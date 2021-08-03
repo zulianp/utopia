@@ -10,7 +10,7 @@
 #include "utopia_stk_DofMap.hpp"
 #include "utopia_stk_FunctionSpace.hpp"
 
-#include "utopia_intrepid2_L2Norm.hpp"
+#include "utopia_kokkos_L2Norm.hpp"
 
 // Stk
 #include <stk_mesh/base/BulkData.hpp>
@@ -137,7 +137,7 @@ namespace utopia {
             Kokkos::deep_copy(device_element_tags, element_tags);
 
             fe.init(topo, device_cell_points, degree);
-            fe.element_tags = device_element_tags;
+            fe.element_tags() = device_element_tags;
             return true;
         }
     };
@@ -506,16 +506,16 @@ namespace utopia {
 #endif
 
     template <typename Scalar>
-    void ConvertField<Field<utopia::stk::FunctionSpace>, utopia::intrepid2::Field<Scalar>>::apply(
+    void ConvertField<Field<utopia::stk::FunctionSpace>, Intrepid2Field<Scalar>>::apply(
         const Field<utopia::stk::FunctionSpace> &from,
-        utopia::intrepid2::Field<Scalar> &to) {
+        Intrepid2Field<Scalar> &to) {
         GlobalToLocal<utopia::stk::FunctionSpace, Vector, StkViewDevice_t<Scalar>>::apply(
             *from.space(), from.data(), to.data(), from.tensor_size());
 
         to.set_tensor_size(from.tensor_size());
     }
 
-    template class ConvertField<Field<utopia::stk::FunctionSpace>, utopia::intrepid2::Field<StkScalar_t>>;
+    template class ConvertField<Field<utopia::stk::FunctionSpace>, Intrepid2Field<StkScalar_t>>;
 
     template <typename Scalar>
     void GlobalToLocal<utopia::stk::FunctionSpace,
@@ -582,7 +582,24 @@ namespace utopia {
                                  StkViewDevice_t<StkScalar_t>>;
 
     void l2_norm(const Field<utopia::stk::FunctionSpace> &field, std::vector<StkScalar_t> &norms) {
-        intrepid2::l2_norm(field, norms);
+        using Scalar = typename Traits<utopia::stk::FunctionSpace>::Scalar;
+        utopia::kokkos::L2Norm<utopia::stk::FunctionSpace, utopia::intrepid2::FE<Scalar>>().compute(field, norms);
     }
+
+    // template <class FunctionSpace>
+    // auto l2_norm(const utopia::Field<FunctionSpace> &field) -> typename Traits<FunctionSpace>::Scalar {
+    //     using Scalar = typename Traits<FunctionSpace>::Scalar;
+    //     std::vector<Scalar> results;
+    //     L2Norm<FunctionSpace>().compute(field, results);
+
+    //     assert(results.size() == 1);
+    //     return results[0];
+    // }
+
+    // template <class FunctionSpace>
+    // void l2_norm(const utopia::Field<FunctionSpace> &field,
+    //              std::vector<typename Traits<FunctionSpace>::Scalar> &results) {
+
+    // }
 
 }  // namespace utopia

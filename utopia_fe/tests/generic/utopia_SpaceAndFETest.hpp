@@ -7,6 +7,12 @@
 
 #include "utopia_fe_Core.hpp"
 
+// FIXME
+#include "utopia_kokkos_LaplaceOperator.hpp"
+#include "utopia_kokkos_LinearElasticity.hpp"
+#include "utopia_kokkos_NeoHookean.hpp"
+#include "utopia_kokkos_VectorLaplaceOperator.hpp"
+
 namespace utopia {
 
     template <class FunctionSpace, class FE>
@@ -78,13 +84,9 @@ namespace utopia {
             return dir + "/rectangle_4_tris.e";
         }
 
-        template <class Op>
-        void assemble_and_solve(const std::string &name, FunctionSpace &space, Op &op) {
-            using Assembler_t = typename AssembleTraits<FE, Op>::Type;
+        template <class Assembler>
+        void assemble_and_solve(const std::string &name, FunctionSpace &space, Assembler &assembler) {
             using FEField_t = typename Traits<FE>::Field;
-
-            auto fe_ptr = std::make_shared<FE>();
-            create_fe(space, *fe_ptr, 2);
 
             Vector_t rhs;
             space.create_vector(rhs);
@@ -95,10 +97,9 @@ namespace utopia {
             auto &x = field_x.data();
             x.set(0.0);
 
-            FEField_t fe_field(fe_ptr);
+            FEField_t fe_field(assembler.fe_ptr());
             convert_field(field_x, fe_field);
 
-            Assembler_t assembler(fe_ptr, op);
             assembler.update(make_ref(fe_field));
             assembler.assemble();
 
@@ -178,7 +179,9 @@ namespace utopia {
                 space.add_dirichlet_boundary_condition("outlet", -1.0);
             }
 
-            LaplaceOperator<Scalar_t> lapl{1.0};
+            auto fe_ptr = std::make_shared<FE>();
+            create_fe(space, *fe_ptr, 2);
+            utopia::kokkos::LaplaceOperator<FE> lapl(fe_ptr, {1.0});
 
             assemble_and_solve("poisson", space, lapl);
         }
@@ -201,7 +204,9 @@ namespace utopia {
                 space.add_dirichlet_boundary_condition("outlet", -3.0, 2);
             }
 
-            VectorLaplaceOperator<3, Scalar_t> lapl{1.0};
+            auto fe_ptr = std::make_shared<FE>();
+            create_fe(space, *fe_ptr, 2);
+            utopia::kokkos::VectorLaplaceOperator<FE, 3> lapl(fe_ptr, {1.0});
 
             assemble_and_solve("vector_poisson", space, lapl);
         }
@@ -225,10 +230,13 @@ namespace utopia {
                 space.add_dirichlet_boundary_condition("outlet", -0.001, 2);
             }
 
-            LinearElasticity<Dim, Scalar_t> linear_elasticity{1.0, 1.0};
+            auto fe_ptr = std::make_shared<FE>();
+            create_fe(space, *fe_ptr, 2);
+
+            utopia::kokkos::LinearElasticity<FE, Dim> linear_elasticity(fe_ptr, {1.0, 1.0});
             assemble_and_solve("linear_elasticity", space, linear_elasticity);
 
-            NeoHookean<Dim, Scalar_t> neohookean{1.0, 1.0};
+            utopia::kokkos::NeoHookean<FE> neohookean(fe_ptr, {1.0, 1.0});
             assemble_and_solve("neohookean", space, neohookean);
         }
 
@@ -245,7 +253,9 @@ namespace utopia {
                 space.add_dirichlet_boundary_condition("surface_3", -1.0);
             }
 
-            LaplaceOperator<Scalar_t> lapl{1.0};
+            auto fe_ptr = std::make_shared<FE>();
+            create_fe(space, *fe_ptr, 2);
+            utopia::kokkos::LaplaceOperator<FE> lapl(fe_ptr, {1.0});
 
             std::stringstream ss;
             space.describe(ss);
@@ -266,7 +276,9 @@ namespace utopia {
                 space.add_dirichlet_boundary_condition("body_bottom", -1.0);
             }
 
-            LaplaceOperator<Scalar_t> lapl{1.0};
+            auto fe_ptr = std::make_shared<FE>();
+            create_fe(space, *fe_ptr, 2);
+            utopia::kokkos::LaplaceOperator<FE> lapl(fe_ptr, {1.0});
 
             std::stringstream ss;
             space.describe(ss);
@@ -293,7 +305,11 @@ namespace utopia {
                 space.add_dirichlet_boundary_condition("body_bottom", 0.0, 2);
             }
 
-            LinearElasticity<Dim, Scalar_t> linear_elasticity{1.0, 1.0};
+            auto fe_ptr = std::make_shared<FE>();
+            create_fe(space, *fe_ptr, 2);
+
+            utopia::kokkos::LinearElasticity<FE, Dim> linear_elasticity(fe_ptr, {1.0, 1.0});
+
             assemble_and_solve("elasticity_problem_parallel", space, linear_elasticity);
         }
 
@@ -310,7 +326,9 @@ namespace utopia {
                 space.add_dirichlet_boundary_condition("Side", -1.0);
             }
 
-            LaplaceOperator<Scalar_t> lapl{1.0};
+            auto fe_ptr = std::make_shared<FE>();
+            create_fe(space, *fe_ptr, 2);
+            utopia::kokkos::LaplaceOperator<FE> lapl(fe_ptr, {1.0});
 
             std::stringstream ss;
             space.describe(ss);

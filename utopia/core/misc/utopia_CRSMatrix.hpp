@@ -14,7 +14,9 @@ namespace utopia {
     template <typename T>
     class Traits<std::vector<T> > {
     public:
+        using Scalar = T;
         using ValueType = T;
+        static constexpr int StaticSize = 0;
     };
 
     template <class ScalarView, class IndexView, int BlockSize_ = 1>

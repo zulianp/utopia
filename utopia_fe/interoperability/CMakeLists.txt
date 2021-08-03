@@ -74,6 +74,11 @@ if(UTOPIA_ENABLE_INTREPID2)
         list(APPEND INTEROP_MODULES libmesh_intrepid2)
     endif()
 
+    if(UTOPIA_ENABLE_ARBORX)
+        list(APPEND INTEROP_MODULES intrepid2_arborx)
+        list(APPEND INTEROP_DEP utopia_arborx)
+    endif()
+
 endif()
 
 # ##############################################################################

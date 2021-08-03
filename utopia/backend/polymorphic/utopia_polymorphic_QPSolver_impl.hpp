@@ -202,8 +202,7 @@ namespace utopia {
         tron->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));
         impl_ = std::move(tron);
 #else
-        impl_ = utopia::make_unique<SemismoothNewton<Matrix, Vector>>(
-            QPSolverRegistry<Matrix, Vector>::default_linear_solver());
+        impl_ = QPSolverRegistry::default_solver();
 #endif
     }
 

@@ -5,6 +5,11 @@
 #include "utopia_CreateFE.hpp"
 #include "utopia_Field.hpp"
 
+// Utopia/Kokkos includes
+#include "utopia_kokkos_Field.hpp"
+#include "utopia_kokkos_Gradient.hpp"
+#include "utopia_kokkos_Strain.hpp"
+
 // Utopia/intrepid2 includes
 #include "utopia_intrepid2.hpp"
 
@@ -17,9 +22,10 @@ namespace utopia {
             using Scalar_t = typename Traits<FunctionSpace>::Scalar;
             using Field_t = utopia::Field<FunctionSpace>;
 
-            using Intrepid2Field_t = utopia::intrepid2::Field<Scalar_t>;
-            using Intrepid2Gradient_t = utopia::intrepid2::Gradient<Scalar_t>;
             using Intrepid2FE_t = utopia::intrepid2::FE<Scalar_t>;
+            using Intrepid2Field_t = utopia::kokkos::Field<Intrepid2FE_t>;
+            using Intrepid2Gradient_t = utopia::kokkos::Gradient<Intrepid2FE_t>;
+            using Intrepid2Strain_t = utopia::kokkos::Strain<Intrepid2FE_t>;
 
             void read(Input &in) override {
                 valid_ = true;
@@ -92,7 +98,7 @@ namespace utopia {
                 }
 
                 if (compute_strain_) {
-                    Strain<Scalar_t> intrepid_strain(fe);
+                    Intrepid2Strain_t intrepid_strain(fe);
                     intrepid_strain.init_linearized(intrepid_field);
 
                     if (verbose_) {

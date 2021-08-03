@@ -32,6 +32,7 @@ option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
 option(UTOPIA_ENABLE_LIBMESH "Enable the libmesh functionalities" ON)
 option(UTOPIA_ENABLE_STK "Enable the stk functionalities" OFF)
 option(UTOPIA_ENABLE_MOONOLITH "Enable the moonolith functionalities" ON)
+option(UTOPIA_ENABLE_ARBORX "Enable the ArborX backend" OFF)
 
 # ##############################################################################
 # ##############################################################################
@@ -216,9 +217,32 @@ if(UTOPIA_ENABLE_STK)
     list(APPEND UTOPIA_FE_MODULES backend/stk)
 endif()
 
+if(UTOPIA_ENABLE_PETSC)
+    list(APPEND UTOPIA_FE_MODULES backend/petsc)
+endif()
+
+
+##################################################
+
+if(UTOPIA_ENABLE_INTREPID2 OR UTOPIA_ENABLE_MARS)
+    list(APPEND UTOPIA_FE_MODULES backend/kokkos)
+endif()
+
+if(UTOPIA_ENABLE_INTREPID2)
+    list(APPEND UTOPIA_FE_MODULES backend/intrepid2)
+endif()
+
 if(UTOPIA_ENABLE_MARS)
     list(APPEND UTOPIA_FE_MODULES backend/mars)
 endif()
+
+if(UTOPIA_ENABLE_ARBORX)
+    list(APPEND UTOPIA_FE_MODULES backend/arborx)
+endif()
+
+##################################################
+
+
 
 list(APPEND UTOPIA_FE_MODULES base interoperability core)
 
@@ -226,9 +250,6 @@ list(APPEND UTOPIA_FE_MODULES base interoperability core)
 #     include(InstallLIBMESH)
 # endif()
 
-if(UTOPIA_ENABLE_INTREPID2)
-    list(APPEND UTOPIA_FE_MODULES backend/intrepid2)
-endif()
 
 add_library(utopia_fe utopia_fe.cpp)
 set_utopia_compiler_features(utopia_fe)

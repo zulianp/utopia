@@ -167,19 +167,20 @@ int main(const int argc, char* argv[]) {
 #ifdef UTOPIA_WITH_PETSC
     using MatrixT = PetscMatrix;
     using VectorT = PetscVector;
-#else
-#ifdef UTOPIA_WITH_TRILINOS
-    using MatrixT = TpetraMatrixd;
-    using VectorT = TpetraVectord;
-#else
-    using MatrixT = BlasMatrixd;
-    using VectorT = BlasVectord;
-#endif
-#endif
+    // FIXME once the other backends are up to date with petsc
+    // #else
+    // #ifdef UTOPIA_WITH_TRILINOS
+    //     using MatrixT = TpetraMatrixd;
+    //     using VectorT = TpetraVectord;
+    // #else
+    //     using MatrixT = BlasMatrixd;
+    //     using VectorT = BlasVectord;
+    // #endif
+    // #endif
 
     Utopia::Init(argc, argv);
 
     test_linear_solver<MatrixT, VectorT>();
-
+#endif  // UTOPIA_WITH_PETSC
     return Utopia::Finalize();
 }

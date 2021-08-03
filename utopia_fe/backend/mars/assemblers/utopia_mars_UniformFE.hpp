@@ -6,6 +6,8 @@
 #include "utopia_mars_Hex8.hpp"
 #include "utopia_mars_Hex8Quadrature.hpp"
 
+#include "utopia_kokkos_UniformFE.hpp"
+
 namespace utopia {
 
     template <int Dim, typename Scalar_>
