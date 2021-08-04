@@ -394,6 +394,41 @@ namespace utopia {
                 return true;
             }
 
+            bool apply(Vector &vec) {
+                ensure_output(vec);
+                ensure_vector_accumulators();
+                zero_vector_accumulators();
+
+                auto data = domain.vector_accumulator->data();
+
+                for (auto &a_ptr : domain.assemblers) {
+                    if (a_ptr->is_operator()) {
+                        if (!a_ptr->apply(x_field->data(), data)) {
+                            assert(false);
+                            return false;
+                        }
+                    }
+                }
+
+                for (auto &p : boundary) {
+                    auto &b = p.second;
+
+                    for (auto &a_ptr : b.assemblers) {
+                        if (a_ptr->is_operator()) {
+                            assert(false);  // Not supported yet!
+                            // if (!a_ptr->apply(*x_field, data)) {
+                            //     assert(false);
+                            //     return false;
+                            // }
+                        }
+                    }
+                }
+
+                local_to_global_vector_domain(vec);
+                // local_to_global_vector_boundary(vec);
+                return true;
+            }
+
             bool assemble_vector(Vector &vec) {
                 ensure_output(vec);
                 ensure_vector_accumulators();
@@ -602,6 +637,20 @@ namespace utopia {
 
             impl_->update(x);
             if (!impl_->assemble_vector(vec)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        template <class FunctionSpace, class FE>
+        bool OmniAssembler<FunctionSpace, FE>::apply(const Vector &x, Vector &hessian_times_x) {
+            if (!impl_->domain.fe) {
+                return false;
+            }
+
+            impl_->update(x);
+            if (!impl_->apply(hessian_times_x)) {
                 return false;
             }
 

@@ -22,6 +22,7 @@ namespace utopia {
         virtual bool assemble(const Vector &x, Matrix &hessian, Vector &gradient) = 0;
         virtual bool assemble(const Vector &x, Matrix &jacobian) = 0;
         virtual bool assemble(const Vector &x, Vector &fun) = 0;
+        virtual bool apply(const Vector &x, Vector &hessian_times_x) = 0;
 
         // For linear only
         virtual bool assemble(Matrix &jacobian) = 0;

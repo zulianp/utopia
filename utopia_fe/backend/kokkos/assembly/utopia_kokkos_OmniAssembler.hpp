@@ -38,6 +38,8 @@ namespace utopia {
             bool assemble(Matrix &jacobian) override;
             bool assemble(Vector &fun) override;
 
+            bool apply(const Vector &x, Vector &hessian_times_x) override;
+
             void read(Input &in) override;
 
             AssemblyMode mode() const;

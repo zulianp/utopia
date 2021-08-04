@@ -30,6 +30,12 @@ namespace utopia {
 
         virtual ~FEFunctionInterface() = default;
 
+        virtual bool apply(const Vector_t & /*x*/, Vector_t & /*hessian_times_x*/) const {
+            assert(false);
+            Utopia::Abort("Implement me!");
+            return false;
+        }
+
         virtual void create_solution_vector(Vector_t &x) = 0;
         virtual void apply_constraints(Vector_t &x) const = 0;
         virtual void set_environment(const std::shared_ptr<Environment_t> &env) = 0;
@@ -124,6 +130,17 @@ namespace utopia {
         inline const std::shared_ptr<Matrix_t> &mass_matrix() const override { return mass_matrix_; }
 
         bool assemble_mass_matrix() override { return assemble_mass_matrix(*mass_matrix()); }
+
+        virtual bool apply(const Vector_t &x, Vector_t &hessian_times_x) const override {
+            if (empty(hessian_times_x)) {
+                this->space()->create_vector(hessian_times_x);
+                rename("hessian_times_x", hessian_times_x);
+            } else {
+                hessian_times_x *= 0.0;
+            }
+
+            return this->assembler()->apply(x, hessian_times_x);
+        }
 
         bool assemble_mass_matrix(Matrix_t &mass_matrix) override {
             this->space()->create_matrix(mass_matrix);
@@ -427,6 +444,7 @@ namespace utopia {
 
     protected:
         inline bool export_tensors() const { return export_tensors_; }
+        inline bool must_apply_constraints_to_assembled() const { return must_apply_constraints_; }
 
     private:
         std::shared_ptr<FEFunctionInterface_t> fe_function_;
