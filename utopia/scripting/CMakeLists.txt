@@ -1,6 +1,7 @@
 utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} ".")
 
 # ############### SWIG ##################
+cmake_policy(SET "CMP0086" NEW)
 
 find_package(SWIG REQUIRED)
 
