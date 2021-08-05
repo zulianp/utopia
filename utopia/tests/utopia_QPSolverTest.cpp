@@ -133,7 +133,7 @@ namespace utopia {
             BoxConstraints<Vector> box;
             create_symm_lapl_test_data(comm, A, b, box);
 
-            b *= 0.5;
+            // b *= 0.5;
             // box.lower_bound() = nullptr;
             // box.upper_bound() = nullptr;
             QuadraticFunction<Matrix, Vector> fun(make_ref(A), make_ref(b));
@@ -155,28 +155,38 @@ namespace utopia {
             // newton.verbose(true);
 
             Vector x(layout(b));
+
+            // Linear solve first to get closer to solution
+            cg.solve(A, b, x);
+            barrier.project_onto_feasibile_region(x);
+
+            // if (Traits::Backend == PETSC) {
+            //     rename("x0", x);
+            //     write("X0.m", x);
+            // }
+
             newton.solve(barrier, x);
 
-            if (Traits::Backend == PETSC) {
-                rename("x", x);
-                write("X.m", x);
+            // if (Traits::Backend == PETSC) {
+            //     rename("x", x);
+            //     write("X.m", x);
 
-                if (box.has_lower_bound()) {
-                    rename("lb", *box.lower_bound());
-                    write("LB.m", *box.lower_bound());
-                }
+            //     if (box.has_lower_bound()) {
+            //         rename("lb", *box.lower_bound());
+            //         write("LB.m", *box.lower_bound());
+            //     }
 
-                if (box.has_upper_bound()) {
-                    rename("ub", *box.upper_bound());
-                    write("UB.m", *box.upper_bound());
-                }
+            //     if (box.has_upper_bound()) {
+            //         rename("ub", *box.upper_bound());
+            //         write("UB.m", *box.upper_bound());
+            //     }
 
-                rename("a", A);
-                write("A.m", A);
+            //     rename("a", A);
+            //     write("A.m", A);
 
-                rename("b", b);
-                write("B.m", b);
-            }
+            //     rename("b", b);
+            //     write("B.m", b);
+            // }
         }
 
         void MPRGP_test() const {
