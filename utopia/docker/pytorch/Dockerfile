@@ -4,6 +4,8 @@ RUN yum install make
 RUN yum install git cmake
 RUN yum install clang-devel
 RUN yum install python3-devel
+RUN yum install swig
+
 RUN git clone https://github.com/spack/spack.git
 RUN . spack/share/spack/setup-env.sh
 RUN spack install anaconda3

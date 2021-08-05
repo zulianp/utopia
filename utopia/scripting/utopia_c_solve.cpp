@@ -18,10 +18,13 @@ using MatrixType = utopia::TpetraMatrix;
 using VectorType = utopia::BlasVectord;
 using MatrixType = utopia::BlasMatrixd;
 #else
-#error "No backend available"
+#warning "No backend available"
+#define UTOPIA_NO_BACKEND
 #endif  // UTOPIA_WITH_BLAS
 #endif  // UTOPIA_WITH_TRILINOS
 #endif  // UTOPIA_WITH_PETSC
+
+#ifndef UTOPIA_NO_BACKEND
 
 extern "C" {
 
@@ -95,3 +98,5 @@ void USolverSolve(USolver solver, UMat A, UVec b, UVec x) {
     utopia::out() << "USolverSolve" << std::endl;
 }
 }
+
+#endif  // UTOPIA_NO_BACKEND
