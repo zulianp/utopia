@@ -34,7 +34,7 @@ ENV MPI_DIR /opt/mpich
 ENV PATH $PATH:$MPI_DIR/bin
 
 
-RUN find / -name "libstdc++.so"
+# RUN find / -name "libstdc++.so"
 COPY ./mpi_test.cpp ./mpi_test.cpp
 RUN mpicxx mpi_test.cpp && mpiexec -n 1 ./a.out
 
@@ -51,11 +51,22 @@ RUN mpicxx mpi_test.cpp && mpiexec -n 1 ./a.out
 # #                             Utopia installation
 # ################################################################################
 
-# RUN git clone https://zulianp@bitbucket.org/zulianp/utopia.git
-# RUN cd utopia && git checkout development && git submodule update --init --recursive
-# RUN mkdir /utopia/utopia/build
-# RUN cd /utopia/utopia/build && cmake ..
-# RUN cd /utopia/utopia/build && make petsc
+WORKDIR /
+RUN git clone https://zulianp@bitbucket.org/zulianp/utopia.git
+RUN cd utopia && git checkout development && git submodule update --init --recursive
+RUN mkdir /utopia/utopia/build
+RUN cd /utopia/utopia/build && cmake .. -DUTOPIA_DEPENDENCIES_DIR=/utopia_dependencies
+RUN cd /utopia/utopia/build && make petsc
+
+ENV PETSC_DIR=/utopia_dependencies/petsc
+RUN cd /utopia/utopia/build && cmake .. && make -j4 complete
+
+
+RUN conda install --yes pytorch torchvision torchaudio cpuonly -c pytorch
+RUN conda install swig
+
+RUN mkdir /utopia/utopia/build_script && cmake .. -DUTOPIA_SCRIPTING=ON
+
 # -DUTOPIA_SCRIPTING=ON \
 #     -DCMAKE_SHARED_LINKER_FLAGS:STRING="-shared" \
 #     -DBUILD_SHARED_LIBS=ON

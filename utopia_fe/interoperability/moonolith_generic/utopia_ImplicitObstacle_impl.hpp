@@ -31,6 +31,7 @@ namespace utopia {
         bool update_transfer{true};
         bool export_tensors{false};
         bool shift_field{false};
+        Scalar field_rescale{1.0};
     };
 
     template <class FunctionSpace>
@@ -57,6 +58,7 @@ namespace utopia {
         in.get("update_transfer", impl_->update_transfer);
         in.get("export_tensors", impl_->export_tensors);
         in.get("infinity", impl_->infinity);
+        in.get("field_rescale", impl_->field_rescale);
 
         if (impl_->shift_field) {
             Scalar min_dd = min(impl_->domain_distance->data());
@@ -65,6 +67,10 @@ namespace utopia {
 
             impl_->domain_distance->data().transform_values(
                 UTOPIA_LAMBDA(const Scalar &val)->Scalar { return val - min_dd; });
+
+            if (impl_->field_rescale != 1.0) {
+                impl_->domain_distance->data() *= impl_->field_rescale;
+            }
         }
 
         compute_gradients();
