@@ -19,6 +19,7 @@
 
 #include "utopia_Agglomerate.hpp"
 #include "utopia_LogBarrierFunction.hpp"
+#include "utopia_LogBarrierQPSolver.hpp"
 
 #ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
@@ -189,6 +190,48 @@ namespace utopia {
             // }
         }
 
+        void log_barrier_qp_solver_test() {
+            auto &&comm = Comm::get_default();
+
+            Matrix A;
+            Vector b;
+            BoxConstraints<Vector> box;
+            create_symm_lapl_test_data(comm, A, b, box);
+
+            InputParameters params;
+            // params.set("verbose", true);
+            params.set("barrier_parameter", 1e-5);
+            params.set("barrier_parameter_shrinking_factor", 0.7);
+
+            LogBarrierQPSolver<Matrix, Vector> solver;
+            solver.set_box_constraints(box);
+            solver.read(params);
+
+            Vector x(layout(b));
+            utopia_test_assert(solver.solve(A, b, x));
+
+            // if (Traits::Backend == PETSC) {
+            //     rename("x", x);
+            //     write("X.m", x);
+
+            //     if (box.has_lower_bound()) {
+            //         rename("lb", *box.lower_bound());
+            //         write("LB.m", *box.lower_bound());
+            //     }
+
+            //     if (box.has_upper_bound()) {
+            //         rename("ub", *box.upper_bound());
+            //         write("UB.m", *box.upper_bound());
+            //     }
+
+            //     rename("a", A);
+            //     write("A.m", A);
+
+            //     rename("b", b);
+            //     write("B.m", b);
+            // }
+        }
+
         void MPRGP_test() const {
             MPRGP<Matrix, Vector> qp_solver;
             run_qp_solver(qp_solver);
@@ -297,6 +340,7 @@ namespace utopia {
             print_backend_info();
 
             UTOPIA_RUN_TEST(log_barrier_test);
+            UTOPIA_RUN_TEST(log_barrier_qp_solver_test);
             UTOPIA_RUN_TEST(pg_test);
             UTOPIA_RUN_TEST(pcg_test);
             UTOPIA_RUN_TEST(ngs_test);

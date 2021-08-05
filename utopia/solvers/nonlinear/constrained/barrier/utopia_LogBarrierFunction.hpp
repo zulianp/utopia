@@ -37,6 +37,14 @@ namespace utopia {
             reset();
         }
 
+        LogBarrierFunction() {}
+
+        inline void set_unconstrained_function(const std::shared_ptr<Function> &unconstrained) {
+            unconstrained_ = unconstrained;
+        }
+
+        void set_box_constraints(const std::shared_ptr<BoxConstraints> &box) { box_ = box; }
+
         LogBarrierFunction(const std::shared_ptr<Function> &unconstrained, const std::shared_ptr<BoxConstraints> &box)
             : unconstrained_(unconstrained), box_(box) {}
 
@@ -222,6 +230,8 @@ namespace utopia {
 
         void set_min_barrier_parameter(const Scalar value) { min_barrier_parameter_ = value; }
 
+        void reset() { current_barrier_parameter_ = barrier_parameter_; }
+
     private:
         std::shared_ptr<Function> unconstrained_;
         std::shared_ptr<BoxConstraints> box_;
@@ -233,8 +243,6 @@ namespace utopia {
         Scalar soft_boundary_{1e-7};
 
         bool verbose_{false};
-
-        void reset() { current_barrier_parameter_ = barrier_parameter_; }
 
         void update_barrier() {
             current_barrier_parameter_ =
