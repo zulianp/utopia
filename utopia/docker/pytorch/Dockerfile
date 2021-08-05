@@ -30,7 +30,8 @@ RUN mkdir /utopia/utopia/build
 RUN cd /utopia/utopia/build && cmake .. \
     -DUTOPIA_ENABLE_SCRIPTING=ON \
     -DUTOPIA_DEPENDENCIES_DIR=/utopia_dependencies \
-    -DBLAS_LIBRARIES=/usr/lib64/libblas.so.3
+    -DBLAS_LIBRARIES=/usr/lib64/libblas.so.3 \
+    -DLAPACK_LIBRARIES=/usr/lib64/liblapack.so.3
 
 # Install petsc with utopia/cmake installer
 RUN cd /utopia/utopia/build && make petsc
