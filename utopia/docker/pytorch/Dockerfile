@@ -37,7 +37,8 @@ RUN cd /utopia/utopia/build && cmake .. \
 RUN cd /utopia/utopia/build && make petsc
 ENV PETSC_DIR=/utopia_dependencies/petsc
 
-RUN cd /utopia/utopia/build && cmake .. && make -j4 && make -j4 complete
+RUN cd /utopia/utopia/build && cmake .. && make -j4
+# RUN cd /utopia/utopia/build && make -j4 complete
 
 COPY ./hello_utopia_torch.py  /utopia/utopia/build/scripting/hello_utopia_torch.py
 RUN cd /utopia/utopia/build/scripting && python3 hello_utopia_torch.py
