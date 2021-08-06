@@ -57,6 +57,10 @@ namespace utopia {
         return impl_->get_assembler().assemble(x, gradient);
     }
 
+    bool OmniAssembler<utopia::stk::FunctionSpace>::apply(const Vector &x, Vector &hessian_times_x) {
+        return impl_->get_assembler().apply(x, hessian_times_x);
+    }
+
     // For linear only
     bool OmniAssembler<utopia::stk::FunctionSpace>::assemble(Matrix &hessian) {
         return impl_->get_assembler().assemble(hessian);

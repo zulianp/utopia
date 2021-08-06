@@ -83,15 +83,15 @@ namespace utopia {
                     norm_v += x * x;
                 }
 
-                // if (norm_v > 0) {
-                assert(norm_v > 0);
-                norm_v = device::sqrt(norm_v);
+                if (norm_v > 0) {
+                    // assert(norm_v > 0);
+                    norm_v = device::sqrt(norm_v);
 
-                for (int d = 0; d < dim; ++d) {
-                    auto x = view.get(i * dim + d);
-                    view.set(i * dim + d, x / norm_v);
+                    for (int d = 0; d < dim; ++d) {
+                        auto x = view.get(i * dim + d);
+                        view.set(i * dim + d, x / norm_v);
+                    }
                 }
-                // }
             });
     }
 

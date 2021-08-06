@@ -19,20 +19,16 @@ namespace utopia {
 
         void read(Input &in) override { Super::read(in); }
 
-        bool setup_IVP(Vector_t &) override {
+        bool setup_IVP(Vector_t &x) override {
             if (!this->assemble_mass_matrix()) {
                 return false;
             }
 
-            this->space()->create_vector(active_stress_);
-            active_stress_.set(0.);
-
-            auto vlo = layout(active_stress_);
+            auto vlo = layout(x);
 
             x_old_.zeros(vlo);
-            x_older_.zeros(vlo);
-            internal_stress_old_.zeros(vlo);
-            external_force_.zeros(vlo);
+            velocity_old_.zeros(vlo);
+            acceleration_old_.zeros(vlo);
             return true;
         }
 
@@ -41,17 +37,13 @@ namespace utopia {
 
             const Scalar_t dt = this->delta_time();
 
-            x_older_ = x_old_;
+            Vector_t acceleration_new;
+            this->gradient(x, acceleration_new);
+            acceleration_new *= -1.0;
+
+            velocity_old_ += dt / 2.0 * (acceleration_new + acceleration_old_);
             x_old_ = x;
-
-            active_stress_ = -internal_stress_old_ + (4. * external_force_);
-
-            // In case of contact problems here we also have the contact stress
-            this->gradient(x, internal_stress_old_);
-
-            active_stress_ +=
-                (4. / (dt * dt)) * ((*this->mass_matrix()) * (2. * x_old_ - x_older_)) - 2. * internal_stress_old_;
-
+            acceleration_old_ = acceleration_new;
             return true;
         }
 
@@ -63,9 +55,11 @@ namespace utopia {
         void integrate_gradient(const Vector_t &x, Vector_t &g) const override {
             const Scalar_t dt2 = this->delta_time() * this->delta_time();
 
-            g -= active_stress_;
-            g *= (dt2 / 4.);
-            g += ((*this->mass_matrix()) * x);
+            Vector_t mom = (*this->mass_matrix()) * (x - x_old_ - this->delta_time() * velocity_old_);
+            g -= acceleration_old_;
+            g *= dt2 / 4.0;
+            g += mom;
+
             this->space()->apply_zero_constraints(g);
         }
 
@@ -82,8 +76,7 @@ namespace utopia {
         const Vector_t &solution() const override { return x_old(); }
 
     private:
-        Vector_t x_old_, x_older_;
-        Vector_t active_stress_, internal_stress_old_, external_force_;
+        Vector_t x_old_, velocity_old_, acceleration_old_;
     };
 
 }  // namespace utopia

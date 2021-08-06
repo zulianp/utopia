@@ -1,6 +1,8 @@
 #ifndef UTOPIA_VELOCITY_NEWMARK_INTEGRATOR_HPP
 #define UTOPIA_VELOCITY_NEWMARK_INTEGRATOR_HPP
 
+#include "utopia_Tracer.hpp"
+
 #include "utopia_FEModelFunction.hpp"
 #include "utopia_NewmarkIntegrator.hpp"
 #include "utopia_VelocityVariant.hpp"
@@ -58,11 +60,19 @@ namespace utopia {
         }
 
         void integrate_gradient(const Vector_t &x, Vector_t &g) const override {
+            UTOPIA_TRACE_REGION_BEGIN("VelocityNewmarkIntegrator::integrate_gradient");
+
             Super::integrate_gradient(x, g);
             g *= 2. / this->delta_time();
+
+            UTOPIA_TRACE_REGION_END("VelocityNewmarkIntegrator::integrate_gradient");
         }
 
-        void integrate_hessian(const Vector_t &x, Matrix_t &H) const override { Super::integrate_hessian(x, H); }
+        void integrate_hessian(const Vector_t &x, Matrix_t &H) const override {
+            UTOPIA_TRACE_REGION_BEGIN("VelocityNewmarkIntegrator::integrate_hessian");
+            Super::integrate_hessian(x, H);
+            UTOPIA_TRACE_REGION_END("VelocityNewmarkIntegrator::integrate_hessian");
+        }
 
         bool time_derivative(const Vector_t &x, Vector_t &dfdt) const override {
             return Super::time_derivative(x, dfdt);

@@ -15,12 +15,14 @@ namespace utopia {
             moonolith::FETransfer transfer;
             bool export_converted_mesh{false};
             bool remove_constrained_dofs{false};
+            bool volume_to_surface{false};
         };
 
         void FETransfer::read(Input &in) {
             impl_->transfer.read(in);
             in.get("export_converted_mesh", impl_->export_converted_mesh);
             in.get("remove_constrained_dofs", impl_->remove_constrained_dofs);
+            in.get("volume_to_surface", impl_->volume_to_surface);
         }
 
         void FETransfer::describe(std::ostream &os) const { impl_->transfer.describe(os); }
@@ -50,11 +52,11 @@ namespace utopia {
                 impl_->from->mesh().write("from_and_to.vtu");
             }
 
-            if(!impl_->transfer.init(impl_->from)) {
+            if (!impl_->transfer.init(impl_->from)) {
                 return false;
             }
 
-            if(impl_->remove_constrained_dofs) {
+            if (impl_->remove_constrained_dofs) {
                 from_and_to->apply_constraints(*transfer_matrix(), 0);
             }
 
@@ -66,21 +68,26 @@ namespace utopia {
             impl_->to = std::make_shared<moonolith::FunctionSpace>(to->comm());
 
             convert_function_space(*from, *impl_->from);
-            convert_function_space(*to, *impl_->to);
+
+            if (impl_->volume_to_surface) {
+                extract_trace_space(*to, *impl_->to);
+            } else {
+                convert_function_space(*to, *impl_->to);
+            }
 
             assert(from->mesh().n_local_elements() == impl_->from->mesh().n_local_elements());
-            assert(to->mesh().n_local_elements() == impl_->to->mesh().n_local_elements());
+            assert(impl_->volume_to_surface || to->mesh().n_local_elements() == impl_->to->mesh().n_local_elements());
 
             if (impl_->export_converted_mesh) {
                 impl_->from->mesh().write("from.vtu");
                 impl_->to->mesh().write("to.vtu");
             }
 
-            if(!impl_->transfer.init(impl_->from, impl_->to)) {
+            if (!impl_->transfer.init(impl_->from, impl_->to)) {
                 return false;
             }
 
-            if(impl_->remove_constrained_dofs) {
+            if (impl_->remove_constrained_dofs) {
                 to->apply_constraints(*transfer_matrix(), 0);
             }
 

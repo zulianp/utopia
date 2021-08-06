@@ -741,6 +741,14 @@ namespace utopia {
             }
         }
 
+        inline void shift_diag(const BlasVector &v) {
+            auto n = std::min(rows_, cols_);
+
+            for (SizeType i = 0; i < n; ++i) {
+                ref(i, i) += v.get(i);
+            }
+        }
+
         inline void assign(const Range &row_range, const Range &col_range, const BlasMatrix &block) {
             assert(row_range.valid());
             assert(col_range.valid());
