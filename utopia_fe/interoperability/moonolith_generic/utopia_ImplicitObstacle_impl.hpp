@@ -33,6 +33,7 @@ namespace utopia {
         bool shift_field{false};
         bool volume_to_surface{false};
         Scalar field_rescale{1.0};
+        Scalar field_offset{0.0};
     };
 
     template <class FunctionSpace>
@@ -60,15 +61,17 @@ namespace utopia {
         in.get("export_tensors", impl_->export_tensors);
         in.get("infinity", impl_->infinity);
         in.get("field_rescale", impl_->field_rescale);
+        in.get("field_offset", impl_->field_offset);
         in.get("volume_to_surface", impl_->volume_to_surface);
 
         if (impl_->shift_field) {
             Scalar min_dd = min(impl_->domain_distance->data());
+            Scalar offset = impl_->field_offset;
 
             utopia::out() << "min_dd: " << min_dd << "\n";
 
             impl_->domain_distance->data().transform_values(
-                UTOPIA_LAMBDA(const Scalar &val)->Scalar { return val - min_dd; });
+                UTOPIA_LAMBDA(const Scalar &val)->Scalar { return val - min_dd + offset; });
 
             if (impl_->field_rescale != 1.0) {
                 impl_->domain_distance->data() *= impl_->field_rescale;
