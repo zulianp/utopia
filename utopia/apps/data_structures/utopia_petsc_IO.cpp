@@ -6,6 +6,7 @@
 #include "utopia_petsc_DM.hpp"
 
 #if defined(PETSC_HAVE_EXODUSII)
+#include <petscdmplex.h>
 #include <petscviewerexodusii.h>
 #endif
 
