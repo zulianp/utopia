@@ -124,6 +124,7 @@ namespace utopia {
         using Super::Super;
         using MatrixLayout = typename Traits<PetscMatrix>::MatrixLayout;
         using IndexArray = typename Traits<PetscMatrix>::IndexArray;
+        using ScalarArray = typename Traits<PetscMatrix>::ScalarArray;
 
         ////////////////////////////////////////////////////////////////////
         ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
@@ -343,6 +344,11 @@ namespace utopia {
                        d_nnz,
                        o_nnz);
         }
+
+        void crs(const MatrixLayout &layout,
+                 const IndexArray &row_ptr,
+                 const IndexArray &col_idx,
+                 const ScalarArray &values);
 
         inline void block_sparse(const MatrixLayout &layout,
                                  const IndexArray &d_nnz,

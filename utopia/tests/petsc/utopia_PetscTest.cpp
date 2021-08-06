@@ -1305,6 +1305,33 @@ namespace utopia {
         zero_rows_to_identity(m, 1e-10);
     }
 
+    void petsc_crs_construct() {
+        const SizeType n_rows = 2;
+        const SizeType n_cols = 3;
+
+        Traits<PetscMatrix>::IndexArray row_ptr(n_rows + 1);
+        row_ptr[0] = 0;
+        row_ptr[1] = 2;
+        row_ptr[2] = 4;
+
+        Traits<PetscMatrix>::IndexArray columns(row_ptr[n_rows]);
+        columns[0] = 0;
+        columns[1] = 1;
+        columns[2] = 1;
+        columns[3] = 2;
+
+        Traits<PetscMatrix>::ScalarArray values(row_ptr[n_rows]);
+        values[0] = 1;
+        values[1] = -1;
+        values[2] = -1;
+        values[3] = 1;
+
+        PetscMatrix A;
+        A.crs(serial_layout(n_rows, n_cols), row_ptr, columns, values);
+
+        disp(A);
+    }
+
     void petsc_block_matrix() {
         using IndexArray = Traits<PetscMatrix>::IndexArray;
         using ScalarArray = Traits<PetscMatrix>::ScalarArray;
@@ -1376,6 +1403,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_sparse_matrix_accessors);
         UTOPIA_RUN_TEST(local_diag_block);
         UTOPIA_RUN_TEST(petsc_block_matrix);
+        UTOPIA_RUN_TEST(petsc_crs_construct);
 
         // serial tests
 #ifdef PETSC_HAVE_MUMPS

@@ -731,6 +731,36 @@ namespace utopia {
     //     matij_init(comm, MATAIJ, rows_local, cols_local, rows_global, cols_global, d_nnz, o_nnz);
     // }
 
+    void PetscMatrix::crs(const MatrixLayout &layout,
+                          const IndexArray &row_ptr,
+                          const IndexArray &col_idx,
+                          const ScalarArray &values) {
+        SizeType n_local_rows = row_ptr.size() - 1;
+        assert(n_local_rows == layout.local_size(0));
+
+        assert(layout.comm().size() == 1);  // IMPLEMENT ME for parallel
+
+        IndexArray d_nnz(n_local_rows, 0), o_nnz(n_local_rows, 0);
+
+        for (SizeType r = 0; r < n_local_rows; ++r) {
+            d_nnz[r] = row_ptr[r + 1] - row_ptr[r];
+        }
+
+        sparse(layout, d_nnz, o_nnz);
+
+        SizeType r_begin = row_range().begin();
+
+        write_lock(utopia::LOCAL);
+
+        for (SizeType r = 0; r < n_local_rows; ++r) {
+            for (SizeType idx = row_ptr[r]; idx < row_ptr[r + 1]; ++idx) {
+                this->set(r + r_begin, col_idx[idx], values[idx]);
+            }
+        }
+
+        write_unlock(utopia::LOCAL);
+    }
+
     void PetscMatrix::matij_init(MPI_Comm comm,
                                  MatType type,
                                  PetscInt rows_local,

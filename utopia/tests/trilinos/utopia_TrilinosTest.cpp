@@ -1500,7 +1500,6 @@ namespace utopia {
             values[3] = 1;
 
             TpetraMatrixd A;
-            // = utopia::crs(n_rows, n_cols, row_ptr, columns, values);
             A.crs(serial_layout(n_rows, n_cols), row_ptr, columns, values);
         }
 

@@ -15,10 +15,18 @@ else
     return
 fi
 
+if [ -n "$PETSC_DIR" ]; then
+    echo "PETSC_DIR="$PETSC_DIR
+else
+    echo "define PETSC_DIR to the petsc installation"
+    return
+fi
+
+
 
 git clone https://github.com/trilinos/Trilinos.git; \
     cd Trilinos && \
     mkdir build; \
     cd build && \
-    source $UTOPIA_SRC_DIR/utopia/scripts/installer/configure_trilinos.sh \
+    source $UTOPIA_SRC_DIR/utopia/scripts/installer/configure_trilinos.sh && \
     make -j && make install
