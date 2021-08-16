@@ -15,6 +15,7 @@
 
 #include "utopia_fe_Core.hpp"
 
+#include "utopia_FEFunctionFactory.hpp"
 #include "utopia_NewmarkIntegrator.hpp"
 #include "utopia_ObstacleFEFunction.hpp"
 
@@ -65,11 +66,19 @@ namespace utopia {
 
             std::shared_ptr<FEFunctionInterface_t> fun = std::make_shared<FEModelFunction_t>(make_ref(space));
 
-            bool dynamic = false;
-            in.get("dynamic", dynamic);
+            std::string integrator;
+            in.get("integrator", integrator);
 
-            if (dynamic) {
-                fun = std::make_shared<NewmarkIntegrator_t>(fun);
+            if (integrator.empty()) {
+                bool dynamic = false;
+                in.get("dynamic", dynamic);
+
+                if (dynamic) {
+                    fun = std::make_shared<NewmarkIntegrator_t>(fun);
+                }
+
+            } else {
+                fun = FEFunctionFactory<FunctionSpace>::make_time_integrator(fun, integrator);
             }
 
             auto obs_fun = std::make_shared<ObstacleFEFunction_t>(fun);

@@ -32,6 +32,7 @@ namespace utopia {
         bool export_tensors{false};
         bool shift_field{false};
         bool volume_to_surface{false};
+        bool has_covering{false};
         Scalar field_rescale{1.0};
         Scalar field_offset{0.0};
     };
@@ -63,6 +64,7 @@ namespace utopia {
         in.get("field_rescale", impl_->field_rescale);
         in.get("field_offset", impl_->field_offset);
         in.get("volume_to_surface", impl_->volume_to_surface);
+        in.get("has_covering", impl_->has_covering);
 
         if (impl_->shift_field) {
             Scalar min_dd = min(impl_->domain_distance->data());
@@ -133,11 +135,13 @@ namespace utopia {
         FETransfer<FunctionSpace> transfer;
         transfer.set_options(opts);
 
+        InputParameters params;
         if (impl_->volume_to_surface) {
-            InputParameters params;
             params.set("volume_to_surface", true);
-            transfer.read(params);
         }
+
+        params.set("has_covering", impl_->has_covering);
+        transfer.read(params);
 
         transfer.init(impl_->domain, make_ref(space));
         impl_->transfer = transfer.template build_transfer<IPTransfer<Matrix, Vector>>();
@@ -167,48 +171,48 @@ namespace utopia {
 
         int n_var = space.n_var();
 
-        if (impl_->volume_to_surface) {
-            auto r = local_range_device(impl_->is_contact);
-            RangeDevice<Vector> rd(r.begin(), r.begin() + r.extent() / n_var);
-            auto is_contact_view = local_view_device(impl_->is_contact);
-            auto gap_view = local_view_device(gap->data());
-            auto normals_view = local_view_device(normals->data());
+        // if (impl_->volume_to_surface) {
+        auto r = local_range_device(impl_->is_contact);
+        RangeDevice<Vector> rd(r.begin(), r.begin() + r.extent() / n_var);
+        auto is_contact_view = local_view_device(impl_->is_contact);
+        auto gap_view = local_view_device(gap->data());
+        auto normals_view = local_view_device(normals->data());
 
-            Scalar infty = impl_->infinity;
-            parallel_for(
-                rd, UTOPIA_LAMBDA(const SizeType i) {
-                    Scalar norm_n = 0.0;
-                    for (int d = 0; d < n_var; ++d) {
-                        auto x = normals_view.get(i * n_var + d);
-                        norm_n += x * x;
-                    }
+        Scalar infty = impl_->infinity;
+        parallel_for(
+            rd, UTOPIA_LAMBDA(const SizeType i) {
+                Scalar norm_n = 0.0;
+                for (int d = 0; d < n_var; ++d) {
+                    auto x = normals_view.get(i * n_var + d);
+                    norm_n += x * x;
+                }
 
-                    int start = 0;
-                    if (norm_n != 0.) {
-                        start = 1;
-                        is_contact_view.set(i * n_var, 1.);
-                    }
-
-                    for (int k = start; k < n_var; ++k) {
-                        gap_view.set(i * n_var + k, infty);
-                    }
-                });
-        } else {
-            auto r = local_range_device(impl_->is_contact);
-            RangeDevice<Vector> rd(r.begin(), r.begin() + r.extent() / n_var);
-            auto is_contact_view = local_view_device(impl_->is_contact);
-            auto gap_view = local_view_device(gap->data());
-
-            Scalar infty = impl_->infinity;
-            parallel_for(
-                rd, UTOPIA_LAMBDA(const SizeType i) {
+                int start = 0;
+                if (norm_n != 0.) {
+                    start = 1;
                     is_contact_view.set(i * n_var, 1.);
+                }
 
-                    for (int k = 1; k < n_var; ++k) {
-                        gap_view.set(i * n_var + k, infty);
-                    }
-                });
-        }
+                for (int k = start; k < n_var; ++k) {
+                    gap_view.set(i * n_var + k, infty);
+                }
+            });
+        // } else {
+        //     auto r = local_range_device(impl_->is_contact);
+        //     RangeDevice<Vector> rd(r.begin(), r.begin() + r.extent() / n_var);
+        //     auto is_contact_view = local_view_device(impl_->is_contact);
+        //     auto gap_view = local_view_device(gap->data());
+
+        //     Scalar infty = impl_->infinity;
+        //     parallel_for(
+        //         rd, UTOPIA_LAMBDA(const SizeType i) {
+        //             is_contact_view.set(i * n_var, 1.);
+
+        //             for (int k = 1; k < n_var; ++k) {
+        //                 gap_view.set(i * n_var + k, infty);
+        //             }
+        //         });
+        // }
 
         space.apply_zero_constraints(impl_->is_contact);
         // space.apply_zero_constraints(normals->data());

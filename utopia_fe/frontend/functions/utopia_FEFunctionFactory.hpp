@@ -34,7 +34,12 @@ namespace utopia {
 
         static std::unique_ptr<FEFunctionInterface<FunctionSpace>> make(const std::shared_ptr<FunctionSpace> &space,
                                                                         const std::string &integrator) {
-            auto fun = utopia::make_unique<FEModelFunction_t>(space);
+            return make_time_integrator(utopia::make_unique<FEModelFunction_t>(space), integrator);
+        }
+
+        static std::unique_ptr<FEFunctionInterface<FunctionSpace>> make_time_integrator(
+            const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &fun,
+            const std::string &integrator) {
             if (integrator == "Newmark") {
                 return utopia::make_unique<NewmarkIntegrator_t>(std::move(fun));
             } else if (integrator == "ImplicitEuler") {
@@ -44,7 +49,9 @@ namespace utopia {
             } else if (integrator == "VelocityImplicitEuler") {
                 return utopia::make_unique<VelocityImplicitEulerIntegrator_t>(std::move(fun));
             } else {
-                return fun;
+                Utopia::Abort("Specified time integrator does not exists!");
+                // Compiler needs a return type!
+                return nullptr;
             }
         }
 
