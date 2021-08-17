@@ -3,6 +3,7 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Core.hpp"
+#include "utopia_Layout.hpp"
 #include "utopia_TestFunctions.hpp"
 
 namespace utopia {
@@ -26,8 +27,9 @@ namespace utopia {
             {
                 auto x_view = view_device(x_init_);
 
-                parallel_for(range_device(x_init_),
-                             UTOPIA_LAMBDA(const SizeType &i) { x_view.set(i, (i % 2 == 1) ? -1.2 : 1.0); });
+                parallel_for(
+                    range_device(x_init_),
+                    UTOPIA_LAMBDA(const SizeType &i) { x_view.set(i, (i % 2 == 1) ? -1.2 : 1.0); });
             }
 
             x_exact_.values(layout(x_init_), 1.0);

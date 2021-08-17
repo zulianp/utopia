@@ -37,12 +37,15 @@ option(UTOPIA_ENABLE_MOONOLITH "Enable the moonolith functionalities" ON)
 # ##############################################################################
 # ##############################################################################
 
-if(UTOPIA_ENABLE_WARNINGS)
-    set(UTOPIA_FE_DEV_FLAGS
-        "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder"
-    )
-else()
-    set(UTOPIA_FE_DEV_FLAGS "-w -Wno-deprecated-declarations")
+if(NOT UTOPIA_ENABLE_MARS)
+    if(UTOPIA_ENABLE_WARNINGS)
+        set(UTOPIA_FE_DEV_FLAGS
+            "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder"
+        )
+    else()
+        set(UTOPIA_FE_DEV_FLAGS "-w -Wno-deprecated-declarations")
+    endif()
+
 endif()
 
 # More annoying set(UTOPIA_FE_DEV_FLAGS "${UTOPIA_FE_DEV_FLAGS} -Wextra

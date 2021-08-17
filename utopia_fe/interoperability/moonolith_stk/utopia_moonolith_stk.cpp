@@ -65,6 +65,7 @@ namespace utopia {
                 case ::stk::topology::NODE:
                     return ::moonolith::NODE1;
                 case ::stk::topology::LINE_2:
+                case ::stk::topology::BEAM_2:
                     return ::moonolith::EDGE2;
                 case ::stk::topology::TRI_3:
                 case ::stk::topology::TRI_3_2D:

@@ -208,6 +208,15 @@ namespace utopia {
 
     JSONInput::~JSONInput() = default;
 
+    bool JSONInput::key_exists(const std::string &key) const {
+        auto it = impl_->json().find(key);
+        if (it == impl_->json().end()) {
+            return false;
+        }
+
+        return true;
+    }
+
     bool JSONInput::open(const Path &path) {
         impl_ = utopia::make_unique<Impl>(path);
         return impl_->good();

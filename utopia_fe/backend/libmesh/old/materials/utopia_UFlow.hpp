@@ -16,6 +16,9 @@ namespace utopia {
 
         void read(Input &in) override;
         bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override;
+        bool assemble_hessian(Matrix &hessian) override;
+        bool assemble_hessian(const Vector &x, Matrix &hessian) override;
+        bool assemble_gradient(const Vector &x, Vector &gradient) override;
 
         inline bool is_linear() const override {
             assert(is_valid());

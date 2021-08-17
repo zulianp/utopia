@@ -138,6 +138,8 @@ namespace utopia {
         }
 
         void MG_QR_test() {
+            bool verbose = true;
+
             Vector rhs, x;
             Vector upper_bound, lower_bound;
             Matrix A, R, Q, Ih_fine, Rot;
@@ -157,6 +159,8 @@ namespace utopia {
             read(data_path + "/forQR/Ih", Ih_fine);
             read(data_path + "/forQR/I2h", Ih1);
             read(data_path + "/forQR/I3h", Ih0);
+
+            x.set(1);
 
             auto num_levels = 3;
 
@@ -187,20 +191,19 @@ namespace utopia {
             auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>("mumps", "lu");
             // MultigridQR<Matrix, Vector> multigrid(fine_smoother, coarse_smoother, direct_solver, num_levels);  // QR
-            MonotoneMultigrid<Matrix, Vector> multigrid(
-                fine_smoother, coarse_smoother, direct_solver, num_levels);  // Monotone
+            MonotoneMultigrid<Matrix, Vector> multigrid(fine_smoother, coarse_smoother, direct_solver);  // Monotone
 
             std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> interpolation_operators;
             interpolation_operators.resize(num_levels - 1);
             interpolation_operators[1] =
-                std::make_shared<IPRTruncatedTransfer<Matrix, Vector>>(std::make_shared<Matrix>(QtIh));
-            interpolation_operators[0] =
-                std::make_shared<IPRTruncatedTransfer<Matrix, Vector>>(std::make_shared<Matrix>(Ih1));
+                std::make_shared<IPTruncatedTransfer<Matrix, Vector>>(std::make_shared<Matrix>(QtIh));
+            interpolation_operators[0] = std::make_shared<IPTransfer<Matrix, Vector>>(std::make_shared<Matrix>(Ih1));
 
             multigrid.set_transfer_operators(interpolation_operators);
             multigrid.max_it(40);
             multigrid.pre_smoothing_steps(3);
             multigrid.post_smoothing_steps(3);
+            multigrid.verbose(verbose);
             // multigrid.verbose(true);
 
             // multigrid.mg_type(2);
@@ -321,7 +324,7 @@ namespace utopia {
         void monotone_mg_test() {
             const std::string data_path = Utopia::instance().get("data_path");
 
-            const static bool verbose = false;
+            const static bool verbose = true;
             const static bool use_masks = false;
 
             int n_levels = 6;
@@ -349,7 +352,7 @@ namespace utopia {
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
             // auto direct_solver = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
 
-            MonotoneMultigrid<Matrix, Vector> multigrid(fine_smoother, coarse_smoother, direct_solver, n_levels);
+            MonotoneMultigrid<Matrix, Vector> multigrid(fine_smoother, coarse_smoother, direct_solver);
 
             std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> interpolation_operators;
             interpolation_operators.resize(n_levels - 1);

@@ -66,14 +66,17 @@ namespace utopia {
 
         void read(Input &in) override {
             NonLinearSolver<Vector>::read(in);
-            in.get("check-diff", check_diff_);
+            in.get("check_diff", check_diff_);
+            in.get_deprecated("check-diff", "check_diff", check_diff_);
 
             if (check_diff_) {
-                in.get("diff-controller", controller_);
+                in.get("diff_controller", controller_);
+                in.get_deprecated("diff-controller", "diff_controller", controller_);
             }
 
             if (linear_solver_) {
-                in.get("linear-solver", *linear_solver_);
+                in.get("linear_solver", *linear_solver_);
+                in.get_deprecated("linear-solver", "linear_solver", *linear_solver_);
             }
         }
 

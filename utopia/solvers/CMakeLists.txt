@@ -13,6 +13,7 @@ list(
     nonlinear
     nonlinear/pseudo_transient_continuation
     nonlinear/constrained
+    nonlinear/constrained/smoothers
     nonlinear/constrained/quadratic_programming
     nonlinear/line_search
     nonlinear/trust_region

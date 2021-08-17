@@ -22,6 +22,19 @@ namespace utopia {
 
         class Impl;
 
+        bool assemble_hessian(const Vector &x, Matrix &hessian) override {
+            assert(false);
+            return false;
+        }
+        bool assemble_hessian(Matrix &hessian) override {
+            assert(false);
+            return false;
+        }
+        bool assemble_gradient(const Vector &x, Vector &gradient) override {
+            assert(false);
+            return false;
+        }
+
         bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override;
 
         bool is_linear() const override;

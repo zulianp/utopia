@@ -23,9 +23,9 @@ namespace utopia {
             in.get("expected_volume", expected_volume);
             in.get("expected_volume_tol", expected_volume_tol);
 
-            in.get("density_function", [this](Input &in) {
+            in.get("density_function", [this](Input &node) {
                 density_function = std::make_shared<DensityFunction>(1.0);
-                density_function->read(in);
+                node.get("function", [this](Input &inner_node) { density_function->read(inner_node); });
             });
 
             if (verbose) {
@@ -243,8 +243,11 @@ namespace utopia {
                 }
 
                 if (op_.density_function) {
-                    this->scale(*op_.density_function);
+                    auto data = this->matrix_data();
+                    this->scale_matrix(*op_.density_function, data);
                 }
+
+                assert(check_volume());
 
                 UTOPIA_TRACE_REGION_END("Assemble<Mass>::assemble");
                 return true;
@@ -252,6 +255,22 @@ namespace utopia {
 
             inline UserOp &user_op() { return op_; }
             inline const UserOp &user_op() const { return op_; }
+
+            bool check_volume() const {
+                if (op_.expected_volume <= 0) {
+                    // Ignore
+                    return true;
+                }
+
+                Scalar actual_volume = this->matrix_accumulator()->sum();
+
+                if (!utopia::approxeq(actual_volume, op_.expected_volume, op_.expected_volume_tol)) {
+                    assert(false);
+                    return false;
+                }
+
+                return true;
+            }
 
             // NVCC_PRIVATE :
             UserOp op_;

@@ -3,6 +3,8 @@
 
 #include "utopia_FEModelFunction.hpp"
 
+#include <utility>
+
 namespace utopia {
 
     // https://en.wikipedia.org/wiki/Newmark-beta_method
@@ -45,6 +47,8 @@ namespace utopia {
         }
 
         bool update_IVP(const Vector_t &x) override {
+            Super::update_IVP(x);
+
             const Scalar_t dt = this->delta_time();
 
             x_older_ = x_old_;
@@ -62,7 +66,8 @@ namespace utopia {
             return true;
         }
 
-        NewmarkIntegrator(const std::shared_ptr<FunctionSpace> &space) : Super(space) {}
+        template <class... Args>
+        NewmarkIntegrator(Args &&... args) : Super(std::forward<Args>(args)...) {}
 
         void integrate_gradient(const Vector_t &x, Vector_t &g) const override {
             const Scalar_t dt2 = this->delta_time() * this->delta_time();

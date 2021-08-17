@@ -9,6 +9,8 @@
 #cmakedefine UTOPIA_WITH_LIBMESH
 #cmakedefine UTOPIA_WITH_STK
 #cmakedefine UTOPIA_WITH_MOONOLITH
+#cmakedefine UTOPIA_WITH_MARS
+#cmakedefine UTOPIA_WITH_VTK
 
 #ifdef UTOPIA_WITH_TRILINOS
 #cmakedefine UTOPIA_WITH_TRILINOS_ALGEBRA

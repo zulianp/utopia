@@ -30,8 +30,10 @@ namespace utopia {
         switch (topo) {
             case ::stk::topology::NODE:
                 return ::shards::getCellTopologyData<::shards::Node>();
+
             case ::stk::topology::LINE_2_1D:
                 return ::shards::getCellTopologyData<::shards::Line<>>();
+            case ::stk::topology::BEAM_2:
             case ::stk::topology::LINE_2:
                 return (no_shell_topologies ? ::shards::getCellTopologyData<::shards::Line<>>()
                                             : ::shards::getCellTopologyData<::shards::ShellLine<>>());
@@ -214,6 +216,12 @@ namespace utopia {
             ::Kokkos::create_mirror_view(device_element_matrices);
         ::Kokkos::deep_copy(element_matrices, device_element_matrices);
 
+        const int n_var = space.n_var();
+
+        if (!matrix.is_block() && n_var != 1) {
+            matrix.clear();
+        }
+
         if (matrix.empty()) {
             space.create_matrix(matrix);
 
@@ -241,7 +249,6 @@ namespace utopia {
         {
             Write<PetscMatrix> w(matrix, utopia::GLOBAL_ADD);
 
-            const int n_var = space.n_var();
             const SizeType n_dofs = element_matrices.extent(1);
             const SizeType nn = n_dofs / n_var;
 
@@ -335,9 +342,13 @@ namespace utopia {
                           PetscVector &vector) {
             UTOPIA_TRACE_REGION_BEGIN("LocalToGlobalFromBuckets(Stk,Intrepid2)");
 
+            const int n_var = space.n_var();
+
             if (empty(vector)) {
                 space.create_vector(vector);
             } else {
+                // Ensure the vector has the right block size
+                vector.set_block_size(n_var);
                 // Reuse vector
                 if (mode == OVERWRITE_MODE) {
                     vector *= 0.0;
@@ -355,7 +366,6 @@ namespace utopia {
             {
                 Write<PetscVector> w(vector, utopia::GLOBAL_ADD);
 
-                const int n_var = space.n_var();
                 const SizeType n_dofs = element_vectors.extent(1);
                 const SizeType nn = n_dofs / n_var;
 
@@ -416,6 +426,8 @@ namespace utopia {
             if (mode == SUBTRACT_MODE) {
                 vector *= -1.0;
             }
+
+            // disp(vector);
 
             UTOPIA_TRACE_REGION_END("LocalToGlobalFromBuckets(Stk,Intrepid2)");
         }

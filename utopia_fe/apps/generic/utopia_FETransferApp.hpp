@@ -60,7 +60,17 @@ namespace utopia {
                     from_space.read_with_state(in, field);
 
                     const Scalar_t norm_field = norm2(field.data());
-                    std::cout << "norm_field: " << norm_field << std::endl;
+                    const Size_t size_field = field.data().size();
+
+                    const auto n_elements = from_space.mesh().n_elements();
+                    const auto n_nodes = from_space.mesh().n_nodes();
+
+                    if (from_space.comm().rank() == 0) {
+                        utopia::out() << "[Mesh] n elements: " << n_elements << ", n nodes: " << n_nodes << '\n';
+
+                        utopia::out() << "[Field] size: " << size_field << ", norm: " << norm_field << '\n';
+                    }
+
                 } else {
                     from_space.read(in);
                 }
@@ -71,7 +81,7 @@ namespace utopia {
             }
 
             if (verbose) {
-                utopia::out() << "Reading to!\n";
+                from_space.comm().root_print("Reading to!\n", utopia::out().stream());
             }
 
             in.get("to", to_space);
@@ -90,17 +100,25 @@ namespace utopia {
             in.get("export_from_function", export_from_function);
 
             if (verbose) {
-                utopia::out() << "Exiting read!\n";
+                from_space.comm().root_print("Exiting read!\n", utopia::out().stream());
             }
         }
 
         void run() {
+            if (export_from_function) {
+                from_space.write("./from_out.e", field.data());
+
+                if (verbose) {
+                    from_space.comm().root_print("Exported from function!\n", utopia::out().stream());
+                }
+            }
+
             if (!transfer.init(make_ref(from_space), make_ref(to_space))) {
                 return;
             }
 
             if (verbose) {
-                utopia::out() << "Exiting transfer!\n";
+                from_space.comm().root_print("Exiting transfer!\n", utopia::out().stream());
             }
 
             Field<FunctionSpace> to_field;
@@ -119,10 +137,6 @@ namespace utopia {
             // for (int i = 0; i < n_var; ++i) {
             //     utopia::out() << from_norms[i] << " -> " << to_norms[i] << '\n';
             // }
-
-            if (export_from_function) {
-                from_space.write("./from_out.e", field.data());
-            }
         }
 
         FETransferApp() {}
