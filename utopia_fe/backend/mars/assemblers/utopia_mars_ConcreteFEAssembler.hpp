@@ -95,6 +95,11 @@ namespace utopia {
                 auto x_view = local_view_device(x).raw_type();
                 auto y_view = local_view_device(y).raw_type();
 
+                // kokkos_view_owned = local_view_device(x).raw_type(); // Rank 2 tensor N x 1
+                // View x_local; // Rank 1 tensor
+                // fe_dof_map.copy_owned_values(kokkos_view_owned, x_local);
+                // fe_dof_map.gather_values(kokkos_view_owned, x_local);
+
                 fe_dof_map.iterate(MARS_LAMBDA(const ::mars::Integer elem_index) {
                     for (int i = 0; i < n_fun; i++) {
                         const auto local_dof_i = fe_dof_map.get_elem_local_dof(elem_index, i);
@@ -108,6 +113,8 @@ namespace utopia {
                             auto x_j = x_view(local_dof_j, 0);
 
                             val += op(elem_index, i, j) * x_j;
+
+                            // val += op(elem_index, i, j, block_i, block_j) * x_local_j;
                         }
 
                         Kokkos::atomic_fetch_add(&y_view(local_dof_i, 0), val);
