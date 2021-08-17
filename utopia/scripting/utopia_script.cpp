@@ -220,6 +220,22 @@ namespace scripting {
         }
     }
 
+    void Vector::utopia_to_numpy(double *seq, int n) {
+        {
+            impl_->write_lock(utopia::LOCAL);
+            for (auto i = 0; i < n; ++i) {
+                seq[i] = impl_->get(i);
+            }
+
+            impl_->write_unlock(utopia::LOCAL);
+        }
+    }
+
+    void Vector::init(int n) {
+        auto l = utopia::serial_layout(n);
+        impl_->values(l, n);
+    }
+
     // void Vector::parallel_uconversion(std::vector<double> values, const Layout &l) {
     //     if (impl_->empty()) {
     //         impl_->values(*l.get_layout(), 0.0);
