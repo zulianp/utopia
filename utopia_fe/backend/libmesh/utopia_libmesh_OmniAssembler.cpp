@@ -81,6 +81,12 @@ namespace utopia {
 
         OmniAssembler::~OmniAssembler() = default;
 
+        bool OmniAssembler::apply(const Vector &x, Vector &hessian_times_x) {
+            assert(false);
+            Utopia::Abort("IMPLEMENT ME");
+            return false;
+        }
+
         bool OmniAssembler::assemble(const Vector &x, Matrix &jacobian, Vector &fun) {
             if (!impl_->legacy_model) {
                 return false;
