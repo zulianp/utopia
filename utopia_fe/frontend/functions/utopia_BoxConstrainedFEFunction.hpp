@@ -102,6 +102,7 @@ namespace utopia {
             in.get("qp_solver", *qp_solver_);
             in.get("update_factor", update_factor_);
             in.get("material_iter_tol", material_iter_tol_);
+            in.get("max_constraints_iterations", max_constraints_iterations_);
         }
 
         bool solve(Function_t &fun, Vector_t &x) {

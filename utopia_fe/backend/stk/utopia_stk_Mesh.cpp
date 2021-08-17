@@ -169,7 +169,7 @@ namespace utopia {
             comm().synched_print(ss.str());
 
             // if (impl_->verbose) {
-            //     impl_->bulk_data->dump_all_mesh_info(os);
+            //     // impl_->bulk_data->dump_all_mesh_info(os);
             // }
         }
 

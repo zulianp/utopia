@@ -85,7 +85,7 @@ option(UTOPIA_ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
 option(
     UTOPIA_ENABLE_PETSC_DM_PLEX
     "For the moment is to allow the \"make petsc\" command to install DMPlex dependencies"
-    ON)
+    OFF)
 option(UTOPIA_PULL_REQUEST_MODE
        "Mode for ensuring that pull request standards are respected" OFF)
 

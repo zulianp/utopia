@@ -89,6 +89,9 @@ namespace utopia {
             void exchange_shared_dofs(const Communicator &comm,
                                       ::stk::mesh::BulkData &bulk_data,
                                       bool add_to_nnz_pattern = true);
+
+            void describe_mesh_connectivity(Mesh &mesh);
+            void describe_debug(Mesh &mesh, std::ostream &os) const;
         };
     }  // namespace stk
 }  // namespace utopia

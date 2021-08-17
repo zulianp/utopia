@@ -37,6 +37,9 @@ RUN cd /utopia/utopia/build && cmake .. \
 RUN cd /utopia/utopia/build && make petsc
 ENV PETSC_DIR=/utopia_dependencies/petsc
 
+# Fix for bug in cmake/swig/numpy integration
+RUN ln -s /usr/local/lib64/python3.6/site-packages/numpy/core/include/numpy/ /usr/include/numpy
+RUN cd /utopia/utopia/build && git pull
 RUN cd /utopia/utopia/build && cmake .. && make -j4
 # RUN cd /utopia/utopia/build && make -j4 complete
 

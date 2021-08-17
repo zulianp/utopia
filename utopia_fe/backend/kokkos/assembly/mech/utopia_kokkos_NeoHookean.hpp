@@ -125,7 +125,7 @@ namespace utopia {
                 }
 
                 UTOPIA_TRACE_REGION_END("Assemble<NeoHookean>::apply");
-                return false;
+                return true;
             }
 
             bool assemble_matrix() override {
