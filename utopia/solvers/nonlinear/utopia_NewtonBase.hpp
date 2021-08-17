@@ -104,6 +104,8 @@ namespace utopia {
     public:
         inline std::shared_ptr<Solver> linear_solver() const { return linear_solver_; }
 
+        void init_memory(const Layout &layout) { linear_solver_->init_memory(layout); }
+
     protected:
         inline bool linear_solve(const Matrix &mat, const Vector &rhs, Vector &sol) {
             linear_solver_->update(make_ref(mat));
@@ -134,8 +136,6 @@ namespace utopia {
 
             return flg;
         }
-
-        void init_memory(const Layout &layout) { linear_solver_->init_memory(layout); }
 
         std::shared_ptr<Solver> linear_solver_; /*!< Linear solver parameters. */
         DiffController controller_;

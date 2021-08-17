@@ -91,6 +91,8 @@ namespace utopia {
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
 
+        std::cout << "----------- yes, here.... \n";
+
         Comm world;
 
         MPITimeStatistics stats(world);
