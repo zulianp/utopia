@@ -96,7 +96,7 @@ namespace scripting {
         void write_into_carray(double *double_array);
         Scalar get(const SizeType &i) const;
         void numpy_to_utopia(double *seq, int n);
-        void utopia_to_numpy(double *seq, int n);
+        void utopia_to_numpy(double *seq_2, int n_2);
         // void convert(int *seq, int n);
 
     private:

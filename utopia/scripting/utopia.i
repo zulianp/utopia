@@ -15,6 +15,7 @@
 %}
 
 %apply (double* IN_ARRAY1, int DIM1) {(double* seq, int n)};
+%apply (double* INPLACE_ARRAY1, int DIM1) {(double*  seq_2, int n_2)};
 
 #else
 

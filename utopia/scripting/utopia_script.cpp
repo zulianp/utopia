@@ -220,11 +220,11 @@ namespace scripting {
         }
     }
 
-    void Vector::utopia_to_numpy(double *seq, int n) {
+    void Vector::utopia_to_numpy(double *seq_2, int n_2) {
         {
             impl_->write_lock(utopia::LOCAL);
-            for (auto i = 0; i < n; ++i) {
-                seq[i] = impl_->get(i);
+            for (auto i = 0; i < n_2; ++i) {
+                seq_2[i] = impl_->get(i);
             }
 
             impl_->write_unlock(utopia::LOCAL);
