@@ -77,7 +77,7 @@ namespace utopia {
             Vector diff;
 
             if (box_->has_upper_bound()) {
-                diff = (*box_->upper_bound() - x);
+                compute_diff_upper_bound(x, diff);
                 g += current_barrier_parameter_ / diff;
 
                 diff = pow2(diff);
@@ -87,7 +87,8 @@ namespace utopia {
             }
 
             if (box_->has_lower_bound()) {
-                diff = (x - *box_->lower_bound());
+                compute_diff_lower_bound(x, diff);
+
                 g += current_barrier_parameter_ / diff;
 
                 diff = pow2(diff);
@@ -97,11 +98,57 @@ namespace utopia {
             }
         }
 
+        void compute_diff_upper_bound(const Vector &x, Vector &diff) const {
+            if (diff.empty()) {
+                diff.zeros(layout(x));
+            }
+
+            auto ub_view = local_view_device(*box_->upper_bound());
+            auto x_view = local_view_device(x);
+            auto diff_view = local_view_device(diff);
+
+            auto zero = zero_;
+            parallel_for(
+                local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                    auto xi = x_view.get(i);
+                    auto ubi = ub_view.get(i);
+                    auto d = ubi - xi;
+                    if (d == 0.) {
+                        d = zero;
+                    }
+
+                    diff_view.set(i, d);
+                });
+        }
+
+        void compute_diff_lower_bound(const Vector &x, Vector &diff) const {
+            if (diff.empty()) {
+                diff.zeros(layout(x));
+            }
+
+            auto lb_view = local_view_device(*box_->lower_bound());
+            auto x_view = local_view_device(x);
+            auto diff_view = local_view_device(diff);
+
+            auto zero = zero_;
+            parallel_for(
+                local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                    auto xi = x_view.get(i);
+                    auto lbi = lb_view.get(i);
+                    auto d = xi - lbi;
+                    if (d == 0.) {
+                        d = zero;
+                    }
+
+                    diff_view.set(i, d);
+                });
+        }
+
         void extend_hessian(const Vector &x, Matrix &H) const {
             Vector diff;
 
             if (box_->has_upper_bound()) {
-                diff = (*box_->upper_bound() - x);
+                compute_diff_upper_bound(x, diff);
                 diff = pow2(diff);
                 diff = current_barrier_parameter_ / diff;
 
@@ -109,7 +156,7 @@ namespace utopia {
             }
 
             if (box_->has_lower_bound()) {
-                diff = (x - *box_->lower_bound());
+                compute_diff_lower_bound(x, diff);
                 diff = pow2(diff);
                 diff = current_barrier_parameter_ / diff;
 
@@ -118,12 +165,15 @@ namespace utopia {
         }
 
         void extend_gradient(const Vector &x, Vector &g) const {
+            Vector diff;
             if (box_->has_upper_bound()) {
-                g += current_barrier_parameter_ / (*box_->upper_bound() - x);
+                compute_diff_upper_bound(x, diff);
+                g += current_barrier_parameter_ / diff;
             }
 
             if (box_->has_lower_bound()) {
-                g -= current_barrier_parameter_ / (x - *box_->lower_bound());
+                compute_diff_lower_bound(x, diff);
+                g -= current_barrier_parameter_ / diff;
             }
         }
 
@@ -241,6 +291,7 @@ namespace utopia {
         Scalar min_barrier_parameter_{1e-10};
         Scalar current_barrier_parameter_{1e-10};
         Scalar soft_boundary_{1e-7};
+        Scalar zero_{1e-20};
 
         bool verbose_{false};
 

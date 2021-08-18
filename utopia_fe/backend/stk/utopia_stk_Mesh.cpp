@@ -210,7 +210,10 @@ namespace utopia {
 
         Mesh::SizeType Mesh::n_local_nodes() const { return impl_->n_local_nodes; }
 
-        void Mesh::displace(const Vector &displacement) { assert(false); }
+        void Mesh::displace(const Vector &) {
+            Utopia::Abort("IMPLEMENT ME");
+            assert(false);
+        }
 
         void Mesh::init() { impl_->compute_mesh_stats(); }
 

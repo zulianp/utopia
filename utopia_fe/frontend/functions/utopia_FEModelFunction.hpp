@@ -61,6 +61,11 @@ namespace utopia {
         virtual bool setup_IVP(Vector_t &) { return false; }
         virtual bool is_IVP_solved() { return true; }
 
+        virtual bool set_initial_condition(const Vector_t &) {
+            assert(false);
+            return false;
+        }
+
         virtual bool time_derivative(const Vector_t &x, Vector_t &dfdt) const {
             UTOPIA_UNUSED(x);
             UTOPIA_UNUSED(dfdt);

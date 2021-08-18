@@ -197,7 +197,7 @@ namespace utopia {
             Utopia::Abort("Unable to find part!");
         }
 
-        ::stk::mesh::Selector part = *part_ptr;
+        ::stk::mesh::Selector part = *part_ptr & meta_data.locally_owned_part();
 
         const BucketVector_t &side_buckets = bulk_data.get_buckets(meta_data.side_rank(), part);
 
@@ -247,7 +247,7 @@ namespace utopia {
         }
 
         // Fix preallocation bug and REMOVE ME
-        if (space.n_var() > 1 && space.comm().size() > 1) {
+        if (!space.mesh().has_aura() && space.n_var() > 1 && space.comm().size() > 1) {
             MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
             m_utopia_warning(
                 "using: MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR,"
@@ -494,7 +494,7 @@ namespace utopia {
             Utopia::Abort("Unable to find part!");
         }
 
-        ::stk::mesh::Selector part = *part_ptr;
+        ::stk::mesh::Selector part = *part_ptr & meta_data.locally_owned_part();
 
         LocalToGlobalFromBuckets<Scalar>::apply(
             space, bulk_data.get_buckets(meta_data.side_rank(), part), element_vectors, mode, vector);

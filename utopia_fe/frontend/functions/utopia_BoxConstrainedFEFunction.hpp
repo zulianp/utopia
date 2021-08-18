@@ -94,10 +94,7 @@ namespace utopia {
         void read(Input &in) override {
             Super::read(in);
 
-            if (!qp_solver_) {
-                auto omni = std::make_shared<OmniQPSolver_t>();
-                qp_solver_ = omni;
-            }
+            ensure_qp_solver();
 
             in.get("qp_solver", *qp_solver_);
             in.get("update_factor", update_factor_);
@@ -105,7 +102,16 @@ namespace utopia {
             in.get("max_constraints_iterations", max_constraints_iterations_);
         }
 
+        void ensure_qp_solver() {
+            if (!qp_solver_) {
+                auto omni = std::make_shared<OmniQPSolver_t>();
+                qp_solver_ = omni;
+            }
+        }
+
         bool solve(Function_t &fun, Vector_t &x) {
+            ensure_qp_solver();
+
             BoxConstraints<Vector_t> box;
 
             int max_material_iterations = this->max_it();
