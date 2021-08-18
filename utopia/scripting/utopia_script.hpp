@@ -78,7 +78,7 @@ namespace scripting {
         Vector();
         ~Vector();
         void print_info();
-        void init(int n);
+        void create_serial(int n);
         SizeType local_size();
         void values(const Layout &l, const Scalar &value);
         void add(const SizeType &i, const Scalar &value);
@@ -87,17 +87,14 @@ namespace scripting {
         void describe() const;
         bool equals(const Vector *other, const Scalar tol) const;
         void set(const SizeType &i, const Scalar &value);
+        Scalar get(const SizeType &i) const;
         void print_array(double *seq, int n);
-        // void convert_into_uvector(std::vector<double> values, const Layout &l);
+        void numpy_to_utopia(double *seq, int n);
+        void utopia_to_numpy(double *seq_2, int n_2);
+        void write_into_carray(double *double_array);
         void serial_uconversion(double *seq, int n);
         void parallel_uconversion(float *values, const Layout &l);
         void scale(const Scalar &a);
-        // void double *from_utopia_to_carray();
-        void write_into_carray(double *double_array);
-        Scalar get(const SizeType &i) const;
-        void numpy_to_utopia(double *seq, int n);
-        void utopia_to_numpy(double *seq_2, int n_2);
-        // void convert(int *seq, int n);
 
     private:
         VectorImpl *impl_;

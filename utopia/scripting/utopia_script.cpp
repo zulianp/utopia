@@ -101,7 +101,6 @@ namespace scripting {
 
     Layout::~Layout() { delete impl_; }
 
-    // input inside here, vcector of double
     Vector::Vector() : impl_(nullptr) {
         auto vec = Factory::new_vector();
 
@@ -117,17 +116,31 @@ namespace scripting {
     Vector::~Vector() { delete impl_; }
 
     void Vector::print_info() { utopia::out() << "Vector::print()" << std::endl; }
+
+    void Vector::create_serial(int n) {
+        auto l = utopia::serial_layout(n);
+        impl_->values(l, n);
+    }
+
     void Vector::values(const Layout &l, const Scalar &value) {
         auto ll = *l.get_layout();
         impl_->values(ll, value);
     }
+
     void Vector::add(const SizeType &i, const Scalar &value) { impl_->add(i, value); }
+
     void Vector::axpy(Scalar alpha, Vector *x) { impl_->axpy(alpha, *x->impl_); }
+
     void Vector::describe() const { impl_->describe(); }
+
     bool Vector::equals(const Vector *other, const Scalar tol) const { return impl_->equals(*other->impl_, tol); }
+
     Scalar Vector::dot(const Vector *x) const { return impl_->dot(*x->impl_); }
+
     void Vector::set(const SizeType &i, const Scalar &value) { impl_->set(i, value); }
+
     Scalar Vector::get(const SizeType &i) const { return impl_->get(i); }
+
     void Vector::scale(const Scalar &a) { impl_->scale(a); }
 
     void Vector::print_array(double *seq, int n) {
@@ -138,70 +151,6 @@ namespace scripting {
     }
 
     SizeType Vector::local_size() { return impl_->local_size(); }
-
-    void Vector::serial_uconversion(double *seq, int n) {
-        {
-            if (impl_->empty()) {
-                auto l = utopia::serial_layout(n);
-                impl_->values(l, 0);
-            }
-
-            impl_->write_lock(utopia::LOCAL);
-            for (auto i = 0; i < n; ++i) {
-                impl_->set(i, *seq);
-                ++seq;
-            }
-
-            impl_->write_unlock(utopia::LOCAL);
-        }
-    }
-
-    // double *Vector::from_utopia_to_carray() {
-    //     int size = impl_->size();
-    //     double *temp = new double[size];
-    //     {
-    //         impl_->write_lock(utopia::LOCAL);
-    //         utopia::Range rr = impl_->range();
-    //         for (auto i = rr.begin(); i < rr.end(); ++i) {
-    //             temp[i] = impl_->get(i);
-    //         }
-
-    //         impl_->write_unlock(utopia::LOCAL);
-    //     }
-    //     for (int j = 0; j < size; j++) {
-    //         printf("%g\n", temp[j]);
-    //     }
-    //     return temp;
-    // }
-
-    void Vector::parallel_uconversion(float *values, const Layout &l) {
-        if (impl_->empty()) {
-            impl_->values(*l.get_layout(), 0.0);
-        }
-
-        {
-            impl_->write_lock(utopia::LOCAL);
-            utopia::Range rr = impl_->range();
-            for (auto i = rr.begin(); i < rr.end(); ++i) {
-                impl_->set(i, *values);
-                ++values;
-            }
-
-            impl_->write_unlock(utopia::LOCAL);
-        }
-    }
-
-    void Vector::write_into_carray(double *double_array) {
-        {
-            impl_->write_lock(utopia::LOCAL);
-            utopia::Range rr = impl_->range();
-            for (auto i = rr.begin(); i < rr.end(); ++i) {
-                double_array[i] = impl_->get(i);
-            }
-
-            impl_->write_unlock(utopia::LOCAL);
-        }
-    }
 
     void Vector::numpy_to_utopia(double *seq, int n) {
         {
@@ -231,27 +180,50 @@ namespace scripting {
         }
     }
 
-    void Vector::init(int n) {
-        auto l = utopia::serial_layout(n);
-        impl_->values(l, n);
+    void Vector::write_into_carray(double *double_array) {
+        {
+            impl_->write_lock(utopia::LOCAL);
+            utopia::Range rr = impl_->range();
+            for (auto i = rr.begin(); i < rr.end(); ++i) {
+                double_array[i] = impl_->get(i);
+            }
+
+            impl_->write_unlock(utopia::LOCAL);
+        }
     }
 
-    // void Vector::parallel_uconversion(std::vector<double> values, const Layout &l) {
-    //     if (impl_->empty()) {
-    //         impl_->values(*l.get_layout(), 0.0);
-    //     }
+    void Vector::serial_uconversion(double *seq, int n) {
+        {
+            if (impl_->empty()) {
+                auto l = utopia::serial_layout(n);
+                impl_->values(l, 0);
+            }
 
-    //     {
-    //         impl_->write_lock(utopia::LOCAL);
-    //         auto it = values.begin();
-    //         utopia::Range rr = impl_->range();
-    //         for (auto i = rr.begin(); i < rr.end(); ++i) {
-    //             impl_->set(i, *it);
-    //             ++it;
-    //         }
+            impl_->write_lock(utopia::LOCAL);
+            for (auto i = 0; i < n; ++i) {
+                impl_->set(i, *seq);
+                ++seq;
+            }
 
-    //         impl_->write_unlock(utopia::LOCAL);
-    //     }
-    // }
+            impl_->write_unlock(utopia::LOCAL);
+        }
+    }
+
+    void Vector::parallel_uconversion(float *values, const Layout &l) {
+        if (impl_->empty()) {
+            impl_->values(*l.get_layout(), 0.0);
+        }
+
+        {
+            impl_->write_lock(utopia::LOCAL);
+            utopia::Range rr = impl_->range();
+            for (auto i = rr.begin(); i < rr.end(); ++i) {
+                impl_->set(i, *values);
+                ++values;
+            }
+
+            impl_->write_unlock(utopia::LOCAL);
+        }
+    }
 
 }  // namespace scripting
