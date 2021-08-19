@@ -3,6 +3,7 @@
 
 #include "utopia_Core.hpp"
 #include "utopia_LogBarrierFunction.hpp"
+#include "utopia_LogBarrierFunctionWithSelection.hpp"
 #include "utopia_Newton.hpp"
 
 #include <iomanip>
@@ -20,6 +21,7 @@ namespace utopia {
         using Layout = typename Traits<Vector>::Layout;
         using Newton = utopia::Newton<Matrix, Vector>;
         using LogBarrierFunction = utopia::LogBarrierFunction<Matrix, Vector>;
+        using LogBarrierFunctionBase = utopia::LogBarrierFunctionBase<Matrix, Vector>;
         using LSStrategy = utopia::LSStrategy<Vector>;
         using LinearSolver = utopia::LinearSolver<Matrix, Vector>;
 
@@ -75,7 +77,7 @@ namespace utopia {
 
     private:
         std::shared_ptr<Newton> newton_;
-        std::shared_ptr<LogBarrierFunction> function_;
+        std::shared_ptr<LogBarrierFunctionBase> function_;
         bool linear_solver_pass_{true};
     };
 

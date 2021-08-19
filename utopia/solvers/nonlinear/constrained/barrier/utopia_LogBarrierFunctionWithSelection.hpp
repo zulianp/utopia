@@ -1,5 +1,5 @@
-#ifndef UTOPIA_LOG_BARRIER_FUNCTION_HPP
-#define UTOPIA_LOG_BARRIER_FUNCTION_HPP
+#ifndef UTOPIA_LOG_BARRIER_FUNCTION_WITH_SELECTION_HPP
+#define UTOPIA_LOG_BARRIER_FUNCTION_WITH_SELECTION_HPP
 
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_Core.hpp"
@@ -13,7 +13,7 @@
 
 namespace utopia {
     template <class Matrix, class Vector>
-    class LogBarrierFunction : public LogBarrierFunctionBase<Matrix, Vector> {
+    class LogBarrierFunctionWithSelection : public LogBarrierFunctionBase<Matrix, Vector> {
     public:
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
@@ -21,33 +21,40 @@ namespace utopia {
         using BoxConstraints = utopia::BoxConstraints<Vector>;
         using Super = utopia::LogBarrierFunctionBase<Matrix, Vector>;
 
-        LogBarrierFunction() {}
+        LogBarrierFunctionWithSelection() {}
 
-        LogBarrierFunction(const std::shared_ptr<Function> &unconstrained, const std::shared_ptr<BoxConstraints> &box)
+        LogBarrierFunctionWithSelection(const std::shared_ptr<Function> &unconstrained,
+                                        const std::shared_ptr<BoxConstraints> &box)
             : Super(unconstrained, box) {}
 
         void extend_hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const override {
-            Vector diff;
+            Vector diff, diff_selector;
 
             if (this->box_->has_upper_bound()) {
                 this->compute_diff_upper_bound(x, diff);
-                g += this->current_barrier_parameter_ / diff;
+                diff_selector = this->current_barrier_parameter_ / diff;
+                diff_selector = e_mul(*boolean_selector_, diff);
+                g += diff_selector;
 
                 diff = pow2(diff);
-                diff = this->current_barrier_parameter_ / diff;
+                diff_selector = this->current_barrier_parameter_ / diff;
+                diff_selector = e_mul(*boolean_selector_, diff);
 
-                H.shift_diag(diff);
+                H.shift_diag(diff_selector);
             }
 
             if (this->box_->has_lower_bound()) {
                 this->compute_diff_lower_bound(x, diff);
 
-                g += this->current_barrier_parameter_ / diff;
+                diff_selector = this->current_barrier_parameter_ / diff;
+                diff_selector = e_mul(*boolean_selector_, diff);
+                g += diff_selector;
 
                 diff = pow2(diff);
-                diff = this->current_barrier_parameter_ / diff;
+                diff_selector = this->current_barrier_parameter_ / diff;
+                diff_selector = e_mul(*boolean_selector_, diff);
 
-                H.shift_diag(diff);
+                H.shift_diag(diff_selector);
             }
         }
 
@@ -58,6 +65,7 @@ namespace utopia {
                 this->compute_diff_upper_bound(x, diff);
                 diff = pow2(diff);
                 diff = this->current_barrier_parameter_ / diff;
+                diff = e_mul(*boolean_selector_, diff);
 
                 H.shift_diag(diff);
             }
@@ -66,6 +74,7 @@ namespace utopia {
                 this->compute_diff_lower_bound(x, diff);
                 diff = pow2(diff);
                 diff = this->current_barrier_parameter_ / diff;
+                diff = e_mul(*boolean_selector_, diff);
 
                 H.shift_diag(diff);
             }
@@ -75,24 +84,30 @@ namespace utopia {
             Vector diff;
             if (this->box_->has_upper_bound()) {
                 this->compute_diff_upper_bound(x, diff);
-                g += this->current_barrier_parameter_ / diff;
+                diff = this->current_barrier_parameter_ / diff;
+                diff = e_mul(*boolean_selector_, diff);
+                g += diff;
             }
 
             if (this->box_->has_lower_bound()) {
                 this->compute_diff_lower_bound(x, diff);
-                g -= this->current_barrier_parameter_ / diff;
+                diff = this->current_barrier_parameter_ / diff;
+                diff = e_mul(*boolean_selector_, diff);
+                g -= diff;
             }
         }
 
         void extend_value(const Vector &x, Scalar &value) const override {
             Scalar ub_value = 0.0;
             if (this->box_->has_upper_bound()) {
-                ub_value = this->current_barrier_parameter_ * sum(logn(*this->box_->upper_bound() - x));
+                ub_value = this->current_barrier_parameter_ *
+                           sum(e_mul(*boolean_selector_, logn(*this->box_->upper_bound() - x)));
             }
 
             Scalar lb_value = 0.0;
             if (this->box_->has_lower_bound()) {
-                ub_value = this->current_barrier_parameter_ * sum(logn(x - *this->box_->lower_bound()));
+                ub_value = this->current_barrier_parameter_ *
+                           sum(e_mul(*boolean_selector_, logn(x - *this->box_->lower_bound())));
             }
 
             value -= (ub_value - lb_value);
@@ -103,15 +118,20 @@ namespace utopia {
             if (this->box_->has_upper_bound()) {
                 auto ub_view = local_view_device(*this->box_->upper_bound());
                 auto x_view = local_view_device(x);
+                auto selector_view = local_view_device(*boolean_selector_);
 
                 Scalar soft_boundary = this->soft_boundary_;
                 parallel_for(
                     local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                        auto xi = x_view.get(i);
-                        auto ubi = ub_view.get(i);
+                        auto s = selector_view.get(i);
 
-                        if (xi > ubi) {
-                            x_view.set(i, ubi - soft_boundary);
+                        if (s > 0.99) {
+                            auto xi = x_view.get(i);
+                            auto ubi = ub_view.get(i);
+
+                            if (xi > ubi) {
+                                x_view.set(i, ubi - soft_boundary);
+                            }
                         }
                     });
             }
@@ -119,23 +139,31 @@ namespace utopia {
             if (this->box_->has_lower_bound()) {
                 auto lb_view = local_view_device(*this->box_->lower_bound());
                 auto x_view = local_view_device(x);
+                auto selector_view = local_view_device(*boolean_selector_);
 
                 Scalar soft_boundary = this->soft_boundary_;
                 parallel_for(
                     local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                        auto xi = x_view.get(i);
-                        auto lbi = lb_view.get(i);
+                        auto s = selector_view.get(i);
 
-                        if (xi < lbi) {
-                            x_view.set(i, lbi + soft_boundary);
+                        if (s > 0.99) {
+                            auto xi = x_view.get(i);
+                            auto lbi = lb_view.get(i);
+
+                            if (xi < lbi) {
+                                x_view.set(i, lbi + soft_boundary);
+                            }
                         }
                     });
             }
-
-            return true;
         }
+
+        void set_selector(const std::shared_ptr<Vector> &boolean_selector) { boolean_selector_ = boolean_selector; }
+
+    private:
+        std::shared_ptr<Vector> boolean_selector_;
     };
 
 }  // namespace utopia
 
-#endif  // UTOPIA_LOG_BARRIER_FUNCTION_HPP
+#endif  // UTOPIA_LOG_BARRIER_FUNCTION_WITH_SELECTION_HPP
