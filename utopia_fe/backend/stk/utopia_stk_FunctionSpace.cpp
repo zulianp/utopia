@@ -69,6 +69,7 @@ namespace utopia {
                     }
 
                 } else {
+                    auto n_local_to_global = local_to_global.size();
                     for (const auto &ib : node_buckets) {
                         const Bucket_t &b = *ib;
                         const Bucket_t::size_type length = b.size();
@@ -80,7 +81,10 @@ namespace utopia {
                             const Scalar *points = (const Scalar *)::stk::mesh::field_data(*coords, node);
 
                             auto idx = utopia::stk::convert_entity_to_index(node);
-                            fun(local_to_global(idx, 0), points);
+
+                            assert(idx < n_local_to_global);
+
+                            fun(local_to_global.global_node_id(idx), points);
                         }
                     }
                 }
@@ -846,8 +850,9 @@ namespace utopia {
             auto &meta_data = mesh().meta_data();
             auto &bulk_data = mesh().bulk_data();
 
-            ::stk::mesh::Selector s_universal = meta_data.universal_part();
-            const auto &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, s_universal);
+            // ::stk::mesh::Selector s_universal = meta_data.universal_part();
+            ::stk::mesh::Selector selector = meta_data.locally_owned_part();
+            const auto &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, selector);
             impl_->node_eval(node_buckets, fun);
         }
 
@@ -858,7 +863,8 @@ namespace utopia {
             auto &meta_data = mesh().meta_data();
             auto &bulk_data = mesh().bulk_data();
 
-            ::stk::mesh::Selector s_universal = meta_data.universal_part();
+            // ::stk::mesh::Selector s_universal = meta_data.universal_part();
+            ::stk::mesh::Selector selector = meta_data.locally_owned_part();
 
             auto *part = meta_data.get_part(part_name);
             if (!part) {
@@ -868,7 +874,7 @@ namespace utopia {
             }
 
             if (part) {
-                auto &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, *part);
+                auto &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, *part & selector);
                 impl_->node_eval(node_buckets, fun);
             } else {
                 Utopia::Abort("Part not defined!");

@@ -21,14 +21,17 @@ namespace utopia {
         using Layout = typename Traits<Vector>::Layout;
         using Newton = utopia::Newton<Matrix, Vector>;
         using LogBarrierFunction = utopia::LogBarrierFunction<Matrix, Vector>;
+        using LogBarrierFunctionWithSelection = utopia::LogBarrierFunctionWithSelection<Matrix, Vector>;
         using LogBarrierFunctionBase = utopia::LogBarrierFunctionBase<Matrix, Vector>;
         using LSStrategy = utopia::LSStrategy<Vector>;
         using LinearSolver = utopia::LinearSolver<Matrix, Vector>;
 
     public:
-        LogBarrierSolver(const std::shared_ptr<LinearSolver> &linear_solver =
-                             std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE> >())
-            : newton_(std::make_shared<Newton>(linear_solver)), function_(std::make_shared<LogBarrierFunction>()) {}
+        LogBarrierSolver(
+            const std::shared_ptr<LinearSolver> &linear_solver =
+                std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE> >(),
+            const std::shared_ptr<LogBarrierFunctionBase> &barrier_function = std::make_shared<LogBarrierFunction>())
+            : newton_(std::make_shared<Newton>(linear_solver)), function_(barrier_function) {}
 
         LogBarrierSolver *clone() const /*override*/ {
             auto ptr = utopia::make_unique<LogBarrierSolver>();
@@ -55,13 +58,23 @@ namespace utopia {
 
         void read(Input &in) override {
             newton_->read(in);
-            function_->read(in);
+
+            std::string function_type;
 
             Options()
                 .add_option("linear_solver_pass",
                             linear_solver_pass_,
                             "Performs a linear solve before integrating the barrier function.")
+                .add_option("function_type",
+                            function_type,
+                            "Type of LogBarrier. Options={LogBarrierFunctionWithSelection|LogBarrierFunction}")
                 .parse(in);
+
+            if (function_type == "LogBarrierFunctionWithSelection") {
+                function_ = std::make_shared<LogBarrierFunctionWithSelection>();
+            }
+
+            function_->read(in);
         }
 
         /**

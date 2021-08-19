@@ -186,7 +186,9 @@ namespace utopia {
 
         void set_min_barrier_parameter(const Scalar value) { min_barrier_parameter_ = value; }
 
-        void reset() { current_barrier_parameter_ = barrier_parameter_; }
+        virtual void reset() { current_barrier_parameter_ = barrier_parameter_; }
+
+        inline bool verbose() const { return verbose_; }
 
     protected:
         std::shared_ptr<Function> unconstrained_;

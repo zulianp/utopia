@@ -26,6 +26,8 @@ namespace utopia {
             return idx_[local_idx];
         }
 
+        inline SizeType global_node_id(const SizeType local_idx) const { return idx_[local_idx]; }
+
         inline SizeType operator()(const SizeType local_idx, const int component) const {
             assert(component < n_var_);
             assert(local_idx < static_cast<SizeType>(idx_.size()));

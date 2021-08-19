@@ -27,7 +27,81 @@ namespace utopia {
                                         const std::shared_ptr<BoxConstraints> &box)
             : Super(unconstrained, box) {}
 
+        void read(Input &in) override {
+            Super::read(in);
+            in.get("infinity", infinity_);
+            in.get("auto_selector", auto_selector_);
+        }
+
+        void ensure_selector() const {
+            assert(boolean_selector_);
+            if (boolean_selector_->empty()) {
+                determine_boolean_selector();
+            }
+        }
+
+        void allocate_selector() {
+            if (!boolean_selector_) {
+                boolean_selector_ = std::make_shared<Vector>();
+            }
+        }
+
+        void determine_boolean_selector() const {
+            if (!this->box_) return;
+
+            if (this->verbose()) {
+                utopia::out() << "LogBarrierFunctionWithSelection::determine_boolean_selector()\n";
+            }
+
+            if (empty(*boolean_selector_)) {
+                if (this->box_->has_upper_bound()) {
+                    boolean_selector_->zeros(layout(*this->box_->upper_bound()));
+                } else if (this->box_->has_lower_bound()) {
+                    boolean_selector_->zeros(layout(*this->box_->lower_bound()));
+                }
+            }
+
+            if (this->box_->has_upper_bound()) {
+                auto ub_view = local_view_device(*this->box_->upper_bound());
+                auto selector_view = local_view_device(*boolean_selector_);
+
+                Scalar infinity = infinity_;
+                parallel_for(
+                    local_range_device(*boolean_selector_), UTOPIA_LAMBDA(const SizeType i) {
+                        auto bound = ub_view.get(i);
+
+                        if (bound < infinity) {
+                            selector_view.set(i, 1.);
+                        }
+                    });
+            }
+
+            if (this->box_->has_lower_bound()) {
+                auto lb_view = local_view_device(*this->box_->lower_bound());
+                auto selector_view = local_view_device(*boolean_selector_);
+
+                Scalar infinity = infinity_;
+                parallel_for(
+                    local_range_device(*boolean_selector_), UTOPIA_LAMBDA(const SizeType i) {
+                        auto bound = lb_view.get(i);
+
+                        if (bound > -infinity) {
+                            selector_view.set(i, 1.);
+                        }
+                    });
+            }
+
+            if (this->verbose()) {
+                Scalar sum_selected = sum(*boolean_selector_);
+                if (boolean_selector_->comm().rank() == 0) {
+                    utopia::out() << "Selected: " << SizeType(sum_selected) << "\n";
+                }
+            }
+        }
+
         void extend_hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const override {
+            ensure_selector();
+
             Vector diff, diff_selector;
 
             if (this->box_->has_upper_bound()) {
@@ -59,6 +133,8 @@ namespace utopia {
         }
 
         void extend_hessian(const Vector &x, Matrix &H) const override {
+            ensure_selector();
+
             Vector diff;
 
             if (this->box_->has_upper_bound()) {
@@ -156,12 +232,24 @@ namespace utopia {
                         }
                     });
             }
+
+            return true;
         }
 
         void set_selector(const std::shared_ptr<Vector> &boolean_selector) { boolean_selector_ = boolean_selector; }
 
+        void reset() override {
+            Super::reset();
+            if (auto_selector_) {
+                allocate_selector();
+                determine_boolean_selector();
+            }
+        }
+
     private:
+        bool auto_selector_{true};
         std::shared_ptr<Vector> boolean_selector_;
+        Scalar infinity_{std::numeric_limits<Scalar>::max()};
     };
 
 }  // namespace utopia
