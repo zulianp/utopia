@@ -14,15 +14,17 @@ namespace utopia {
         using Vector = typename Traits<FunctionSpace>::Vector;
         using Scalar = typename Traits<FunctionSpace>::Scalar;
         using Environment = utopia::Environment<NCFunctionSpace<FunctionSpace>>;
+        // using Environment = utopia::Environment<FunctionSpace>;
 
         ~OmniAssembler() {}
         OmniAssembler(const std::shared_ptr<NCFunctionSpace<FunctionSpace>> &space)
-            : Super(space->unconstrained_space()) {}
+            // : Super(space->unconstrained_space()) {}
+            : Super(space) {}
 
-        void set_environment(const std::shared_ptr<Environment> &) {
-            utopia::err()
-                << "OmniAssembler<NCFunctionSpace<FunctionSpace>>[Warning] set_environment not implemented!\n";
-        }
+        // void set_environment(const std::shared_ptr<Environment> &) {
+        //     utopia::err()
+        //         << "OmniAssembler<NCFunctionSpace<FunctionSpace>>[Warning] set_environment not implemented!\n";
+        // }
     };
 
 }  // namespace utopia
