@@ -1,5 +1,6 @@
 // #include <stdlib.h>
 // #include <vector>
+// #include <./../solvers/nonlinear/utopia_Function.hpp>
 
 #ifndef UTOPIA_SCRIPT_HPP
 #define UTOPIA_SCRIPT_HPP
@@ -27,6 +28,9 @@ namespace utopia {
 
     template <typename Derived, int Order>
     class Tensor;
+
+    template <class AbstractVector>
+    class FunctionBase;
 
     template <class T, int Order>
     class DeviceView;
@@ -110,6 +114,16 @@ namespace scripting {
 
     private:
         MatrixImpl *impl_;
+    };
+
+    class FunctionBase {
+    public:
+        using FunctionBaseImpl = utopia::FunctionBase<utopia::AbstractVector<Scalar, SizeType>>;
+        FunctionBase();
+        ~FunctionBase();
+
+    private:
+        FunctionBaseImpl *impl_;
     };
 
 }  // namespace scripting

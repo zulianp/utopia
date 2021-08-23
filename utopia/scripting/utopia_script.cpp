@@ -226,4 +226,5 @@ namespace scripting {
         }
     }
 
+    FunctionBase::FunctionBase() : impl_(nullptr) { int a = 3; }
 }  // namespace scripting
