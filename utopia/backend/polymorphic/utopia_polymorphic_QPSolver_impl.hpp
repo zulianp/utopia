@@ -224,6 +224,12 @@ namespace utopia {
     }
 
     template <class Matrix, class Vector>
+    void OmniQPSolver<Matrix, Vector>::set_selection(const std::shared_ptr<Vector> &selection) {
+        assert(impl_);
+        impl_->set_selection(selection);
+    }
+
+    template <class Matrix, class Vector>
     bool OmniQPSolver<Matrix, Vector>::apply(const Vector &rhs, Vector &sol) {
         assert(static_cast<bool>(impl_));
         if (!impl_) return false;

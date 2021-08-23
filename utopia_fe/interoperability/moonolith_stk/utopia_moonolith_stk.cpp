@@ -285,7 +285,7 @@ namespace utopia {
 
                     if (moonolith_index == -1) continue;
 
-                    assert(moonolith_index < n_selected_nodes);
+                    assert(Bucket_t::size_type(moonolith_index) < n_selected_nodes);
 
                     auto &p = m_mesh->node(moonolith_index);
 

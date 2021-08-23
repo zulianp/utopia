@@ -31,6 +31,12 @@ namespace utopia {
 
         bool has_nonlinear_constraints() const override { return !linear_obstacle_; }
 
+        inline std::shared_ptr<Vector_t> selection() override {
+            auto s = std::make_shared<Vector_t>(obstacle_->is_contact());
+            // this->space()->apply_zero_constraints(*s);
+            return s;
+        }
+
         bool update_constraints(const Vector_t &x) {
             utopia::out() << "update_constraints\n";
 

@@ -1,6 +1,7 @@
 #ifndef UTOPIA_STK_FUNCTION_SPACE_HPP
 #define UTOPIA_STK_FUNCTION_SPACE_HPP
 
+#include "utopia_DirichletBoundary.hpp"
 #include "utopia_FEVar.hpp"
 #include "utopia_FunctionSpaceBase.hpp"
 #include "utopia_fe_Core.hpp"
@@ -100,6 +101,8 @@ namespace utopia {
 
             void node_eval(std::function<void(const SizeType idx, const Scalar *)> fun);
             void node_eval(const std::string &part_name, std::function<void(const SizeType idx, const Scalar *)> fun);
+
+            const DirichletBoundary &dirichlet_boundary() const;
 
         private:
             class Impl;

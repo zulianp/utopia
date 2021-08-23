@@ -29,6 +29,7 @@ namespace utopia {
         virtual void transform(const Vector_t &x, Vector_t &x_constrained) = 0;
         virtual void inverse_transform(const Vector_t &x_constrained, Vector_t &x) = 0;
         virtual void transform(const Matrix_t &H, Matrix_t &H_constrained) = 0;
+        virtual std::shared_ptr<Vector_t> selection() = 0;
 
         bool value(const Vector_t & /*point*/, Scalar_t & /*value*/) const override { return false; }
 
@@ -156,6 +157,11 @@ namespace utopia {
                     }
 
                     qp_solver_->set_box_constraints(box);
+
+                    auto selection = fun.selection();
+                    if (selection) {
+                        qp_solver_->set_selection(selection);
+                    }
 
                     bool qp_solver_converged = false;
 

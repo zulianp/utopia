@@ -61,7 +61,23 @@ namespace utopia {
                 }
             }
 
-            if (this->box_->has_upper_bound()) {
+            if (this->box_->has_upper_bound() && this->box_->has_lower_bound()) {
+                auto lb_view = local_view_device(*this->box_->lower_bound());
+                auto ub_view = local_view_device(*this->box_->upper_bound());
+                auto selector_view = local_view_device(*boolean_selector_);
+
+                Scalar infinity = infinity_;
+                parallel_for(
+                    local_range_device(*boolean_selector_), UTOPIA_LAMBDA(const SizeType i) {
+                        auto ubi = ub_view.get(i);
+                        auto lbi = lb_view.get(i);
+
+                        if (ubi < infinity || lbi > -infinity) {
+                            selector_view.set(i, 1.);
+                        }
+                    });
+
+            } else if (this->box_->has_upper_bound()) {
                 auto ub_view = local_view_device(*this->box_->upper_bound());
                 auto selector_view = local_view_device(*boolean_selector_);
 
@@ -74,9 +90,7 @@ namespace utopia {
                             selector_view.set(i, 1.);
                         }
                     });
-            }
-
-            if (this->box_->has_lower_bound()) {
+            } else if (this->box_->has_lower_bound()) {
                 auto lb_view = local_view_device(*this->box_->lower_bound());
                 auto selector_view = local_view_device(*boolean_selector_);
 
@@ -236,7 +250,7 @@ namespace utopia {
             return true;
         }
 
-        void set_selector(const std::shared_ptr<Vector> &boolean_selector) { boolean_selector_ = boolean_selector; }
+        void set_selection(const std::shared_ptr<Vector> &boolean_selector) { boolean_selector_ = boolean_selector; }
 
         void reset() override {
             Super::reset();
@@ -245,6 +259,8 @@ namespace utopia {
                 determine_boolean_selector();
             }
         }
+
+        void auto_selector(const bool value) { auto_selector_ = value; }
 
     private:
         bool auto_selector_{true};

@@ -88,6 +88,15 @@ namespace utopia {
             newton_->set_line_search_strategy(strategy);
         }
 
+        void set_selection(const std::shared_ptr<Vector> &selection) override {
+            auto ptr = std::dynamic_pointer_cast<LogBarrierFunctionWithSelection>(function_);
+
+            if (ptr) {
+                ptr->set_selection(selection);
+                ptr->auto_selector(false);
+            }
+        }
+
     private:
         std::shared_ptr<Newton> newton_;
         std::shared_ptr<LogBarrierFunctionBase> function_;
