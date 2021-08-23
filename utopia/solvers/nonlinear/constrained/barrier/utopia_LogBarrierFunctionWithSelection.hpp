@@ -31,6 +31,8 @@ namespace utopia {
             Super::read(in);
             in.get("infinity", infinity_);
             in.get("auto_selector", auto_selector_);
+            in.get("skip_projection", skip_projection_);
+            in.get("print_norms", print_norms_);
         }
 
         void ensure_selector() const {
@@ -136,7 +138,7 @@ namespace utopia {
 
                 diff_selector = this->current_barrier_parameter_ / diff;
                 diff_selector = e_mul(*boolean_selector_, diff);
-                g += diff_selector;
+                g -= diff_selector;
 
                 diff = pow2(diff);
                 diff_selector = this->current_barrier_parameter_ / diff;
@@ -171,6 +173,12 @@ namespace utopia {
         }
 
         void extend_gradient(const Vector &x, Vector &g) const override {
+            if (print_norms_) {
+                Scalar norm_g = norm2(g);
+                x.comm().root_print("Norm g");
+                x.comm().root_print(norm_g);
+            }
+
             Vector diff;
             if (this->box_->has_upper_bound()) {
                 this->compute_diff_upper_bound(x, diff);
@@ -184,6 +192,12 @@ namespace utopia {
                 diff = this->current_barrier_parameter_ / diff;
                 diff = e_mul(*boolean_selector_, diff);
                 g -= diff;
+            }
+
+            if (print_norms_) {
+                Scalar norm_g = norm2(g);
+                x.comm().root_print("Norm g (with barrier)");
+                x.comm().root_print(norm_g);
             }
         }
 
@@ -204,6 +218,10 @@ namespace utopia {
         }
 
         bool project_onto_feasibile_region(Vector &x) const override {
+            if (skip_projection_) return true;
+
+            assert(boolean_selector_);
+
             // bool verbose = verbose_;
             if (this->box_->has_upper_bound()) {
                 auto ub_view = local_view_device(*this->box_->upper_bound());
@@ -264,6 +282,8 @@ namespace utopia {
 
     private:
         bool auto_selector_{true};
+        bool skip_projection_{false};
+        bool print_norms_{false};
         std::shared_ptr<Vector> boolean_selector_;
         Scalar infinity_{std::numeric_limits<Scalar>::max()};
     };

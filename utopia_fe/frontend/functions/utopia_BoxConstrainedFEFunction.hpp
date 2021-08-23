@@ -101,6 +101,7 @@ namespace utopia {
             in.get("update_factor", update_factor_);
             in.get("material_iter_tol", material_iter_tol_);
             in.get("max_constraints_iterations", max_constraints_iterations_);
+            in.get("rescale", rescale_);
         }
 
         void ensure_qp_solver() {
@@ -144,6 +145,12 @@ namespace utopia {
                 bool material_converged = false;
                 for (int material_iter = 0; material_iter < max_material_iterations; ++material_iter, ++total_iter) {
                     fun.hessian_and_gradient(x, H, g);
+
+                    if (rescale_ != 1.) {
+                        // x.comm().root_print("Rescaling system with " + std::to_string(rescale_) + "\n");
+                        H *= rescale_;
+                        g *= rescale_;
+                    }
 
                     // Use negative gradient instead
                     g *= -1;
@@ -255,6 +262,7 @@ namespace utopia {
         int max_constraints_iterations_{10};
         Scalar_t update_factor_{1};
         Scalar_t material_iter_tol_{1e-6};
+        Scalar_t rescale_{1};
 
         // FIXME move somewhere else
         static void register_fe_solvers() {
