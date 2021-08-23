@@ -165,43 +165,51 @@ namespace utopia {
 
         auto r = local_range_device(impl_->is_contact);
         RangeDevice<Vector> rd(r.begin(), r.begin() + r.extent() / n_var);
-        auto is_contact_view = local_view_device(impl_->is_contact);
+
         auto gap_view = local_view_device(gap->data());
         auto normals_view = local_view_device(normals->data());
-
         Scalar infty = impl_->infinity;
-        parallel_for(
-            rd, UTOPIA_LAMBDA(const SizeType i) {
-                Scalar norm_n = 0.0;
-                for (int d = 0; d < n_var; ++d) {
-                    auto x = normals_view.get(i * n_var + d);
-                    norm_n += x * x;
-                }
 
-                int start = 0;
-                if (norm_n != 0.) {
-                    start = 1;
-                    is_contact_view.set(i * n_var, 1.);
-                }
+        {
+            auto is_contact_view = local_view_device(impl_->is_contact);
 
-                for (int k = start; k < n_var; ++k) {
-                    gap_view.set(i * n_var + k, infty);
-                }
-            });
+            parallel_for(
+                rd, UTOPIA_LAMBDA(const SizeType i) {
+                    Scalar norm_n = 0.0;
+                    for (int d = 0; d < n_var; ++d) {
+                        auto x = normals_view.get(i * n_var + d);
+                        norm_n += x * x;
+                    }
+
+                    int start = 0;
+                    if (norm_n != 0.) {
+                        start = 1;
+                        is_contact_view.set(i * n_var, 1.);
+                    }
+
+                    for (int k = start; k < n_var; ++k) {
+                        gap_view.set(i * n_var + k, infty);
+                    }
+                });
+        }
 
         space.apply_zero_constraints(impl_->is_contact);
 
-        // Remove Dirichlet
-        parallel_for(
-            rd, UTOPIA_LAMBDA(const SizeType i) {
-                bool is_c = is_contact_view.get(i * n_var) > 0.99;
+        {
+            auto is_contact_view = local_view_device(impl_->is_contact);
 
-                if (!is_c) {
-                    for (int k = 0; k < n_var; ++k) {
-                        gap_view.set(i * n_var + k, infty);
+            // Remove Dirichlet
+            parallel_for(
+                rd, UTOPIA_LAMBDA(const SizeType i) {
+                    bool is_c = is_contact_view.get(i * n_var) > 0.99;
+
+                    if (!is_c) {
+                        for (int k = 0; k < n_var; ++k) {
+                            gap_view.set(i * n_var + k, infty);
+                        }
                     }
-                }
-            });
+                });
+        }
 
         int spatial_dimension = space.mesh().spatial_dimension();
 
