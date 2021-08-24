@@ -231,7 +231,12 @@ namespace utopia {
                 }
             }
 
-            bool update() { return transfer_->init(from_->space(), to_->space()); }
+            bool update() {
+                InputParameters params;
+                params.set("conform_from_space", false);
+                transfer_->read(params);
+                return transfer_->init(from_->space(), to_->space());
+            }
 
             void set(const std::shared_ptr<FEProblem> &from, const std::shared_ptr<FEProblem> &to) {
                 this->from_ = from;

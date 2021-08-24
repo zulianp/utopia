@@ -58,6 +58,9 @@ namespace utopia {
 
             std::shared_ptr<Matrix> transfer_matrix() const;
 
+            void set_constraint_matrix_from(const std::shared_ptr<Matrix> &c);
+            void set_constraint_matrix_to(const std::shared_ptr<Matrix> &c);
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;

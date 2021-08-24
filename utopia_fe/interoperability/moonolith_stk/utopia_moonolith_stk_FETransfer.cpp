@@ -16,6 +16,8 @@ namespace utopia {
             bool export_converted_mesh{false};
             bool remove_constrained_dofs{false};
             bool volume_to_surface{false};
+            bool conform_to_space{true};
+            bool conform_from_space{true};
         };
 
         void FETransfer::read(Input &in) {
@@ -23,6 +25,8 @@ namespace utopia {
             in.get("export_converted_mesh", impl_->export_converted_mesh);
             in.get("remove_constrained_dofs", impl_->remove_constrained_dofs);
             in.get("volume_to_surface", impl_->volume_to_surface);
+            in.get("conform_to_space", impl_->conform_to_space);
+            in.get("conform_from_space", impl_->conform_from_space);
         }
 
         void FETransfer::describe(std::ostream &os) const { impl_->transfer.describe(os); }
@@ -77,6 +81,14 @@ namespace utopia {
 
             assert(from->mesh().n_local_elements() == impl_->from->mesh().n_local_elements());
             assert(impl_->volume_to_surface || to->mesh().n_local_elements() == impl_->to->mesh().n_local_elements());
+
+            if (impl_->conform_from_space && from->is_non_conforming()) {
+                impl_->transfer.set_constraint_matrix_from(from->constraint_matrix());
+            }
+
+            if (impl_->conform_to_space && to->is_non_conforming()) {
+                impl_->transfer.set_constraint_matrix_to(to->constraint_matrix());
+            }
 
             if (impl_->export_converted_mesh) {
                 impl_->from->mesh().write("from.vtu");

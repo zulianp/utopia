@@ -34,6 +34,10 @@ namespace utopia {
             /// Full transformation
             std::shared_ptr<Matrix> transfer_matrix;
 
+            // constraint matrices (to be passed from outside)
+            std::shared_ptr<Matrix> constraint_matrix_from;
+            std::shared_ptr<Matrix> constraint_matrix_to;
+
             void create_matrices() {
                 coupling_matrix = std::make_shared<Matrix>();
                 mass_matrix = std::make_shared<Matrix>();
@@ -72,6 +76,52 @@ namespace utopia {
                 });
             }
 
+            static void pre_constrain(FETransferData<Matrix_t> &data) {
+                auto &B = *data.coupling_matrix;
+                auto &D = *data.mass_matrix;
+
+                if (data.constraint_matrix_to) {
+                    auto &c_to = (*data.constraint_matrix_to);
+                    D = transpose(c_to) * D * c_to;
+                }
+
+                if (data.constraint_matrix_from) {
+                    auto &c_from = (*data.constraint_matrix_from);
+                    if (data.constraint_matrix_to) {
+                        // Both spaces are constrained
+                        auto &c_to = (*data.constraint_matrix_to);
+                        B = transpose(c_to) * B * c_from;
+                    } else {
+                        B = B * c_from;
+                    }
+                }
+            }
+
+            static void post_constrain(FETransferData<Matrix_t> &data) {
+                // auto &Q = *data.basis_transform_matrix;
+                auto &T = *data.transfer_matrix;
+
+                if (data.constraint_matrix_to) {
+                    auto &c_to = (*data.constraint_matrix_to);
+                    Vector_t sum_c_to = sum(c_to, 1);
+
+                    {
+                        auto view = local_view_device(sum_c_to);
+                        parallel_for(
+                            local_range_device(sum_c_to), UTOPIA_LAMBDA(Size_t i) {
+                                if (view.get(i) > 0.99) {
+                                    view.set(i, 0.);
+                                } else {
+                                    view.set(i, 1.);
+                                }
+                            });
+                    }
+
+                    Matrix_t temp = diag(sum_c_to) * T;
+                    T += temp + c_to * T;
+                }
+            }
+
             template <class TransferAssembler>
             static bool apply(const FETransferOptions &opts, TransferAssembler &t, FETransferData<Matrix_t> &data) {
                 UTOPIA_TRACE_REGION_BEGIN("FETransferPrepareData::apply");
@@ -93,6 +143,8 @@ namespace utopia {
 
                     // handle_constraints_pre_process(data);
 
+                    pre_constrain(data);
+
                     Vector_t d_inv = sum(D, 1);
 
                     e_pseudo_inv(d_inv, d_inv, 1e-12);
@@ -105,6 +157,8 @@ namespace utopia {
                     if (opts.chop_tol != 0.0) {
                         chop(T_x, opts.chop_tol);
                     }
+
+                    post_constrain(data);
 
                     if (opts.n_var == 1) {
                         T = T_x;
@@ -516,6 +570,14 @@ namespace utopia {
             } else {
                 return impl_->data.coupling_matrix->comm();
             }
+        }
+
+        void FETransfer::set_constraint_matrix_from(const std::shared_ptr<Matrix> &constraint_matrix) {
+            impl_->data.constraint_matrix_from = constraint_matrix;
+        }
+
+        void FETransfer::set_constraint_matrix_to(const std::shared_ptr<Matrix> &constraint_matrix) {
+            impl_->data.constraint_matrix_to = constraint_matrix;
         }
 
     }  // namespace moonolith

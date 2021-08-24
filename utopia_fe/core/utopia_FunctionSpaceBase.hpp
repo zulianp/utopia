@@ -61,6 +61,9 @@ namespace utopia {
 
         virtual const std::string &name() const = 0;
         virtual void initialize() = 0;
+
+        virtual bool is_non_conforming() const { return false; }
+        virtual std::shared_ptr<Matrix> constraint_matrix() const { return nullptr; }
     };
 
 }  // namespace utopia

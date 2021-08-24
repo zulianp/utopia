@@ -230,6 +230,8 @@ namespace utopia {
 
         const int n_var = space.n_var();
 
+        UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(Stk,Intrepid2,Matrix handling)");
+
         if (!matrix.is_block() && n_var != 1) {
             matrix.clear();
         }
@@ -253,6 +255,8 @@ namespace utopia {
                 "using: MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR,"
                 "PETSC_FALSE);");
         }
+
+        UTOPIA_TRACE_REGION_END("LocalToGlobal(Stk,Intrepid2,Matrix handling)");
 
         auto &bulk_data = space.mesh().bulk_data();
 
