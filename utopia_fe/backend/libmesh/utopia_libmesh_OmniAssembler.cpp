@@ -79,7 +79,7 @@ namespace utopia {
             impl_->update_legacy_mirror();
         }
 
-        virtual OmniAssembler::~OmniAssembler() = default;
+        OmniAssembler::~OmniAssembler() = default;
 
         bool OmniAssembler::apply(const Vector &x, Vector &hessian_times_x) {
             assert(false);
