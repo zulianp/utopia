@@ -41,6 +41,7 @@ namespace utopia {
 
             std::string type;
             in.get("type", type);
+            in.get("debug", debug_);
 
 #ifdef UTOPIA_WITH_MOONOLITH
             if (type == "mortar") {
@@ -62,6 +63,8 @@ namespace utopia {
                     }
                 });
 
+                temp->I_ptr()->shift_diag(1.0);
+
                 projector_ = temp;
             }
 #endif  // UTOPIA_WITH_MOONOLITH
@@ -71,7 +74,8 @@ namespace utopia {
             if (projector_) {
                 Matrix temp;
                 projector_->restrict(in, temp);
-                out += temp;
+                // out += temp;
+                out = temp;
             }
         }
 
@@ -86,10 +90,11 @@ namespace utopia {
                 if (in.is_alias(out)) {
                     Vector temp;
                     projector_->interpolate(in, temp);
-                    out += temp;
+                    // out += temp;
+                    out = temp;
                 } else {
                     projector_->interpolate(in, out);
-                    out += in;
+                    // out += in;
                 }
             } else {
                 if (!in.is_alias(out)) {
@@ -118,7 +123,14 @@ namespace utopia {
             if (projector_) {
                 Matrix m_temp;
                 projector_->restrict(m, m_temp);
-                m += m_temp;
+
+                if (debug_) {
+                    utopia::rename("p", m_temp);
+                    utopia::write("load_p.m", m_temp);
+                }
+
+                // m += m_temp;
+                m = m_temp;
 
                 utopia::set_zero_rows(m, constrained_indices_, diag_value);
             }
@@ -130,7 +142,8 @@ namespace utopia {
             if (projector_) {
                 Vector v_temp;
                 projector_->restrict(v, v_temp);
-                v += v_temp;
+                // v += v_temp;
+                v = v_temp;
 
                 utopia::set(v, constrained_indices_, 0.);
             }
@@ -142,11 +155,13 @@ namespace utopia {
             if (projector_) {
                 Matrix m_temp;
                 projector_->restrict(m, m_temp);
-                m += m_temp;
+                // m += m_temp;
+                m = m_temp;
 
                 Vector v_temp;
                 projector_->restrict(v, v_temp);
-                v += v_temp;
+                // v += v_temp;
+                v = v_temp;
 
                 set_zero_rows(m, constrained_indices_, 1.0);
                 set(v, constrained_indices_, 0.);
@@ -159,7 +174,9 @@ namespace utopia {
 
         inline std::shared_ptr<Matrix> constraint_matrix() const override {
             if (projector_) {
-                return projector_->I_ptr();
+                auto copy = std::make_shared<Matrix>(*projector_->I_ptr());
+                copy->shift_diag(-1);
+                return copy;
             } else {
                 return nullptr;
             }
@@ -168,6 +185,7 @@ namespace utopia {
     private:
         std::shared_ptr<IPTransfer> projector_;
         IndexArray constrained_indices_;
+        bool debug_{false};
     };
 
 }  // namespace utopia

@@ -97,6 +97,7 @@ namespace utopia {
             Super::read(in);
             in.get("assembly", *assembler_);
             in.get("verbose", verbose_);
+            in.get("export_tensors", export_tensors_);
 
             bool user_defined_mass = false;
             in.get("mass", [this, &user_defined_mass](Input &node) {
@@ -200,9 +201,25 @@ namespace utopia {
                 return false;
             }
 
+            if (export_tensors_) {
+                rename("Hu", H);
+                write("load_Hu.m", H);
+
+                rename("gu", g);
+                write("load_gu.m", g);
+            }
+
             if (must_apply_constraints_) {
                 this->space()->apply_constraints(H);
                 this->space()->apply_zero_constraints(g);
+            }
+
+            if (export_tensors_) {
+                rename("H", H);
+                write("load_H.m", H);
+
+                rename("g", g);
+                write("load_g.m", g);
             }
 
             return true;
@@ -263,6 +280,7 @@ namespace utopia {
 
         bool must_apply_constraints_{true};
         bool verbose_{false};
+        bool export_tensors_{false};
 
         utopia::Path output_path_{"output.e"};
     };

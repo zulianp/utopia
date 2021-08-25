@@ -262,6 +262,7 @@ namespace utopia {
 
         const BucketVector_t &elem_buckets = utopia::stk::local_elements(bulk_data);
 
+        UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(Stk,Intrepid2,Matrix assembly)");
         {
             Write<PetscMatrix> w(matrix, utopia::GLOBAL_ADD);
 
@@ -329,6 +330,7 @@ namespace utopia {
                 }
             }
         }
+        UTOPIA_TRACE_REGION_END("LocalToGlobal(Stk,Intrepid2,Matrix assembly)");
 
         if (mode == SUBTRACT_MODE) {
             matrix *= -1.0;
