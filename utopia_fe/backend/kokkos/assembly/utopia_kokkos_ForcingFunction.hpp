@@ -77,6 +77,9 @@ namespace utopia {
                             assert(f >= 0);
                             assert(f <= 1.0);
 
+                            assert(cell < int(ev.extent(0)));
+                            assert(offset < int(ev.extent(1)));
+
                             ev(cell, offset) += -f * value * dX;
                         }
                     });
