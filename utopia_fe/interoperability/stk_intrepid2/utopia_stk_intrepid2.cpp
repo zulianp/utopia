@@ -79,8 +79,11 @@ namespace utopia {
         using Size_t = Traits<utopia::stk::Mesh>::SizeType;
 
         static bool apply(const ::stk::mesh::BulkData &bulk_data, const BucketVector_t &buckets, FE &fe, int degree) {
-            assert(buckets.begin() != buckets.end());
-            if (buckets.begin() == buckets.end()) return false;
+            // assert(buckets.begin() != buckets.end());
+            if (buckets.begin() == buckets.end()) {
+                utopia::err() << "[Warning] buckets.begin() == buckets.end()\n";
+                return false;
+            }
 
             auto &meta_data = bulk_data.mesh_meta_data();
 

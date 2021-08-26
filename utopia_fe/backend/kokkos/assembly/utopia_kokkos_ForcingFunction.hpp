@@ -55,40 +55,43 @@ namespace utopia {
                 this->ensure_vector_accumulator();
 
                 auto &fe = this->fe();
-                auto ev = this->vector_data();
 
-                const int n_components = op_.n_components;
-                const int component = op_.component;
-                const int n_qp = fe.n_quad_points();
+                if (!fe.empty()) {
+                    auto ev = this->vector_data();
 
-                auto value = op_.value;
-                auto fun = fe.fun();
-                auto measure = fe.measure();
+                    const int n_components = op_.n_components;
+                    const int component = op_.component;
+                    const int n_qp = fe.n_quad_points();
 
-                this->loop_cell_test(
-                    "Assemble<ForcingFunction>::assemble", KOKKOS_LAMBDA(const int &cell, const int &i) {
-                        auto offset = i * n_components + component;
+                    auto value = op_.value;
+                    auto fun = fe.fun();
+                    auto measure = fe.measure();
 
-                        for (int qp = 0; qp < n_qp; ++qp) {
-                            auto dX = measure(cell, qp);
+                    this->loop_cell_test(
+                        "Assemble<ForcingFunction>::assemble", KOKKOS_LAMBDA(const int &cell, const int &i) {
+                            auto offset = i * n_components + component;
 
-                            const Scalar f = fun(i, qp);
+                            for (int qp = 0; qp < n_qp; ++qp) {
+                                auto dX = measure(cell, qp);
 
-                            assert(f >= 0);
-                            assert(f <= 1.0);
+                                const Scalar f = fun(i, qp);
 
-                            assert(cell < int(ev.extent(0)));
-                            assert(offset < int(ev.extent(1)));
+                                assert(f >= 0);
+                                assert(f <= 1.0);
 
-                            ev(cell, offset) += -f * value * dX;
-                        }
-                    });
+                                assert(cell < int(ev.extent(0)));
+                                assert(offset < int(ev.extent(1)));
 
-                if (op_.verbose) {
-                    utopia::out() << "ForcingFunction: " << this->vector_accumulator()->sum() << '\n';
-                    // this->describe(utopia::out().stream());
-                    // utopia::out() << "Accumulator:\n";
-                    this->vector_accumulator()->describe(utopia::out().stream());
+                                ev(cell, offset) += -f * value * dX;
+                            }
+                        });
+
+                    if (op_.verbose) {
+                        utopia::out() << "ForcingFunction: " << this->vector_accumulator()->sum() << '\n';
+                        // this->describe(utopia::out().stream());
+                        // utopia::out() << "Accumulator:\n";
+                        this->vector_accumulator()->describe(utopia::out().stream());
+                    }
                 }
 
                 UTOPIA_TRACE_REGION_END("Assemble<ForcingFunction>::assemble");

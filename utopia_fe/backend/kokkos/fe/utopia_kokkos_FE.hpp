@@ -59,6 +59,7 @@ namespace utopia {
             UTOPIA_INLINE_FUNCTION JacobianView jacobian() const { return jacobian_; }
             UTOPIA_INLINE_FUNCTION JacobianInverseView jacobian_inverse() const { return jacobian_inverse_; }
 
+            inline bool empty() const { return n_cells() == 0; }
             inline SizeType n_cells() const override { return measure_.extent(0); }
             inline SizeType n_shape_functions() const override { return fun_.extent(0); }
             inline SizeType n_quad_points() const override { return measure_.extent(1); }
