@@ -7,6 +7,7 @@
 // utopia/kokkos
 #include "utopia_kokkos_FEAssembler.hpp"
 #include "utopia_kokkos_ForcingFunction.hpp"
+#include "utopia_kokkos_IncrementalForcingFunction.hpp"
 #include "utopia_kokkos_LaplaceOperator.hpp"
 #include "utopia_kokkos_LinearElasticity.hpp"
 #include "utopia_kokkos_Mass.hpp"
@@ -86,6 +87,7 @@ namespace utopia {
                 register_assembler<utopia::kokkos::Mass<FE_t>>("Mass");
                 register_assembler<utopia::kokkos::LaplaceOperator<FE_t>>("LaplaceOperator");
                 register_assembler<utopia::kokkos::ForcingFunction<FE_t>>("ForcingFunction");
+                register_assembler<utopia::kokkos::IncrementalForcingFunction<FE_t>>("IncrementalForcingFunction");
                 register_assembler<utopia::kokkos::NeoHookean<FE_t>>("NeoHookean");
 
                 register_assembler_variant<utopia::kokkos::VectorLaplaceOperator<FE_t, 1, Scalar_t>>(
@@ -704,6 +706,8 @@ namespace utopia {
         template <class FunctionSpace, class FE>
         void OmniAssembler<FunctionSpace, FE>::read(Input &in) {
             using ForcingFunction_t = utopia::kokkos::ForcingFunction<typename Impl::FE>;
+            using IncrementalForcingFunction_t = utopia::kokkos::IncrementalForcingFunction<typename Impl::FE>;
+
 
             if (!impl_->domain.fe) {
                 // FIXME order must be guessed by discretization and material
@@ -732,12 +736,14 @@ namespace utopia {
                     std::string forcing_function_type = "value";
                     std::string where = "domain";
                     std::string name;
+                    std::string type;
                     int id = -1;
 
                     node.get("type", forcing_function_type);
                     node.get("where", where);
                     node.get("name", name);
                     node.get("id", id);
+                    node.get("type", type);
 
                     if (where == "surface") {
                         if (name.empty()) {
@@ -749,19 +755,35 @@ namespace utopia {
                         node.get("quadrature_order", quadrature_order);
 
                         if (forcing_function_type == "value") {
-                            typename ForcingFunction_t::Params ff;
-                            ff.read(node);
-                            ff.n_components = impl_->space->n_var();
-                            impl_->template add_forcing_function_on_boundary<ForcingFunction_t>(
-                                name, quadrature_order, ff);
+                            if(type == "IncrementalForcingFunction") {
+                                typename IncrementalForcingFunction_t::Params ff;
+                                ff.read(node);
+                                ff.n_components = impl_->space->n_var();
+                                impl_->template add_forcing_function_on_boundary<IncrementalForcingFunction_t>(
+                                    name, quadrature_order, ff);
+
+                            } else {
+                                typename ForcingFunction_t::Params ff;
+                                ff.read(node);
+                                ff.n_components = impl_->space->n_var();
+                                impl_->template add_forcing_function_on_boundary<ForcingFunction_t>(
+                                    name, quadrature_order, ff);
+                        }
                         }
 
                     } else {
                         if (forcing_function_type == "value") {
-                            typename ForcingFunction_t::Params ff;
-                            ff.read(node);
-                            ff.n_components = impl_->space->n_var();
-                            impl_->template add_forcing_function<ForcingFunction_t>(ff);
+                            if(type == "IncrementalForcingFunction") {
+                                typename IncrementalForcingFunction_t::Params ff;
+                                ff.read(node);
+                                ff.n_components = impl_->space->n_var();
+                                impl_->template add_forcing_function<IncrementalForcingFunction_t>(ff);
+                            } else {
+                                typename ForcingFunction_t::Params ff;
+                                ff.read(node);
+                                ff.n_components = impl_->space->n_var();
+                                impl_->template add_forcing_function<ForcingFunction_t>(ff);
+                            }
                         }
                     }
                 });
