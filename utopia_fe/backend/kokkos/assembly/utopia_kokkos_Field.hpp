@@ -15,6 +15,7 @@ namespace utopia {
         public:
             using FE = FE_;
             using Scalar = typename FE::Scalar;
+            using Function = typename FE::Function;
             using DynRankView = typename FE::DynRankView;
 
             virtual ~Field() = default;
@@ -96,7 +97,7 @@ namespace utopia {
 
             class Interpolate {
             public:
-                UTOPIA_INLINE_FUNCTION Interpolate(const DynRankView &fun, const DynRankView &coefficients)
+                UTOPIA_INLINE_FUNCTION Interpolate(const Function &fun, const DynRankView &coefficients)
                     : fun_(fun),
                       coefficients_(coefficients),
                       n_shape_functions_(fun.extent(1)),
@@ -136,7 +137,7 @@ namespace utopia {
                     return ret;
                 }
 
-                DynRankView fun_;
+                Function fun_;
                 DynRankView coefficients_;
                 const int n_shape_functions_;
                 const int tensor_size_;

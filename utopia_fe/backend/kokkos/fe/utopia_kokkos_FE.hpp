@@ -33,9 +33,10 @@ namespace utopia {
             using DynRankView = ::Kokkos::DynRankView<Scalar, ExecutionSpace_>;
         };
 
-        template <typename Scalar, class Traits = FEDefaultTraits<Scalar>>
+        template <typename Scalar_, class Traits = FEDefaultTraits<Scalar_>>
         class FE : public FEBase<typename Traits::ExecutionSpace, typename Traits::SizeType> {
         public:
+            using Scalar = Scalar_;
             using SizeType = typename Traits::SizeType;
             using MeasureView = typename Traits::MeasureView;
             using FunctionView = typename Traits::FunctionView;
@@ -43,7 +44,7 @@ namespace utopia {
             using JacobianView = typename Traits::JacobianView;
             using JacobianInverseView = typename Traits::JacobianInverseView;
             using IntView = typename Traits::IntView;
-            using DynRankView = typename Traits::IntView;
+            using DynRankView = typename Traits::DynRankView;
 
             using Measure = typename Traits::MeasureView;
             using Function = typename Traits::FunctionView;

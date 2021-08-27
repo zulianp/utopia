@@ -29,7 +29,7 @@ namespace utopia {
                     bool is_symbolic = false;
                     in.get("is_symbolic", is_symbolic);
 
-                    if(is_symbolic) {
+                    if (is_symbolic) {
                         std::string expr;
                         in.get("value", expr);
                         symbolic = std::make_shared<utopia::SymbolicFunction>(expr);
@@ -40,8 +40,6 @@ namespace utopia {
                     in.get("component", component);
                     in.get("verbose", verbose);
                     in.get("n_components", n_components);
-
-
                 }
 
                 Params(const Fun &value = Fun(0.0)) : value(value) {}
@@ -54,7 +52,8 @@ namespace utopia {
                 std::shared_ptr<utopia::SymbolicFunction> symbolic;
             };
 
-            IncrementalForcingFunction(const std::shared_ptr<FE> &fe, Params op = Params()) : Super(fe), op_(std::move(op)) {}
+            IncrementalForcingFunction(const std::shared_ptr<FE> &fe, Params op = Params())
+                : Super(fe), op_(std::move(op)) {}
 
             inline int n_vars() const override { return op_.n_components; }
 
@@ -65,11 +64,11 @@ namespace utopia {
             inline std::string name() const override { return "IncrementalForcingFunction"; }
 
             bool assemble_vector() override {
-                UTOPIA_TRACE_REGION_BEGIN("Assemble<IncrementalForcingFunction>::assemble");
+                UTOPIA_TRACE_REGION_BEGIN("IncrementalForcingFunction::assemble");
                 this->ensure_vector_accumulator();
 
                 auto &fe = this->fe();
-                
+
                 assert(time);
 
                 // When integrating in subsets in parallel
@@ -84,14 +83,14 @@ namespace utopia {
                     auto time = this->time();
 
                     Scalar t = 1;
-                    if(time) {
+                    if (time) {
                         t = time->get();
                     }
 
                     Scalar value = 0;
-                    if(op_.symbolic) {
+                    if (op_.symbolic) {
                         // it can be nonlinear with respect to t
-                        value = op_.symbolic->eval(0,0,0,t);
+                        value = op_.symbolic->eval(0, 0, 0, t);
                     } else {
                         value = t * op_.value;
                     }
@@ -100,7 +99,7 @@ namespace utopia {
                     auto measure = fe.measure();
 
                     this->loop_cell_test(
-                        "Assemble<IncrementalForcingFunction>::assemble", KOKKOS_LAMBDA(const int &cell, const int &i) {
+                        "IncrementalForcingFunction::assemble", KOKKOS_LAMBDA(const int &cell, const int &i) {
                             auto offset = i * n_components + component;
 
                             for (int qp = 0; qp < n_qp; ++qp) {
@@ -126,7 +125,7 @@ namespace utopia {
                     }
                 }
 
-                UTOPIA_TRACE_REGION_END("Assemble<IncrementalForcingFunction>::assemble");
+                UTOPIA_TRACE_REGION_END("IncrementalForcingFunction::assemble");
                 return true;
             }
 

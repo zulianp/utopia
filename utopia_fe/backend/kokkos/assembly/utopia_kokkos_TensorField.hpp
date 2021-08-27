@@ -20,7 +20,6 @@ namespace utopia {
             using Scalar = typename FE::Scalar;
             using SizeType = typename FE::SizeType;
             using DynRankView = typename FE::DynRankView;
-            using FunctionSpaceTools = typename FE::FunctionSpaceTools;
             using ExecutionSpace = typename FE::ExecutionSpace;
 
             using Rank1Range = ::Kokkos::MDRangePolicy<::Kokkos::Rank<3>, ExecutionSpace>;
