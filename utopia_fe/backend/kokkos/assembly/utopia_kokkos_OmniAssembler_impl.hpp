@@ -769,6 +769,21 @@ namespace utopia {
         }
 
         template <class FunctionSpace, class FE>
+        void OmniAssembler<FunctionSpace, FE>::set_time(const std::shared_ptr<SimulationTime> &time) {
+            for (auto &a : impl_->domain.assemblers) {
+                a->set_time(time);
+            }
+
+            for (auto &p : impl_->boundary) {
+                auto &b = p.second;
+
+                for (auto &a : b.assemblers) {
+                    a->set_time(time);
+                }
+            }
+        }
+
+        template <class FunctionSpace, class FE>
         std::string OmniAssembler<FunctionSpace, FE>::name() const {
             return "utopia::kokkos::OmniAssembler";
         }

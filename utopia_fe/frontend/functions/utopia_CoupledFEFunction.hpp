@@ -20,6 +20,7 @@ namespace utopia {
         using Environment_t = utopia::Environment<FunctionSpace>;
         using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
         using Size_t = typename Traits<FunctionSpace>::SizeType;
+        using SimulationTime = utopia::SimulationTime<Scalar_t>;
 
         inline static constexpr bool default_verbose() { return true; }
 
@@ -682,6 +683,12 @@ namespace utopia {
 
         void add_matrix_transformer(std::unique_ptr<MatrixTransformer<Matrix_t>> &&transformer) {
             transformers_.push_back(std::move(transformer));
+        }
+
+        void set_time(const std::shared_ptr<SimulationTime> &time) override {
+            for (auto &ff : fe_problems_) {
+                ff.second->function_->set_time(time);
+            }
         }
 
     protected:

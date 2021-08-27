@@ -52,6 +52,8 @@ namespace utopia {
 
         bool is_linear() const override;
 
+        void set_time(const std::shared_ptr<SimulationTime> &time) override;
+
     private:
         class Impl;
         std::unique_ptr<Impl> impl_;

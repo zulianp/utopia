@@ -40,6 +40,13 @@ namespace utopia {
         impl_->space = space;
     }
 
+    void OmniAssembler<utopia::stk::FunctionSpace>::set_time(const std::shared_ptr<SimulationTime> &time) {
+        assert(impl_->assembler);
+        if (impl_->assembler) {
+            impl_->assembler->set_time(time);
+        }
+    }
+
     bool OmniAssembler<utopia::stk::FunctionSpace>::is_linear() const { return impl_->get_assembler().is_linear(); }
 
     void OmniAssembler<utopia::stk::FunctionSpace>::clear() { return impl_->get_assembler().clear(); }

@@ -19,6 +19,7 @@ namespace utopia {
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+        using SimulationTime = utopia::SimulationTime<Scalar_t>;
         using Environment_t = utopia::Environment<FunctionSpace>;
 
         ~BoxConstrainedFEFunction() override = default;
@@ -75,6 +76,13 @@ namespace utopia {
         BoxConstrainedFEFunction(const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &unconstrained)
             : unconstrained_(unconstrained) {
             assert(unconstrained_);
+        }
+
+        void set_time(const std::shared_ptr<SimulationTime> &time) override {
+            assert(unconstrained_);
+            if (unconstrained_) {
+                unconstrained_->set_time(time);
+            }
         }
 
     private:

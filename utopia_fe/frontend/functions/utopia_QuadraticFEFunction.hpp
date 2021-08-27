@@ -12,6 +12,7 @@ namespace utopia {
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
         using Environment_t = utopia::Environment<FunctionSpace>;
+        using SimulationTime = utopia::SimulationTime<Scalar_t>;
 
         QuadraticFEFunction(const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &function) : function_(function) {
             assert(function_);
@@ -103,6 +104,13 @@ namespace utopia {
         bool update_IVP(const Vector_t &x) override { return function_->update_IVP(x); }
         bool setup_IVP(Vector_t &x) override { return function_->setup_IVP(x); }
         bool is_IVP_solved() override { return function_->is_IVP_solved(); }
+
+        void set_time(const std::shared_ptr<SimulationTime> &time) override {
+            assert(function_);
+            if (function_) {
+                function_->set_time(time);
+            }
+        }
 
     public:
         std::shared_ptr<FEFunctionInterface<FunctionSpace>> function_;

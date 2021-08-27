@@ -56,6 +56,8 @@ namespace utopia {
 
                 auto &fe = this->fe();
 
+                // When integrating in subsets in parallel
+                // we might get empty fe data
                 if (!fe.empty()) {
                     auto ev = this->vector_data();
 
