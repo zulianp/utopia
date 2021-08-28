@@ -30,10 +30,10 @@ namespace utopia {
             using Scalar = typename Traits<OpOrView>::Scalar;
 
             UTOPIA_INLINE_FUNCTION constexpr SubView(const OpOrView &view,
-                                                     const Range0 &s0,
-                                                     const Range0 &s1,
-                                                     const Range0 &s2,
-                                                     const Range0 &s3)
+                                                     const Range0 &s0 = Range0(),
+                                                     const Range1 &s1 = Range1(),
+                                                     const Range2 &s2 = Range2(),
+                                                     const Range3 &s3 = Range3())
                 : view(view), s0(s0), s1(s1), s2(s2), s3(s3) {}
 
             UTOPIA_INLINE_FUNCTION constexpr Scalar operator()(const int cell,

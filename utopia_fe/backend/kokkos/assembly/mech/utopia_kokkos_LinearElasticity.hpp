@@ -24,7 +24,6 @@ namespace utopia {
             using SizeType = typename FE::SizeType;
             using Scalar = typename FE::Scalar;
             using DynRankView = typename FE::DynRankView;
-            using FunctionSpaceTools = typename FE::FunctionSpaceTools;
 
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;

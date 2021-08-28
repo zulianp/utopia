@@ -15,6 +15,7 @@
 #include "utopia_kokkos_Residual.hpp"
 #include "utopia_kokkos_Transport.hpp"
 #include "utopia_kokkos_VectorLaplaceOperator.hpp"
+#include "utopia_kokkos_WeakLinearThermoElasticity.hpp"
 
 // utopia/kokkos includes
 #include "utopia_kokkos_FE.hpp"
@@ -100,6 +101,13 @@ namespace utopia {
                 register_assembler_variant<utopia::kokkos::LinearElasticity<FE_t, 1, Scalar_t>>("LinearElasticity", 1);
                 register_assembler_variant<utopia::kokkos::LinearElasticity<FE_t, 2, Scalar_t>>("LinearElasticity", 2);
                 register_assembler_variant<utopia::kokkos::LinearElasticity<FE_t, 3, Scalar_t>>("LinearElasticity", 3);
+
+                register_assembler_variant<utopia::kokkos::WeakLinearThermoElasticity<FE_t, 1, Scalar_t>>(
+                    "WeakLinearThermoElasticity", 1);
+                register_assembler_variant<utopia::kokkos::WeakLinearThermoElasticity<FE_t, 2, Scalar_t>>(
+                    "WeakLinearThermoElasticity", 2);
+                register_assembler_variant<utopia::kokkos::WeakLinearThermoElasticity<FE_t, 3, Scalar_t>>(
+                    "WeakLinearThermoElasticity", 3);
             }
         };
 
