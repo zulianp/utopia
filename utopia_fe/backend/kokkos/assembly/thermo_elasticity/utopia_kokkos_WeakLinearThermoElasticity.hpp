@@ -72,38 +72,10 @@ namespace utopia {
                 int temperature{Dim};
             };
 
-            class UOp {
-            public:
-                using LinearElasticityOp = utopia::kokkos::kernels::
-                    LinearElasticityOp<Dim, Scalar, FirstLameParameter, ShearModulus, Grad, typename FE::Measure>;
+            using UOp = utopia::kokkos::kernels::
+                LinearElasticityOp<Dim, Scalar, FirstLameParameter, ShearModulus, Grad, typename FE::Measure>;
 
-                UTOPIA_INLINE_FUNCTION Scalar
-                operator()(const int cell, const int i, const int j, const int sub_i, const int sub_j) const {
-                    return op_(cell, i, j, sub_i, sub_j);
-                }
-
-                UTOPIA_INLINE_FUNCTION UOp(const FirstLameParameter &lambda,
-                                           const ShearModulus &mu,
-                                           const Grad &grad,
-                                           const Measure &measure)
-                    : op_(lambda, mu, grad, measure) {}
-
-                LinearElasticityOp op_;
-            };
-
-            class COp {
-            public:
-                using LaplaceOp = utopia::kokkos::kernels::LaplaceOp<Scalar, Scalar, Grad, Measure>;
-
-                UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int i, const int j) const {
-                    return op_(cell, i, j);
-                }
-
-                UTOPIA_INLINE_FUNCTION COp(const Scalar &coeff, const Grad &grad, const Measure &measure)
-                    : op_(coeff, grad, measure) {}
-
-                LaplaceOp op_;
-            };
+            using COp = utopia::kokkos::kernels::LaplaceOp<Scalar, Scalar, Grad, Measure>;
 
             class UCOp {
             public:
@@ -160,8 +132,6 @@ namespace utopia {
             bool is_operator() const override { return true; }
 
             inline std::string name() const override { return "WeakLinearThermoElasticity"; }
-
-            // inline Op make_op() const { return Op(op_.lambda, op_.mu, this->fe().grad(), this->fe().measure()); }
 
             bool apply(const VectorView &x, VectorView &y) override {
                 UTOPIA_TRACE_REGION_BEGIN("WeakLinearThermoElasticity::apply");
