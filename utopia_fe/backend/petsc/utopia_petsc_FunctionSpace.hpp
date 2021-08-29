@@ -1,7 +1,10 @@
 #ifndef UTOPIA_PETSC_FUNCTION_SPACE_HPP
 #define UTOPIA_PETSC_FUNCTION_SPACE_HPP
 
+#include "utopia_fe_Core.hpp"
+
 #include "utopia_DirichletBoundary.hpp"
+#include "utopia_FunctionSpaceBase.hpp"
 
 #include "utopia_petsc_StructuredGrid.hpp"
 
@@ -15,21 +18,64 @@ namespace utopia {
 
     namespace petsc {
 
-        class FunctionSpace : public Configurable {
+        class FunctionSpace : public FunctionSpaceBase<petsc::StructuredGrid>, public Traits<FunctionSpace> {
         public:
+            using Super = utopia::FunctionSpaceBase<petsc::StructuredGrid>;
             using Traits = utopia::Traits<FunctionSpace>;
             using Vector = Traits::Vector;
             using Matrix = Traits::Matrix;
+            using Scalar = Traits::Scalar;
+            using SizeType = Traits::SizeType;
             using Communicator = Traits::Communicator;
             using Mesh = Traits::Mesh;
 
-            FunctionSpace(const Communicator &comm);
+            FunctionSpace(const Communicator &comm = Communicator::get_default());
             FunctionSpace(const std::shared_ptr<Mesh> &mesh);
             ~FunctionSpace();
 
             void read(Input &in) override;
 
             //////////////////////////////////////////
+
+            void init(const std::shared_ptr<Mesh> &mesh) override;
+            std::shared_ptr<Mesh> mesh_ptr() const override;
+            const Mesh &mesh() const override;
+            Mesh &mesh() override;
+            int n_var() const override;
+
+            // Below could be made into a cross-backend interface (given that the same algebra is used)
+            bool write(const Path &path, const Vector &x) override;
+
+            const Communicator &comm() const override;
+
+            SizeType n_dofs() const override;
+            SizeType n_local_dofs() const override;
+
+            void create_vector(Vector &v) const override;
+            void create_matrix(Matrix &m) const override;
+
+            void apply_constraints(Matrix &m, const Scalar diag_value = 1.0) const override;
+            void apply_constraints(Vector &v) const override;
+            void apply_constraints(Matrix &m, Vector &v) const override;
+            void apply_zero_constraints(Vector &vec) const override;
+
+            void add_dirichlet_boundary_condition(const std::string &name,
+                                                  const Scalar &value,
+                                                  const int component = 0) override;
+
+            bool empty() const override;
+
+            void displace(const Vector &displacement) override;
+
+            const std::string &name() const override;
+            void initialize() override;
+
+            void create_field(Field<FunctionSpace> &field);
+            void global_to_local(const Vector &global, Vector &local) const;
+            void local_to_global(const Vector &local, Vector &global, AssemblyMode mode) const;
+
+            // bool is_non_conforming() const { return false; }
+            // std::shared_ptr<Matrix> constraint_matrix() const { return nullptr; }
 
             // int n_components() const;
 
@@ -113,9 +159,6 @@ namespace utopia {
             // }
 
             // //////////////////////////////////////////
-
-            void create_matrix(Matrix &mat) const;
-            void create_vector(Vector &vec) const;
 
             // void create_local_vector(Vector &vec) const { mesh_->create_local_vector(vec); }
 

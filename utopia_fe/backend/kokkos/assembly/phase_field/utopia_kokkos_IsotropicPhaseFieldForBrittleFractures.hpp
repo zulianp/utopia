@@ -23,6 +23,7 @@ namespace utopia {
             using Scalar = typename FE::Scalar;
             using Gradient = typename FE::Gradient;
             using Function = typename FE::Function;
+            using Measure = typename FE::Measure;
             using DynRankView = typename FE::DynRankView;
             using ExecutionSpace = typename FE::ExecutionSpace;
             using VectorView = typename Super::VectorView;
@@ -71,6 +72,9 @@ namespace utopia {
                         mu = E / (2.0 * (1. + nu));
                         lambda = (2.0 * nu * mu) / (1.0 - (2.0 * nu));
                     }
+
+                    in.get("displacement", displacement);
+                    in.get("phase_field", phase_field);
                 }
 
                 Params()
@@ -102,6 +106,8 @@ namespace utopia {
                 bool turn_off_uc_coupling{false};
                 bool turn_off_cu_coupling{false};
                 bool use_mobility{false};
+                int displacement{0};
+                int phase_field{Dim};
             };
 
             using QuadraticDegradation = utopia::kokkos::QuadraticDegradation<Params>;

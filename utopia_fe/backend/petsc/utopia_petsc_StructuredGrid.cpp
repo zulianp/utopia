@@ -126,5 +126,13 @@ namespace utopia {
 
         DMDABase &StructuredGrid::dm() const { return *impl_; }
 
+        StructuredGrid::ElemToNodeIndex StructuredGrid::elem_to_node_index() const {
+            return impl_->elem_to_node_index();
+        }
+
+        StructuredGrid::ElemToNodeIndex StructuredGrid::elem_to_local_node_index() const {
+            return impl_->elem_to_local_node_index();
+        }
+
     }  // namespace petsc
 }  // namespace utopia
