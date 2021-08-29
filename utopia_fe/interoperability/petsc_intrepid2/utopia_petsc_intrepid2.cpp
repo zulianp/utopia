@@ -69,7 +69,15 @@ namespace utopia {
         for (SizeType idx = 0; idx < n_local_elements; ++idx) {
             for (int k = 0; k < n_nodes_x_elem; ++k) {
                 auto node_idx = elems(idx, k);
-                mesh_view.point(idx, p);
+                mesh_view.point(node_idx, p);
+
+                // utopia::out() << node_idx << ") ";
+
+                // for (auto pi : p) {
+                //     utopia::out() << pi << " ";
+                // }
+
+                // utopia::out() << '\n';
 
                 for (int d = 0; d < spatial_dim; ++d) {
                     cell_points(idx, k, d) = p[d];
@@ -115,129 +123,94 @@ namespace utopia {
         AssemblyMode mode,
         PetscMatrix &matrix) {
         UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(Petsc,Intrepid2)");
-        assert(false);
-        Utopia::Abort("IMPLEMENT ME!");
 
         // // Type defs
-        // using IndexArray_t = Traits<PetscMatrix>::IndexArray;
-        // using ScalarArray_t = Traits<PetscMatrix>::ScalarArray;
-        // using Size_t = Traits<PetscMatrix>::SizeType;
+        using IndexArray_t = Traits<PetscMatrix>::IndexArray;
+        using ScalarArray_t = Traits<PetscMatrix>::ScalarArray;
+        using Size_t = Traits<PetscMatrix>::SizeType;
 
-        // using Bucket_t = ::petsc::mesh::Bucket;
-        // using BucketVector_t = ::petsc::mesh::BucketVector;
-        // using Entity_t = ::petsc::mesh::Entity;
+        auto &mesh = space.mesh();
+        auto mesh_view = mesh.view();
 
-        // typename PetscViewDevice_t<Scalar>::HostMirror element_matrices =
-        //     ::Kokkos::create_mirror_view(device_element_matrices);
-        // ::Kokkos::deep_copy(element_matrices, device_element_matrices);
+        SizeType n_local_elements = mesh_view.n_local_elements();
+        int spatial_dim = mesh_view.spatial_dim();
+        int n_nodes_x_elem = mesh_view.n_nodes_x_element();
 
-        // const int n_var = space.n_var();
+        typename PetscViewDevice_t<Scalar>::HostMirror element_matrices =
+            ::Kokkos::create_mirror_view(device_element_matrices);
+        ::Kokkos::deep_copy(element_matrices, device_element_matrices);
 
-        // UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(Petsc,Intrepid2,Matrix handling)");
+        const int n_var = space.n_var();
 
-        // if (!matrix.is_block() && n_var != 1) {
-        //     matrix.clear();
-        // }
+        UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(Petsc,Intrepid2,Matrix handling)");
 
-        // if (matrix.empty()) {
-        //     space.create_matrix(matrix);
+        if (matrix.empty()) {
+            space.create_matrix(matrix);
+        } else {
+            // Reuse matrix
+            if (matrix.is_assembled() && mode == OVERWRITE_MODE) {
+                matrix *= 0.0;
+            } else if (mode == SUBTRACT_MODE) {
+                matrix *= -1.0;
+            }
+        }
 
-        // } else {
-        //     // Reuse matrix
-        //     if (matrix.is_assembled() && mode == OVERWRITE_MODE) {
-        //         matrix *= 0.0;
-        //     } else if (mode == SUBTRACT_MODE) {
-        //         matrix *= -1.0;
-        //     }
-        // }
+        bool is_block = matrix.is_block();
 
-        // // Fix preallocation bug and REMOVE ME
-        // if (!space.mesh().has_aura() && space.n_var() > 1 && space.comm().size() > 1) {
-        //     MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
-        //     m_utopia_warning(
-        //         "using: MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR,"
-        //         "PETSC_FALSE);");
-        // }
+        UTOPIA_TRACE_REGION_END("LocalToGlobal(Petsc,Intrepid2,Matrix handling)");
 
-        // UTOPIA_TRACE_REGION_END("LocalToGlobal(Petsc,Intrepid2,Matrix handling)");
+        UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(Petsc,Intrepid2,Matrix assembly)");
+        {
+            Write<PetscMatrix> w(matrix, utopia::GLOBAL_ADD);
 
-        // auto &bulk_data = space.mesh().bulk_data();
+            const SizeType n_dofs = element_matrices.extent(1);
+            const SizeType nn = n_dofs / n_var;
 
-        // const BucketVector_t &elem_buckets = utopia::petsc::local_elements(bulk_data);
+            IndexArray_t idx(is_block ? nn : n_dofs);
+            ScalarArray_t val(n_dofs * n_dofs);
 
-        // UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(Petsc,Intrepid2,Matrix assembly)");
-        // {
-        //     Write<PetscMatrix> w(matrix, utopia::GLOBAL_ADD);
+            const bool is_block = matrix.is_block();
 
-        //     const SizeType n_dofs = element_matrices.extent(1);
-        //     const SizeType nn = n_dofs / n_var;
+            auto elems = mesh.elem_to_node_index();
 
-        //     IndexArray_t idx(nn);
-        //     ScalarArray_t val(n_dofs * n_dofs);
+            for (SizeType elem_idx = 0; elem_idx < n_local_elements; ++elem_idx) {
+                for (Size_t i = 0, dof_k = 0; i < nn; ++i) {
+                    if (!is_block) {
+                        for (int v = 0; v < n_var; ++v, ++dof_k) {
+                            idx[dof_k] = elems(elem_idx, i) * n_var + v;
+                        }
+                    } else {
+                        idx[i] = elems(elem_idx, i);
+                    }
+                }
 
-        //     const bool is_block = matrix.is_block();
+                for (Size_t i = 0; i < nn; ++i) {
+                    for (int di = 0; di < n_var; ++di) {
+                        const Size_t idx_i = i * n_var + di;
 
-        //     auto &&local_to_global = space.dof_map().local_to_global();
+                        for (Size_t j = 0; j < nn; ++j) {
+                            for (int dj = 0; dj < n_var; ++dj) {
+                                const Size_t idx_j = j * n_var + dj;
 
-        //     Size_t elem_idx = 0;
-        //     for (const auto &ib : elem_buckets) {
-        //         const Bucket_t &b = *ib;
-        //         const Bucket_t::size_type length = b.size();
+                                val[idx_i * n_dofs + idx_j] = element_matrices(elem_idx, idx_i, idx_j);
+                            }
+                        }
+                    }
+                }
 
-        //         for (Bucket_t::size_type k = 0; k < length; ++k) {
-        //             // get the current node entity and extract the id to fill it into the field
-        //             Entity_t elem = b[k];
-        //             // const Size_t elem_idx = utopia::petsc::convert_entity_to_index(elem) - n_local_nodes;
-        //             const Size_t n_nodes = bulk_data.num_nodes(elem);
-        //             UTOPIA_UNUSED(n_nodes);
+                if (is_block) {
+                    matrix.add_matrix_blocked(idx, idx, val);
+                } else {
+                    matrix.add_matrix(idx, idx, val);
+                }
+            }
+        }
 
-        //             assert(nn == n_nodes);
+        UTOPIA_TRACE_REGION_END("LocalToGlobal(Petsc,Intrepid2,Matrix assembly)");
 
-        //             auto node_ids = bulk_data.begin_nodes(elem);
-
-        //             if (local_to_global.empty()) {
-        //                 for (Size_t i = 0; i < nn; ++i) {
-        //                     idx[i] = utopia::petsc::convert_entity_to_index(node_ids[i]);
-        //                     assert(idx[i] < space.n_dofs());
-        //                     assert(idx[i] >= 0);
-        //                 }
-        //             } else {
-        //                 for (Size_t i = 0; i < nn; ++i) {
-        //                     idx[i] = local_to_global.block(utopia::petsc::convert_entity_to_index(node_ids[i]));
-        //                     assert(idx[i] < space.n_dofs());
-        //                     assert(idx[i] >= 0);
-        //                 }
-        //             }
-
-        //             for (Size_t i = 0; i < nn; ++i) {
-        //                 for (int di = 0; di < n_var; ++di) {
-        //                     const Size_t idx_i = i * n_var + di;
-
-        //                     for (Size_t j = 0; j < nn; ++j) {
-        //                         for (int dj = 0; dj < n_var; ++dj) {
-        //                             const Size_t idx_j = j * n_var + dj;
-
-        //                             val[idx_i * n_dofs + idx_j] = element_matrices(elem_idx, idx_i, idx_j);
-        //                         }
-        //                     }
-        //                 }
-        //             }
-
-        //             if (is_block) {
-        //                 matrix.add_matrix_blocked(idx, idx, val);
-        //             } else {
-        //                 matrix.add_matrix(idx, idx, val);
-        //             }
-
-        //             ++elem_idx;
-        //         }
-        //     }
-        // }
-        // UTOPIA_TRACE_REGION_END("LocalToGlobal(Petsc,Intrepid2,Matrix assembly)");
-
-        // if (mode == SUBTRACT_MODE) {
-        //     matrix *= -1.0;
-        // }
+        if (mode == SUBTRACT_MODE) {
+            matrix *= -1.0;
+        }
 
         UTOPIA_TRACE_REGION_END("LocalToGlobal(Petsc,Intrepid2)");
     }
