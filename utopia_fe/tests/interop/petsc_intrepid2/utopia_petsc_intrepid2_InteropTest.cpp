@@ -26,15 +26,15 @@
 #include "utopia_petsc_intrepid2.hpp"
 
 // FIXME: This is the last include because the operator files are not yet in the correct place
-#include "utopia_SpaceAndFETest.hpp"
+#include "utopia_UnitCubeSpaceAndFETest.hpp"
 
-#include "utopia_ScalarProductTest.hpp"
+// #include "utopia_ScalarProductTest.hpp"
 
 using namespace utopia;
 
 using PetscScalar_t = Traits<utopia::petsc::FunctionSpace>::Scalar;
 void interop_petsc_intrepid2() {
-    SpaceAndFETest<utopia::petsc::FunctionSpace, utopia::intrepid2::FE<PetscScalar_t>>().run();
+    UnitCubeSpaceAndFETest<utopia::petsc::FunctionSpace, utopia::intrepid2::FE<PetscScalar_t>>().run();
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(interop_petsc_intrepid2);
