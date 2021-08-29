@@ -40,6 +40,18 @@ namespace utopia {
             return ret;
         }
 
+        template <class Array, int Dim = Traits<Array>::StaticSize>
+        class ResizeArray {
+        public:
+            UTOPIA_INLINE_FUNCTION static void apply(int, Array &) {}
+        };
+
+        template <class Array>
+        class ResizeArray<Array, DYNAMIC_SIZE> {
+        public:
+            inline static void apply(int dim, Array &array) { array.resize(dim); }
+        };
+
         // follows mesh dm layout
         template <class Point_, class IntArray_, typename...>
         class StructuredGrid {
@@ -311,6 +323,8 @@ namespace utopia {
                                                             SideSet::BoundaryIdType b_id) const  //_local_no_ghost
             {
                 IntArray tensor_index;
+                ResizeArray<IntArray>::apply(dim(), tensor_index);
+
                 node_to_grid_coord(idx, tensor_index);  //_local_no_ghost
 
                 // FIXME use dim-dependent version

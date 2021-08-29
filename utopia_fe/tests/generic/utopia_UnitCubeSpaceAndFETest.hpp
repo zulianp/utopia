@@ -27,6 +27,7 @@ namespace utopia {
         bool save_output{false};
         bool export_tensors{false};
         bool verbose{false};
+        std::string output_format{"e"};
         Scalar_t rtol{1e-6};
 
         InputParameters cube_space_param(const int n_var) const {
@@ -105,7 +106,8 @@ namespace utopia {
             ////////////////////////////////////////////////////////////
 
             if (save_output) {
-                space.write(name + ".e", x);
+                space.write(name + "." + output_format, x);
+                space.write("rhs." + output_format, rhs);
             }
 
             if (export_tensors) {
@@ -115,11 +117,13 @@ namespace utopia {
 
         virtual void run() {
             UTOPIA_RUN_TEST(unit_cube_create_fe);
+
+            save_output = export_tensors = true;
             UTOPIA_RUN_TEST(unit_cube_poisson_problem);
+            save_output = export_tensors = false;
+
             UTOPIA_RUN_TEST(unit_cube_vector_poisson_problem);
-            // save_output = export_tensors = true;
             UTOPIA_RUN_TEST(unit_cube_elasticity_problem);
-            // save_output = export_tensors = false;
             UTOPIA_RUN_TEST(unit_cube_poisson_problem_parallel_2D);
             UTOPIA_RUN_TEST(unit_cube_poisson_problem_parallel_3D);
             UTOPIA_RUN_TEST(unit_cube_elasticity_problem_parallel);

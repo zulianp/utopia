@@ -34,7 +34,9 @@ using namespace utopia;
 
 using PetscScalar_t = Traits<utopia::petsc::FunctionSpace>::Scalar;
 void interop_petsc_intrepid2() {
-    UnitCubeSpaceAndFETest<utopia::petsc::FunctionSpace, utopia::intrepid2::FE<PetscScalar_t>>().run();
+    UnitCubeSpaceAndFETest<utopia::petsc::FunctionSpace, utopia::intrepid2::FE<PetscScalar_t>> test;
+    test.output_format = "vtr";
+    test.run();
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(interop_petsc_intrepid2);

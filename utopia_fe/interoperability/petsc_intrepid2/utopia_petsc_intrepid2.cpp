@@ -221,23 +221,99 @@ namespace utopia {
         const PetscViewDevice_t<Scalar> &element_vectors,
         AssemblyMode mode,
         PetscVector &vector) {
-        assert(false);
-        Utopia::Abort("IMPLEMENT ME!");
-        // LocalToGlobalFromBuckets<Scalar>::apply(
-        // space, utopia::petsc::local_elements(space.mesh().bulk_data()), element_vectors, mode, vector);
+        LocalToGlobal<utopia::petsc::FunctionSpace, PetscViewDevice_t<Scalar>, PetscVector>::apply(
+            space, element_vectors, mode, vector, space.n_var());
     }
 
     template <typename Scalar>
     void LocalToGlobal<utopia::petsc::FunctionSpace, PetscViewDevice_t<Scalar>, PetscVector>::apply(
         const utopia::petsc::FunctionSpace &space,
-        const PetscViewDevice_t<Scalar> &element_vectors,
+        const PetscViewDevice_t<Scalar> &device_element_vectors,
         AssemblyMode mode,
         PetscVector &vector,
         const int n_var) {
-        assert(false);
-        Utopia::Abort("IMPLEMENT ME!");
-        // LocalToGlobalFromBuckets<Scalar>::apply(
-        // space, utopia::petsc::local_elements(space.mesh().bulk_data()), element_vectors, mode, vector, n_var);
+        UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(Petsc,Intrepid2)");
+
+        // // Type defs
+        using IndexArray_t = Traits<PetscMatrix>::IndexArray;
+        using ScalarArray_t = Traits<PetscMatrix>::ScalarArray;
+        using Size_t = Traits<PetscMatrix>::SizeType;
+
+        auto &mesh = space.mesh();
+        auto mesh_view = mesh.view();
+
+        SizeType n_local_elements = mesh_view.n_local_elements();
+        int spatial_dim = mesh_view.spatial_dim();
+        int n_nodes_x_elem = mesh_view.n_nodes_x_element();
+
+        typename PetscViewDevice_t<Scalar>::HostMirror element_vectors =
+            ::Kokkos::create_mirror_view(device_element_vectors);
+        ::Kokkos::deep_copy(element_vectors, device_element_vectors);
+
+        UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(Petsc,Intrepid2,Matrix handling)");
+
+        if (vector.empty()) {
+            space.create_vector(vector);
+        } else {
+            // Reuse vector
+            if (mode == OVERWRITE_MODE) {
+                vector *= 0.0;
+            } else if (mode == SUBTRACT_MODE) {
+                vector *= -1.0;
+            }
+        }
+
+        vector.set_block_size(n_var);
+
+        const bool is_block = vector.block_size() > 1;
+
+        UTOPIA_TRACE_REGION_END("LocalToGlobal(Petsc,Intrepid2,Matrix handling)");
+
+        UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(Petsc,Intrepid2,Matrix assembly)");
+        {
+            Write<PetscVector> w(vector, utopia::GLOBAL_ADD);
+
+            const SizeType n_dofs = element_vectors.extent(1);
+            const SizeType nn = n_dofs / n_var;
+
+            IndexArray_t idx(is_block ? nn : n_dofs);
+            ScalarArray_t val(n_dofs * n_dofs);
+
+            auto elems = mesh.elem_to_node_index();
+
+            for (SizeType elem_idx = 0; elem_idx < n_local_elements; ++elem_idx) {
+                for (Size_t i = 0, dof_k = 0; i < nn; ++i) {
+                    if (!is_block) {
+                        for (int v = 0; v < n_var; ++v, ++dof_k) {
+                            idx[dof_k] = elems(elem_idx, i) * n_var + v;
+                        }
+                    } else {
+                        idx[i] = elems(elem_idx, i);
+                    }
+                }
+
+                for (Size_t i = 0; i < nn; ++i) {
+                    for (int di = 0; di < n_var; ++di) {
+                        const Size_t idx_i = i * n_var + di;
+                        val[idx_i] = element_vectors(elem_idx, idx_i);
+                    }
+                }
+
+                if (is_block) {
+                    vector.add_vector_blocked(idx, val);
+                } else {
+                    vector.add_vector(idx, val);
+                }
+            }
+        }
+
+        UTOPIA_TRACE_REGION_END("LocalToGlobal(Petsc,Intrepid2,Matrix assembly)");
+
+        if (mode == SUBTRACT_MODE) {
+            vector *= -1.0;
+        }
+
+        UTOPIA_TRACE_REGION_END("LocalToGlobal(Petsc,Intrepid2)");
     }
 
     template <typename Scalar>

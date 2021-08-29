@@ -29,7 +29,7 @@ namespace utopia {
                 inline static std::string front() { return "front"; }
                 inline static std::string back() { return "back"; }
 
-                inline static BoundaryIdType from_name(const std::string &str_in) {
+                inline static BoundaryIdType convert(const std::string &str_in) {
                     if (str_in.empty()) {
                         return invalid_id();
                     }

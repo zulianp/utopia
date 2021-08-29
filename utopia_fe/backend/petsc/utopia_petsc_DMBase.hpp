@@ -187,6 +187,9 @@ namespace utopia {
                 return ret;
             }
 
+            void set_default_components(const int n_comp) { default_components_ = n_comp; }
+            int default_components() { return default_components_; }
+
         private:
             PetscCommunicator comm_;
 
@@ -210,6 +213,7 @@ namespace utopia {
             };
 
             std::unique_ptr<Wrapper> wrapper_;
+            int default_components_{1};
         };
 
     }  // namespace petsc
