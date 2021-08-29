@@ -115,6 +115,12 @@ namespace utopia {
             void local_to_global(const PetscVector &local, PetscVector &global) const {
                 UTOPIA_TRACE_REGION_BEGIN("PetscDMbase::local_to_global(...)");
 
+                assert(!local.empty());
+
+                if (global.empty()) {
+                    create_vector(global);
+                }
+
 #if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)  // DM-INCOMPLETE
                 DMLocalToGlobal(raw_type(), local.raw_type(), ADD_VALUES, global.raw_type());
 #else
@@ -127,6 +133,12 @@ namespace utopia {
 
             void global_to_local(const PetscVector &global, PetscVector &local) const {
                 UTOPIA_TRACE_REGION_BEGIN("PetscDMbase::global_to_local(...)");
+
+                assert(!global.empty());
+
+                if (local.empty()) {
+                    create_local_vector(local);
+                }
 
 #if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)  // DM-INCOMPLETE
                 DMGlobalToLocal(raw_type(), global.raw_type(), INSERT_VALUES, local.raw_type());

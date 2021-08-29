@@ -109,6 +109,8 @@ namespace utopia {
                         Utopia::Abort("StructureGrid::n_nodes_x_element() : Invalid dimension!");
                     }
                 }
+
+                return -1;
             }
 
             UTOPIA_INLINE_FUNCTION constexpr SizeType elements_x_cell() const { return elements_x_cell_; }

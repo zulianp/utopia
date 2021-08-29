@@ -1,5 +1,6 @@
 #include "utopia_petsc_FunctionSpace.hpp"
 
+#include "utopia_Options.hpp"
 #include "utopia_petsc_DMDABase.hpp"
 
 namespace utopia {
@@ -8,11 +9,25 @@ namespace utopia {
 
         class FunctionSpace::Impl : public Configurable {
         public:
-            void read(Input &in) override { mesh->read(in); }
+            void read(Input &in) override {
+                in.get("mesh", *mesh);
+
+                if (!Options()
+                         // .add_option("name", name, "Unique name of the function space")
+                         // .add_option(
+                         // "n_var", n_var, "Number of variables per node (instead of specifiying all of them).")
+                         .add_option("boundary_conditions", dirichlet_boundary, "Boundary conditions.")
+                         .add_option("verbose", verbose, "Verbose output.")
+                         .parse(in)) {
+                    return;
+                }
+            }
 
             Impl(const Communicator &comm) : mesh(std::make_shared<Mesh>(comm)) {}
             Impl(const std::shared_ptr<Mesh> &mesh) : mesh(mesh) {}
             std::shared_ptr<Mesh> mesh;
+            DirichletBoundary dirichlet_boundary;
+            bool verbose{false};
         };
 
         void FunctionSpace::read(Input &in) { impl_->read(in); }
@@ -42,10 +57,7 @@ namespace utopia {
             Utopia::Abort("IMPLEMENT ME!");
         }
 
-        int FunctionSpace::n_var() const {
-            assert(false);
-            Utopia::Abort("IMPLEMENT ME!");
-        }
+        int FunctionSpace::n_var() const { return mesh().dm().get_dof(); }
 
         // Below could be made into a cross-backend interface (given that the same algebra is used)
         bool FunctionSpace::write(const Path &path, const Vector &x) {
@@ -91,8 +103,10 @@ namespace utopia {
         void FunctionSpace::add_dirichlet_boundary_condition(const std::string &name,
                                                              const Scalar &value,
                                                              const int component) {
-            assert(false);
-            Utopia::Abort("IMPLEMENT ME!");
+            // assert(component < n_var());
+
+            DirichletBoundary::Condition dirichlet_boundary{name, value, component};
+            impl_->dirichlet_boundary.conditions.push_back(dirichlet_boundary);
         }
 
         bool FunctionSpace::empty() const {
@@ -116,18 +130,26 @@ namespace utopia {
         }
 
         void FunctionSpace::create_field(Field<FunctionSpace> &field) {
-            assert(false);
-            Utopia::Abort("IMPLEMENT ME!");
+            auto gv = std::make_shared<Vector>();
+            create_vector(*gv);
+            field.set_data(gv);
+            field.set_space(make_ref(*this));
+
+            // assert(impl_->variables.size() == 1);
+
+            // if (!impl_->variables.empty()) {
+            //     field.set_name(impl_->variables[0].name);
+            //     rename(impl_->variables[0].name, *gv);
+            //     field.set_tensor_size(impl_->variables[0].n_components);
+            // }
         }
 
         void FunctionSpace::global_to_local(const Vector &global, Vector &local) const {
-            assert(false);
-            Utopia::Abort("IMPLEMENT ME!");
+            mesh().dm().global_to_local(global, local);
         }
 
         void FunctionSpace::local_to_global(const Vector &local, Vector &global, AssemblyMode mode) const {
-            assert(false);
-            Utopia::Abort("IMPLEMENT ME!");
+            mesh().dm().local_to_global(local, global);
         }
 
     }  // namespace petsc

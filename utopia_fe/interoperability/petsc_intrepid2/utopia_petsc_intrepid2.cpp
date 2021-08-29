@@ -61,7 +61,7 @@ namespace utopia {
         PetscIntViewDevice_t::HostMirror element_tags = Kokkos::create_mirror_view(device_element_tags);
 
         auto elems = mesh.elem_to_node_index();
-        auto local_elems = mesh.elem_to_local_node_index();
+        // auto local_elems = mesh.elem_to_local_node_index();
         // TODO Create points and tags
 
         utopia::petsc::StructuredGrid::View::Point p(spatial_dim);
@@ -91,14 +91,20 @@ namespace utopia {
     void CreateFEOnBoundary<utopia::petsc::FunctionSpace, utopia::intrepid2::FE<Scalar>>::apply(
         const utopia::petsc::FunctionSpace &space,
         utopia::intrepid2::FE<Scalar> &fe,
-        const int degree) {}
+        const int degree) {
+        assert(false);
+        Utopia::Abort("IMPLEMENT ME!");
+    }
 
     template <typename Scalar>
     void CreateFEOnBoundary<utopia::petsc::FunctionSpace, utopia::intrepid2::FE<Scalar>>::apply(
         const utopia::petsc::FunctionSpace &space,
         utopia::intrepid2::FE<Scalar> &fe,
         const std::string &part_name,
-        const int degree) {}
+        const int degree) {
+        assert(false);
+        Utopia::Abort("IMPLEMENT ME!");
+    }
 
     template class CreateFEOnBoundary<utopia::petsc::FunctionSpace, utopia::intrepid2::FE<PetscScalar_t>>;
 
@@ -109,6 +115,8 @@ namespace utopia {
         AssemblyMode mode,
         PetscMatrix &matrix) {
         UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(Petsc,Intrepid2)");
+        assert(false);
+        Utopia::Abort("IMPLEMENT ME!");
 
         // // Type defs
         // using IndexArray_t = Traits<PetscMatrix>::IndexArray;
@@ -240,6 +248,8 @@ namespace utopia {
         const PetscViewDevice_t<Scalar> &element_vectors,
         AssemblyMode mode,
         PetscVector &vector) {
+        assert(false);
+        Utopia::Abort("IMPLEMENT ME!");
         // LocalToGlobalFromBuckets<Scalar>::apply(
         // space, utopia::petsc::local_elements(space.mesh().bulk_data()), element_vectors, mode, vector);
     }
@@ -251,6 +261,8 @@ namespace utopia {
         AssemblyMode mode,
         PetscVector &vector,
         const int n_var) {
+        assert(false);
+        Utopia::Abort("IMPLEMENT ME!");
         // LocalToGlobalFromBuckets<Scalar>::apply(
         // space, utopia::petsc::local_elements(space.mesh().bulk_data()), element_vectors, mode, vector, n_var);
     }
@@ -261,7 +273,10 @@ namespace utopia {
         const PetscViewDevice_t<Scalar> &element_vectors,
         AssemblyMode mode,
         PetscVector &vector,
-        const std::string &part_name) {}
+        const std::string &part_name) {
+        assert(false);
+        Utopia::Abort("IMPLEMENT ME!");
+    }
 
     template class LocalToGlobal<utopia::petsc::FunctionSpace, PetscViewDevice_t<PetscScalar_t>, PetscMatrix>;
     template class LocalToGlobal<utopia::petsc::FunctionSpace, PetscViewDevice_t<PetscScalar_t>, PetscVector>;
@@ -290,19 +305,19 @@ namespace utopia {
         Vector local;
         space.global_to_local(vector, local);
 
-        // auto &bulk_data = space.mesh().bulk_data();
-        // const auto &elem_buckets = utopia::petsc::local_elements(bulk_data);
-        // const Size_t num_elem = utopia::petsc::count_local_elements(bulk_data);
+        auto &mesh = space.mesh();
+        auto mesh_view = mesh.view();
+        SizeType n_local_elements = mesh_view.n_local_elements();
+        int spatial_dim = mesh_view.spatial_dim();
+        int n_nodes_x_elem = mesh_view.n_nodes_x_element();
+        int n_var = space.n_var();
+        auto topo = convert_elem_type(mesh_view.dim(), mesh_view.elements_x_cell());
 
-        // // Dirty hack (FIXME once petsc usage is a bit more profficient)
-        // auto *first_bucket = *elem_buckets.begin();
-        // auto topo = convert_elem_type(first_bucket->topology(), true);
-        // Size_t n_nodes_x_elem = bulk_data.num_nodes((*first_bucket)[0]);
-
-        // if (Size_t(device_element_vectors.extent(0)) < num_elem ||
-        //     Size_t(device_element_vectors.extent(1)) < n_nodes_x_elem * n_comp) {
-        //     device_element_vectors = PetscViewDevice_t<Scalar>("Coefficients", num_elem, n_nodes_x_elem * n_comp);
-        // }
+        if (Size_t(device_element_vectors.extent(0)) < n_local_elements ||
+            Size_t(device_element_vectors.extent(1)) < n_nodes_x_elem * n_comp) {
+            device_element_vectors =
+                PetscViewDevice_t<Scalar>("Coefficients", n_local_elements, n_nodes_x_elem * n_comp);
+        }
 
         typename PetscViewDevice_t<Scalar>::HostMirror element_vectors =
             ::Kokkos::create_mirror_view(device_element_vectors);
@@ -310,28 +325,19 @@ namespace utopia {
         // FIXME not on device
         auto local_view = const_local_view_device(local);
 
-        // Size_t elem_idx = 0;
-        // for (const auto &ib : elem_buckets) {
-        //     const auto &b = *ib;
-        //     const SizeType length = b.size();
+        auto local_elems = mesh.elem_to_local_node_index();
 
-        //     for (SizeType k = 0; k < length; ++k) {
-        //         // get the current node entity and extract the id to fill it into the field
-        //         auto elem = b[k];
-        //         const int n_nodes = bulk_data.num_nodes(elem);
+        for (SizeType idx = 0; idx < n_local_elements; ++idx) {
+            for (int k = 0; k < n_nodes_x_elem; ++k) {
+                auto node_idx = local_elems(idx, k);
 
-        //         auto node_ids = bulk_data.begin_nodes(elem);
-
-        //         for (int i = 0; i < n_nodes; ++i) {
-        //             SizeType node_idx = utopia::petsc::convert_entity_to_index(node_ids[i]);
-        //             for (int d = 0; d < n_comp; ++d) {
-        //                 element_vectors(elem_idx, i * n_comp + d) = local_view.get(node_idx * n_comp + d);
-        //             }
-        //         }
-
-        //         ++elem_idx;
-        //     }
-        // }
+                for (int i = 0; i < n_nodes_x_elem; ++i) {
+                    for (int d = 0; d < n_comp; ++d) {
+                        element_vectors(idx, i * n_comp + d) = local_view.get(node_idx * n_comp + d);
+                    }
+                }
+            }
+        }
 
         ::Kokkos::deep_copy(device_element_vectors, element_vectors);
 
@@ -344,6 +350,9 @@ namespace utopia {
 
     void l2_norm(const Field<utopia::petsc::FunctionSpace> &field, std::vector<PetscScalar_t> &norms) {
         using Scalar = typename Traits<utopia::petsc::FunctionSpace>::Scalar;
+
+        assert(false);
+        Utopia::Abort("IMPLEMENT ME!");
         // utopia::kokkos::L2Norm<utopia::petsc::FunctionSpace, utopia::intrepid2::FE<Scalar>>().compute(field, norms);
     }
 
