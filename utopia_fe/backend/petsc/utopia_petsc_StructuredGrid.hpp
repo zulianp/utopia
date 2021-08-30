@@ -8,6 +8,7 @@
 #include "utopia_Traits.hpp"
 #include "utopia_make_unique.hpp"
 
+#include "utopia_AABB.hpp"
 #include "utopia_mesh_StructuredGrid.hpp"
 
 #include <cassert>
@@ -18,13 +19,14 @@ namespace utopia {
     class Traits<petsc::StructuredGrid> : public Traits<PetscVector> {
     public:
         using SideSet = utopia::mesh::SideSet;
+        using AABB = utopia::AABB<std::vector<Traits<PetscVector>::Scalar>>;
     };
 
     namespace petsc {
 
         class DMDABase;
 
-        class StructuredGrid : public Configurable, public Describable {
+        class StructuredGrid : public Configurable, public Describable, public Traits<StructuredGrid> {
         public:
             using Traits = utopia::Traits<StructuredGrid>;
             using Communicator = Traits::Communicator;
@@ -35,6 +37,9 @@ namespace utopia {
             using Point = utopia::StaticVector<Scalar, 3>;
             using View = mesh::StructuredGrid<std::vector<Scalar>, std::vector<SizeType>>;
             using ElemToNodeIndex = utopia::ArrayView<const SizeType, DYNAMIC_SIZE, DYNAMIC_SIZE>;
+
+            // bool read(const Path &path);
+            bool write(const Path &path) const;
 
             // FIXME make this work also without static-sizes
             // constexpr static typename SideSets::Sides sides() { return SideSets::sides(); }
@@ -50,6 +55,8 @@ namespace utopia {
             void unit_cube(const SizeType nx, const SizeType ny, const SizeType nz);
 
             void update_mirror();
+
+            void bounding_box(AABB &output) const;
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -67,12 +74,24 @@ namespace utopia {
             StructuredGrid(const Communicator &comm);
             ~StructuredGrid();
 
+            SizeType n_elements() const;
             SizeType n_nodes() const;
+
+            SizeType n_local_elements() const;
+            SizeType n_local_nodes() const;
 
             DMDABase &dm() const;
 
             ElemToNodeIndex elem_to_node_index() const;
             ElemToNodeIndex elem_to_local_node_index() const;
+
+            int spatial_dimension() const;
+
+            void box(const AABB &box,
+                     const SizeType &nx,
+                     const SizeType &ny,
+                     const SizeType &nz,
+                     const std::string &elem_type);
 
         private:
             std::unique_ptr<DMDABase> impl_;

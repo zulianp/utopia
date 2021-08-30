@@ -74,6 +74,8 @@ namespace utopia {
             void global_to_local(const Vector &global, Vector &local) const;
             void local_to_global(const Vector &local, Vector &global, AssemblyMode mode) const;
 
+            void copy_meta_info_from(const FunctionSpace &other);
+
             // bool is_non_conforming() const { return false; }
             // std::shared_ptr<Matrix> constraint_matrix() const { return nullptr; }
 

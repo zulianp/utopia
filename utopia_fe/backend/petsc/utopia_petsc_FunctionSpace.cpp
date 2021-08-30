@@ -1,5 +1,6 @@
 #include "utopia_petsc_FunctionSpace.hpp"
 
+#include "utopia_FEVar.hpp"
 #include "utopia_Options.hpp"
 #include "utopia_petsc_DMDABase.hpp"
 
@@ -19,27 +20,30 @@ namespace utopia {
                 int n_var = 1;
                 if (!Options()
                          // .add_option("name", name, "Unique name of the function space")
-                         .add_option(
-                             "n_var", n_var, "Number of variables per node (instead of specifiying all of them).")
                          .add_option("boundary_conditions", dirichlet_boundary, "Boundary conditions.")
                          .add_option("verbose", verbose, "Verbose output.")
                          .parse(in)) {
                     return;
                 }
 
-                // in.get("mesh", [&](Input &node) {
-                //     InputParameters params;
-                //     params.set("n_components", n_var);
-                //     mesh->read(params);
-                // });
-                mesh->dm().set_default_components(n_var);
+                variables.read(in);
+                mesh->dm().set_default_components(variables.count_variables());
                 in.get("mesh", *mesh);
+
+                // auto &&dm = mesh->dm();
+
+                // int i = 0;
+                // for (auto &v : variables) {
+                //     dm.set_field_name(i++, v.name);
+                // }
             }
 
             Impl(const Communicator &comm) : mesh(std::make_shared<Mesh>(comm)) {}
             Impl(const std::shared_ptr<Mesh> &mesh) : mesh(mesh) {}
+
             std::shared_ptr<Mesh> mesh;
             DirichletBoundary dirichlet_boundary;
+            FEVariables variables;
             bool verbose{false};
         };
 
@@ -76,8 +80,9 @@ namespace utopia {
         bool FunctionSpace::write(const Path &path, const Vector &x) { return mesh().dm().write(path, x); }
 
         const FunctionSpace::Communicator &FunctionSpace::comm() const {
-            assert(false);
-            Utopia::Abort("IMPLEMENT ME!");
+            // assert(false);
+            // Utopia::Abort("IMPLEMENT ME!");
+            return mesh().comm();
         }
 
         FunctionSpace::SizeType FunctionSpace::n_dofs() const {
@@ -171,6 +176,11 @@ namespace utopia {
             Utopia::Abort("IMPLEMENT ME!");
         }
 
+        void FunctionSpace::copy_meta_info_from(const FunctionSpace &other) {
+            assert(false);
+            Utopia::Abort("IMPLEMENT ME!");
+        }
+
         void FunctionSpace::create_field(Field<FunctionSpace> &field) {
             auto gv = std::make_shared<Vector>();
             create_vector(*gv);
@@ -181,11 +191,11 @@ namespace utopia {
 
             // assert(impl_->variables.size() == 1);
 
-            // if (!impl_->variables.empty()) {
-            //     field.set_name(impl_->variables[0].name);
-            //     rename(impl_->variables[0].name, *gv);
-            //     field.set_tensor_size(impl_->variables[0].n_components);
-            // }
+            if (!impl_->variables.empty()) {
+                field.set_name(impl_->variables[0].name);
+                rename(impl_->variables[0].name, *gv);
+                field.set_tensor_size(impl_->variables[0].n_components);
+            }
         }
 
         void FunctionSpace::global_to_local(const Vector &global, Vector &local) const {

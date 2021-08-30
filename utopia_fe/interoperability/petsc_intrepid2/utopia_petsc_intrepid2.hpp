@@ -6,7 +6,7 @@
 
 #include "utopia_intrepid2_Base.hpp"
 
-// #include "utopia_petsc_intrepid2_OmniAssembler.hpp"
+#include "utopia_petsc_intrepid2_OmniAssembler.hpp"
 // #include "utopia_petsc_intrepid2_Transport.hpp"
 
 #ifdef UTOPIA_WITH_PETSC
