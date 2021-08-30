@@ -177,6 +177,8 @@ namespace utopia {
             field.set_data(gv);
             field.set_space(make_ref(*this));
 
+            field.set_tensor_size(this->n_var());
+
             // assert(impl_->variables.size() == 1);
 
             // if (!impl_->variables.empty()) {
