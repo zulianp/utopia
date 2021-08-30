@@ -151,7 +151,7 @@ namespace utopia {
             }
 
             bool write(const Path &path, const PetscVector &x) const {
-                // UTOPIA_TRACE_REGION_BEGIN("PetscDMbase::write(...)");
+                UTOPIA_TRACE_REGION_BEGIN("PetscDMbase::write(...)");
                 PetscIO io;
                 if (!io.open(comm(), path)) {
                     return false;
@@ -163,7 +163,7 @@ namespace utopia {
                     return false;
                 }
 
-                // UTOPIA_TRACE_REGION_END("PetscDMbase::write(...)");
+                UTOPIA_TRACE_REGION_END("PetscDMbase::write(...)");
                 return true;
             }
 
