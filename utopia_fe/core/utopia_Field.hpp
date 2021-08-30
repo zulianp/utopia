@@ -66,7 +66,7 @@ namespace utopia {
 
         /// @return true if anything goes with this field
         inline bool is_blank() const { return name_.empty(); }
-        inline bool empty() const { return !data_; }
+        inline bool empty() const { return !data_ || data_->empty(); }
 
         void set_space(const std::shared_ptr<FunctionSpace> &space) { space_ = space; }
         const std::shared_ptr<FunctionSpace> &space() const { return space_; }

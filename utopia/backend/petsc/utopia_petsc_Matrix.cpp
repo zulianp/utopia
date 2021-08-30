@@ -735,6 +735,10 @@ namespace utopia {
                           const IndexArray &row_ptr,
                           const IndexArray &col_idx,
                           const ScalarArray &values) {
+        // TODO
+        // MatCreateSeqAIJWithArrays
+        // MatCreateMPIAIJWithArrays
+
         SizeType n_local_rows = row_ptr.size() - 1;
         assert(n_local_rows == layout.local_size(0));
 

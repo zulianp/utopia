@@ -2,6 +2,7 @@
 #define UTOPIA_KOKKOS_OMNI_ASSEMBLER_HPP
 
 #include "utopia_Input.hpp"
+#include "utopia_SimulationTime.hpp"
 #include "utopia_Traits.hpp"
 
 #include "utopia_FEAssembler.hpp"
@@ -19,6 +20,7 @@ namespace utopia {
             using Matrix = typename Traits<FunctionSpace>::Matrix;
             using Vector = typename Traits<FunctionSpace>::Vector;
             using Scalar = typename Traits<FunctionSpace>::Scalar;
+            using SimulationTime = utopia::SimulationTime<Scalar>;
 
             using Environment = utopia::Environment<FunctionSpace>;
 
@@ -55,6 +57,8 @@ namespace utopia {
 
             void add_domain_assembler(const Intrepid2FEAssemblerPtr &assembler);
             void fail_if_unregistered(const bool val);
+
+            void set_time(const std::shared_ptr<SimulationTime> &time) override;
 
         private:
             class Impl;

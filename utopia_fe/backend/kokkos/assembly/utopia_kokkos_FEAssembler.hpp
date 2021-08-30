@@ -1,6 +1,7 @@
 #ifndef UTOPIA_KOKKOS_FEASSEMBLER_HPP
 #define UTOPIA_KOKKOS_FEASSEMBLER_HPP
 
+#include "utopia_SimulationTime.hpp"
 #include "utopia_fe_Core.hpp"
 
 #include "utopia_kokkos_FE.hpp"
@@ -92,6 +93,7 @@ namespace utopia {
             using CellTestTrialRange = typename FE::CellTestTrialRange;
             using CellTestRange = typename FE::CellTestRange;
             using CellRange = typename FE::CellRange;
+            using SimulationTime = utopia::SimulationTime<Scalar>;
 
             virtual ~FEAssembler() = default;
 
@@ -405,12 +407,16 @@ namespace utopia {
 
             inline std::shared_ptr<Field<FE>> current_solution() { return current_solution_; }
 
+            void set_time(const std::shared_ptr<SimulationTime> &time) { time_ = time; }
+            std::shared_ptr<SimulationTime> time() const { return time_; }
+
         private:
             std::shared_ptr<FE> fe_;
             std::shared_ptr<MatrixAccumulator> matrix_accumulator_;
             std::shared_ptr<VectorAccumulator> vector_accumulator_;
             std::shared_ptr<ScalarAccumulator> scalar_accumulator_;
             std::shared_ptr<Field<FE>> current_solution_;
+            std::shared_ptr<SimulationTime> time_;
         };
 
     }  // namespace kokkos

@@ -192,6 +192,10 @@ namespace utopia {
             }
         }
 
+        void OmniAssembler::set_time(const std::shared_ptr<SimulationTime> &) {
+            utopia::err() << "[Warning] libmesh::OmniAssembler ingores time, for the moment!\n";
+        }
+
         bool OmniAssembler::is_linear() const {
             if (impl_->legacy_model) {
                 return impl_->legacy_model->is_linear();

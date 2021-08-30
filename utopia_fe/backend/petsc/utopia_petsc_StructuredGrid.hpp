@@ -15,7 +15,10 @@
 namespace utopia {
 
     template <>
-    class Traits<petsc::StructuredGrid> : public Traits<PetscVector> {};
+    class Traits<petsc::StructuredGrid> : public Traits<PetscVector> {
+    public:
+        using SideSet = utopia::mesh::SideSet;
+    };
 
     namespace petsc {
 
@@ -31,7 +34,7 @@ namespace utopia {
             using IntArray = utopia::ArrayView<SizeType, 3>;
             using Point = utopia::StaticVector<Scalar, 3>;
             using View = mesh::StructuredGrid<std::vector<Scalar>, std::vector<SizeType>>;
-            using ElemToNodeIndex = utopia::ArrayView<SizeType, DYNAMIC_SIZE, DYNAMIC_SIZE>;
+            using ElemToNodeIndex = utopia::ArrayView<const SizeType, DYNAMIC_SIZE, DYNAMIC_SIZE>;
 
             // FIXME make this work also without static-sizes
             // constexpr static typename SideSets::Sides sides() { return SideSets::sides(); }
@@ -67,6 +70,9 @@ namespace utopia {
             SizeType n_nodes() const;
 
             DMDABase &dm() const;
+
+            ElemToNodeIndex elem_to_node_index() const;
+            ElemToNodeIndex elem_to_local_node_index() const;
 
         private:
             std::unique_ptr<DMDABase> impl_;

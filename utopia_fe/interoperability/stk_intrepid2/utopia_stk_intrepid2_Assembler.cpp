@@ -42,6 +42,13 @@ namespace utopia {
             std::shared_ptr<Intrepid2Assembler> assembler;
         };
 
+        void StkIntrepid2ProxyAssembler::set_time(const std::shared_ptr<SimulationTime> &time) {
+            assert(impl_->assembler);
+            if (impl_->assembler) {
+                impl_->assembler->set_time(time);
+            }
+        }
+
         void StkIntrepid2ProxyAssembler::set_assembler(const std::shared_ptr<Intrepid2Assembler> &assembler) {
             impl_->assembler = assembler;
         }

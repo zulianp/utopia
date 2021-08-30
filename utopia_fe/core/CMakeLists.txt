@@ -1,4 +1,4 @@
-list(APPEND CORE_MODULES . fe)
+list(APPEND CORE_MODULES . fe mech)
 
 utopiafe_add_module(utopia_fe_core ${CMAKE_CURRENT_SOURCE_DIR}
                     "${CORE_MODULES}")

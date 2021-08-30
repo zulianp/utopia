@@ -38,6 +38,8 @@ namespace utopia {
         void max_it(const SizeType &max_it_in) override;
         void verbose(const bool &verbose_in) override;
 
+        void set_selection(const std::shared_ptr<Vector> &selection) override;
+
         static QPSolverRegistry &registry();
 
     private:

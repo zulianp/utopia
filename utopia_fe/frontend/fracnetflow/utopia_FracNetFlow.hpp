@@ -2,6 +2,7 @@
 #define UTOPIA_FRAC_NET_FLOW_HPP
 
 #include "utopia_CoupledFEFunction.hpp"
+#include "utopia_NCFunctionSpace.hpp"
 #include "utopia_NLSolve.hpp"
 #include "utopia_QuadraticFEFunction.hpp"
 
@@ -96,7 +97,8 @@ namespace utopia {
                 // Read the function-space of the porous-matrix
 
                 node.get("space", [this, &porous_matrix](Input &space_node) {
-                    auto s = std::make_shared<FunctionSpace>(this->comm());
+                    // auto s = std::make_shared<FunctionSpace>(this->comm());
+                    auto s = std::make_shared<NCFunctionSpace<FunctionSpace>>(this->comm());
                     // Use this so everyhting is added to the env automatically when calling read
                     // s->set_environment(this->environment());
 
@@ -129,7 +131,8 @@ namespace utopia {
                     // Read the function-space of the fracture-network
 
                     node.get("space", [this, &fracture_networks](Input &space_node) {
-                        auto s = std::make_shared<FunctionSpace>(this->comm());
+                        // auto s = std::make_shared<FunctionSpace>(this->comm());
+                        auto s = std::make_shared<NCFunctionSpace<FunctionSpace>>(this->comm());
                         // Use this so everyhting is added to the env automatically when calling read
                         // s->set_environment(this->environment());
 

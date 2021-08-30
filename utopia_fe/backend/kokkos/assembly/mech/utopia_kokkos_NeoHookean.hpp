@@ -204,7 +204,7 @@ namespace utopia {
                         case 2: {
                             this->loop_cell_test(
                                 "Assemble<NeoHookean>::assemble_vector",
-                                typename Def<3>::OpAndStoreGradient(
+                                typename Def<2>::OpAndStoreGradient(
                                     op_.lambda, op_.mu, op_.rescale, F, fe.grad(), fe.measure(), data));
 
                             break;

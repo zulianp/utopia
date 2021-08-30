@@ -40,6 +40,18 @@ namespace utopia {
             return ret;
         }
 
+        template <class Array, int Dim = Traits<Array>::StaticSize>
+        class ResizeArray {
+        public:
+            UTOPIA_INLINE_FUNCTION static void apply(int, Array &) {}
+        };
+
+        template <class Array>
+        class ResizeArray<Array, DYNAMIC_SIZE> {
+        public:
+            inline static void apply(int dim, Array &array) { array.resize(dim); }
+        };
+
         // follows mesh dm layout
         template <class Point_, class IntArray_, typename...>
         class StructuredGrid {
@@ -57,6 +69,7 @@ namespace utopia {
             ////////////////////////////////////////////////////////////////
 
             UTOPIA_INLINE_FUNCTION constexpr SizeType dim() const { return dims_.size(); }
+            UTOPIA_INLINE_FUNCTION constexpr SizeType spatial_dim() const { return box_min_.size(); }
 
             UTOPIA_INLINE_FUNCTION constexpr SizeType n_components() const { return n_components_; }
 
@@ -73,6 +86,43 @@ namespace utopia {
             }
             UTOPIA_INLINE_FUNCTION constexpr const IntArray &ghost_corners_extent() const {
                 return ghost_corners_extent_;
+            }
+            UTOPIA_INLINE_FUNCTION SizeType n_nodes_x_element() const {
+                switch (dim()) {
+                    case 2: {
+                        switch (elements_x_cell()) {
+                            case 1: {
+                                return 4;
+                            }
+                            case 2: {
+                                return 3;
+                            }
+                            default: {
+                                Utopia::Abort("StructureGrid::n_nodes_x_element() : Invalid elements x cell!");
+                            }
+                        }
+
+                        break;
+                    }
+                    case 3: {
+                        switch (elements_x_cell()) {
+                            case 1: {
+                                return 8;
+                            }
+                            case 2: {
+                                return 4;
+                            }
+                            default: {
+                                Utopia::Abort("StructureGrid::n_nodes_x_element() : Invalid elements x cell!");
+                            }
+                        }
+                    }
+                    default: {
+                        Utopia::Abort("StructureGrid::n_nodes_x_element() : Invalid dimension!");
+                    }
+                }
+
+                return -1;
             }
 
             UTOPIA_INLINE_FUNCTION constexpr SizeType elements_x_cell() const { return elements_x_cell_; }
@@ -111,6 +161,18 @@ namespace utopia {
 
                 for (SizeType i = 1; i < n; ++i) {
                     ret *= (dims_[i] - 1);
+                }
+
+                return ret * elements_x_cell_;
+            }
+
+            UTOPIA_INLINE_FUNCTION constexpr SizeType n_local_elements() const {
+                const SizeType n = dim();
+
+                SizeType ret = ghost_corners_extent_[0] - 1;
+
+                for (SizeType i = 1; i < n; ++i) {
+                    ret *= (ghost_corners_extent_[i] - 1);
                 }
 
                 return ret * elements_x_cell_;
@@ -261,6 +323,8 @@ namespace utopia {
                                                             SideSet::BoundaryIdType b_id) const  //_local_no_ghost
             {
                 IntArray tensor_index;
+                ResizeArray<IntArray>::apply(dim(), tensor_index);
+
                 node_to_grid_coord(idx, tensor_index);  //_local_no_ghost
 
                 // FIXME use dim-dependent version

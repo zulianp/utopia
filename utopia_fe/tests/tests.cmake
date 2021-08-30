@@ -32,6 +32,10 @@ if(UTOPIA_ENABLE_INTREPID2 AND UTOPIA_ENABLE_STK)
     list(APPEND TEST_MODULES interop/stk_intrepid2)
 endif()
 
+if(UTOPIA_ENABLE_INTREPID2 AND UTOPIA_ENABLE_PETSC)
+    list(APPEND TEST_MODULES interop/petsc_intrepid2)
+endif()
+
 if(UTOPIA_ENABLE_INTREPID2 AND UTOPIA_ENABLE_ARBORX)
     list(APPEND TEST_MODULES interop/intrepid2_arborx)
 endif()

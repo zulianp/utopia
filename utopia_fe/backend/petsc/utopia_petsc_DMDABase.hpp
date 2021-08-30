@@ -57,7 +57,7 @@ namespace utopia {
                 in.get("max_y", box_max_[1]);
                 in.get("max_z", box_max_[2]);
 
-                SizeType n_components = 1;
+                SizeType n_components = this->default_components();
                 in.get("n_components", n_components);
 
                 // FIXME

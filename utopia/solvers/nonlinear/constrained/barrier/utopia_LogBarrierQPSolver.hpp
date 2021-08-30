@@ -52,6 +52,11 @@ namespace utopia {
         void init_memory(const Layout &layout) override { Super::init_memory(layout); }
         void update(const std::shared_ptr<const Matrix> &op) override { Super::update(op); }
 
+        void set_selection(const std::shared_ptr<Vector> &selection) override {
+            assert(solver_);
+            solver_->set_selection(selection);
+        }
+
     private:
         std::shared_ptr<LogBarrierSolver> solver_;
         std::shared_ptr<QuadraticFunction> quadratic_function_;

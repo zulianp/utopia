@@ -4,6 +4,7 @@
 #include "utopia_Input.hpp"
 #include "utopia_Traits.hpp"
 
+#include "utopia_SimulationTime.hpp"
 #include "utopia_fe_Environment.hpp"
 
 namespace utopia {
@@ -15,6 +16,8 @@ namespace utopia {
         using Matrix = typename Traits<FunctionSpace>::Matrix;
         using Vector = typename Traits<FunctionSpace>::Vector;
         using Environment = utopia::Environment<FunctionSpace>;
+        using Scalar = typename Traits<Vector>::Scalar;
+        using SimulationTime = utopia::SimulationTime<Scalar>;
 
         virtual ~FEAssembler() = default;
         virtual void clear() {}
@@ -46,6 +49,8 @@ namespace utopia {
         virtual std::shared_ptr<FunctionSpace> space() const = 0;
 
         virtual bool is_linear() const = 0;
+
+        virtual void set_time(const std::shared_ptr<SimulationTime> &time) = 0;
 
         // private:
         //     std::shared_ptr<Environment> env_;

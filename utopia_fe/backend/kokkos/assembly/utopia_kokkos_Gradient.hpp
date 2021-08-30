@@ -22,7 +22,6 @@ namespace utopia {
             using Scalar = typename FE::Scalar;
             using SizeType = typename FE::SizeType;
             using DynRankView = typename FE::DynRankView;
-            using FunctionSpaceTools = typename FE::FunctionSpaceTools;
             using ExecutionSpace = typename FE::ExecutionSpace;
 
             Gradient(const std::shared_ptr<FE> &fe, const std::string &name = "Gradient") : Super(fe, name) {}

@@ -75,6 +75,11 @@ namespace utopia {
 
         const Vector_t &solution() const override { return x_old(); }
 
+        bool set_initial_condition(const Vector_t &x) override {
+            x_old_ = x;
+            return true;
+        }
+
     private:
         Vector_t x_old_, velocity_old_, acceleration_old_;
     };

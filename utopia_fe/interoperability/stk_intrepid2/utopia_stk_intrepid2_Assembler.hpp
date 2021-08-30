@@ -69,6 +69,8 @@ namespace utopia {
             void set_assembler(const std::shared_ptr<Intrepid2Assembler> &assembler);
             const std::shared_ptr<Intrepid2Assembler> &assembler() const;
 
+            void set_time(const std::shared_ptr<SimulationTime> &time);
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;

@@ -43,6 +43,9 @@ namespace utopia {
         void run(Input &in) {
             FunctionSpace space;
             Field<FunctionSpace> deformation;
+            bool use_state_as_initial_condition = false;
+
+            in.get("use_state_as_initial_condition", use_state_as_initial_condition);
 
             in.require("space", [&](Input &in) {
                 bool read_state = false;
@@ -52,7 +55,7 @@ namespace utopia {
                     space.read_with_state(in, deformation);
 
                     const Scalar_t norm_deformation = norm2(deformation.data());
-                    std::cout << "norm_deformation: " << norm_deformation << std::endl;
+                    utopia::out() << "norm_deformation: " << norm_deformation << std::endl;
 
                 } else {
                     space.read(in);
@@ -88,9 +91,22 @@ namespace utopia {
             in.get("solver", solver);
 
             Vector_t x;
-            space.create_vector(x);
+
+            if (deformation.empty()) {
+                space.create_vector(x);
+            } else {
+                x = deformation.data();
+            }
 
             fun->setup_IVP(x);
+
+            if (use_state_as_initial_condition) {
+                utopia::out() << "Using state as initial condition!\n";
+                assert(!deformation.empty());
+                if (deformation.empty() || !fun->set_initial_condition(deformation.data())) {
+                    Utopia::Abort("Called set_initial_condition on function that does not support it!");
+                }
+            }
 
             do {
                 if (!solver.solve(*obs_fun, x)) {

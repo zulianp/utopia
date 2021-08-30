@@ -207,7 +207,7 @@ namespace utopia {
                 for (auto ri : rank_incoming) {
                     requests.push_back(MPI_REQUEST_NULL);
 
-                    assert(ri.first < buffers_incoming.size());
+                    assert(std::size_t(ri.first) < buffers_incoming.size());
 
                     auto &buff = buffers_incoming[ri.first];
                     assert(!buff.empty());
@@ -224,11 +224,11 @@ namespace utopia {
                 for (auto ro : rank_outgoing) {
                     requests.push_back(MPI_REQUEST_NULL);
 
-                    assert(ro.first < buffers_outgoing.size());
+                    assert(std::size_t(ro.first) < buffers_outgoing.size());
 
                     auto &buff = buffers_outgoing[ro.first];
                     assert(!buff.empty());
-                    assert(ro.second == buff.size());
+                    assert(std::size_t(ro.second) == buff.size());
 
                     MPI_CATCH_ERROR(MPI_Isend(&buff[0],
                                               buff.size(),
@@ -439,6 +439,8 @@ namespace utopia {
 
             // describe_mesh_connectivity(mesh);
 
+            // TODO IF bulk_data.local_id(aura_node) != Crap then use it!
+
             if (mesh.has_aura() && size > 1) {
                 // if (true) {
                 UTOPIA_TRACE_REGION_BEGIN("DofMap::init_aura");
@@ -475,7 +477,7 @@ namespace utopia {
                         const Size_t n_nodes = bulk_data.num_nodes(elem);
 
                         for (Size_t i = 0; i < n_nodes; ++i) {
-                            const auto node_i = bulk_data.local_id(node_ids[i]);
+                            const SizeType node_i = bulk_data.local_id(node_ids[i]);
                             assert(node_i < n_universal_nodes);
                             for (Size_t j = 0; j < n_nodes; ++j) {
                                 node2node[node_i].insert(utopia::stk::convert_entity_to_index(node_ids[j]));
@@ -510,7 +512,7 @@ namespace utopia {
 
                             for (Size_t i = 0; i < n_nodes; ++i) {
                                 if (!bulk_data.in_receive_ghost(node_ids[i])) {
-                                    const auto node_i = bulk_data.local_id(node_ids[i]);
+                                    const SizeType node_i = bulk_data.local_id(node_ids[i]);
 
                                     assert(node_i < n_universal_nodes);
 

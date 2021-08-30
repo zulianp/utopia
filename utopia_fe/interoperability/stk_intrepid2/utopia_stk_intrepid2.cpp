@@ -79,8 +79,11 @@ namespace utopia {
         using Size_t = Traits<utopia::stk::Mesh>::SizeType;
 
         static bool apply(const ::stk::mesh::BulkData &bulk_data, const BucketVector_t &buckets, FE &fe, int degree) {
-            assert(buckets.begin() != buckets.end());
-            if (buckets.begin() == buckets.end()) return false;
+            // assert(buckets.begin() != buckets.end());
+            if (buckets.begin() == buckets.end()) {
+                utopia::err() << "[Warning] buckets.begin() == buckets.end()\n";
+                return false;
+            }
 
             auto &meta_data = bulk_data.mesh_meta_data();
 
@@ -197,7 +200,7 @@ namespace utopia {
             Utopia::Abort("Unable to find part!");
         }
 
-        ::stk::mesh::Selector part = *part_ptr;
+        ::stk::mesh::Selector part = *part_ptr & meta_data.locally_owned_part();
 
         const BucketVector_t &side_buckets = bulk_data.get_buckets(meta_data.side_rank(), part);
 
@@ -230,6 +233,8 @@ namespace utopia {
 
         const int n_var = space.n_var();
 
+        UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(Stk,Intrepid2,Matrix handling)");
+
         if (!matrix.is_block() && n_var != 1) {
             matrix.clear();
         }
@@ -247,17 +252,20 @@ namespace utopia {
         }
 
         // Fix preallocation bug and REMOVE ME
-        if (space.n_var() > 1 && space.comm().size() > 1) {
+        if (!space.mesh().has_aura() && space.n_var() > 1 && space.comm().size() > 1) {
             MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
             m_utopia_warning(
                 "using: MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR,"
                 "PETSC_FALSE);");
         }
 
+        UTOPIA_TRACE_REGION_END("LocalToGlobal(Stk,Intrepid2,Matrix handling)");
+
         auto &bulk_data = space.mesh().bulk_data();
 
         const BucketVector_t &elem_buckets = utopia::stk::local_elements(bulk_data);
 
+        UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(Stk,Intrepid2,Matrix assembly)");
         {
             Write<PetscMatrix> w(matrix, utopia::GLOBAL_ADD);
 
@@ -325,6 +333,7 @@ namespace utopia {
                 }
             }
         }
+        UTOPIA_TRACE_REGION_END("LocalToGlobal(Stk,Intrepid2,Matrix assembly)");
 
         if (mode == SUBTRACT_MODE) {
             matrix *= -1.0;
@@ -494,7 +503,7 @@ namespace utopia {
             Utopia::Abort("Unable to find part!");
         }
 
-        ::stk::mesh::Selector part = *part_ptr;
+        ::stk::mesh::Selector part = *part_ptr & meta_data.locally_owned_part();
 
         LocalToGlobalFromBuckets<Scalar>::apply(
             space, bulk_data.get_buckets(meta_data.side_rank(), part), element_vectors, mode, vector);

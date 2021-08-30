@@ -220,7 +220,11 @@ namespace utopia {
 
                     mat_inv = inv(mat);
 
-                    assert(approxeq(det(mat_inv), 1. / det(mat), 1e-8));
+#ifndef NDEBUG
+                    Scalar det_mat_inv = det(mat_inv);
+                    Scalar det_mat = det(mat);
+                    assert(approxeq(det_mat_inv, 1. / det_mat, 1e-6));
+#endif  // NDEBUG
 
                     for (SizeType d1 = 0; d1 < ManifoldDim; ++d1) {
                         for (SizeType d2 = 0; d2 < SpatialDim; ++d2) {

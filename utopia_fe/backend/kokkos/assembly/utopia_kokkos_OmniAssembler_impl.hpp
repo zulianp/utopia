@@ -7,6 +7,7 @@
 // utopia/kokkos
 #include "utopia_kokkos_FEAssembler.hpp"
 #include "utopia_kokkos_ForcingFunction.hpp"
+#include "utopia_kokkos_IncrementalForcingFunction.hpp"
 #include "utopia_kokkos_LaplaceOperator.hpp"
 #include "utopia_kokkos_LinearElasticity.hpp"
 #include "utopia_kokkos_Mass.hpp"
@@ -14,6 +15,7 @@
 #include "utopia_kokkos_Residual.hpp"
 #include "utopia_kokkos_Transport.hpp"
 #include "utopia_kokkos_VectorLaplaceOperator.hpp"
+#include "utopia_kokkos_WeakLinearThermoElasticity.hpp"
 
 // utopia/kokkos includes
 #include "utopia_kokkos_FE.hpp"
@@ -86,6 +88,7 @@ namespace utopia {
                 register_assembler<utopia::kokkos::Mass<FE_t>>("Mass");
                 register_assembler<utopia::kokkos::LaplaceOperator<FE_t>>("LaplaceOperator");
                 register_assembler<utopia::kokkos::ForcingFunction<FE_t>>("ForcingFunction");
+                register_assembler<utopia::kokkos::IncrementalForcingFunction<FE_t>>("IncrementalForcingFunction");
                 register_assembler<utopia::kokkos::NeoHookean<FE_t>>("NeoHookean");
 
                 register_assembler_variant<utopia::kokkos::VectorLaplaceOperator<FE_t, 1, Scalar_t>>(
@@ -98,6 +101,13 @@ namespace utopia {
                 register_assembler_variant<utopia::kokkos::LinearElasticity<FE_t, 1, Scalar_t>>("LinearElasticity", 1);
                 register_assembler_variant<utopia::kokkos::LinearElasticity<FE_t, 2, Scalar_t>>("LinearElasticity", 2);
                 register_assembler_variant<utopia::kokkos::LinearElasticity<FE_t, 3, Scalar_t>>("LinearElasticity", 3);
+
+                register_assembler_variant<utopia::kokkos::WeakLinearThermoElasticity<FE_t, 1, Scalar_t>>(
+                    "WeakLinearThermoElasticity", 1);
+                register_assembler_variant<utopia::kokkos::WeakLinearThermoElasticity<FE_t, 2, Scalar_t>>(
+                    "WeakLinearThermoElasticity", 2);
+                register_assembler_variant<utopia::kokkos::WeakLinearThermoElasticity<FE_t, 3, Scalar_t>>(
+                    "WeakLinearThermoElasticity", 3);
             }
         };
 
@@ -704,6 +714,7 @@ namespace utopia {
         template <class FunctionSpace, class FE>
         void OmniAssembler<FunctionSpace, FE>::read(Input &in) {
             using ForcingFunction_t = utopia::kokkos::ForcingFunction<typename Impl::FE>;
+            using IncrementalForcingFunction_t = utopia::kokkos::IncrementalForcingFunction<typename Impl::FE>;
 
             if (!impl_->domain.fe) {
                 // FIXME order must be guessed by discretization and material
@@ -754,6 +765,12 @@ namespace utopia {
                             ff.n_components = impl_->space->n_var();
                             impl_->template add_forcing_function_on_boundary<ForcingFunction_t>(
                                 name, quadrature_order, ff);
+                        } else if (forcing_function_type == "IncrementalForcingFunction") {
+                            typename IncrementalForcingFunction_t::Params ff;
+                            ff.read(node);
+                            ff.n_components = impl_->space->n_var();
+                            impl_->template add_forcing_function_on_boundary<IncrementalForcingFunction_t>(
+                                name, quadrature_order, ff);
                         }
 
                     } else {
@@ -762,10 +779,30 @@ namespace utopia {
                             ff.read(node);
                             ff.n_components = impl_->space->n_var();
                             impl_->template add_forcing_function<ForcingFunction_t>(ff);
+                        } else if (forcing_function_type == "IncrementalForcingFunction") {
+                            typename IncrementalForcingFunction_t::Params ff;
+                            ff.read(node);
+                            ff.n_components = impl_->space->n_var();
+                            impl_->template add_forcing_function<IncrementalForcingFunction_t>(ff);
                         }
                     }
                 });
             });
+        }
+
+        template <class FunctionSpace, class FE>
+        void OmniAssembler<FunctionSpace, FE>::set_time(const std::shared_ptr<SimulationTime> &time) {
+            for (auto &a : impl_->domain.assemblers) {
+                a->set_time(time);
+            }
+
+            for (auto &p : impl_->boundary) {
+                auto &b = p.second;
+
+                for (auto &a : b.assemblers) {
+                    a->set_time(time);
+                }
+            }
         }
 
         template <class FunctionSpace, class FE>
