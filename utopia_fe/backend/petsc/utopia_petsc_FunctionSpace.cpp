@@ -19,7 +19,7 @@ namespace utopia {
             void read(Input &in) override {
                 int n_var = 1;
                 if (!Options()
-                         // .add_option("name", name, "Unique name of the function space")
+                         .add_option("name", name, "Unique name of the function space")
                          .add_option("boundary_conditions", dirichlet_boundary, "Boundary conditions.")
                          .add_option("verbose", verbose, "Verbose output.")
                          .parse(in)) {
@@ -31,6 +31,8 @@ namespace utopia {
                 in.get("mesh", *mesh);
 
                 // auto &&dm = mesh->dm();
+
+                dirichlet_boundary.convert_user_space_names(SideSet::Cube());
 
                 // int i = 0;
                 // for (auto &v : variables) {
@@ -44,6 +46,7 @@ namespace utopia {
             std::shared_ptr<Mesh> mesh;
             DirichletBoundary dirichlet_boundary;
             FEVariables variables;
+            std::string name{"main"};
             bool verbose{false};
         };
 
@@ -96,13 +99,60 @@ namespace utopia {
         }
 
         void FunctionSpace::apply_constraints(Matrix &m, const Scalar diag_value) const {
-            assert(false);
-            Utopia::Abort("IMPLEMENT ME!");
+            using IndexSet = Traits::IndexSet;
+
+            auto mesh_view = mesh().view();
+            auto r = mesh_view.dof_range();
+            int n_var = mesh().dm().get_dof();
+
+            auto &db = impl_->dirichlet_boundary;
+
+            SizeType n_local_dofs = r.extent();
+            SizeType n_local_nodes = n_local_dofs / n_var;
+            assert(n_local_nodes * n_var == n_local_dofs);
+
+            IndexSet constrains;
+            constrains.reserve(n_local_dofs);
+
+            for (auto i = 0; i < n_local_nodes; ++i) {
+                for (auto &c : db.conditions) {
+                    if (mesh_view.is_node_on_boundary(i, c.side)) {
+                        const SizeType dof = i * n_var + c.component;
+                        constrains.push_back(dof + r.begin());
+                    }
+                }
+            }
+
+            set_zero_rows(m, constrains, 1.);
         }
 
         void FunctionSpace::apply_constraints(Vector &v) const {
-            assert(false);
-            Utopia::Abort("IMPLEMENT ME!");
+            using IndexSet = Traits::IndexSet;
+
+            auto v_view = local_view_device(v);
+
+            auto mesh_view = mesh().view();
+            auto r = mesh_view.dof_range();
+            int n_var = mesh().dm().get_dof();
+
+            auto &db = impl_->dirichlet_boundary;
+
+            SizeType n_local_dofs = r.extent();
+            SizeType n_local_nodes = n_local_dofs / n_var;
+            SizeType local_size = v.local_size();
+
+            assert(local_size == n_local_dofs);
+            assert(n_local_nodes * n_var == n_local_dofs);
+
+            for (auto i = 0; i < n_local_nodes; ++i) {
+                for (auto &c : db.conditions) {
+                    if (mesh_view.is_node_on_boundary(i, c.side)) {
+                        const SizeType dof = i * n_var + c.component;
+                        const Scalar v = c.value;
+                        v_view.set(dof, v);
+                    }
+                }
+            }
         }
 
         void FunctionSpace::apply_constraints(Matrix &m, Vector &v) const {
@@ -141,9 +191,32 @@ namespace utopia {
             set_zero_rows(m, constrains, 1.);
         }
 
-        void FunctionSpace::apply_zero_constraints(Vector &vec) const {
-            assert(false);
-            Utopia::Abort("IMPLEMENT ME!");
+        void FunctionSpace::apply_zero_constraints(Vector &v) const {
+            using IndexSet = Traits::IndexSet;
+
+            auto v_view = local_view_device(v);
+
+            auto mesh_view = mesh().view();
+            auto r = mesh_view.dof_range();
+            int n_var = mesh().dm().get_dof();
+
+            auto &db = impl_->dirichlet_boundary;
+
+            SizeType n_local_dofs = r.extent();
+            SizeType n_local_nodes = n_local_dofs / n_var;
+            SizeType local_size = v.local_size();
+
+            assert(local_size == n_local_dofs);
+            assert(n_local_nodes * n_var == n_local_dofs);
+
+            for (auto i = 0; i < n_local_nodes; ++i) {
+                for (auto &c : db.conditions) {
+                    if (mesh_view.is_node_on_boundary(i, c.side)) {
+                        const SizeType dof = i * n_var + c.component;
+                        v_view.set(dof, 0.);
+                    }
+                }
+            }
         }
 
         void FunctionSpace::add_dirichlet_boundary_condition(const std::string &name,
@@ -156,20 +229,14 @@ namespace utopia {
             impl_->dirichlet_boundary.conditions.push_back(dirichlet_boundary);
         }
 
-        bool FunctionSpace::empty() const {
-            assert(false);
-            Utopia::Abort("IMPLEMENT ME!");
-        }
+        bool FunctionSpace::empty() const { return mesh().dm().empty(); }
 
         void FunctionSpace::displace(const Vector &displacement) {
             assert(false);
             Utopia::Abort("IMPLEMENT ME!");
         }
 
-        const std::string &FunctionSpace::name() const {
-            assert(false);
-            Utopia::Abort("IMPLEMENT ME!");
-        }
+        const std::string &FunctionSpace::name() const { return impl_->name; }
 
         void FunctionSpace::initialize() {
             assert(false);

@@ -187,6 +187,8 @@ namespace utopia {
                 return ret;
             }
 
+            inline bool empty() const { return wrapper_->dm == nullptr; }
+
             void set_default_components(const int n_comp) { default_components_ = n_comp; }
             int default_components() { return default_components_; }
 
@@ -195,10 +197,7 @@ namespace utopia {
 
             class Wrapper {
             public:
-                Wrapper()
-
-                    = default;
-
+                Wrapper() = default;
                 ~Wrapper() { destroy(); }
 
                 void destroy() {

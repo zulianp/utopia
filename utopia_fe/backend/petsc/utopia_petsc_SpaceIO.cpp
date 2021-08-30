@@ -1,6 +1,8 @@
 #include "utopia_petsc_SpaceIO.hpp"
 #include "utopia_petsc_IO.hpp"
 
+#include "utopia_petsc_DMDABase.hpp"
+
 namespace utopia {
     namespace petsc {
 
@@ -9,6 +11,7 @@ namespace utopia {
             Impl(FunctionSpace &space) : space(space) /*, io(space.mesh())*/ {}
             FunctionSpace &space;
             PetscIO io;
+            Path output_path{"out.vtr"};
             bool is_open{false};
         };
 
@@ -42,25 +45,18 @@ namespace utopia {
             return false;
         }
 
-        void SpaceIO::set_output_path(const Path &path) {
-            // impl_->io.set_output_path(path);
-
-            assert(false);
-            Utopia::Abort("IMPLEMENT ME!");
-        }
+        void SpaceIO::set_output_path(const Path &path) { impl_->output_path = path; }
 
         bool SpaceIO::open_output() {
-            // if (!impl_->io.ensure_output()) {
-            //     return false;
-            // }
+            if (impl_->is_open) return true;
 
-            // impl_->space.register_output_variables(impl_->io);
-            // impl_->is_open = true;
-            // return true;
+            if (!impl_->io.open(impl_->space.comm(), impl_->output_path)) {
+                return false;
+            }
 
-            assert(false);
-            Utopia::Abort("IMPLEMENT ME!");
-            return false;
+            // // impl_->space.register_output_variables(impl_->io);
+            impl_->is_open = true;
+            return impl_->io.write(impl_->space.mesh().dm());
         }
 
         SpaceIO::SpaceIO(FunctionSpace &space) : impl_(utopia::make_unique<Impl>(space)) {}
