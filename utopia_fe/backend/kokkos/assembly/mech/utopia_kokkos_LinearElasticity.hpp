@@ -35,16 +35,19 @@ namespace utopia {
                     StressStrainParameters<FirstLameParameter, ShearModulus> ssp;
                     ssp.read(in);
 
+                    // in.get("mass_density", [&](Input &node) { mass_density.read(node); });
+
                     lambda = ssp.first_lame_parameter.get();
                     mu = ssp.shear_modulus.get();
                 }
 
                 Params(const FirstLameParameter &lambda = FirstLameParameter(1.0),
                        const ShearModulus &mu = FirstLameParameter(1.0))
-                    : lambda(lambda), mu(mu) {}
+                    : lambda(lambda), mu(mu) /*, mass_density(1) */ {}
 
                 FirstLameParameter lambda;
                 ShearModulus mu;
+                // kokkos::SubdomainValue<FE> mass_density;
             };
 
             using Op = utopia::kokkos::kernels::LinearElasticityOp<Dim,

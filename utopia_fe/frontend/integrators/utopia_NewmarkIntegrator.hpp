@@ -27,8 +27,8 @@ namespace utopia {
             auto vlo = layout(x);
 
             x_old_.zeros(vlo);
-            velocity_old_.zeros(vlo);
-            acceleration_old_.zeros(vlo);
+            mass_x_velocity_old_.zeros(vlo);
+            mass_x_acceleration_old_.zeros(vlo);
             return true;
         }
 
@@ -36,14 +36,23 @@ namespace utopia {
             Super::update_IVP(x);
 
             const Scalar_t dt = this->delta_time();
+            const Scalar_t dt2 = dt * dt;
 
-            Vector_t acceleration_new;
-            this->gradient(x, acceleration_new);
-            acceleration_new *= -1.0;
+            // New acceleration
+            Vector_t mass_x_acceleration_new =
+                4.0 / (dt2) * ((*this->mass_matrix()) * (x - x_old_) - dt * mass_x_velocity_old_) -
+                mass_x_acceleration_old_;
 
-            velocity_old_ += dt / 2.0 * (acceleration_new + acceleration_old_);
+            // Update velocity
+            mass_x_velocity_old_ += dt / 2 * (mass_x_acceleration_old_ + mass_x_acceleration_new);
+
+            // Store current solution
             x_old_ = x;
-            acceleration_old_ = acceleration_new;
+
+            mass_x_acceleration_old_ = mass_x_acceleration_new;
+
+            Scalar_t acc = sum(mass_x_acceleration_new);
+            utopia::out() << "acc: " << acc << "\n";
             return true;
         }
 
@@ -55,8 +64,8 @@ namespace utopia {
         void integrate_gradient(const Vector_t &x, Vector_t &g) const override {
             const Scalar_t dt2 = this->delta_time() * this->delta_time();
 
-            Vector_t mom = (*this->mass_matrix()) * (x - x_old_ - this->delta_time() * velocity_old_);
-            g -= acceleration_old_;
+            Vector_t mom = (*this->mass_matrix()) * (x - x_old_) - this->delta_time() * mass_x_velocity_old_;
+            g -= mass_x_acceleration_old_;
             g *= dt2 / 4.0;
             g += mom;
 
@@ -81,7 +90,7 @@ namespace utopia {
         }
 
     private:
-        Vector_t x_old_, velocity_old_, acceleration_old_;
+        Vector_t x_old_, mass_x_velocity_old_, mass_x_acceleration_old_;
     };
 
 }  // namespace utopia
