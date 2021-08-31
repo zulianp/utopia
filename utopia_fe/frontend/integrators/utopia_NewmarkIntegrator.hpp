@@ -51,8 +51,8 @@ namespace utopia {
 
             mass_x_acceleration_old_ = mass_x_acceleration_new;
 
-            Scalar_t acc = sum(mass_x_acceleration_new);
-            utopia::out() << "acc: " << acc << "\n";
+            // Scalar_t acc = sum(mass_x_acceleration_new);
+            // utopia::out() << "acc: " << acc << "\n";
             return true;
         }
 
