@@ -16,7 +16,7 @@
 
 #include "utopia_ActiveSet.hpp"
 #include "utopia_Multigrid.hpp"
-#include "utopia_ProjectedGaussSeidelNew.hpp"
+
 #include "utopia_ProjectedGaussSeidelQR.hpp"
 
 #include <cassert>

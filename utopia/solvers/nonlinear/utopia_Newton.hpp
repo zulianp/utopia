@@ -5,6 +5,7 @@
 #include "utopia_Function.hpp"
 #include "utopia_LS_Strategy.hpp"
 #include "utopia_LinearSolver.hpp"
+#include "utopia_NewtonBase.hpp"
 #include "utopia_NonLinearSolver.hpp"
 
 #include <iomanip>
@@ -113,6 +114,8 @@ namespace utopia {
                         x += alpha_ * step_;
                     }
                 }
+
+                fun.project_onto_feasibile_region(x);
 
                 // notify listener
                 fun.update(x);

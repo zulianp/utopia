@@ -2,7 +2,11 @@
 #define UTOPIA_TR_SUBPROBLEM_KSP_TR_HPP
 #include <cstring>
 #include <string>
+
+#include "utopia_SteihaugToint.hpp"
 #include "utopia_TRSubproblem.hpp"
+
+#include "utopia_petsc_KSPSolver.hpp"
 
 namespace utopia {
     /**

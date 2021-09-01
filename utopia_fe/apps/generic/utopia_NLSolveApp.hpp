@@ -2,7 +2,6 @@
 #define UTOPIA_NL_SOLVE_APP_HPP
 
 #include "utopia_Main.hpp"
-#include "utopia_Multiphysics.hpp"
 
 #include "utopia.hpp"
 
@@ -11,6 +10,8 @@
 #include "utopia_ImplicitEulerIntegrator.hpp"
 #include "utopia_NewmarkIntegrator.hpp"
 #include "utopia_SemiGeometricMultigridNew.hpp"
+#include "utopia_VelocityImplicitEulerIntegrator.hpp"
+#include "utopia_VelocityNewmarkIntegrator.hpp"
 
 #include "utopia_NLSolve.hpp"
 
@@ -22,7 +23,11 @@ namespace utopia {
         using FEFunctionInterface_t = utopia::FEFunctionInterface<FunctionSpace>;
         using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
         using ImplicitEulerIntegrator_t = utopia::ImplicitEulerIntegrator<FunctionSpace>;
+        using VelocityImplicitEulerIntegrator_t = utopia::VelocityImplicitEulerIntegrator<FunctionSpace>;
+
         using NewmarkIntegrator_t = utopia::NewmarkIntegrator<FunctionSpace>;
+        using VelocityNewmarkIntegratorIntegrator_t = utopia::VelocityNewmarkIntegrator<FunctionSpace>;
+
         using TimeDependentFunction_t = utopia::TimeDependentFunction<FunctionSpace>;
         using Multgrid_t = utopia::SemiGeometricMultigridNew<FunctionSpace>;
 
@@ -63,6 +68,12 @@ namespace utopia {
                 function = time_dependent_function;
             } else if (integrator == "ImplicitEuler") {
                 time_dependent_function = utopia::make_unique<ImplicitEulerIntegrator_t>(problem);
+                function = time_dependent_function;
+            } else if (integrator == "VelocityImplicitEuler") {
+                time_dependent_function = utopia::make_unique<VelocityImplicitEulerIntegrator_t>(problem);
+                function = time_dependent_function;
+            } else if (integrator == "VelocityNewmark") {
+                time_dependent_function = utopia::make_unique<VelocityNewmarkIntegratorIntegrator_t>(problem);
                 function = time_dependent_function;
             } else {
                 function = problem;

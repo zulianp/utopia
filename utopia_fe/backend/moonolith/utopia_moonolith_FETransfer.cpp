@@ -19,59 +19,6 @@ namespace utopia {
 
     namespace moonolith {
 
-        // FIXME move somewhere public
-        class FETransferOptions : public Configurable {
-        public:
-            virtual ~FETransferOptions() = default;
-
-            void read(Input &in) override {
-                if (!Options()  //
-                         .add_option("verbose", verbose, "Verbose output during computation.")
-                         .add_option("n_var",
-                                     n_var,
-                                     "Number of dimensions of vector function. Useful with tensor-product spaces.")
-                         .add_option("use_reference_frame",
-                                     use_reference_frame,
-                                     "Use reference element frame for intersections.")
-                         .add_option("clear_non_essential_matrices",
-                                     clear_non_essential_matrices,
-                                     "Keeps only the final transfer matrix in memory and deletes the rest.")
-                         .add_option("export_tensors", export_tensors_, "Exports tensors to disk.")
-                         .add_option("has_covering", has_covering, "Constructs lagrange multiplier in intersections.")
-                         .add_option("chop_tol", chop_tol, "Chop numeric entries close below a certain tolerance")
-                         .parse(in)) {
-                    return;
-                }
-
-                in.get("coupling", [this](Input &in) {
-                    in.get_all([this](Input &in) {
-                        int from = -1, to = -1;
-
-                        in.get("from", from);
-                        in.get("to", to);
-
-                        assert(from != -1);
-                        assert(to != -1);
-
-                        tags.emplace_back(from, to);
-                    });
-                });
-            }
-
-#ifndef NDEBUG
-            bool verbose{true};
-#else
-            bool verbose{false};
-#endif
-            bool has_covering{true};
-            int n_var{1};
-            std::vector<std::pair<int, int>> tags;
-            bool clear_non_essential_matrices{true};
-            bool export_tensors_{false};
-            bool use_reference_frame{false};
-            double chop_tol{0.};
-        };
-
         template <class Matrix>
         class FETransferData {
         public:
@@ -86,6 +33,10 @@ namespace utopia {
 
             /// Full transformation
             std::shared_ptr<Matrix> transfer_matrix;
+
+            // constraint matrices (to be passed from outside)
+            std::shared_ptr<Matrix> constraint_matrix_from;
+            std::shared_ptr<Matrix> constraint_matrix_to;
 
             void create_matrices() {
                 coupling_matrix = std::make_shared<Matrix>();
@@ -125,6 +76,52 @@ namespace utopia {
                 });
             }
 
+            static void pre_constrain(FETransferData<Matrix_t> &data) {
+                auto &B = *data.coupling_matrix;
+                auto &D = *data.mass_matrix;
+
+                if (data.constraint_matrix_to) {
+                    auto &c_to = (*data.constraint_matrix_to);
+                    D = transpose(c_to) * D * c_to;
+                }
+
+                if (data.constraint_matrix_from) {
+                    auto &c_from = (*data.constraint_matrix_from);
+                    if (data.constraint_matrix_to) {
+                        // Both spaces are constrained
+                        auto &c_to = (*data.constraint_matrix_to);
+                        B = transpose(c_to) * B * c_from;
+                    } else {
+                        B = B * c_from;
+                    }
+                }
+            }
+
+            static void post_constrain(FETransferData<Matrix_t> &data) {
+                // auto &Q = *data.basis_transform_matrix;
+                auto &T = *data.transfer_matrix;
+
+                if (data.constraint_matrix_to) {
+                    auto &c_to = (*data.constraint_matrix_to);
+                    Vector_t sum_c_to = sum(c_to, 1);
+
+                    {
+                        auto view = local_view_device(sum_c_to);
+                        parallel_for(
+                            local_range_device(sum_c_to), UTOPIA_LAMBDA(Size_t i) {
+                                if (view.get(i) > 0.99) {
+                                    view.set(i, 0.);
+                                } else {
+                                    view.set(i, 1.);
+                                }
+                            });
+                    }
+
+                    Matrix_t temp = diag(sum_c_to) * T;
+                    T += temp + c_to * T;
+                }
+            }
+
             template <class TransferAssembler>
             static bool apply(const FETransferOptions &opts, TransferAssembler &t, FETransferData<Matrix_t> &data) {
                 UTOPIA_TRACE_REGION_BEGIN("FETransferPrepareData::apply");
@@ -146,6 +143,8 @@ namespace utopia {
 
                     // handle_constraints_pre_process(data);
 
+                    pre_constrain(data);
+
                     Vector_t d_inv = sum(D, 1);
 
                     e_pseudo_inv(d_inv, d_inv, 1e-12);
@@ -158,6 +157,8 @@ namespace utopia {
                     if (opts.chop_tol != 0.0) {
                         chop(T_x, opts.chop_tol);
                     }
+
+                    post_constrain(data);
 
                     if (opts.n_var == 1) {
                         T = T_x;
@@ -191,6 +192,23 @@ namespace utopia {
             using Matrix_t = Traits<FunctionSpace>::Matrix;
             using Vector_t = Traits<FunctionSpace>::Vector;
             using Scalar_t = Traits<FunctionSpace>::Scalar;
+
+            static bool apply(const FETransferOptions &opts,
+                              const FunctionSpace &from_and_to,
+                              FETransferData<Matrix_t> &data) {
+                auto &m_from_and_to = *from_and_to.raw_type<Dim>();
+                ::moonolith::Communicator comm = m_from_and_to.mesh().comm();
+                comm.barrier();
+
+                ::moonolith::ParL2Transfer<Scalar_t, Dim, DimFrom, DimFrom> assembler(comm);
+                bool ok = assembler.assemble(m_from_and_to, opts.tags, 1e-8);
+
+                if (ok) {
+                    FETransferPrepareData::apply(opts, assembler, data);
+                }
+
+                return ok;
+            }
 
             static bool apply(const FETransferOptions &opts,
                               const FunctionSpace &from,
@@ -251,10 +269,10 @@ namespace utopia {
         public:
             using Matrix_t = Traits<FunctionSpace>::Matrix;
 
-            static bool apply(const FETransferOptions &opts,
-                              const FunctionSpace &from,
-                              const FunctionSpace &to,
-                              FETransferData<Matrix_t> &data) {
+            static bool apply(const FETransferOptions &,
+                              const FunctionSpace &,
+                              const FunctionSpace &,
+                              FETransferData<Matrix_t> &) {
                 assert(false && "invalid dimensions");
                 return false;
             }
@@ -332,6 +350,23 @@ namespace utopia {
 
                 return true;
             }
+
+            static bool apply(const FETransferOptions &opts,
+                              const FunctionSpace &from_and_to,
+                              FETransferData<Matrix_t> &data) {
+                if (from_and_to.mesh().manifold_dimension() < Dim) {
+                    // surf to surf, avoid 0 for the moment (no point clouds)
+                    static const int ManifoldDim = ::moonolith::StaticMax<Dim - 1, 1>::value;
+
+                    assert(Dim > 1);
+                    return FETransferAux<Dim, ManifoldDim, ManifoldDim>::apply(opts, from_and_to, data);
+                } else {
+                    // vol 2 vol
+                    FETransferAux<Dim, Dim, Dim>::apply(opts, from_and_to, data);
+                }
+
+                return true;
+            }
         };
 
         class FETransfer::Impl {
@@ -339,6 +374,13 @@ namespace utopia {
             FETransferOptions opts;
             FETransferData<Matrix> data;
         };
+
+        void FETransfer::set_options(const FETransferOptions &options) {
+            assert(impl_);
+            if (impl_) {
+                impl_->opts = options;
+            }
+        }
 
         void FETransfer::verbose(const bool val) {
             assert(impl_);
@@ -351,6 +393,34 @@ namespace utopia {
         FETransfer::~FETransfer() = default;
 
         void FETransfer::read(Input &in) { impl_->opts.read(in); }
+
+        bool FETransfer::init(const std::shared_ptr<FunctionSpace> &from_and_to) {
+            UTOPIA_TRACE_REGION_BEGIN("FETransfer::init");
+
+            bool has_intersection = false;
+
+            switch (from_and_to->mesh().spatial_dimension()) {
+                case 1: {
+                    has_intersection = FETransferDispatch<1>::apply(impl_->opts, *from_and_to, impl_->data);
+                    break;
+                }
+                case 2: {
+                    has_intersection = FETransferDispatch<2>::apply(impl_->opts, *from_and_to, impl_->data);
+                    break;
+                }
+                case 3: {
+                    has_intersection = FETransferDispatch<3>::apply(impl_->opts, *from_and_to, impl_->data);
+                    break;
+                }
+                default: {
+                    assert(false && "Case not handled");
+                    Utopia::Abort();
+                }
+            }
+
+            UTOPIA_TRACE_REGION_END("FETransfer::init");
+            return has_intersection;
+        }
 
         bool FETransfer::init(const std::shared_ptr<FunctionSpace> &from, const std::shared_ptr<FunctionSpace> &to) {
             UTOPIA_TRACE_REGION_BEGIN("FETransfer::init");
@@ -384,6 +454,11 @@ namespace utopia {
                 }
             }
 
+            if (impl_->opts.verbose) {
+                Scalar n_coupled_dofs = sum(*impl_->data.transfer_matrix);
+                utopia::out() << "n_coupled_dofs in to_space: " << SizeType(n_coupled_dofs) << "\n";
+            }
+
             UTOPIA_TRACE_REGION_END("FETransfer::init");
             return has_intersection;
         }
@@ -401,24 +476,32 @@ namespace utopia {
                 auto n_op = op.cols();
                 auto n_from = from.size();
 
-                auto n_var = n_from / n_op;
+                auto n_var_from = n_from / n_op;
 
-                assert(n_op * n_var == n_from);
+                assert(n_op * n_var_from == n_from);
 
-                if (n_var == 1) {
+                if (n_var_from == 1) {
                     to = (*impl_->data.transfer_matrix) * from;
                 } else {
-                    utopia::out() << "Tensorizing within FETransfer::apply! n_var = " << n_var << "\n";
+                    utopia::out() << "Tensorizing within FETransfer::apply! n_var_from = " << n_var_from << "\n";
 
                     Vector scalar_from, scalar_to;
                     if (!utopia::empty(to)) {
                         to.set(0.0);
                     }
 
-                    for (int c = 0; c < n_var; ++c) {
-                        extract_component(from, n_var, c, scalar_from);
+                    SizeType n_to = to.size();
+
+                    for (int c = 0; c < n_var_from; ++c) {
+                        extract_component(from, n_var_from, c, scalar_from);
                         scalar_to = (*impl_->data.transfer_matrix) * scalar_from;
-                        set_component(scalar_to, n_var, c, to);
+                        SizeType scalar_n_to = scalar_to.size();
+
+                        if (scalar_n_to == n_to) {
+                            copy_component(scalar_to, n_var_from, 0, c, to);
+                        } else {
+                            set_component(scalar_to, n_var_from, c, to);
+                        }
                     }
                 }
 
@@ -487,6 +570,14 @@ namespace utopia {
             } else {
                 return impl_->data.coupling_matrix->comm();
             }
+        }
+
+        void FETransfer::set_constraint_matrix_from(const std::shared_ptr<Matrix> &constraint_matrix) {
+            impl_->data.constraint_matrix_from = constraint_matrix;
+        }
+
+        void FETransfer::set_constraint_matrix_to(const std::shared_ptr<Matrix> &constraint_matrix) {
+            impl_->data.constraint_matrix_to = constraint_matrix;
         }
 
     }  // namespace moonolith

@@ -4,6 +4,7 @@
 #include "utopia_Base.hpp"
 
 namespace utopia {
+    using BackendType = const char *;
     using SolverType = const char *;
     using SolverPackage = const char *;
 
@@ -23,6 +24,9 @@ namespace utopia {
     class Solver {
     public:
         // all solvers
+        inline constexpr static BackendType any_backend() { return "any"; }
+        inline constexpr static BackendType petsc_backend() { return "petsc"; }
+
         inline constexpr static SolverType automatic() { return "auto"; }
 
         // linear solvers

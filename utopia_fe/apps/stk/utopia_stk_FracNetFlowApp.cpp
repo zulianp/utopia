@@ -1,5 +1,4 @@
 #include "utopia_Main.hpp"
-#include "utopia_Multiphysics.hpp"
 
 #include "utopia.hpp"
 
@@ -29,8 +28,8 @@ void stk_fracflow(utopia::Input &in) {
     moonolith::Moonolith::instance().verbose(true);
 
     utopia::FracNetFlow<utopia::stk::FunctionSpace> fnf;
-    fnf.read(in);
-    fnf.solve();
+    fnf.read(in);  // Read from input file
+    fnf.solve();   // Solve coupled problem
 }
 
 UTOPIA_REGISTER_APP(stk_fracflow);

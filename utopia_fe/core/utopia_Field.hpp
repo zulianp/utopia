@@ -4,6 +4,8 @@
 #include "utopia_Input.hpp"
 #include "utopia_Traits.hpp"
 
+#include "utopia_Instance.hpp"
+
 #include <memory>
 #include <string>
 
@@ -13,6 +15,8 @@ namespace utopia {
     class Field : public Configurable {
     public:
         using Vector = typename Traits<FunctionSpace>::Vector;
+
+        virtual ~Field() = default;
 
         Field(const std::string &name = "",
               const std::shared_ptr<FunctionSpace> &space = nullptr,
@@ -26,6 +30,19 @@ namespace utopia {
         }
 
         inline const std::shared_ptr<Vector> data_ptr() const { return data_; }
+
+        void zero() {
+            if (!space_) {
+                Utopia::Abort("Cannot generate zero field from nullptr space");
+            }
+
+            if (!data_) {
+                data_ = std::make_shared<Vector>();
+                space_->create_vector(*data_);
+            }
+
+            data_->set(0.0);
+        }
 
         inline Vector &data() {
             assert(data_);
@@ -49,7 +66,7 @@ namespace utopia {
 
         /// @return true if anything goes with this field
         inline bool is_blank() const { return name_.empty(); }
-        inline bool empty() const { return !data_; }
+        inline bool empty() const { return !data_ || data_->empty(); }
 
         void set_space(const std::shared_ptr<FunctionSpace> &space) { space_ = space; }
         const std::shared_ptr<FunctionSpace> &space() const { return space_; }

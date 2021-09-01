@@ -27,10 +27,19 @@ if(UTOPIA_ENABLE_INTREPID2)
     list(APPEND INTEROP_DEP utopia_intrepid2)
 endif()
 
+if(UTOPIA_ENABLE_PETSC)
+    list(APPEND INTEROP_DEP utopia_petsc_dm)
+endif()
+
 # ##############################################################################
 # ##############################################################################
 
 if(UTOPIA_ENABLE_MOONOLITH)
+
+    list(
+        APPEND
+        INTEROP_MODULES
+        moonolith_generic)
 
     if(UTOPIA_ENABLE_STK)
         list(APPEND INTEROP_MODULES moonolith_stk)
@@ -67,6 +76,18 @@ if(UTOPIA_ENABLE_INTREPID2)
 
     if(UTOPIA_ENABLE_LIBMESH)
         list(APPEND INTEROP_MODULES libmesh_intrepid2)
+        set(INTEROP_EXISTS TRUE)
+    endif()
+
+    if(UTOPIA_ENABLE_ARBORX)
+        list(APPEND INTEROP_MODULES intrepid2_arborx)
+        list(APPEND INTEROP_DEP utopia_arborx)
+        set(INTEROP_EXISTS TRUE)
+    endif()
+
+    if(UTOPIA_ENABLE_PETSC)
+        list(APPEND INTEROP_MODULES petsc_intrepid2)
+        set(INTEROP_EXISTS TRUE)
     endif()
 
 endif()

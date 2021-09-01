@@ -1,7 +1,12 @@
 #ifndef UTOPIA_IPR_TRANSFER_HPP
 #define UTOPIA_IPR_TRANSFER_HPP
 
+#include "utopia_Readable.hpp"
+#include "utopia_Traits.hpp"
 #include "utopia_Transfer.hpp"
+#include "utopia_Writable.hpp"
+
+#include "utopia_MatrixPtAPProduct.hpp"
 
 #include <cassert>
 #include <cmath>

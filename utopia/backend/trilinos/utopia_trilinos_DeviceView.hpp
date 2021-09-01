@@ -101,6 +101,8 @@ namespace utopia {
         LocalViewDevice(const TpetraVector &tensor)
             : view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>()) {}
 
+        inline const DeviceViewType &raw_type() { return view_; }
+
     private:
         const DeviceViewType view_;
     };
@@ -120,6 +122,8 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION void set(const SizeType &idx, const Scalar &val) const { view_(idx, 0) = val; }
 
         LocalViewDevice(TpetraVector &tensor) : view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>()) {}
+
+        inline DeviceViewType &raw_type() { return view_; }
 
     private:
         DeviceViewType view_;

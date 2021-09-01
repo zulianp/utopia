@@ -1,46 +1,23 @@
 
 #include "utopia_stk_intrepid2_Transport.hpp"
-#include "utopia_intrepid2_Field.hpp"
-#include "utopia_intrepid2_Gradient.hpp"
-#include "utopia_intrepid2_Mass.hpp"
-#include "utopia_intrepid2_SubdomainFunction.hpp"
-#include "utopia_intrepid2_Transport.hpp"
+#include "utopia_kokkos_Field.hpp"
+#include "utopia_kokkos_Gradient.hpp"
+#include "utopia_kokkos_Mass.hpp"
+#include "utopia_kokkos_SubdomainValue.hpp"
+#include "utopia_kokkos_Transport.hpp"
 #include "utopia_stk_intrepid2.hpp"
 
 #include "utopia_make_unique.hpp"
 
 namespace utopia {
     namespace stk {
-        class StkIntrepid2Assembler::Impl {
-        public:
-            std::shared_ptr<FunctionSpace> space;
-            std::shared_ptr<Environment> environment;
-        };
-
-        void StkIntrepid2Assembler::set_environment(const std::shared_ptr<Environment> &env) {
-            impl_->environment = env;
-        }
-
-        std::shared_ptr<StkIntrepid2Assembler::Environment> StkIntrepid2Assembler::environment() const {
-            assert(impl_->environment);
-            return impl_->environment;
-        }
-
-        void StkIntrepid2Assembler::set_space(const std::shared_ptr<FunctionSpace> &space) { impl_->space = space; }
-
-        std::shared_ptr<FunctionSpace> StkIntrepid2Assembler::space() const { return impl_->space; }
-
-        StkIntrepid2Assembler::~StkIntrepid2Assembler() = default;
-
-        StkIntrepid2Assembler::StkIntrepid2Assembler(const std::shared_ptr<FE> &fe)
-            : Super(fe), impl_(utopia::make_unique<Impl>()) {}
 
         class Transport::Impl {
         public:
-            using Transport2 = utopia::Transport<2, Intrepid2FE::DynRankView>;
-            using Transport3 = utopia::Transport<3, Intrepid2FE::DynRankView>;
-            using DiffusionFunction = utopia::intrepid2::SubdomainValue<Scalar>;
-            using Intrepid2Assembler = utopia::intrepid2::FEAssembler<Scalar>;
+            using Transport2 = utopia::kokkos::Transport<Intrepid2FE, 2, Intrepid2FE::DynRankView>;
+            using Transport3 = utopia::kokkos::Transport<Intrepid2FE, 3, Intrepid2FE::DynRankView>;
+            using DiffusionFunction = utopia::kokkos::SubdomainValue<Intrepid2FE>;
+            using Intrepid2Assembler = utopia::kokkos::FEAssembler<Intrepid2FE, Intrepid2FE::DynRankView>;
 
             std::shared_ptr<Field> field;
             std::shared_ptr<DiffusionFunction> diffusion_function;
@@ -48,50 +25,11 @@ namespace utopia {
             bool stabilize_transport{false};
             bool verbose{false};
             bool print_field{false};
-
-            std::shared_ptr<Intrepid2Assembler> assembler;
         };
-
-        void Transport::set_matrix_accumulator(const std::shared_ptr<TensorAccumulator> &matrix_accumulator) {
-            Super::set_matrix_accumulator(matrix_accumulator);
-            assert(impl_->assembler);
-            impl_->assembler->set_matrix_accumulator(matrix_accumulator);
-        }
-
-        void Transport::set_vector_accumulator(const std::shared_ptr<TensorAccumulator> &vector_accumulator) {
-            Super::set_vector_accumulator(vector_accumulator);
-            assert(impl_->assembler);
-            impl_->assembler->set_vector_accumulator(vector_accumulator);
-        }
-
-        void Transport::set_scalar_accumulator(const std::shared_ptr<TensorAccumulator> &scalar_accumulator) {
-            Super::set_scalar_accumulator(scalar_accumulator);
-            assert(impl_->assembler);
-            impl_->assembler->set_scalar_accumulator(scalar_accumulator);
-        }
-
-        void Transport::ensure_matrix_accumulator() {
-            impl_->assembler->ensure_matrix_accumulator();
-            Super::set_matrix_accumulator(impl_->assembler->matrix_accumulator());
-        }
-
-        void Transport::ensure_vector_accumulator() {
-            impl_->assembler->ensure_vector_accumulator();
-            Super::set_vector_accumulator(impl_->assembler->vector_accumulator());
-        }
-
-        void Transport::ensure_scalar_accumulator() {
-            impl_->assembler->ensure_scalar_accumulator();
-            Super::set_scalar_accumulator(impl_->assembler->scalar_accumulator());
-        }
 
         Transport::Transport(const std::shared_ptr<FE> &fe) : Super(fe), impl_(utopia::make_unique<Impl>()) {}
 
         Transport::~Transport() = default;
-
-        bool Transport::apply(const DynRankView &x, DynRankView &y) { return impl_->assembler->apply(x, y); }
-
-        bool Transport::assemble_matrix() { return impl_->assembler->assemble_matrix(); }
 
         void Transport::read(Input &in) {
             Super::read(in);
@@ -140,18 +78,18 @@ namespace utopia {
 
             const int spatial_dim = this->space()->mesh().spatial_dimension();
 
-            intrepid2::Gradient<Scalar> g(this->fe_ptr());
+            utopia::kokkos::Gradient<FE> g(this->fe_ptr());
 
             if (impl_->field->tensor_size() == 1) {
                 assert(this->fe_ptr()->spatial_dimension() != 1);
                 // If scalar field differentiate
-                intrepid2::Field<Scalar> field(this->fe_ptr());
+                utopia::kokkos::Field<FE> field(this->fe_ptr());
                 convert_field(*impl_->field, field);
                 g.init(field);
                 g.scale(-impl_->coeff);
 
                 in.get("diffusion_function", [this, &g](Input &node) {
-                    impl_->diffusion_function = std::make_shared<utopia::intrepid2::SubdomainValue<Scalar>>(1.0);
+                    impl_->diffusion_function = std::make_shared<Impl::DiffusionFunction>(1.0);
                     // impl_->diffusion_function->read(node);
                     node.get("function", [this, &g](Input &inner_node) {
                         impl_->diffusion_function->read(inner_node);
@@ -160,7 +98,7 @@ namespace utopia {
                 });
 
             } else {
-                convert_field(*impl_->field, static_cast<intrepid2::Field<Scalar> &>(g));
+                convert_field(*impl_->field, static_cast<utopia::kokkos::Field<FE> &>(g));
             }
 
             if (impl_->print_field) {
@@ -169,18 +107,18 @@ namespace utopia {
 
             switch (spatial_dim) {
                 case 2: {
-                    using Assemble2 = utopia::intrepid2::Assemble<Impl::Transport2>;
+                    using Assemble2 = Impl::Transport2;
                     auto assembler = std::make_shared<Assemble2>(this->fe_ptr(), g.data());
                     assembler->read(in);
-                    impl_->assembler = assembler;
+                    this->set_assembler(assembler);
                     break;
                 }
 
                 case 3: {
-                    using Assemble3 = utopia::intrepid2::Assemble<Impl::Transport3>;
+                    using Assemble3 = Impl::Transport3;
                     auto assembler = std::make_shared<Assemble3>(this->fe_ptr(), g.data());
                     assembler->read(in);
-                    impl_->assembler = assembler;
+                    this->set_assembler(assembler);
                     break;
                 }
 

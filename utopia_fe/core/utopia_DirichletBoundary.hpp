@@ -41,6 +41,21 @@ namespace utopia {
             }
         };
 
+        template <class Mapper>
+        void convert_user_space_names(const Mapper &mapper) {
+            for (auto &c : conditions) {
+                if (!c.name.empty() && c.side == mapper.invalid_id()) {
+                    auto id = mapper.id_from_user_space_name(c.name);
+                    if (id != mapper.invalid_id()) {
+                        c.side = id;
+                        c.name = mapper.name_from_id(id);
+                    } else {
+                        assert(false && "FIXME");
+                    }
+                }
+            }
+        }
+
         void read(Input &in) override {
             in.get_all([this](Input &in) {
                 conditions.emplace_back();

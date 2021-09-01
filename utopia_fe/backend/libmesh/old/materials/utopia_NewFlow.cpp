@@ -110,7 +110,9 @@ namespace utopia {
         forcing_function_.eval(x, gradient);
 
         // for newton methods
+#ifndef UTOPIA_LIBMESH_LEGACY_MODE
         gradient += hessian * x;
+#endif  // UTOPIA_LIBMESH_LEGACY_MODE
 
         if (rescale_ != 1.0) {
             //     hessian *= rescale_;
@@ -171,7 +173,9 @@ namespace utopia {
     template <class FunctionSpace, class Matrix, class Vector>
     void NewFlow<FunctionSpace, Matrix, Vector>::read(Input &in) {
         read_permeability_tensor(in);
-        in.get("permeability-function", permeability_);
+        in.get("diffusion_function", permeability_);
+        // in.get_deprecated("permeability-function", permeability_);
+
         in.get("forcing-function", forcing_function_);
 
         lower_dimensional_tags_.clear();

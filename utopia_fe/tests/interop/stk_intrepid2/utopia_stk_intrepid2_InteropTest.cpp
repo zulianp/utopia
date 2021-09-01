@@ -11,14 +11,15 @@
 #include "utopia_stk_FunctionSpace.hpp"
 #include "utopia_stk_Mesh.hpp"
 
-// Intrepid2 includes
-#include "utopia_intrepid2_LaplaceOperator.hpp"
-#include "utopia_intrepid2_LinearElasticity.hpp"
-#include "utopia_intrepid2_NeoHookean.hpp"
-#include "utopia_intrepid2_ShellTools.hpp"
-#include "utopia_intrepid2_VectorLaplaceOperator.hpp"
+// utopia/kokkos includes
+#include "utopia_kokkos_L2Norm.hpp"
+#include "utopia_kokkos_LaplaceOperator.hpp"
+#include "utopia_kokkos_LinearElasticity.hpp"
+#include "utopia_kokkos_NeoHookean.hpp"
+#include "utopia_kokkos_VectorLaplaceOperator.hpp"
 
-#include "utopia_intrepid2_L2Norm.hpp"
+// utopia/intrepid2 includes
+#include "utopia_intrepid2_ShellTools.hpp"
 
 // Interop includes
 #include "utopia_stk_intrepid2.hpp"

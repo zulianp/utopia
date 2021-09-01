@@ -135,6 +135,7 @@ namespace utopia {
         inline void add_node(const std::string &name, std::shared_ptr<Input> &&node) { nodes_[name] = std::move(node); }
 
         bool key_exists(const std::string &key) const override;
+        bool is_collection() const override;
 
     private:
         std::map<std::string, std::unique_ptr<IConvertible>> values_;

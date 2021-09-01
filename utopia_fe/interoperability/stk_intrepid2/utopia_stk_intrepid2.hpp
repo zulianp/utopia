@@ -6,6 +6,9 @@
 
 #include "utopia_intrepid2_Base.hpp"
 
+#include "utopia_stk_intrepid2_OmniAssembler.hpp"
+#include "utopia_stk_intrepid2_Transport.hpp"
+
 #ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_ForwardDeclarations.hpp"
 #endif
@@ -13,9 +16,10 @@
 #include "utopia_CreateFE.hpp"
 #include "utopia_LocalToGlobal.hpp"
 
-#include "utopia_intrepid2_Field.hpp"
 #include "utopia_intrepid2_ForwardDeclarations.hpp"
+#include "utopia_kokkos_Field.hpp"
 #include "utopia_stk_ForwardDeclarations.hpp"
+#include "utopia_stk_intrepid2_GradientField.hpp"
 
 #include "utopia_stk_FunctionSpace.hpp"
 
@@ -28,6 +32,9 @@ namespace utopia {
     template <typename T>
     using StkViewDevice_t = utopia::intrepid2::ViewDevice<T>;
     using StkIntViewDevice_t = utopia::intrepid2::ViewDevice<int>;
+
+    template <typename Scalar>
+    using Intrepid2Field = utopia::kokkos::Field<utopia::intrepid2::FE<Scalar>>;
 
     template <typename Scalar>
     class CreateFE<utopia::stk::FunctionSpace, utopia::intrepid2::FE<Scalar>> {
@@ -51,12 +58,13 @@ namespace utopia {
     };
 
     template <typename Scalar>
-    class ConvertField<Field<utopia::stk::FunctionSpace>, utopia::intrepid2::Field<Scalar>> {
+    class ConvertField<Field<utopia::stk::FunctionSpace>, Intrepid2Field<Scalar>> {
     public:
         using Vector = utopia::Traits<utopia::stk::FunctionSpace>::Vector;
         using SizeType = utopia::Traits<utopia::stk::FunctionSpace>::SizeType;
 
-        static void apply(const Field<utopia::stk::FunctionSpace> &from, utopia::intrepid2::Field<Scalar> &to);
+        static void apply(const Field<utopia::stk::FunctionSpace> &from, Intrepid2Field<Scalar> &to);
+        static void apply(const Field<utopia::stk::FunctionSpace> &from, Intrepid2Field<Scalar> &to, int var);
     };
 
 #ifdef UTOPIA_WITH_PETSC
@@ -76,6 +84,12 @@ namespace utopia {
                           const StkViewDevice_t<Scalar> &element_vectors,
                           AssemblyMode mode,
                           PetscVector &vector);
+
+        static void apply(const utopia::stk::FunctionSpace &space,
+                          const StkViewDevice_t<Scalar> &element_vectors,
+                          AssemblyMode mode,
+                          PetscVector &vector,
+                          const int n_var);
 
         static void side_apply(const utopia::stk::FunctionSpace &space,
                                const StkViewDevice_t<Scalar> &element_vectors,

@@ -141,4 +141,12 @@ namespace utopia {
         }
     }
 
+    bool InputParameters::is_collection() const {
+        for (auto &r : aux_roots_) {
+            if (r->is_collection()) return true;
+        }
+
+        return false;
+    }
+
 }  // namespace utopia

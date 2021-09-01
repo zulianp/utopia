@@ -75,6 +75,12 @@ namespace utopia {
 
             void bounding_box(AABB &output) const;
 
+            bool has_aura() const;
+
+            void create_edges();
+
+            inline static constexpr const char *universal_edge_set_name() { return "universal_edge_set"; }
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;
@@ -83,6 +89,7 @@ namespace utopia {
             friend class Impl;
 
             void init();
+            void set_is_generated_cube(const bool val);
         };
 
     }  // namespace stk

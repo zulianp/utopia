@@ -9,7 +9,8 @@ namespace utopia {
     public:
         using Scalar = typename utopia::Traits<Matrix>::Scalar;
 
-        QuadraticFunction(const std::shared_ptr<Matrix> &H, const std::shared_ptr<Vector> &rhs) : rhs_(rhs), H_(H) {
+        QuadraticFunction(const std::shared_ptr<const Matrix> &H, const std::shared_ptr<const Vector> &rhs)
+            : rhs_(rhs), H_(H) {
             assert(H);
             assert(rhs);
 
@@ -54,8 +55,8 @@ namespace utopia {
         }
 
     private:
-        std::shared_ptr<Vector> rhs_;
-        std::shared_ptr<Matrix> H_;
+        std::shared_ptr<const Vector> rhs_;
+        std::shared_ptr<const Matrix> H_;
     };
 
     template <class Matrix, class Vector>

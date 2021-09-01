@@ -31,20 +31,6 @@ namespace utopia {
         using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using Mesh_t = typename Traits<FunctionSpace>::Mesh;
 
-        // Use specialized compoenents for function space
-        using Obstacle_t = utopia::Obstacle<FunctionSpace>;
-        using OmniAssembler_t = utopia::OmniAssembler<FunctionSpace>;
-
-        // Use algorithms from utopia algebra
-        using QPSolver_t = utopia::QPSolver<Matrix_t, Vector_t>;
-        using SemismoothNewton_t = utopia::SemismoothNewton<Matrix_t, Vector_t>;
-        using Factorization_t = utopia::Factorization<Matrix_t, Vector_t>;
-        using LinearSolver_t = utopia::LinearSolver<Matrix_t, Vector_t>;
-        using IterativeSolver_t = utopia::IterativeSolver<Matrix_t, Vector_t>;
-        using AlgebraicMultigrid_t = utopia::AlgebraicMultigrid<Matrix_t, Vector_t>;
-        using ProjectedGaussSeidel_t = utopia::ProjectedGaussSeidel<Matrix_t, Vector_t>;
-        using KSPSolver_t = utopia::KSPSolver<Matrix_t, Vector_t>;
-
         void read(Input &in) override {
             in.get("verbose", verbose);
 

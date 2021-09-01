@@ -30,6 +30,8 @@ namespace utopia {
             SizeType n_nodes{-1};
             SizeType n_local_elements{-1};
             SizeType n_local_nodes{-1};
+            bool verbose{false};
+            bool is_generated_cube{false};
 
             void compute_mesh_stats() {
                 std::vector<size_t> entity_counts;
@@ -88,6 +90,8 @@ namespace utopia {
             if (rescale != 1.0) {
                 scale(rescale);
             }
+
+            in.get("verbose", impl_->verbose);
         }
 
         void Mesh::unit_cube(const SizeType &nx, const SizeType &ny, const SizeType &nz) {
@@ -99,6 +103,8 @@ namespace utopia {
             if (!io.load()) {
                 assert(false);
             }
+
+            set_is_generated_cube(true);
         }
 
         void Mesh::box(const AABB &box,
@@ -146,12 +152,25 @@ namespace utopia {
                     os << field->name() << ", " << field->entity_rank() << ", num states: " << field->number_of_states()
                        << '\n';
                 }
-
-                os << "n_local_elements:\t" << n_local_elements() << "\n";
-                os << "n_local_nodes:\t" << n_local_nodes() << "\n";
             }
 
-            // impl_->bulk_data->dump_all_mesh_info(os);
+            std::stringstream ss;
+
+            ss << "n_local_nodes:\t\t" << n_local_nodes() << "\n";
+            ss << "n_aura_nodes:\t\t" << count_aura_nodes(bulk_data()) << "\n";
+            ss << "n_shared_nodes:\t\t" << count_shared_nodes(bulk_data()) << "\n";
+            ss << "n_universal_nodes:\t" << count_universal_nodes(bulk_data()) << "\n";
+            ss << "\n";
+            ss << "n_local_elements:\t" << n_local_elements() << "\n";
+            ss << "n_aura_elements:\t" << count_aura_elements(bulk_data()) << "\n";
+            ss << "n_shared_elements:\t" << count_shared_elements(bulk_data()) << "\n";
+            ss << "n_universal_elements:\t" << count_universal_elements(bulk_data()) << "\n";
+
+            comm().synched_print(ss.str());
+
+            // if (impl_->verbose) {
+            //     // impl_->bulk_data->dump_all_mesh_info(os);
+            // }
         }
 
         const Mesh::Comm &Mesh::comm() const { return impl_->comm; }
@@ -191,7 +210,10 @@ namespace utopia {
 
         Mesh::SizeType Mesh::n_local_nodes() const { return impl_->n_local_nodes; }
 
-        void Mesh::displace(const Vector &displacement) { assert(false); }
+        void Mesh::displace(const Vector &) {
+            Utopia::Abort("IMPLEMENT ME");
+            assert(false);
+        }
 
         void Mesh::init() { impl_->compute_mesh_stats(); }
 
@@ -252,5 +274,19 @@ namespace utopia {
             }
         }
 
+        bool Mesh::has_aura() const { return bulk_data().is_automatic_aura_on(); }
+
+        void Mesh::create_edges() {
+            auto &edges_part = meta_data().declare_part(universal_edge_set_name(), ::stk::topology::EDGE_RANK);
+            ::stk::mesh::create_edges(bulk_data(), meta_data().universal_part(), &edges_part);
+
+            std::stringstream ss;
+            ss << "n_universal_edges:\t"
+               << utopia::stk::count_entities(bulk_data(), ::stk::topology::EDGE_RANK, edges_part) << "\n";
+
+            comm().synched_print(ss.str());
+        }
+
+        void Mesh::set_is_generated_cube(const bool val) { impl_->is_generated_cube = val; }
     }  // namespace stk
 }  // namespace utopia

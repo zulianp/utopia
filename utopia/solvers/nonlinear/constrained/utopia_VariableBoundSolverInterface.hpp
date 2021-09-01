@@ -36,6 +36,8 @@ namespace utopia {
             return true;
         }
 
+        virtual void set_selection(const std::shared_ptr<Vector> &) {}
+
         const BoxConstraints &get_box_constraints() const { return constraints_; }
         BoxConstraints &get_box_constraints() { return constraints_; }
 

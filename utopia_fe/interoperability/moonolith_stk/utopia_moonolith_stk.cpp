@@ -144,7 +144,8 @@ namespace utopia {
             auto &bulk_data = in.bulk_data();
 
             const Size_t n_local_elements = in.n_local_elements();
-            const Size_t n_local_nodes = utopia::stk::count_universal_nodes(bulk_data);
+            const Size_t n_local_nodes =
+                utopia::stk::count_universal_nodes(bulk_data) - utopia::stk::count_aura_nodes(bulk_data);
 
             auto m_mesh = std::make_shared<MoonolithMesh_t>(in.comm().raw_comm());
 
@@ -156,12 +157,17 @@ namespace utopia {
 
             assert(coords);
 
+            const bool has_aura = in.has_aura();
+
             for (const auto &ib : node_buckets) {
                 const Bucket_t &b = *ib;
                 const Bucket_t::size_type length = b.size();
 
                 for (Bucket_t::size_type k = 0; k < length; ++k) {
                     Entity_t node = b[k];
+
+                    if (has_aura && bulk_data.in_receive_ghost(node)) continue;
+
                     auto moonolith_index = utopia::stk::convert_entity_to_index(node);
                     auto &p = m_mesh->node(moonolith_index);
 
@@ -173,7 +179,8 @@ namespace utopia {
                 }
             }
 
-            const BucketVector_t &elem_buckets = bulk_data.get_buckets(::stk::topology::ELEMENT_RANK, s_universal);
+            const BucketVector_t &elem_buckets =
+                bulk_data.get_buckets(::stk::topology::ELEMENT_RANK, meta_data.locally_owned_part());
 
             int manifold_dim = -1;
 
@@ -211,16 +218,16 @@ namespace utopia {
             out.wrap(m_mesh);
         }
 
-        static void extract_surface(const utopia::stk::Mesh &in, utopia::moonolith::Mesh &out) {
-            auto &meta_data = in.meta_data();
-            auto &bulk_data = in.bulk_data();
-
-            ::stk::mesh::Selector s_universal = meta_data.universal_part();
-
+        static void extract_selection(const ::stk::mesh::BulkData &bulk_data,
+                                      const ::stk::mesh::Selector &selector,
+                                      const ::stk::topology::rank_t &topo,
+                                      MoonolithMesh_t &out) {
+            auto &meta_data = bulk_data.mesh_meta_data();
             auto *coords = meta_data.coordinate_field();
-            auto topo = meta_data.side_rank();
 
-            const BucketVector_t &elem_buckets = bulk_data.get_buckets(topo, s_universal);
+            const bool has_aura = bulk_data.is_automatic_aura_on();
+
+            const BucketVector_t &elem_buckets = bulk_data.get_buckets(topo, selector);
 
             Bucket_t::size_type n_selected_elements = 0;
             Bucket_t::size_type n_selected_nodes = 0;
@@ -255,15 +262,15 @@ namespace utopia {
             // std::cout << "Num elem: " << n_selected_elements << "\n";
 
             ////////////////////////////////////////////////////////////////
-            auto m_mesh = std::make_shared<MoonolithMesh_t>(in.comm().raw_comm());
 
-            m_mesh->resize(n_selected_elements, n_selected_nodes);
+            out.resize(n_selected_elements, n_selected_nodes);
 
             ////////////////////////////////////////////////////////////////
             // Nodes
             ////////////////////////////////////////////////////////////////
 
-            const BucketVector_t &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, s_universal);
+            const BucketVector_t &node_buckets =
+                bulk_data.get_buckets(::stk::topology::NODE_RANK, meta_data.universal_part());
 
             for (const auto &ib : node_buckets) {
                 const Bucket_t &b = *ib;
@@ -271,13 +278,15 @@ namespace utopia {
 
                 for (Bucket_t::size_type k = 0; k < length; ++k) {
                     Entity_t node = b[k];
+                    if (has_aura && bulk_data.in_receive_ghost(node)) continue;
+
                     auto moonolith_index = node_mapping[utopia::stk::convert_entity_to_index(node)];
 
                     if (moonolith_index == -1) continue;
 
-                    assert(moonolith_index < n_selected_nodes);
+                    assert(Bucket_t::size_type(moonolith_index) < n_selected_nodes);
 
-                    auto &p = m_mesh->node(moonolith_index);
+                    auto &p = out.node(moonolith_index);
 
                     const Scalar_t *points = (const Scalar_t *)::stk::mesh::field_data(*coords, node);
 
@@ -298,15 +307,15 @@ namespace utopia {
                 auto moonolith_type = convert_elem_type(b.topology());
                 const Bucket_t::size_type length = b.size();
 
-                int sideset = utopia::stk::extract_set_id_from_bucket(b, topo);
+                int block_id = utopia::stk::extract_set_id_from_bucket(b, topo);
 
                 for (Bucket_t::size_type k = 0; k < length; ++k) {
                     Entity_t elem = b[k];
                     const Size_t n_nodes = bulk_data.num_nodes(elem);
 
-                    auto &e = m_mesh->elem(selected_elem_idx++);
+                    auto &e = out.elem(selected_elem_idx++);
                     e.type = moonolith_type;
-                    e.block = sideset;
+                    e.block = block_id;
                     e.is_affine = true;  /// elem.has_affine_map();
                     e.global_idx = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(elem));
                     e.nodes.resize(n_nodes);
@@ -318,10 +327,23 @@ namespace utopia {
                     }
                 }
             }
+        }
+
+        static void extract_surface(const utopia::stk::Mesh &in, utopia::moonolith::Mesh &out) {
+            auto &meta_data = in.meta_data();
+            auto &bulk_data = in.bulk_data();
+
+            const bool has_aura = in.has_aura();
+
+            auto *coords = meta_data.coordinate_field();
+            auto topo = meta_data.side_rank();
+
+            auto m_mesh = std::make_shared<MoonolithMesh_t>(in.comm().raw_comm());
+
+            extract_selection(bulk_data, meta_data.locally_owned_part(), topo, *m_mesh);
 
             m_mesh->set_manifold_dim(in.spatial_dimension() - 1);
             m_mesh->finalize();
-
             out.wrap(m_mesh);
         }
 
@@ -340,25 +362,31 @@ namespace utopia {
         //     return sideset;
         // }
 
-        static void extract_trace_space(const utopia::stk::FunctionSpace &in, utopia::moonolith::FunctionSpace &out) {
-            auto m_mesh = std::make_shared<utopia::moonolith::Mesh>(in.comm());
-            extract_surface(in.mesh(), *m_mesh);
-            out.init(m_mesh, false);
-
-            auto &out_space = *out.raw_type<Dim>();
-            auto topo = in.mesh().meta_data().side_rank();
-
+        static void extract_space_selection(const utopia::stk::FunctionSpace &in,
+                                            const ::stk::mesh::Selector &selector,
+                                            const ::stk::topology::rank_t &topo,
+                                            utopia::moonolith::FunctionSpace &out) {
             auto &meta_data = in.mesh().meta_data();
             auto &bulk_data = in.mesh().bulk_data();
 
-            ::stk::mesh::Selector s_universal = meta_data.universal_part();
-            const BucketVector_t &elem_buckets = bulk_data.get_buckets(topo, s_universal);
+            auto m_mesh = std::make_shared<MoonolithMesh_t>(in.comm().raw_comm());
+            extract_selection(bulk_data, selector, topo, *m_mesh);
+
+            auto out_mesh = std::make_shared<utopia::moonolith::Mesh>(in.comm());
+            m_mesh->set_manifold_dim(in.mesh().spatial_dimension() - 1);
+            m_mesh->finalize();
+            out_mesh->wrap(m_mesh);
+            out.init(out_mesh, false);
+
+            auto &out_space = *out.raw_type<Dim>();
+
+            const BucketVector_t &elem_buckets = bulk_data.get_buckets(topo, selector);
 
             Bucket_t::size_type n_local_dofs = in.n_local_dofs();
             Bucket_t::size_type n_dofs = in.n_dofs();
 
             auto &out_dof_map = out_space.dof_map();
-            out_dof_map.resize(m_mesh->n_local_elements());
+            out_dof_map.resize(out_mesh->n_local_elements());
             out_dof_map.set_n_local_dofs(n_local_dofs);
             out_dof_map.set_n_dofs(n_dofs);
             SizeType n_var = in.n_var();
@@ -390,8 +418,9 @@ namespace utopia {
 
                     if (local_to_global.empty()) {
                         for (Size_t i = 0; i < n_nodes; ++i) {
-                            dof_object.dofs[i] =
-                                utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node_ids[i])) * n_var;
+                            // dof_object.dofs[i] =
+                            //     utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node_ids[i])) * n_var;
+                            dof_object.dofs[i] = utopia::stk::convert_entity_to_index(node_ids[i]) * n_var;
                         }
                     } else {
                         for (Size_t i = 0; i < n_nodes; ++i) {
@@ -402,6 +431,26 @@ namespace utopia {
             }
 
             assert(out_space.dof_map().is_valid());
+        }
+
+        static void extract_trace_space(const utopia::stk::FunctionSpace &in, utopia::moonolith::FunctionSpace &out) {
+            auto topo = in.mesh().meta_data().side_rank();
+
+            auto &meta_data = in.mesh().meta_data();
+            auto &bulk_data = in.mesh().bulk_data();
+
+            auto &dirichlet_boundary = in.dirichlet_boundary();
+
+            ::stk::mesh::Selector selector = meta_data.locally_owned_part();
+
+            for (auto &bc : dirichlet_boundary.conditions) {
+                auto *part = meta_data.get_part(bc.name);
+                if (part) {
+                    selector &= !*part;
+                }
+            }
+
+            extract_space_selection(in, selector, topo, out);
         }
     };
 

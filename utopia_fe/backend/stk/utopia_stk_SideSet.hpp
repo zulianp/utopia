@@ -16,7 +16,7 @@ namespace utopia {
                 inline static constexpr BoundaryIdType right_id() { return 4; }
                 inline static constexpr BoundaryIdType top_id() { return 5; }
                 inline static constexpr BoundaryIdType front_id() { return 6; }
-                inline static constexpr BoundaryIdType invalid_id() { return 0; }
+                inline static constexpr BoundaryIdType invalid_id() { return -1; }
 
                 inline static SideSet left() { return SideSet(left_id()); }
                 inline static SideSet bottom() { return SideSet(bottom_id()); }
@@ -25,6 +25,19 @@ namespace utopia {
                 inline static SideSet right() { return SideSet(right_id()); }
                 inline static SideSet top() { return SideSet(top_id()); }
                 inline static SideSet front() { return SideSet(front_id()); }
+
+                inline static std::string convert(const std::string &user_space_name) {
+                    auto id = id_from_user_space_name(user_space_name);
+                    if (id != invalid_id()) {
+                        return name_from_id(id);
+                    }
+
+                    return "";
+                }
+
+                inline static std::string name_from_id(const BoundaryIdType id) {
+                    return "surface_" + std::to_string(id);
+                }
 
                 inline static BoundaryIdType id_from_user_space_name(const std::string &str_in) {
                     if (str_in.empty()) {

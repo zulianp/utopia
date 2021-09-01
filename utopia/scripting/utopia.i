@@ -5,6 +5,7 @@
 #define SWIG_FILE_WITH_INIT
  %}
 
+#define UTOPIA_WITH_NUMPY
 #ifdef UTOPIA_WITH_NUMPY
 
 %include "numpy.i"

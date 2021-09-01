@@ -5,16 +5,15 @@
 
 using namespace utopia;
 
-void mars_poisson() {
+void mars_poisson_aux(int nx, int ny, int nz) {
     using Mesh_t = utopia::mars::Mesh;
     using FunctionSpace_t = utopia::mars::FunctionSpace;
     using Vector_t = Traits<FunctionSpace_t>::Vector;
     using Matrix_t = Traits<FunctionSpace_t>::Matrix;
     using Scalar_t = Traits<FunctionSpace_t>::Scalar;
 
-    int n = 400;
     Mesh_t mesh;
-    mesh.unit_cube(n, n, 0);
+    mesh.unit_cube(nx, ny, nz);
 
     FunctionSpace_t space;
     space.init(make_ref(mesh));
@@ -43,10 +42,10 @@ void mars_poisson() {
     Vector_t sum_rows = mat * ones;
     Scalar_t sum_mat = sum(abs(sum_rows));
 
-    utopia_test_assert(sum_mat < 1e-8);
-
     // write("load_mat.mm", mat);
     // write("load_rhs.mm", rhs);
+
+    utopia_test_assert(sum_mat < 1e-8);
 
     space.apply_constraints(mat, rhs);
     // space.apply_constraints(x);
@@ -57,9 +56,17 @@ void mars_poisson() {
     cg.verbose(true);
 
     utopia_test_assert(cg.solve(mat, rhs, x));
-    utopia_test_assert(space.write("result.vtu", x));
+    utopia_test_assert(
+        space.write("result" + std::to_string(nx) + "x" + std::to_string(ny) + "x" + std::to_string(nz) + ".vtu", x));
 }
 
-void mars_assembler() { UTOPIA_RUN_TEST(mars_poisson); }
+void mars_poisson_2D() { mars_poisson_aux(10, 11, 0); }
+
+void mars_poisson_3D() { mars_poisson_aux(8, 9, 10); }
+
+void mars_assembler() {
+    UTOPIA_RUN_TEST(mars_poisson_2D);
+    UTOPIA_RUN_TEST(mars_poisson_3D);
+}
 
 UTOPIA_REGISTER_TEST_FUNCTION(mars_assembler);

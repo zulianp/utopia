@@ -131,6 +131,9 @@ namespace utopia {
         set_preconditioner();  //(A) //FIXME
     }
 
+    // https://trilinos.github.io/pdfs/mueluguide.pdf
+    // https://trilinos.github.io/pdfs/MueLu_tutorial.pdf
+
     template <typename Matrix, typename Vector>
     void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner(const Matrix &precond) {
         bool direct_solver =

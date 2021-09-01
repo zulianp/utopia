@@ -1,51 +1,36 @@
 #ifndef UTOPIA_PETSC_HPP
 #define UTOPIA_PETSC_HPP
 
-#include "utopia_petsc_ForwardDeclarations.hpp"
-#include "utopia_petsc_Solver_Traits.hpp"
-#include "utopia_petsc_Traits.hpp"
-
+#include "utopia_PetscIS.hpp"
+#include "utopia_petsc.hpp"
+#include "utopia_petsc_Base.hpp"
+#include "utopia_petsc_Communicator.hpp"
+#include "utopia_petsc_Each.hpp"
 #include "utopia_petsc_Error.hpp"
-#include "utopia_petsc_Matrix.hpp"
-#include "utopia_petsc_Vector.hpp"
-
-#include "utopia_petsc_Types.hpp"
-
-#include "utopia_petsc_RowView.hpp"
-
-#include "utopia_petsc_LinearSolverFactory.hpp"
-#include "utopia_petsc_TrustRegionFactory.hpp"
-#include "utopia_petsc_solvers.hpp"
-
-//#include "utopia_petsc_Each.hpp"
-#include "utopia_petsc_Newton.hpp"
-#include "utopia_petsc_TaoTRQP.hpp"
-
-#ifdef UTOPIA_WITH_SLEPC
-#include "utopia_petsc_Slepc.hpp"
-#endif
-
-// very much experimental files for the moment
-//#include "utopia_petsc_Each.hpp"
-#include "utopia_petsc_SNES.hpp"
-#include "utopia_petsc_build_ksp.hpp"
-#include "utopia_petsc_debug.hpp"
-
-#include "utopia_petsc_Eval.hpp"
+#include "utopia_petsc_ForwardDeclarations.hpp"
+#include "utopia_petsc_IndexSet.hpp"
 #include "utopia_petsc_Layout.hpp"
+#include "utopia_petsc_Library.hpp"
+#include "utopia_petsc_Matrix.hpp"
+#include "utopia_petsc_Matrix_impl.hpp"
+#include "utopia_petsc_Redundant.hpp"
+#include "utopia_petsc_RowView.hpp"
+#include "utopia_petsc_Traits.hpp"
+#include "utopia_petsc_Types.hpp"
+#include "utopia_petsc_Utils.hpp"
+#include "utopia_petsc_Vector.hpp"
+#include "utopia_petsc_Vector_impl.hpp"
+#include "utopia_petsc_debug.hpp"
+#include "utopia_petsc_impl.hpp"
+#include "utopia_petsc_quirks.hpp"
 
-#include "utopia_petsc_MeasureResidual.hpp"
+// views
+#include "utopia_petsc_CrsView.hpp"
 
-/// FIXME
+// eval
+#include "utopia_petsc_Eval.hpp"
 
-// #include "utopia_petsc_Matrix_impl.hpp"
-// #include "utopia_petsc_Vector_impl.hpp"
-
-namespace utopia {
-    void optimize_nnz(PetscMatrix &A);
-    bool is_diagonally_dominant(const PetscMatrix &A);
-    void local_block_view(const PetscMatrix &mat, PetscMatrix &block);
-    // void local_view(const PetscVector &vec, PetscVector &lv);
-}  // namespace utopia
+// solvers
+#include "utopia_petsc_Solvers.hpp"
 
 #endif  // UTOPIA_PETSC_HPP

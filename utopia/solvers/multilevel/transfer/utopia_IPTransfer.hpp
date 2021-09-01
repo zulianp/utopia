@@ -5,6 +5,8 @@
 #include "utopia_Transfer.hpp"
 #include "utopia_TransferCommons.hpp"
 
+#include "utopia_MatrixPtAPProduct.hpp"
+
 #include <cassert>
 #include <cmath>
 #include <memory>

@@ -1,6 +1,7 @@
 #ifndef UTOPIA_MULTILEVEL_MASK_HPP
 #define UTOPIA_MULTILEVEL_MASK_HPP
 
+#include "utopia_DeviceView.hpp"
 #include "utopia_IPRTransfer.hpp"
 #include "utopia_Level.hpp"
 #include "utopia_MultiLevelBase.hpp"

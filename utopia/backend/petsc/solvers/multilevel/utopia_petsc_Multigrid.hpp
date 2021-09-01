@@ -10,6 +10,9 @@
 #include "utopia_petsc.hpp"
 #include "utopia_petsc_impl.hpp"
 
+#include "utopia_petsc_Factorization.hpp"
+#include "utopia_petsc_KSPSolver.hpp"
+
 namespace utopia {
 
     template <class Matrix, class Vector>

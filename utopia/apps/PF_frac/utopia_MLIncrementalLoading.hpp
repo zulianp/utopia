@@ -13,6 +13,7 @@
 #include "utopia_PFMassMatrix.hpp"
 #include "utopia_RedundantQPSolver.hpp"
 #include "utopia_make_unique.hpp"
+#include "utopia_petsc_Solvers.hpp"
 
 namespace utopia {
 

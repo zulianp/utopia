@@ -5,19 +5,12 @@
 #include "utopia_IPRTransfer.hpp"
 #include "utopia_Multigrid.hpp"
 
+#include "utopia_Agglomerate.hpp"
+#include "utopia_BlockAgglomerate.hpp"
+#include "utopia_ILU.hpp"
+#include "utopia_MatrixAgglomerator.hpp"
+
 namespace utopia {
-
-    template <class Matrix>
-    class MatrixAgglomerator : public Clonable, public Configurable {
-    public:
-        using Transfer = utopia::Transfer<Matrix, typename Traits<Matrix>::Vector>;
-
-        virtual ~MatrixAgglomerator() = default;
-        virtual std::shared_ptr<Transfer> create_transfer(const Matrix &in) = 0;
-        virtual std::shared_ptr<Transfer> create_truncated_transfer(const Matrix &in) { return create_transfer(in); }
-        virtual void read(Input &) override {}
-        MatrixAgglomerator *clone() const override = 0;
-    };
 
     template <class Matrix>
     class AlgebraicMultigridBuilder {
@@ -74,6 +67,8 @@ namespace utopia {
         using Scalar = typename Traits<Matrix>::Scalar;
         using SizeType = typename Traits<Matrix>::SizeType;
 
+        using ILU = utopia::ILU<Matrix, Vector>;
+
         using Super::max_it;
         using Super::verbose;
 
@@ -86,10 +81,34 @@ namespace utopia {
 
         inline void set_n_levels(const int n_levels) { n_levels_ = n_levels; }
 
+        inline void set_block_size(const int block_size) { block_size_ = block_size; }
+
+        void ensure_agglomerator() {
+            if (!agglomerator_) {
+#ifdef UTOPIA_WITH_PETSC
+                if (block_size_ == 2) {
+                    agglomerator_ = std::make_shared<BlockAgglomerate<Matrix, 2>>();
+                } else if (block_size_ == 3) {
+                    agglomerator_ = std::make_shared<BlockAgglomerate<Matrix, 3>>();
+                } else if (block_size_ == 4) {
+                    agglomerator_ = std::make_shared<BlockAgglomerate<Matrix, 4>>();
+                } else
+#endif  // UTOPIA_WITH_PETSC
+
+                {
+                    agglomerator_ = std::make_shared<Agglomerate<Matrix>>();
+                }
+            }
+        }
+
         void read(Input &in) override {
             Super::read(in);
             in.get("n_levels", n_levels_);
+            in.get("block_size", block_size_);
+
             algorithm_.read(in);
+
+            ensure_agglomerator();
 
             if (agglomerator_) {
                 in.get("agglomerator", *agglomerator_);
@@ -116,6 +135,7 @@ namespace utopia {
 
             Super::update(op);
 
+            ensure_agglomerator();
             AlgebraicMultigridBuilder<Matrix>::build(n_levels_, op, *agglomerator_, algorithm_);
 
             algorithm_.adjust_memory();
@@ -132,9 +152,9 @@ namespace utopia {
             algorithm_.max_it(max_it_in);
         }
 
-        AlgebraicMultigrid(const std::shared_ptr<Smoother> &smoother,
-                           const std::shared_ptr<Solver> &coarse_solver,
-                           const std::shared_ptr<MatrixAgglomerator<Matrix>> &agglomerator)
+        AlgebraicMultigrid(const std::shared_ptr<Smoother> &smoother = std::make_shared<ILU>(),
+                           const std::shared_ptr<Solver> &coarse_solver = std::make_shared<ILU>(),
+                           const std::shared_ptr<MatrixAgglomerator<Matrix>> &agglomerator = nullptr)
             : algorithm_(smoother, coarse_solver), agglomerator_(agglomerator) {}
 
         inline const Multigrid<Matrix, Vector> &algorithm() const { return algorithm_; }
@@ -144,7 +164,8 @@ namespace utopia {
         Multigrid<Matrix, Vector> algorithm_;
         std::shared_ptr<MatrixAgglomerator<Matrix>> agglomerator_;
         SizeType n_levels_{2};
-    };
+        int block_size_{1};
+    };  // namespace utopia
 
 }  // namespace utopia
 

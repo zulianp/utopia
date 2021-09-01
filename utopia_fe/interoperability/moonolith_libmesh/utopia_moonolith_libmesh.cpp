@@ -82,4 +82,45 @@ namespace utopia {
         }
     }
 
+    void ExtractTraceSpace<utopia::libmesh::FunctionSpace, utopia::moonolith::FunctionSpace>::apply(
+        const utopia::libmesh::FunctionSpace &in,
+        utopia::moonolith::FunctionSpace &out) {
+        using Scalar = Traits<utopia::libmesh::FunctionSpace>::Scalar;
+
+        const int dim = in.mesh().spatial_dimension();
+
+        switch (in.mesh().spatial_dimension()) {
+            case 2: {
+                using Mesh2_t = ::moonolith::Mesh<Scalar, 2>;
+                using Space2_t = ::moonolith::FunctionSpace<Mesh2_t>;
+
+                auto mesh = std::make_shared<Mesh2_t>(in.comm().raw_comm());
+                auto temp_space = std::make_shared<Space2_t>(mesh);
+
+                extract_trace_space(in.mesh().raw_type(), in.raw_type_dof_map(), 0, *temp_space, {});
+
+                out.wrap(temp_space);
+                break;
+            }
+
+            case 3: {
+                using Mesh3_t = ::moonolith::Mesh<Scalar, 3>;
+                using Space3_t = ::moonolith::FunctionSpace<Mesh3_t>;
+
+                auto mesh = std::make_shared<Mesh3_t>(in.comm().raw_comm());
+                auto temp_space = std::make_shared<Space3_t>(mesh);
+
+                extract_trace_space(in.mesh().raw_type(), in.raw_type_dof_map(), 0, *temp_space, {});
+
+                out.wrap(temp_space);
+                break;
+            }
+
+            default: {
+                assert(false);
+                Utopia::Abort("ExtractTraceSpace<FunctionSpace> spatial_dimension not supported");
+            }
+        }
+    }
+
 }  // namespace utopia

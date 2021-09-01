@@ -2,6 +2,7 @@
 #define UTOPIA_MARS_LAPLACE_OPERATOR_HPP
 
 #include "mars_quad4.hpp"
+#include "utopia_kokkos_LaplaceOp.hpp"
 #include "utopia_mars_ConcreteFEAssembler.hpp"
 
 namespace utopia {
@@ -14,56 +15,54 @@ namespace utopia {
             using Vector = Traits<mars::FunctionSpace>::Vector;
             using Scalar = Traits<mars::FunctionSpace>::Scalar;
             using Super = utopia::mars::ConcreteFEAssembler<DMesh, Args...>;
+
+            // Correct fe type is managed in ConcreteFEAssembler
             using FE = typename Super::FE;
+
+            // Same op template used in intrepid2-based backend
+            using Op = utopia::kokkos::kernels::LaplaceOp<Scalar, Scalar, typename FE::Gradient, typename FE::Measure>;
 
             bool assemble(const Vector &x, Matrix &hessian, Vector &gradient) override {
                 if (!assemble(hessian)) {
                     return false;
                 }
 
-                gradient = hessian * x;
+                assemble(x, gradient);
                 return true;
             }
 
             bool assemble(const Vector &, Matrix &hessian) override { return assemble(hessian); }
 
             bool assemble(const Vector &x, Vector &vec) override {
-                assert(false && "IMPLEMENT ME");
-                return false;
+                this->ensure_fe();
+
+                auto &fe = this->fe();
+
+                // This is for linear materials since gradient := A x - b
+                // non linear materials will have to implement a separate gradient Op
+                Op op(coeff_, fe.grad(), fe.measure());
+                return Super::scalar_op_apply(op, x, vec);
             }
 
             bool assemble(Matrix &hessian) override {
-                init();
-                fe_->intrepid2_laplace_operator();
+                this->ensure_fe();
 
-                // FIXME Bad it should not do this
-                auto mat_impl =
-                    Teuchos::rcp(new Matrix::CrsMatrixType(this->handler()->get_sparsity_pattern().get_matrix(),
-                                                           hessian.raw_type()->getRowMap(),
-                                                           hessian.raw_type()->getColMap()));
-                hessian.wrap(mat_impl, false);
-                return true;
+                auto &fe = this->fe();
+                Op op(coeff_, fe.grad(), fe.measure());
+                return Super::scalar_op_assemble_matrix(op, hessian);
             }
 
             void read(Input &in) override { in.get("coeff", coeff_); }
 
-            void set_environment(const std::shared_ptr<Environment<mars::FunctionSpace>> &) override {
-                // assert(false);
+            void set_environment(const std::shared_ptr<Environment<mars::FunctionSpace>> &env) override {
+                Super::set_environment(env);
+                // DO extra things ...
             }
 
             inline bool is_linear() const override { return true; }
 
         private:
             Scalar coeff_{1.0};
-            std::unique_ptr<FE> fe_;
-
-            void init() {
-                if (!fe_) {
-                    auto handler = this->handler();
-                    fe_ = utopia::make_unique<FE>(handler->get_sparsity_pattern(), handler->get_fe_dof_map());
-                    fe_->init();
-                }
-            }
         };
 
     }  // namespace mars

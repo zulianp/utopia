@@ -231,6 +231,10 @@ namespace utopia {
         }
 
         FunctionSpace::FunctionSpace(const std::shared_ptr<Mesh> &mesh) : impl_(utopia::make_unique<Impl>()) {
+            init(mesh);
+        }
+
+        void FunctionSpace::init(const std::shared_ptr<Mesh> &mesh) {
             impl_->mesh = mesh;
             impl_->systems = std::make_shared<libMesh::EquationSystems>(mesh->raw_type());
         }
@@ -245,24 +249,24 @@ namespace utopia {
             Sys main_system;
             main_system.read(in);
 
-            if (Options().parse(in)) {
+            // if (Options().parse(in)) {
+            if (impl_->mesh->empty()) {
+                in.get("mesh", *impl_->mesh);
+
+                // Users did not care, so lets give them a cube
                 if (impl_->mesh->empty()) {
-                    in.get("mesh", *impl_->mesh);
-
-                    // Users did not care, so lets give them a cube
-                    if (impl_->mesh->empty()) {
-                        impl_->mesh->unit_cube();
-                    }
+                    impl_->mesh->unit_cube();
                 }
-
-                if (!impl_->systems) {
-                    impl_->systems = std::make_shared<libMesh::EquationSystems>(impl_->mesh->raw_type());
-                }
-
-                main_system.add_to_space(*impl_);
-                impl_->systems->init();
-                impl_->name = main_system.name;
             }
+
+            if (!impl_->systems) {
+                impl_->systems = std::make_shared<libMesh::EquationSystems>(impl_->mesh->raw_type());
+            }
+
+            main_system.add_to_space(*impl_);
+            impl_->systems->init();
+            impl_->name = main_system.name;
+            // }
 
             UTOPIA_TRACE_REGION_END("libmesh::FunctionSpace::read");
         }
@@ -271,9 +275,9 @@ namespace utopia {
             Sys main_system;
             main_system.read(in);
 
-            if (!Options().parse(in)) {
-                return false;
-            }
+            // if (!Options().parse(in)) {
+            //     return false;
+            // }
 
             Path path;
             in.get("mesh", [&](Input &in) { in.get("path", path); });

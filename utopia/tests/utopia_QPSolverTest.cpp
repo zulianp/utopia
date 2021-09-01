@@ -8,7 +8,6 @@
 #include "test_problems/utopia_QPSolverTestProblem.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
 
-#include "utopia_ProjectedGaussSeidelNew.hpp"
 #include "utopia_polymorphic_QPSolver.hpp"
 
 #include "utopia_MonotoneAlgebraicMultigrid.hpp"
@@ -19,6 +18,8 @@
 #include "utopia_Poisson1D.hpp"
 
 #include "utopia_Agglomerate.hpp"
+#include "utopia_LogBarrierFunction.hpp"
+#include "utopia_LogBarrierQPSolver.hpp"
 
 #ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
@@ -71,14 +72,8 @@ namespace utopia {
             run_qp_solver(pgs);
         }
 
-        void MPRGP_test() const {
-            MPRGP<Matrix, Vector> qp_solver;
-            run_qp_solver(qp_solver);
-
-            auto &&comm = Comm::get_default();
-
+        static void create_symm_lapl_test_data(Comm &comm, Matrix &A, Vector &b, BoxConstraints<Vector> &box) {
             SizeType n = 100;
-            Matrix A;
             A.sparse(layout(comm, Traits::decide(), Traits::decide(), n, n), 3, 2);
             assemble_symmetric_laplacian_1D(A, true);
 
@@ -100,7 +95,7 @@ namespace utopia {
                 }
             }
 
-            Vector b(row_layout(A), 50.0);
+            b.values(row_layout(A), 50.0);
 
             {
                 Range row_range = range(b);
@@ -125,12 +120,132 @@ namespace utopia {
 
             b = h * b;
 
-            Vector lb(row_layout(A), -0.5);
-            Vector ub(row_layout(A), 0.5);
+            auto lb = std::make_shared<Vector>(row_layout(A), -0.5);
+            auto ub = std::make_shared<Vector>(row_layout(A), 0.5);
+
+            box = make_box_constaints(lb, ub);
+        }
+
+        void log_barrier_test() {
+            auto &&comm = Comm::get_default();
+
+            Matrix A;
+            Vector b;
+            BoxConstraints<Vector> box;
+            create_symm_lapl_test_data(comm, A, b, box);
+
+            // b *= 0.5;
+            // box.lower_bound() = nullptr;
+            // box.upper_bound() = nullptr;
+            QuadraticFunction<Matrix, Vector> fun(make_ref(A), make_ref(b));
+
+            InputParameters params;
+            // params.set("verbose", true);
+            params.set("barrier_parameter", 1e-5);
+            params.set("barrier_parameter_shrinking_factor", 0.7);
+
+            LogBarrierFunction<Matrix, Vector> barrier(make_ref(fun), make_ref(box));
+            barrier.read(params);
+
+            ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+            cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector>>());
+            // cg.verbose(true);
+            cg.max_it(20);
+
+            Newton<Matrix, Vector> newton(make_ref(cg));
+            // newton.verbose(true);
+
+            Vector x(layout(b));
+
+            // Linear solve first to get closer to solution
+            cg.solve(A, b, x);
+            barrier.project_onto_feasibile_region(x);
+
+            // if (Traits::Backend == PETSC) {
+            //     rename("x0", x);
+            //     write("X0.m", x);
+            // }
+
+            newton.solve(barrier, x);
+
+            // if (Traits::Backend == PETSC) {
+            //     rename("x", x);
+            //     write("X.m", x);
+
+            //     if (box.has_lower_bound()) {
+            //         rename("lb", *box.lower_bound());
+            //         write("LB.m", *box.lower_bound());
+            //     }
+
+            //     if (box.has_upper_bound()) {
+            //         rename("ub", *box.upper_bound());
+            //         write("UB.m", *box.upper_bound());
+            //     }
+
+            //     rename("a", A);
+            //     write("A.m", A);
+
+            //     rename("b", b);
+            //     write("B.m", b);
+            // }
+        }
+
+        void log_barrier_qp_solver_test() {
+            auto &&comm = Comm::get_default();
+
+            Matrix A;
+            Vector b;
+            BoxConstraints<Vector> box;
+            create_symm_lapl_test_data(comm, A, b, box);
+
+            InputParameters params;
+            // params.set("verbose", true);
+            params.set("barrier_parameter", 1e-5);
+            params.set("barrier_parameter_shrinking_factor", 0.7);
+
+            LogBarrierQPSolver<Matrix, Vector> solver;
+            solver.set_box_constraints(box);
+            solver.read(params);
+
+            Vector x(layout(b));
+            utopia_test_assert(solver.solve(A, b, x));
+
+            // if (Traits::Backend == PETSC) {
+            //     rename("x", x);
+            //     write("X.m", x);
+
+            //     if (box.has_lower_bound()) {
+            //         rename("lb", *box.lower_bound());
+            //         write("LB.m", *box.lower_bound());
+            //     }
+
+            //     if (box.has_upper_bound()) {
+            //         rename("ub", *box.upper_bound());
+            //         write("UB.m", *box.upper_bound());
+            //     }
+
+            //     rename("a", A);
+            //     write("A.m", A);
+
+            //     rename("b", b);
+            //     write("B.m", b);
+            // }
+        }
+
+        void MPRGP_test() const {
+            MPRGP<Matrix, Vector> qp_solver;
+            run_qp_solver(qp_solver);
+
+            auto &&comm = Comm::get_default();
+
+            Matrix A;
+            Vector b;
+            BoxConstraints<Vector> box;
+            create_symm_lapl_test_data(comm, A, b, box);
 
             Vector x = 0 * b;
 
-            qp_solver.set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));
+            qp_solver.set_box_constraints(box);
             qp_solver.verbose(false);
             qp_solver.max_it(n * 2);
             qp_solver.set_eig_comp_tol(1e-1);
@@ -138,7 +253,7 @@ namespace utopia {
         }
 
         void MG_QR_test() {
-            bool verbose = true;
+            bool verbose = false;
 
             Vector rhs, x;
             Vector upper_bound, lower_bound;
@@ -224,6 +339,8 @@ namespace utopia {
         void run() {
             print_backend_info();
 
+            UTOPIA_RUN_TEST(log_barrier_test);
+            UTOPIA_RUN_TEST(log_barrier_qp_solver_test);
             UTOPIA_RUN_TEST(pg_test);
             UTOPIA_RUN_TEST(pcg_test);
             UTOPIA_RUN_TEST(ngs_test);
@@ -256,7 +373,7 @@ namespace utopia {
         void poly_qp() {
             QPSolverTest<Matrix, Vector> s;
 
-            PolymorphicQPSolver<Matrix, Vector> solver;
+            OmniQPSolver<Matrix, Vector> solver;
             InputParameters in;
 
             in.set("backend", "any");
@@ -324,7 +441,7 @@ namespace utopia {
         void monotone_mg_test() {
             const std::string data_path = Utopia::instance().get("data_path");
 
-            const static bool verbose = true;
+            const static bool verbose = false;
             const static bool use_masks = false;
 
             int n_levels = 6;

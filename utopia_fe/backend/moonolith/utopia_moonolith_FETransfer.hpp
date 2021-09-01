@@ -10,6 +10,7 @@
 
 #include "utopia_fe_Core.hpp"
 
+#include "utopia_FETransferOptions.hpp"
 #include "utopia_Transfer.hpp"
 
 namespace utopia {
@@ -24,10 +25,14 @@ namespace utopia {
             using SizeType = Traits<FunctionSpace>::SizeType;
             using Communicator = Traits<FunctionSpace>::Communicator;
 
+            void set_options(const FETransferOptions &options);
+
             void read(Input &in) override;
             void describe(std::ostream &) const override;
 
             bool init(const std::shared_ptr<FunctionSpace> &from, const std::shared_ptr<FunctionSpace> &to);
+            bool init(const std::shared_ptr<FunctionSpace> &from_and_to);
+
             void clear();
             bool empty() const;
             bool apply(const Vector &from, Vector &to) const override;
@@ -52,6 +57,9 @@ namespace utopia {
             }
 
             std::shared_ptr<Matrix> transfer_matrix() const;
+
+            void set_constraint_matrix_from(const std::shared_ptr<Matrix> &c);
+            void set_constraint_matrix_to(const std::shared_ptr<Matrix> &c);
 
         private:
             class Impl;

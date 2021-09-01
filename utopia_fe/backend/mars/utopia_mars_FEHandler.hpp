@@ -17,6 +17,7 @@ namespace utopia {
         class FEHandler : public IFEHandler {
         public:
             static constexpr ::mars::Integer Degree = Degree_;
+            static constexpr int Dim = DMesh::Dim;
             using DofHandler = ::mars::DofHandler<DMesh, Degree>;
             using FEDofMap = ::mars::FEDofMap<DofHandler>;
             using SPattern =

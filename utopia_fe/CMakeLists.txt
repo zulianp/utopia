@@ -26,12 +26,13 @@ option(UTOPIA_ENABLE_MARS "Tries to use mars backend" OFF)
 option(UTOPIA_ENABLE_INTREPID2 "Tries to use the intrepid2 related features"
        OFF)
 option(UTOPIA_ENABLE_NEW_TRANSFER "Use new transfer features" ON)
-option(UTOPIA_INSTALL_LIBMESH "install libmesh" OFF)
+# option(UTOPIA_INSTALL_LIBMESH "install libmesh" OFF)
 option(UTOPIA_ENABLE_WARNINGS "Compiler warnings" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
 option(UTOPIA_ENABLE_LIBMESH "Enable the libmesh functionalities" ON)
 option(UTOPIA_ENABLE_STK "Enable the stk functionalities" OFF)
 option(UTOPIA_ENABLE_MOONOLITH "Enable the moonolith functionalities" ON)
+option(UTOPIA_ENABLE_ARBORX "Enable the ArborX backend" OFF)
 
 # ##############################################################################
 # ##############################################################################
@@ -39,9 +40,13 @@ option(UTOPIA_ENABLE_MOONOLITH "Enable the moonolith functionalities" ON)
 
 if(NOT UTOPIA_ENABLE_MARS)
     if(UTOPIA_ENABLE_WARNINGS)
+
         set(UTOPIA_FE_DEV_FLAGS
-            "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder"
-        )
+            "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=return-type" # -Werror=uninitialized
+)
+
+        set(UTOPIA_FE_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
+
     else()
         set(UTOPIA_FE_DEV_FLAGS "-w -Wno-deprecated-declarations")
     endif()
@@ -197,6 +202,8 @@ macro(add_utopiafe_app app_name)
     # include)
 endmacro(add_utopiafe_app)
 
+list(APPEND UTOPIA_FE_MODULES frontend)
+
 if(UTOPIA_ENABLE_LIBMESH)
     list(APPEND UTOPIA_FE_MODULES backend/libmesh edsl)
 
@@ -210,19 +217,39 @@ if(UTOPIA_ENABLE_STK)
     list(APPEND UTOPIA_FE_MODULES backend/stk)
 endif()
 
-if(UTOPIA_ENABLE_MARS)
-    list(APPEND UTOPIA_FE_MODULES backend/mars)
+if(UTOPIA_ENABLE_PETSC)
+    list(APPEND UTOPIA_FE_MODULES backend/petsc)
 endif()
 
-list(APPEND UTOPIA_FE_MODULES base interoperability core)
 
-if(UTOPIA_INSTALL_LIBMESH)
-    include(InstallLIBMESH)
+##################################################
+
+if(UTOPIA_ENABLE_INTREPID2 OR UTOPIA_ENABLE_MARS)
+    list(APPEND UTOPIA_FE_MODULES backend/kokkos)
 endif()
 
 if(UTOPIA_ENABLE_INTREPID2)
     list(APPEND UTOPIA_FE_MODULES backend/intrepid2)
 endif()
+
+if(UTOPIA_ENABLE_MARS)
+    list(APPEND UTOPIA_FE_MODULES backend/mars)
+endif()
+
+if(UTOPIA_ENABLE_ARBORX)
+    list(APPEND UTOPIA_FE_MODULES backend/arborx)
+endif()
+
+##################################################
+
+
+
+list(APPEND UTOPIA_FE_MODULES base interoperability core)
+
+# if(UTOPIA_INSTALL_LIBMESH)
+#     include(InstallLIBMESH)
+# endif()
+
 
 add_library(utopia_fe utopia_fe.cpp)
 set_utopia_compiler_features(utopia_fe)

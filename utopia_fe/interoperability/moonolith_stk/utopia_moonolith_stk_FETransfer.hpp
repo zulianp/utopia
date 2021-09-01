@@ -8,6 +8,7 @@
 #include "utopia_stk_ForwardDeclarations.hpp"
 #include "utopia_stk_FunctionSpace.hpp"
 
+#include "utopia_FETransferOptions.hpp"
 #include "utopia_fe_Core.hpp"
 
 namespace utopia {
@@ -22,9 +23,13 @@ namespace utopia {
             using SizeType = Traits<FunctionSpace>::SizeType;
             using Communicator = Traits<FunctionSpace>::Communicator;
 
+            void set_options(const FETransferOptions &options);
+
             void read(Input &in) override;
             void describe(std::ostream &) const override;
 
+            bool init_from_decomposition(const std::shared_ptr<FunctionSpace> &from_and_to);
+            bool init(const std::shared_ptr<FunctionSpace> &from_and_to);
             bool init(const std::shared_ptr<FunctionSpace> &from, const std::shared_ptr<FunctionSpace> &to);
             void clear();
             bool empty() const;
@@ -49,11 +54,11 @@ namespace utopia {
                 return std::make_shared<TransferType>(this->transfer_matrix());
             }
 
+            std::shared_ptr<Matrix> transfer_matrix() const;
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;
-
-            std::shared_ptr<Matrix> transfer_matrix() const;
         };
 
     }  // namespace stk

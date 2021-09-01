@@ -50,6 +50,7 @@ namespace utopia {
         virtual SizeType size() const = 0;
         virtual void get(std::vector<std::shared_ptr<IConvertible>> &values) = 0;
         virtual void get_all(std::function<void(Input &)> lambda) = 0;
+        virtual bool is_collection() const = 0;
 
         virtual void get(const std::string &key, Path &val) { get(key, val.raw_type()); }
         virtual void get(const std::string &key, bool &val) = 0;
@@ -113,6 +114,10 @@ namespace utopia {
         template <typename T>
         void require(const std::string &key, T &val) {
             get(key, val, KeyRequired(key));
+        }
+
+        void require(const std::string &key, std::function<void(Input &)> lambda) {
+            get(key, lambda, KeyRequired(key));
         }
 
         virtual bool good() const = 0;
