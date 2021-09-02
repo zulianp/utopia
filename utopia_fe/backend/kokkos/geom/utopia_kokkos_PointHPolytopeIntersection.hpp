@@ -9,12 +9,14 @@ namespace utopia {
         class PointHPolytopeIntersection {
         public:
             using SizeType = typename Traits<PointView>::SizeType;
+            using Scalar = typename Traits<PointView>::Scalar;
             using IndexView = ::Kokkos::View<SizeType *, ExecutionSpace>;
             static constexpr int MAX_DIM = 4;
 
             /// Complexity is n*m
             void intersect(const PointView &points, const HPolytopeView &poly, IndexView &result) {
-                using Range = ::Kokkos::MDRangePolicy<::Kokkos::Rank<2>, ExecutionSpace>;
+                using Range1 = ::Kokkos::RangePolicy<ExecutionSpace>;
+                using Range2 = ::Kokkos::MDRangePolicy<::Kokkos::Rank<2>, ExecutionSpace>;
 
                 const SizeType n_points = points.extent(0);
                 const SizeType n_polytopes = poly.size();
@@ -25,7 +27,10 @@ namespace utopia {
                 result = IndexView("PointHPolytopeIntersection_result", n_points);
 
                 ::Kokkos::parallel_for(
-                    Range({0, n_polytopes}, {0, n_points}),
+                    Range1(0, n_points), UTOPIA_LAMBDA(const SizeType &idx) { result(idx) = -1; });
+
+                ::Kokkos::parallel_for(
+                    Range2({0, n_polytopes}, {0, n_points}),
                     UTOPIA_LAMBDA(const SizeType &idx_poly, const SizeType &idx_point) {
                         Scalar p[MAX_DIM];
 

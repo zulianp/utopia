@@ -17,6 +17,7 @@ namespace utopia {
     public:
         using Scalar = T;
         using ExecutionSpace = typename ::Kokkos::DynRankView<T, Args...>::execution_space;
+        using SizeType = std::size_t;
     };
 
     namespace kokkos {

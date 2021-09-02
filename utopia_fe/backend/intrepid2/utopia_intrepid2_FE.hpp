@@ -120,6 +120,7 @@ namespace utopia {
             inline SizeType n_quad_points() const override { return cubature->getNumPoints(); }
             inline SizeType spatial_dimension() const override { return cell_nodes.extent(2); }
             inline SizeType manifold_dimension() const override { return type.getDimension(); }
+            inline DynRankView points() const { return cell_nodes; }
 
             CellTopology type;
             DynRankView cell_nodes;

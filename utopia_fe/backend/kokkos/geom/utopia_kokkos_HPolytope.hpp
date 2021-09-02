@@ -3,6 +3,8 @@
 
 #include "utopia_Base.hpp"
 
+#include "utopia_kokkos_Commons.hpp"
+
 namespace utopia {
     namespace kokkos {
         template <class View>
@@ -14,7 +16,7 @@ namespace utopia {
             UTOPIA_INLINE_FUNCTION Scalar distance(const SizeType idx, const SizeType side, const Scalar *point) const {
                 Scalar ret = 0;
                 for (int d = 0; d < dim; ++d) {
-                    ret += point[d] * normals(idx, side, d)
+                    ret += point[d] * normals(idx, side, d);
                 }
 
                 ret -= distances(idx, side);
