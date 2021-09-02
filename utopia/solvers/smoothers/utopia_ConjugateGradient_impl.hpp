@@ -87,8 +87,6 @@ namespace utopia {
         SizeType it = 0;
         Scalar rho = 1., rho_1 = 1., beta = 0., alpha = 1., r_norm = 9e9;
 
-        std::cout << "--- unprecond solve.... \n";
-
         assert(!empty(b));
 
         // Cheap consistency check

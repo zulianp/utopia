@@ -16,27 +16,27 @@ namespace utopia {
         Comm comm_;
 
         void run() {
-            // UTOPIA_RUN_TEST(petsc_cg);
+            UTOPIA_RUN_TEST(petsc_cg);
             UTOPIA_RUN_TEST(petsc_cg_operator);
 
-            //             UTOPIA_RUN_TEST(petsc_bicgstab);
-            //             UTOPIA_RUN_TEST(petsc_gmres);
-            // // FIXME make it work also without mumps
-            // #ifdef PETSC_HAVE_MUMPS
-            //             UTOPIA_RUN_TEST(petsc_mg);
-            //             UTOPIA_RUN_TEST(petsc_cg_mg);
-            //             UTOPIA_RUN_TEST(petsc_mg_1D);
+            UTOPIA_RUN_TEST(petsc_bicgstab);
+            UTOPIA_RUN_TEST(petsc_gmres);
+// FIXME make it work also without mumps
+#ifdef PETSC_HAVE_MUMPS
+            UTOPIA_RUN_TEST(petsc_mg);
+            UTOPIA_RUN_TEST(petsc_cg_mg);
+            UTOPIA_RUN_TEST(petsc_mg_1D);
 
-            //             UTOPIA_RUN_TEST(petsc_block_mg_exp);  // petsc 3.11.3 ERROR here
-            //             UTOPIA_RUN_TEST(petsc_block_mg);
-            //             UTOPIA_RUN_TEST(petsc_mg_exp);
-            //             UTOPIA_RUN_TEST(petsc_superlu_mg);
-            //             UTOPIA_RUN_TEST(petsc_mg_jacobi);
-            //             UTOPIA_RUN_TEST(petsc_factorization);
-            //             UTOPIA_RUN_TEST(petsc_st_cg_mg);
-            //             UTOPIA_RUN_TEST(petsc_redundant_test);
+            UTOPIA_RUN_TEST(petsc_block_mg_exp);  // petsc 3.11.3 ERROR here
+            UTOPIA_RUN_TEST(petsc_block_mg);
+            UTOPIA_RUN_TEST(petsc_mg_exp);
+            UTOPIA_RUN_TEST(petsc_superlu_mg);
+            UTOPIA_RUN_TEST(petsc_mg_jacobi);
+            UTOPIA_RUN_TEST(petsc_factorization);
+            UTOPIA_RUN_TEST(petsc_st_cg_mg);
+            UTOPIA_RUN_TEST(petsc_redundant_test);
 
-            // #endif  // PETSC_HAVE_MUMPS
+#endif  // PETSC_HAVE_MUMPS
         }
 
         void petsc_cg() {
@@ -52,7 +52,7 @@ namespace utopia {
             cg.rtol(1e-6);
             cg.atol(1e-6);
             cg.max_it(500);
-            cg.verbose(true);
+            cg.verbose(false);
 
             x = rhs;
             cg.update(std::make_shared<PetscMatrix>(A));
@@ -74,7 +74,7 @@ namespace utopia {
             cg.rtol(1e-6);
             cg.atol(1e-6);
             cg.max_it(500);
-            cg.verbose(true);
+            cg.verbose(false);
 
             // stupid, as Matrix is already operator, but for sake of testing, lets do it...
             class CustomOperator final : public Operator<PetscVector> {
