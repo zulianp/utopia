@@ -87,6 +87,8 @@ namespace utopia {
         SizeType it = 0;
         Scalar rho = 1., rho_1 = 1., beta = 0., alpha = 1., r_norm = 9e9;
 
+        std::cout << "--- unprecond solve.... \n";
+
         assert(!empty(b));
 
         // Cheap consistency check
@@ -130,7 +132,7 @@ namespace utopia {
                 break;
             }
 
-            if (it > 0) {
+            if (it > 1) {
                 beta = rho / rho_1;
                 UTOPIA_NO_ALLOC_BEGIN("CG:region2");
                 p = r + beta * p;

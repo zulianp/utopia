@@ -16,25 +16,27 @@ namespace utopia {
         Comm comm_;
 
         void run() {
-            UTOPIA_RUN_TEST(petsc_cg);
-            UTOPIA_RUN_TEST(petsc_bicgstab);
-            UTOPIA_RUN_TEST(petsc_gmres);
-// FIXME make it work also without mumps
-#ifdef PETSC_HAVE_MUMPS
-            UTOPIA_RUN_TEST(petsc_mg);
-            UTOPIA_RUN_TEST(petsc_cg_mg);
-            UTOPIA_RUN_TEST(petsc_mg_1D);
+            // UTOPIA_RUN_TEST(petsc_cg);
+            UTOPIA_RUN_TEST(petsc_cg_operator);
 
-            UTOPIA_RUN_TEST(petsc_block_mg_exp);  // petsc 3.11.3 ERROR here
-            UTOPIA_RUN_TEST(petsc_block_mg);
-            UTOPIA_RUN_TEST(petsc_mg_exp);
-            UTOPIA_RUN_TEST(petsc_superlu_mg);
-            UTOPIA_RUN_TEST(petsc_mg_jacobi);
-            UTOPIA_RUN_TEST(petsc_factorization);
-            UTOPIA_RUN_TEST(petsc_st_cg_mg);
-            UTOPIA_RUN_TEST(petsc_redundant_test);
+            //             UTOPIA_RUN_TEST(petsc_bicgstab);
+            //             UTOPIA_RUN_TEST(petsc_gmres);
+            // // FIXME make it work also without mumps
+            // #ifdef PETSC_HAVE_MUMPS
+            //             UTOPIA_RUN_TEST(petsc_mg);
+            //             UTOPIA_RUN_TEST(petsc_cg_mg);
+            //             UTOPIA_RUN_TEST(petsc_mg_1D);
 
-#endif  // PETSC_HAVE_MUMPS
+            //             UTOPIA_RUN_TEST(petsc_block_mg_exp);  // petsc 3.11.3 ERROR here
+            //             UTOPIA_RUN_TEST(petsc_block_mg);
+            //             UTOPIA_RUN_TEST(petsc_mg_exp);
+            //             UTOPIA_RUN_TEST(petsc_superlu_mg);
+            //             UTOPIA_RUN_TEST(petsc_mg_jacobi);
+            //             UTOPIA_RUN_TEST(petsc_factorization);
+            //             UTOPIA_RUN_TEST(petsc_st_cg_mg);
+            //             UTOPIA_RUN_TEST(petsc_redundant_test);
+
+            // #endif  // PETSC_HAVE_MUMPS
         }
 
         void petsc_cg() {
@@ -50,11 +52,60 @@ namespace utopia {
             cg.rtol(1e-6);
             cg.atol(1e-6);
             cg.max_it(500);
-            // cg.verbose(true);
+            cg.verbose(true);
 
             x = rhs;
             cg.update(std::make_shared<PetscMatrix>(A));
             cg.apply(rhs, x);
+
+            utopia_test_assert(approxeq(rhs, A * x, 1e-5));
+        }
+
+        void petsc_cg_operator() {
+            Poisson1D<PetscMatrix, PetscVector> fun(100, 2);
+            PetscVector x = fun.initial_guess();
+            PetscVector rhs;
+            fun.get_rhs(rhs);
+            PetscMatrix A;
+            fun.hessian(x, A);
+            rhs *= 0.00001;
+
+            ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> cg;
+            cg.rtol(1e-6);
+            cg.atol(1e-6);
+            cg.max_it(500);
+            cg.verbose(true);
+
+            // stupid, as Matrix is already operator, but for sake of testing, lets do it...
+            class CustomOperator final : public Operator<PetscVector> {
+            public:
+                using Communicator = typename utopia::Traits<PetscVector>::Communicator;
+                CustomOperator(const PetscMatrix &A, const PetscVector &x) : A_(A), x_(x) {}
+
+                bool apply(const PetscVector &v, PetscVector &result) const override {
+                    result = A_ * v;
+                    return true;
+                }
+                Size size() const override { return Size(x_.size()); }
+                Size local_size() const override { return Size(x_.local_size()); }
+
+                Communicator &comm() override { return x_.comm(); }
+                const Communicator &comm() const override { return x_.comm(); }
+
+            private:
+                PetscMatrix A_;
+                PetscVector x_;
+            };
+
+            // auto op = CustomOperator(A);
+
+            auto matrix_operator = CustomOperator(A, rhs);
+
+            x = rhs;
+            // cg.update(matrix_operator);
+
+            // cg.set_preconditioner(std::make_shared<IdentityPreconditioner<PetscVector>>());
+            cg.solve(matrix_operator, rhs, x);
 
             utopia_test_assert(approxeq(rhs, A * x, 1e-5));
         }
