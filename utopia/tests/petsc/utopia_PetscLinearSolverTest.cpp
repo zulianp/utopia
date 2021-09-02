@@ -70,7 +70,6 @@ namespace utopia {
             fun.hessian(x, A);
             rhs *= 0.00001;
 
-            // ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> cg;
             KSP_MF<PetscMatrix, PetscVector> cg;
             cg.rtol(1e-6);
             cg.atol(1e-6);
@@ -101,8 +100,7 @@ namespace utopia {
             x = rhs;
 
             // test also with our preconditioner
-            std::cout << "-- \n";
-            cg.set_preconditioner(std::make_shared<IdentityPreconditioner<PetscVector>>());
+            // cg.set_preconditioner(std::make_shared<IdentityPreconditioner<PetscVector>>());
             cg.ksp_type("cg");
             cg.solve(matrix_operator, rhs, x);
 
