@@ -158,7 +158,7 @@ namespace utopia {
 
         virtual void set_monitor_options(KSP &ksp) const;
 
-        void handle_reset(const Matrix &op);
+        void handle_reset(const PetscCommunicator &op);
 
         void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec) override;
 

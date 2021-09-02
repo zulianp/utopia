@@ -70,7 +70,8 @@ namespace utopia {
             fun.hessian(x, A);
             rhs *= 0.00001;
 
-            ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> cg;
+            // ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> cg;
+            KSP_MF<PetscMatrix, PetscVector> cg;
             cg.rtol(1e-6);
             cg.atol(1e-6);
             cg.max_it(500);
@@ -80,31 +81,29 @@ namespace utopia {
             class CustomOperator final : public Operator<PetscVector> {
             public:
                 using Communicator = typename utopia::Traits<PetscVector>::Communicator;
-                CustomOperator(const PetscMatrix &A, const PetscVector &x) : A_(A), x_(x) {}
+                CustomOperator(const PetscMatrix &A) : A_(A) {}
 
                 bool apply(const PetscVector &v, PetscVector &result) const override {
                     result = A_ * v;
                     return true;
                 }
-                Size size() const override { return Size(x_.size()); }
-                Size local_size() const override { return Size(x_.local_size()); }
+                Size size() const override { return Size(A_.size()); }
+                Size local_size() const override { return Size(A_.local_size()); }
 
-                Communicator &comm() override { return x_.comm(); }
-                const Communicator &comm() const override { return x_.comm(); }
+                Communicator &comm() override { return A_.comm(); }
+                const Communicator &comm() const override { return A_.comm(); }
 
             private:
                 PetscMatrix A_;
-                PetscVector x_;
             };
 
-            // auto op = CustomOperator(A);
-
-            auto matrix_operator = CustomOperator(A, rhs);
-
+            auto matrix_operator = CustomOperator(A);
             x = rhs;
-            // cg.update(matrix_operator);
 
-            // cg.set_preconditioner(std::make_shared<IdentityPreconditioner<PetscVector>>());
+            // test also with our preconditioner
+            std::cout << "-- \n";
+            cg.set_preconditioner(std::make_shared<IdentityPreconditioner<PetscVector>>());
+            cg.ksp_type("cg");
             cg.solve(matrix_operator, rhs, x);
 
             utopia_test_assert(approxeq(rhs, A * x, 1e-5));
