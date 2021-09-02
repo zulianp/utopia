@@ -270,7 +270,7 @@ namespace utopia {
                 params.set("stol", 1e-11);
                 params.set("verbose", false);
 
-                auto lsolver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+                auto lsolver = std::make_shared<ConjugateGradient<Matrix, Vector>>();
                 Newton<Matrix, Vector> nlsolver1(lsolver);
                 Newton<Matrix, Vector> nlsolver2(lsolver);
 
@@ -333,6 +333,7 @@ namespace utopia {
                 Rosenbrock01<Matrix, Vector> rosenbrock_fun;
 
                 Vector x01(serial_layout(2), 2.0), x02(serial_layout(2), 2.0);
+
                 nlsolver1.solve(rosenbrock_fun, x01);
                 nlsolver2.solve(rosenbrock_fun, x02);
 
