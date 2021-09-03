@@ -13,7 +13,12 @@ namespace utopia {
 #ifdef UTOPIA_WITH_PETSC
         static char help[] = "initializing utopia environment through petsc";
 
+        // #ifndef NDEBUG
+        // PetscOptionsSetValue(nullptr, "-on_error_attach_debugger", "lldb");
+        // PetscOptionsSetValue(nullptr, "-start_in_debugger", "lldb");
+        // #else
         PetscOptionsSetValue(nullptr, "-on_error_abort", nullptr);
+        // #endif
 
 #ifdef UTOPIA_WITH_SLEPC
         SlepcInitialize(&argc, &argv, (char *)nullptr, help);  // calls PetscInitialize inside

@@ -122,7 +122,9 @@ namespace utopia {
                 }
 
                 if (sort_columns) {
-                    std::sort(&colidx[row_ptr[block_i]], &colidx[row_ptr[block_i + 1] - 1]);
+                    if (row_ptr[block_i] < row_ptr[block_i + 1]) {
+                        std::sort(&colidx[row_ptr[block_i]], &colidx[row_ptr[block_i + 1] - 1]);
+                    }
                 }
             }
 
