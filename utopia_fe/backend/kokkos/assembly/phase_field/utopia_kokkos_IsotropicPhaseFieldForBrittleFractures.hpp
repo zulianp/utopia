@@ -11,6 +11,8 @@
 #include "utopia_kokkos_Strain.hpp"
 #include "utopia_kokkos_SubView.hpp"
 
+#include "utopia_kokkos_StressLinearElasticityOp.hpp"
+
 namespace utopia {
     namespace kokkos {
 
@@ -127,6 +129,12 @@ namespace utopia {
                                                       IdentityRange,
                                                       IdentityRange,
                                                       StaticRange<DISPLACEMENT_OFFSET, DISPLACEMENT_OFFSET + Dim>>;
+
+            // using ElasticityOp =
+            //     utopia::kokkos::kernels::LinearElasticityOp<Dim, Scalar, Scalar, Scalar, Grad, typename FE::Measure>;
+
+            using CoeffLinearElasticityOp = utopia::kokkos::kernels::
+                CoeffLinearElasticityOp<Dim, Scalar, Scalar, Scalar, DynRankView, typename FE::Measure>;
 
             IsotropicPhaseFieldForBrittleFractures(const std::shared_ptr<FE> &fe, Params op = Params())
                 : Super(fe), op_(std::move(op)) {
@@ -332,8 +340,50 @@ namespace utopia {
                 this->ensure_vector_accumulator();
 
                 auto &fe = this->fe();
-                auto data = this->vector_data();
-                assert(false && "IMPLEMENT ME");
+                auto &&grad = fe.grad();
+                auto &&fun = fe.fun();
+                auto &&measure = fe.measure();
+
+                auto x = this->current_solution()->interpolate();
+
+                const int n_shape_functions = fe.n_shape_functions();
+                const int displacement = op_.displacement;
+                const int phase_field = op_.phase_field;
+                const int n_var = this->n_vars();
+
+                using DegradationFunction = utopia::kokkos::QuadraticDegradationKernel<InterpolateField, Scalar>;
+
+                // UOp u_op(op_.lambda, op_.mu, grad, measure);
+                // COp c_op(1., grad, measure);
+                // UCOp uc_op(op_.lambda, op_.mu, op_.alpha, grad, fun, measure);
+
+                DegradationFunction degradation_function(x, phase_field);
+                CoeffLinearElasticityOp stress_op(op_.lambda, op_.mu, gradient_->data(), measure, displacement);
+
+                this->loop_cell_test(
+                    "IsotropicPhaseFieldForBrittleFractures::apply", UTOPIA_LAMBDA(const int &cell, const int &i) {
+                        for (int j = 0; j < n_shape_functions; ++j) {
+                            for (int sub_i = 0; sub_i < Dim; ++sub_i) {
+                                //     Scalar val = 0.0;
+
+                                //     // Integrate displacement block
+                                //     for (int sub_j = 0; sub_j < Dim; ++sub_j) {
+                                //         const int idx_j = j * n_var + displacement + sub_j;
+                                //         val += u_op(cell, i, j, sub_i, sub_j) * x(cell, idx_j);
+                                //     }
+
+                                //     // Integrate coupling block
+                                //     val += uc_op(cell, i, j, sub_i) * x(cell, j * n_var + phase_field);
+
+                                //     // Store result in displacement block
+                                //     y(cell, i * n_var + displacement + sub_i) += val;
+                            }
+
+                            // // Integrate and store in phase_field block
+                            // y(cell, i * n_var + phase_field) += c_op(cell, i, j) * x(cell, j * n_var + phase_field);
+                        }
+                    });
+
                 UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::assemble_vector");
                 return true;
             }

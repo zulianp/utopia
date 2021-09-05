@@ -145,7 +145,7 @@ namespace utopia {
 
             Interpolate interpolate() const {
                 assert(fe_);
-                return Interpolate(fe_->fun, data_);
+                return Interpolate(fe_->fun(), data_);
             }
 
             virtual bool is_coefficient() const { return true; }
