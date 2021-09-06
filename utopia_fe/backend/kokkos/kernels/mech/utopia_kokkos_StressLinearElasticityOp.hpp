@@ -43,7 +43,7 @@ namespace utopia {
                     return mux2 * strain(cell, qp, sub_i, sub_j) + lambda * strain_trace(cell, qp);
                 }
 
-                UTOPIA_INLINE_FUNCTION Scalar energy(const int cell, const int qp) {
+                UTOPIA_INLINE_FUNCTION Scalar energy(const int cell, const int qp) const {
                     Scalar trace = 0.0;
                     Scalar inner_strain = 0.0;
                     for (int d1 = 0; d1 < dim(); ++d1) {
@@ -77,12 +77,12 @@ namespace utopia {
                                                                      const int cell,
                                                                      const int i,
                                                                      const int qp,
-                                                                     const int sub_i) {
+                                                                     const int sub_i) const {
                     Scalar ret = 0.0;
 
                     for (int d = 0; d < dim(); ++d) {
-                        ret += stress(cell, qp, sub_i * dim() + d) * grad(cell, i, qp, d);
-                        ret += stress(cell, qp, sub_i + d * dim()) * grad(cell, i, qp, d);
+                        ret += stress(cell, qp, sub_i, d) * grad(cell, i, qp, d);
+                        ret += stress(cell, qp, d, sub_i) * grad(cell, i, qp, d);
                     }
 
                     return 0.5 * ret;

@@ -46,7 +46,7 @@ namespace utopia {
                     Scalar ret = 0.0;
 
                     for (int qp = 0; qp < n_qp; ++qp) {
-                        const Scalar val = stress(cell, i, j, qp, sub_i, sub_j);
+                        const Scalar val = inner(cell, i, j, qp, sub_i, sub_j);
 
                         ret += val * measure(cell, qp);
                     }
@@ -55,7 +55,7 @@ namespace utopia {
                 }
 
                 UTOPIA_INLINE_FUNCTION Scalar
-                stress(const int cell, const int i, const int j, const int qp, const int sub_i, const int sub_j) const {
+                inner(const int cell, const int i, const int j, const int qp, const int sub_i, const int sub_j) const {
                     return mux2 * strain_inner(cell, i, j, qp, sub_i, sub_j) +
                            lambda * strain_trace(cell, i, qp, sub_i) * strain_trace(cell, j, qp, sub_j);
                 }
