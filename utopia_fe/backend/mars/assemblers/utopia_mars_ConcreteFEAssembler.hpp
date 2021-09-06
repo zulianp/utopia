@@ -11,6 +11,8 @@
 
 #include "utopia_mars_FEBuilder.hpp"
 
+#include "mars_distributed_base_data_management.hpp"
+
 namespace utopia {
     namespace mars {
 
@@ -96,9 +98,11 @@ namespace utopia {
                 auto y_view = local_view_device(y).raw_type();
 
                 // kokkos_view_owned = local_view_device(x).raw_type(); // Rank 2 tensor N x 1
-                // View x_local; // Rank 1 tensor
-                // fe_dof_map.copy_owned_values(kokkos_view_owned, x_local);
-                // fe_dof_map.gather_values(kokkos_view_owned, x_local);
+                ::mars::ViewVectorType<Scalar> x_local("x_local", dof_handler.get_dof_size());  // Rank 1 tensor
+
+                ::mars::ViewVectorType<Scalar> x_view_rank1(::Kokkos::subview(x_view, ::Kokkos::ALL, 0));
+                ::mars::set_locally_owned_data(dof_handler, x_local, x_view_rank1);
+                ::mars::gather_ghost_data(dof_handler, x_local);
 
                 fe_dof_map.iterate(MARS_LAMBDA(const ::mars::Integer elem_index) {
                     for (int i = 0; i < n_fun; i++) {
@@ -110,7 +114,7 @@ namespace utopia {
                         for (int j = 0; j < n_fun; j++) {
                             // FIXME What is the correct index map?
                             const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, j);
-                            auto x_j = x_view(local_dof_j, 0);
+                            auto x_j = x_local(local_dof_j);
 
                             val += op(elem_index, i, j) * x_j;
 
