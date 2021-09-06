@@ -310,7 +310,7 @@ namespace utopia {
                                     integr += val * measure(cell, qp);
                                 }
 
-                                data(cell, u_dof_i, dof_j) = integr;
+                                data(cell, u_dof_i, dof_j) += integr;
                             }
 
                             // Integrate coupling block (u, c)
@@ -333,7 +333,7 @@ namespace utopia {
                                 integr += val * measure(cell, qp);
                             }
 
-                            data(cell, u_dof_i, dof_j) = integr;
+                            data(cell, u_dof_i, dof_j) += integr;
                         }
 
                         int u_dof_i = offset_i + phase_field;
@@ -384,7 +384,7 @@ namespace utopia {
                                 integr += val * measure(cell, qp);
                             }
 
-                            data(cell, u_dof_i, dof_j) = integr;
+                            data(cell, u_dof_i, dof_j) += integr;
                         }
                     });
 
