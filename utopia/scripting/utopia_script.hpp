@@ -29,11 +29,14 @@ namespace utopia {
     template <typename Derived, int Order>
     class Tensor;
 
-    template <class AbstractVector>
+    template <class Vector>
     class FunctionBase;
 
     template <class T, int Order>
     class DeviceView;
+
+    template <class Vector>
+    class X_sqaured;
 
 }  // namespace utopia
 
@@ -85,6 +88,7 @@ namespace scripting {
         void create_serial(int n);
         SizeType local_size();
         void values(const Layout &l, const Scalar &value);
+        void copy(const Vector *to_copy, int n);
         void add(const SizeType &i, const Scalar &value);
         void axpy(Scalar alpha, Vector *x);
         Scalar dot(const Vector *x) const;
@@ -118,14 +122,16 @@ namespace scripting {
 
     class FunctionBase {
     public:
-        using FunctionBaseImpl = utopia::FunctionBase<utopia::AbstractVector<Scalar, SizeType>>;
         FunctionBase();
         ~FunctionBase();
-
-    private:
-        FunctionBaseImpl *impl_;
+        bool value(Vector *theta, double value);
+        bool gradient(const Vector *x, Vector *g);
     };
 
+    // class X_squared : public FunctionBase<Vector> {
+    //     bool value(Vector *x, double *value);
+    //     bool gradient(Vector *x, double *value);
+    // };
 }  // namespace scripting
 
 #endif  // UTOPIA_SCRIPT_HPP

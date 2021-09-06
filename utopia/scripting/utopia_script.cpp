@@ -152,6 +152,24 @@ namespace scripting {
 
     SizeType Vector::local_size() { return impl_->local_size(); }
 
+    // correct layout
+    void Vector::copy(const Vector *to_copy, int n) {
+        {
+            if (impl_->empty()) {
+                auto l = utopia::serial_layout(n);
+                impl_->values(l, 0);
+            }
+
+            impl_->write_lock(utopia::LOCAL);
+            utopia::Range rr = impl_->range();
+            for (auto i = rr.begin(); i < rr.end(); ++i) {
+                impl_->set(i, to_copy->get(i));
+            }
+
+            impl_->write_unlock(utopia::LOCAL);
+        }
+    }
+
     void Vector::numpy_to_utopia(double *seq, int n) {
         {
             if (impl_->empty()) {
@@ -226,5 +244,9 @@ namespace scripting {
         }
     }
 
-    FunctionBase::FunctionBase() : impl_(nullptr) { int a = 3; }
+    FunctionBase::~FunctionBase() = default;
+    FunctionBase::FunctionBase() = default;
+    bool FunctionBase::value(Vector *x, double value) { return true; }
+    bool FunctionBase::gradient(const Vector *x, Vector *g) { return true; }
+
 }  // namespace scripting
