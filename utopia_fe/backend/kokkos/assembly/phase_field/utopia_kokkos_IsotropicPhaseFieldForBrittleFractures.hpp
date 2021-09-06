@@ -345,6 +345,27 @@ namespace utopia {
                             Scalar integr = 0.;
                             for (int qp = 0; qp < n_quad_points; ++qp) {
                                 Scalar val = 0.0;
+                                Scalar elastic_energy = stress_op.energy(cell, qp);
+
+                                Scalar lapl = 0.0;
+                                for (int d = 0; d < Dim; ++d) {
+                                    lapl += grad(cell, i, qp, d) * grad(cell, j, qp, d);
+                                }
+
+                                const Scalar diffusion = fracture_toughness * length_scale * lapl;
+
+                                const Scalar reaction = (fracture_toughness / length_scale);
+
+                                const Scalar deriv_cc_elast =
+                                    ((1 - regularization) * degradation_function.deriv2(cell, qp)) * elastic_energy;
+
+                                val += diffusion + (reaction + deriv_cc_elast) * fun(i, qp) * fun(j, qp);
+
+                                //////////////////////////////////////////////////////
+                                // Pressure induction
+                                val += degradation_function.deriv2(cell, qp) * p(cell, qp) *
+                                       stress_op.strain_trace(cell, qp) * fun(i, qp) * fun(j, qp);
+                                //////////////////////////////////////////////////////
 
                                 integr += val * measure(cell, qp);
                             }
