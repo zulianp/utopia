@@ -36,7 +36,7 @@ namespace utopia {
     class DeviceView;
 
     template <class Vector>
-    class X_sqaured;
+    class XSquared;
 
 }  // namespace utopia
 
@@ -124,14 +124,18 @@ namespace scripting {
     public:
         FunctionBase();
         ~FunctionBase();
-        bool value(Vector *theta, double value);
-        bool gradient(const Vector *x, Vector *g);
+        virtual bool value(Vector *x, double value) const = 0;
+        virtual bool gradient(Vector *x, Vector *g) const = 0;
     };
 
-    // class X_squared : public FunctionBase<Vector> {
-    //     bool value(Vector *x, double *value);
-    //     bool gradient(Vector *x, double *value);
-    // };
+    class XSquared : public FunctionBase {
+    public:
+        XSquared();
+        ~XSquared();
+        bool value(Vector *x, double value) const override;
+        bool gradient(Vector *x, Vector *g) const override;
+    };
+
 }  // namespace scripting
 
 #endif  // UTOPIA_SCRIPT_HPP

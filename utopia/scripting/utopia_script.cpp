@@ -244,9 +244,18 @@ namespace scripting {
         }
     }
 
-    FunctionBase::~FunctionBase() = default;
-    FunctionBase::FunctionBase() = default;
-    bool FunctionBase::value(Vector *x, double value) { return true; }
-    bool FunctionBase::gradient(const Vector *x, Vector *g) { return true; }
+    // FunctionBase::~FunctionBase() = default;
+    // FunctionBase::FunctionBase() = default;
+    // bool FunctionBase::value(Vector *x, double value) { return true; }
+    // bool FunctionBase::gradient(Vector *x, Vector *g) { return true; }
+
+    bool XSquared::value(Vector *x, double value) const {
+        int a = 1;
+        return false;
+    }
+    bool XSquared::gradient(Vector *x, Vector *g) const {
+        int b = 2;
+        return false;
+    }
 
 }  // namespace scripting
