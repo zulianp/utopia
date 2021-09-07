@@ -47,6 +47,14 @@ add_executable(example_app EXCLUDE_FROM_ALL example_app.cpp)
 utopia_link_default_targets(example_app)
 target_link_libraries(example_app PRIVATE utopia)
 
+# XSquared 
+add_executable(example_x_squared EXCLUDE_FROM_ALL
+               example_x_squared)
+utopia_link_default_targets(example_x_squared)
+target_link_libraries(example_x_squared PRIVATE utopia)
+
+
+
 # Add more examples here and add target to dependecy list below ...
 
 add_custom_target(utopia_examples)
@@ -60,4 +68,5 @@ add_dependencies(
     example_sum_of_two_vectors
     example_trivial_linear_system
     example_comparison_linear_solvers
+    example_x_squared
     example_app)
