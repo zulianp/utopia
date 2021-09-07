@@ -78,6 +78,7 @@ namespace utopia {
 
                     in.get("displacement", displacement);
                     in.get("phase_field", phase_field);
+                    in.get("print_tensors", print_tensors_);
                 }
 
                 Params()
@@ -85,7 +86,7 @@ namespace utopia {
                       b(1.0),
                       d(1.0),
                       f(1.0),
-                      length_scale(0.0),
+                      length_scale(1.0),
                       fracture_toughness(1e-3),
                       mu(80.0),
                       lambda(120.0),
@@ -111,6 +112,7 @@ namespace utopia {
                 bool use_mobility{false};
                 int displacement{0};
                 int phase_field{Dim};
+                bool print_tensors_{false};
             };
 
             using QuadraticDegradation = utopia::kokkos::QuadraticDegradation<Params>;
@@ -506,6 +508,9 @@ namespace utopia {
                     });
 
                 UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::assemble_matrix");
+
+                if (op_.print_tensors_) this->matrix_accumulator()->describe(utopia::out().stream());
+
                 return true;
             }
 
@@ -607,6 +612,8 @@ namespace utopia {
                     });
 
                 UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::assemble_vector");
+
+                if (op_.print_tensors_) this->vector_accumulator()->describe(utopia::out().stream());
                 return true;
             }
 
