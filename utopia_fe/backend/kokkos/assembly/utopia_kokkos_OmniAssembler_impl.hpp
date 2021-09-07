@@ -8,6 +8,7 @@
 #include "utopia_kokkos_FEAssembler.hpp"
 #include "utopia_kokkos_ForcingFunction.hpp"
 #include "utopia_kokkos_IncrementalForcingFunction.hpp"
+#include "utopia_kokkos_IsotropicPhaseFieldForBrittleFractures.hpp"
 #include "utopia_kokkos_LaplaceOperator.hpp"
 #include "utopia_kokkos_LinearElasticity.hpp"
 #include "utopia_kokkos_Mass.hpp"
@@ -108,6 +109,14 @@ namespace utopia {
                     "WeakLinearThermoElasticity", 2);
                 register_assembler_variant<utopia::kokkos::WeakLinearThermoElasticity<FE_t, 3, Scalar_t>>(
                     "WeakLinearThermoElasticity", 3);
+
+                // register_assembler_variant<utopia::kokkos::IsotropicPhaseFieldForBrittleFractures<FE_t, 1,
+                // Scalar_t>>(
+                //     "IsotropicPhaseFieldForBrittleFractures", 1);
+                register_assembler_variant<utopia::kokkos::IsotropicPhaseFieldForBrittleFractures<FE_t, 2>>(
+                    "IsotropicPhaseFieldForBrittleFractures", 2);
+                register_assembler_variant<utopia::kokkos::IsotropicPhaseFieldForBrittleFractures<FE_t, 3>>(
+                    "IsotropicPhaseFieldForBrittleFractures", 3);
             }
         };
 

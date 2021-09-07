@@ -169,6 +169,12 @@ namespace utopia {
                 }
 
                 gradient_->init(*x);
+
+                if (!pressure_field_) {
+                    pressure_field_ = std::make_shared<utopia::kokkos::Field<FE>>(this->fe_ptr());
+                    pressure_field_->data() = DynRankView("pressure", this->fe().n_cells(), this->fe().n_quad_points());
+                }
+
                 return true;
             }
 
@@ -439,21 +445,21 @@ namespace utopia {
                 LinearElasticityOp elasticity_op(op_.lambda, op_.mu, grad, measure);
 
                 // Displacement
-                HessianUU<DegradationFunction> HUU(degradation_function, elasticity_op, regularization, measure);
+                HessianUU<DegradationFunction> H_uu(degradation_function, elasticity_op, regularization, measure);
 
                 // Coupling
-                HessianUCWithPressure<DegradationFunction> HUC(degradation_function, fun, grad, stress_op, measure, p);
+                HessianUCWithPressure<DegradationFunction> H_uc(degradation_function, fun, grad, stress_op, measure, p);
 
                 // Phase-field
-                HessianCCWithPressure<DegradationFunction> HCC(degradation_function,
-                                                               fun,
-                                                               grad,
-                                                               stress_op,
-                                                               fracture_toughness,
-                                                               length_scale,
-                                                               regularization,
-                                                               measure,
-                                                               p);
+                HessianCCWithPressure<DegradationFunction> H_cc(degradation_function,
+                                                                fun,
+                                                                grad,
+                                                                stress_op,
+                                                                fracture_toughness,
+                                                                length_scale,
+                                                                regularization,
+                                                                measure,
+                                                                p);
 
                 this->loop_cell_test_trial(
                     "IsotropicPhaseFieldForBrittleFractures::assemble_matrix",
@@ -468,12 +474,12 @@ namespace utopia {
                             for (int sub_j = 0; sub_j < Dim; ++sub_j) {
                                 int dof_j = offset_j + sub_j + displacement;
 
-                                const Scalar integr = HUU(cell, i, j, sub_i, sub_j);
+                                const Scalar integr = H_uu(cell, i, j, sub_i, sub_j);
                                 data(cell, u_dof_i, dof_j) += integr;
                             }
 
                             // Integrate coupling block (u, c)
-                            const Scalar integr = HUC(cell, i, j, sub_i);
+                            const Scalar integr = H_uc(cell, i, j, sub_i);
                             int c_dof_j = offset_j + phase_field;
                             data(cell, u_dof_i, c_dof_j) += integr;
                         }
@@ -484,7 +490,7 @@ namespace utopia {
                         {
                             int c_dof_j = offset_j + phase_field;
 
-                            Scalar integr = HCC(cell, i, j);
+                            Scalar integr = H_cc(cell, i, j);
                             data(cell, c_dof_i, c_dof_j) += integr;
                         }
 
@@ -492,7 +498,7 @@ namespace utopia {
                         for (int sub_j = 0; sub_j < Dim; ++sub_j) {
                             int u_dof_j = offset_j + sub_j + displacement;
 
-                            Scalar integr = HUC(cell, j, i, sub_j);
+                            Scalar integr = H_uc(cell, j, i, sub_j);
                             data(cell, c_dof_i, u_dof_j) += integr;
                         }
                     });
@@ -636,21 +642,21 @@ namespace utopia {
                 LinearElasticityOp elasticity_op(op_.lambda, op_.mu, grad, measure);
 
                 // Displacement
-                HessianUU<DegradationFunction> HUU(degradation_function, elasticity_op, regularization, measure);
+                HessianUU<DegradationFunction> H_uu(degradation_function, elasticity_op, regularization, measure);
 
                 // Coupling
-                HessianUCWithPressure<DegradationFunction> HUC(degradation_function, fun, grad, stress_op, measure, p);
+                HessianUCWithPressure<DegradationFunction> H_uc(degradation_function, fun, grad, stress_op, measure, p);
 
                 // Phase-field
-                HessianCCWithPressure<DegradationFunction> HCC(degradation_function,
-                                                               fun,
-                                                               grad,
-                                                               stress_op,
-                                                               fracture_toughness,
-                                                               length_scale,
-                                                               regularization,
-                                                               measure,
-                                                               p);
+                HessianCCWithPressure<DegradationFunction> H_cc(degradation_function,
+                                                                fun,
+                                                                grad,
+                                                                stress_op,
+                                                                fracture_toughness,
+                                                                length_scale,
+                                                                regularization,
+                                                                measure,
+                                                                p);
 
                 this->loop_cell_test(
                     "IsotropicPhaseFieldForBrittleFractures::apply", UTOPIA_LAMBDA(const int &cell, const int &i) {
@@ -661,24 +667,24 @@ namespace utopia {
                                 // Integrate displacement block
                                 for (int sub_j = 0; sub_j < Dim; ++sub_j) {
                                     const int idx_j = j * n_var + displacement + sub_j;
-                                    val += HUU(cell, i, j, sub_i, sub_j) * x(cell, idx_j);
+                                    val += H_uu(cell, i, j, sub_i, sub_j) * x(cell, idx_j);
                                 }
 
                                 // Integrate coupling block
-                                val += HUC(cell, i, j, sub_i) * x(cell, j * n_var + phase_field);
+                                val += H_uc(cell, i, j, sub_i) * x(cell, j * n_var + phase_field);
 
                                 // Store result in displacement block
                                 y(cell, i * n_var + displacement + sub_i) += val;
                             }
 
                             // Integrate and store in phase_field block
-                            y(cell, i * n_var + phase_field) += HCC(cell, i, j) * x(cell, j * n_var + phase_field);
+                            y(cell, i * n_var + phase_field) += H_cc(cell, i, j) * x(cell, j * n_var + phase_field);
 
                             // Integrate coupling block
                             Scalar val = 0.0;
                             for (int sub_j = 0; sub_j < Dim; ++sub_j) {
                                 const int idx_j = j * n_var + displacement + sub_j;
-                                val += HUC(cell, j, i, sub_j) * x(cell, idx_j);
+                                val += H_uc(cell, j, i, sub_j) * x(cell, idx_j);
                             }
 
                             y(cell, i * n_var + phase_field) += val;
