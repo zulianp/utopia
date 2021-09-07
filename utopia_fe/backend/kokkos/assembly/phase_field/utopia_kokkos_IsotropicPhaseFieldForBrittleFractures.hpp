@@ -250,6 +250,158 @@ namespace utopia {
                 return true;
             }
 
+            template <class DegradationFunction>
+            class HessianUCWithPressure {
+            public:
+                UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell,
+                                                         const int i,
+                                                         const int j,
+                                                         const int sub_i) const {
+                    const int n_quad_points = measure.extent(1);
+
+                    Scalar integr = 0.;
+                    for (int qp = 0; qp < n_quad_points; ++qp) {
+                        Scalar val = 0.;
+                        auto ddf = degradation_function.deriv(cell, qp);
+
+                        val += ddf * stress_op.inner_with_strain_test(grad, cell, i, qp, sub_i) * fun(j, qp);
+
+                        //////////////////////////////////////////////////////
+                        // Pressure induction
+                        val += ddf * p(cell, qp) *
+                               kernels::LinearizedStrain<Dim, Scalar>::trace(grad, cell, i, qp, sub_i) * fun(j, qp);
+
+                        //////////////////////////////////////////////////////
+                        integr += val * measure(cell, qp);
+                    }
+
+                    return integr;
+                }
+
+                HessianUCWithPressure(const DegradationFunction &degradation_function,
+                                      const Function &fun,
+                                      const Gradient &grad,
+                                      const CoeffLinearElasticityOp &stress_op,
+                                      const Measure &measure,
+                                      const InterpolateField &p)
+                    : degradation_function(degradation_function),
+                      fun(fun),
+                      grad(grad),
+                      stress_op(stress_op),
+                      measure(measure),
+                      p(p) {}
+
+                DegradationFunction degradation_function;
+                Function fun;
+                Gradient grad;
+                CoeffLinearElasticityOp stress_op;
+                Measure measure;
+                InterpolateField p;
+            };
+
+            template <class DegradationFunction>
+            class HessianUU {
+            public:
+                UTOPIA_INLINE_FUNCTION Scalar
+                operator()(const int cell, const int i, const int j, const int sub_i, const int sub_j) const {
+                    Scalar integr = 0.;
+
+                    const int n_quad_points = measure.extent(1);
+
+                    for (int qp = 0; qp < n_quad_points; ++qp) {
+                        Scalar val = 0.;
+
+                        val += ((1 - regularization) * degradation_function.value(cell, qp) + regularization) *
+                               elasticity_op.inner(cell, i, j, qp, sub_i, sub_j);
+
+                        integr += val * measure(cell, qp);
+                    }
+
+                    return integr;
+                }
+
+                UTOPIA_INLINE_FUNCTION HessianUU(const DegradationFunction &degradation_function,
+                                                 const LinearElasticityOp &elasticity_op,
+                                                 const Scalar regularization,
+                                                 const Measure &measure)
+                    : degradation_function(degradation_function),
+                      elasticity_op(elasticity_op),
+                      regularization(regularization),
+                      measure(measure) {}
+
+                DegradationFunction degradation_function;
+                LinearElasticityOp elasticity_op;
+                Scalar regularization;
+                Measure measure;
+            };
+
+            template <class DegradationFunction>
+            class HessianCCWithPressure {
+            public:
+                UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int i, const int j) const {
+                    const int n_quad_points = measure.extent(1);
+
+                    Scalar integr = 0.;
+                    for (int qp = 0; qp < n_quad_points; ++qp) {
+                        Scalar val = 0.0;
+                        Scalar elastic_energy = stress_op.energy(cell, qp);
+
+                        Scalar lapl = 0.0;
+                        for (int d = 0; d < Dim; ++d) {
+                            lapl += grad(cell, i, qp, d) * grad(cell, j, qp, d);
+                        }
+
+                        const Scalar diffusion = fracture_toughness * length_scale * lapl;
+
+                        const Scalar reaction = (fracture_toughness / length_scale);
+
+                        const Scalar deriv_cc_elast =
+                            ((1 - regularization) * degradation_function.deriv2(cell, qp)) * elastic_energy;
+
+                        val += diffusion + (reaction + deriv_cc_elast) * fun(i, qp) * fun(j, qp);
+
+                        //////////////////////////////////////////////////////
+                        // Pressure induction
+                        val += degradation_function.deriv2(cell, qp) * p(cell, qp) * stress_op.strain_trace(cell, qp) *
+                               fun(i, qp) * fun(j, qp);
+                        //////////////////////////////////////////////////////
+
+                        integr += val * measure(cell, qp);
+                    }
+
+                    return integr;
+                }
+
+                HessianCCWithPressure(const DegradationFunction &degradation_function,
+                                      const Function &fun,
+                                      const Gradient &grad,
+                                      const CoeffLinearElasticityOp &stress_op,
+                                      const Scalar fracture_toughness,
+                                      const Scalar length_scale,
+                                      const Scalar regularization,
+                                      const Measure &measure,
+                                      const InterpolateField &p)
+                    : degradation_function(degradation_function),
+                      fun(fun),
+                      grad(grad),
+                      stress_op(stress_op),
+                      fracture_toughness(fracture_toughness),
+                      length_scale(length_scale),
+                      regularization(regularization),
+                      measure(measure),
+                      p(p) {}
+
+                DegradationFunction degradation_function;
+                Function fun;
+                Gradient grad;
+                CoeffLinearElasticityOp stress_op;
+                Scalar fracture_toughness;
+                Scalar length_scale;
+                Scalar regularization;
+                Measure measure;
+                InterpolateField p;
+            };
+
             bool assemble_matrix() override {
                 using DegradationFunction = utopia::kokkos::QuadraticDegradationKernel<InterpolateField, Scalar>;
 
@@ -286,6 +438,23 @@ namespace utopia {
                 CoeffLinearElasticityOp stress_op(op_.lambda, op_.mu, grad_x, measure, displacement);
                 LinearElasticityOp elasticity_op(op_.lambda, op_.mu, grad, measure);
 
+                // Displacement
+                HessianUU<DegradationFunction> HUU(degradation_function, elasticity_op, regularization, measure);
+
+                // Coupling
+                HessianUCWithPressure<DegradationFunction> HUC(degradation_function, fun, grad, stress_op, measure, p);
+
+                // Phase-field
+                HessianCCWithPressure<DegradationFunction> HCC(degradation_function,
+                                                               fun,
+                                                               grad,
+                                                               stress_op,
+                                                               fracture_toughness,
+                                                               length_scale,
+                                                               regularization,
+                                                               measure,
+                                                               p);
+
                 this->loop_cell_test_trial(
                     "IsotropicPhaseFieldForBrittleFractures::assemble_matrix",
                     UTOPIA_LAMBDA(const int cell, const int i, const int j) {
@@ -299,92 +468,32 @@ namespace utopia {
                             for (int sub_j = 0; sub_j < Dim; ++sub_j) {
                                 int dof_j = offset_j + sub_j + displacement;
 
-                                Scalar integr = 0.;
-                                for (int qp = 0; qp < n_quad_points; ++qp) {
-                                    Scalar val = 0.;
-
-                                    val +=
-                                        ((1 - regularization) * degradation_function.value(cell, qp) + regularization) *
-                                        elasticity_op.inner(cell, i, j, qp, sub_i, sub_j);
-
-                                    integr += val * measure(cell, qp);
-                                }
-
+                                const Scalar integr = HUU(cell, i, j, sub_i, sub_j);
                                 data(cell, u_dof_i, dof_j) += integr;
                             }
 
                             // Integrate coupling block (u, c)
-                            int dof_j = offset_j + phase_field;
-
-                            Scalar integr = 0.;
-                            for (int qp = 0; qp < n_quad_points; ++qp) {
-                                Scalar val = 0.;
-                                auto ddf = degradation_function.deriv(cell, qp);
-
-                                val += ddf * stress_op.inner_with_strain_test(grad, cell, i, qp, sub_i) * fun(j, qp);
-
-                                //////////////////////////////////////////////////////
-                                // Pressure induction
-                                val += ddf * p(cell, qp) *
-                                       kernels::LinearizedStrain<Dim, Scalar>::trace(grad, cell, i, qp, sub_i) *
-                                       fun(j, qp);
-
-                                //////////////////////////////////////////////////////
-                                integr += val * measure(cell, qp);
-                            }
-
-                            data(cell, u_dof_i, dof_j) += integr;
+                            const Scalar integr = HUC(cell, i, j, sub_i);
+                            int c_dof_j = offset_j + phase_field;
+                            data(cell, u_dof_i, c_dof_j) += integr;
                         }
 
-                        int u_dof_i = offset_i + phase_field;
+                        int c_dof_i = offset_i + phase_field;
 
                         // Integrate phase_field block (c, c)
                         {
-                            int u_dof_j = offset_j + phase_field;
+                            int c_dof_j = offset_j + phase_field;
 
-                            Scalar integr = 0.;
-                            for (int qp = 0; qp < n_quad_points; ++qp) {
-                                Scalar val = 0.0;
-                                Scalar elastic_energy = stress_op.energy(cell, qp);
-
-                                Scalar lapl = 0.0;
-                                for (int d = 0; d < Dim; ++d) {
-                                    lapl += grad(cell, i, qp, d) * grad(cell, j, qp, d);
-                                }
-
-                                const Scalar diffusion = fracture_toughness * length_scale * lapl;
-
-                                const Scalar reaction = (fracture_toughness / length_scale);
-
-                                const Scalar deriv_cc_elast =
-                                    ((1 - regularization) * degradation_function.deriv2(cell, qp)) * elastic_energy;
-
-                                val += diffusion + (reaction + deriv_cc_elast) * fun(i, qp) * fun(j, qp);
-
-                                //////////////////////////////////////////////////////
-                                // Pressure induction
-                                val += degradation_function.deriv2(cell, qp) * p(cell, qp) *
-                                       stress_op.strain_trace(cell, qp) * fun(i, qp) * fun(j, qp);
-                                //////////////////////////////////////////////////////
-
-                                integr += val * measure(cell, qp);
-                            }
+                            Scalar integr = HCC(cell, i, j);
+                            data(cell, c_dof_i, c_dof_j) += integr;
                         }
 
-                        // TODO Integrate coupling block (c, u)
-
+                        // Integrate coupling block (c, u)
                         for (int sub_j = 0; sub_j < Dim; ++sub_j) {
-                            int dof_j = offset_j + sub_j + displacement;
+                            int u_dof_j = offset_j + sub_j + displacement;
 
-                            Scalar integr = 0.;
-
-                            for (int qp = 0; qp < n_quad_points; ++qp) {
-                                Scalar val = 0.0;
-                                // HERE
-                                integr += val * measure(cell, qp);
-                            }
-
-                            data(cell, u_dof_i, dof_j) += integr;
+                            Scalar integr = HUC(cell, j, i, sub_j);
+                            data(cell, c_dof_i, u_dof_j) += integr;
                         }
                     });
 
@@ -494,8 +603,88 @@ namespace utopia {
             }
 
             bool apply(const VectorView &x, VectorView &y) override {
+                using DegradationFunction = utopia::kokkos::QuadraticDegradationKernel<InterpolateField, Scalar>;
+
                 UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::apply");
-                assert(false && "IMPLEMENT ME");
+
+                // FE
+                auto &fe = this->fe();
+                auto &&grad = fe.grad();
+                auto &&fun = fe.fun();
+                auto &&measure = fe.measure();
+
+                const int n_shape_functions = fe.n_shape_functions();
+                const int n_var = this->n_vars();
+                const int n_quad_points = fe.n_quad_points();
+
+                // Fields
+                const int displacement = op_.displacement;
+                const int phase_field = op_.phase_field;
+
+                auto sol = this->current_solution()->interpolate();
+                auto p = pressure_field_->interpolate();
+                auto grad_x = gradient_->data();
+
+                // Model parameters
+                const Scalar regularization = op_.regularization;
+                const Scalar fracture_toughness = op_.fracture_toughness;
+                const Scalar length_scale = op_.length_scale;
+
+                // Function and operators
+                DegradationFunction degradation_function(sol, phase_field);
+                CoeffLinearElasticityOp stress_op(op_.lambda, op_.mu, grad_x, measure, displacement);
+                LinearElasticityOp elasticity_op(op_.lambda, op_.mu, grad, measure);
+
+                // Displacement
+                HessianUU<DegradationFunction> HUU(degradation_function, elasticity_op, regularization, measure);
+
+                // Coupling
+                HessianUCWithPressure<DegradationFunction> HUC(degradation_function, fun, grad, stress_op, measure, p);
+
+                // Phase-field
+                HessianCCWithPressure<DegradationFunction> HCC(degradation_function,
+                                                               fun,
+                                                               grad,
+                                                               stress_op,
+                                                               fracture_toughness,
+                                                               length_scale,
+                                                               regularization,
+                                                               measure,
+                                                               p);
+
+                this->loop_cell_test(
+                    "IsotropicPhaseFieldForBrittleFractures::apply", UTOPIA_LAMBDA(const int &cell, const int &i) {
+                        for (int j = 0; j < n_shape_functions; ++j) {
+                            for (int sub_i = 0; sub_i < Dim; ++sub_i) {
+                                Scalar val = 0.0;
+
+                                // Integrate displacement block
+                                for (int sub_j = 0; sub_j < Dim; ++sub_j) {
+                                    const int idx_j = j * n_var + displacement + sub_j;
+                                    val += HUU(cell, i, j, sub_i, sub_j) * x(cell, idx_j);
+                                }
+
+                                // Integrate coupling block
+                                val += HUC(cell, i, j, sub_i) * x(cell, j * n_var + phase_field);
+
+                                // Store result in displacement block
+                                y(cell, i * n_var + displacement + sub_i) += val;
+                            }
+
+                            // Integrate and store in phase_field block
+                            y(cell, i * n_var + phase_field) += HCC(cell, i, j) * x(cell, j * n_var + phase_field);
+
+                            // Integrate coupling block
+                            Scalar val = 0.0;
+                            for (int sub_j = 0; sub_j < Dim; ++sub_j) {
+                                const int idx_j = j * n_var + displacement + sub_j;
+                                val += HUC(cell, j, i, sub_j) * x(cell, idx_j);
+                            }
+
+                            y(cell, i * n_var + phase_field) += val;
+                        }
+                    });
+
                 UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::apply");
                 return true;
             }
