@@ -170,6 +170,7 @@ namespace utopia {
 
                 gradient_->init(*x);
 
+                // FIXME
                 if (!pressure_field_) {
                     pressure_field_ = std::make_shared<utopia::kokkos::Field<FE>>(this->fe_ptr());
                     pressure_field_->data() = DynRankView("pressure", this->fe().n_cells(), this->fe().n_quad_points());
@@ -177,10 +178,6 @@ namespace utopia {
 
                 return true;
             }
-
-            class VectorOp {};
-
-            class MatrixOp {};
 
             bool assemble_scalar() override {
                 using DegradationFunction = utopia::kokkos::QuadraticDegradationKernel<InterpolateField, Scalar>;
@@ -340,6 +337,10 @@ namespace utopia {
                 Scalar regularization;
                 Measure measure;
             };
+
+            void set_pressure_field(const std::shared_ptr<utopia::kokkos::Field<FE>> &pressure_field) {
+                pressure_field_ = pressure_field;
+            }
 
             template <class DegradationFunction>
             class HessianCCWithPressure {
