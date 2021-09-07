@@ -69,15 +69,17 @@ namespace utopia {
             void zero() { utopia::kokkos::fill(data_, 0.0); }
 
             void describe(std::ostream &os) const override {
-                const SizeType n_cells = data_.extent(0);
+                typename View::HostMirror host_data = ::Kokkos::create_mirror_view(data_);
 
-                if (data_.rank() == 2) {
-                    const int n_dofs_i = data_.extent(1);
+                const SizeType n_cells = host_data.extent(0);
+
+                if (host_data.rank() == 2) {
+                    const int n_dofs_i = host_data.extent(1);
 
                     for (SizeType c = 0; c < n_cells; ++c) {
                         os << c << ")\n";
                         for (SizeType i = 0; i < n_dofs_i; ++i) {
-                            os << data_(c, i) << " ";
+                            os << host_data(c, i) << " ";
 
                             os << '\n';
                         }
@@ -85,15 +87,15 @@ namespace utopia {
                         os << '\n';
                     }
 
-                } else if (data_.rank() == 3) {
-                    const int n_dofs_i = data_.extent(1);
-                    const int n_dofs_j = data_.extent(2);
+                } else if (host_data.rank() == 3) {
+                    const int n_dofs_i = host_data.extent(1);
+                    const int n_dofs_j = host_data.extent(2);
 
                     for (SizeType c = 0; c < n_cells; ++c) {
                         os << c << ")\n";
                         for (SizeType i = 0; i < n_dofs_i; ++i) {
                             for (SizeType j = 0; j < n_dofs_j; ++j) {
-                                os << data_(c, i, j) << " ";
+                                os << host_data(c, i, j) << " ";
                             }
 
                             os << '\n';
