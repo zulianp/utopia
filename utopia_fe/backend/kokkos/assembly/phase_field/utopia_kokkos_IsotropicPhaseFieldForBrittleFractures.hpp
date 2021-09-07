@@ -173,7 +173,8 @@ namespace utopia {
                 // FIXME
                 if (!pressure_field_) {
                     pressure_field_ = std::make_shared<utopia::kokkos::Field<FE>>(this->fe_ptr());
-                    pressure_field_->data() = DynRankView("pressure", this->fe().n_cells(), this->fe().n_quad_points());
+                    pressure_field_->data() =
+                        DynRankView("pressure", this->fe().n_cells(), this->fe().n_shape_functions());
                 }
 
                 return true;

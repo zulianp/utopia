@@ -100,7 +100,7 @@ namespace utopia {
                 UTOPIA_INLINE_FUNCTION Interpolate(const Function &fun, const DynRankView &coefficients)
                     : fun_(fun),
                       coefficients_(coefficients),
-                      n_shape_functions_(fun.extent(1)),
+                      n_shape_functions_(fun.extent(0)),
                       tensor_size_(coefficients_.extent(1) / n_shape_functions_) {}
 
                 UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int qp, const int var) const {
