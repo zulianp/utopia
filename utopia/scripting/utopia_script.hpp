@@ -133,7 +133,7 @@ namespace scripting {
         XSquared();
         ~XSquared();
         bool value(Vector *x, double value) const override;
-        bool gradient(Vector *x, Vector *g) const override;
+        bool gradient(Vector *x, Vector *grad) const override;
     };
 
 }  // namespace scripting

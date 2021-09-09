@@ -244,18 +244,25 @@ namespace scripting {
         }
     }
 
-    // FunctionBase::~FunctionBase() = default;
-    // FunctionBase::FunctionBase() = default;
-    // bool FunctionBase::value(Vector *x, double value) { return true; }
-    // bool FunctionBase::gradient(Vector *x, Vector *g) { return true; }
+    // XSquared::XSquared() = default;
 
     bool XSquared::value(Vector *x, double value) const {
-        int a = 1;
-        return false;
+        // {
+        //     x->write_lock(utopia::LOCAL);
+        //     utopia::Range rr = x->range();
+        //     for (auto i = rr.begin(); i < rr.end(); ++i) {
+        //         value += x->get(i);
+        //     }
+
+        //     x->write_unlock(utopia::LOCAL);
+        // }
+
+        return true;
     }
-    bool XSquared::gradient(Vector *x, Vector *g) const {
-        int b = 2;
-        return false;
+
+    bool XSquared::gradient(Vector *x, Vector *grad) const {
+        // x.axpy(-lr, grad);  //
+        return true;
     }
 
 }  // namespace scripting
