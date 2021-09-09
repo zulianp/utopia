@@ -82,8 +82,11 @@ namespace utopia {
         }
 
         void integrate_hessian(const Vector_t &, Matrix_t &H) const override {
-            const Scalar_t dt2 = this->delta_time() * this->delta_time();
-            H += (4. / dt2) * (*this->mass_matrix());
+            if (!has_zero_density_) {
+                const Scalar_t dt2 = this->delta_time() * this->delta_time();
+                H += (4. / dt2) * (*this->mass_matrix());
+            }
+
             this->space()->apply_constraints(H);
         }
 
