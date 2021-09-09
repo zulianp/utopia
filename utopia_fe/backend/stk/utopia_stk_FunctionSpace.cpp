@@ -965,6 +965,40 @@ namespace utopia {
             }
         }
 
+        void FunctionSpace::backend_set_elemental_field(const Field<FunctionSpace> &field) {
+            // auto &meta_data = mesh().meta_data();
+            // auto &&part = meta_data.universal_part();
+
+            // ::stk::mesh::FieldBase *stk_field = ::stk::mesh::get_field_by_name(field.name(), meta_data);
+
+            // int tensor_size = field.tensor_size();
+            // if (!stk_field) {
+            //     meta_data.enable_late_fields();
+
+            //     if (tensor_size == 1) {
+            //         stk_field = &meta_data.declare_field<::stk::mesh::Field<Scalar>>(
+            //             ::stk::topology::ELEMENT_RANK, field.name(), 1);
+            //         ::stk::mesh::put_field_on_mesh(*stk_field, part, 1, nullptr);
+            //     } else if (tensor_size == mesh().spatial_dimension()) {
+            //         assert(tensor_size == mesh().spatial_dimension());
+            //         stk_field =
+            //             &meta_data.declare_field<Impl::VectorField_t>(::stk::topology::ELEMENT_RANK, field.name(),
+            //             1);
+            //         ::stk::mesh::put_field_on_mesh(*stk_field, part, tensor_size, nullptr);
+            //     }
+            // }
+
+            // auto &data = field.data();
+
+            // if (data.comm().size() == 1) {
+            //     impl_->copy_local_vector_to_nodal_field(data, *stk_field);
+            // } else {
+            //     Vector local;
+            //     global_to_local(data, local);
+            //     impl_->copy_local_vector_to_nodal_field(local, *stk_field);
+            // }
+        }
+
         void FunctionSpace::backend_set_nodal_field(const Field<FunctionSpace> &field) {
             auto &meta_data = mesh().meta_data();
             auto &&part = meta_data.universal_part();

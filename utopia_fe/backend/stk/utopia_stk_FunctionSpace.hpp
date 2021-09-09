@@ -95,6 +95,7 @@ namespace utopia {
             void global_vector_to_nodal_field(const std::string &field_name, const Vector &v);
 
             void backend_set_nodal_field(const Field<FunctionSpace> &field);
+            void backend_set_elemental_field(const Field<FunctionSpace> &field);
 
             void copy_meta_info_from(const FunctionSpace &other);
             void initialize() override;
