@@ -30,7 +30,6 @@ namespace utopia {
         bool update_IVP(const Vector_t &velocity) override {
             Vector_t x = this->x_old();
             update_x(velocity, x);
-            velocity_old_ = velocity;
             return Super::update_IVP(x);
         }
 
@@ -54,10 +53,7 @@ namespace utopia {
 
         ////////////////////////////////////////////////////////////////////////////////
 
-        bool setup_IVP(Vector_t &x) override {
-            velocity_old_.zeros(layout(x));
-            return Super::setup_IVP(x);
-        }
+        bool setup_IVP(Vector_t &x) override { return Super::setup_IVP(x); }
 
         void integrate_gradient(const Vector_t &x, Vector_t &g) const override {
             UTOPIA_TRACE_REGION_BEGIN("VelocityNewmarkIntegrator::integrate_gradient");
@@ -83,10 +79,8 @@ namespace utopia {
     private:
         void update_x(const Vector_t &velocity, Vector_t &x) const {
             x = this->x_old();
-            x += (0.5 * this->delta_time()) * (velocity_old_ + velocity);
+            x += (0.5 * this->delta_time()) * (this->velocity_old() + velocity);
         }
-
-        Vector_t velocity_old_;
     };
 
 }  // namespace utopia
