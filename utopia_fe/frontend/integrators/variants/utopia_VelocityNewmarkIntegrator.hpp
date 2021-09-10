@@ -15,6 +15,7 @@ namespace utopia {
     class VelocityNewmarkIntegrator final : public NewmarkIntegrator<FunctionSpace>,
                                             public VelocityVariant<FunctionSpace> {
     public:
+        using TimeDependentFunction = utopia::TimeDependentFunction<FunctionSpace>;
         using Super = utopia::NewmarkIntegrator<FunctionSpace>;
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
@@ -42,7 +43,25 @@ namespace utopia {
         bool gradient(const Vector_t &velocity, Vector_t &g) const override {
             Vector_t x;
             update_x(velocity, x);
-            return Super::gradient(x, g);
+            // if (!TimeDependentFunction::gradient(x, g)) {
+            //     return false;
+            // }
+
+            if (!this->function()->gradient(x, g)) {
+                return false;
+            }
+
+            Vector_t mom = velocity - this->velocity();
+            mom *= 2 / this->delta_time();
+            mom -= this->acceleration();
+
+            g += (*this->mass_matrix()) * mom;
+
+            if (this->must_apply_constraints_to_assembled()) {
+                this->space()->apply_zero_constraints(g);
+            }
+
+            return true;
         }
 
         bool hessian(const Vector_t &velocity, Matrix_t &H) const override {
@@ -55,18 +74,21 @@ namespace utopia {
 
         bool setup_IVP(Vector_t &x) override { return Super::setup_IVP(x); }
 
-        void integrate_gradient(const Vector_t &x, Vector_t &g) const override {
-            UTOPIA_TRACE_REGION_BEGIN("VelocityNewmarkIntegrator::integrate_gradient");
+        void integrate_gradient(const Vector_t &, Vector_t &) const override {
+            // void integrate_gradient(const Vector_t &x, Vector_t &g) const override {
+            // Skip and do later
+            // UTOPIA_TRACE_REGION_BEGIN("VelocityNewmarkIntegrator::integrate_gradient");
 
-            Super::integrate_gradient(x, g);
-            g *= 2. / this->delta_time();
+            // Super::integrate_gradient(x, g);
+            // g *= 2. / this->delta_time();
 
-            UTOPIA_TRACE_REGION_END("VelocityNewmarkIntegrator::integrate_gradient");
+            // UTOPIA_TRACE_REGION_END("VelocityNewmarkIntegrator::integrate_gradient");
         }
 
         void integrate_hessian(const Vector_t &x, Matrix_t &H) const override {
             UTOPIA_TRACE_REGION_BEGIN("VelocityNewmarkIntegrator::integrate_hessian");
             Super::integrate_hessian(x, H);
+            H *= (this->delta_time() / 2);
             UTOPIA_TRACE_REGION_END("VelocityNewmarkIntegrator::integrate_hessian");
         }
 
