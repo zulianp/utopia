@@ -130,6 +130,8 @@ namespace utopia {
             }
         }
 
+        void FunctionSpace::update(const SimulationTime<Scalar> &time) { impl_->dirichlet_boundary.update(time); }
+
         bool FunctionSpace::write(const Path &path, const Vector &x) { return impl_->write(path, x); }
 
         void FunctionSpace::read(Input &in) {
@@ -180,28 +182,28 @@ namespace utopia {
             m.wrap(mat, true);
         }
 
-        void FunctionSpace::apply_constraints(Matrix &m, const Scalar diag_value) {
-            for (auto &bc : impl_->dirichlet_boundary.conditions) {
-                handler()->matrix_apply_constraints(m, diag_value, bc.name);
+        void FunctionSpace::apply_constraints(Matrix &m, const Scalar diag_value) const {
+            for (auto &bc : impl_->dirichlet_boundary) {
+                handler()->matrix_apply_constraints(m, diag_value, bc->name);
             }
         }
 
-        void FunctionSpace::apply_constraints(Vector &v) {
-            for (auto &bc : impl_->dirichlet_boundary.conditions) {
-                handler()->vector_apply_constraints(v, bc.value, bc.name);
+        void FunctionSpace::apply_constraints(Vector &v) const {
+            for (auto &bc : impl_->dirichlet_boundary) {
+                handler()->vector_apply_constraints(v, bc->value(), bc->name);
             }
         }
 
-        void FunctionSpace::apply_constraints(Matrix &m, Vector &v) {
-            for (auto &bc : impl_->dirichlet_boundary.conditions) {
-                handler()->matrix_apply_constraints(m, 1.0, bc.name);
-                handler()->vector_apply_constraints(v, bc.value, bc.name);
+        void FunctionSpace::apply_constraints(Matrix &m, Vector &v) const {
+            for (auto &bc : impl_->dirichlet_boundary) {
+                handler()->matrix_apply_constraints(m, 1.0, bc->name);
+                handler()->vector_apply_constraints(v, bc->value(), bc->name);
             }
         }
 
         void FunctionSpace::apply_zero_constraints(Vector &vec) const {
-            for (auto &bc : impl_->dirichlet_boundary.conditions) {
-                handler()->vector_apply_constraints(vec, bc.value, bc.name);
+            for (auto &bc : impl_->dirichlet_boundary) {
+                handler()->vector_apply_constraints(vec, bc->value(), bc->name);
             }
         }
 
@@ -209,8 +211,8 @@ namespace utopia {
                                                              const Scalar &value,
                                                              const int component) {
             assert(component < n_var());
-            DirichletBoundary::Condition dirichlet_boundary{name, value, component};
-            impl_->dirichlet_boundary.conditions.push_back(dirichlet_boundary);
+            DirichletBoundary::UniformCondition dirichlet_boundary{name, value, component};
+            impl_->dirichlet_boundary.add(dirichlet_boundary);
         }
 
         bool FunctionSpace::empty() const { return !static_cast<bool>(impl_->handler); }

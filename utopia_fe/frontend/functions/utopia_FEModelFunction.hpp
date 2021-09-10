@@ -326,6 +326,7 @@ namespace utopia {
 
         bool update_IVP(const Vector_t &) override {
             time()->update();
+            space()->update(*time());
             return true;
         }
 

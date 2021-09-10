@@ -71,6 +71,7 @@ namespace utopia {
         void FunctionSpace::create_vector(Vector &vec) const { impl_->mesh->dm().create_vector(vec); }
 
         void FunctionSpace::init(const std::shared_ptr<Mesh> &mesh) {}
+        void FunctionSpace::update(const SimulationTime<Scalar> &time) { impl_->dirichlet_boundary.update(time); }
 
         std::shared_ptr<FunctionSpace::Mesh> FunctionSpace::mesh_ptr() const {
             assert(false);
@@ -115,9 +116,9 @@ namespace utopia {
             constrains.reserve(n_local_dofs);
 
             for (auto i = 0; i < n_local_nodes; ++i) {
-                for (auto &c : db.conditions) {
-                    if (mesh_view.is_node_on_boundary(i, c.side)) {
-                        const SizeType dof = i * n_var + c.component;
+                for (auto &c : db) {
+                    if (mesh_view.is_node_on_boundary(i, c->side)) {
+                        const SizeType dof = i * n_var + c->component;
                         constrains.push_back(dof + r.begin());
                     }
                 }
@@ -145,10 +146,10 @@ namespace utopia {
             assert(n_local_nodes * n_var == n_local_dofs);
 
             for (auto i = 0; i < n_local_nodes; ++i) {
-                for (auto &c : db.conditions) {
-                    if (mesh_view.is_node_on_boundary(i, c.side)) {
-                        const SizeType dof = i * n_var + c.component;
-                        const Scalar v = c.value;
+                for (auto &c : db) {
+                    if (mesh_view.is_node_on_boundary(i, c->side)) {
+                        const SizeType dof = i * n_var + c->component;
+                        const Scalar v = c->value();
                         v_view.set(dof, v);
                     }
                 }
@@ -177,10 +178,10 @@ namespace utopia {
             constrains.reserve(n_local_dofs);
 
             for (auto i = 0; i < n_local_nodes; ++i) {
-                for (auto &c : db.conditions) {
-                    if (mesh_view.is_node_on_boundary(i, c.side)) {
-                        const SizeType dof = i * n_var + c.component;
-                        const Scalar v = c.value;
+                for (auto &c : db) {
+                    if (mesh_view.is_node_on_boundary(i, c->side)) {
+                        const SizeType dof = i * n_var + c->component;
+                        const Scalar v = c->value();
                         v_view.set(dof, v);
 
                         constrains.push_back(dof + r.begin());
@@ -210,9 +211,9 @@ namespace utopia {
             assert(n_local_nodes * n_var == n_local_dofs);
 
             for (auto i = 0; i < n_local_nodes; ++i) {
-                for (auto &c : db.conditions) {
-                    if (mesh_view.is_node_on_boundary(i, c.side)) {
-                        const SizeType dof = i * n_var + c.component;
+                for (auto &c : db) {
+                    if (mesh_view.is_node_on_boundary(i, c->side)) {
+                        const SizeType dof = i * n_var + c->component;
                         v_view.set(dof, 0.);
                     }
                 }
@@ -224,9 +225,9 @@ namespace utopia {
                                                              const int component) {
             // assert(component < n_var());
 
-            DirichletBoundary::Condition dirichlet_boundary{name, value, component};
+            DirichletBoundary::UniformCondition dirichlet_boundary{name, value, component};
             dirichlet_boundary.side = SideSet::Cube::convert(name);
-            impl_->dirichlet_boundary.conditions.push_back(dirichlet_boundary);
+            impl_->dirichlet_boundary.add(dirichlet_boundary);
         }
 
         bool FunctionSpace::empty() const { return mesh().dm().empty(); }

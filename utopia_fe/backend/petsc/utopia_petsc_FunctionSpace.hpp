@@ -38,6 +38,7 @@ namespace utopia {
             //////////////////////////////////////////
 
             void init(const std::shared_ptr<Mesh> &mesh) override;
+            void update(const SimulationTime<Scalar> &) override;
             std::shared_ptr<Mesh> mesh_ptr() const override;
             const Mesh &mesh() const override;
             Mesh &mesh() override;

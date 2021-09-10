@@ -141,6 +141,7 @@ namespace utopia {
                 do {
                     this->status("Timestep: " + std::to_string(n_time_steps++));
 
+                    function_->space()->apply_constraints_update(x);
                     if (!solver_->solve(*function_, x)) {
                         error("Solver failed to solve");
                         return false;

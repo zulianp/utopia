@@ -412,6 +412,8 @@ namespace utopia {
 
         void FunctionSpace::init(const std::shared_ptr<Mesh> &mesh) { impl_->mesh = mesh; }
 
+        void FunctionSpace::update(const SimulationTime<Scalar> &time) { impl_->dirichlet_boundary.update(time); }
+
         void FunctionSpace::read_meta(Input &in) { impl_->read_meta(in); }
 
         void FunctionSpace::register_variables() { impl_->register_variables(); }
@@ -616,7 +618,8 @@ namespace utopia {
             auto &&local_to_global = dof_map().local_to_global();
 
             if (local_to_global.empty()) {
-                for (auto &bc : impl_->dirichlet_boundary.conditions) {
+                for (auto &bc_ptr : impl_->dirichlet_boundary) {
+                    auto &bc = *bc_ptr;
                     auto *part = meta_data.get_part(bc.name);
                     if (part) {
                         auto &buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, *part);
@@ -640,7 +643,9 @@ namespace utopia {
             } else {
                 // auto rr = row_range(m);
 
-                for (auto &bc : impl_->dirichlet_boundary.conditions) {
+                for (auto &bc_ptr : impl_->dirichlet_boundary) {
+                    auto &bc = *bc_ptr;
+
                     auto *part = meta_data.get_part(bc.name);
                     if (part) {
                         auto &buckets =
@@ -682,7 +687,9 @@ namespace utopia {
 
                 auto v_view = local_view_device(v);
 
-                for (auto &bc : impl_->dirichlet_boundary.conditions) {
+                for (auto &bc_ptr : impl_->dirichlet_boundary) {
+                    auto &bc = *bc_ptr;
+
                     auto *part = meta_data.get_part(bc.name);
                     if (part) {
                         auto &buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, *part);
@@ -695,7 +702,7 @@ namespace utopia {
                                 auto node = b[k];
                                 // auto idx = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node));
                                 auto idx = utopia::stk::convert_entity_to_index(node);
-                                v_view.set(idx * nv + bc.component, bc.value);
+                                v_view.set(idx * nv + bc.component, bc.value());
                             }
                         }
                     }
@@ -706,7 +713,8 @@ namespace utopia {
 
                 Write<Vector> w(v, utopia::GLOBAL_INSERT);
 
-                for (auto &bc : impl_->dirichlet_boundary.conditions) {
+                for (auto &bc_ptr : impl_->dirichlet_boundary) {
+                    auto &bc = *bc_ptr;
                     auto *part = meta_data.get_part(bc.name);
                     if (part) {
                         auto &buckets =
@@ -721,7 +729,7 @@ namespace utopia {
                                 auto local_idx = utopia::stk::convert_entity_to_index(node);
                                 assert(local_idx < local_to_global.size());
 
-                                v.c_set(local_to_global(local_idx, bc.component), bc.value);
+                                v.c_set(local_to_global(local_idx, bc.component), bc.value());
                             }
                         }
                     }
@@ -744,7 +752,9 @@ namespace utopia {
 
                 auto v_view = local_view_device(v);
 
-                for (auto &bc : impl_->dirichlet_boundary.conditions) {
+                for (auto &bc_ptr : impl_->dirichlet_boundary) {
+                    auto &bc = *bc_ptr;
+
                     auto *part = meta_data.get_part(bc.name);
                     if (part) {
                         auto &buckets =
@@ -769,7 +779,8 @@ namespace utopia {
 
                 Write<Vector> w(v, utopia::GLOBAL_INSERT);
 
-                for (auto &bc : impl_->dirichlet_boundary.conditions) {
+                for (auto &bc_ptr : impl_->dirichlet_boundary) {
+                    auto &bc = *bc_ptr;
                     auto *part = meta_data.get_part(bc.name);
                     if (part) {
                         auto &buckets =
@@ -804,8 +815,8 @@ namespace utopia {
                                                              const int component) {
             assert(component < n_var());
 
-            DirichletBoundary::Condition dirichlet_boundary{name, value, component};
-            impl_->dirichlet_boundary.conditions.push_back(dirichlet_boundary);
+            DirichletBoundary::UniformCondition dirichlet_boundary{name, value, component};
+            impl_->dirichlet_boundary.add(dirichlet_boundary);
         }
 
         void FunctionSpace::displace(const Vector &displacement) {

@@ -151,6 +151,8 @@ namespace utopia {
             Super::apply_constraints(v);
         }
 
+        void apply_constraints_update(Vector &v) const override { Super::apply_constraints(v); }
+
         void apply_constraints(Matrix &m, Vector &v) const override {
             if (projector_) {
                 Matrix m_temp;

@@ -78,7 +78,11 @@ namespace utopia {
         const FEVar &operator[](const std::size_t i) const { return variables_[i]; }
         bool empty() const { return variables_.empty(); }
 
-        void describe(std::ostream &os) const override {}
+        void describe(std::ostream &os) const override {
+            for (auto &v : variables_) {
+                v.describe(os);
+            }
+        }
 
     private:
         std::vector<FEVar> variables_;

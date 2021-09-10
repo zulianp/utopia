@@ -34,6 +34,8 @@ namespace utopia {
         SymbolicFunction(const SymbolicFunction &other);
         ~SymbolicFunction();
 
+        const std::string &to_string() const;
+
     private:
         std::unique_ptr<Impl> impl_;
     };

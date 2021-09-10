@@ -239,6 +239,15 @@ namespace utopia {
             impl_->systems = std::make_shared<libMesh::EquationSystems>(mesh->raw_type());
         }
 
+        void FunctionSpace::update(const SimulationTime<Scalar> &) {
+            static bool printed = false;
+
+            if (!printed) {
+                utopia::err() << "[Warning] libmesh::FunctionSpace::update(time) not implemented!\n";
+                printed = true;
+            }
+        }
+
         bool FunctionSpace::empty() const { return !static_cast<bool>(impl_->systems); }
 
         FunctionSpace::~FunctionSpace() {}

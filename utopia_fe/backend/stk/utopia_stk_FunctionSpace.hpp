@@ -32,6 +32,7 @@ namespace utopia {
             ~FunctionSpace();
 
             void init(const std::shared_ptr<Mesh> &mesh) override;
+            void update(const SimulationTime<Scalar> &) override;
 
             bool write(const Path &path, const Vector &x) override;
             void read(Input &in) override;

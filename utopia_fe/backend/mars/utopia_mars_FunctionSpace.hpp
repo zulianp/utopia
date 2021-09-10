@@ -64,6 +64,7 @@ namespace utopia {
             ~FunctionSpace();
 
             void init(const std::shared_ptr<Mesh> &mesh);
+            void update(const SimulationTime<Scalar> &);
 
             bool write(const Path &path, const Vector &x);
             void read(Input &in) override;
@@ -91,10 +92,12 @@ namespace utopia {
             // void create_field(Field<FunctionSpace> &field);
             // void create_nodal_vector_field(const int vector_size, Field<FunctionSpace> &field);
 
-            void apply_constraints(Matrix &m, const Scalar diag_value = 1.0);
-            void apply_constraints(Vector &v);
-            void apply_constraints(Matrix &m, Vector &v);
+            void apply_constraints(Matrix &m, const Scalar diag_value = 1.0) const;
+            void apply_constraints(Vector &v) const;
+            void apply_constraints(Matrix &m, Vector &v) const;
             void apply_zero_constraints(Vector &vec) const;
+
+            void apply_constraints_update(Vector &v) const { this->apply_constraints(v); }
 
             void add_dirichlet_boundary_condition(const std::string &name,
                                                   const Scalar &value,

@@ -443,7 +443,9 @@ namespace utopia {
 
             ::stk::mesh::Selector selector = meta_data.locally_owned_part();
 
-            for (auto &bc : dirichlet_boundary.conditions) {
+            for (auto &bc_ptr : dirichlet_boundary) {
+                auto &bc = *bc_ptr;
+
                 auto *part = meta_data.get_part(bc.name);
                 if (part) {
                     selector &= !*part;
