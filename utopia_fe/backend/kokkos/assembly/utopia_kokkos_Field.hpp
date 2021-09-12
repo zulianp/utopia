@@ -2,6 +2,7 @@
 #define UTOPIA_KOKKOS_FIELD_HPP
 
 #include "utopia_Algorithms.hpp"
+#include "utopia_MeshElementType.hpp"
 
 #include "utopia_kokkos_FE.hpp"
 #include "utopia_kokkos_SubdomainValue.hpp"
@@ -150,11 +151,15 @@ namespace utopia {
 
             virtual bool is_coefficient() const { return true; }
 
+            void set_elem_type(MeshElementType type) { elem_type_ = type; }
+            inline MeshElementType elem_type() const { return elem_type_; }
+
         private:
             std::shared_ptr<FE> fe_;
             DynRankView data_;
             int tensor_size_{1};
             std::string name_{"UnknownField"};
+            MeshElementType elem_type_{UNDEFINED_TYPE};
         };
 
         template <typename FE_>
@@ -181,6 +186,33 @@ namespace utopia {
 
                         for (int i = 0; i < tensor_size; ++i) {
                             data(cell, qp, i) *= v;
+                        }
+                    });
+            }
+
+            void avg(Field<FE> &field) {
+                assert(field.is_coefficient());
+
+                const int tensor_size = this->tensor_size();
+                field.data() = DynRankView("avg", this->fe()->n_cells(), tensor_size);
+                field.set_tensor_size(tensor_size);
+
+                auto data = this->data();
+                auto avg_data = field.data();
+                auto measure = this->fe()->measure();
+
+                const int n_quad_points = this->fe()->n_quad_points();
+
+                ::Kokkos::parallel_for(
+                    this->fe()->cell_range(), UTOPIA_LAMBDA(int cell) {
+                        for (int i = 0; i < tensor_size; ++i) {
+                            Scalar m = 0.;
+                            for (int qp = 0; qp < n_quad_points; ++qp) {
+                                m += measure(cell, qp);
+                                avg_data(cell, i) += data(cell, qp, i);
+                            }
+
+                            avg_data(cell, i) /= m;
                         }
                     });
             }

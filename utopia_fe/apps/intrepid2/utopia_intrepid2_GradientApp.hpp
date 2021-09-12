@@ -81,6 +81,16 @@ namespace utopia {
                     utopia::out() << "-------------------------------\n";
                 }
 
+                Intrepid2Field_t avg_gradient(fe);
+                intrepid_gradient.avg(avg_gradient);
+
+                if (verbose_) {
+                    utopia::out() << "avg(Gradient):\n";
+                    utopia::out() << "-------------------------------\n";
+                    avg_gradient.describe(utopia::out().stream());
+                    utopia::out() << "-------------------------------\n";
+                }
+
                 if (compute_deformation_gradient_) {
                     intrepid_gradient.add_identity();
 
