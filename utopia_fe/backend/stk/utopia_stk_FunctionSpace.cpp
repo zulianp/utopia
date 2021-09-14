@@ -132,22 +132,9 @@ namespace utopia {
 
             void register_variables() {
                 auto &meta_data = mesh->meta_data();
-                // auto &&part = meta_data.universal_part();
-
                 meta_data.enable_late_fields();
 
                 for (auto &v : variables) {
-                    // if (v.n_components == 1) {
-                    //     auto &field =
-                    //         meta_data.declare_field<::stk::mesh::Field<Scalar>>(::stk::topology::NODE_RANK, v.name,
-                    //         1);
-                    //     ::stk::mesh::put_field_on_mesh(field, part, 1, nullptr);
-                    // } else {
-                    //     auto &field =
-                    //         meta_data.declare_field<Impl::VectorField_t>(::stk::topology::NODE_RANK, v.name, 1);
-                    //     ::stk::mesh::put_field_on_mesh(field, part, v.n_components, nullptr);
-                    // }
-
                     register_variable(v);
                 }
             }
@@ -977,37 +964,54 @@ namespace utopia {
         }
 
         void FunctionSpace::backend_set_elemental_field(const Field<FunctionSpace> &field) {
-            // auto &meta_data = mesh().meta_data();
-            // auto &&part = meta_data.universal_part();
+            auto &meta_data = mesh().meta_data();
+            auto &&part = meta_data.universal_part();
 
-            // ::stk::mesh::FieldBase *stk_field = ::stk::mesh::get_field_by_name(field.name(), meta_data);
+            ::stk::mesh::FieldBase *stk_field = ::stk::mesh::get_field_by_name(field.name(), meta_data);
 
-            // int tensor_size = field.tensor_size();
-            // if (!stk_field) {
-            //     meta_data.enable_late_fields();
+            int tensor_size = field.tensor_size();
+            if (!stk_field) {
+                meta_data.enable_late_fields();
 
-            //     if (tensor_size == 1) {
-            //         stk_field = &meta_data.declare_field<::stk::mesh::Field<Scalar>>(
-            //             ::stk::topology::ELEMENT_RANK, field.name(), 1);
-            //         ::stk::mesh::put_field_on_mesh(*stk_field, part, 1, nullptr);
-            //     } else if (tensor_size == mesh().spatial_dimension()) {
-            //         assert(tensor_size == mesh().spatial_dimension());
-            //         stk_field =
-            //             &meta_data.declare_field<Impl::VectorField_t>(::stk::topology::ELEMENT_RANK, field.name(),
-            //             1);
-            //         ::stk::mesh::put_field_on_mesh(*stk_field, part, tensor_size, nullptr);
-            //     }
-            // }
+                if (tensor_size == 1) {
+                    stk_field = &meta_data.declare_field<::stk::mesh::Field<Scalar>>(
+                        ::stk::topology::ELEMENT_RANK, field.name(), 1);
+                    ::stk::mesh::put_field_on_mesh(*stk_field, part, 1, nullptr);
+                } else if (tensor_size == mesh().spatial_dimension()) {
+                    assert(tensor_size == mesh().spatial_dimension());
+                    stk_field =
+                        &meta_data.declare_field<Impl::VectorField_t>(::stk::topology::ELEMENT_RANK, field.name(), 1);
+                    ::stk::mesh::put_field_on_mesh(*stk_field, part, tensor_size, nullptr);
+                }
+            }
 
-            // auto &data = field.data();
+            auto &data = field.data();
 
-            // if (data.comm().size() == 1) {
-            //     impl_->copy_local_vector_to_nodal_field(data, *stk_field);
-            // } else {
-            //     Vector local;
-            //     global_to_local(data, local);
-            //     impl_->copy_local_vector_to_nodal_field(local, *stk_field);
-            // }
+            auto &bulk_data = mesh().bulk_data();
+            auto &elem_buckets = utopia::stk::local_elements(bulk_data);
+
+            auto v_view = local_view_device(data);
+
+            using Bucket_t = ::stk::mesh::Bucket;
+            using Entity_t = ::stk::mesh::Entity;
+
+            int elem_idx = 0;
+            for (const auto &ib : elem_buckets) {
+                const Bucket_t &b = *ib;
+                const Bucket_t::size_type length = b.size();
+
+                for (Bucket_t::size_type k = 0; k < length; ++k, ++elem_idx) {
+                    Entity_t elem = b[k];
+
+                    Scalar *points = (Scalar *)::stk::mesh::field_data(*stk_field, elem);
+                    int n_comp = ::stk::mesh::field_scalars_per_entity(*stk_field, elem);
+                    assert(field.tensor_size() == n_comp);
+
+                    for (int d = 0; d < n_comp; ++d) {
+                        points[d] = v_view.get(elem_idx * n_comp + d);
+                    }
+                }
+            }
         }
 
         void FunctionSpace::backend_set_nodal_field(const Field<FunctionSpace> &field) {

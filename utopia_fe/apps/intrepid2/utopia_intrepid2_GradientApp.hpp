@@ -20,7 +20,9 @@ namespace utopia {
         class GradientApp : public Configurable {
         public:
             using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+            using Vector_t = typename Traits<FunctionSpace>::Vector;
             using Field_t = utopia::Field<FunctionSpace>;
+            using IO_t = utopia::IO<FunctionSpace>;
 
             using Intrepid2FE_t = utopia::intrepid2::FE<Scalar_t>;
             using Intrepid2Field_t = utopia::kokkos::Field<Intrepid2FE_t>;
@@ -83,6 +85,17 @@ namespace utopia {
 
                 Intrepid2Field_t avg_gradient(fe);
                 intrepid_gradient.avg(avg_gradient);
+                avg_gradient.set_elem_type(ELEMENT_TYPE);
+
+                Field_t avg_gradient_global("avg_grad", make_ref(space_), std::make_shared<Vector_t>());
+                convert_field(avg_gradient, avg_gradient_global);
+
+                utopia::out() << avg_gradient_global.data().size() << "\n";
+                utopia::out() << avg_gradient_global.tensor_size() << "\n";
+
+                IO_t io(space_);
+                io.set_output_path(path_);
+                io.write(avg_gradient_global);
 
                 if (verbose_) {
                     utopia::out() << "avg(Gradient):\n";
@@ -133,6 +146,8 @@ namespace utopia {
             bool compute_deformation_gradient_{false};
             bool compute_strain_{false};
             int quadrature_order{0};
+
+            Path path_{"out.e"};
         };
     }  // namespace intrepid2
 }  // namespace utopia

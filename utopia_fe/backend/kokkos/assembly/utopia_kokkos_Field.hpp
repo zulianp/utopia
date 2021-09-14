@@ -215,6 +215,8 @@ namespace utopia {
                             avg_data(cell, i) /= m;
                         }
                     });
+
+                field.set_elem_type(this->elem_type());
             }
 
             void describe(std::ostream &) const override {

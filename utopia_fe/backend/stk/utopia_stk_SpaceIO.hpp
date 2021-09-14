@@ -4,6 +4,7 @@
 #include "utopia_Input.hpp"
 #include "utopia_Path.hpp"
 
+#include "utopia_Field.hpp"
 #include "utopia_fe_Core.hpp"
 
 #include "utopia_stk_ForwardDeclarations.hpp"
@@ -27,6 +28,7 @@ namespace utopia {
             // Statefull functions
             // bool load();
 
+            bool write(const Field<FunctionSpace> &field);
             bool write(const Vector &v);
             bool write(const Vector &v, const int step, const Scalar);
             bool write(const int step, const Scalar t);
