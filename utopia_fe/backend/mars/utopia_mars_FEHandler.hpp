@@ -18,7 +18,8 @@ namespace utopia {
         public:
             static constexpr ::mars::Integer Degree = Degree_;
             static constexpr int Dim = DMesh::Dim;
-            using DofHandler = ::mars::DofHandler<DMesh, Degree>;
+            using DofHandler = ::mars::DofHandler<DMesh, Degree, 0>;
+            // using DofHandler = ::mars::DofHandler<DMesh, Degree, 1>;
             using FEDofMap = ::mars::FEDofMap<DofHandler>;
             using SPattern =
                 ::mars::SparsityPattern<Scalar, LocalSizeType, SizeType, DofHandler, MarsCrsMatrix::size_type>;
@@ -74,8 +75,9 @@ namespace utopia {
 
             auto factory() -> Factory & override { return ConcreteFactory<DMesh>::instance(); };
 
-            void init(DMesh &mesh_impl) {
+            void init(DMesh &mesh_impl, int block_size) {
                 dof_handler = std::make_shared<DofHandler>(&mesh_impl);  //, mesh->raw_type_context());
+                dof_handler->set_block(block_size);
                 dof_handler->enumerate_dofs();
 
                 fe_dof_map = std::make_shared<FEDofMap>(build_fe_dof_map(*dof_handler));

@@ -25,7 +25,8 @@ namespace utopia {
                 using FEHandler = utopia::mars::FEHandler<DMesh>;
 
                 auto handler_impl = std::make_shared<FEHandler>();
-                handler_impl->init(mesh_impl);
+                assert(n_var != 0);
+                handler_impl->init(mesh_impl, n_var);
                 handler = handler_impl;
 
 #ifdef MARS_WITH_WITH_IO
@@ -95,7 +96,7 @@ namespace utopia {
             std::function<bool(const Path &, const Vector &)> write;
 
             bool verbose{false};
-            int n_var{0};
+            int n_var{1};
         };
 
         std::shared_ptr<IFEHandler> FunctionSpace::handler() const { return impl_->handler; }
@@ -135,12 +136,18 @@ namespace utopia {
         bool FunctionSpace::write(const Path &path, const Vector &x) { return impl_->write(path, x); }
 
         void FunctionSpace::read(Input &in) {
-            if (impl_->mesh) {
+            if (!impl_->mesh) {
                 impl_->mesh = std::make_shared<Mesh>();
                 in.get("mesh", *impl_->mesh);
+
+                if (impl_->mesh->empty()) {
+                    // Unit square
+                    impl_->mesh->unit_cube(4, 4, 4);
+                }
             }
 
             impl_->read_meta(in);
+            init(impl_->mesh);
         }
         void FunctionSpace::describe(std::ostream &os) const {
             if (impl_->handler) {
@@ -156,8 +163,8 @@ namespace utopia {
 
         FunctionSpace::SizeType FunctionSpace::n_dofs() const { return handler()->n_dofs(); }
         FunctionSpace::SizeType FunctionSpace::n_local_dofs() const { return handler()->n_local_dofs(); }
-        int FunctionSpace::n_var() const { return 1; }
-        void FunctionSpace::set_n_var(const int n_var) { assert(n_var == 1); }
+        int FunctionSpace::n_var() const { return impl_->n_var; }
+        void FunctionSpace::set_n_var(const int n_var) { impl_->n_var = n_var; }
 
         void FunctionSpace::create_vector(Vector &v) const { v.zeros(layout(comm(), n_local_dofs(), n_dofs())); }
         void FunctionSpace::create_local_vector(Vector &) const { Utopia::Abort("IMPLEMENT ME"); }

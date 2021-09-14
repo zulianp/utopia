@@ -128,6 +128,116 @@ namespace utopia {
                 return true;
             }
 
+            ////////////////////////
+
+            template <class Op>
+            bool block_op_assemble_matrix(Op op, Matrix &hessian) {
+                ensure_fe();
+
+                auto handler = this->handler();
+                auto sp = handler->get_sparsity_pattern();
+                auto fe_dof_map = handler->get_fe_dof_map();
+                auto dof_handler = sp.get_dof_handler();
+
+                const int n_fun = fe_->n_shape_functions();
+                const int n_qp = fe_->n_quad_points();
+
+                int block_size = op.dim();
+
+                if (block_size != dof_handler.get_block()) {
+                    utopia::err() << block_size << "==" << dof_handler.get_block() << "\n";
+                }
+
+                assert(block_size == dof_handler.get_block());
+
+                fe_dof_map.iterate(MARS_LAMBDA(const ::mars::Integer elem_index) {
+                    for (int i = 0; i < n_fun; i++) {
+                        for (int sub_i = 0; sub_i < block_size; ++sub_i) {
+                            auto offset_i = dof_handler.compute_block_index(i, sub_i);
+                            const auto local_dof_i = fe_dof_map.get_elem_local_dof(elem_index, offset_i);
+                            if (!dof_handler.is_owned(local_dof_i)) continue;
+
+                            for (int j = 0; j < n_fun; j++) {
+                                for (int sub_j = 0; sub_j < block_size; ++sub_j) {
+                                    auto offset_j = dof_handler.compute_block_index(j, sub_j);
+                                    const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, offset_j);
+                                    const Scalar val = op(elem_index, i, j, sub_i, sub_j);
+
+                                    assert(val == val);
+                                    sp.atomic_add_value(local_dof_i, local_dof_j, val);
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // // FIXME Bad it should not do this
+                auto mat_impl =
+                    Teuchos::rcp(new Matrix::CrsMatrixType(this->handler()->get_sparsity_pattern().get_matrix(),
+                                                           hessian.raw_type()->getRowMap(),
+                                                           hessian.raw_type()->getColMap()));
+                hessian.wrap(mat_impl, false);
+                return true;
+            }
+
+            template <class Op>
+            bool block_op_apply(Op op, const Vector &x, Vector &y) {
+                ensure_fe();
+
+                if (empty(y)) {
+                    y.zeros(layout(x));
+                } else {
+                    y.set(0.0);
+                }
+
+                auto handler = this->handler();
+                auto sp = handler->get_sparsity_pattern();
+                auto fe_dof_map = handler->get_fe_dof_map();
+                auto dof_handler = sp.get_dof_handler();
+
+                const int n_fun = fe_->n_shape_functions();
+                const int n_qp = fe_->n_quad_points();
+
+                // FIXME Missing gobal to local for x!!!
+                auto x_view = local_view_device(x).raw_type();
+                auto y_view = local_view_device(y).raw_type();
+
+                // kokkos_view_owned = local_view_device(x).raw_type(); // Rank 2 tensor N x 1
+                ::mars::ViewVectorType<Scalar> x_local("x_local", dof_handler.get_dof_size());  // Rank 1 tensor
+
+                ::mars::ViewVectorType<Scalar> x_view_rank1(::Kokkos::subview(x_view, ::Kokkos::ALL, 0));
+                ::mars::set_locally_owned_data(dof_handler, x_local, x_view_rank1);
+                ::mars::gather_ghost_data(dof_handler, x_local);
+
+                int block_size = op.dim();
+                assert(block_size == dof_handler.get_block());
+
+                fe_dof_map.iterate(MARS_LAMBDA(const ::mars::Integer elem_index) {
+                    for (int i = 0; i < n_fun; i++) {
+                        for (int sub_i = 0; sub_i < block_size; ++sub_i) {
+                            auto offset_i = dof_handler.compute_block_index(i, sub_i);
+                            const auto local_dof_i = fe_dof_map.get_elem_local_dof(elem_index, offset_i);
+                            if (!dof_handler.is_owned(local_dof_i)) continue;
+
+                            Scalar val = 0;
+                            for (int j = 0; j < n_fun; j++) {
+                                for (int sub_j = 0; sub_j < block_size; ++sub_j) {
+                                    auto offset_j = dof_handler.compute_block_index(j, sub_j);
+                                    const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, offset_j);
+                                    auto x_j = x_local(local_dof_j);
+                                    val += op(elem_index, i, j, sub_i, sub_j) * x_j;
+                                }
+                            }
+
+                            const auto owned_dof_i = dof_handler.local_to_owned_index(local_dof_i);
+                            Kokkos::atomic_fetch_add(&y_view(owned_dof_i, 0), val);
+                        }
+                    }
+                });
+
+                return true;
+            }
+
             void read(Input &in) override {}
 
             void set_environment(const std::shared_ptr<Environment<mars::FunctionSpace>> &) override {
