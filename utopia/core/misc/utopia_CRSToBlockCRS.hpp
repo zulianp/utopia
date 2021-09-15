@@ -40,9 +40,19 @@ namespace utopia {
             assert(n_blocks * BlockSize == n);
             assert(n > 0);
 
-            out.set_cols(n_blocks);
+            auto n_nnz = ia[n];
+            SizeType max_j = 0;
 
-            std::vector<SizeType> block_pattern(n_blocks, 0.0);
+            for (SizeType i = 0; i < n_nnz; ++i) {
+                max_j = std::max(max_j, ja[i]);
+            }
+
+            max_j /= BlockSize;
+
+            std::vector<SizeType> block_pattern(max_j + 1, 0);
+
+            // FIXME
+            out.set_cols(std::max(n_blocks, max_j + 1));
 
             auto &row_ptr = out.row_ptr();
             auto &colidx = out.colidx();
@@ -66,7 +76,7 @@ namespace utopia {
                         if (block_pattern[block_j] == 0) {
                             assert((block_i + 1) < SizeType(row_ptr.size()));
                             row_ptr[block_i + 1]++;
-                            block_pattern[block_j] = 1.0;
+                            block_pattern[block_j] = 1;
                         }
                     }
                 }
@@ -102,7 +112,7 @@ namespace utopia {
                         SizeType block_j = j / BlockSize;
 
                         if (block_pattern[block_j] == 0) {
-                            block_pattern[block_j] = 1.0;
+                            block_pattern[block_j] = 1;
                             SizeType idx_offset = row_ptr[block_i] + count[block_i];
                             colidx[idx_offset] = block_j;
                             ++count[block_i];

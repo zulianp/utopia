@@ -743,7 +743,7 @@ namespace utopia {
                     add_domain_assembler(assembler);
                 } else if (impl_->fail_if_unregistered) {
                     assert(false && "Should not come here");
-                    Utopia::Abort();
+                    Utopia::Abort("Could not find material!");
                 }
             });
 

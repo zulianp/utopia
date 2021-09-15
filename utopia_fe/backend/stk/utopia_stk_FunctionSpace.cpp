@@ -263,6 +263,10 @@ namespace utopia {
                         Entity_t node = b[k];
                         auto idx = utopia::stk::convert_entity_to_index(node);
 
+                        if (bulk_data.in_receive_ghost(node)) {
+                            idx = dof_map->shift_aura_idx(idx);
+                        }
+
                         Scalar *points = (Scalar *)::stk::mesh::field_data(field, node);
                         int n_comp = ::stk::mesh::field_scalars_per_entity(field, node);
 
