@@ -142,7 +142,7 @@ namespace utopia {
 
                 if (impl_->mesh->empty()) {
                     // Unit square
-                    impl_->mesh->unit_cube(4, 4, 4);
+                    impl_->mesh->unit_cube(2, 2, 0);
                 }
             }
 
