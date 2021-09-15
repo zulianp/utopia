@@ -57,7 +57,8 @@ namespace utopia {
             using Vector = Traits<FunctionSpace>::Vector;
             using GlobalIndex = utopia::GlobalIndex<FunctionSpace>;
 
-            void init(Mesh &mesh);
+            void set_valid_local_id_mode(const bool val);
+            void init(Mesh &mesh, const bool verbose = false);
 
             DofMap();
             ~DofMap();

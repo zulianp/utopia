@@ -99,7 +99,8 @@ namespace utopia {
             void backend_set_elemental_field(const Field<FunctionSpace> &field);
 
             void copy_meta_info_from(const FunctionSpace &other);
-            void initialize() override;
+            void initialize() override { initialize(true); }
+            void initialize(const bool valid_local_id_mode);
 
             void node_eval(std::function<void(const SizeType idx, const Scalar *)> fun);
             void node_eval(const std::string &part_name, std::function<void(const SizeType idx, const Scalar *)> fun);

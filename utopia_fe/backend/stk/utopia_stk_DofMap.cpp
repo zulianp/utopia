@@ -49,6 +49,7 @@ namespace utopia {
             SizeType owned_dof_start{-1}, owned_dof_end{-1};
             SizeType aura_nodes_offset{0};
             int n_var{1};
+            bool valid_local_id_mode{false};
 
             void print_map(const ::stk::mesh::BulkData &bulk_data, std::ostream &os) const {
                 auto &node_buckets = utopia::stk::universal_nodes(bulk_data);
@@ -61,9 +62,26 @@ namespace utopia {
                         auto node = b[i];
 
                         auto local_index = utopia::stk::convert_entity_to_index(node);
-                        auto dof = local_to_global[local_index];
-                        os << local_index << " -> " << dof << ", "
-                           << utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node)) << '\n';
+
+                        os << local_index << " -> " << bulk_data.local_id(node) << " ";
+
+                        if (!local_to_global.empty()) {
+                            auto dof = local_to_global[local_index];
+                            os << dof << ", ";
+                        }
+
+                        os << utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node)) << '\n';
+                    }
+                }
+
+                os << "Linear local_to_global:\n";
+                if (!local_to_global.empty()) {
+                    SizeType n = local_to_global.size();
+                    for (SizeType i = 0; i < n; ++i) {
+                        os << i << " -> "
+                           << local_to_global[i]
+                           // << ", " << bulk_data.identifier(Entity(utopia::stk::convert_index_to_stk_index(i)))
+                           << "\n";
                     }
                 }
             }
@@ -415,6 +433,8 @@ namespace utopia {
         int DofMap::n_var() const { return impl_->n_var; }
         void DofMap::set_n_var(const int n_var) { impl_->n_var = n_var; }
 
+        void DofMap::set_valid_local_id_mode(const bool val) { impl_->valid_local_id_mode = val; }
+
         void DofMap::init(::stk::mesh::BulkData &bulk_data) {
             impl_->comm = Impl::Communicator(bulk_data.parallel());
 
@@ -425,7 +445,7 @@ namespace utopia {
             }
         }
 
-        void DofMap::init(Mesh &mesh) {
+        void DofMap::init(Mesh &mesh, const bool verbose) {
             auto &meta_data = mesh.meta_data();
             auto &bulk_data = mesh.bulk_data();
 
@@ -580,10 +600,14 @@ namespace utopia {
                     // ss << "max_local_node_id: " << max_local_node_id << "\n";
                     // ss << "min_aura_node_id: " << min_aura_node_id << "\n";
 
-                    impl_->aura_nodes_offset = (min_aura_node_id - (max_local_node_id + 1));
-                    assert(impl_->aura_nodes_offset >= 0);
+                    if (!impl_->valid_local_id_mode) {
+                        impl_->aura_nodes_offset = (min_aura_node_id - (max_local_node_id + 1));
+                        assert(impl_->aura_nodes_offset >= 0);
+                    } else {
+                        impl_->aura_nodes_offset = 0;
+                    }
 
-                    // ss << "aura_nodes_offset: " << impl_->aura_nodes_offset << "\n";
+                    if (verbose) std::cout << "aura_nodes_offset: " << impl_->aura_nodes_offset << "\n";
                 }
 
                 exchange_shared_dofs(mesh.comm(), bulk_data, false);
@@ -603,6 +627,12 @@ namespace utopia {
             // describe_debug(mesh, ss);
 
             // mesh.comm().synched_print(ss.str());
+
+            if (verbose) {
+                std::stringstream ss;
+                impl_->print_map(bulk_data, ss);
+                mesh.comm().synched_print(ss.str(), utopia::out().stream());
+            }
         }
 
         void DofMap::describe_mesh_connectivity(Mesh &mesh) {

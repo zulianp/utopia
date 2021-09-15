@@ -37,6 +37,7 @@ namespace utopia {
             std::vector<FEVar> variables;
             std::shared_ptr<DofMap> dof_map;
             bool verbose{false};
+            bool print_map{false};
 
             void node_eval(const BucketVector_t &node_buckets,
                            std::function<void(const SizeType idx, const Scalar *)> fun) {
@@ -293,6 +294,7 @@ namespace utopia {
                              "n_var", n_var, "Number of variables per node (instead of specifiying all of them).")
                          .add_option("boundary_conditions", dirichlet_boundary, "Boundary conditions.")
                          .add_option("verbose", verbose, "Verbose output.")
+                         .add_option("print_map", print_map, "Print local to global mapping.")
                          .parse(in)) {
                     return;
                 }
@@ -363,14 +365,16 @@ namespace utopia {
             dof_map().set_n_var(other.n_var());
         }
 
-        void FunctionSpace::initialize() {
+        void FunctionSpace::initialize(const bool valid_local_id_mode) {
             impl_->register_variables();
 
             // if (this->mesh().has_aura()) {
             //     this->mesh().create_edges();
             // }
 
-            impl_->dof_map->init(*this->mesh_ptr());
+            // impl_->dof_map->init(*this->mesh_ptr(), impl_->print_map);
+            impl_->dof_map->set_valid_local_id_mode(valid_local_id_mode);
+            impl_->dof_map->init(*this->mesh_ptr(), false);
 
             if (impl_->verbose) {
                 std::stringstream ss;
@@ -422,7 +426,7 @@ namespace utopia {
             //     this->mesh().create_edges();
             // }
 
-            impl_->dof_map->init(*this->mesh_ptr());
+            impl_->dof_map->init(*this->mesh_ptr(), impl_->print_map);
 
             if (impl_->verbose) {
                 std::stringstream ss;
@@ -442,7 +446,7 @@ namespace utopia {
 
             impl_->read_meta(in);
             impl_->register_variables();
-            impl_->dof_map->init(*this->mesh_ptr());
+            impl_->dof_map->init(*this->mesh_ptr(), impl_->print_map);
 
             std::vector<FEVar> fields;
             in.get("fields", [&](Input &array_node) {
@@ -577,7 +581,7 @@ namespace utopia {
 
         void FunctionSpace::create_matrix(Matrix &m) const {
             if (impl_->dof_map->empty()) {
-                impl_->dof_map->init(*this->mesh_ptr());
+                impl_->dof_map->init(*this->mesh_ptr(), impl_->print_map);
             }
 
             auto vl = layout(comm(), n_local_dofs(), n_dofs());
