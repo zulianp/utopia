@@ -52,7 +52,26 @@ namespace utopia {
             bool valid_local_id_mode{false};
 
             void print_map(const ::stk::mesh::BulkData &bulk_data, std::ostream &os) const {
-                auto &node_buckets = utopia::stk::universal_nodes(bulk_data);
+                auto &meta_data = bulk_data.mesh_meta_data();
+
+                (!meta_data.locally_owned_part() & meta_data.globally_shared_part());
+
+                // auto &node_buckets = utopia::stk::universal_nodes(bulk_data);
+
+                os << "Owned\n";
+                print_map(bulk_data, meta_data.locally_owned_part(), os);
+
+                os << "Shared\n";
+                print_map(bulk_data, (!meta_data.locally_owned_part() & meta_data.globally_shared_part()), os);
+
+                os << "Aura\n";
+                print_map(bulk_data, meta_data.aura_part(), os);
+            }
+
+            void print_map(const ::stk::mesh::BulkData &bulk_data,
+                           const ::stk::mesh::Selector &selector,
+                           std::ostream &os) const {
+                const auto &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, selector);
 
                 for (auto *b_ptr : node_buckets) {
                     auto &b = *b_ptr;
@@ -74,16 +93,16 @@ namespace utopia {
                     }
                 }
 
-                os << "Linear local_to_global:\n";
-                if (!local_to_global.empty()) {
-                    SizeType n = local_to_global.size();
-                    for (SizeType i = 0; i < n; ++i) {
-                        os << i << " -> "
-                           << local_to_global[i]
-                           // << ", " << bulk_data.identifier(Entity(utopia::stk::convert_index_to_stk_index(i)))
-                           << "\n";
-                    }
-                }
+                // os << "Linear local_to_global:\n";
+                // if (!local_to_global.empty()) {
+                //     SizeType n = local_to_global.size();
+                //     for (SizeType i = 0; i < n; ++i) {
+                //         os << i << " -> "
+                //            << local_to_global[i]
+                //            // << ", " << bulk_data.identifier(Entity(utopia::stk::convert_index_to_stk_index(i)))
+                //            << "\n";
+                //     }
+                // }
             }
         };
 
