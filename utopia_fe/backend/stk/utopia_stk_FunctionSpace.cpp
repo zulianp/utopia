@@ -30,6 +30,8 @@ namespace utopia {
             using Selector_t = ::stk::mesh::Selector;
             using IOBroker_t = ::stk::io::StkMeshIoBroker;
             using VectorField_t = ::stk::mesh::Field<Scalar, ::stk::mesh::Cartesian>;
+            using MatrixField_t = ::stk::mesh::Field<Scalar, ::stk::mesh::Cartesian, ::stk::mesh::Cartesian>;
+            using MatrixField3x3_t = ::stk::mesh::Field<Scalar, ::stk::mesh::Cartesian3d, ::stk::mesh::Cartesian3d>;
 
             std::string name{"main"};
             std::shared_ptr<Mesh> mesh;
@@ -989,6 +991,21 @@ namespace utopia {
                     assert(tensor_size == mesh().spatial_dimension());
                     stk_field =
                         &meta_data.declare_field<Impl::VectorField_t>(::stk::topology::ELEMENT_RANK, field.name(), 1);
+                    ::stk::mesh::put_field_on_mesh(*stk_field, part, tensor_size, nullptr);
+                } else if (tensor_size == mesh().spatial_dimension() * mesh().spatial_dimension()) {
+                    // if (mesh().spatial_dimension() == 3) {
+                    //     stk_field = &meta_data.declare_field<Impl::MatrixField3x3_t>(
+                    //         ::stk::topology::ELEMENT_RANK, field.name(), 1);
+                    //     ::stk::mesh::put_field_on_mesh(*stk_field, part, 3, 3, nullptr);
+                    // } else {
+                    stk_field =
+                        &meta_data.declare_field<Impl::MatrixField_t>(::stk::topology::ELEMENT_RANK, field.name(), 1);
+                    ::stk::mesh::put_field_on_mesh(
+                        *stk_field, part, mesh().spatial_dimension(), mesh().spatial_dimension(), nullptr);
+                    // }
+                } else {
+                    stk_field = &meta_data.declare_field<::stk::mesh::Field<Scalar>>(
+                        ::stk::topology::ELEMENT_RANK, field.name(), 1);
                     ::stk::mesh::put_field_on_mesh(*stk_field, part, tensor_size, nullptr);
                 }
             }

@@ -87,15 +87,17 @@ namespace utopia {
                 intrepid_gradient.avg(avg_gradient);
                 avg_gradient.set_elem_type(ELEMENT_TYPE);
 
-                Field_t avg_gradient_global("avg_grad", make_ref(space_), std::make_shared<Vector_t>());
+                Field_t avg_gradient_global("avggrad", make_ref(space_), std::make_shared<Vector_t>());
                 convert_field(avg_gradient, avg_gradient_global);
 
                 utopia::out() << avg_gradient_global.data().size() << "\n";
                 utopia::out() << avg_gradient_global.tensor_size() << "\n";
 
-                IO_t io(space_);
-                io.set_output_path(path_);
-                io.write(avg_gradient_global);
+                {
+                    IO_t io(space_);
+                    io.set_output_path(path_);
+                    io.write(avg_gradient_global);
+                }
 
                 if (verbose_) {
                     utopia::out() << "avg(Gradient):\n";
@@ -123,6 +125,19 @@ namespace utopia {
                 if (compute_strain_) {
                     Intrepid2Strain_t intrepid_strain(fe);
                     intrepid_strain.init_linearized(intrepid_field);
+
+                    Intrepid2Field_t avg_strain(fe);
+                    intrepid_strain.avg(avg_strain);
+                    avg_strain.set_elem_type(ELEMENT_TYPE);
+
+                    Field_t avg_strain_global("avgstrain", make_ref(space_), std::make_shared<Vector_t>());
+                    convert_field(avg_strain, avg_strain_global);
+
+                    {
+                        IO_t io(space_);
+                        io.set_output_path("strain.e");
+                        io.write(avg_strain_global);
+                    }
 
                     if (verbose_) {
                         utopia::out() << "Strain:\n";
