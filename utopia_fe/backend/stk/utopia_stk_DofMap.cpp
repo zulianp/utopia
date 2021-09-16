@@ -82,7 +82,7 @@ namespace utopia {
 
                         auto local_index = utopia::stk::convert_entity_to_index(node);
 
-                        os << local_index << " -> " << bulk_data.local_id(node) << " ";
+                        os << local_index << " -> " << utopia::stk::convert_entity_to_index(node) << " ";
 
                         if (!local_to_global.empty()) {
                             auto dof = local_to_global[local_index];
@@ -394,8 +394,9 @@ namespace utopia {
                     const Entity_t &elem = b[k];
                     const auto local_id = utopia::stk::convert_entity_to_index(elem);
                     const auto id = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(elem));
-                    os << "lid: " << local_id << ", id: " << id << ' ' << " => " << (bulk_data.local_id(elem))
-                       << ", offset: " << elem.local_offset() << ", in range: " << bulk_data.in_index_range(elem)
+                    os << "lid: " << local_id << ", id: " << id << ' ' << " => "
+                       << (utopia::stk::convert_entity_to_index(elem)) << ", offset: " << elem.local_offset()
+                       << ", in range: " << bulk_data.in_index_range(elem)
                        << ", is_aura: " << bulk_data.is_aura_ghosted_onto_another_proc(bulk_data.entity_key(elem))
                        << ", is_shared: " << bulk_data.in_shared(elem) << ", owner: ";
                     os << bulk_data.parallel_owner_rank(elem);
@@ -478,7 +479,7 @@ namespace utopia {
 
             // describe_mesh_connectivity(mesh);
 
-            // TODO IF bulk_data.local_id(aura_node) != Crap then use it!
+            // TODO IF utopia::stk::convert_entity_to_index(aura_node) != Crap then use it!
 
             if (mesh.has_aura() && size > 1) {
                 // if (true) {
@@ -516,7 +517,7 @@ namespace utopia {
                         const Size_t n_nodes = bulk_data.num_nodes(elem);
 
                         for (Size_t i = 0; i < n_nodes; ++i) {
-                            const SizeType node_i = bulk_data.local_id(node_ids[i]);
+                            const SizeType node_i = utopia::stk::convert_entity_to_index(node_ids[i]);
                             assert(node_i < n_universal_nodes);
                             for (Size_t j = 0; j < n_nodes; ++j) {
                                 node2node[node_i].insert(utopia::stk::convert_entity_to_index(node_ids[j]));
@@ -551,7 +552,7 @@ namespace utopia {
 
                             for (Size_t i = 0; i < n_nodes; ++i) {
                                 if (!bulk_data.in_receive_ghost(node_ids[i])) {
-                                    const SizeType node_i = bulk_data.local_id(node_ids[i]);
+                                    const SizeType node_i = utopia::stk::convert_entity_to_index(node_ids[i]);
 
                                     assert(node_i < n_universal_nodes);
 
@@ -589,7 +590,7 @@ namespace utopia {
                                     std::min(Impl::SizeType(utopia::stk::convert_entity_to_index(e)), min_aura_node_id);
                                 continue;
                             }
-                            Impl::SizeType i = bulk_data.local_id(e);
+                            Impl::SizeType i = utopia::stk::convert_entity_to_index(e);
                             max_local_node_id = std::max(i, max_local_node_id);
 
                             int owner_rank = bulk_data.parallel_owner_rank(e);
@@ -649,6 +650,7 @@ namespace utopia {
 
             if (verbose) {
                 std::stringstream ss;
+                describe_mesh_connectivity(mesh);
                 impl_->print_map(bulk_data, ss);
                 mesh.comm().synched_print(ss.str(), utopia::out().stream());
             }

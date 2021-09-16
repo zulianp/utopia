@@ -1096,6 +1096,8 @@ namespace utopia {
             impl_->local_vector_to_nodal_field(field_name, local);
         }
 
+        void FunctionSpace::set_print_map(const bool val) { impl_->print_map = val; }
+
         template void FunctionSpace::declare_new_nodal_field<Traits<FunctionSpace>::Scalar>(const std::string &,
                                                                                             const int);
         // template void FunctionSpace::declare_new_nodal_field<Traits<FunctionSpace>::SizeType>(const std::string

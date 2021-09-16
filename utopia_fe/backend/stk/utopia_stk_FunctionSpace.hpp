@@ -107,6 +107,8 @@ namespace utopia {
 
             const DirichletBoundary &dirichlet_boundary() const;
 
+            void set_print_map(const bool val);
+
         private:
             class Impl;
             // class Var;
