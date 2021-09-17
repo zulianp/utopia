@@ -16,6 +16,7 @@ namespace utopia {
     class BlockCRSDefaultBlockAssignment {
     public:
         inline constexpr SizeType operator[](const SizeType i) const { return i / BlockSize; }
+        inline constexpr int sub(const SizeType i) const { return i - (i / BlockSize) * BlockSize; }
     };
 
     template <class ScalarView,
@@ -86,7 +87,7 @@ namespace utopia {
 
             max_j = col_block_assignement[max_j];
 
-            std::vector<bool> block_pattern(max_j + 1, false);
+            std::vector<SizeType> block_lut(max_j + 1, -1);
             std::vector<SizeType> current_row(max_j + 1, 0);
 
             // FIXME
@@ -117,7 +118,7 @@ namespace utopia {
                         SizeType block_j = current_row[k];
                         assert(block_j >= 0);
                         assert(block_j < (max_j + 1));
-                        block_pattern[block_j] = false;
+                        block_lut[block_j] = -1;
                     }
 
                     prev_block_i = block_i;
@@ -129,16 +130,16 @@ namespace utopia {
                     const SizeType block_j = col_block_assignement[j];
 
                     assert(block_j >= 0);
-                    assert(block_j < SizeType(block_pattern.size()));
+                    assert(block_j < SizeType(block_lut.size()));
 
-                    if (!block_pattern[block_j]) {
+                    if (block_lut[block_j] == -1) {
                         assert((block_i + 1) < SizeType(row_ptr.size()));
 
                         // Store current column index
                         current_row[row_ptr[block_i + 1]] = block_j;
 
                         // Flag current column as encountered
-                        block_pattern[block_j] = true;
+                        block_lut[block_j] = 1;  // use as boolean
 
                         // Increase number of columns in block row
                         row_ptr[block_i + 1]++;
@@ -167,7 +168,9 @@ namespace utopia {
             colidx.resize(row_ptr[n_blocks], 0);
 
             // FIXME
-            device::fill(false, block_pattern);
+            device::fill(-1, block_lut);
+            values.resize(row_ptr[n_blocks] * BlockSize_2);
+            device::fill(0., values);
 
             prev_block_i = 0;
             SizeType count = 0;
@@ -176,6 +179,10 @@ namespace utopia {
                 const SizeType row_end = ia[i + 1];
                 // const SizeType block_i = i / BlockSize;
                 const SizeType block_i = row_block_assignement[i];
+                const SizeType sub_i = row_block_assignement.sub(i);
+
+                assert(sub_i < BlockSize);
+                assert(sub_i >= 0);
 
                 if (prev_block_i != block_i) {
                     // Clean-up boolean flags
@@ -185,8 +192,8 @@ namespace utopia {
                         assert(k < SizeType(current_row.size()));
                         SizeType block_j = current_row[k];
                         assert(block_j >= 0);
-                        assert(block_j < SizeType(block_pattern.size()));
-                        block_pattern[block_j] = false;
+                        assert(block_j < SizeType(block_lut.size()));
+                        block_lut[block_j] = -1;
                     }
 
                     prev_block_i = block_i;
@@ -195,56 +202,85 @@ namespace utopia {
 
                 for (SizeType k = row_begin; k < row_end; ++k) {
                     const SizeType j = ja[k];
+                    const Scalar value = array[k];
                     // const SizeType block_j = j / BlockSize;
                     const SizeType block_j = col_block_assignement[j];
+                    const SizeType sub_j = col_block_assignement.sub(j);
 
-                    assert(block_j < SizeType(block_pattern.size()));
+                    assert(sub_j < BlockSize);
+                    assert(sub_j >= 0);
 
-                    if (!block_pattern[block_j]) {
+                    assert(block_j < SizeType(block_lut.size()));
+
+                    if (block_lut[block_j] == -1) {
                         assert((block_i + 1) < SizeType(row_ptr.size()));
 
                         // Store current column index
                         assert(count < SizeType(current_row.size()));
                         current_row[count] = block_j;
 
-                        // Flag current column as encountered
-                        block_pattern[block_j] = true;
-
                         // Set column index in new slot
                         SizeType idx_offset = row_ptr[block_i] + count;
+
+                        // Store current column index
+                        block_lut[block_j] = idx_offset;
+
                         colidx[idx_offset] = block_j;
 
                         // Increase counter
                         ++count;
                     }
+
+                    // Set values in block
+                    assert(block_lut[block_j] != -1);
+                    SizeType val_idx = block_lut[block_j] * BlockSize_2 + (sub_i * BlockSize) + sub_j;
+                    assert(val_idx < SizeType(values.size()));
+                    values[val_idx] = value;
                 }
             }
 
-            if (sort_columns) {
-                for (SizeType block_i = 0; block_i < n_blocks; block_i++) {
-                    if (row_ptr[block_i] < row_ptr[block_i + 1]) {
-                        std::sort(&colidx[0] + row_ptr[block_i], &colidx[0] + row_ptr[block_i + 1]);
-                    }
-                }
-            }
+            // if (sort_columns) {
+            //     for (SizeType block_i = 0; block_i < n_blocks; block_i++) {
+            //         if (row_ptr[block_i] < row_ptr[block_i + 1]) {
+            //             std::sort(&colidx[0] + row_ptr[block_i], &colidx[0] + row_ptr[block_i + 1]);
+            //         }
+            //     }
+            // }
 
-            values.resize(row_ptr[n_blocks] * BlockSize_2);
+            // values.resize(row_ptr[n_blocks] * BlockSize_2);
 
-            update(n, ia, ja, array, out);
+            // update(n, ia, ja, array, row_block_assignement, col_block_assignement, out);
 
             assert(out.is_valid());
         }
 
         static void update(const CRSMatrix<ScalarView, IndexView, 1> &in,
                            CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out) {
-            update(in.rows(), in.row_ptr(), in.colidx(), in.values(), out);
+            update(in.rows(),
+                   in.row_ptr(),
+                   in.colidx(),
+                   in.values(),
+                   DefaultBlockAssignment(),
+                   DefaultBlockAssignment(),
+                   out);
         }
 
-        template <typename IA, typename JA, typename Array>
+        // template <typename IA, typename JA, typename Array>
+        // static void update(const SizeType n,
+        //                    const IA &ia,
+        //                    const JA &ja,
+        //                    const Array &array,
+        //                    CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out) {
+
+        // }
+
+        template <typename IA, typename JA, typename Array, class RowBlockAssignemnt, class ColBlockAssignemnt>
         static void update(const SizeType n,
                            const IA &ia,
                            const JA &ja,
                            const Array &array,
+                           const RowBlockAssignemnt &,
+                           const ColBlockAssignemnt &,
                            CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out) {
             static const int BlockSize_2 = BlockSize * BlockSize;
 
@@ -257,6 +293,23 @@ namespace utopia {
             const auto &colidx = out.colidx();
             auto &values = out.values();
             device::fill(0.0, values);
+
+            // for (SizeType i = 0; i < n; ++i) {
+            //     const SizeType row_begin = ia[i];
+            //     const SizeType row_end = ia[i + 1];
+            //     // const SizeType block_i = i / BlockSize;
+            //     const SizeType block_i = row_block_assignement[i];
+            //     const SizeType sub_i = row_block_assignement.sub(i);
+
+            //     for (SizeType k = row_begin; k < row_end; ++k) {
+            //         const SizeType j = ja[k];
+            //         // const SizeType block_j = j / BlockSize;
+            //         const SizeType block_j = col_block_assignement[j];
+            //         const SizeType sub_j = col_block_assignement.sub(j);
+
+            //         values[k_block * BlockSize_2 + (sub_i * BlockSize) + sub_j] = value;
+            //     }
+            // }
 
             for (SizeType block_i = 0; block_i < n_blocks; block_i++) {
                 const SizeType offset_i = block_i * BlockSize;
