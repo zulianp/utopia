@@ -12,6 +12,12 @@
 
 namespace utopia {
 
+    template <typename SizeType, int BlockSize>
+    class BlockCRSDefaultBlockAssignment {
+    public:
+        inline constexpr SizeType operator[](const SizeType i) const { return i / BlockSize; }
+    };
+
     template <class ScalarView,
               class IndexView,
               int BlockSize,
@@ -22,10 +28,28 @@ namespace utopia {
         using Scalar = typename std::remove_const<typename Traits<ScalarView>::ValueType>::type;
         using SizeType = typename std::remove_const<typename Traits<IndexView>::ValueType>::type;
 
+        using DefaultBlockAssignment = utopia::BlockCRSDefaultBlockAssignment<SizeType, BlockSize>;
+
         static void apply(const CRSMatrix<ScalarView, IndexView, 1> &in,
                           CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out,
                           const bool sort_columns = true) {
             apply(in.rows(), in.row_ptr(), in.colidx(), in.values(), out, sort_columns);
+        }
+
+        template <typename RowBlockAssignemnt, typename ColBlockAssignemnt>
+        static void apply(const CRSMatrix<ScalarView, IndexView, 1> &in,
+                          const RowBlockAssignemnt &row_block_assignement,
+                          const ColBlockAssignemnt &col_block_assignement,
+                          CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out,
+                          const bool sort_columns = true) {
+            apply(in.rows(),
+                  in.row_ptr(),
+                  in.colidx(),
+                  in.values(),
+                  row_block_assignement,
+                  col_block_assignement,
+                  out,
+                  sort_columns);
         }
 
         template <typename IA, typename JA, typename Array>
@@ -35,9 +59,22 @@ namespace utopia {
                           const Array &array,
                           CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out,
                           const bool sort_columns = true) {
+            apply(n, ia, ja, array, DefaultBlockAssignment(), DefaultBlockAssignment(), out, sort_columns);
+        }
+
+        template <typename IA, typename JA, typename Array, typename RowBlockAssignemnt, typename ColBlockAssignemnt>
+        static void apply(const SizeType n,
+                          const IA &ia,
+                          const JA &ja,
+                          const Array &array,
+                          const RowBlockAssignemnt &row_block_assignement,
+                          const ColBlockAssignemnt &col_block_assignement,
+                          CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out,
+                          const bool sort_columns = true) {
             static const int BlockSize_2 = BlockSize * BlockSize;
-            auto n_blocks = n / BlockSize;
-            assert(n_blocks * BlockSize == n);
+            auto n_blocks = row_block_assignement[n - 1] + 1;
+
+            // assert(n_blocks * BlockSize == n);
             assert(n > 0);
 
             auto n_nnz = ia[n];
@@ -47,93 +84,146 @@ namespace utopia {
                 max_j = std::max(max_j, ja[i]);
             }
 
-            max_j /= BlockSize;
+            max_j = col_block_assignement[max_j];
 
-            std::vector<SizeType> block_pattern(max_j + 1, 0);
+            std::vector<bool> block_pattern(max_j + 1, false);
+            std::vector<SizeType> current_row(max_j + 1, 0);
 
             // FIXME
-            out.set_cols(std::max(n_blocks, max_j + 1));
+            SizeType cols = std::max(n_blocks, max_j + 1);
+            out.set_cols(cols);
 
             auto &row_ptr = out.row_ptr();
             auto &colidx = out.colidx();
             auto &values = out.values();
 
-            row_ptr.resize(n_blocks + 1, 0);
+            row_ptr.resize(n_blocks + 1);
+            device::fill(SizeType(0), row_ptr);
 
-            for (SizeType block_i = 0; block_i < n_blocks; block_i++) {
-                const SizeType offset_i = block_i * BlockSize;
+            SizeType prev_block_i = 0;
 
-                for (SizeType i = offset_i; i < offset_i + BlockSize; ++i) {
-                    const SizeType row_begin = ia[i];
-                    const SizeType row_end = ia[i + 1];
+            // Detect number of blocks per block row
+            for (SizeType i = 0; i < n; ++i) {
+                const SizeType row_begin = ia[i];
+                const SizeType row_end = ia[i + 1];
+                // const SizeType block_i = i / BlockSize;
+                const SizeType block_i = row_block_assignement[i];
 
-                    for (SizeType k = row_begin; k < row_end; ++k) {
-                        SizeType j = ja[k];
-                        SizeType block_j = j / BlockSize;
-
-                        assert(block_j < SizeType(block_pattern.size()));
-
-                        if (block_pattern[block_j] == 0) {
-                            assert((block_i + 1) < SizeType(row_ptr.size()));
-                            row_ptr[block_i + 1]++;
-                            block_pattern[block_j] = 1;
-                        }
+                if (prev_block_i != block_i) {
+                    // Clean-up boolean flags
+                    const SizeType n_blocks_in_row = row_ptr[prev_block_i + 1];
+                    for (SizeType k = 0; k < n_blocks_in_row; ++k) {
+                        assert(k < SizeType(current_row.size()));
+                        SizeType block_j = current_row[k];
+                        assert(block_j >= 0);
+                        assert(block_j < (max_j + 1));
+                        block_pattern[block_j] = false;
                     }
+
+                    prev_block_i = block_i;
                 }
 
-                for (SizeType i = offset_i; i < offset_i + BlockSize; ++i) {
-                    const SizeType row_begin = ia[i];
-                    const SizeType row_end = ia[i + 1];
+                for (SizeType k = row_begin; k < row_end; ++k) {
+                    const SizeType j = ja[k];
+                    // const SizeType block_j = j / BlockSize;
+                    const SizeType block_j = col_block_assignement[j];
 
-                    for (SizeType k = row_begin; k < row_end; ++k) {
-                        SizeType j = ja[k];
-                        SizeType block_j = j / BlockSize;
-                        block_pattern[block_j] = 0;
+                    assert(block_j >= 0);
+                    assert(block_j < SizeType(block_pattern.size()));
+
+                    if (!block_pattern[block_j]) {
+                        assert((block_i + 1) < SizeType(row_ptr.size()));
+
+                        // Store current column index
+                        current_row[row_ptr[block_i + 1]] = block_j;
+
+                        // Flag current column as encountered
+                        block_pattern[block_j] = true;
+
+                        // Increase number of columns in block row
+                        row_ptr[block_i + 1]++;
+
+                        // Check that we do not overflow
+                        assert(row_ptr[block_i + 1] <= cols);
                     }
                 }
             }
 
+            // Compute row pointer
             for (SizeType i = 0; i < n_blocks; ++i) {
                 row_ptr[i + 1] += row_ptr[i];
+                assert((row_ptr[i + 1] - row_ptr[i]) <= cols);
+                assert(row_ptr[i + 1] >= 0);
             }
 
+#ifndef NDEBUG
+            for (SizeType i = 0; i < n_blocks; ++i) {
+                assert(row_ptr[i + 1] >= row_ptr[i]);
+                assert((row_ptr[i + 1] - row_ptr[i]) <= cols);
+            }
+#endif  // NDEBUG
+
+            // Allocate buffers
             colidx.resize(row_ptr[n_blocks], 0);
-            std::vector<SizeType> count(n_blocks, 0);
 
-            for (SizeType block_i = 0; block_i < n_blocks; block_i++) {
-                const SizeType offset_i = block_i * BlockSize;
+            // FIXME
+            device::fill(false, block_pattern);
 
-                for (SizeType i = offset_i; i < offset_i + BlockSize; ++i) {
-                    const SizeType row_begin = ia[i];
-                    const SizeType row_end = ia[i + 1];
+            prev_block_i = 0;
+            SizeType count = 0;
+            for (SizeType i = 0; i < n; ++i) {
+                const SizeType row_begin = ia[i];
+                const SizeType row_end = ia[i + 1];
+                // const SizeType block_i = i / BlockSize;
+                const SizeType block_i = row_block_assignement[i];
 
-                    for (SizeType k = row_begin; k < row_end; ++k) {
-                        SizeType j = ja[k];
-                        SizeType block_j = j / BlockSize;
-
-                        if (block_pattern[block_j] == 0) {
-                            block_pattern[block_j] = 1;
-                            SizeType idx_offset = row_ptr[block_i] + count[block_i];
-                            colidx[idx_offset] = block_j;
-                            ++count[block_i];
-                        }
+                if (prev_block_i != block_i) {
+                    // Clean-up boolean flags
+                    const SizeType n_blocks_in_row = row_ptr[prev_block_i + 1] - row_ptr[prev_block_i];
+                    assert(n_blocks_in_row <= cols);
+                    for (SizeType k = 0; k < n_blocks_in_row; ++k) {
+                        assert(k < SizeType(current_row.size()));
+                        SizeType block_j = current_row[k];
+                        assert(block_j >= 0);
+                        assert(block_j < SizeType(block_pattern.size()));
+                        block_pattern[block_j] = false;
                     }
+
+                    prev_block_i = block_i;
+                    count = 0;
                 }
 
-                for (SizeType i = offset_i; i < offset_i + BlockSize; ++i) {
-                    const SizeType row_begin = ia[i];
-                    const SizeType row_end = ia[i + 1];
+                for (SizeType k = row_begin; k < row_end; ++k) {
+                    const SizeType j = ja[k];
+                    // const SizeType block_j = j / BlockSize;
+                    const SizeType block_j = col_block_assignement[j];
 
-                    for (SizeType k = row_begin; k < row_end; ++k) {
-                        SizeType j = ja[k];
-                        SizeType block_j = j / BlockSize;
-                        block_pattern[block_j] = 0;
+                    assert(block_j < SizeType(block_pattern.size()));
+
+                    if (!block_pattern[block_j]) {
+                        assert((block_i + 1) < SizeType(row_ptr.size()));
+
+                        // Store current column index
+                        assert(count < SizeType(current_row.size()));
+                        current_row[count] = block_j;
+
+                        // Flag current column as encountered
+                        block_pattern[block_j] = true;
+
+                        // Set column index in new slot
+                        SizeType idx_offset = row_ptr[block_i] + count;
+                        colidx[idx_offset] = block_j;
+
+                        // Increase counter
+                        ++count;
                     }
                 }
+            }
 
-                if (sort_columns) {
+            if (sort_columns) {
+                for (SizeType block_i = 0; block_i < n_blocks; block_i++) {
                     if (row_ptr[block_i] < row_ptr[block_i + 1]) {
-                        std::sort(&colidx[row_ptr[block_i]], &colidx[row_ptr[block_i + 1] - 1]);
+                        std::sort(&colidx[0] + row_ptr[block_i], &colidx[0] + row_ptr[block_i + 1]);
                     }
                 }
             }
@@ -397,6 +487,21 @@ namespace utopia {
     void convert(const CRSMatrix<ScalarView, IndexView, 1> &mat,
                  CRSMatrix<OutScalarView, OutIndexView, BlockSize> &block_mat) {
         CRSToBlockCRS<ScalarView, IndexView, BlockSize, OutScalarView, OutIndexView>::apply(mat, block_mat);
+    }
+
+    template <class ScalarView,
+              class IndexView,
+              int BlockSize,
+              class RowBlockAssignement,
+              class ColBlockAssignement,
+              class OutScalarView,
+              class OutIndexView>
+    void convert(const CRSMatrix<ScalarView, IndexView, 1> &mat,
+                 const RowBlockAssignement &row_block_assignement,
+                 const ColBlockAssignement &col_block_assignement,
+                 CRSMatrix<OutScalarView, OutIndexView, BlockSize> &block_mat) {
+        CRSToBlockCRS<ScalarView, IndexView, BlockSize, OutScalarView, OutIndexView>::apply(
+            mat, row_block_assignement, col_block_assignement, block_mat);
     }
 
     template <class ScalarView, class IndexView, int BlockSize, class OutScalarView, class OutIndexView, class DiagView>
