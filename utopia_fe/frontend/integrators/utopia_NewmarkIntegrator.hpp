@@ -29,7 +29,8 @@ namespace utopia {
 
             auto vlo = layout(x);
 
-            x_old_.zeros(vlo);
+            // x_old_.zeros(vlo);
+            x_old_ = x;
             velocity_old_.zeros(vlo);
             acceleration_old_.zeros(vlo);
             return true;
