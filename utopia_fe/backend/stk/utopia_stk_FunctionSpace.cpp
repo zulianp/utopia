@@ -376,7 +376,7 @@ namespace utopia {
 
             // impl_->dof_map->init(*this->mesh_ptr(), impl_->print_map);
             impl_->dof_map->set_valid_local_id_mode(valid_local_id_mode);
-            impl_->dof_map->init(*this->mesh_ptr(), true);
+            impl_->dof_map->init(*this->mesh_ptr(), impl_->print_map);
 
             if (impl_->verbose) {
                 std::stringstream ss;
