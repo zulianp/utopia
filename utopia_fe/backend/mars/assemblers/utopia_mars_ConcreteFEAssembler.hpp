@@ -54,14 +54,16 @@ namespace utopia {
                 fe_dof_map.iterate(MARS_LAMBDA(const ::mars::Integer elem_index) {
                     for (int i = 0; i < n_fun; i++) {
                         const auto local_dof_i = fe_dof_map.get_elem_local_dof(elem_index, i);
-                        if (!dof_handler.is_owned(local_dof_i)) continue;
+                        if (local_dof_i < 0 || !dof_handler.is_owned(local_dof_i)) continue;
 
                         for (int j = 0; j < n_fun; j++) {
                             const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, j);
-                            Scalar val = op(elem_index, i, j);
+                            if (local_dof_j > -1) {
+                                Scalar val = op(elem_index, i, j);
 
-                            assert(val == val);
-                            sp.atomic_add_value(local_dof_i, local_dof_j, val);
+                                assert(val == val);
+                                sp.atomic_add_value(local_dof_i, local_dof_j, val);
+                            }
                         }
                     }
                 });
@@ -93,7 +95,6 @@ namespace utopia {
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
 
-                // FIXME Missing gobal to local for x!!!
                 auto x_view = local_view_device(x).raw_type();
                 auto y_view = local_view_device(y).raw_type();
 
@@ -107,21 +108,20 @@ namespace utopia {
                 fe_dof_map.iterate(MARS_LAMBDA(const ::mars::Integer elem_index) {
                     for (int i = 0; i < n_fun; i++) {
                         const auto local_dof_i = fe_dof_map.get_elem_local_dof(elem_index, i);
-                        if (!dof_handler.is_owned(local_dof_i)) continue;
+                        if (local_dof_i < 0 || !dof_handler.is_owned(local_dof_i)) continue;
 
                         Scalar val = 0;
-
                         for (int j = 0; j < n_fun; j++) {
-                            // FIXME What is the correct index map?
                             const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, j);
-                            auto x_j = x_local(local_dof_j);
-
-                            val += op(elem_index, i, j) * x_j;
-
-                            // val += op(elem_index, i, j, block_i, block_j) * x_local_j;
+                            if (local_dof_j > -1) {
+                                assert(local_dof_j < x_local.extent(0));
+                                auto x_j = x_local(local_dof_j);
+                                val += op(elem_index, i, j) * x_j;
+                            }
                         }
 
-                        Kokkos::atomic_fetch_add(&y_view(local_dof_i, 0), val);
+                        const auto owned_dof_i = dof_handler.local_to_owned_index(local_dof_i);
+                        Kokkos::atomic_fetch_add(&y_view(owned_dof_i, 0), val);
                     }
                 });
 
@@ -155,16 +155,18 @@ namespace utopia {
                         for (int sub_i = 0; sub_i < block_size; ++sub_i) {
                             auto offset_i = dof_handler.compute_block_index(i, sub_i);
                             const auto local_dof_i = fe_dof_map.get_elem_local_dof(elem_index, offset_i);
-                            if (!dof_handler.is_owned(local_dof_i)) continue;
+                            if (local_dof_i < 0 || !dof_handler.is_owned(local_dof_i)) continue;
 
                             for (int j = 0; j < n_fun; j++) {
                                 for (int sub_j = 0; sub_j < block_size; ++sub_j) {
                                     auto offset_j = dof_handler.compute_block_index(j, sub_j);
                                     const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, offset_j);
-                                    const Scalar val = op(elem_index, i, j, sub_i, sub_j);
+                                    if (local_dof_j > -1) {
+                                        const Scalar val = op(elem_index, i, j, sub_i, sub_j);
 
-                                    assert(val == val);
-                                    sp.atomic_add_value(local_dof_i, local_dof_j, val);
+                                        assert(val == val);
+                                        sp.atomic_add_value(local_dof_i, local_dof_j, val);
+                                    }
                                 }
                             }
                         }
@@ -198,7 +200,6 @@ namespace utopia {
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
 
-                // FIXME Missing gobal to local for x!!!
                 auto x_view = local_view_device(x).raw_type();
                 auto y_view = local_view_device(y).raw_type();
 
@@ -217,15 +218,17 @@ namespace utopia {
                         for (int sub_i = 0; sub_i < block_size; ++sub_i) {
                             auto offset_i = dof_handler.compute_block_index(i, sub_i);
                             const auto local_dof_i = fe_dof_map.get_elem_local_dof(elem_index, offset_i);
-                            if (!dof_handler.is_owned(local_dof_i)) continue;
+                            if (local_dof_i < 0 || !dof_handler.is_owned(local_dof_i)) continue;
 
                             Scalar val = 0;
                             for (int j = 0; j < n_fun; j++) {
                                 for (int sub_j = 0; sub_j < block_size; ++sub_j) {
                                     auto offset_j = dof_handler.compute_block_index(j, sub_j);
                                     const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, offset_j);
-                                    auto x_j = x_local(local_dof_j);
-                                    val += op(elem_index, i, j, sub_i, sub_j) * x_j;
+                                    if (local_dof_i > -1) {
+                                        auto x_j = x_local(local_dof_j);
+                                        val += op(elem_index, i, j, sub_i, sub_j) * x_j;
+                                    }
                                 }
                             }
 
