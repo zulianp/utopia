@@ -1224,6 +1224,9 @@ namespace utopia {
 
             ////////////////////////////////////////////////////////////
             SizeType n_owned_nodes = impl_->owned_dof_end - impl_->owned_dof_start;
+            assert(impl_->owned_dof_start >= 0);
+            assert(impl_->owned_dof_end >= 0);
+            assert(n_owned_nodes > 0);
             SizeType n_var_vec = global.local_size() / n_owned_nodes;
 
             assert(n_owned_nodes * n_var_vec == global.local_size());

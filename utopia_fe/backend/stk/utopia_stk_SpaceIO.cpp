@@ -2,6 +2,8 @@
 
 #include "utopia_stk_MeshIO.hpp"
 
+#include "utopia_stk_DofMap.hpp"
+
 namespace utopia {
     namespace stk {
 
@@ -93,6 +95,8 @@ namespace utopia {
             if (!open_input()) {
                 return false;
             }
+
+            impl_->space.dof_map().init(impl_->space.mesh());
 
             return true;
         }
