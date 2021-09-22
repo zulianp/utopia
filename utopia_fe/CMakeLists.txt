@@ -23,6 +23,7 @@ option(UTOPIA_ENABLE_MOOSE_ENV_MODE
 option(UTOPIA_ENABLE_TRILINOS_ALGEBRA
        "Allows to use the moose installation compilers" OFF)
 option(UTOPIA_ENABLE_MARS "Tries to use mars backend" OFF)
+option(UTOPIA_ENABLE_MARS_VTK "Enable vtk output for mars" ON)
 option(UTOPIA_ENABLE_INTREPID2 "Tries to use the intrepid2 related features"
        OFF)
 option(UTOPIA_ENABLE_NEW_TRANSFER "Use new transfer features" ON)
@@ -33,6 +34,7 @@ option(UTOPIA_ENABLE_LIBMESH "Enable the libmesh functionalities" ON)
 option(UTOPIA_ENABLE_STK "Enable the stk functionalities" OFF)
 option(UTOPIA_ENABLE_MOONOLITH "Enable the moonolith functionalities" ON)
 option(UTOPIA_ENABLE_ARBORX "Enable the ArborX backend" OFF)
+
 
 # ##############################################################################
 # ##############################################################################

@@ -51,8 +51,13 @@ if(MARS_LIBRARIES)
 list(APPEND MARS_LIBRARIES
   ${MARS_LIB_PATH}/libmars_core.a
   ${MARS_LIB_PATH}/libmars_mpi.a
-  ${MARS_LIB_PATH}/libmars_vtk.a
 )
+
+if(UTOPIA_ENABLE_MARS_VTK)
+  list(APPEND MARS_LIBRARIES
+    ${MARS_LIB_PATH}/libmars_vtk.a
+  )
+endif()
 
 endif()
 
