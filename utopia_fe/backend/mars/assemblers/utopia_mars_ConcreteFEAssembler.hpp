@@ -380,7 +380,8 @@ namespace utopia {
 
                 auto y_view = local_view_device(y).raw_type();
 
-                ::mars::ViewVectorType<Scalar> x_local("x_local", dof_handler.get_dof_size());  // Rank 1 tensor
+                ::mars::ViewVectorType<Scalar> x_local;
+                // ::mars::ViewVectorType<Scalar> x_local("x_local", dof_handler.get_dof_size());  // Rank 1 tensor
                 collect_ghost_layer(x, x_local);
 
                 int block_size = vec_op.dim();
