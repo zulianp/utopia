@@ -337,7 +337,7 @@ namespace utopia {
                 const int n_qp = fe_->n_quad_points();
 
                 int block_size = vec_op.dim();
-                assert(block_size == dof_handler.get_block());
+                assert(block_size <= dof_handler.get_block());
 
                 bool ok = add_offsetted_block_op_to_matrix(vector_var, vector_var, vec_op, sp) &&
                           add_offsetted_scalar_op_to_matrix(scalar_var, scalar_var, scalar_op, sp) &&
@@ -384,7 +384,7 @@ namespace utopia {
                 collect_ghost_layer(x, x_local);
 
                 int block_size = vec_op.dim();
-                assert(block_size == dof_handler.get_block());
+                assert(block_size <= dof_handler.get_block());
 
                 return add_offsetted_block_op_to_vector(vector_var, vector_var, vec_op, x_local, y_view) &&
                        add_offsetted_block_x_scalar_op_to_vector(

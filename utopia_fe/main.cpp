@@ -19,9 +19,9 @@ int main(const int argc, char *argv[]) {
     }
 #endif  // UTOPIA_WITH_LIBMESH
 
-#ifdef UTOPIA_WITH_MARS
-    utopia::Utopia::instance().add_library(utopia::make_unique<utopia::MarsLibrary>());
-#endif  // UTOPIA_WITH_MARS
+    // #ifdef UTOPIA_WITH_MARS
+    //     utopia::Utopia::instance().add_library(utopia::make_unique<utopia::MarsLibrary>());
+    // #endif  // UTOPIA_WITH_MARS
 
     return UTOPIA_MAIN(argc, argv);
 }
