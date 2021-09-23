@@ -548,6 +548,10 @@ namespace utopia {
             bool assemble(const Vector &x, Vector &vec) override {
                 assert(is_linear());
 
+                if (empty(vec)) {
+                    vec.zeros(layout(x));
+                }
+
                 bool ok = apply(x, vec);
                 assert(ok);
                 return ok;
