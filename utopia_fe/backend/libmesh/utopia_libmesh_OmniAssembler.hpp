@@ -27,6 +27,7 @@ namespace utopia {
             bool assemble(const Vector &x, Matrix &jacobian);
             bool assemble(const Vector &x, Vector &fun);
             bool apply(const Vector &x, Vector &hessian_times_x);
+            bool is_operator() const { return false; }
 
             bool assemble(Matrix &jacobian);
             void read(Input &in) override;

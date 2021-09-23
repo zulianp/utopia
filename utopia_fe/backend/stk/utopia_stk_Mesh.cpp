@@ -174,6 +174,7 @@ namespace utopia {
         }
 
         const Mesh::Comm &Mesh::comm() const { return impl_->comm; }
+        Mesh::Comm &Mesh::comm() { return impl_->comm; }
 
         ::stk::mesh::BulkData &Mesh::bulk_data() const {
             assert(impl_->bulk_data);

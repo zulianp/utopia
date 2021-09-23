@@ -24,6 +24,9 @@ namespace utopia {
 
         inline static constexpr bool default_verbose() { return true; }
 
+        inline Communicator_t &comm() override { return master_fe_problem_->comm(); }
+        inline const Communicator_t &comm() const override { return master_fe_problem_->comm(); }
+
         class FEProblem : public Configurable {
         public:
             std::string name_{"no_name"};
@@ -40,6 +43,10 @@ namespace utopia {
             std::shared_ptr<Vector_t> solution_;
 
             bool report_solution() { return function_->report_solution(*solution()); }
+
+            inline Communicator_t &comm() { return function_->comm(); }
+
+            inline const Communicator_t &comm() const { return function_->comm(); }
 
             inline bool is_linear() const {
                 if (function_) {

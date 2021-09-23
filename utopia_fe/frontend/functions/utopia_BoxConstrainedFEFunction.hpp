@@ -19,6 +19,7 @@ namespace utopia {
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+        using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using SimulationTime = utopia::SimulationTime<Scalar_t>;
         using Environment_t = utopia::Environment<FunctionSpace>;
 
@@ -84,6 +85,10 @@ namespace utopia {
                 unconstrained_->set_time(time);
             }
         }
+
+        inline Communicator_t &comm() override { return unconstrained_->comm(); }
+
+        inline const Communicator_t &comm() const override { return unconstrained_->comm(); }
 
     private:
         std::shared_ptr<FEFunctionInterface<FunctionSpace>> unconstrained_;

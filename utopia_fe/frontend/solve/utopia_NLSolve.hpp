@@ -80,7 +80,7 @@ namespace utopia {
 
             this->status("Solving linear problem (matrix free)");
             // Solve linear problem
-            ConjugateGradient<Matrix_t, Vector_t> cg;
+            ConjugateGradient<Matrix_t, Vector_t, HOMEMADE> cg;
             cg.verbose(verbose_);
             cg.apply_gradient_descent_step(true);
             cg.solve(*function_, rhs, x);

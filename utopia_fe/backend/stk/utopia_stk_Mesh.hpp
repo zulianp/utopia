@@ -46,6 +46,7 @@ namespace utopia {
             void describe(std::ostream &os) const override;
 
             const Comm &comm() const;
+            Comm &comm();
 
             ::stk::mesh::BulkData &bulk_data() const;
             ::stk::mesh::MetaData &meta_data() const;

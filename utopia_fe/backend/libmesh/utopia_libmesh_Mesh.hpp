@@ -43,6 +43,7 @@ namespace utopia {
             void describe(std::ostream &os) const override;
 
             const Comm &comm() const;
+            Comm &comm();
 
             libMesh::MeshBase &raw_type();
             const libMesh::MeshBase &raw_type() const;
