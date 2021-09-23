@@ -29,6 +29,7 @@ namespace utopia {
 
             std::string name() const override;
             bool apply(const Vector &x, Vector &hessian_times_x) override;
+            bool is_operator() const override;
             bool assemble(Vector &fun) override;
             std::shared_ptr<Environment> environment() const override;
             std::shared_ptr<FunctionSpace> space() const override;

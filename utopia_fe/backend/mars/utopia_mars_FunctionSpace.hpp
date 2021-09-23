@@ -40,6 +40,8 @@ namespace utopia {
 
             virtual void apply_zero_constraints(Vector &vec, const std::string side) = 0;
 
+            virtual void copy_at_constrained_nodes(const Vector &in, Vector &out, const std::string side) = 0;
+
             // virtual void system_apply_constraints(Matrix &m, Vector &v) = 0;
 
             virtual SizeType n_local_dofs() = 0;
@@ -96,6 +98,7 @@ namespace utopia {
             void apply_constraints(Vector &v) const;
             void apply_constraints(Matrix &m, Vector &v) const;
             void apply_zero_constraints(Vector &vec) const;
+            void copy_at_constrained_nodes(const Vector &in, Vector &out) const /*override*/;
 
             void apply_constraints_update(Vector &v) const { this->apply_constraints(v); }
 

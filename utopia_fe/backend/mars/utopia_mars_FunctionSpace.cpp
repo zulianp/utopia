@@ -110,6 +110,8 @@ namespace utopia {
         FunctionSpace::~FunctionSpace() {}
 
         void FunctionSpace::init(const std::shared_ptr<Mesh> &mesh) {
+            UTOPIA_TRACE_REGION_BEGIN("FunctionSpace::init(mesh)");
+
             impl_->mesh = mesh;
             switch (mesh->spatial_dimension()) {
                 case 2: {
@@ -129,6 +131,8 @@ namespace utopia {
                     Utopia::Abort("Trying to create mesh with unsupported dimension!");
                 }
             }
+
+            UTOPIA_TRACE_REGION_END("FunctionSpace::init(mesh)");
         }
 
         void FunctionSpace::update(const SimulationTime<Scalar> &time) { impl_->dirichlet_boundary.update(time); }
@@ -170,6 +174,8 @@ namespace utopia {
         void FunctionSpace::create_local_vector(Vector &) const { Utopia::Abort("IMPLEMENT ME"); }
 
         void FunctionSpace::create_matrix(Matrix &m) const {
+            UTOPIA_TRACE_REGION_BEGIN("FunctionSpace::create_matrix(m)");
+
             using MapType = Matrix::MapType;
 
             SizeType n_global = this->n_dofs();
@@ -187,31 +193,55 @@ namespace utopia {
             Matrix::RCPCrsMatrixType mat =
                 Teuchos::rcp(new Matrix::CrsMatrixType(handler()->new_crs_matrix(), row_map, col_map));
             m.wrap(mat, true);
+
+            UTOPIA_TRACE_REGION_END("FunctionSpace::create_matrix(m)");
+        }
+
+        void FunctionSpace::copy_at_constrained_nodes(const Vector &in, Vector &out) const {
+            UTOPIA_TRACE_REGION_BEGIN("FunctionSpace::copy_at_constrained_nodes(in, out)");
+
+            for (auto &bc : impl_->dirichlet_boundary) {
+                handler()->copy_at_constrained_nodes(in, out, bc->name);
+            }
+
+            UTOPIA_TRACE_REGION_END("FunctionSpace::copy_at_constrained_nodes(in, out)");
         }
 
         void FunctionSpace::apply_constraints(Matrix &m, const Scalar diag_value) const {
+            UTOPIA_TRACE_REGION_BEGIN("FunctionSpace::apply_constraints(m, diag_value)");
             for (auto &bc : impl_->dirichlet_boundary) {
                 handler()->matrix_apply_constraints(m, diag_value, bc->name);
             }
+            UTOPIA_TRACE_REGION_END("FunctionSpace::apply_constraints(m, diag_value)");
         }
 
         void FunctionSpace::apply_constraints(Vector &v) const {
+            UTOPIA_TRACE_REGION_BEGIN("FunctionSpace::apply_constraints(v)");
+
             for (auto &bc : impl_->dirichlet_boundary) {
                 handler()->vector_apply_constraints(v, bc->value(), bc->name);
             }
+
+            UTOPIA_TRACE_REGION_END("FunctionSpace::apply_constraints(v)");
         }
 
         void FunctionSpace::apply_constraints(Matrix &m, Vector &v) const {
+            UTOPIA_TRACE_REGION_BEGIN("FunctionSpace::apply_constraints(m, v)");
+
             for (auto &bc : impl_->dirichlet_boundary) {
                 handler()->matrix_apply_constraints(m, 1.0, bc->name);
                 handler()->vector_apply_constraints(v, bc->value(), bc->name);
             }
+
+            UTOPIA_TRACE_REGION_END("FunctionSpace::apply_constraints(m, v)");
         }
 
         void FunctionSpace::apply_zero_constraints(Vector &vec) const {
+            UTOPIA_TRACE_REGION_BEGIN("FunctionSpace::apply_zero_constraints(vec)");
             for (auto &bc : impl_->dirichlet_boundary) {
                 handler()->vector_apply_constraints(vec, bc->value(), bc->name);
             }
+            UTOPIA_TRACE_REGION_END("FunctionSpace::apply_zero_constraints(vec)");
         }
 
         void FunctionSpace::add_dirichlet_boundary_condition(const std::string &name,

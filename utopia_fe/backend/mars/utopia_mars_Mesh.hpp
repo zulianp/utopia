@@ -43,6 +43,7 @@ namespace utopia {
             void describe(std::ostream &os) const override;
 
             const Comm &comm() const;
+            Comm &comm();
 
             bool empty() const;
             int spatial_dimension() const;

@@ -65,6 +65,23 @@ namespace utopia {
                     MARS_LAMBDA(const ::mars::Integer local_dof) { sp.apply_zero_constraints(local_dof, vec); }, side);
             }
 
+            void copy_at_constrained_nodes(const Vector &in, Vector &out, const std::string side) override {
+                auto sp = *sparsity_pattern;
+                auto in_view = in.raw_type()->getLocalView<::mars::KokkosSpace>();
+                auto out_view = out.raw_type()->getLocalView<::mars::KokkosSpace>();
+
+                auto sp_dof_handler = sp.get_dof_handler();
+
+                // BC set values to constraint value (i.e., boundary value)
+                dof_handler->boundary_dof_iterate(
+                    MARS_LAMBDA(const ::mars::Integer local_dof) {
+                        // sp.vector_apply_constraints(local_dof, vec, value);
+                        auto idx = sp_dof_handler.local_to_owned_index(local_dof);
+                        out_view(idx, 0) = in_view(idx, 0);
+                    },
+                    side);
+            }
+
             /* void system_apply_constraints(Matrix &m, Vector &v) override {
                 vector_apply_constraints(v);
                 matrix_apply_constraints(m, 1.0);

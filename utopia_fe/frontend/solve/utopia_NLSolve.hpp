@@ -47,11 +47,59 @@ namespace utopia {
             in.get("use_pseudo_newton", use_pseudo_newton_);
             in.get("export_rhs", export_rhs_);
             in.get("export_tensors", export_tensors_);
+            in.get("matrix_free", matrix_free_);
         }
 
         inline void set_solver(const std::shared_ptr<NewtonBase_t> &solver) { solver_ = solver; }
 
+        bool solve_trivial_matrix_free() {
+            Vector_t x;
+            function_->create_solution_vector(x);
+            // zero out boundary conditions
+            x.set(0.0);
+
+            this->status("Assemblying rhs problem");
+
+            Vector_t rhs;
+            bool ok = function_->gradient(x, rhs);
+            assert(ok);
+
+            rhs *= -1;
+
+            // apply boundary conditions to rhs
+            function_->space()->apply_constraints(rhs);
+            function_->space()->apply_constraints(x);
+
+            if (export_tensors_) {
+                write("load_rhs.m", rhs);
+            }
+
+            if (export_rhs_) {
+                function_->space()->write("rhs.e", rhs);
+            }
+
+            this->status("Solving linear problem (matrix free)");
+            // Solve linear problem
+            ConjugateGradient<Matrix_t, Vector_t> cg;
+            cg.verbose(verbose_);
+            cg.apply_gradient_descent_step(true);
+            cg.solve(*function_, rhs, x);
+            assert(ok);
+
+            this->status("Reporting solution");
+
+            function_->report_solution(x);
+            return ok;
+        }
+
         bool solve_trivial() {
+            if (matrix_free_) {
+                if (function_->is_operator()) {
+                    return solve_trivial_matrix_free();
+                } else {
+                    this->warning("Did not use matrix free version, because assembler is not an operator!");
+                }
+            }
             Vector_t x;
             function_->create_solution_vector(x);
             // zero out boundary conditions
@@ -179,6 +227,8 @@ namespace utopia {
             }
         }
 
+        void set_matrix_free(const bool val) { matrix_free_ = val; }
+
     private:
         Communicator_t comm_;
         std::shared_ptr<Environment_t> environment_;
@@ -188,6 +238,7 @@ namespace utopia {
         bool use_pseudo_newton_{false};
         bool export_rhs_{false};
         bool export_tensors_{false};
+        bool matrix_free_{false};
 
         void init_defaults() {
             auto linear_solver = std::make_shared<OmniLinearSolver_t>();

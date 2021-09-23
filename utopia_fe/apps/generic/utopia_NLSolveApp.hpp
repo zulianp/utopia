@@ -101,6 +101,8 @@ namespace utopia {
             solver->verbose(true);
             in.get("solver", *solver);
 
+            in.get("matrix_free", matrix_free_);
+            nlsolve_.set_matrix_free(matrix_free_);
             nlsolve_.init(function);
             nlsolve_.set_solver(solver);
             valid_ = true;
@@ -112,6 +114,7 @@ namespace utopia {
     private:
         NLSolve<FunctionSpace> nlsolve_;
         bool valid_{false};
+        bool matrix_free_{false};
     };
 
 }  // namespace utopia
