@@ -2,6 +2,7 @@
 #define UTOPIA_NL_SOLVE_APP_HPP
 
 #include "utopia_Main.hpp"
+#include "utopia_fe_config.hpp"
 
 #include "utopia.hpp"
 
@@ -84,11 +85,15 @@ namespace utopia {
             bool use_mg = false;
             in.get("use_mg", use_mg);
 
+#ifndef UTOPIA_WITH_MARS  // FIXME
+
             if (use_mg) {
                 auto mg = std::make_shared<SemiGeometricMultigridNew<FunctionSpace>>();
                 mg->set_fine_space(space_);
                 linear_solver = mg;
-            } else {
+            } else
+#endif
+            {
                 linear_solver = std::make_shared<OmniLinearSolver_t>();
             }
 

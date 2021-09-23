@@ -3,6 +3,7 @@
 
 #include "utopia_mars_LaplaceOperator.hpp"
 #include "utopia_mars_LinearElasticity.hpp"
+#include "utopia_mars_Mass.hpp"
 
 namespace utopia {
     namespace mars {
@@ -21,6 +22,8 @@ namespace utopia {
                     return utopia::make_unique<LaplaceOperator<Args...>>();
                 } else if (type == "LinearElasticity") {
                     return utopia::make_unique<LinearElasticity<Args...>>();
+                } else if (type == "Mass") {
+                    return utopia::make_unique<Mass<Args...>>();
                 } else {
                     return nullptr;
                 }

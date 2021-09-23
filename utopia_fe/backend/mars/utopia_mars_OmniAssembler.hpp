@@ -21,11 +21,18 @@ namespace utopia {
             bool assemble(Matrix &mat) override;
             void read(Input &in) override;
 
-            void set_environment(const std::shared_ptr<Environment<mars::FunctionSpace>> &env) override;
+            void set_environment(const std::shared_ptr<Environment> &env) override;
 
             bool is_linear() const override;
 
             void set_space(const std::shared_ptr<FunctionSpace> &space) override;
+
+            std::string name() const override;
+            bool apply(const Vector &x, Vector &hessian_times_x) override;
+            bool assemble(Vector &fun) override;
+            std::shared_ptr<Environment> environment() const override;
+            std::shared_ptr<FunctionSpace> space() const override;
+            void set_time(const std::shared_ptr<SimulationTime> &time) override;
 
         private:
             class Impl;

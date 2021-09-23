@@ -334,7 +334,7 @@ namespace utopia {
 
             void read(Input &in) override {}
 
-            void set_environment(const std::shared_ptr<Environment<mars::FunctionSpace>> &) override {
+            void set_environment(const std::shared_ptr<Environment> &) override {
                 // assert(false);
             }
 
@@ -346,6 +346,16 @@ namespace utopia {
             }
 
             void ensure_fe() { init(); }
+
+            std::string name() const override { Utopia::Abort("IMPLEMENT ME"); }
+
+            bool apply(const Vector &x, Vector &hessian_times_x) override { Utopia::Abort("IMPLEMENT ME"); }
+
+            bool assemble(Vector &fun) override { Utopia::Abort("IMPLEMENT ME"); }
+
+            std::shared_ptr<Environment> environment() const { Utopia::Abort("IMPLEMENT ME"); }
+
+            void set_time(const std::shared_ptr<SimulationTime> &time) override { Utopia::Abort("IMPLEMENT ME"); }
 
         private:
             std::shared_ptr<FunctionSpace> space_;

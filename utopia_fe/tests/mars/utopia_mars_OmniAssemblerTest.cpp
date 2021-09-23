@@ -91,8 +91,8 @@ void mars_solve_aux(Input &in) {
 void mars_linear_elasticity_aux(int nx, int ny, int nz) {
     auto params =
         param_list(param("n_var", 2 + (nz != 0)),
-                   param("type", "LinearElasticity"),
-                   param("mesh", param_list(param("type", "cube"), param("nx", nx), param("ny", ny), param("nz", nz))));
+                   param("mesh", param_list(param("type", "cube"), param("nx", nx), param("ny", ny), param("nz", nz))),
+                   param("material", param_list(param("type", "LinearElasticity"))));
 
     mars_solve_aux(params);
 }
@@ -131,7 +131,7 @@ void mars_poisson_aux(int nx, int ny, int nz) {
     Matrix_t mat;
     space.create_matrix(mat);
 
-    auto params = param_list(param("type", "LaplaceOperator"));
+    auto params = param_list(param("material", param_list(param("type", "LaplaceOperator"))));
 
     OmniAssembler<FunctionSpace_t> assembler(make_ref(space));
     assembler.read(params);

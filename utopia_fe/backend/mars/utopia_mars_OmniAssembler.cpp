@@ -72,21 +72,23 @@ namespace utopia {
         void OmniAssembler::set_space(const std::shared_ptr<FunctionSpace> &space) { impl_->space = space; }
 
         void OmniAssembler::read(Input &in) {
-            auto ass = impl_->space->factory().new_assembler(in);
+            in.get("material", [this](Input &node) {
+                auto ass = impl_->space->factory().new_assembler(node);
 
-            if (ass) {
-                ass->set_space(impl_->space);
-                ass->read(in);
+                if (ass) {
+                    ass->set_space(impl_->space);
+                    ass->read(node);
 
-                impl_->assemblers.push_back(std::move(ass));
-            }
+                    impl_->assemblers.push_back(std::move(ass));
+                }
+            });
 
             if (impl_->assemblers.empty()) {
                 Utopia::Abort("assemblers cannot be empty!");
             }
         }
 
-        void OmniAssembler::set_environment(const std::shared_ptr<Environment<mars::FunctionSpace>> &env) {
+        void OmniAssembler::set_environment(const std::shared_ptr<Environment> &env) {
             for (auto &a_ptr : impl_->assemblers) {
                 a_ptr->set_environment(env);
             }
@@ -101,6 +103,20 @@ namespace utopia {
 
             return true;
         }
+
+        std::string OmniAssembler::name() const { Utopia::Abort("IMPLEMENT ME"); }
+
+        bool OmniAssembler::apply(const Vector &x, Vector &hessian_times_x) { Utopia::Abort("IMPLEMENT ME"); }
+
+        bool OmniAssembler::assemble(Vector &fun) { Utopia::Abort("IMPLEMENT ME"); }
+
+        std::shared_ptr<OmniAssembler::Environment> OmniAssembler::environment() const {
+            Utopia::Abort("IMPLEMENT ME");
+        }
+
+        std::shared_ptr<FunctionSpace> OmniAssembler::space() const { Utopia::Abort("IMPLEMENT ME"); }
+
+        void OmniAssembler::set_time(const std::shared_ptr<SimulationTime> &time) { Utopia::Abort("IMPLEMENT ME"); }
 
     }  // namespace mars
 }  // namespace utopia
