@@ -119,7 +119,7 @@ namespace utopia {
                 COp c_op(1., grad, measure);
                 UCOp uc_op(params_.lambda, params_.mu, params_.alpha, grad, fun, measure);
 
-                return Super::coupled_vector_scalar_op_asemble(displacement, temperature, u_op, c_op, uc_op, hessian);
+                return Super::coupled_vector_scalar_op_assemble(displacement, temperature, u_op, c_op, uc_op, hessian);
             }
 
             void read(Input &in) override { params_.read(in); }

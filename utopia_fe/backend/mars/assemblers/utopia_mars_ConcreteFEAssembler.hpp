@@ -320,12 +320,12 @@ namespace utopia {
             }
 
             template <class VecOp, class ScalarOp, class CoupleVecScalarOp>
-            bool coupled_vector_scalar_op_asemble(const int vector_var,
-                                                  const int scalar_var,
-                                                  VecOp vec_op,
-                                                  ScalarOp scalar_op,
-                                                  CoupleVecScalarOp couple_vec_scalar_op,
-                                                  Matrix &hessian) {
+            bool coupled_vector_scalar_op_assemble(const int vector_var,
+                                                   const int scalar_var,
+                                                   VecOp vec_op,
+                                                   ScalarOp scalar_op,
+                                                   CoupleVecScalarOp couple_vec_scalar_op,
+                                                   Matrix &hessian) {
                 ensure_fe();
 
                 auto handler = this->handler();
@@ -378,11 +378,11 @@ namespace utopia {
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
 
-                auto y_view = local_view_device(y).raw_type();
-
-                ::mars::ViewVectorType<Scalar> x_local;
-                // ::mars::ViewVectorType<Scalar> x_local("x_local", dof_handler.get_dof_size());  // Rank 1 tensor
+                // ::mars::ViewVectorType<Scalar> x_local;
+                ::mars::ViewVectorType<Scalar> x_local("x_local_apply", dof_handler.get_dof_size());  // Rank 1 tensor
                 collect_ghost_layer(x, x_local);
+
+                auto y_view = local_view_device(y).raw_type();
 
                 int block_size = vec_op.dim();
                 assert(block_size <= dof_handler.get_block());
@@ -536,13 +536,25 @@ namespace utopia {
 
             void ensure_fe() { init(); }
 
-            std::string name() const override { Utopia::Abort("IMPLEMENT ME"); }
+            std::string name() const override {
+                Utopia::Abort("IMPLEMENT ME");
+                return "Undefined!";
+            }
 
-            bool apply(const Vector &x, Vector &hessian_times_x) override { Utopia::Abort("IMPLEMENT ME"); }
+            bool apply(const Vector &, Vector &) override {
+                Utopia::Abort("IMPLEMENT ME");
+                return false;
+            }
 
-            bool assemble(Vector &fun) override { Utopia::Abort("IMPLEMENT ME"); }
+            bool assemble(Vector &) override {
+                Utopia::Abort("IMPLEMENT ME");
+                return false;
+            }
 
-            std::shared_ptr<Environment> environment() const { Utopia::Abort("IMPLEMENT ME"); }
+            std::shared_ptr<Environment> environment() const override {
+                Utopia::Abort("IMPLEMENT ME");
+                return nullptr;
+            }
 
             void set_time(const std::shared_ptr<SimulationTime> &time) override { Utopia::Abort("IMPLEMENT ME"); }
 
