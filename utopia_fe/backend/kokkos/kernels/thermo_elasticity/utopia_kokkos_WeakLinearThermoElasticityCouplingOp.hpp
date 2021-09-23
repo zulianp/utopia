@@ -12,7 +12,7 @@ namespace utopia {
             public:
                 using StrainKernel = utopia::kokkos::kernels::LinearizedStrain<Dim, Scalar>;
 
-                static constexpr int dim() { return Dim; }
+                UTOPIA_INLINE_FUNCTION static constexpr int dim() { return Dim; }
 
                 UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell,
                                                          const int i,
