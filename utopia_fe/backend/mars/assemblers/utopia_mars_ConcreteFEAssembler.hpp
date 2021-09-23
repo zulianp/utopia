@@ -378,6 +378,7 @@ namespace utopia {
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
 
+                // Why does it crash here???
                 // ::mars::ViewVectorType<Scalar> x_local;
                 ::mars::ViewVectorType<Scalar> x_local("x_local_apply", dof_handler.get_dof_size());  // Rank 1 tensor
                 collect_ghost_layer(x, x_local);
