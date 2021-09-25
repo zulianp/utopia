@@ -64,7 +64,7 @@ namespace utopia {
             bool ok = function_->gradient(x, rhs);
             assert(ok);
 
-            rhs.set(0);
+            // rhs.set(0);
             rhs *= -1;
 
             // apply boundary conditions to rhs
