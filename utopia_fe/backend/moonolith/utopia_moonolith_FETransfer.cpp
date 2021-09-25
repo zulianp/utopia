@@ -455,8 +455,15 @@ namespace utopia {
             }
 
             if (impl_->opts.verbose) {
-                Scalar n_coupled_dofs = sum(*impl_->data.transfer_matrix);
-                utopia::out() << "n_coupled_dofs in to_space: " << SizeType(n_coupled_dofs) << "\n";
+                auto &T = *impl_->data.transfer_matrix;
+                Scalar n_coupled_dofs = sum(T);
+                std::stringstream root_ss, ss;
+                root_ss << "n_coupled_dofs in to_space:\t" << SizeType(n_coupled_dofs) << "\n";
+                root_ss << "global_nnz:\t" << T.global_nnz() << "\n";
+                T.comm().root_print(root_ss.str(), utopia::out().stream());
+
+                ss << "local_nnz:\t" << T.local_nnz() << "\n";
+                T.comm().synched_print(ss.str(), utopia::out().stream());
             }
 
             UTOPIA_TRACE_REGION_END("FETransfer::init");
