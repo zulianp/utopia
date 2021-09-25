@@ -33,6 +33,7 @@ namespace utopia {
             using FE = UniformFE;
             using FEAssembler::assemble;
 
+            ConcreteFEAssembler() = default;
             virtual ~ConcreteFEAssembler() = default;
 
             inline void set_space(const std::shared_ptr<FunctionSpace> &space) override { space_ = space; }
@@ -78,11 +79,10 @@ namespace utopia {
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
 
-                auto y_view = local_view_device(y).raw_type();                                  // Rank 2 tensor N x 1
-                ::mars::ViewVectorType<Scalar> x_local("x_local", dof_handler.get_dof_size());  // Rank 1 tensor
-                collect_ghost_layer(x, x_local);
+                auto y_view = local_view_device(y).raw_type();  // Rank 2 tensor N x 1
+                collect_ghost_layer(x, x_current_local_view);
 
-                return add_offsetted_scalar_op_to_vector(0, 0, op, x_local, y_view);
+                return add_offsetted_scalar_op_to_vector(0, 0, op, x_current_local_view, y_view);
             }
 
             template <class Op, class TpetraVectorView>
@@ -221,10 +221,8 @@ namespace utopia {
 
                 // kokkos_view_owned = local_view_device(x).raw_type(); // Rank 2 tensor N x 1
 
-                ::mars::ViewVectorType<Scalar> x_local("x_local", dof_handler.get_dof_size());  // Rank 1 tensor
-                collect_ghost_layer(x, x_local);
-
-                return add_offsetted_block_op_to_vector(0, 0, op, x_local, y_view);
+                collect_ghost_layer(x, x_current_local_view);
+                return add_offsetted_block_op_to_vector(0, 0, op, x_current_local_view, y_view);
             }
 
             template <class Op, class TpetraVectorView>
@@ -380,20 +378,18 @@ namespace utopia {
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
 
-                // Why does it crash here???
-                ::mars::ViewVectorType<Scalar> weird_x_local("weird_x_local",
-                                                             dof_handler.get_dof_size());  // Rank 1 tensor
-                collect_ghost_layer(x, weird_x_local);
+                collect_ghost_layer(x, x_current_local_view);
 
                 auto y_view = local_view_device(y).raw_type();
 
                 int block_size = vec_op.dim();
                 assert(block_size <= dof_handler.get_block());
 
-                return add_offsetted_block_op_to_vector(vector_var, vector_var, vec_op, weird_x_local, y_view) &&
+                return add_offsetted_block_op_to_vector(vector_var, vector_var, vec_op, x_current_local_view, y_view) &&
                        add_offsetted_block_x_scalar_op_to_vector(
-                           vector_var, scalar_var, couple_vec_scalar_op, weird_x_local, y_view) &&
-                       add_offsetted_scalar_op_to_vector(scalar_var, scalar_var, scalar_op, weird_x_local, y_view);
+                           vector_var, scalar_var, couple_vec_scalar_op, x_current_local_view, y_view) &&
+                       add_offsetted_scalar_op_to_vector(
+                           scalar_var, scalar_var, scalar_op, x_current_local_view, y_view);
             }
 
             ////////////////////
@@ -586,6 +582,8 @@ namespace utopia {
         private:
             std::shared_ptr<FunctionSpace> space_;
             std::unique_ptr<UniformFE> fe_;
+
+            ::mars::ViewVectorType<Scalar> x_current_local_view;
 
             void init() {
                 if (!fe_) {
