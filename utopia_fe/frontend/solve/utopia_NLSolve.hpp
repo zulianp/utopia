@@ -142,7 +142,10 @@ namespace utopia {
 
             this->status("Solving linear problem");
             // Solve linear problem
+
+            UTOPIA_TRACE_REGION_BEGIN("Linear solve");
             ok = solver_->linear_solver()->solve(A, rhs, x);
+            UTOPIA_TRACE_REGION_END("Linear solve");
             assert(ok);
 
             this->status("Reporting solution");
