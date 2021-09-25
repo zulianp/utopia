@@ -161,7 +161,9 @@ namespace utopia {
 
             template <class Op>
             bool block_op_assemble_matrix(Op op, Matrix &hessian) {
-                ensure_fe();
+	       UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::block_op_assemble_matrix");
+
+	       ensure_fe();
 
                 auto handler = this->handler();
                 auto sp = handler->get_sparsity_pattern();
@@ -202,12 +204,17 @@ namespace utopia {
                     }
                 });
 
+		UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::block_op_assemble_matrix::Tpetra::CrsMatrix()");
+
                 // // FIXME Bad it should not do this
                 auto mat_impl =
                     Teuchos::rcp(new Matrix::CrsMatrixType(this->handler()->get_sparsity_pattern().get_matrix(),
                                                            hessian.raw_type()->getRowMap(),
                                                            hessian.raw_type()->getColMap()));
                 hessian.wrap(mat_impl, false);
+
+		UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_assemble_matrix::Tpetra::CrsMatrix()");
+		UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_assemble_matrix");
                 return true;
             }
 
@@ -215,7 +222,8 @@ namespace utopia {
 
             template <class Op>
             bool block_op_apply(Op op, const Vector &x, Vector &y) {
-                ensure_fe();
+                UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::block_op_apply");
+	        ensure_fe();
 
                 if (empty(y)) {
                     y.zeros(layout(x));
@@ -237,8 +245,11 @@ namespace utopia {
                 // kokkos_view_owned = local_view_device(x).raw_type(); // Rank 2 tensor N x 1
 
                 collect_ghost_layer(x, x_current_local_view);
-                return add_offsetted_block_op_to_vector(0, 0, op, x_current_local_view, y_view);
-            }
+                bool ok =  add_offsetted_block_op_to_vector(0, 0, op, x_current_local_view, y_view);
+
+		UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_apply");
+		return ok;
+	    }
 
             template <class Op, class TpetraVectorView>
             bool add_offsetted_block_op_to_vector(const int b_offset_i,
