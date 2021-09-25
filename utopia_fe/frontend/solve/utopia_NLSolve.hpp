@@ -129,6 +129,9 @@ namespace utopia {
                 function_->space()->write("rhs.e", rhs);
             }
 
+            // disp(A);
+            // disp(rhs);
+
             this->status("Solving linear problem");
             // Solve linear problem
             ok = solver_->linear_solver()->solve(A, rhs, x);

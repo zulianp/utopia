@@ -103,12 +103,14 @@ namespace utopia {
 
                 fe_dof_map.iterate(MARS_LAMBDA(const ::mars::Integer elem_index) {
                     for (int i = 0; i < n_fun; i++) {
-                        const auto local_dof_i = fe_dof_map.get_elem_local_dof(elem_index, i + s_offset_i);
+                        auto offset_i = dof_handler.compute_block_index(i, s_offset_i);
+                        const auto local_dof_i = fe_dof_map.get_elem_local_dof(elem_index, offset_i);
                         if (local_dof_i < 0 || !dof_handler.is_owned(local_dof_i)) continue;
 
                         Scalar val = 0;
                         for (int j = 0; j < n_fun; j++) {
-                            const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, j + s_offset_j);
+                            auto offset_j = dof_handler.compute_block_index(i, s_offset_j);
+                            const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, offset_j);
                             if (local_dof_j > -1) {
                                 assert(local_dof_j < x.extent(0));
                                 auto x_j = x(local_dof_j);
@@ -300,14 +302,14 @@ namespace utopia {
 
                             Scalar val = 0;
                             for (int j = 0; j < n_fun; j++) {
-                                for (int sub_j = 0; sub_j < block_size; ++sub_j) {
-                                    auto offset_j = dof_handler.compute_block_index(j, sub_j + s_offset_j);
-                                    const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, offset_j);
-                                    if (local_dof_i > -1) {
-                                        auto x_j = x(local_dof_j);
-                                        val += op(elem_index, i, j, sub_i) * x_j;
-                                    }
+                                // for (int sub_j = 0; sub_j < block_size; ++sub_j) {
+                                auto offset_j = dof_handler.compute_block_index(j, s_offset_j);
+                                const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, offset_j);
+                                if (local_dof_i > -1) {
+                                    auto x_j = x(local_dof_j);
+                                    val += op(elem_index, i, j, sub_i) * x_j;
                                 }
+                                // }
                             }
 
                             const auto owned_dof_i = dof_handler.local_to_owned_index(local_dof_i);
@@ -379,25 +381,25 @@ namespace utopia {
                 const int n_qp = fe_->n_quad_points();
 
                 // Why does it crash here???
-                ::mars::ViewVectorType<Scalar> nvcc_bug_x_local("nvcc_bug_x_local",
-                                                                dof_handler.get_dof_size());  // Rank 1 tensor
-                collect_ghost_layer(x, nvcc_bug_x_local);
+                ::mars::ViewVectorType<Scalar> weird_x_local("weird_x_local",
+                                                             dof_handler.get_dof_size());  // Rank 1 tensor
+                collect_ghost_layer(x, weird_x_local);
 
                 auto y_view = local_view_device(y).raw_type();
 
                 int block_size = vec_op.dim();
                 assert(block_size <= dof_handler.get_block());
 
-                return add_offsetted_block_op_to_vector(vector_var, vector_var, vec_op, nvcc_bug_x_local, y_view) &&
+                return add_offsetted_block_op_to_vector(vector_var, vector_var, vec_op, weird_x_local, y_view) &&
                        add_offsetted_block_x_scalar_op_to_vector(
-                           vector_var, scalar_var, couple_vec_scalar_op, nvcc_bug_x_local, y_view) &&
-                       add_offsetted_scalar_op_to_vector(scalar_var, scalar_var, scalar_op, nvcc_bug_x_local, y_view);
+                           vector_var, scalar_var, couple_vec_scalar_op, weird_x_local, y_view) &&
+                       add_offsetted_scalar_op_to_vector(scalar_var, scalar_var, scalar_op, weird_x_local, y_view);
             }
 
             ////////////////////
 
             template <class Op>
-            bool add_offsetted_scalar_op_to_matrix(const int offset_i, const int offset_j, Op op, SPattern &sp) {
+            bool add_offsetted_scalar_op_to_matrix(const int s_offset_i, const int s_offset_j, Op op, SPattern &sp) {
                 ensure_fe();
 
                 auto handler = this->handler();
@@ -409,11 +411,13 @@ namespace utopia {
 
                 fe_dof_map.iterate(MARS_LAMBDA(const ::mars::Integer elem_index) {
                     for (int i = 0; i < n_fun; i++) {
-                        const auto local_dof_i = fe_dof_map.get_elem_local_dof(elem_index, i + offset_i);
+                        auto offset_i = dof_handler.compute_block_index(i, s_offset_i);
+                        const auto local_dof_i = fe_dof_map.get_elem_local_dof(elem_index, offset_i);
                         if (local_dof_i < 0 || !dof_handler.is_owned(local_dof_i)) continue;
 
                         for (int j = 0; j < n_fun; j++) {
-                            const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, j + offset_j);
+                            auto offset_j = dof_handler.compute_block_index(i, s_offset_j);
+                            const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, offset_j);
                             if (local_dof_j > -1) {
                                 Scalar val = op(elem_index, i, j);
 
