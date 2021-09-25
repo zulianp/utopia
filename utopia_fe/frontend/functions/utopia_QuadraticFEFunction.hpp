@@ -21,9 +21,9 @@ namespace utopia {
             g0 = utopia::make_unique<Vector_t>();
         }
 
-        inline Communicator_t &comm() { return H0->comm(); }
+        inline Communicator_t &comm() override { return H0->comm(); }
 
-        inline const Communicator_t &comm() const { return H0->comm(); }
+        inline const Communicator_t &comm() const override { return H0->comm(); }
 
         void read(Input &in) override {
             function_->read(in);

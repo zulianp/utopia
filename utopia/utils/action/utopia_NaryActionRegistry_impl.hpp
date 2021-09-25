@@ -38,10 +38,19 @@ namespace utopia {
     }
 
     template <class... Args>
-    int NaryActionRegistry<Args...>::apply(const std::string &action_name, Args &&... args) {
+    int NaryActionRegistry<Args...>::apply_with_backend(const std::string &action_name,
+                                                        const std::string &backend,
+                                                        Args &&... args) {
         rank_ = mpi_world_rank();
 
-        auto it = actions_.find(action_name);
+        std::string search_string;
+        if (!backend.empty()) {
+            search_string = backend + "_";
+        }
+
+        search_string += action_name;
+
+        auto it = actions_.find(search_string);
         if (it == actions_.end()) {
             // if(rank_ == 0) {
             //     std::cerr << "[Error] no " << type() << " with name " << action_name << std::endl;
