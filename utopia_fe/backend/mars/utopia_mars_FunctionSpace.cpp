@@ -201,7 +201,7 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("FunctionSpace::copy_at_constrained_nodes(in, out)");
 
             for (auto &bc : impl_->dirichlet_boundary) {
-                handler()->copy_at_constrained_nodes(in, out, bc->name);
+                handler()->copy_at_constrained_nodes(in, out, bc->name, bc->component);
             }
 
             UTOPIA_TRACE_REGION_END("FunctionSpace::copy_at_constrained_nodes(in, out)");
@@ -210,7 +210,7 @@ namespace utopia {
         void FunctionSpace::apply_constraints(Matrix &m, const Scalar diag_value) const {
             UTOPIA_TRACE_REGION_BEGIN("FunctionSpace::apply_constraints(m, diag_value)");
             for (auto &bc : impl_->dirichlet_boundary) {
-                handler()->matrix_apply_constraints(m, diag_value, bc->name);
+                handler()->matrix_apply_constraints(m, diag_value, bc->name, bc->component);
             }
             UTOPIA_TRACE_REGION_END("FunctionSpace::apply_constraints(m, diag_value)");
         }
@@ -219,7 +219,7 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("FunctionSpace::apply_constraints(v)");
 
             for (auto &bc : impl_->dirichlet_boundary) {
-                handler()->vector_apply_constraints(v, bc->value(), bc->name);
+                handler()->vector_apply_constraints(v, bc->value(), bc->name, bc->component);
             }
 
             UTOPIA_TRACE_REGION_END("FunctionSpace::apply_constraints(v)");
@@ -229,8 +229,8 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("FunctionSpace::apply_constraints(m, v)");
 
             for (auto &bc : impl_->dirichlet_boundary) {
-                handler()->matrix_apply_constraints(m, 1.0, bc->name);
-                handler()->vector_apply_constraints(v, bc->value(), bc->name);
+                handler()->matrix_apply_constraints(m, 1.0, bc->name, bc->component);
+                handler()->vector_apply_constraints(v, bc->value(), bc->name, bc->component);
             }
 
             UTOPIA_TRACE_REGION_END("FunctionSpace::apply_constraints(m, v)");
@@ -239,7 +239,7 @@ namespace utopia {
         void FunctionSpace::apply_zero_constraints(Vector &vec) const {
             UTOPIA_TRACE_REGION_BEGIN("FunctionSpace::apply_zero_constraints(vec)");
             for (auto &bc : impl_->dirichlet_boundary) {
-                handler()->vector_apply_constraints(vec, bc->value(), bc->name);
+                handler()->vector_apply_constraints(vec, bc->value(), bc->name, bc->component);
             }
             UTOPIA_TRACE_REGION_END("FunctionSpace::apply_zero_constraints(vec)");
         }

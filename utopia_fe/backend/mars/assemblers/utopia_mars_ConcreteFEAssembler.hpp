@@ -379,19 +379,19 @@ namespace utopia {
                 const int n_qp = fe_->n_quad_points();
 
                 // Why does it crash here???
-                // ::mars::ViewVectorType<Scalar> x_local;
-                ::mars::ViewVectorType<Scalar> x_local("x_local_apply", dof_handler.get_dof_size());  // Rank 1 tensor
-                collect_ghost_layer(x, x_local);
+                ::mars::ViewVectorType<Scalar> nvcc_bug_x_local("nvcc_bug_x_local",
+                                                                dof_handler.get_dof_size());  // Rank 1 tensor
+                collect_ghost_layer(x, nvcc_bug_x_local);
 
                 auto y_view = local_view_device(y).raw_type();
 
                 int block_size = vec_op.dim();
                 assert(block_size <= dof_handler.get_block());
 
-                return add_offsetted_block_op_to_vector(vector_var, vector_var, vec_op, x_local, y_view) &&
+                return add_offsetted_block_op_to_vector(vector_var, vector_var, vec_op, nvcc_bug_x_local, y_view) &&
                        add_offsetted_block_x_scalar_op_to_vector(
-                           vector_var, scalar_var, couple_vec_scalar_op, x_local, y_view) &&
-                       add_offsetted_scalar_op_to_vector(scalar_var, scalar_var, scalar_op, x_local, y_view);
+                           vector_var, scalar_var, couple_vec_scalar_op, nvcc_bug_x_local, y_view) &&
+                       add_offsetted_scalar_op_to_vector(scalar_var, scalar_var, scalar_op, nvcc_bug_x_local, y_view);
             }
 
             ////////////////////

@@ -34,13 +34,22 @@ namespace utopia {
             virtual MarsCrsMatrix new_crs_matrix() = 0;
 
             virtual void describe() const = 0;
-            virtual void matrix_apply_constraints(Matrix &m, const Scalar diag_value, const std::string side) = 0;
+            virtual void matrix_apply_constraints(Matrix &m,
+                                                  const Scalar diag_value,
+                                                  const std::string side,
+                                                  const int component) = 0;
 
-            virtual void vector_apply_constraints(Vector &v, const Scalar value, const std::string side) = 0;
+            virtual void vector_apply_constraints(Vector &v,
+                                                  const Scalar value,
+                                                  const std::string side,
+                                                  const int component) = 0;
 
-            virtual void apply_zero_constraints(Vector &vec, const std::string side) = 0;
+            virtual void apply_zero_constraints(Vector &vec, const std::string side, const int component) = 0;
 
-            virtual void copy_at_constrained_nodes(const Vector &in, Vector &out, const std::string side) = 0;
+            virtual void copy_at_constrained_nodes(const Vector &in,
+                                                   Vector &out,
+                                                   const std::string side,
+                                                   const int component) = 0;
 
             // virtual void system_apply_constraints(Matrix &m, Vector &v) = 0;
 

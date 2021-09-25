@@ -35,37 +35,68 @@ namespace utopia {
                 // ::mars::print_fe_dof_map(*dof_handler_impl, *fe_dof_map_impl);
             }
 
-            void matrix_apply_constraints(Matrix &m, const Scalar diag_value, const std::string side) override {
+            void matrix_apply_constraints(Matrix &m,
+                                          const Scalar diag_value,
+                                          const std::string side,
+                                          const int component) override {
                 // BC set constrained rows to zero, except diagonal where you set diag_value
                 auto sp = *sparsity_pattern;
                 auto mat = m.raw_type()->getLocalMatrix();
+                auto sp_dof_handler = sp.get_dof_handler();
+
                 dof_handler->boundary_dof_iterate(
                     MARS_LAMBDA(const ::mars::Integer local_dof) {
+                        auto c = sp_dof_handler.compute_component(local_dof);
+                        if (c != component) return;
                         sp.matrix_apply_constraints(local_dof, mat, diag_value);
                     },
-                    side);
+                    side
+                    // ,
+                    // component
+                );
             }
 
-            void vector_apply_constraints(Vector &v, const Scalar value, const std::string side) override {
+            void vector_apply_constraints(Vector &v,
+                                          const Scalar value,
+                                          const std::string side,
+                                          const int component) override {
                 auto sp = *sparsity_pattern;
                 auto vec = v.raw_type()->getLocalView<::mars::KokkosSpace>();
+                auto sp_dof_handler = sp.get_dof_handler();
                 // BC set values to constraint value (i.e., boundary value)
                 dof_handler->boundary_dof_iterate(
                     MARS_LAMBDA(const ::mars::Integer local_dof) {
+                        auto c = sp_dof_handler.compute_component(local_dof);
+                        if (c != component) return;
                         sp.vector_apply_constraints(local_dof, vec, value);
                     },
-                    side);
+                    side
+                    // ,
+                    // component
+                );
             }
 
-            void apply_zero_constraints(Vector &v, const std::string side) override {
+            void apply_zero_constraints(Vector &v, const std::string side, const int component) override {
                 auto sp = *sparsity_pattern;
                 auto vec = v.raw_type()->getLocalView<::mars::KokkosSpace>();
+                auto sp_dof_handler = sp.get_dof_handler();
                 // BC set values to constraint value to zero
                 dof_handler->boundary_dof_iterate(
-                    MARS_LAMBDA(const ::mars::Integer local_dof) { sp.apply_zero_constraints(local_dof, vec); }, side);
+                    MARS_LAMBDA(const ::mars::Integer local_dof) {
+                        auto c = sp_dof_handler.compute_component(local_dof);
+                        if (c != component) return;
+                        sp.apply_zero_constraints(local_dof, vec);
+                    },
+                    side
+                    // ,
+                    // component
+                );
             }
 
-            void copy_at_constrained_nodes(const Vector &in, Vector &out, const std::string side) override {
+            void copy_at_constrained_nodes(const Vector &in,
+                                           Vector &out,
+                                           const std::string side,
+                                           const int component) override {
                 auto sp = *sparsity_pattern;
                 auto in_view = in.raw_type()->getLocalView<::mars::KokkosSpace>();
                 auto out_view = out.raw_type()->getLocalView<::mars::KokkosSpace>();
@@ -75,11 +106,16 @@ namespace utopia {
                 // BC set values to constraint value (i.e., boundary value)
                 dof_handler->boundary_dof_iterate(
                     MARS_LAMBDA(const ::mars::Integer local_dof) {
+                        auto c = sp_dof_handler.compute_component(local_dof);
+                        if (c != component) return;
                         // sp.vector_apply_constraints(local_dof, vec, value);
                         auto idx = sp_dof_handler.local_to_owned_index(local_dof);
                         out_view(idx, 0) = in_view(idx, 0);
                     },
-                    side);
+                    side
+                    // ,
+                    // component
+                );
             }
 
             /* void system_apply_constraints(Matrix &m, Vector &v) override {
