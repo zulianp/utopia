@@ -28,6 +28,10 @@ namespace utopia {
                      .add_option("export_tensors", export_tensors_, "Exports tensors to disk.")
                      .add_option("has_covering", has_covering, "Constructs lagrange multiplier in intersections.")
                      .add_option("chop_tol", chop_tol, "Chop numeric entries close below a certain tolerance")
+                     .add_option(
+                         "print_operator_imbalance",
+                         print_operator_imbalance,
+                         "Prints information for detecting imbalance when using the operator for static condensation.")
                      .parse(in)) {
                 return;
             }
@@ -58,6 +62,7 @@ namespace utopia {
         bool clear_non_essential_matrices{true};
         bool export_tensors_{false};
         bool use_reference_frame{false};
+        bool print_operator_imbalance{true};
         double chop_tol{0.};
     };
 

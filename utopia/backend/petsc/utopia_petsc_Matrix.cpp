@@ -738,6 +738,11 @@ namespace utopia {
         // TODO
         // MatCreateSeqAIJWithArrays
         // MatCreateMPIAIJWithArrays
+        // MatUpdateMPIAIJWithArrays
+
+        // Se also
+        // MatCreateMPIAIJWithSplitArrays
+        // MatMPIAIJSetPreallocationCSR
 
         SizeType n_local_rows = row_ptr.size() - 1;
         assert(n_local_rows == layout.local_size(0));
