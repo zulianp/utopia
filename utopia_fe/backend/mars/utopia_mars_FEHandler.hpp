@@ -46,14 +46,10 @@ namespace utopia {
 
                 dof_handler->boundary_dof_iterate(
                     MARS_LAMBDA(const ::mars::Integer local_dof) {
-                        auto c = sp_dof_handler.compute_component(local_dof);
-                        if (c != component) return;
                         sp.matrix_apply_constraints(local_dof, mat, diag_value);
                     },
-                    side
-                    // ,
-                    // component
-                );
+                    side,
+                    component);
             }
 
             void vector_apply_constraints(Vector &v,
@@ -66,14 +62,10 @@ namespace utopia {
                 // BC set values to constraint value (i.e., boundary value)
                 dof_handler->boundary_dof_iterate(
                     MARS_LAMBDA(const ::mars::Integer local_dof) {
-                        auto c = sp_dof_handler.compute_component(local_dof);
-                        if (c != component) return;
                         sp.vector_apply_constraints(local_dof, vec, value);
                     },
-                    side
-                    // ,
-                    // component
-                );
+                    side,
+                    component);
             }
 
             void apply_zero_constraints(Vector &v, const std::string side, const int component) override {
@@ -83,14 +75,10 @@ namespace utopia {
                 // BC set values to constraint value to zero
                 dof_handler->boundary_dof_iterate(
                     MARS_LAMBDA(const ::mars::Integer local_dof) {
-                        auto c = sp_dof_handler.compute_component(local_dof);
-                        if (c != component) return;
                         sp.apply_zero_constraints(local_dof, vec);
                     },
-                    side
-                    // ,
-                    // component
-                );
+                    side,
+                    component);
             }
 
             void copy_at_constrained_nodes(const Vector &in,
@@ -106,16 +94,12 @@ namespace utopia {
                 // BC set values to constraint value (i.e., boundary value)
                 dof_handler->boundary_dof_iterate(
                     MARS_LAMBDA(const ::mars::Integer local_dof) {
-                        auto c = sp_dof_handler.compute_component(local_dof);
-                        if (c != component) return;
                         // sp.vector_apply_constraints(local_dof, vec, value);
                         auto idx = sp_dof_handler.local_to_owned_index(local_dof);
                         out_view(idx, 0) = in_view(idx, 0);
                     },
-                    side
-                    // ,
-                    // component
-                );
+                    side,
+                    component);
             }
 
             /* void system_apply_constraints(Matrix &m, Vector &v) override {
