@@ -97,7 +97,7 @@ void mars_linear_elasticity_aux(int nx, int ny, int nz) {
     mars_solve_aux(params);
 }
 
-void mars_linear_elasticity() { mars_linear_elasticity_aux(40, 40, 40); }
+void mars_linear_elasticity() { mars_linear_elasticity_aux(8, 8, 8); }
 
 void mars_poisson_aux(int nx, int ny, int nz) {
     using Mesh_t = utopia::mars::Mesh;
@@ -142,13 +142,13 @@ void mars_poisson_aux(int nx, int ny, int nz) {
     Vector_t sum_rows = mat * ones;
     Scalar_t sum_mat = sum(abs(sum_rows));
 
-    write("load_mat.mm", mat);
-    write("load_rhs.mm", rhs);
+    // write("load_mat.mm", mat);
+    // write("load_rhs.mm", rhs);
 
     utopia_test_assert(sum_mat < 1e-8);
 
     space.apply_constraints(mat, rhs);
-    space.apply_constraints(x);
+    // space.apply_constraints(x);
 
     c.stop();
 
@@ -159,7 +159,7 @@ void mars_poisson_aux(int nx, int ny, int nz) {
     ConjugateGradient<Matrix_t, Vector_t> cg;
     cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix_t, Vector_t>>());
     cg.apply_gradient_descent_step(true);
-    cg.verbose(true);
+    // cg.verbose(true);
 
     utopia_test_assert(cg.solve(mat, rhs, x));
 
@@ -179,7 +179,7 @@ void mars_poisson_aux(int nx, int ny, int nz) {
 
 void mars_poisson_2D() { mars_poisson_aux(10, 11, 0); }
 
-void mars_poisson_3D() { mars_poisson_aux(8, 9, 10); }
+void mars_poisson_3D() { mars_poisson_aux(4, 5, 6); }
 
 void mars_assembler() {
     UTOPIA_RUN_TEST(mars_poisson_2D);
