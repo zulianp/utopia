@@ -142,13 +142,13 @@ void mars_poisson_aux(int nx, int ny, int nz) {
     Vector_t sum_rows = mat * ones;
     Scalar_t sum_mat = sum(abs(sum_rows));
 
-    // write("load_mat.mm", mat);
-    // write("load_rhs.mm", rhs);
+    write("load_mat.mm", mat);
+    write("load_rhs.mm", rhs);
 
     utopia_test_assert(sum_mat < 1e-8);
 
     space.apply_constraints(mat, rhs);
-    // space.apply_constraints(x);
+    space.apply_constraints(x);
 
     c.stop();
 
@@ -159,7 +159,7 @@ void mars_poisson_aux(int nx, int ny, int nz) {
     ConjugateGradient<Matrix_t, Vector_t> cg;
     cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix_t, Vector_t>>());
     cg.apply_gradient_descent_step(true);
-    cg.verbose(false);
+    cg.verbose(true);
 
     utopia_test_assert(cg.solve(mat, rhs, x));
 
