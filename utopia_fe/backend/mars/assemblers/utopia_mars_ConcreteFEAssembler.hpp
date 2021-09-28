@@ -43,7 +43,7 @@ namespace utopia {
 
             template <class Op>
             bool scalar_op_assemble_matrix(Op op, Matrix &hessian) {
-	        UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::scalar_op_assemble_matrix");
+                UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::scalar_op_assemble_matrix");
                 ensure_fe();
 
                 auto handler = this->handler();
@@ -53,7 +53,7 @@ namespace utopia {
                     return false;
                 }
 
-		 UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::scalar_op_assemble_matrix::TpetraCrsMatrix()");
+                UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::scalar_op_assemble_matrix::TpetraCrsMatrix()");
 
                 // FIXME Bad it should not do this
                 auto mat_impl =
@@ -62,16 +62,16 @@ namespace utopia {
                                                            hessian.raw_type()->getColMap()));
                 hessian.wrap(mat_impl, false);
 
-		UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::scalar_op_assemble_matrix::TpetraCrsMatrix()");		
-		UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::scalar_op_assemble_matrix");
+                UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::scalar_op_assemble_matrix::TpetraCrsMatrix()");
+                UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::scalar_op_assemble_matrix");
                 return true;
             }
 
             template <class Op>
             bool scalar_op_apply(Op op, const Vector &x, Vector &y) {
-	        UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::scalar_op_apply");
+                UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::scalar_op_apply");
 
-		ensure_fe();
+                ensure_fe();
 
                 if (empty(y)) {
                     y.zeros(layout(x));
@@ -89,12 +89,12 @@ namespace utopia {
 
                 auto y_view = local_view_device(y).raw_type();  // Rank 2 tensor N x 1
                 collect_ghost_layer(x, x_current_local_view);
-		
-                bool ok =  add_offsetted_scalar_op_to_vector(0, 0, op, x_current_local_view, y_view);
 
-		UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::scalar_op_apply");
-		return ok;
-	    }
+                bool ok = add_offsetted_scalar_op_to_vector(0, 0, op, x_current_local_view, y_view);
+
+                UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::scalar_op_apply");
+                return ok;
+            }
 
             template <class Op, class TpetraVectorView>
             bool add_offsetted_scalar_op_to_vector(const int s_offset_i,
@@ -138,9 +138,9 @@ namespace utopia {
             }
 
             void collect_ghost_layer(const Vector &in, ::mars::ViewVectorType<Scalar> &out) {
-	        UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::collect_ghost_layer");
+                UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::collect_ghost_layer");
 
-		auto handler = this->handler();
+                auto handler = this->handler();
                 auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
                 auto dof_handler = sp.get_dof_handler();
@@ -154,16 +154,16 @@ namespace utopia {
                 ::mars::set_locally_owned_data(dof_handler, out, x_view_rank1);
                 ::mars::gather_ghost_data(dof_handler, out);
 
-		UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::collect_ghost_layer");
-	    }
+                UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::collect_ghost_layer");
+            }
 
             ////////////////////////
 
             template <class Op>
             bool block_op_assemble_matrix(Op op, Matrix &hessian) {
-	       UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::block_op_assemble_matrix");
+                UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::block_op_assemble_matrix");
 
-	       ensure_fe();
+                ensure_fe();
 
                 auto handler = this->handler();
                 auto sp = handler->get_sparsity_pattern();
@@ -204,7 +204,7 @@ namespace utopia {
                     }
                 });
 
-		UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::block_op_assemble_matrix::Tpetra::CrsMatrix()");
+                UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::block_op_assemble_matrix::Tpetra::CrsMatrix()");
 
                 // // FIXME Bad it should not do this
                 auto mat_impl =
@@ -213,8 +213,8 @@ namespace utopia {
                                                            hessian.raw_type()->getColMap()));
                 hessian.wrap(mat_impl, false);
 
-		UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_assemble_matrix::Tpetra::CrsMatrix()");
-		UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_assemble_matrix");
+                UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_assemble_matrix::Tpetra::CrsMatrix()");
+                UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_assemble_matrix");
                 return true;
             }
 
@@ -223,7 +223,7 @@ namespace utopia {
             template <class Op>
             bool block_op_apply(Op op, const Vector &x, Vector &y) {
                 UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::block_op_apply");
-	        ensure_fe();
+                ensure_fe();
 
                 if (empty(y)) {
                     y.zeros(layout(x));
@@ -245,11 +245,11 @@ namespace utopia {
                 // kokkos_view_owned = local_view_device(x).raw_type(); // Rank 2 tensor N x 1
 
                 collect_ghost_layer(x, x_current_local_view);
-                bool ok =  add_offsetted_block_op_to_vector(0, 0, op, x_current_local_view, y_view);
+                bool ok = add_offsetted_block_op_to_vector(0, 0, op, x_current_local_view, y_view);
 
-		UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_apply");
-		return ok;
-	    }
+                UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_apply");
+                return ok;
+            }
 
             template <class Op, class TpetraVectorView>
             bool add_offsetted_block_op_to_vector(const int b_offset_i,
@@ -438,7 +438,7 @@ namespace utopia {
                         if (local_dof_i < 0 || !dof_handler.is_owned(local_dof_i)) continue;
 
                         for (int j = 0; j < n_fun; j++) {
-                            auto offset_j = dof_handler.compute_block_index(i, s_offset_j);
+                            auto offset_j = dof_handler.compute_block_index(j, s_offset_j);
                             const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, offset_j);
                             if (local_dof_j > -1) {
                                 Scalar val = op(elem_index, i, j);
