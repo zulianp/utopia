@@ -3,6 +3,7 @@
 
 #include "utopia_FEModelFunction.hpp"
 #include "utopia_ImplicitEulerIntegrator.hpp"
+#include "utopia_IncrementalLoading.hpp"
 #include "utopia_NewmarkIntegrator.hpp"
 #include "utopia_VelocityImplicitEulerIntegrator.hpp"
 #include "utopia_VelocityNewmarkIntegrator.hpp"
@@ -23,6 +24,7 @@ namespace utopia {
         using VelocityNewmarkIntegrator_t = utopia::VelocityNewmarkIntegrator<FunctionSpace>;
 
         using TimeDependentFunction_t = utopia::TimeDependentFunction<FunctionSpace>;
+        using IncrementalLoading_t = utopia::IncrementalLoading<FunctionSpace>;
 
         static std::unique_ptr<FEFunctionInterface<FunctionSpace>> make(const std::shared_ptr<FunctionSpace> &space,
                                                                         Input &in) {
@@ -48,6 +50,8 @@ namespace utopia {
                 return utopia::make_unique<VelocityNewmarkIntegrator_t>(std::move(fun));
             } else if (integrator == "VelocityImplicitEuler") {
                 return utopia::make_unique<VelocityImplicitEulerIntegrator_t>(std::move(fun));
+            } else if (integrator == "IncrementalLoading") {
+                return utopia::make_unique<IncrementalLoading_t>(std::move(fun));
             } else {
                 Utopia::Abort("Specified time integrator does not exists!");
                 // Compiler needs a return type!

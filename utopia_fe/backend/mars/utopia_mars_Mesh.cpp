@@ -90,6 +90,11 @@ namespace utopia {
             unit_cube(nx, ny, nz);
         }
 
+        bool Mesh::write(const utopia::Path &path) const {
+            Utopia::Abort("IMPLEMENT ME");
+            return false;
+        }
+
         void Mesh::describe(std::ostream &os) const {
             if (impl_->describe) {
                 impl_->describe();
@@ -99,6 +104,7 @@ namespace utopia {
         }
 
         const Mesh::Comm &Mesh::comm() const { return impl_->comm; }
+        Mesh::Comm &Mesh::comm() { return impl_->comm; }
 
         bool Mesh::empty() const { return !static_cast<bool>(impl_->mesh); }
 

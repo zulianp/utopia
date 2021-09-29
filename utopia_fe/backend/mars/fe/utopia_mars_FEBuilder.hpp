@@ -38,13 +38,14 @@ namespace utopia {
                 auto sp = handler.get_sparsity_pattern();
                 auto fe_dof_map = handler.get_fe_dof_map();
                 auto dof_handler = sp.get_dof_handler();
+                int block_size = dof_handler.get_block();
 
                 fe_dof_map.iterate(MARS_LAMBDA(const ::mars::Integer elem_index) {
                     if (elem_index == 0) {
                         Scalar p[Dim];
 
                         for (int i = 0; i < coords.extent(0); ++i) {
-                            auto local_dof = fe_dof_map.get_elem_local_dof(elem_index, i);
+                            auto local_dof = fe_dof_map.get_elem_local_dof(elem_index, i * block_size);
                             dof_handler.template get_dof_coordinates_from_local<Type>(local_dof, p);
 
                             for (int d = 0; d < coords.extent(1); ++d) {

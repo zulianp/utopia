@@ -1,0 +1,7 @@
+#ifndef UTOPIA_MESH_ELEMENT_TYPE_HPP
+#define UTOPIA_MESH_ELEMENT_TYPE_HPP
+
+namespace utopia {
+    enum MeshElementType : int { NODE_TYPE = 0, EDGE_TYPE = 1, FACE_TYPE = 2, ELEMENT_TYPE = 3, UNDEFINED_TYPE = 4 };
+}
+#endif  // UTOPIA_MESH_ELEMENT_TYPE_HPP

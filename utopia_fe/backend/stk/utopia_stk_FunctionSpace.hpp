@@ -32,6 +32,7 @@ namespace utopia {
             ~FunctionSpace();
 
             void init(const std::shared_ptr<Mesh> &mesh) override;
+            void update(const SimulationTime<Scalar> &) override;
 
             bool write(const Path &path, const Vector &x) override;
             void read(Input &in) override;
@@ -95,14 +96,18 @@ namespace utopia {
             void global_vector_to_nodal_field(const std::string &field_name, const Vector &v);
 
             void backend_set_nodal_field(const Field<FunctionSpace> &field);
+            void backend_set_elemental_field(const Field<FunctionSpace> &field);
 
             void copy_meta_info_from(const FunctionSpace &other);
-            void initialize() override;
+            void initialize() override { initialize(true); }
+            void initialize(const bool valid_local_id_mode);
 
             void node_eval(std::function<void(const SizeType idx, const Scalar *)> fun);
             void node_eval(const std::string &part_name, std::function<void(const SizeType idx, const Scalar *)> fun);
 
             const DirichletBoundary &dirichlet_boundary() const;
+
+            void set_print_map(const bool val);
 
         private:
             class Impl;

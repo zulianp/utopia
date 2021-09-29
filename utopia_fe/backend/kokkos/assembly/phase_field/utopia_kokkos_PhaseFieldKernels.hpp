@@ -6,25 +6,42 @@
 namespace utopia {
     namespace kokkos {
 
-        template <class Parameters>
+        template <typename Scalar>
         class QuadraticDegradation {
         public:
-            template <typename C>
-            UTOPIA_INLINE_FUNCTION static C value(const Parameters &, const C &c) {
-                C imc = 1.0 - c;
+            UTOPIA_INLINE_FUNCTION static Scalar value(const Scalar &c) {
+                Scalar imc = 1.0 - c;
                 return imc * imc;
             }
 
-            template <typename C>
-            UTOPIA_INLINE_FUNCTION static C deriv(const Parameters &, const C &c) {
-                C imc = 1.0 - c;
+            UTOPIA_INLINE_FUNCTION static Scalar deriv(const Scalar &c) {
+                Scalar imc = 1.0 - c;
                 return -2.0 * imc;
             }
 
-            template <typename C>
-            UTOPIA_INLINE_FUNCTION static C deriv2(const Parameters &, const C &) {
-                return 2.0;
+            UTOPIA_INLINE_FUNCTION static Scalar deriv2(const Scalar &) { return 2.0; }
+        };
+
+        template <class Coeff, typename Scalar>
+        class QuadraticDegradationKernel {
+        public:
+            using F = utopia::kokkos::QuadraticDegradation<Scalar>;
+
+            UTOPIA_INLINE_FUNCTION Scalar value(const int cell, const int qp) const {
+                return F::value(coeff(cell, qp, phase_field));
             }
+
+            UTOPIA_INLINE_FUNCTION Scalar deriv(const int cell, const int qp) const {
+                return F::deriv(coeff(cell, qp, phase_field));
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar deriv2(const int, const int) const { return 2.0; }
+
+            UTOPIA_INLINE_FUNCTION QuadraticDegradationKernel(const Coeff &coeff, const int phase_field)
+                : coeff(coeff), phase_field(phase_field) {}
+
+            Coeff coeff;
+            int phase_field;
         };
 
         template <class Parameters, class DegradationFunction>

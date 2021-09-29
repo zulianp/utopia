@@ -46,6 +46,11 @@ if(UTOPIA_ENABLE_MOONOLITH)
         set(INTEROP_EXISTS TRUE)
     endif()
 
+    if(UTOPIA_ENABLE_PETSC)
+        list(APPEND INTEROP_MODULES moonolith_petsc)
+        set(INTEROP_EXISTS TRUE)
+    endif()
+
     if(UTOPIA_ENABLE_LIBMESH)
         list(
             APPEND

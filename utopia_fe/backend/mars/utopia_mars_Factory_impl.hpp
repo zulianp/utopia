@@ -2,6 +2,9 @@
 #include "utopia_mars_Factory.hpp"
 
 #include "utopia_mars_LaplaceOperator.hpp"
+#include "utopia_mars_LinearElasticity.hpp"
+#include "utopia_mars_Mass.hpp"
+#include "utopia_mars_WeakLinearThermoElasticity.hpp"
 
 namespace utopia {
     namespace mars {
@@ -18,6 +21,12 @@ namespace utopia {
             inline std::unique_ptr<FEAssembler> new_assembler(const std::string &type) const {
                 if (type == "LaplaceOperator") {
                     return utopia::make_unique<LaplaceOperator<Args...>>();
+                } else if (type == "LinearElasticity") {
+                    return utopia::make_unique<LinearElasticity<Args...>>();
+                } else if (type == "Mass") {
+                    return utopia::make_unique<Mass<Args...>>();
+                } else if (type == "WeakLinearThermoElasticity") {
+                    return utopia::make_unique<WeakLinearThermoElasticity<Args...>>();
                 } else {
                     return nullptr;
                 }

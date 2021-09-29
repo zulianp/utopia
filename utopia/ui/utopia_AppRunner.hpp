@@ -15,8 +15,9 @@ namespace utopia {
         AppRunner();
         virtual ~AppRunner();
         int run(int argc, char **argv);
-        int run(const std::vector<std::string> &apps) const;
-        int run(const std::string &name, Input &in) const;
+        int run(const std::vector<std::string> &apps, const std::string &backend = "") const;
+        inline int run(const std::string &name, Input &in) const { return run(name, "", in); }
+        int run(const std::string &name, const std::string &backend, Input &in) const;
         void describe(std::ostream &os = std::cout) const;
         void verbose(const bool val);
 

@@ -13,8 +13,19 @@ namespace utopia {
     bool AppRegistry::verbose() const { return apps_.verbose(); }
     void AppRegistry::verbose(const bool val) { apps_.verbose(val); }
 
+    std::string AppRegistry::concat_app_backend(const std::string &app_name, const std::string &backend) {
+        if (backend.empty()) return app_name;
+        return backend + "_" + app_name;
+    }
+
     char AppRegistry::add_app(const std::string &app_name, AppRegistry::RunApp run_app) {
         instance().apps_.add_action(app_name, run_app);
+        return 0;
+    }
+
+    char AppRegistry::add_app(const std::string &app_name, const std::string &backend, AppRegistry::RunApp run_app) {
+        // instance().apps_.add_action(app_name, run_app);
+        instance().apps_.add_action(concat_app_backend(app_name, backend), run_app);
         return 0;
     }
 
@@ -32,6 +43,10 @@ namespace utopia {
     }
 
     int AppRegistry::run_all() { return apps_.apply_all(); }
+
+    int AppRegistry::run(const std::string &app_name, const std::string &backend) {
+        return run(concat_app_backend(app_name, backend));
+    }
 
     int AppRegistry::run(const std::string &app_name) {
         int ret = apps_.apply(app_name);

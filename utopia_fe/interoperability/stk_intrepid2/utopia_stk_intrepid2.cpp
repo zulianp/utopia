@@ -365,6 +365,38 @@ namespace utopia {
             apply(space, buckets, device_element_vectors, mode, vector, n_var);
         }
 
+        static void apply_elemental(const utopia::stk::FunctionSpace &space,
+                                    // const BucketVector_t &buckets,
+                                    const StkViewDevice_t<Scalar> &device_element_vectors,
+                                    AssemblyMode mode,
+                                    PetscVector &vector) {
+            typename StkViewDevice_t<Scalar>::HostMirror element_vectors =
+                ::Kokkos::create_mirror_view(device_element_vectors);
+            ::Kokkos::deep_copy(element_vectors, device_element_vectors);
+
+            const Size_t n_cells = element_vectors.extent(0);
+            const int tensor_size = element_vectors.extent(1);
+
+            if (empty(vector)) {
+                vector.zeros(layout(space.comm(), n_cells * tensor_size, Traits<PetscVector>::determine()));
+            } else {
+                if (mode == OVERWRITE_MODE) {
+                    vector *= 0.0;
+                }
+            }
+
+            Write<PetscVector> w(vector);
+
+            auto r = range(vector);
+            for (Size_t i = 0; i < n_cells; ++i) {
+                Size_t offset_i = i * tensor_size;
+
+                for (int t = 0; t < tensor_size; ++t) {
+                    vector.add(offset_i + t, element_vectors(i, t));
+                }
+            }
+        }
+
         static void apply(const utopia::stk::FunctionSpace &space,
                           const BucketVector_t &buckets,
                           const StkViewDevice_t<Scalar> &device_element_vectors,
@@ -522,9 +554,34 @@ namespace utopia {
             *from.space(), from.data(), to.data(), from.tensor_size());
 
         to.set_tensor_size(from.tensor_size());
+        to.set_elem_type(from.elem_type());
     }
 
     template class ConvertField<Field<utopia::stk::FunctionSpace>, Intrepid2Field<StkScalar_t>>;
+
+    template <typename Scalar>
+    void ConvertField<Intrepid2Field<Scalar>, Field<utopia::stk::FunctionSpace>>::apply(
+        const Intrepid2Field<Scalar> &from,
+        Field<utopia::stk::FunctionSpace> &to) {
+        if (from.elem_type() == ELEMENT_TYPE) {
+            LocalToGlobalFromBuckets<Scalar>::apply_elemental(
+                *to.space(),
+                // utopia::stk::local_elements(to.space()->mesh().bulk_data()),
+                from.data(),
+                OVERWRITE_MODE,
+                to.data());
+        } else {
+            assert(false && "IMPLEMENT ME");
+            Utopia::Abort("IMPLEMENT ME");
+            // LocalToGlobal<utopia::stk::FunctionSpace, Vector, StkViewDevice_t<Scalar>>::apply(
+            //     *to.space(), from.data(), OVERWRITE_MODE, to.data(), from.tensor_size());
+        }
+
+        to.set_tensor_size(from.tensor_size());
+        to.set_elem_type(from.elem_type());
+    }
+
+    template class ConvertField<Intrepid2Field<StkScalar_t>, Field<utopia::stk::FunctionSpace>>;
 
     template <typename Scalar>
     void GlobalToLocal<utopia::stk::FunctionSpace,

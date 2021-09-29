@@ -36,11 +36,13 @@ namespace utopia {
 
             in.get("time", time_);
 
-            Integer n_steps = 1;
+            Integer n_steps = 0;
             in.get("n_steps", n_steps);
-            end_ = start_ + n_steps * delta_;
-
             in.get("end", end_);
+
+            if (n_steps != 0) {
+                end_ = start_ + n_steps * delta_;
+            }
         }
 
     private:
