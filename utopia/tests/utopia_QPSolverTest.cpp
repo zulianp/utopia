@@ -170,12 +170,14 @@ namespace utopia {
             Vector b;
             BoxConstraints<Vector> box;
             create_symm_lapl_test_data(comm, A, b, box);
+            box.lower_bound() = nullptr;
 
             InputParameters params;
             // params.set("verbose", true);
             params.set("barrier_parameter", 1e-5);
-            params.set("barrier_thickness", 0.5);
+            params.set("barrier_thickness", 0.01);
             params.set("barrier_parameter_shrinking_factor", 0.7);
+            params.set("min_barrier_parameter", 1e-8);
             params.set("verbose", verbose);
             params.set("function_type", barrier_function_type);
 
@@ -183,32 +185,33 @@ namespace utopia {
             solver.set_box_constraints(box);
             solver.read(params);
 
-            Vector x(layout(b));
+            Vector x(layout(b), 0.);
             utopia_test_assert(solver.solve(A, b, x));
 
-            if (Traits::Backend == PETSC) {
-                rename("x", x);
-                write("X.m", x);
+            // if (Traits::Backend == PETSC) {
+            //     rename("x", x);
+            //     write("X.m", x);
 
-                if (box.has_lower_bound()) {
-                    rename("lb", *box.lower_bound());
-                    write("LB.m", *box.lower_bound());
-                }
+            //     if (box.has_lower_bound()) {
+            //         rename("lb", *box.lower_bound());
+            //         write("LB.m", *box.lower_bound());
+            //     }
 
-                if (box.has_upper_bound()) {
-                    rename("ub", *box.upper_bound());
-                    write("UB.m", *box.upper_bound());
-                }
+            //     if (box.has_upper_bound()) {
+            //         rename("ub", *box.upper_bound());
+            //         write("UB.m", *box.upper_bound());
+            //     }
 
-                rename("a", A);
-                write("A.m", A);
+            //     rename("a", A);
+            //     write("A.m", A);
 
-                rename("b", b);
-                write("B.m", b);
-            }
+            //     rename("b", b);
+            //     write("B.m", b);
+            // }
         }
 
         void log_barrier_qp_solver_test() {
+            // log_barrier_qp_solver_test("LogBarrierFunction", true);
             log_barrier_qp_solver_test("LogBarrierFunction", false);
             // log_barrier_qp_solver_test("BoundedLogBarrierFunction", true);
         }

@@ -105,6 +105,8 @@ namespace utopia {
                         d = zero;
                     }
 
+                    assert(d > 0);
+
                     diff_view.set(i, d);
                 });
         }
@@ -127,6 +129,8 @@ namespace utopia {
                     if (d == 0.) {
                         d = zero;
                     }
+
+                    assert(d > 0);
 
                     diff_view.set(i, d);
                 });

@@ -48,18 +48,28 @@ namespace utopia {
             auto d_hat = barrier_thickness_;
 
             // Currently it is not adaptive like in the paper
-            auto stiffness = this->current_barrier_parameter_;
+            auto stiffness = barrier_stiffness();
+            const Scalar sign = -1;
+
+            // diff = u - x
 
             parallel_for(
                 local_range_device(diff), UTOPIA_LAMBDA(const SizeType i) {
                     auto d_i = diff_view.get(i);
                     auto d_m_d_hat = d_i - d_hat;
 
-                    if (d_m_d_hat > 0) {
+                    // ((u - x) - d_hat) * (- 2 * (u - x) * log((u-x)/d_hat) + d_hat - (u - x))/(u - x)
+                    // (d - d_hat) * (-2 * d * log(d/d_hat) + d_hat - d)/d
+                    // d_m_d_hat * (-2 d * log(d_div_d_hat) -  d_m_d_hat)/d
+
+                    if (d_m_d_hat < 0) {
                         // Inside the thickness of the barrier
                         auto d_div_d_hat = d_i / d_hat;
-                        auto b_g = 2 * device::log(d_div_d_hat) + (d_m_d_hat)*d_div_d_hat;
-                        b_g *= -stiffness * d_m_d_hat;
+                        // auto d_hat_div_d = d_hat / d_i;
+                        auto b_g = d_m_d_hat * (-2 * device::log(d_div_d_hat) - d_m_d_hat);
+                        b_g *= sign * stiffness / d_i;
+
+                        assert(b_g == b_g);
 
                         auto g_i = g_view.get(i);
                         g_view.set(i, g_i + b_g);
@@ -74,21 +84,28 @@ namespace utopia {
                 auto d_hat = barrier_thickness_;
 
                 // Currently it is not adaptive like in the paper
-                auto stiffness = this->current_barrier_parameter_;
+                auto stiffness = barrier_stiffness();
+                const Scalar sign = -1;
 
                 parallel_for(
                     local_range_device(diff), UTOPIA_LAMBDA(const SizeType i) {
                         auto d_i = diff_view.get(i);
                         auto d_m_d_hat = d_i - d_hat;
 
-                        if (d_m_d_hat > 0) {
+                        // diff = u - x
+                        // - d_hat*d_hat/(d_i*d_i) - 2*d_hat/d_i + 2*log(d_i/d_hat) + 3
+                        //
+
+                        if (d_m_d_hat < 0) {
                             // Inside the thickness of the barrier
-                            auto d_div_d_hat = d_i / d_hat;
-                            auto a = 2 * device::log(d_div_d_hat) + (d_m_d_hat)*d_div_d_hat;
-                            auto b = d_m_d_hat * (2 * d_div_d_hat + d_div_d_hat - d_m_d_hat * d_hat / (d_i * d_i));
-                            auto b_H = -stiffness * (a + b);
+                            auto b_H = -sign * stiffness * (d_hat * d_hat) / (d_i * d_i) - 2.0 * d_hat / d_i +
+                                       2 * device::log(d_i / d_hat) + 3;
+
+                            assert(b_H == b_H);
 
                             diff_view.set(i, b_H);
+                        } else {
+                            diff_view.set(i, 0.);
                         }
                     });
             }
@@ -146,7 +163,8 @@ namespace utopia {
             auto d_hat = barrier_thickness_;
 
             // Currently it is not adaptive like in the paper
-            auto stiffness = this->current_barrier_parameter_;
+            auto stiffness = barrier_stiffness();
+            const Scalar sign = -1;
 
             Scalar b_val = 0.;
             parallel_reduce(
@@ -155,10 +173,10 @@ namespace utopia {
                     auto d_i = diff_view.get(i);
                     auto d_m_d_hat = d_i - d_hat;
 
-                    if (d_m_d_hat > 0) {
+                    if (d_m_d_hat < 0) {
                         auto d_div_d_hat = d_i / d_hat;
                         // Inside the thickness of the barrier
-                        return -stiffness * d_m_d_hat * d_m_d_hat * device::log(d_div_d_hat);
+                        return sign * stiffness * d_m_d_hat * d_m_d_hat * device::log(d_div_d_hat);
                     } else {
                         return 0.0;
                     }
@@ -228,6 +246,11 @@ namespace utopia {
             }
 
             return true;
+        }
+
+        inline Scalar barrier_stiffness() const {
+            return this->current_barrier_parameter_;
+            // return 1;
         }
 
     private:
