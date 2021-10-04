@@ -47,6 +47,12 @@ namespace utopia {
             function_->set_box_constraints(make_ref(this->get_box_constraints()));
             function_->reset();
 
+            if (newton_->verbose()) {
+                if (x.comm().rank() == 0) {
+                    utopia::out() << "[Status] function_type: " << function_->function_type() << "\n";
+                }
+            }
+
             if (linear_solver_pass_) {
                 // One linear solver pass
                 Matrix H;

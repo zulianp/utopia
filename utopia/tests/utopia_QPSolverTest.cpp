@@ -160,37 +160,10 @@ namespace utopia {
             // Linear solve first to get closer to solution
             cg.solve(A, b, x);
             barrier.project_onto_feasibile_region(x);
-
-            // if (Traits::Backend == PETSC) {
-            //     rename("x0", x);
-            //     write("X0.m", x);
-            // }
-
             newton.solve(barrier, x);
-
-            // if (Traits::Backend == PETSC) {
-            //     rename("x", x);
-            //     write("X.m", x);
-
-            //     if (box.has_lower_bound()) {
-            //         rename("lb", *box.lower_bound());
-            //         write("LB.m", *box.lower_bound());
-            //     }
-
-            //     if (box.has_upper_bound()) {
-            //         rename("ub", *box.upper_bound());
-            //         write("UB.m", *box.upper_bound());
-            //     }
-
-            //     rename("a", A);
-            //     write("A.m", A);
-
-            //     rename("b", b);
-            //     write("B.m", b);
-            // }
         }
 
-        void log_barrier_qp_solver_test() {
+        void log_barrier_qp_solver_test(const std::string &barrier_function_type, const bool verbose) {
             auto &&comm = Comm::get_default();
 
             Matrix A;
@@ -201,7 +174,10 @@ namespace utopia {
             InputParameters params;
             // params.set("verbose", true);
             params.set("barrier_parameter", 1e-5);
+            params.set("barrier_thickness", 0.5);
             params.set("barrier_parameter_shrinking_factor", 0.7);
+            params.set("verbose", verbose);
+            params.set("function_type", barrier_function_type);
 
             LogBarrierQPSolver<Matrix, Vector> solver;
             solver.set_box_constraints(box);
@@ -210,26 +186,31 @@ namespace utopia {
             Vector x(layout(b));
             utopia_test_assert(solver.solve(A, b, x));
 
-            // if (Traits::Backend == PETSC) {
-            //     rename("x", x);
-            //     write("X.m", x);
+            if (Traits::Backend == PETSC) {
+                rename("x", x);
+                write("X.m", x);
 
-            //     if (box.has_lower_bound()) {
-            //         rename("lb", *box.lower_bound());
-            //         write("LB.m", *box.lower_bound());
-            //     }
+                if (box.has_lower_bound()) {
+                    rename("lb", *box.lower_bound());
+                    write("LB.m", *box.lower_bound());
+                }
 
-            //     if (box.has_upper_bound()) {
-            //         rename("ub", *box.upper_bound());
-            //         write("UB.m", *box.upper_bound());
-            //     }
+                if (box.has_upper_bound()) {
+                    rename("ub", *box.upper_bound());
+                    write("UB.m", *box.upper_bound());
+                }
 
-            //     rename("a", A);
-            //     write("A.m", A);
+                rename("a", A);
+                write("A.m", A);
 
-            //     rename("b", b);
-            //     write("B.m", b);
-            // }
+                rename("b", b);
+                write("B.m", b);
+            }
+        }
+
+        void log_barrier_qp_solver_test() {
+            log_barrier_qp_solver_test("LogBarrierFunction", false);
+            // log_barrier_qp_solver_test("BoundedLogBarrierFunction", true);
         }
 
         void MPRGP_test() const {

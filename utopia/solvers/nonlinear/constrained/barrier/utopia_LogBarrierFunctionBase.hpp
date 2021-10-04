@@ -24,6 +24,8 @@ namespace utopia {
         virtual void extend_gradient(const Vector &x, Vector &g) const = 0;
         virtual void extend_value(const Vector &x, Scalar &value) const = 0;
 
+        virtual std::string function_type() const = 0;
+
         bool project_onto_feasibile_region(Vector &) const override {
             assert(false);
             return false;

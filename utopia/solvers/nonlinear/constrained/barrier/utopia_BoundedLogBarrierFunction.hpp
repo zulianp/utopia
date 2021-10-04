@@ -27,6 +27,8 @@ namespace utopia {
                                   const std::shared_ptr<BoxConstraints> &box)
             : Super(unconstrained, box) {}
 
+        inline std::string function_type() const override { return "BoundedLogBarrierFunction"; }
+
         void read(Input &in) override {
             Super::read(in);
             if (!Options()

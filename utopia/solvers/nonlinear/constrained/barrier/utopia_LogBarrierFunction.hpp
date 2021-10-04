@@ -26,6 +26,8 @@ namespace utopia {
         LogBarrierFunction(const std::shared_ptr<Function> &unconstrained, const std::shared_ptr<BoxConstraints> &box)
             : Super(unconstrained, box) {}
 
+        inline std::string function_type() const override { return "LogBarrierFunction"; }
+
         void extend_hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const override {
             Vector diff;
 
