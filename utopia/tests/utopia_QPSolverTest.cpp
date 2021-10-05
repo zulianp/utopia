@@ -188,26 +188,26 @@ namespace utopia {
             Vector x(layout(b), 0.);
             utopia_test_assert(solver.solve(A, b, x));
 
-            // if (Traits::Backend == PETSC) {
-            //     rename("x", x);
-            //     write("X.m", x);
+            if (Traits::Backend == PETSC) {
+                rename("x", x);
+                write("X.m", x);
 
-            //     if (box.has_lower_bound()) {
-            //         rename("lb", *box.lower_bound());
-            //         write("LB.m", *box.lower_bound());
-            //     }
+                if (box.has_lower_bound()) {
+                    rename("lb", *box.lower_bound());
+                    write("LB.m", *box.lower_bound());
+                }
 
-            //     if (box.has_upper_bound()) {
-            //         rename("ub", *box.upper_bound());
-            //         write("UB.m", *box.upper_bound());
-            //     }
+                if (box.has_upper_bound()) {
+                    rename("ub", *box.upper_bound());
+                    write("UB.m", *box.upper_bound());
+                }
 
-            //     rename("a", A);
-            //     write("A.m", A);
+                rename("a", A);
+                write("A.m", A);
 
-            //     rename("b", b);
-            //     write("B.m", b);
-            // }
+                rename("b", b);
+                write("B.m", b);
+            }
         }
 
         void log_barrier_qp_solver_test() {

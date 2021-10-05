@@ -45,7 +45,7 @@ namespace utopia {
             }
 
             inline AssemblyMode mode() const { return mode_; }
-            inline void set_mode(AssemblyMode mode) const { mode_ = mode; }
+            inline void set_mode(AssemblyMode mode) { mode_ = mode; }
 
             void prepare() {
                 if (mode_ == OVERWRITE_MODE) {
