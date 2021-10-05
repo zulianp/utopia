@@ -75,6 +75,10 @@ namespace utopia {
                         g_view.set(i, g_i + b_g);
                     }
                 });
+
+            // static int iter = 0;
+            // rename("g", g);
+            // write("G" + std::to_string(iter++) + ".m", g);
         }
 
         // !!! diff is modified inside !!!

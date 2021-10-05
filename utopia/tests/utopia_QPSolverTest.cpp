@@ -73,7 +73,7 @@ namespace utopia {
         }
 
         static void create_symm_lapl_test_data(Comm &comm, Matrix &A, Vector &b, BoxConstraints<Vector> &box) {
-            SizeType n = 100;
+            SizeType n = 20;
             A.sparse(layout(comm, Traits::decide(), Traits::decide(), n, n), 3, 2);
             assemble_symmetric_laplacian_1D(A, true);
 
@@ -180,6 +180,7 @@ namespace utopia {
             params.set("min_barrier_parameter", 1e-8);
             params.set("verbose", verbose);
             params.set("function_type", barrier_function_type);
+            params.set("max-it", 10);
 
             LogBarrierQPSolver<Matrix, Vector> solver;
             solver.set_box_constraints(box);
@@ -214,6 +215,194 @@ namespace utopia {
             // log_barrier_qp_solver_test("LogBarrierFunction", true);
             log_barrier_qp_solver_test("LogBarrierFunction", false);
             // log_barrier_qp_solver_test("BoundedLogBarrierFunction", true);
+
+            // Utopia::Abort("BYE");
+        }
+
+        void interior_point_qp_solver_test() {
+            auto &&comm = Comm::get_default();
+
+            Matrix A;
+            Vector b;
+            BoxConstraints<Vector> box;
+            create_symm_lapl_test_data(comm, A, b, box);
+
+            Vector x(layout(b), 0.), lambda(layout(b), 0.), slack(layout(b), 0.);
+            Vector buff(layout(b), 0.);
+            Scalar sigma = 0;  // in [0, 1]
+            Scalar mu = 0.0;
+
+            ConjugateGradient<Matrix, Vector, HOMEMADE> solver;
+            // solver.verbose(true);
+
+            // duality measure: mu = lambda^T s / m, m = number of lagr mult
+            // sigma > 0
+            // S = diag(s), Lambda = diag(lambda)
+            // e = 1
+
+            // r_d = A * x + T^T * lambda - b
+            // r_p = T * x - u + s
+            // r_s = e_mul(s,lambda,e) - sigma * mu * vec(1)
+
+            auto duality_measure = [&](const Vector &lambda, const Vector &s) -> Scalar {
+                return dot(lambda, s) / size(lambda);
+            };
+
+            auto residual_d = [&](const Vector &x, const Vector &lambda, Vector &r_d) -> bool {
+                r_d = A * x + /* T*^T */ lambda - b;
+                return true;
+            };
+
+            auto residual_p = [&](const Vector &x, const Vector &s, Vector &r_p) -> bool {
+                r_p = /* T* */ x - *box.upper_bound() + s;
+                return true;
+            };
+
+            auto residual_s = [&](const Vector &lambda, const Vector &s, Vector &r_s) -> bool {
+                buff.set(sigma * mu);
+                r_s = e_mul(s, lambda);
+                r_s -= buff;
+                return true;
+            };
+
+            auto grad_f = [&A, &b](const Vector &x, Vector &g) -> bool {
+                g = A * x - b;
+                return true;
+            };
+
+            auto hessian_f = [&A](const Vector &x, Matrix &H) -> bool {
+                H = A;
+                return true;
+            };
+
+            auto is_positive = [](const Vector &x) -> bool {
+                auto x_view = local_view_device(x);
+
+                int n_violations = 0;
+                parallel_reduce(
+                    local_range_device(x),
+                    UTOPIA_LAMBDA(const SizeType i)->int {
+                        auto xi = x_view.get(i);
+                        return (xi <= 0) ? 1 : 0;
+                    },
+                    n_violations);
+
+                n_violations = x.comm().sum(n_violations);
+                utopia::out() << "n_violations: " << n_violations << "\n";
+                return n_violations == 0;
+            };
+
+            auto compute_alpha = [&buff](const Vector &x, const Vector &delta_x) -> Scalar {
+                {
+                    auto x_view = local_view_device(x);
+                    auto delta_x_view = local_view_device(delta_x);
+
+                    buff.set(1.);
+
+                    auto buff_view = local_view_device(buff);
+
+                    parallel_for(
+                        local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                            auto xi = x_view.get(i);
+                            auto dxi = delta_x_view.get(i);
+
+                            if (dxi < 0) {
+                                auto val = -xi / dxi;
+                                buff_view.set(i, val);
+                            }
+                        });
+                }
+
+                return min(buff);
+            };
+
+            Matrix H;
+            Vector g(layout(b), 0.), delta_x(layout(b), 0.), delta_lambda, delta_s, rd, rp, rs, rs_aff;
+
+            // Missing transfer op
+            lambda = A * x - b;
+            slack = x - *box.upper_bound();
+            slack.e_max(1e-8);
+            lambda.e_max(1e-8);
+
+            assert(is_positive(slack));
+            assert(is_positive(lambda));
+
+            for (int k = 0; k < 10; ++k) {
+                sigma = 0.;
+
+                H = A;
+                buff = e_mul(1. / slack, lambda);
+                H.shift_diag(buff);
+
+                residual_d(x, lambda, rd);
+                residual_p(x, slack, rp);
+                residual_s(lambda, slack, rs);
+
+                g = e_mul(rs, 1. / slack);
+                g -= e_mul(e_mul(rp, lambda), 1. / slack);
+                g -= rd;
+
+                delta_x.set(0.);
+                if (!solver.solve(H, g, delta_x)) {
+                    assert(false);
+                    break;
+                }
+
+                //////////////////////////////////////////////////////////////////////
+
+                delta_lambda = e_mul(1. / slack, e_mul(lambda, delta_x) + e_mul(lambda, rp - rs));
+                delta_s = -e_mul(1. / lambda, rs + e_mul(slack, delta_lambda));
+
+                /////////////////////////////////////////////////////////////////////////
+                // https://en.wikipedia.org/wiki/Mehrotra_predictor%E2%80%93corrector_method
+                mu = duality_measure(lambda, slack);
+                assert(mu == mu);
+
+                auto alpha_primal = compute_alpha(x, delta_x);
+                assert(alpha_primal == alpha_primal);
+
+                auto alpha_dual = compute_alpha(slack, delta_s);
+                assert(alpha_dual == alpha_dual);
+
+                auto mu_aff = dot(slack + alpha_primal * delta_s, lambda + alpha_dual * delta_lambda);
+                sigma = pow(mu_aff / mu, 3);
+                assert(sigma == sigma);
+
+                //////////////////////////////////////
+
+                buff.set(sigma * mu);
+                rs_aff = e_mul(slack, lambda) + e_mul(delta_s, delta_lambda) - buff;
+
+                g = e_mul(rs_aff, 1. / slack);
+                g -= e_mul(e_mul(rp, lambda), 1. / slack);
+                g -= rd;
+
+                delta_x.set(0.);
+                if (!solver.solve(H, g, delta_x)) {
+                    assert(false);
+                    break;
+                }
+
+                delta_lambda = e_mul(1. / slack, e_mul(lambda, delta_x) + e_mul(lambda, rp - rs_aff));
+                delta_s = -e_mul(1. / lambda, rs_aff + e_mul(slack, delta_lambda));
+
+                ////////////////////////////////////////
+
+                // Chooese tau_k and set alpha = min(alpha^pri, alpha^dual);
+                Scalar alpha = std::min(alpha_primal, alpha_dual);
+                assert(alpha == alpha);
+
+                x += alpha * delta_x;
+                lambda += alpha * delta_lambda;
+                slack += alpha * delta_s;
+
+                Scalar norm_dx = norm1(delta_x);
+                utopia::out() << k << " norm_dx: " << norm_dx << "\n";
+
+                assert(is_positive(slack));
+                assert(is_positive(lambda));
+            }
         }
 
         void MPRGP_test() const {
@@ -322,7 +511,7 @@ namespace utopia {
 
         void run() {
             print_backend_info();
-
+            UTOPIA_RUN_TEST(interior_point_qp_solver_test);
             UTOPIA_RUN_TEST(log_barrier_test);
             UTOPIA_RUN_TEST(log_barrier_qp_solver_test);
             UTOPIA_RUN_TEST(pg_test);
