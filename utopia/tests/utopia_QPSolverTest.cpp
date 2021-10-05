@@ -398,7 +398,13 @@ namespace utopia {
                 slack += alpha * delta_s;
 
                 Scalar norm_dx = norm1(delta_x);
-                utopia::out() << k << " norm_dx: " << norm_dx << "\n";
+                utopia::out() << "iteration:\t" << k << "\n";
+                utopia::out() << "norm_dx:\t" << norm_dx << "\n";
+                utopia::out() << "alpha:\t" << alpha << "\n";
+                utopia::out() << "alpha_primal:\t" << alpha_primal << "\n";
+                utopia::out() << "alpha_dual:\t" << alpha_dual << "\n";
+                utopia::out() << "mu:\t" << mu << "\n";
+                utopia::out() << "mu_aff:\t" << mu_aff << "\n";
 
                 assert(is_positive(slack));
                 assert(is_positive(lambda));
