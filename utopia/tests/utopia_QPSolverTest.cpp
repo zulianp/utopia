@@ -288,7 +288,9 @@ namespace utopia {
                     n_violations);
 
                 n_violations = x.comm().sum(n_violations);
-                utopia::out() << "n_violations: " << n_violations << "\n";
+
+                if (n_violations) utopia::out() << "n_violations: " << n_violations << "/" << x.size() << "\n";
+
                 return n_violations == 0;
             };
 
@@ -359,13 +361,15 @@ namespace utopia {
                 mu = duality_measure(lambda, slack);
                 assert(mu == mu);
 
-                auto alpha_primal = compute_alpha(x, delta_x);
+                Scalar alpha_primal = compute_alpha(x, delta_x);
                 assert(alpha_primal == alpha_primal);
 
-                auto alpha_dual = compute_alpha(slack, delta_s);
+                Scalar alpha_dual = compute_alpha(slack, delta_s);
                 assert(alpha_dual == alpha_dual);
 
-                auto mu_aff = dot(slack + alpha_primal * delta_s, lambda + alpha_dual * delta_lambda);
+                Scalar mu_aff = dot(slack + alpha_primal * delta_s, lambda + alpha_dual * delta_lambda);
+                mu_aff /= size(lambda);
+
                 sigma = pow(mu_aff / mu, 3);
                 assert(sigma == sigma);
 
