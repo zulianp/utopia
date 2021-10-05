@@ -293,7 +293,7 @@ namespace utopia {
         bool is_time_dependent() const override { return false; }
 
         inline bool verbose() const { return verbose_; }
-        inline void verbose(const bool val) const { verbose_ = val; }
+        inline void verbose(const bool val) { verbose_ = val; }
 
         bool report_solution(const Vector_t &x) override { return space_->write(output_path_, x); }
 
