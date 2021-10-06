@@ -1556,7 +1556,7 @@ namespace utopia {
     }
 
     static void petsc_specific() {
-        UTOPIA_RUN_TEST(petsc_rectangular_block_mat_from_file);
+        // UTOPIA_RUN_TEST(petsc_rectangular_block_mat_from_file);
         UTOPIA_RUN_TEST(petsc_rectangular_block_mat);
         UTOPIA_RUN_TEST(petsc_memcheck);
         UTOPIA_RUN_TEST(petsc_line_search);

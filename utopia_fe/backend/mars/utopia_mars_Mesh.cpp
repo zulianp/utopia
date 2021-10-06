@@ -139,6 +139,8 @@ namespace utopia {
         }
 
         void Mesh::unit_cube(const SizeType &nx, const SizeType &ny, const SizeType &nz) {
+            UTOPIA_TRACE_REGION_BEGIN("Mesh::unit_cube");
+
             // 2D
             if (nz == 0) {
                 using DMesh = ::mars::DistributedMesh<::mars::ElementType::Quad4>;
@@ -158,6 +160,8 @@ namespace utopia {
 
                 impl_->wrap(mesh);
             }
+
+            UTOPIA_TRACE_REGION_END("Mesh::unit_cube");
         }
 
         void Mesh::init() {}
