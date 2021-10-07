@@ -77,7 +77,7 @@ void mars_solve_aux(Input &in) {
     ConjugateGradient<Matrix_t, Vector_t> cg;
     cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix_t, Vector_t>>());
     cg.apply_gradient_descent_step(true);
-    cg.max_it(20);
+    cg.max_it(200);
     cg.verbose(true);
 
     utopia_test_assert(cg.solve(mat, rhs, x));
@@ -124,11 +124,11 @@ void mars_poisson_aux(int nx, int ny, int nz) {
     mars_solve_aux(params);
 }
 
-void mars_linear_elasticity() { mars_linear_elasticity_aux(200, 200, 200); }
+void mars_linear_elasticity() { mars_linear_elasticity_aux(20, 20, 20); }
 
 void mars_poisson_2D() { mars_poisson_aux(10, 11, 0); }
 
-void mars_poisson_3D() { mars_poisson_aux(300, 240, 200); }
+void mars_poisson_3D() { mars_poisson_aux(30, 24, 20); }
 
 void mars_assembler() {
     UTOPIA_RUN_TEST(mars_poisson_2D);

@@ -253,12 +253,14 @@ namespace utopia {
             }
         }
 
-        void Mesh::scale(const Scalar &scale_factor) {
+        void Mesh::scale(const std::vector<Scalar> &scale_factors) {
             ::stk::mesh::Selector s_universal = meta_data().universal_part();
             const auto &node_buckets = bulk_data().get_buckets(::stk::topology::NODE_RANK, s_universal);
             auto *coords = meta_data().coordinate_field();
 
             const int dim = spatial_dimension();
+
+            assert(dim <= int(scale_factors.size()));
 
             for (const auto &ib : node_buckets) {
                 const auto &b = *ib;
@@ -269,10 +271,16 @@ namespace utopia {
                     Scalar *points = (Scalar *)::stk::mesh::field_data(*coords, node);
 
                     for (int d = 0; d < dim; ++d) {
-                        points[d] *= scale_factor;
+                        points[d] *= scale_factors[d];
                     }
                 }
             }
+        }
+
+        void Mesh::scale(const Scalar &scale_factor) {
+            const int dim = spatial_dimension();
+            std::vector<Scalar> sf(dim, scale_factor);
+            scale(sf);
         }
 
         bool Mesh::has_aura() const { return bulk_data().is_automatic_aura_on(); }
