@@ -3,13 +3,14 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_kokkos_Op.hpp"
 
 namespace utopia {
     namespace kokkos {
         namespace kernels {
 
             template <int Dim, typename Scalar, class Field, class Grad, class Fun, class Measure>
-            class TransportOp {
+            class TransportOp : public TestTrialOp {
             public:
                 UTOPIA_INLINE_FUNCTION TransportOp(const Field &vector_field,
                                                    const Grad &grad,
