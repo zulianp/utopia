@@ -37,6 +37,8 @@ namespace utopia {
         using Scalar = typename Traits::Scalar;
         using SizeType = typename Traits::SizeType;
         using Comm = typename Traits::Communicator;
+        using IndexArray = typename Traits::IndexArray;
+        using IndexSet = typename Traits::IndexSet;
 
         static void print_backend_info() {
             if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
@@ -409,7 +411,6 @@ namespace utopia {
 
                 delta_x.set(0.);
                 if (!solver.solve(H, g, delta_x)) {
-                    assert(false);
                     // break;
                 }
 
@@ -447,7 +448,6 @@ namespace utopia {
 
                 delta_x.set(0.);
                 if (!solver.solve(H, g, delta_x)) {
-                    assert(false);
                     // break;
                 }
 
@@ -640,9 +640,94 @@ namespace utopia {
     template <class Matrix, class Vector>
     class PQPSolverTest {
     public:
+        using Traits = utopia::Traits<Matrix>;
+        using Scalar = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm = typename Traits::Communicator;
+        using IndexArray = typename Traits::IndexArray;
+        using IndexSet = typename Traits::IndexSet;
+
         void run() {
+            UTOPIA_RUN_TEST(MPRGP_DD);
             // FIXME
             UTOPIA_RUN_TEST(poly_qp);
+        }
+
+        void MPRGP_DD() {
+            // Subdomains (n process) +
+
+            auto &&comm = Comm::get_default();
+
+            SizeType n = 6;
+            // if (Traits::Backend == BLAS) {
+            //     n = 20;
+            // }
+
+            Matrix A;
+            Vector b;
+            BoxConstraints<Vector> box;
+            QPSolverTest<Matrix, Vector>::create_symm_lapl_test_data(comm, A, b, box, n);
+
+            Vector x(layout(b), 0.);
+
+            auto r = row_range(A);
+            SizeType n_local = r.extent();
+            IndexSet min_idx(n_local, A.rows()), max_idx(n_local, 0);
+
+            A.read([&](const SizeType i, const SizeType j, const Scalar) {
+                min_idx[i - r.begin()] = std::min(SizeType(min_idx[i - r.begin()]), j);
+                max_idx[i - r.begin()] = std::max(SizeType(max_idx[i - r.begin()]), j);
+            });
+
+            SizeType n_interface = 0;
+            std::stringstream ss;
+            for (SizeType i = 0; i < n_local; ++i) {
+                if (!r.inside(min_idx[i]) || !r.inside(max_idx[i])) {
+                    ++n_interface;
+                    ss << (i + r.begin()) << " ";
+                }
+            }
+
+            IndexSet local_interface_idx(n_interface, 0);
+            IndexSet local_to_global(n_interface, 0);
+
+            n_interface = 0;
+            for (SizeType i = 0; i < n_local; ++i) {
+                if (!r.inside(min_idx[i]) || !r.inside(max_idx[i])) {
+                    local_to_global[n_interface] = (i + r.begin());
+                    local_interface_idx[n_interface++] = i;
+                }
+            }
+
+            SizeType interface_offset = 0;
+            x.comm().exscan_sum(&n_interface, &interface_offset, 1);
+
+            x.comm().synched_print(ss.str());
+
+            Matrix A_II_view;
+            local_block_view(A, A_II_view);
+
+            Matrix A_II = A_II_view;
+            set_zero_rows(A_II, local_interface_idx, 1);
+
+            for (SizeType r = 0; r < A.comm().size(); ++r) {
+                A.comm().barrier();
+
+                if (r == A.comm().rank()) {
+                    std::cout << "interface_offset: " << interface_offset << std::endl;
+
+                    for (SizeType i = 0; i < n_interface; ++i) {
+                        std::cout << (interface_offset + i) << " -> " << local_to_global[i] << " ";
+                    }
+
+                    std::cout << "\n";
+                    disp(A_II);
+                }
+            }
+
+            A.comm().barrier();
+
+            Utopia::Abort("BYE!");
         }
 
         void poly_qp() {
@@ -787,10 +872,10 @@ namespace utopia {
 
     static void qp_solver() {
 #ifdef UTOPIA_WITH_PETSC
+        PQPSolverTest<PetscMatrix, PetscVector>().run();
         QPSolverTest<PetscMatrix, PetscVector>().run();
         QPSolverTest<PetscMatrix, PetscVector>().run_GS_QR();
 
-        PQPSolverTest<PetscMatrix, PetscVector>().run();
         MonotoneMGTest<PetscMatrix, PetscVector>().run();
         // ProjectedGaussSeidelNewTest<PetscMatrix, PetscVector>().run();
 
