@@ -227,19 +227,17 @@ namespace utopia {
         void interior_point_qp_solver_test() {
             auto &&comm = Comm::get_default();
 
-            Matrix A;
+            Matrix A, B;
             Vector b;
             BoxConstraints<Vector> box;
-            create_symm_lapl_test_data(comm, A, b, box, 1000);
+            create_symm_lapl_test_data(comm, A, b, box, 2000);
 
             Vector x(layout(b), 0.), lambda(layout(b), 0.), slack(layout(b), 0.);
             Vector buff(layout(b), 0.);
             Scalar sigma = 0;  // in [0, 1]
             Scalar mu = 0.0;
 
-            rename("x", x);
-            rename("lambda", lambda);
-            rename("slack", slack);
+            B.identity(layout(A), 1.0);
 
             ConjugateGradient<Matrix, Vector, HOMEMADE> solver;
             // solver.verbose(true);
@@ -258,12 +256,12 @@ namespace utopia {
             };
 
             auto residual_d = [&](const Vector &x, const Vector &lambda, Vector &r_d) -> bool {
-                r_d = A * x + /* T*^T */ lambda - b;
+                r_d = A * x + transpose(B) * lambda - b;
                 return true;
             };
 
             auto residual_p = [&](const Vector &x, const Vector &s, Vector &r_p) -> bool {
-                r_p = /* T* */ x - *box.upper_bound() + s;
+                r_p = B * x - *box.upper_bound() + s;
                 return true;
             };
 
@@ -321,6 +319,30 @@ namespace utopia {
                 }
             };
 
+            auto compute_alpha_with_tau = [&buff](const Vector &x, const Vector &delta_x, const Scalar tau) -> Scalar {
+                {
+                    auto x_view = local_view_device(x);
+                    auto delta_x_view = local_view_device(delta_x);
+
+                    buff.set(1.);
+
+                    auto buff_view = local_view_device(buff);
+
+                    parallel_for(
+                        local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                            auto xi = x_view.get(i);
+                            auto dxi = delta_x_view.get(i);
+
+                            if (dxi < 0 && xi != 0) {
+                                auto val = -xi * tau / dxi;
+                                buff_view.set(i, val);
+                            }
+                        });
+                }
+
+                return min(buff);
+            };
+
             auto compute_alpha = [&buff](const Vector &x, const Vector &delta_x) -> Scalar {
                 {
                     auto x_view = local_view_device(x);
@@ -346,21 +368,22 @@ namespace utopia {
             };
 
             Matrix H;
-            Vector g(layout(b), 0.), delta_x(layout(b), 0.), delta_lambda, delta_slack, rd, rp, rs, rs_aff, slack_inv;
+            Vector g(layout(b), 0.), delta_x(layout(b), 0.), delta_lambda, delta_slack, rd, rp, rs, rs_aff, slack_inv,
+                lambda_inv;
 
-            if (!solver.solve(A, b, x)) {
-                assert(false);
-            }
+            // if (!solver.solve(A, b, x)) {
+            //     assert(false);
+            // }
 
             x = min(x, *box.upper_bound());
 
             // Missing transfer op
-            lambda = A * x;
-            lambda = b - lambda;
+            // lambda = A * x;
+            // lambda = b - lambda;
+            lambda.values(layout(x), 1.);
 
-            slack = *box.upper_bound() - x;
-            slack.e_max(1e-8);
-            lambda.e_max(1e-8);
+            slack = *box.upper_bound() - B * x;
+            slack.e_max(1e-8);  // 0.1
 
             assert(is_positive(slack));
             assert(is_positive(lambda));
@@ -368,24 +391,32 @@ namespace utopia {
             // auto r = range(buff);
             // SizeType N = b.size();
 
-            int max_it = 20;
+            int max_it = 100;
             for (int k = 0; k < max_it; ++k) {
+                mu = duality_measure(lambda, slack);
                 sigma = 0;
-
-                H = A;
-                e_pseudo_inv(slack, slack_inv);
-                buff = e_mul(slack_inv, lambda);
-
-                apply_bc(buff);
-
-                H.shift_diag(buff);
 
                 residual_d(x, lambda, rd);
                 residual_p(x, slack, rp);
                 residual_s(lambda, slack, rs);
 
-                g = e_mul(rs, slack_inv);
-                g -= e_mul(e_mul(rp, lambda), slack_inv);
+                H = A;
+                e_pseudo_inv(slack, slack_inv);
+                e_pseudo_inv(lambda, lambda_inv);
+
+                /// FIXME begin
+                Vector temp_vec = e_mul(slack_inv, lambda);
+                apply_bc(temp_vec);
+
+                Matrix temp_mat = diag(temp_vec);
+
+                Matrix temp_mat_2 = transpose(B) * temp_mat * B;
+                H += temp_mat_2;
+                /// FIXME end
+
+                // H.shift_diag(buff);
+
+                g = -transpose(B) * e_mul(e_mul(rp, lambda) - rs, slack_inv);
                 g -= rd;
 
                 apply_bc(g);
@@ -398,74 +429,94 @@ namespace utopia {
 
                 //////////////////////////////////////////////////////////////////////
 
-                // delta_lambda = e_mul(1. / slack, e_mul(lambda, delta_x) + e_mul(lambda, rp - rs));
-                // delta_slack = -e_mul(1. / lambda, rs + e_mul(slack, delta_lambda));
+                delta_lambda = e_mul(slack_inv, e_mul(lambda, B * delta_x) + e_mul(lambda, rp) - rs);
+                delta_slack = -e_mul(lambda_inv, rs + e_mul(slack, delta_lambda));
 
-                delta_lambda = -A * delta_x;
+                // delta_lambda = -A * delta_x;
 
                 // apply_bc(delta_lambda);
                 // apply_bc(delta_slack);
 
                 // /////////////////////////////////////////////////////////////////////////
                 // // https://en.wikipedia.org/wiki/Mehrotra_predictor%E2%80%93corrector_method
-                mu = duality_measure(lambda, slack);
+                // mu = duality_measure(lambda, slack);
                 // assert(mu == mu);
 
-                Scalar alpha_primal = compute_alpha(slack, -delta_x);
+                Scalar alpha_primal = compute_alpha(slack, delta_slack);
                 assert(alpha_primal == alpha_primal);
 
-                // Scalar alpha_primal = compute_alpha(slack, delta_slack);
-                // assert(alpha_primal == alpha_primal);
-
                 Scalar alpha_dual = compute_alpha(lambda, delta_lambda);
-                // assert(alpha_dual == alpha_dual);
+                assert(alpha_dual == alpha_dual);
+
+                Scalar alpha = std::min(alpha_primal, alpha_dual);
 
                 // Scalar mu_aff = dot(slack + alpha_primal * delta_slack, lambda + alpha_dual * delta_lambda);
-                // mu_aff /= size(lambda);
-
-                // sigma = pow(mu_aff / mu, 3);
-                // assert(sigma == sigma);
+                Scalar mu_aff = dot(slack + alpha * delta_slack, lambda + alpha * delta_lambda);
+                mu_aff /= size(lambda);
+                sigma = pow(mu_aff / mu, 3);
+                assert(sigma == sigma);
 
                 // //////////////////////////////////////
 
-                // buff.set(sigma * mu);
-                // rs_aff = e_mul(slack, lambda) + e_mul(delta_slack, delta_lambda) - buff;
+                buff.set(sigma * mu);
+                rs_aff = e_mul(slack, lambda) + e_mul(delta_slack, delta_lambda) - buff;
 
-                // g = e_mul(rs_aff, 1. / slack);
-                // g -= e_mul(e_mul(rp, lambda), 1. / slack);
-                // g -= rd;
+                g = -transpose(B) * e_mul(slack_inv, e_mul(lambda, rp) - rs_aff);
+                g -= rd;
 
-                // apply_bc(g);
+                apply_bc(g);
 
-                // delta_x.set(0.);
-                // if (!solver.solve(H, g, delta_x)) {
-                //     assert(false);
-                //     break;
-                // }
+                delta_x.set(0.);
+                if (!solver.solve(H, g, delta_x)) {
+                    assert(false);
+                    break;
+                }
 
-                // delta_lambda = e_mul(1. / slack, e_mul(lambda, delta_x) + e_mul(lambda, rp - rs_aff));
-                // delta_slack = -e_mul(1. / lambda, rs_aff + e_mul(slack, delta_lambda));
+                delta_lambda = e_mul(slack_inv, e_mul(lambda, B * delta_x) + e_mul(lambda, rp) - rs_aff);
+                delta_slack = -e_mul(lambda_inv, rs_aff + e_mul(slack, delta_lambda));
 
                 // ////////////////////////////////////////
 
                 // // Chooese tau_k and set alpha = min(alpha^pri, alpha^dual);
                 Scalar tau = 1;
-                Scalar alpha = tau * alpha_primal;
+                // Scalar alpha_d = 1;
+                // Scalar alpha_p = 1;
+                // Scalar alpha = tau * alpha_primal;
                 // assert(alpha == alpha);
 
+                // Maybe we need to stay above lambda * (1-tau) instead of 0
+
+                alpha_primal = compute_alpha_with_tau(slack, delta_slack, tau);
+                assert(alpha_primal == alpha_primal);
+
+                alpha_dual = compute_alpha_with_tau(lambda, delta_lambda, tau);
+                assert(alpha_dual == alpha_dual);
+
+                // alpha_primal = compute_alpha(slack, delta_slack);
+                // assert(alpha_primal == alpha_primal);
+
+                // alpha_dual = compute_alpha(lambda, delta_lambda);
+                // assert(alpha_dual == alpha_dual);
+
+                alpha = std::min(alpha_primal, alpha_dual);
+
                 x += alpha * delta_x;
-                x = min(x, *box.upper_bound());
+                lambda += alpha * delta_lambda;
+                slack += alpha * delta_slack;
+
+                // x = min(x, *box.upper_bound());
                 // x += 0.5 * delta_x;
 
-                lambda = A * x;
-                lambda = b - lambda;
+                // lambda = A * x;
+                // lambda = b - lambda;
 
-                slack = *box.upper_bound() - x;
+                // slack = *box.upper_bound() - x;
 
                 // lambda += alpha * delta_lambda;
                 // slack += alpha * delta_slack;
 
                 Scalar norm_dx = norm1(delta_x);
+                utopia::out() << "==============================\n";
                 utopia::out() << "iteration:\t" << k << "\n";
                 utopia::out() << "norm_dx:\t" << norm_dx << "\n";
                 utopia::out() << "alpha:\t" << alpha << "\n";
@@ -482,11 +533,15 @@ namespace utopia {
                 //     write("L" + std::to_string(k) + ".m", lambda);
                 // }
 
-                if (norm_dx < 1e-6) {
+                if (((k == max_it - 1) || norm_dx < 1e-6) && Traits::Backend == PETSC) {
                     utopia::out() << "Solution found!\n";
-                    write("X.m", x);
-                    write("S.m", slack);
-                    write("L.m", lambda);
+                    rename("x", x);
+                    rename("lambda", lambda);
+                    rename("slack", slack);
+
+                    write("IP_X.m", x);
+                    write("IP_S.m", slack);
+                    write("IP_L.m", lambda);
                     break;
                 }
 
@@ -494,7 +549,8 @@ namespace utopia {
                 // assert(is_positive(lambda));
             }
 
-            assert(false);
+            // assert(false);
+            // Utopia::Abort("here");
         }
 
         void MPRGP_test() const {

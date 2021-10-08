@@ -97,7 +97,7 @@ namespace utopia {
 
         // Handler
         template <class FE, typename DiffusionCoefficient = typename FE::Scalar>
-        class LaplaceOp : public TestTrialOpParams, public Configurable {
+        class LaplaceOp : public TestTrialOpParams {
         public:
             using UniformKernel = utopia::kokkos::kernels::
                 LaplaceOp<typename FE::Scalar, DiffusionCoefficient, typename FE::Gradient, typename FE::Measure>;
