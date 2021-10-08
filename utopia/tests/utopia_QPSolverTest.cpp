@@ -227,10 +227,15 @@ namespace utopia {
         void interior_point_qp_solver_test() {
             auto &&comm = Comm::get_default();
 
+            SizeType n = 2000;
+            if (Traits::Backend == BLAS) {
+                n = 20;
+            }
+
             Matrix A, B;
             Vector b;
             BoxConstraints<Vector> box;
-            create_symm_lapl_test_data(comm, A, b, box, 2000);
+            create_symm_lapl_test_data(comm, A, b, box, n);
 
             Vector x(layout(b), 0.), lambda(layout(b), 0.), slack(layout(b), 0.);
             Vector buff(layout(b), 0.);
@@ -240,16 +245,8 @@ namespace utopia {
             B.identity(layout(A), 1.0);
 
             ConjugateGradient<Matrix, Vector, HOMEMADE> solver;
+            solver.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector>>());
             // solver.verbose(true);
-
-            // duality measure: mu = lambda^T s / m, m = number of lagr mult
-            // sigma > 0
-            // S = diag(s), Lambda = diag(lambda)
-            // e = 1
-
-            // r_d = A * x + T^T * lambda - b
-            // r_p = T * x - u + s
-            // r_s = e_mul(s,lambda,e) - sigma * mu * vec(1)
 
             auto duality_measure = [&](const Vector &lambda, const Vector &s) -> Scalar {
                 return dot(lambda, s) / size(lambda);
@@ -300,7 +297,7 @@ namespace utopia {
 
                 n_violations = x.comm().sum(n_violations);
 
-                if (n_violations) utopia::out() << "n_violations: " << n_violations << "/" << x.size() << "\n";
+                // if (n_violations) utopia::out() << "n_violations: " << n_violations << "/" << x.size() << "\n";
 
                 return n_violations == 0;
             };
@@ -333,7 +330,7 @@ namespace utopia {
                             auto xi = x_view.get(i);
                             auto dxi = delta_x_view.get(i);
 
-                            if (dxi < 0 && xi != 0) {
+                            if (xi + dxi < (1 - tau) * xi) {
                                 auto val = -xi * tau / dxi;
                                 buff_view.set(i, val);
                             }
@@ -371,15 +368,7 @@ namespace utopia {
             Vector g(layout(b), 0.), delta_x(layout(b), 0.), delta_lambda, delta_slack, rd, rp, rs, rs_aff, slack_inv,
                 lambda_inv;
 
-            // if (!solver.solve(A, b, x)) {
-            //     assert(false);
-            // }
-
             x = min(x, *box.upper_bound());
-
-            // Missing transfer op
-            // lambda = A * x;
-            // lambda = b - lambda;
             lambda.values(layout(x), 1.);
 
             slack = *box.upper_bound() - B * x;
@@ -388,10 +377,9 @@ namespace utopia {
             assert(is_positive(slack));
             assert(is_positive(lambda));
 
-            // auto r = range(buff);
-            // SizeType N = b.size();
-
-            int max_it = 100;
+            bool verbose = Traits::Backend == PETSC;
+            int max_it = 1000;
+            Scalar tol = 1e-8;
             for (int k = 0; k < max_it; ++k) {
                 mu = duality_measure(lambda, slack);
                 sigma = 0;
@@ -414,8 +402,6 @@ namespace utopia {
                 H += temp_mat_2;
                 /// FIXME end
 
-                // H.shift_diag(buff);
-
                 g = -transpose(B) * e_mul(e_mul(rp, lambda) - rs, slack_inv);
                 g -= rd;
 
@@ -424,7 +410,7 @@ namespace utopia {
                 delta_x.set(0.);
                 if (!solver.solve(H, g, delta_x)) {
                     assert(false);
-                    break;
+                    // break;
                 }
 
                 //////////////////////////////////////////////////////////////////////
@@ -432,15 +418,8 @@ namespace utopia {
                 delta_lambda = e_mul(slack_inv, e_mul(lambda, B * delta_x) + e_mul(lambda, rp) - rs);
                 delta_slack = -e_mul(lambda_inv, rs + e_mul(slack, delta_lambda));
 
-                // delta_lambda = -A * delta_x;
-
-                // apply_bc(delta_lambda);
-                // apply_bc(delta_slack);
-
                 // /////////////////////////////////////////////////////////////////////////
                 // // https://en.wikipedia.org/wiki/Mehrotra_predictor%E2%80%93corrector_method
-                // mu = duality_measure(lambda, slack);
-                // assert(mu == mu);
 
                 Scalar alpha_primal = compute_alpha(slack, delta_slack);
                 assert(alpha_primal == alpha_primal);
@@ -469,88 +448,63 @@ namespace utopia {
                 delta_x.set(0.);
                 if (!solver.solve(H, g, delta_x)) {
                     assert(false);
-                    break;
+                    // break;
                 }
 
                 delta_lambda = e_mul(slack_inv, e_mul(lambda, B * delta_x) + e_mul(lambda, rp) - rs_aff);
                 delta_slack = -e_mul(lambda_inv, rs_aff + e_mul(slack, delta_lambda));
 
                 // ////////////////////////////////////////
-
-                // // Chooese tau_k and set alpha = min(alpha^pri, alpha^dual);
                 Scalar tau = 1;
-                // Scalar alpha_d = 1;
-                // Scalar alpha_p = 1;
-                // Scalar alpha = tau * alpha_primal;
-                // assert(alpha == alpha);
-
-                // Maybe we need to stay above lambda * (1-tau) instead of 0
-
                 alpha_primal = compute_alpha_with_tau(slack, delta_slack, tau);
                 assert(alpha_primal == alpha_primal);
 
                 alpha_dual = compute_alpha_with_tau(lambda, delta_lambda, tau);
                 assert(alpha_dual == alpha_dual);
-
-                // alpha_primal = compute_alpha(slack, delta_slack);
-                // assert(alpha_primal == alpha_primal);
-
-                // alpha_dual = compute_alpha(lambda, delta_lambda);
-                // assert(alpha_dual == alpha_dual);
-
                 alpha = std::min(alpha_primal, alpha_dual);
 
                 x += alpha * delta_x;
                 lambda += alpha * delta_lambda;
                 slack += alpha * delta_slack;
 
-                // x = min(x, *box.upper_bound());
-                // x += 0.5 * delta_x;
-
-                // lambda = A * x;
-                // lambda = b - lambda;
-
-                // slack = *box.upper_bound() - x;
-
-                // lambda += alpha * delta_lambda;
-                // slack += alpha * delta_slack;
-
                 Scalar norm_dx = norm1(delta_x);
-                utopia::out() << "==============================\n";
-                utopia::out() << "iteration:\t" << k << "\n";
-                utopia::out() << "norm_dx:\t" << norm_dx << "\n";
-                utopia::out() << "alpha:\t" << alpha << "\n";
-                // utopia::out() << "alpha_primal:\t" << alpha_primal << "\n";
-                utopia::out() << "alpha_dual:\t" << alpha_dual << "\n";
-                utopia::out() << "mu:\t" << mu << "\n";
-                utopia::out() << "sigma:\t" << sigma << "\n";
-                // utopia::out() << "mu_aff:\t" << mu_aff << "\n";
 
-                bool slack_is_positive = is_positive(slack);
-                // if (k == 0 || k == 19 || !slack_is_positive) {
-                //     write("X" + std::to_string(k) + ".m", x);
-                //     write("S" + std::to_string(k) + ".m", slack);
-                //     write("L" + std::to_string(k) + ".m", lambda);
-                // }
+                if (verbose) {
+                    std::stringstream ss;
+                    ss << "==============================\n";
+                    ss << "iteration:\t" << k << "\n";
+                    ss << "norm_dx:\t" << norm_dx << "\n";
+                    ss << "alpha:\t" << alpha << "\n";
+                    ss << "alpha_primal:\t" << alpha_primal << "\n";
+                    ss << "alpha_dual:\t" << alpha_dual << "\n";
+                    ss << "mu:\t" << mu << "\n";
+                    ss << "sigma:\t" << sigma << "\n";
 
-                if (((k == max_it - 1) || norm_dx < 1e-6) && Traits::Backend == PETSC) {
-                    utopia::out() << "Solution found!\n";
-                    rename("x", x);
-                    rename("lambda", lambda);
-                    rename("slack", slack);
-
-                    write("IP_X.m", x);
-                    write("IP_S.m", slack);
-                    write("IP_L.m", lambda);
-                    break;
+                    x.comm().root_print(ss.str());
                 }
 
-                // assert(slack_is_positive);
-                // assert(is_positive(lambda));
-            }
+                bool slack_is_positive = is_positive(slack);
 
-            // assert(false);
-            // Utopia::Abort("here");
+                if (((k == (max_it - 1)) || norm_dx < tol)) {
+                    if (norm_dx < tol && verbose) {
+                        std::stringstream ss;
+                        ss << "Solution found in " << k << " iterations\n";
+                        x.comm().root_print(ss.str());
+                    }
+
+                    if (Traits::Backend == PETSC && verbose) {
+                        rename("x", x);
+                        rename("lambda", lambda);
+                        rename("slack", slack);
+
+                        write("IP_X.m", x);
+                        write("IP_S.m", slack);
+                        write("IP_L.m", lambda);
+                    }
+
+                    break;
+                }
+            }
         }
 
         void MPRGP_test() const {
