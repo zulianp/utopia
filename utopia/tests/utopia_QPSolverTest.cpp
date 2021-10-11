@@ -637,6 +637,120 @@ namespace utopia {
         bool verbose = false;
     };
 
+    template <class Matrix, class Vector>
+    class BDDOperator : public Operator<Vector> {
+    public:
+        using Communicator = typename Traits<Vector>::Communicator;
+
+        static void parallel_to_serial(const Vector &x_p, Vector &x_s) {
+            {
+                // FIXME (copying stuff just because of abstractions!)
+                auto x_p_view = local_view_device(x_p);
+                auto x_s_view = local_view_device(x_s);
+                parallel_for(
+                    local_range_device(x_s), UTOPIA_LAMBDA(const SizeType i) { x_s_view.set(i, x_p_view.get(i)); });
+            }
+        }
+
+        bool apply(const Vector &x_G, Vector &rhs_G) const override {
+            parallel_to_serial(x_G, *xL_);
+
+            *A_IG_x_ = (*A_IG_) * (*xL_);
+            sol_I_->set(0);
+
+            A_II_inv_->apply(*A_IG_x_, *sol_I_);
+
+            (*rhsL_) = (*A_GI_) * (*sol_I_);
+
+            if (empty(rhs_G)) {
+                rhs_G.zeros(layout(x_G));
+            }
+
+            {
+                // FIXME (copying stuff just because of abstractions!)
+                auto rhsG_view = local_view_device(rhs_G);
+                auto rhsL_view = local_view_device(*rhsL_);
+
+                parallel_for(
+                    local_range_device(*rhsL_),
+                    UTOPIA_LAMBDA(const SizeType i) { rhsG_view.set(i, rhsL_view.get(i)); });
+            }
+
+            rhs_G += (*A_GG_) * x_G;
+            return false;
+        }
+
+        Size size() const override { return A_GG_->size(); }
+
+        Size local_size() const override { return A_GG_->local_size(); }
+
+        Communicator &comm() override { return A_GG_->comm(); }
+        const Communicator &comm() const override { return A_GG_->comm(); }
+
+        void init(const std::shared_ptr<Matrix> &A_GG,
+                  const std::shared_ptr<Matrix> &A_GI,
+                  const std::shared_ptr<Matrix> &A_II,
+                  const std::shared_ptr<Matrix> &A_IG) {
+            A_GG_ = A_GG;
+            A_GI_ = A_GI;
+            A_II_ = A_II;
+            A_IG_ = A_IG;
+
+            A_II_inv_ = std::make_shared<Factorization<Matrix, Vector>>();
+            A_II_inv_->update(A_II_);
+        }
+
+        void init_rhs(const Vector &rhs_G, const Vector &rhs_I) {
+            assert(A_II_inv_);
+
+            // Compute rhs
+            secant_G_ = std::make_shared<Vector>(layout(rhs_G));
+            xL_ = std::make_shared<Vector>(row_layout(*A_GI_));
+            rhsL_ = std::make_shared<Vector>(row_layout(*A_GI_));
+            A_IG_x_ = std::make_shared<Vector>(row_layout(*A_II_));
+            sol_I_ = std::make_shared<Vector>(row_layout(*A_II_));
+
+            Vector inv_A_II_rhs_I(layout(rhs_I), 0);
+            A_II_inv_->apply(rhs_I, inv_A_II_rhs_I);
+
+            (*secant_G_) = rhs_G;
+
+            Vector temp = (*A_GI_) * inv_A_II_rhs_I;
+
+            assert(secant_G_->local_size() == temp.local_size());
+
+            {
+                auto sG_view = local_view_device(*secant_G_);
+                auto temp_view = local_view_device(temp);
+
+                parallel_for(
+                    local_range_device(temp),
+                    UTOPIA_LAMBDA(const SizeType i) { sG_view.set(i, sG_view.get(i) - temp_view.get(i)); });
+            }
+        }
+
+        void finalize(const Vector &x_G, const Vector &rhs_I, Vector &x_I) {
+            parallel_to_serial(x_G, *xL_);
+
+            *A_IG_x_ = (*A_IG_) * (*xL_);
+            *rhsL_ = rhs_I;
+            *rhsL_ -= *A_IG_x_;
+
+            if (empty(x_I)) {
+                x_I.zeros(layout(*rhsL_));
+            } else {
+                x_I.set(0);
+            }
+
+            A_II_inv_->apply(*rhsL_, x_I);
+        }
+
+        std::shared_ptr<Matrix> A_GG_, A_GI_, A_II_, A_IG_;
+        std::shared_ptr<Vector> secant_G_;
+        std::shared_ptr<Factorization<Matrix, Vector>> A_II_inv_;
+        std::shared_ptr<Vector> xL_, rhsL_, A_IG_x_, sol_I_;
+    };
+
     // FIXME merge with the other once it is poperly implemented
     template <class Matrix, class Vector>
     class PQPSolverTest {
@@ -659,7 +773,6 @@ namespace utopia {
 
             auto &&comm = Comm::get_default();
 
-            SizeType n = 6;
             // if (Traits::Backend == BLAS) {
             //     n = 20;
             // }
@@ -667,7 +780,22 @@ namespace utopia {
             Matrix A;
             Vector b;
             BoxConstraints<Vector> box;
-            QPSolverTest<Matrix, Vector>::create_symm_lapl_test_data(comm, A, b, box, n, true);
+
+            Vector oracle;
+
+            if (true) {
+                SizeType n = 200;
+                QPSolverTest<Matrix, Vector>::create_symm_lapl_test_data(comm, A, b, box, n, true);
+
+                Factorization<Matrix, Vector> solver;
+                solver.solve(A, b, oracle);
+
+            } else {
+                Path dir = "../data/test/CG_DD/mats_tests_2d_tri3";
+                read(dir / "A", A);
+                read(dir / "b", b);
+                read(dir / "x", oracle);
+            }
 
             disp(A);
 
@@ -715,6 +843,15 @@ namespace utopia {
             Matrix A_II = A_II_view;
             set_zero_rows(A_II, local_interface_idx, 1);
 
+            A_II.transform_ijv([&](const SizeType i, const SizeType j, const Scalar value) -> Scalar {
+                bool is_interface = global_to_local[j] != -1;
+                if (is_interface) {
+                    return i == j ? 1.0 : 0.;
+                } else {
+                    return value;
+                }
+            });
+
             // for (SizeType r = 0; r < comm.size(); ++r) {
             //     comm.barrier();
 
@@ -737,7 +874,7 @@ namespace utopia {
             SizeType n_col_dofs = A.cols();
             int comm_size = comm.size();
             auto find_rank = [=](const SizeType i) -> int {
-                int rank = i * (float(comm_size) / n_col_dofs);
+                int rank = std::min(int(i * (float(comm_size) / n_col_dofs)), comm_size - 1);
 
                 bool found = (i >= ranges[rank]) && (i < ranges[rank + 1]);
 
@@ -985,10 +1122,15 @@ namespace utopia {
                 ////////////////////////////////////////////////////////////////////////////////
 
                 Matrix A_GG;
+                Vector b_G;
                 A_GG.sparse(GG_layout, d_nnz, o_nnz);
+                b_G.zeros(G_layout);
 
                 {
-                    Write<Matrix> w(A_GG);
+                    Write<Matrix> w_A(A_GG);
+                    Write<Vector> w_b(b_G);
+
+                    auto b_view = local_view_device(b);
 
                     for (SizeType i = 0; i < n_interface; ++i) {
                         SizeType original_local_idx = local_interface_idx[i];
@@ -996,6 +1138,8 @@ namespace utopia {
                         auto row_end = d_row_ptr[original_local_idx + 1];
                         auto n_cols = row_end - row_begin;
                         SizeType new_row = interface_offset + i;
+
+                        b_G.set(new_row, b_view.get(original_local_idx));
 
                         for (SizeType k = row_begin; k < row_end; ++k) {
                             SizeType col = d_colidx[k];
@@ -1029,9 +1173,11 @@ namespace utopia {
                 ////////////////////////////////////////////////////////////////////////////////
 
                 Matrix A_GI, A_IG;
+                Vector b_I;
 
                 auto GI_layout = serial_layout(n_interface, n_local);
                 auto IG_layout = serial_layout(n_local, n_interface);
+                auto I_layout = serial_layout(n_local);
 
                 std::fill(std::begin(d_nnz), std::end(d_nnz), 0);
                 std::fill(std::begin(o_nnz), std::end(o_nnz), 0);
@@ -1095,8 +1241,12 @@ namespace utopia {
                     }
 
                     A_IG.sparse(IG_layout, d_nnz, o_nnz);
+                    b_I.zeros(I_layout);
 
-                    Write<Matrix> w(A_IG);
+                    Write<Matrix> w_A(A_IG);
+                    Write<Vector> w_b(b_I);
+
+                    auto b_view = local_view_device(b);
 
                     for (SizeType i = 0; i < n_local; ++i) {
                         if (global_to_local[i] != -1) continue;
@@ -1104,6 +1254,8 @@ namespace utopia {
                         auto row_begin = d_row_ptr[i];
                         auto row_end = d_row_ptr[i + 1];
                         auto n_cols = row_end - row_begin;
+
+                        b_I.set(i, b_view.get(i));
 
                         for (SizeType k = row_begin; k < row_end; ++k) {
                             SizeType col = d_colidx[k];
@@ -1124,6 +1276,7 @@ namespace utopia {
                 comm.barrier();
 
                 disp(A_GG);
+                disp(b_G);
 
                 for (SizeType r = 0; r < comm.size(); ++r) {
                     comm.barrier();
@@ -1135,6 +1288,8 @@ namespace utopia {
                         std::cout << "A_II:\n";
                         disp(A_II);
 
+                        disp(b_I);
+
                         std::cout << "A_IG:\n";
                         disp(A_IG);
 
@@ -1145,6 +1300,49 @@ namespace utopia {
                 }
 
                 comm.barrier();
+
+                BDDOperator<Matrix, Vector> op;
+                op.init(make_ref(A_GG), make_ref(A_GI), make_ref(A_II), make_ref(A_IG));
+                op.init_rhs(b_G, b_I);
+
+                ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+                cg.verbose(true);
+                cg.atol(1e-18);
+                cg.rtol(1e-18);
+                cg.stol(1e-18);
+
+                Vector x_G(row_layout(A_GG), 1);
+                cg.solve(op, *op.secant_G_, x_G);
+
+                Vector x_I;
+                op.finalize(x_G, b_I, x_I);
+
+                Vector x(layout(b), -666);
+
+                {
+                    auto x_view = local_view_device(x);
+                    auto x_I_view = local_view_device(x_I);
+                    auto x_G_view = local_view_device(x_G);
+
+                    parallel_for(
+                        local_range_device(x), UTOPIA_LAMBDA(const SizeType i) { x_view.set(i, x_I_view.get(i)); });
+
+                    parallel_for(local_range_device(x_G), [&](const SizeType i) {
+                        SizeType i_local = local_to_global[i] - r.begin();
+                        x_view.set(i_local, x_G_view.get(i));
+                    });
+                }
+
+                rename("x", x);
+                write("X.m", x);
+
+                if (!empty(oracle)) {
+                    Scalar diff = norm1(x - oracle);
+                    comm.root_print(diff);
+
+                    rename("o", oracle);
+                    write("O.m", oracle);
+                }
             }
 
             comm.barrier();
