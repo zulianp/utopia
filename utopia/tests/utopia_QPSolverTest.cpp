@@ -80,9 +80,10 @@ namespace utopia {
                                                Matrix &A,
                                                Vector &b,
                                                BoxConstraints<Vector> &box,
-                                               SizeType n = 100) {
+                                               SizeType n = 100,
+                                               const bool boundary_conds = true) {
             A.sparse(layout(comm, Traits::decide(), Traits::decide(), n, n), 3, 2);
-            assemble_symmetric_laplacian_1D(A, true);
+            assemble_symmetric_laplacian_1D(A, boundary_conds);
 
             auto h = 1. / (n - 1.);
             A = 1. / h * A;
@@ -666,7 +667,9 @@ namespace utopia {
             Matrix A;
             Vector b;
             BoxConstraints<Vector> box;
-            QPSolverTest<Matrix, Vector>::create_symm_lapl_test_data(comm, A, b, box, n);
+            QPSolverTest<Matrix, Vector>::create_symm_lapl_test_data(comm, A, b, box, n, true);
+
+            disp(A);
 
             Vector x(layout(b), 0.);
 
@@ -680,21 +683,23 @@ namespace utopia {
             });
 
             SizeType n_interface = 0;
-            std::stringstream ss;
+            // std::stringstream ss;
             for (SizeType i = 0; i < n_local; ++i) {
                 if (!r.inside(min_idx[i]) || !r.inside(max_idx[i])) {
                     ++n_interface;
-                    ss << (i + r.begin()) << " ";
+                    // ss << (i + r.begin()) << " ";
                 }
             }
 
             IndexSet local_interface_idx(n_interface, 0);
+            IndexSet global_to_local(n_local, -1);
             IndexSet local_to_global(n_interface, 0);
 
             n_interface = 0;
             for (SizeType i = 0; i < n_local; ++i) {
                 if (!r.inside(min_idx[i]) || !r.inside(max_idx[i])) {
                     local_to_global[n_interface] = (i + r.begin());
+                    global_to_local[i] = n_interface;
                     local_interface_idx[n_interface++] = i;
                 }
             }
@@ -702,7 +707,7 @@ namespace utopia {
             SizeType interface_offset = 0;
             x.comm().exscan_sum(&n_interface, &interface_offset, 1);
 
-            x.comm().synched_print(ss.str());
+            // x.comm().synched_print(ss.str());
 
             Matrix A_II_view;
             local_block_view(A, A_II_view);
@@ -710,23 +715,439 @@ namespace utopia {
             Matrix A_II = A_II_view;
             set_zero_rows(A_II, local_interface_idx, 1);
 
-            for (SizeType r = 0; r < A.comm().size(); ++r) {
-                A.comm().barrier();
+            // for (SizeType r = 0; r < comm.size(); ++r) {
+            //     comm.barrier();
 
-                if (r == A.comm().rank()) {
-                    std::cout << "interface_offset: " << interface_offset << std::endl;
+            //     if (r == comm.rank()) {
+            //         std::cout << "interface_offset: " << interface_offset << std::endl;
 
-                    for (SizeType i = 0; i < n_interface; ++i) {
-                        std::cout << (interface_offset + i) << " -> " << local_to_global[i] << " ";
+            //         for (SizeType i = 0; i < n_interface; ++i) {
+            //             std::cout << (interface_offset + i) << " -> " << local_to_global[i] << " ";
+            //         }
+
+            //         std::cout << "\n";
+            //     }
+            // }
+
+            // comm.barrier();
+
+            const PetscInt *ranges;
+            MatGetOwnershipRanges(A.raw_type(), &ranges);
+
+            SizeType n_col_dofs = A.cols();
+            int comm_size = comm.size();
+            auto find_rank = [=](const SizeType i) -> int {
+                int rank = i * (float(comm_size) / n_col_dofs);
+
+                bool found = (i >= ranges[rank]) && (i < ranges[rank + 1]);
+
+                while (!found) {
+                    if (i < ranges[rank]) {
+                        --rank;
+                    } else if (i >= ranges[rank + 1]) {
+                        ++rank;
+                    } else {
+                        assert(false);
                     }
 
-                    std::cout << "\n";
-                    disp(A_II);
+                    assert(i >= 0);
+                    assert(i < comm_size);
+
+                    found = (i >= ranges[rank]) && (i < ranges[rank + 1]);
                 }
+
+                assert(found);
+
+                return rank;
+            };
+
+            std::vector<SizeType> counter(comm.size(), 0);
+            std::vector<IndexSet> recv_list(comm.size()), send_list(comm.size());
+            std::vector<SizeType> interface_ghosts;
+
+            {
+                Mat d, o;
+                MatMPIAIJGetSeqAIJ(A.raw_type(), &d, &o, nullptr);
+
+                utopia::PetscCrsView d_crs_view(d);
+                utopia::PetscCrsView o_crs_view(o);
+
+                PetscInt nghosts;
+                const PetscInt *ghosts = nullptr;
+                MatGetGhosts(A.raw_type(), &nghosts, &ghosts);
+                interface_ghosts.resize(nghosts, -1);
+
+                auto d_row_ptr = d_crs_view.row_ptr();
+                auto d_colidx = d_crs_view.colidx();
+                auto d_values = d_crs_view.values();
+
+                auto o_row_ptr = o_crs_view.row_ptr();
+                auto o_colidx = o_crs_view.colidx();
+                auto o_values = o_crs_view.values();
+
+                // Count incoming number of indices per process
+                std::stringstream ss;
+                for (SizeType i = 0; i < nghosts; ++i) {
+                    int r = find_rank(ghosts[i]);
+                    ++counter[r];
+                    // ss << ghosts[i] << " -> " << r << "\n";
+                }
+
+                for (int r = 0; r < comm_size; ++r) {
+                    if (r == comm.rank() || counter[r] == 0) continue;
+
+                    recv_list[r].resize(counter[r]);
+                    // ss << "recevies " << counter[r] << " indices from " << r << "\n";
+                }
+
+                // Count outgoing number of indices per process
+                std::fill(std::begin(counter), std::end(counter), 0);
+
+                std::vector<SizeType> encountered_ranks;
+                std::vector<bool> is_rank_counted(comm.size(), false);
+
+                SizeType local_rows = o_crs_view.rows();
+                for (SizeType i = 0; i < n_interface; ++i) {
+                    SizeType original_local_idx = local_interface_idx[i];
+                    auto row_begin = o_row_ptr[original_local_idx];
+                    auto row_end = o_row_ptr[original_local_idx + 1];
+
+                    auto n_cols = row_end - row_begin;
+
+                    if (encountered_ranks.size() < n_cols) {
+                        encountered_ranks.resize(n_cols, -1);
+                    }
+
+                    for (SizeType k = row_begin; k < row_end; ++k) {
+                        SizeType col = o_colidx[k];
+                        int rank = find_rank(ghosts[col]);
+
+                        if (!is_rank_counted[rank]) {
+                            ++counter[rank];
+                        }
+
+                        is_rank_counted[rank] = true;
+                        encountered_ranks[k - row_begin] = rank;
+                    }
+
+                    for (SizeType k = 0; k < n_cols; ++k) {
+                        assert(encountered_ranks[k] >= 0);
+                        is_rank_counted[encountered_ranks[k]] = false;
+                    }
+
+#ifndef NDEBUG
+                    for (auto irc : is_rank_counted) {
+                        assert(!irc);
+                    }
+#endif
+                }
+
+                for (int r = 0; r < comm_size; ++r) {
+                    if (r == comm.rank() || counter[r] == 0) continue;
+
+                    send_list[r].reserve(counter[r]);
+
+                    // ss << "sends " << counter[r] << " indices to " << r << "\n";
+                }
+
+                // Fill send_list with global indices
+
+                // ss << "---------------------------\n";
+                for (SizeType i = 0; i < n_interface; ++i) {
+                    SizeType original_local_idx = local_interface_idx[i];
+                    SizeType new_global_idx = interface_offset + i;
+
+                    auto row_begin = o_row_ptr[original_local_idx];
+                    auto row_end = o_row_ptr[original_local_idx + 1];
+                    auto n_cols = row_end - row_begin;
+
+                    // ss << i << " -> " << original_local_idx << " -> " << new_global_idx << " | " << n_cols << "\n";
+
+                    if (encountered_ranks.size() < n_cols) {
+                        encountered_ranks.resize(n_cols, -1);
+                    }
+
+                    for (SizeType k = row_begin; k < row_end; ++k) {
+                        SizeType col = o_colidx[k];
+                        int rank = find_rank(ghosts[col]);
+
+                        if (!is_rank_counted[rank]) {
+                            send_list[rank].push_back(new_global_idx);
+                        }
+
+                        is_rank_counted[rank] = true;
+                        encountered_ranks[k - row_begin] = rank;
+                    }
+
+                    for (SizeType k = 0; k < n_cols; ++k) {
+                        assert(encountered_ranks[k] >= 0);
+                        is_rank_counted[encountered_ranks[k]] = false;
+                    }
+
+#ifndef NDEBUG
+                    for (auto irc : is_rank_counted) {
+                        assert(!irc);
+                    }
+#endif
+                }
+
+                // for (int r = 0; r < comm_size; ++r) {
+                //     if (send_list[r].empty()) continue;
+
+                //     ss << "to rank " << r << " we send: ";
+                //     for (auto idx : send_list[r]) {
+                //         ss << idx << " ";
+                //     }
+
+                //     ss << "\n";
+                // }
+
+                for (int r = 0; r < comm_size; ++r) {
+                    if (send_list[r].empty()) {
+                        assert(recv_list[r].empty());
+                        continue;
+                    }
+
+                    int tag = 0;
+                    MPI_Status status;
+                    auto &send_buff = send_list[r];
+                    auto &recv_buff = recv_list[r];
+
+                    assert(!recv_buff.empty());
+
+                    MPI_Sendrecv(send_buff.data(),
+                                 send_buff.size(),
+                                 MPIType<SizeType>::value(),
+                                 r,
+                                 tag,
+                                 recv_buff.data(),
+                                 recv_buff.size(),
+                                 MPIType<SizeType>::value(),
+                                 r,
+                                 tag,
+                                 comm.raw_comm(),
+                                 &status);
+                }
+
+                // for (int r = 0; r < comm_size; ++r) {
+                //     if (recv_list[r].empty()) continue;
+
+                //     ss << "from rank " << r << " we received: ";
+                //     for (auto idx : recv_list[r]) {
+                //         ss << idx << " ";
+                //     }
+
+                //     ss << "\n";
+                // }
+
+                SizeType linear_index = 0;
+                for (int r = 0; r < comm_size; ++r) {
+                    if (recv_list[r].empty()) continue;
+
+                    for (auto idx : recv_list[r]) {
+                        // ss << linear_index << " -> " << idx << " (old: " << ghosts[linear_index] << ")\n";
+                        interface_ghosts[linear_index++] = idx;
+                    }
+                }
+
+                ////////////////////////////////////////////////////////////////////////////////
+
+                auto G_layout = layout(comm, n_interface, Traits::determine());
+                auto GG_layout = square_matrix_layout(G_layout);
+
+                IndexSet d_nnz(n_interface, 0), o_nnz(n_interface, 0);
+
+                {
+                    for (SizeType i = 0; i < n_interface; ++i) {
+                        SizeType original_local_idx = local_interface_idx[i];
+                        auto row_begin = d_row_ptr[original_local_idx];
+                        auto row_end = d_row_ptr[original_local_idx + 1];
+                        auto n_cols = row_end - row_begin;
+
+                        for (SizeType k = row_begin; k < row_end; ++k) {
+                            SizeType col = d_colidx[k];
+                            if (!r.inside(min_idx[col]) || !r.inside(max_idx[col])) {
+                                ++d_nnz[i];
+                            }
+                        }
+                    }
+
+                    // count off proc nnz
+                    for (SizeType i = 0; i < n_interface; ++i) {
+                        SizeType original_local_idx = local_interface_idx[i];
+                        auto row_begin = o_row_ptr[original_local_idx];
+                        auto row_end = o_row_ptr[original_local_idx + 1];
+                        auto n_cols = row_end - row_begin;
+                        o_nnz[i] = n_cols;
+                    }
+                }
+
+                ////////////////////////////////////////////////////////////////////////////////
+
+                Matrix A_GG;
+                A_GG.sparse(GG_layout, d_nnz, o_nnz);
+
+                {
+                    Write<Matrix> w(A_GG);
+
+                    for (SizeType i = 0; i < n_interface; ++i) {
+                        SizeType original_local_idx = local_interface_idx[i];
+                        auto row_begin = d_row_ptr[original_local_idx];
+                        auto row_end = d_row_ptr[original_local_idx + 1];
+                        auto n_cols = row_end - row_begin;
+                        SizeType new_row = interface_offset + i;
+
+                        for (SizeType k = row_begin; k < row_end; ++k) {
+                            SizeType col = d_colidx[k];
+                            SizeType new_col_local = global_to_local[col];
+
+                            if (new_col_local != -1) {
+                                SizeType new_col = interface_offset + new_col_local;
+                                Scalar value = d_values[k];
+                                A_GG.set(new_row, new_col, value);
+                            }
+                        }
+                    }
+
+                    // count off proc nnz
+                    for (SizeType i = 0; i < n_interface; ++i) {
+                        SizeType original_local_idx = local_interface_idx[i];
+                        auto row_begin = o_row_ptr[original_local_idx];
+                        auto row_end = o_row_ptr[original_local_idx + 1];
+                        auto n_cols = row_end - row_begin;
+                        SizeType new_row = interface_offset + i;
+
+                        for (SizeType k = row_begin; k < row_end; ++k) {
+                            Scalar value = o_values[k];
+                            SizeType col = o_colidx[k];
+                            SizeType new_col = interface_ghosts[col];
+                            A_GG.set(new_row, new_col, value);
+                        }
+                    }
+                }
+
+                ////////////////////////////////////////////////////////////////////////////////
+
+                Matrix A_GI, A_IG;
+
+                auto GI_layout = serial_layout(n_interface, n_local);
+                auto IG_layout = serial_layout(n_local, n_interface);
+
+                std::fill(std::begin(d_nnz), std::end(d_nnz), 0);
+                std::fill(std::begin(o_nnz), std::end(o_nnz), 0);
+
+                {
+                    for (SizeType i = 0; i < n_interface; ++i) {
+                        SizeType original_local_idx = local_interface_idx[i];
+                        auto row_begin = d_row_ptr[original_local_idx];
+                        auto row_end = d_row_ptr[original_local_idx + 1];
+                        auto n_cols = row_end - row_begin;
+
+                        for (SizeType k = row_begin; k < row_end; ++k) {
+                            SizeType col = d_colidx[k];
+                            if (r.inside(min_idx[col]) && r.inside(max_idx[col])) {
+                                ++d_nnz[i];
+                            }
+                        }
+                    }
+
+                    A_GI.sparse(GI_layout, d_nnz, o_nnz);
+
+                    Write<Matrix> w(A_GI);
+
+                    for (SizeType i = 0; i < n_interface; ++i) {
+                        SizeType original_local_idx = local_interface_idx[i];
+                        auto row_begin = d_row_ptr[original_local_idx];
+                        auto row_end = d_row_ptr[original_local_idx + 1];
+                        auto n_cols = row_end - row_begin;
+
+                        for (SizeType k = row_begin; k < row_end; ++k) {
+                            SizeType col = d_colidx[k];
+                            if (r.inside(min_idx[col]) && r.inside(max_idx[col])) {
+                                Scalar value = d_values[k];
+                                A_GI.set(i, col, value);
+                            }
+                        }
+                    }
+                }
+
+                /////////////////////////////////////////////////
+
+                d_nnz.resize(n_local);
+                o_nnz.resize(n_local);
+
+                std::fill(std::begin(d_nnz), std::end(d_nnz), 0);
+                std::fill(std::begin(o_nnz), std::end(o_nnz), 0);
+
+                {
+                    for (SizeType i = 0; i < n_local; ++i) {
+                        auto row_begin = d_row_ptr[i];
+                        auto row_end = d_row_ptr[i + 1];
+                        auto n_cols = row_end - row_begin;
+
+                        for (SizeType k = row_begin; k < row_end; ++k) {
+                            SizeType col = d_colidx[k];
+
+                            if (!r.inside(min_idx[col]) || !r.inside(max_idx[col])) {
+                                ++d_nnz[i];
+                            }
+                        }
+                    }
+
+                    A_IG.sparse(IG_layout, d_nnz, o_nnz);
+
+                    Write<Matrix> w(A_IG);
+
+                    for (SizeType i = 0; i < n_local; ++i) {
+                        if (global_to_local[i] != -1) continue;
+
+                        auto row_begin = d_row_ptr[i];
+                        auto row_end = d_row_ptr[i + 1];
+                        auto n_cols = row_end - row_begin;
+
+                        for (SizeType k = row_begin; k < row_end; ++k) {
+                            SizeType col = d_colidx[k];
+
+                            SizeType new_col_local = global_to_local[col];
+
+                            if (new_col_local != -1) {
+                                Scalar value = d_values[k];
+                                A_IG.set(i, new_col_local, value);
+                            }
+                        }
+                    }
+                }
+
+                ////////////////////////////////////////////////////////////////////////////////
+
+                // comm.synched_print(ss.str());
+                comm.barrier();
+
+                disp(A_GG);
+
+                for (SizeType r = 0; r < comm.size(); ++r) {
+                    comm.barrier();
+
+                    if (r == comm.rank()) {
+                        std::cout << "=========================================\n";
+                        std::cout << "Rank: " << r << "\n";
+                        std::cout << "=========================================\n";
+                        std::cout << "A_II:\n";
+                        disp(A_II);
+
+                        std::cout << "A_IG:\n";
+                        disp(A_IG);
+
+                        std::cout << "A_GI:\n";
+                        disp(A_GI);
+                        std::cout << "\n" << std::flush;
+                    }
+                }
+
+                comm.barrier();
             }
 
-            A.comm().barrier();
-
+            comm.barrier();
             Utopia::Abort("BYE!");
         }
 
