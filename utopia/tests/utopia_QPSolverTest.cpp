@@ -784,7 +784,7 @@ namespace utopia {
             Vector oracle;
 
             if (true) {
-                SizeType n = 200;
+                SizeType n = 10;
                 QPSolverTest<Matrix, Vector>::create_symm_lapl_test_data(comm, A, b, box, n, true);
 
                 Factorization<Matrix, Vector> solver;
