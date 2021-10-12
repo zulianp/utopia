@@ -638,134 +638,6 @@ namespace utopia {
         bool verbose = false;
     };
 
-    template <class Matrix, class Vector>
-    class BDDOperator : public Operator<Vector> {
-    public:
-        using Communicator = typename Traits<Vector>::Communicator;
-
-        static void parallel_to_serial(const Vector &x_from, Vector &x_to) {
-            {
-                // FIXME (copying stuff just because of abstractions!)
-                auto x_from_view = local_view_device(x_from);
-                auto x_to_view = local_view_device(x_to);
-                parallel_for(
-                    local_range_device(x_to),
-                    UTOPIA_LAMBDA(const SizeType i) { x_to_view.set(i, x_from_view.get(i)); });
-            }
-        }
-
-        static void serial_to_parallel(const Vector &x_from, Vector &x_to) { parallel_to_serial(x_from, x_to); }
-
-        bool apply(const Vector &x_G, Vector &rhs_G) const override {
-            parallel_to_serial(x_G, *xL_);
-
-            *A_IG_x_ = (*A_IG_) * (*xL_);
-            sol_I_->set(0);
-
-            A_II_inv_->apply(*A_IG_x_, *sol_I_);
-
-            (*rhsL_) = (*A_GI_) * (*sol_I_);
-
-            if (empty(rhs_G)) {
-                rhs_G.zeros(layout(x_G));
-            }
-
-            (*rhsL_) *= -1;
-
-            serial_to_parallel(*rhsL_, rhs_G);
-            rhs_G += (*A_GG_) * x_G;
-            return false;
-        }
-
-        Size size() const override { return A_GG_->size(); }
-
-        Size local_size() const override { return A_GG_->local_size(); }
-
-        Communicator &comm() override { return A_GG_->comm(); }
-        const Communicator &comm() const override { return A_GG_->comm(); }
-
-        void init(const std::shared_ptr<Matrix> &A_GG,
-                  const std::shared_ptr<Matrix> &A_GI,
-                  const std::shared_ptr<Matrix> &A_II,
-                  const std::shared_ptr<Matrix> &A_IG) {
-            A_GG_ = A_GG;
-            A_GI_ = A_GI;
-            A_II_ = A_II;
-            A_IG_ = A_IG;
-
-            // A_II_inv_ = std::make_shared<Factorization<Matrix, Vector>>("superlu", "lu");
-            A_II_inv_ = std::make_shared<Factorization<Matrix, Vector>>("mumps", "cholesky");
-            A_II_inv_->update(A_II_);
-        }
-
-        void init_rhs(const Vector &rhs_G, const Vector &rhs_I) {
-            assert(A_II_inv_);
-
-            // Compute rhs
-            secant_G_ = std::make_shared<Vector>(layout(rhs_G));
-            xL_ = std::make_shared<Vector>(row_layout(*A_GI_));
-            rhsL_ = std::make_shared<Vector>(row_layout(*A_GI_));
-            A_IG_x_ = std::make_shared<Vector>(row_layout(*A_II_));
-            sol_I_ = std::make_shared<Vector>(row_layout(*A_II_));
-
-            Vector inv_A_II_rhs_I(layout(rhs_I), 0);
-            A_II_inv_->apply(rhs_I, inv_A_II_rhs_I);
-
-            (*secant_G_) = rhs_G;
-
-            Vector temp = (*A_GI_) * inv_A_II_rhs_I;
-
-            assert(secant_G_->local_size() == temp.local_size());
-
-            {
-                auto sG_view = local_view_device(*secant_G_);
-                auto temp_view = local_view_device(temp);
-
-                parallel_for(
-                    local_range_device(temp),
-                    UTOPIA_LAMBDA(const SizeType i) { sG_view.set(i, sG_view.get(i) - temp_view.get(i)); });
-            }
-
-            // disp(rhs_G);
-            // disp(*secant_G_);
-
-            // for (SizeType r = 0; r < comm().size(); ++r) {
-            //     comm().barrier();
-
-            //     if (r == comm().rank()) {
-            //         std::cout << "=========================================\n";
-            //         std::cout << "Rank: " << r << "\n";
-            //         std::cout << "=========================================\n";
-            //         std::cout << "A_GI * A_II^-1 * rhs_I:\n";
-            //         disp(temp);
-
-            //         std::cout << "\n" << std::flush;
-            //     }
-            // }
-        }
-
-        void finalize(const Vector &x_G, const Vector &rhs_I, Vector &x_I) {
-            parallel_to_serial(x_G, *xL_);
-
-            *A_IG_x_ = (*A_IG_) * (*xL_);
-            *rhsL_ = rhs_I;
-            *rhsL_ -= *A_IG_x_;
-
-            if (empty(x_I)) {
-                x_I.zeros(layout(*rhsL_));
-            } else {
-                x_I.set(0);
-            }
-
-            A_II_inv_->apply(*rhsL_, x_I);
-        }
-
-        std::shared_ptr<Matrix> A_GG_, A_GI_, A_II_, A_IG_;
-        std::shared_ptr<Vector> secant_G_;
-        std::shared_ptr<Factorization<Matrix, Vector>> A_II_inv_;
-        std::shared_ptr<Vector> xL_, rhsL_, A_IG_x_, sol_I_;
-    };
-
     // FIXME merge with the other once it is poperly implemented
     template <class Matrix, class Vector>
     class PQPSolverTest {
@@ -786,7 +658,7 @@ namespace utopia {
         void MPRGP_DD() {
             auto &&comm = Comm::get_default();
 
-            static const bool verbose = true;
+            static const bool verbose = false;
 
             Matrix A;
             Vector b;
@@ -829,597 +701,63 @@ namespace utopia {
                 c_ss << "Read problem from disk\n" << c << "\n";
             }
 
+            ///////////////////////////////////////////////////////////////
+
             c.start();
 
-            // disp(A);
+            BDDOperator<Matrix, Vector> op;
+            // Initialize operator (this must come first)
+            op.initialize(make_ref(A));
+
+            // Initalize rhs (this must come after initialization with matrix)
+            op.initialize(make_ref(b));
+
+            c.stop();
+            c_ss << "BDDOperator initialization\n" << c << "\n";
+
+            ///////////////////////////////////////////////////////////////
+
+            c.start();
 
             Vector x(layout(b), 0.);
+            ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+            cg.verbose(verbose);
+            cg.atol(1e-16);
+            cg.rtol(1e-10);
+            cg.stol(1e-16);
 
-            auto r = row_range(A);
-            SizeType n_local = r.extent();
-            IndexSet min_idx(n_local, A.rows()), max_idx(n_local, 0);
+            Vector x_G;
+            op.create_vector(x_G);
+            cg.solve(op, op.righthand_side(), x_G);
 
-            A.read([&](const SizeType i, const SizeType j, const Scalar) {
-                min_idx[i - r.begin()] = std::min(SizeType(min_idx[i - r.begin()]), j);
-                max_idx[i - r.begin()] = std::max(SizeType(max_idx[i - r.begin()]), j);
-            });
+            op.finalize(x_G, x);
 
-            SizeType n_interface = 0;
-            // std::stringstream ss;
-            for (SizeType i = 0; i < n_local; ++i) {
-                if (!r.inside(min_idx[i]) || !r.inside(max_idx[i])) {
-                    ++n_interface;
-                    // ss << (i + r.begin()) << " ";
-                }
+            c.stop();
+            c_ss << "solve\n" << c << "\n";
+
+            ///////////////////////////////////////////////////////////////
+
+            if (verbose) {
+                x.comm().root_print(c_ss.str());
             }
 
-            IndexSet local_interface_idx(n_interface, 0);
-            IndexSet global_to_local(n_local, -1);
-            IndexSet local_to_global(n_interface, 0);
+            ///////////////////////////////////////////////////////////////
 
-            n_interface = 0;
-            for (SizeType i = 0; i < n_local; ++i) {
-                if (!r.inside(min_idx[i]) || !r.inside(max_idx[i])) {
-                    local_to_global[n_interface] = (i + r.begin());
-                    global_to_local[i] = n_interface;
-                    local_interface_idx[n_interface++] = i;
+            if (!empty(oracle)) {
+                Scalar diff = norm2(x - oracle);
+
+                if (diff > 1e-6 && verbose) {
+                    comm.root_print(diff);
+
+                    rename("o", oracle);
+                    write("O.m", oracle);
+
+                    rename("x", x);
+                    write("X.m", x);
                 }
+
+                utopia_test_assert(diff < 1e-6);
             }
-
-            SizeType interface_offset = 0;
-            x.comm().exscan_sum(&n_interface, &interface_offset, 1);
-
-            // x.comm().synched_print(ss.str());
-
-            Matrix A_II_view;
-            local_block_view(A, A_II_view);
-
-            Matrix A_II = A_II_view;
-            set_zero_rows(A_II, local_interface_idx, 1);
-
-            A_II.transform_ijv([&](const SizeType i, const SizeType j, const Scalar value) -> Scalar {
-                bool is_interface = global_to_local[j] != -1;
-                if (is_interface) {
-                    return i == j ? 1.0 : 0.;
-                } else {
-                    return value;
-                }
-            });
-
-            // for (SizeType r = 0; r < comm.size(); ++r) {
-            //     comm.barrier();
-
-            //     if (r == comm.rank()) {
-            //         std::cout << "interface_offset: " << interface_offset << std::endl;
-
-            //         for (SizeType i = 0; i < n_interface; ++i) {
-            //             std::cout << (interface_offset + i) << " -> " << local_to_global[i] << " ";
-            //         }
-
-            //         std::cout << "\n";
-            //     }
-            // }
-
-            // comm.barrier();
-
-            const PetscInt *ranges;
-            MatGetOwnershipRanges(A.raw_type(), &ranges);
-
-            SizeType n_col_dofs = A.cols();
-            int comm_size = comm.size();
-            auto find_rank = [=](const SizeType i) -> int {
-                int rank = std::min(int(i * (float(comm_size) / n_col_dofs)), comm_size - 1);
-
-                bool found = (i >= ranges[rank]) && (i < ranges[rank + 1]);
-
-                while (!found) {
-                    if (i < ranges[rank]) {
-                        --rank;
-                    } else if (i >= ranges[rank + 1]) {
-                        ++rank;
-                    } else {
-                        assert(false);
-                    }
-
-                    // if (i >= ranges[comm_size]) {
-                    //     std::cout << comm.rank() << ": [" << ranges[0] << "-" << ranges[comm.size()] << ")"
-                    //               << " r: " << rank << " " << i << "\n";
-                    // }
-
-                    assert(i >= 0);
-                    assert(i < ranges[comm_size]);
-                    assert(rank < comm_size);
-                    assert(rank >= 0);
-
-                    found = (i >= ranges[rank]) && (i < ranges[rank + 1]);
-                }
-
-                assert(found);
-
-                return rank;
-            };
-
-            std::vector<SizeType> counter(comm.size(), 0);
-            std::vector<IndexSet> recv_list(comm.size()), send_list(comm.size());
-            std::vector<SizeType> interface_ghosts;
-
-            {
-                Mat d, o;
-                MatMPIAIJGetSeqAIJ(A.raw_type(), &d, &o, nullptr);
-
-                utopia::PetscCrsView d_crs_view(d);
-                utopia::PetscCrsView o_crs_view(o);
-
-                PetscInt nghosts;
-                const PetscInt *ghosts = nullptr;
-                MatGetGhosts(A.raw_type(), &nghosts, &ghosts);
-                interface_ghosts.resize(nghosts, -1);
-
-                auto d_row_ptr = d_crs_view.row_ptr();
-                auto d_colidx = d_crs_view.colidx();
-                auto d_values = d_crs_view.values();
-
-                auto o_row_ptr = o_crs_view.row_ptr();
-                auto o_colidx = o_crs_view.colidx();
-                auto o_values = o_crs_view.values();
-
-                // Count incoming number of indices per process
-                std::stringstream ss;
-                for (SizeType i = 0; i < nghosts; ++i) {
-                    int r = find_rank(ghosts[i]);
-                    ++counter[r];
-                    // ss << ghosts[i] << " -> " << r << "\n";
-                }
-
-                for (int r = 0; r < comm_size; ++r) {
-                    if (r == comm.rank() || counter[r] == 0) continue;
-
-                    recv_list[r].resize(counter[r]);
-                    // ss << "recevies " << counter[r] << " indices from " << r << "\n";
-                }
-
-                // Count outgoing number of indices per process
-                std::fill(std::begin(counter), std::end(counter), 0);
-
-                std::vector<SizeType> encountered_ranks;
-                std::vector<bool> is_rank_counted(comm.size(), false);
-
-                SizeType local_rows = o_crs_view.rows();
-                for (SizeType i = 0; i < n_interface; ++i) {
-                    SizeType original_local_idx = local_interface_idx[i];
-                    auto row_begin = o_row_ptr[original_local_idx];
-                    auto row_end = o_row_ptr[original_local_idx + 1];
-
-                    auto n_cols = row_end - row_begin;
-
-                    if (encountered_ranks.size() < n_cols) {
-                        encountered_ranks.resize(n_cols, -1);
-                    }
-
-                    for (SizeType k = row_begin; k < row_end; ++k) {
-                        SizeType col = o_colidx[k];
-                        int rank = find_rank(ghosts[col]);
-
-                        if (!is_rank_counted[rank]) {
-                            ++counter[rank];
-                        }
-
-                        is_rank_counted[rank] = true;
-                        encountered_ranks[k - row_begin] = rank;
-                    }
-
-                    for (SizeType k = 0; k < n_cols; ++k) {
-                        assert(encountered_ranks[k] >= 0);
-                        is_rank_counted[encountered_ranks[k]] = false;
-                    }
-
-#ifndef NDEBUG
-                    for (auto irc : is_rank_counted) {
-                        assert(!irc);
-                    }
-#endif
-                }
-
-                for (int r = 0; r < comm_size; ++r) {
-                    if (r == comm.rank() || counter[r] == 0) continue;
-
-                    send_list[r].reserve(counter[r]);
-
-                    // ss << "sends " << counter[r] << " indices to " << r << "\n";
-                }
-
-                // Fill send_list with global indices
-
-                // ss << "---------------------------\n";
-                for (SizeType i = 0; i < n_interface; ++i) {
-                    SizeType original_local_idx = local_interface_idx[i];
-                    SizeType new_global_idx = interface_offset + i;
-
-                    auto row_begin = o_row_ptr[original_local_idx];
-                    auto row_end = o_row_ptr[original_local_idx + 1];
-                    auto n_cols = row_end - row_begin;
-
-                    // ss << i << " -> " << original_local_idx << " -> " << new_global_idx << " | " << n_cols << "\n";
-
-                    if (encountered_ranks.size() < n_cols) {
-                        encountered_ranks.resize(n_cols, -1);
-                    }
-
-                    for (SizeType k = row_begin; k < row_end; ++k) {
-                        SizeType col = o_colidx[k];
-                        int rank = find_rank(ghosts[col]);
-
-                        if (!is_rank_counted[rank]) {
-                            send_list[rank].push_back(new_global_idx);
-                        }
-
-                        is_rank_counted[rank] = true;
-                        encountered_ranks[k - row_begin] = rank;
-                    }
-
-                    for (SizeType k = 0; k < n_cols; ++k) {
-                        assert(encountered_ranks[k] >= 0);
-                        is_rank_counted[encountered_ranks[k]] = false;
-                    }
-
-#ifndef NDEBUG
-                    for (auto irc : is_rank_counted) {
-                        assert(!irc);
-                    }
-#endif
-                }
-
-                // for (int r = 0; r < comm_size; ++r) {
-                //     if (send_list[r].empty()) continue;
-
-                //     ss << "to rank " << r << " we send: ";
-                //     for (auto idx : send_list[r]) {
-                //         ss << idx << " ";
-                //     }
-
-                //     ss << "\n";
-                // }
-
-                for (int r = 0; r < comm_size; ++r) {
-                    if (send_list[r].empty()) {
-                        assert(recv_list[r].empty());
-                        continue;
-                    }
-
-                    int tag = 0;
-                    MPI_Status status;
-                    auto &send_buff = send_list[r];
-                    auto &recv_buff = recv_list[r];
-
-                    assert(!recv_buff.empty());
-
-                    MPI_Sendrecv(send_buff.data(),
-                                 send_buff.size(),
-                                 MPIType<SizeType>::value(),
-                                 r,
-                                 tag,
-                                 recv_buff.data(),
-                                 recv_buff.size(),
-                                 MPIType<SizeType>::value(),
-                                 r,
-                                 tag,
-                                 comm.raw_comm(),
-                                 &status);
-                }
-
-                // for (int r = 0; r < comm_size; ++r) {
-                //     if (recv_list[r].empty()) continue;
-
-                //     ss << "from rank " << r << " we received: ";
-                //     for (auto idx : recv_list[r]) {
-                //         ss << idx << " ";
-                //     }
-
-                //     ss << "\n";
-                // }
-
-                SizeType linear_index = 0;
-                for (int r = 0; r < comm_size; ++r) {
-                    if (recv_list[r].empty()) continue;
-
-                    for (auto idx : recv_list[r]) {
-                        // ss << linear_index << " -> " << idx << " (old: " << ghosts[linear_index] << ")\n";
-                        interface_ghosts[linear_index++] = idx;
-                    }
-                }
-
-                ////////////////////////////////////////////////////////////////////////////////
-
-                auto G_layout = layout(comm, n_interface, Traits::determine());
-                auto GG_layout = square_matrix_layout(G_layout);
-
-                IndexSet d_nnz(n_interface, 0), o_nnz(n_interface, 0);
-
-                {
-                    for (SizeType i = 0; i < n_interface; ++i) {
-                        SizeType original_local_idx = local_interface_idx[i];
-                        auto row_begin = d_row_ptr[original_local_idx];
-                        auto row_end = d_row_ptr[original_local_idx + 1];
-                        auto n_cols = row_end - row_begin;
-
-                        for (SizeType k = row_begin; k < row_end; ++k) {
-                            SizeType col = d_colidx[k];
-                            if (!r.inside(min_idx[col]) || !r.inside(max_idx[col])) {
-                                ++d_nnz[i];
-                            }
-                        }
-                    }
-
-                    // count off proc nnz
-                    for (SizeType i = 0; i < n_interface; ++i) {
-                        SizeType original_local_idx = local_interface_idx[i];
-                        auto row_begin = o_row_ptr[original_local_idx];
-                        auto row_end = o_row_ptr[original_local_idx + 1];
-                        auto n_cols = row_end - row_begin;
-                        o_nnz[i] = n_cols;
-                    }
-                }
-
-                ////////////////////////////////////////////////////////////////////////////////
-
-                Matrix A_GG;
-                Vector b_G;
-                A_GG.sparse(GG_layout, d_nnz, o_nnz);
-                b_G.zeros(G_layout);
-
-                {
-                    Write<Matrix> w_A(A_GG);
-                    Write<Vector> w_b(b_G);
-
-                    auto b_view = local_view_device(b);
-
-                    for (SizeType i = 0; i < n_interface; ++i) {
-                        SizeType original_local_idx = local_interface_idx[i];
-                        auto row_begin = d_row_ptr[original_local_idx];
-                        auto row_end = d_row_ptr[original_local_idx + 1];
-                        auto n_cols = row_end - row_begin;
-                        SizeType new_row = interface_offset + i;
-
-                        b_G.set(new_row, b_view.get(original_local_idx));
-
-                        for (SizeType k = row_begin; k < row_end; ++k) {
-                            SizeType col = d_colidx[k];
-                            SizeType new_col_local = global_to_local[col];
-
-                            if (new_col_local != -1) {
-                                SizeType new_col = interface_offset + new_col_local;
-                                Scalar value = d_values[k];
-                                A_GG.set(new_row, new_col, value);
-                            }
-                        }
-                    }
-
-                    // count off proc nnz
-                    for (SizeType i = 0; i < n_interface; ++i) {
-                        SizeType original_local_idx = local_interface_idx[i];
-                        auto row_begin = o_row_ptr[original_local_idx];
-                        auto row_end = o_row_ptr[original_local_idx + 1];
-                        auto n_cols = row_end - row_begin;
-                        SizeType new_row = interface_offset + i;
-
-                        for (SizeType k = row_begin; k < row_end; ++k) {
-                            Scalar value = o_values[k];
-                            SizeType col = o_colidx[k];
-                            SizeType new_col = interface_ghosts[col];
-                            A_GG.set(new_row, new_col, value);
-                        }
-                    }
-                }
-
-                ////////////////////////////////////////////////////////////////////////////////
-
-                Matrix A_GI, A_IG;
-                Vector b_I;
-
-                auto GI_layout = serial_layout(n_interface, n_local);
-                auto IG_layout = serial_layout(n_local, n_interface);
-                auto I_layout = serial_layout(n_local);
-
-                std::fill(std::begin(d_nnz), std::end(d_nnz), 0);
-                std::fill(std::begin(o_nnz), std::end(o_nnz), 0);
-
-                {
-                    for (SizeType i = 0; i < n_interface; ++i) {
-                        SizeType original_local_idx = local_interface_idx[i];
-                        auto row_begin = d_row_ptr[original_local_idx];
-                        auto row_end = d_row_ptr[original_local_idx + 1];
-                        auto n_cols = row_end - row_begin;
-
-                        for (SizeType k = row_begin; k < row_end; ++k) {
-                            SizeType col = d_colidx[k];
-                            if (r.inside(min_idx[col]) && r.inside(max_idx[col])) {
-                                ++d_nnz[i];
-                            }
-                        }
-                    }
-
-                    A_GI.sparse(GI_layout, d_nnz, o_nnz);
-
-                    Write<Matrix> w(A_GI);
-
-                    for (SizeType i = 0; i < n_interface; ++i) {
-                        SizeType original_local_idx = local_interface_idx[i];
-                        auto row_begin = d_row_ptr[original_local_idx];
-                        auto row_end = d_row_ptr[original_local_idx + 1];
-                        auto n_cols = row_end - row_begin;
-
-                        for (SizeType k = row_begin; k < row_end; ++k) {
-                            SizeType col = d_colidx[k];
-                            if (r.inside(min_idx[col]) && r.inside(max_idx[col])) {
-                                Scalar value = d_values[k];
-                                A_GI.set(i, col, value);
-                            }
-                        }
-                    }
-                }
-
-                /////////////////////////////////////////////////
-
-                d_nnz.resize(n_local);
-                o_nnz.resize(n_local);
-
-                std::fill(std::begin(d_nnz), std::end(d_nnz), 0);
-                std::fill(std::begin(o_nnz), std::end(o_nnz), 0);
-
-                {
-                    for (SizeType i = 0; i < n_local; ++i) {
-                        auto row_begin = d_row_ptr[i];
-                        auto row_end = d_row_ptr[i + 1];
-                        auto n_cols = row_end - row_begin;
-
-                        for (SizeType k = row_begin; k < row_end; ++k) {
-                            SizeType col = d_colidx[k];
-
-                            if (!r.inside(min_idx[col]) || !r.inside(max_idx[col])) {
-                                ++d_nnz[i];
-                            }
-                        }
-                    }
-
-                    A_IG.sparse(IG_layout, d_nnz, o_nnz);
-                    b_I.zeros(I_layout);
-
-                    Write<Matrix> w_A(A_IG);
-                    Write<Vector> w_b(b_I);
-
-                    auto b_view = local_view_device(b);
-
-                    for (SizeType i = 0; i < n_local; ++i) {
-                        if (global_to_local[i] != -1) continue;
-
-                        auto row_begin = d_row_ptr[i];
-                        auto row_end = d_row_ptr[i + 1];
-                        auto n_cols = row_end - row_begin;
-
-                        b_I.set(i, b_view.get(i));
-
-                        for (SizeType k = row_begin; k < row_end; ++k) {
-                            SizeType col = d_colidx[k];
-
-                            SizeType new_col_local = global_to_local[col];
-
-                            if (new_col_local != -1) {
-                                Scalar value = d_values[k];
-                                A_IG.set(i, new_col_local, value);
-                            }
-                        }
-                    }
-                }
-
-                ////////////////////////////////////////////////////////////////////////////////
-
-                // comm.synched_print(ss.str());
-                // comm.barrier();
-
-                // disp(A_GG);
-                // disp(b_G);
-
-                // for (SizeType r = 0; r < comm.size(); ++r) {
-                //     comm.barrier();
-
-                //     if (r == comm.rank()) {
-                //         std::cout << "=========================================\n";
-                //         std::cout << "Rank: " << r << "\n";
-                //         std::cout << "=========================================\n";
-                //         std::cout << "A_II:\n";
-                //         disp(A_II);
-
-                //         disp(b_I);
-
-                //         std::cout << "A_IG:\n";
-                //         disp(A_IG);
-
-                //         std::cout << "A_GI:\n";
-                //         disp(A_GI);
-                //         std::cout << "\n" << std::flush;
-                //     }
-                // }
-
-                // comm.barrier();
-
-                c.stop();
-                c_ss << "Operators initialization\n" << c << "\n";
-                c.start();
-
-                BDDOperator<Matrix, Vector> op;
-                op.init(make_ref(A_GG), make_ref(A_GI), make_ref(A_II), make_ref(A_IG));
-                op.init_rhs(b_G, b_I);
-
-                c.stop();
-                c_ss << "BDDOperator initialization\n" << c << "\n";
-                c.start();
-
-                ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
-                cg.verbose(verbose);
-                cg.atol(1e-16);
-                cg.rtol(1e-10);
-                cg.stol(1e-16);
-
-                Vector x_G(row_layout(A_GG), 1);
-                cg.solve(op, *op.secant_G_, x_G);
-
-                Vector x_I;
-                op.finalize(x_G, b_I, x_I);
-
-                Vector x(layout(b), -666);
-
-                {
-                    auto x_view = local_view_device(x);
-                    auto x_I_view = local_view_device(x_I);
-                    auto x_G_view = local_view_device(x_G);
-
-                    parallel_for(
-                        local_range_device(x), UTOPIA_LAMBDA(const SizeType i) { x_view.set(i, x_I_view.get(i)); });
-
-                    parallel_for(local_range_device(x_G), [&](const SizeType i) {
-                        SizeType i_local = local_to_global[i] - r.begin();
-                        x_view.set(i_local, x_G_view.get(i));
-                    });
-                }
-
-                c.stop();
-                c_ss << "solve\n" << c << "\n";
-
-                if (verbose) {
-                    x.comm().root_print(c_ss.str());
-                }
-
-                // rename("b", b);
-                // write("B.m", b);
-
-                // rename("secant", *op.secant_G_);
-                // write("S.m", *op.secant_G_);
-
-                // rename("b_G", b_G);
-                // write("B_G.m", b_G);
-
-                // rename("b_I_" + std::to_string(comm.rank()), b_I);
-                // write("B_I_" + std::to_string(comm.rank()) + ".m", b_I);
-
-                if (!empty(oracle)) {
-                    Scalar diff = norm2(x - oracle);
-
-                    if (diff > 1e-6 && verbose) {
-                        comm.root_print(diff);
-
-                        rename("o", oracle);
-                        write("O.m", oracle);
-
-                        rename("x", x);
-                        write("X.m", x);
-                    }
-
-                    utopia_test_assert(diff < 1e-6);
-                }
-            }
-
-            // comm.barrier();
-            // Utopia::Abort("BYE!");
         }
 
         void poly_qp() {

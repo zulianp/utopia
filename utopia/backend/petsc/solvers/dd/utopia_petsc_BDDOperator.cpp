@@ -7,6 +7,7 @@
 #include "utopia_petsc_CrsView.hpp"
 #include "utopia_petsc_Factorization.hpp"
 #include "utopia_petsc_Matrix.hpp"
+#include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector.hpp"
 
 #include "utopia_petsc_Utils.hpp"
@@ -38,9 +39,11 @@ namespace utopia {
             A_II_ = A_II;
             A_IG_ = A_IG;
 
+            UTOPIA_TRACE_REGION_BEGIN("BDDOperator::initialize::decomposition");
             // A_II_inv_ = std::make_shared<Factorization<Matrix, Vector>>("superlu", "lu");
             A_II_inv_ = std::make_shared<Factorization<Matrix, Vector>>("mumps", "cholesky");
             A_II_inv_->update(A_II_);
+            UTOPIA_TRACE_REGION_END("BDDOperator::initialize::decomposition");
             return true;
         }
 
@@ -117,7 +120,7 @@ namespace utopia {
             auto &&comm = A.comm();
 
             original_range = row_range(A);
-            n_global = A.size();
+            n_global = A.rows();
 
             SizeType n_local = original_range.extent();
 
@@ -186,6 +189,8 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     bool BDDOperator<Matrix, Vector>::initialize(const std::shared_ptr<Vector> &rhs) {
+        UTOPIA_TRACE_REGION_BEGIN("BDDOperator::initialize(vector)");
+
         const auto &b = *rhs;
         auto &&comm = b.comm();
 
@@ -221,11 +226,16 @@ namespace utopia {
             }
         }
 
-        return impl_->init_rhs(b_G, b_I);
+        bool ok = impl_->init_rhs(b_G, b_I);
+
+        UTOPIA_TRACE_REGION_END("BDDOperator::initialize(vector)");
+        return ok;
     }
 
     template <class Matrix, class Vector>
     bool BDDOperator<Matrix, Vector>::initialize(const std::shared_ptr<Matrix> &matrix) {
+        UTOPIA_TRACE_REGION_BEGIN("BDDOperator::initialize(matrix)");
+
         auto A_GG_ptr = std::make_shared<Matrix>();
         auto A_GI_ptr = std::make_shared<Matrix>();
         auto A_IG_ptr = std::make_shared<Matrix>();
@@ -622,7 +632,15 @@ namespace utopia {
             }
         }
 
-        return impl_->init(A_GG_ptr, A_GI_ptr, A_II_ptr, A_IG_ptr);
+        bool ok = impl_->init(A_GG_ptr, A_GI_ptr, A_II_ptr, A_IG_ptr);
+
+        UTOPIA_TRACE_REGION_END("BDDOperator::initialize(matrix)");
+        return ok;
+    }
+
+    template <class Matrix, class Vector>
+    const Vector &BDDOperator<Matrix, Vector>::righthand_side() const {
+        return *impl_->secant_G_;
     }
 
     template <class Matrix, class Vector>
@@ -632,28 +650,38 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     bool BDDOperator<Matrix, Vector>::finalize(const Vector &x_G, Vector &x) {
+        UTOPIA_TRACE_REGION_BEGIN("BDDOperator::finalize");
+
         if (empty(x)) {
             x.zeros(layout(x_G.comm(), impl_->original_range.extent(), impl_->n_global));
         }
 
+        bool ok = true;
+
         Vector x_I;
         if (!impl_->finalize(x_G, impl_->b_I, x_I)) {
-            return false;
+            ok = false;
+        } else {
+            auto x_view = local_view_device(x);
+            auto x_I_view = local_view_device(x_I);
+            auto x_G_view = local_view_device(x_G);
+
+            parallel_for(
+                local_range_device(x), UTOPIA_LAMBDA(const SizeType i) { x_view.set(i, x_I_view.get(i)); });
+
+            parallel_for(local_range_device(x_G), [&](const SizeType i) {
+                SizeType i_local = impl_->local_to_global[i] - impl_->original_range.begin();
+                x_view.set(i_local, x_G_view.get(i));
+            });
         }
 
-        auto x_view = local_view_device(x);
-        auto x_I_view = local_view_device(x_I);
-        auto x_G_view = local_view_device(x_G);
+        UTOPIA_TRACE_REGION_END("BDDOperator::finalize");
+        return ok;
+    }
 
-        parallel_for(
-            local_range_device(x), UTOPIA_LAMBDA(const SizeType i) { x_view.set(i, x_I_view.get(i)); });
-
-        parallel_for(local_range_device(x_G), [&](const SizeType i) {
-            SizeType i_local = impl_->local_to_global[i] - impl_->original_range.begin();
-            x_view.set(i_local, x_G_view.get(i));
-        });
-
-        return true;
+    template <class Matrix, class Vector>
+    void BDDOperator<Matrix, Vector>::create_vector(Vector &x_G) {
+        x_G.zeros(row_layout(*impl_->A_GG_));
     }
 
     template <class Matrix, class Vector>

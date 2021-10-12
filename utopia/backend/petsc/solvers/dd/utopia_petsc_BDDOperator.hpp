@@ -24,6 +24,10 @@ namespace utopia {
         bool initialize(const std::shared_ptr<Matrix> &matrix);
         bool finalize(const Vector &x_G, Vector &x);
 
+        void create_vector(Vector &x_G);
+
+        const Vector &righthand_side() const;
+
         bool apply(const Vector &x_G, Vector &rhs_G) const override;
         Size size() const override;
 
