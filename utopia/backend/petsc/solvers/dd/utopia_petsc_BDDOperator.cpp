@@ -96,7 +96,7 @@ namespace utopia {
             return true;
         }
 
-        void finalize(const Vector &x_G, const Vector &rhs_I, Vector &x_I) {
+        bool finalize(const Vector &x_G, const Vector &rhs_I, Vector &x_I) {
             parallel_to_serial(x_G, *xL_);
 
             *A_IG_x_ = (*A_IG_) * (*xL_);
@@ -110,30 +110,27 @@ namespace utopia {
             }
 
             A_II_inv_->apply(*rhsL_, x_I);
+            return true;
         }
-
-        std::shared_ptr<Matrix> A_GG_, A_GI_, A_II_, A_IG_;
-        std::shared_ptr<Vector> secant_G_;
-        std::shared_ptr<Factorization<Matrix, Vector>> A_II_inv_;
-        std::shared_ptr<Vector> xL_, rhsL_, A_IG_x_, sol_I_;
-        Vector b_I;
 
         void init_interface(const Matrix &A) {
             auto &&comm = A.comm();
 
-            auto r = row_range(A);
-            SizeType n_local = r.extent();
+            original_range = row_range(A);
+            n_global = A.size();
+
+            SizeType n_local = original_range.extent();
 
             IndexSet min_idx(n_local, A.rows()), max_idx(n_local, 0);
 
             A.read([&](const SizeType i, const SizeType j, const Scalar) {
-                min_idx[i - r.begin()] = std::min(SizeType(min_idx[i - r.begin()]), j);
-                max_idx[i - r.begin()] = std::max(SizeType(max_idx[i - r.begin()]), j);
+                min_idx[i - original_range.begin()] = std::min(SizeType(min_idx[i - original_range.begin()]), j);
+                max_idx[i - original_range.begin()] = std::max(SizeType(max_idx[i - original_range.begin()]), j);
             });
 
             n_interface = 0;
             for (SizeType i = 0; i < n_local; ++i) {
-                if (!r.inside(min_idx[i]) || !r.inside(max_idx[i])) {
+                if (!original_range.inside(min_idx[i]) || !original_range.inside(max_idx[i])) {
                     ++n_interface;
                 }
             }
@@ -141,16 +138,16 @@ namespace utopia {
             local_interface_idx.resize(n_interface);
             std::fill(std::begin(local_interface_idx), std::end(local_interface_idx), 0);
 
-            // local_to_global.resize(n_interface);
-            // std::fill(std::begin(local_to_global), std::end(local_to_global), 0);
+            local_to_global.resize(n_interface);
+            std::fill(std::begin(local_to_global), std::end(local_to_global), 0);
 
             global_to_local.resize(n_local);
             std::fill(std::begin(global_to_local), std::end(global_to_local), -1);
 
             n_interface = 0;
             for (SizeType i = 0; i < n_local; ++i) {
-                if (!r.inside(min_idx[i]) || !r.inside(max_idx[i])) {
-                    // local_to_global[n_interface] = (i + r.begin());
+                if (!original_range.inside(min_idx[i]) || !original_range.inside(max_idx[i])) {
+                    local_to_global[n_interface] = (i + original_range.begin());
                     global_to_local[i] = n_interface;
                     local_interface_idx[n_interface++] = i;
                 }
@@ -165,12 +162,20 @@ namespace utopia {
             return (global_to_local[i_owned] != -1);
         }
 
+        std::shared_ptr<Matrix> A_GG_, A_GI_, A_II_, A_IG_;
+        std::shared_ptr<Vector> secant_G_;
+        std::shared_ptr<Factorization<Matrix, Vector>> A_II_inv_;
+        std::shared_ptr<Vector> xL_, rhsL_, A_IG_x_, sol_I_;
+        Vector b_I;
+
         // Interface support
         IndexSet local_interface_idx;
         IndexSet global_to_local;
-        // IndexSet local_to_global;
+        IndexSet local_to_global;
         SizeType interface_offset{0};
         SizeType n_interface{0};
+        Range original_range;
+        SizeType n_global{0};
     };
 
     template <class Matrix, class Vector>
@@ -628,12 +633,13 @@ namespace utopia {
     template <class Matrix, class Vector>
     bool BDDOperator<Matrix, Vector>::finalize(const Vector &x_G, Vector &x) {
         if (empty(x)) {
-            // TODO
-            assert(false);
+            x.zeros(layout(x_G.comm(), impl_->original_range.extent(), impl_->n_global));
         }
 
         Vector x_I;
-        impl_->finalize(x_G, impl_->b_I, x_I);
+        if (!impl_->finalize(x_G, impl_->b_I, x_I)) {
+            return false;
+        }
 
         auto x_view = local_view_device(x);
         auto x_I_view = local_view_device(x_I);
@@ -643,9 +649,11 @@ namespace utopia {
             local_range_device(x), UTOPIA_LAMBDA(const SizeType i) { x_view.set(i, x_I_view.get(i)); });
 
         parallel_for(local_range_device(x_G), [&](const SizeType i) {
-            SizeType i_local = local_to_global[i] - r.begin();
+            SizeType i_local = impl_->local_to_global[i] - impl_->original_range.begin();
             x_view.set(i_local, x_G_view.get(i));
         });
+
+        return true;
     }
 
     template <class Matrix, class Vector>
