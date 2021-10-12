@@ -642,15 +642,18 @@ namespace utopia {
     public:
         using Communicator = typename Traits<Vector>::Communicator;
 
-        static void parallel_to_serial(const Vector &x_p, Vector &x_s) {
+        static void parallel_to_serial(const Vector &x_from, Vector &x_to) {
             {
                 // FIXME (copying stuff just because of abstractions!)
-                auto x_p_view = local_view_device(x_p);
-                auto x_s_view = local_view_device(x_s);
+                auto x_from_view = local_view_device(x_from);
+                auto x_to_view = local_view_device(x_to);
                 parallel_for(
-                    local_range_device(x_s), UTOPIA_LAMBDA(const SizeType i) { x_s_view.set(i, x_p_view.get(i)); });
+                    local_range_device(x_to),
+                    UTOPIA_LAMBDA(const SizeType i) { x_to_view.set(i, x_from_view.get(i)); });
             }
         }
+
+        static void serial_to_parallel(const Vector &x_from, Vector &x_to) { parallel_to_serial(x_from, x_to); }
 
         bool apply(const Vector &x_G, Vector &rhs_G) const override {
             parallel_to_serial(x_G, *xL_);
@@ -666,16 +669,9 @@ namespace utopia {
                 rhs_G.zeros(layout(x_G));
             }
 
-            {
-                // FIXME (copying stuff just because of abstractions!)
-                auto rhsG_view = local_view_device(rhs_G);
-                auto rhsL_view = local_view_device(*rhsL_);
+            (*rhsL_) *= -1;
 
-                parallel_for(
-                    local_range_device(*rhsL_),
-                    UTOPIA_LAMBDA(const SizeType i) { rhsG_view.set(i, rhsL_view.get(i)); });
-            }
-
+            serial_to_parallel(*rhsL_, rhs_G);
             rhs_G += (*A_GG_) * x_G;
             return false;
         }
@@ -727,6 +723,23 @@ namespace utopia {
                     local_range_device(temp),
                     UTOPIA_LAMBDA(const SizeType i) { sG_view.set(i, sG_view.get(i) - temp_view.get(i)); });
             }
+
+            // disp(rhs_G);
+            // disp(*secant_G_);
+
+            // for (SizeType r = 0; r < comm().size(); ++r) {
+            //     comm().barrier();
+
+            //     if (r == comm().rank()) {
+            //         std::cout << "=========================================\n";
+            //         std::cout << "Rank: " << r << "\n";
+            //         std::cout << "=========================================\n";
+            //         std::cout << "A_GI * A_II^-1 * rhs_I:\n";
+            //         disp(temp);
+
+            //         std::cout << "\n" << std::flush;
+            //     }
+            // }
         }
 
         void finalize(const Vector &x_G, const Vector &rhs_I, Vector &x_I) {
@@ -783,8 +796,8 @@ namespace utopia {
 
             Vector oracle;
 
-            if (true) {
-                SizeType n = 10;
+            if (false) {
+                SizeType n = 30;
                 QPSolverTest<Matrix, Vector>::create_symm_lapl_test_data(comm, A, b, box, n, true);
 
                 Factorization<Matrix, Vector> solver;
@@ -887,8 +900,15 @@ namespace utopia {
                         assert(false);
                     }
 
+                    // if (i >= ranges[comm_size]) {
+                    //     std::cout << comm.rank() << ": [" << ranges[0] << "-" << ranges[comm.size()] << ")"
+                    //               << " r: " << rank << " " << i << "\n";
+                    // }
+
                     assert(i >= 0);
-                    assert(i < comm_size);
+                    assert(i < ranges[comm_size]);
+                    assert(rank < comm_size);
+                    assert(rank >= 0);
 
                     found = (i >= ranges[rank]) && (i < ranges[rank + 1]);
                 }
@@ -1335,6 +1355,18 @@ namespace utopia {
 
                 rename("x", x);
                 write("X.m", x);
+
+                rename("b", b);
+                write("B.m", b);
+
+                rename("secant", *op.secant_G_);
+                write("S.m", *op.secant_G_);
+
+                rename("b_G", b_G);
+                write("B_G.m", b_G);
+
+                rename("b_I_" + std::to_string(comm.rank()), b_I);
+                write("B_I_" + std::to_string(comm.rank()) + ".m", b_I);
 
                 if (!empty(oracle)) {
                     Scalar diff = norm1(x - oracle);
