@@ -116,6 +116,7 @@ namespace utopia {
         std::shared_ptr<Vector> secant_G_;
         std::shared_ptr<Factorization<Matrix, Vector>> A_II_inv_;
         std::shared_ptr<Vector> xL_, rhsL_, A_IG_x_, sol_I_;
+        Vector b_I;
 
         void init_interface(const Matrix &A) {
             auto &&comm = A.comm();
@@ -189,7 +190,7 @@ namespace utopia {
         auto I_layout = serial_layout(n_local);
 
         Vector b_G;
-        Vector b_I;
+        Vector &b_I = impl_->b_I;
 
         {
             b_G.zeros(G_layout);
@@ -622,6 +623,29 @@ namespace utopia {
     template <class Matrix, class Vector>
     bool BDDOperator<Matrix, Vector>::apply(const Vector &x_G, Vector &rhs_G) const {
         return impl_->apply(x_G, rhs_G);
+    }
+
+    template <class Matrix, class Vector>
+    bool BDDOperator<Matrix, Vector>::finalize(const Vector &x_G, Vector &x) {
+        if (empty(x)) {
+            // TODO
+            assert(false);
+        }
+
+        Vector x_I;
+        impl_->finalize(x_G, impl_->b_I, x_I);
+
+        auto x_view = local_view_device(x);
+        auto x_I_view = local_view_device(x_I);
+        auto x_G_view = local_view_device(x_G);
+
+        parallel_for(
+            local_range_device(x), UTOPIA_LAMBDA(const SizeType i) { x_view.set(i, x_I_view.get(i)); });
+
+        parallel_for(local_range_device(x_G), [&](const SizeType i) {
+            SizeType i_local = local_to_global[i] - r.begin();
+            x_view.set(i_local, x_G_view.get(i));
+        });
     }
 
     template <class Matrix, class Vector>
