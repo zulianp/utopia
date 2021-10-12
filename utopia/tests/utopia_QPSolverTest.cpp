@@ -692,7 +692,8 @@ namespace utopia {
             A_II_ = A_II;
             A_IG_ = A_IG;
 
-            A_II_inv_ = std::make_shared<Factorization<Matrix, Vector>>("superlu", "lu");
+            // A_II_inv_ = std::make_shared<Factorization<Matrix, Vector>>("superlu", "lu");
+            A_II_inv_ = std::make_shared<Factorization<Matrix, Vector>>("mumps", "cholesky");
             A_II_inv_->update(A_II_);
         }
 
@@ -784,7 +785,7 @@ namespace utopia {
         void MPRGP_DD() {
             auto &&comm = Comm::get_default();
 
-            static const bool verbose = false;
+            static const bool verbose = true;
 
             Matrix A;
             Vector b;
@@ -795,7 +796,7 @@ namespace utopia {
             std::stringstream c_ss;
             Chrono c;
 
-            if (true) {
+            if (false) {
                 c.start();
 
                 SizeType n = 1e3;
@@ -815,7 +816,10 @@ namespace utopia {
             } else {
                 c.start();
 
-                Path dir = "../data/test/CG_DD/mats_tests_2d_tri3";
+                // Path dir = "../data/test/CG_DD/mats_tests_2d_tri3";
+                Path dir = "../data/test/CG_DD/diffusion3d_P1_531k";
+                // Path dir = "../data/test/CG_DD/diffusion3d_P1_69k";
+                // Path dir = "../data/test/CG_DD/diffusion2d_P2_103k";
                 read(dir / "A", A);
                 read(dir / "b", b);
                 read(dir / "x", oracle);
@@ -1337,20 +1341,23 @@ namespace utopia {
 
                 // comm.barrier();
 
+                c.stop();
+                c_ss << "Operators initialization\n" << c << "\n";
+                c.start();
+
                 BDDOperator<Matrix, Vector> op;
                 op.init(make_ref(A_GG), make_ref(A_GI), make_ref(A_II), make_ref(A_IG));
                 op.init_rhs(b_G, b_I);
 
                 c.stop();
                 c_ss << "BDDOperator initialization\n" << c << "\n";
-
                 c.start();
 
                 ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
                 cg.verbose(verbose);
-                cg.atol(1e-18);
-                cg.rtol(1e-18);
-                cg.stol(1e-18);
+                cg.atol(1e-16);
+                cg.rtol(1e-10);
+                cg.stol(1e-16);
 
                 Vector x_G(row_layout(A_GG), 1);
                 cg.solve(op, *op.secant_G_, x_G);
@@ -1394,7 +1401,7 @@ namespace utopia {
                 // write("B_I_" + std::to_string(comm.rank()) + ".m", b_I);
 
                 if (!empty(oracle)) {
-                    Scalar diff = norm1(x - oracle);
+                    Scalar diff = norm2(x - oracle);
 
                     if (diff > 1e-6 && verbose) {
                         comm.root_print(diff);
