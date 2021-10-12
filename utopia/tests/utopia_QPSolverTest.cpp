@@ -692,7 +692,7 @@ namespace utopia {
             A_II_ = A_II;
             A_IG_ = A_IG;
 
-            A_II_inv_ = std::make_shared<Factorization<Matrix, Vector>>();
+            A_II_inv_ = std::make_shared<Factorization<Matrix, Vector>>("superlu", "lu");
             A_II_inv_->update(A_II_);
         }
 
@@ -782,13 +782,9 @@ namespace utopia {
         }
 
         void MPRGP_DD() {
-            // Subdomains (n process) +
-
             auto &&comm = Comm::get_default();
 
-            // if (Traits::Backend == BLAS) {
-            //     n = 20;
-            // }
+            static const bool verbose = false;
 
             Matrix A;
             Vector b;
@@ -796,21 +792,41 @@ namespace utopia {
 
             Vector oracle;
 
-            if (false) {
-                SizeType n = 30;
+            std::stringstream c_ss;
+            Chrono c;
+
+            if (true) {
+                c.start();
+
+                SizeType n = 1e3;
                 QPSolverTest<Matrix, Vector>::create_symm_lapl_test_data(comm, A, b, box, n, true);
 
-                Factorization<Matrix, Vector> solver;
-                solver.solve(A, b, oracle);
+                c.stop();
+                c_ss << "Problem initialization\n" << c << "\n";
+
+                if (n <= 1e5) {
+                    c.start();
+                    Factorization<Matrix, Vector> solver;
+                    solver.solve(A, b, oracle);
+                    c.stop();
+                    c_ss << "Direct solver\n" << c << "\n";
+                }
 
             } else {
+                c.start();
+
                 Path dir = "../data/test/CG_DD/mats_tests_2d_tri3";
                 read(dir / "A", A);
                 read(dir / "b", b);
                 read(dir / "x", oracle);
+
+                c.stop();
+                c_ss << "Read problem from disk\n" << c << "\n";
             }
 
-            disp(A);
+            c.start();
+
+            // disp(A);
 
             Vector x(layout(b), 0.);
 
@@ -1293,40 +1309,45 @@ namespace utopia {
                 ////////////////////////////////////////////////////////////////////////////////
 
                 // comm.synched_print(ss.str());
-                comm.barrier();
+                // comm.barrier();
 
-                disp(A_GG);
-                disp(b_G);
+                // disp(A_GG);
+                // disp(b_G);
 
-                for (SizeType r = 0; r < comm.size(); ++r) {
-                    comm.barrier();
+                // for (SizeType r = 0; r < comm.size(); ++r) {
+                //     comm.barrier();
 
-                    if (r == comm.rank()) {
-                        std::cout << "=========================================\n";
-                        std::cout << "Rank: " << r << "\n";
-                        std::cout << "=========================================\n";
-                        std::cout << "A_II:\n";
-                        disp(A_II);
+                //     if (r == comm.rank()) {
+                //         std::cout << "=========================================\n";
+                //         std::cout << "Rank: " << r << "\n";
+                //         std::cout << "=========================================\n";
+                //         std::cout << "A_II:\n";
+                //         disp(A_II);
 
-                        disp(b_I);
+                //         disp(b_I);
 
-                        std::cout << "A_IG:\n";
-                        disp(A_IG);
+                //         std::cout << "A_IG:\n";
+                //         disp(A_IG);
 
-                        std::cout << "A_GI:\n";
-                        disp(A_GI);
-                        std::cout << "\n" << std::flush;
-                    }
-                }
+                //         std::cout << "A_GI:\n";
+                //         disp(A_GI);
+                //         std::cout << "\n" << std::flush;
+                //     }
+                // }
 
-                comm.barrier();
+                // comm.barrier();
 
                 BDDOperator<Matrix, Vector> op;
                 op.init(make_ref(A_GG), make_ref(A_GI), make_ref(A_II), make_ref(A_IG));
                 op.init_rhs(b_G, b_I);
 
+                c.stop();
+                c_ss << "BDDOperator initialization\n" << c << "\n";
+
+                c.start();
+
                 ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
-                cg.verbose(true);
+                cg.verbose(verbose);
                 cg.atol(1e-18);
                 cg.rtol(1e-18);
                 cg.stol(1e-18);
@@ -1353,32 +1374,44 @@ namespace utopia {
                     });
                 }
 
-                rename("x", x);
-                write("X.m", x);
+                c.stop();
+                c_ss << "solve\n" << c << "\n";
 
-                rename("b", b);
-                write("B.m", b);
+                if (verbose) {
+                    x.comm().root_print(c_ss.str());
+                }
 
-                rename("secant", *op.secant_G_);
-                write("S.m", *op.secant_G_);
+                // rename("b", b);
+                // write("B.m", b);
 
-                rename("b_G", b_G);
-                write("B_G.m", b_G);
+                // rename("secant", *op.secant_G_);
+                // write("S.m", *op.secant_G_);
 
-                rename("b_I_" + std::to_string(comm.rank()), b_I);
-                write("B_I_" + std::to_string(comm.rank()) + ".m", b_I);
+                // rename("b_G", b_G);
+                // write("B_G.m", b_G);
+
+                // rename("b_I_" + std::to_string(comm.rank()), b_I);
+                // write("B_I_" + std::to_string(comm.rank()) + ".m", b_I);
 
                 if (!empty(oracle)) {
                     Scalar diff = norm1(x - oracle);
-                    comm.root_print(diff);
 
-                    rename("o", oracle);
-                    write("O.m", oracle);
+                    if (diff > 1e-6 && verbose) {
+                        comm.root_print(diff);
+
+                        rename("o", oracle);
+                        write("O.m", oracle);
+
+                        rename("x", x);
+                        write("X.m", x);
+                    }
+
+                    utopia_test_assert(diff < 1e-6);
                 }
             }
 
-            comm.barrier();
-            Utopia::Abort("BYE!");
+            // comm.barrier();
+            // Utopia::Abort("BYE!");
         }
 
         void poly_qp() {
