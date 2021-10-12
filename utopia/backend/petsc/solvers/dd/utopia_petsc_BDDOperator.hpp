@@ -11,11 +11,18 @@ namespace utopia {
     class BDDOperator : public Operator<Vector> {
     public:
         using Communicator = typename Traits<Vector>::Communicator;
+        using Traits = utopia::Traits<Matrix>;
+        using Scalar = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using IndexArray = typename Traits::IndexArray;
+        using IndexSet = typename Traits::IndexSet;
 
         BDDOperator();
         ~BDDOperator();
 
-        bool update(const std::shared_ptr<Matrix> &matrix);
+        bool initialize(const std::shared_ptr<Vector> &rhs);
+        bool initialize(const std::shared_ptr<Matrix> &matrix);
+        bool finalize(const Vector &x_G, Vector &x);
 
         bool apply(const Vector &x_G, Vector &rhs_G) const override;
         Size size() const override;

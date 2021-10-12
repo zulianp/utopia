@@ -24,6 +24,7 @@
 #include "utopia_ElementWisePseudoInverse.hpp"
 
 #ifdef UTOPIA_WITH_PETSC
+#include "utopia_petsc_BDDOperator.hpp"
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
 #endif  // UTOPIA_WITH_PETSC
