@@ -188,7 +188,7 @@ namespace utopia {
     BDDOperator<Matrix, Vector>::~BDDOperator() = default;
 
     template <class Matrix, class Vector>
-    bool BDDOperator<Matrix, Vector>::initialize(const std::shared_ptr<Vector> &rhs) {
+    bool BDDOperator<Matrix, Vector>::initialize(const std::shared_ptr<const Vector> &rhs) {
         UTOPIA_TRACE_REGION_BEGIN("BDDOperator::initialize(vector)");
 
         const auto &b = *rhs;
@@ -233,7 +233,7 @@ namespace utopia {
     }
 
     template <class Matrix, class Vector>
-    bool BDDOperator<Matrix, Vector>::initialize(const std::shared_ptr<Matrix> &matrix) {
+    bool BDDOperator<Matrix, Vector>::initialize(const std::shared_ptr<const Matrix> &matrix) {
         UTOPIA_TRACE_REGION_BEGIN("BDDOperator::initialize(matrix)");
 
         auto A_GG_ptr = std::make_shared<Matrix>();
@@ -242,7 +242,7 @@ namespace utopia {
         auto A_II_ptr = std::make_shared<Matrix>();
 
         auto &&comm = matrix->comm();
-        Matrix &A = *matrix;
+        const Matrix &A = *matrix;
         Matrix &A_GG = *A_GG_ptr;
         Matrix &A_GI = *A_GI_ptr;
         Matrix &A_IG = *A_IG_ptr;

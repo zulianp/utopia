@@ -20,8 +20,8 @@ namespace utopia {
         BDDOperator();
         ~BDDOperator();
 
-        bool initialize(const std::shared_ptr<Vector> &rhs);
-        bool initialize(const std::shared_ptr<Matrix> &matrix);
+        bool initialize(const std::shared_ptr<const Vector> &rhs);
+        bool initialize(const std::shared_ptr<const Matrix> &matrix);
         bool finalize(const Vector &x_G, Vector &x);
 
         void create_vector(Vector &x_G);

@@ -24,6 +24,7 @@
 #include "utopia_ElementWisePseudoInverse.hpp"
 
 #ifdef UTOPIA_WITH_PETSC
+#include "utopia_petsc_BDDLinearSolver.hpp"
 #include "utopia_petsc_BDDOperator.hpp"
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
@@ -669,7 +670,7 @@ namespace utopia {
             std::stringstream c_ss;
             Chrono c;
 
-            if (false) {
+            if (true) {
                 c.start();
 
                 SizeType n = 1e3;
@@ -689,8 +690,8 @@ namespace utopia {
             } else {
                 c.start();
 
-                // Path dir = "../data/test/CG_DD/mats_tests_2d_tri3";
-                Path dir = "../data/test/CG_DD/diffusion3d_P1_531k";
+                Path dir = "../data/test/CG_DD/mats_tests_2d_tri3";
+                // Path dir = "../data/test/CG_DD/diffusion3d_P1_531k";
                 // Path dir = "../data/test/CG_DD/diffusion3d_P1_69k";
                 // Path dir = "../data/test/CG_DD/diffusion2d_P2_103k";
                 read(dir / "A", A);
@@ -705,12 +706,18 @@ namespace utopia {
 
             c.start();
 
-            BDDOperator<Matrix, Vector> op;
-            // Initialize operator (this must come first)
-            op.initialize(make_ref(A));
+            Vector x(layout(b), 0.);
+            BDDLinearSolver<Matrix, Vector> solver;
 
-            // Initalize rhs (this must come after initialization with matrix)
-            op.initialize(make_ref(b));
+            InputParameters params;
+            params.set("verbose", verbose);
+            params.set("atol", 1e-16);
+            params.set("rtol", 1e-10);
+            params.set("stol", 1e-16);
+
+            solver.read(params);
+
+            solver.update(make_ref(A));
 
             c.stop();
             c_ss << "BDDOperator initialization\n" << c << "\n";
@@ -719,18 +726,7 @@ namespace utopia {
 
             c.start();
 
-            Vector x(layout(b), 0.);
-            ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
-            cg.verbose(verbose);
-            cg.atol(1e-16);
-            cg.rtol(1e-10);
-            cg.stol(1e-16);
-
-            Vector x_G;
-            op.create_vector(x_G);
-            cg.solve(op, op.righthand_side(), x_G);
-
-            op.finalize(x_G, x);
+            solver.apply(b, x);
 
             c.stop();
             c_ss << "solve\n" << c << "\n";
