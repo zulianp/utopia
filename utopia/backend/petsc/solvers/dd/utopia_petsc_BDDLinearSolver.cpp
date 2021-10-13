@@ -16,12 +16,16 @@ namespace utopia {
             if (solver) {
                 solver->read(in);
             }
+
+            in.get("use_preconditioner", use_preconditioner);
+            op.read(in);
         }
 
         Impl() : solver(std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>()) {}
 
         std::shared_ptr<MatrixFreeLinearSolver> solver;
         BDDOperator<Matrix, Vector> op;
+        bool use_preconditioner{true};
     };
 
     template <typename Matrix, typename Vector>
@@ -69,7 +73,11 @@ namespace utopia {
 
     template <typename Matrix, typename Vector>
     void BDDLinearSolver<Matrix, Vector>::init_memory(const Layout &layout) {
+        // We solve a reduced size system, so we ignore this
         UTOPIA_UNUSED(layout);
+
+        assert(impl_->solver);
+        impl_->solver->init_memory(impl_->op.vector_layout());
     }
 
     template <typename Matrix, typename Vector>
@@ -79,33 +87,48 @@ namespace utopia {
 
     template <typename Matrix, typename Vector>
     bool BDDLinearSolver<Matrix, Vector>::apply(const Vector &b, Vector &x) {
+        UTOPIA_TRACE_REGION_BEGIN("BDDLinearSolver::apply");
+
         if (this->verbose()) {
             b.comm().root_print("BDDLinearSolver::apply");
         }
 
+        bool ok = true;
         if (b.comm().size() == 1) {
-            return impl_->solver->solve(*this->get_operator(), b, x);
+            ok = impl_->solver->solve(*this->get_operator(), b, x);
         } else {
             impl_->op.initialize(make_ref(b));
 
             Vector x_G;
             impl_->op.create_vector(x_G);
-            bool ok = impl_->solver->solve(impl_->op, impl_->op.righthand_side(), x_G);
+            ok = impl_->solver->solve(impl_->op, impl_->op.righthand_side(), x_G);
 
             impl_->op.finalize(x_G, x);
-            return ok;
         }
+
+        UTOPIA_TRACE_REGION_END("BDDLinearSolver::apply");
+        return ok;
     }
 
     template <typename Matrix, typename Vector>
     void BDDLinearSolver<Matrix, Vector>::update(const std::shared_ptr<const Matrix> &A) {
+        UTOPIA_TRACE_REGION_BEGIN("BDDLinearSolver::update");
+
         Super::update(A);
 
         if (A->comm().size() == 1) {
             // TODO
         } else {
             impl_->op.initialize(A);
+
+            if (impl_->solver && impl_->use_preconditioner) {
+                impl_->solver->set_preconditioner(impl_->op.create_preconditioner());
+            }
         }
+
+        init_memory(row_layout(*A));
+
+        UTOPIA_TRACE_REGION_END("BDDLinearSolver::update");
     }
 
     template <typename Matrix, typename Vector>

@@ -659,18 +659,17 @@ namespace utopia {
         void MPRGP_DD() {
             auto &&comm = Comm::get_default();
 
-            static const bool verbose = false;
+            static const bool verbose = true;
 
             Matrix A;
             Vector b;
             BoxConstraints<Vector> box;
 
             Vector oracle;
-
             std::stringstream c_ss;
             Chrono c;
 
-            if (true) {
+            if (false) {
                 c.start();
 
                 SizeType n = 1e3;
@@ -690,8 +689,8 @@ namespace utopia {
             } else {
                 c.start();
 
-                Path dir = "../data/test/CG_DD/mats_tests_2d_tri3";
-                // Path dir = "../data/test/CG_DD/diffusion3d_P1_531k";
+                // Path dir = "../data/test/CG_DD/mats_tests_2d_tri3";
+                Path dir = "../data/test/CG_DD/diffusion3d_P1_531k";
                 // Path dir = "../data/test/CG_DD/diffusion3d_P1_69k";
                 // Path dir = "../data/test/CG_DD/diffusion2d_P2_103k";
                 read(dir / "A", A);
@@ -711,9 +710,12 @@ namespace utopia {
 
             InputParameters params;
             params.set("verbose", verbose);
-            params.set("atol", 1e-16);
+            params.set("atol", 1e-10);
             params.set("rtol", 1e-10);
-            params.set("stol", 1e-16);
+            params.set("stol", 1e-10);
+            params.set("use_preconditioner", true);
+            params.set("preconditioner_type", "inv");
+            // params.set("use_preconditioner", false);
 
             solver.read(params);
 

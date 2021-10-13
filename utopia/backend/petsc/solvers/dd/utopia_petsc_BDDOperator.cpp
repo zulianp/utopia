@@ -2,6 +2,7 @@
 
 // Concrete includes
 #include "utopia_DeviceView.hpp"
+#include "utopia_TrivialPreconditioners.hpp"
 #include "utopia_make_unique.hpp"
 
 #include "utopia_petsc_CrsView.hpp"
@@ -179,7 +180,14 @@ namespace utopia {
         SizeType n_interface{0};
         Range original_range;
         SizeType n_global{0};
+
+        std::string preconditioner_type{"inv_diag"};
     };
+
+    template <class Matrix, class Vector>
+    void BDDOperator<Matrix, Vector>::read(Input &in) {
+        in.get("preconditioner_type", impl_->preconditioner_type);
+    }
 
     template <class Matrix, class Vector>
     BDDOperator<Matrix, Vector>::BDDOperator() : impl_(utopia::make_unique<Impl>()) {}
@@ -680,8 +688,33 @@ namespace utopia {
     }
 
     template <class Matrix, class Vector>
+    std::shared_ptr<Preconditioner<Vector>> BDDOperator<Matrix, Vector>::create_preconditioner() const {
+        if (impl_->preconditioner_type == "inv") {
+            auto solver = std::make_shared<Factorization<Matrix, Vector>>();
+            solver->update(impl_->A_GG_);
+            return solver;
+        } else {
+            auto d = std::make_shared<Vector>();
+            this->diag(*d);
+            *d = 1. / (*d);
+            auto prec = std::make_shared<VectorPreconditioner<Vector>>(d);
+            return prec;
+        }
+    }
+
+    template <class Matrix, class Vector>
+    typename BDDOperator<Matrix, Vector>::Layout BDDOperator<Matrix, Vector>::vector_layout() const {
+        return row_layout(*impl_->A_GG_);
+    }
+
+    template <class Matrix, class Vector>
     void BDDOperator<Matrix, Vector>::create_vector(Vector &x_G) {
-        x_G.zeros(row_layout(*impl_->A_GG_));
+        x_G.zeros(this->vector_layout());
+    }
+
+    template <class Matrix, class Vector>
+    void BDDOperator<Matrix, Vector>::diag(Vector &d) const {
+        impl_->A_GG_->build_diag(d);
     }
 
     template <class Matrix, class Vector>
