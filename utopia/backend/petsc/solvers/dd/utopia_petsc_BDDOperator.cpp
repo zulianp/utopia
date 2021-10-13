@@ -182,11 +182,13 @@ namespace utopia {
         SizeType n_global{0};
 
         std::string preconditioner_type{"inv_diag"};
+        bool verbose{false};
     };
 
     template <class Matrix, class Vector>
     void BDDOperator<Matrix, Vector>::read(Input &in) {
         in.get("preconditioner_type", impl_->preconditioner_type);
+        in.get("verbose", impl_->verbose);
     }
 
     template <class Matrix, class Vector>
@@ -690,10 +692,14 @@ namespace utopia {
     template <class Matrix, class Vector>
     std::shared_ptr<Preconditioner<Vector>> BDDOperator<Matrix, Vector>::create_preconditioner() const {
         if (impl_->preconditioner_type == "inv") {
+            if (impl_->verbose) comm().root_print("Using inv(A_GG) preconditioner");
+
             auto solver = std::make_shared<Factorization<Matrix, Vector>>();
             solver->update(impl_->A_GG_);
             return solver;
         } else if (impl_->preconditioner_type == "amg") {
+            if (impl_->verbose) comm().root_print("Using amg(A_GG) preconditioner");
+
             auto solver = std::make_shared<KSPSolver<Matrix, Vector>>();
             solver->ksp_type("preonly");
             solver->pc_type("hypre");
@@ -701,6 +707,8 @@ namespace utopia {
             solver->max_it(1);
             return solver;
         } else {
+            if (impl_->verbose) comm().root_print("Using inv(diag(diag(A_GG)) preconditioner");
+
             auto d = std::make_shared<Vector>();
             this->diag(*d);
             *d = 1. / (*d);

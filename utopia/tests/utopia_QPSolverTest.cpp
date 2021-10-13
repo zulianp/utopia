@@ -690,8 +690,8 @@ namespace utopia {
                 c.start();
 
                 // Path dir = "../data/test/CG_DD/mats_tests_2d_tri3";
-                Path dir = "../data/test/CG_DD/diffusion3d_P1_531k";
-                // Path dir = "../data/test/CG_DD/diffusion3d_P1_69k";
+                // Path dir = "../data/test/CG_DD/diffusion3d_P1_531k";
+                Path dir = "../data/test/CG_DD/diffusion3d_P1_69k";
                 // Path dir = "../data/test/CG_DD/diffusion2d_P2_103k";
                 read(dir / "A", A);
                 read(dir / "b", b);
@@ -714,8 +714,8 @@ namespace utopia {
             params.set("rtol", 1e-10);
             params.set("stol", 1e-10);
             params.set("use_preconditioner", true);
-            params.set("preconditioner_type", "inv");
-            // params.set("preconditioner_type", "amg");
+            // params.set("preconditioner_type", "inv");
+            params.set("preconditioner_type", "amg");
             // params.set("use_preconditioner", false);
 
             solver.read(params);
