@@ -77,7 +77,10 @@ namespace utopia {
             // apply_bc(g);
 
             correction.set(0.);
-            if (!linear_solver->solve(H, g, correction)) {
+
+            linear_solver->update(make_ref(H));
+
+            if (!linear_solver->apply(g, correction)) {
                 // break;
             }
 
@@ -125,7 +128,7 @@ namespace utopia {
             // apply_bc(g);
 
             correction.set(0.);
-            if (!linear_solver->solve(H, g, correction)) {
+            if (!linear_solver->apply(g, correction)) {
                 // break;
             }
 
@@ -288,7 +291,7 @@ namespace utopia {
         std::shared_ptr<const Matrix> constraints_matrix_;
         std::shared_ptr<const Matrix> system_matrix_;
         bool verbose{false};
-    };  // namespace utopia
+    };
 
     template <class Matrix, class Vector, int Backend>
     PrimalInteriorPointSolver<Matrix, Vector, Backend>::PrimalInteriorPointSolver(
@@ -332,16 +335,13 @@ namespace utopia {
 
     template <class Matrix, class Vector, int Backend>
     bool PrimalInteriorPointSolver<Matrix, Vector, Backend>::apply(const Vector &b, Vector &x) {
-        const auto &A = *this->get_operator();
+        // const auto &A = *this->get_operator();
 
-        assert(A.comm().size() == b.comm().size());
-        assert(A.rows() == b.size());
+        assert(this->get_operator()->comm().size() == b.comm().size());
+        assert(this->get_operator()->rows() == b.size());
         assert(x.empty() || (x.size() == b.size() && b.comm().size() == x.comm().size()));
         assert(this->has_upper_bound());
         // assert(!this->has_lower_bound());
-
-        // auto &&lb = this->get_lower_bound();
-        // auto &&ub = this->get_upper_bound();
 
         impl_->box = this->get_box_constraints();
 

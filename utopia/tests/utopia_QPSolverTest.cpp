@@ -245,21 +245,20 @@ namespace utopia {
             create_symm_lapl_test_data(comm, A, b, box, n);
             box.lower_bound() = nullptr;
 
-            // Matrix B; B.identity(layout(A), 1.0);
+            // bool verbose = Traits::Backend == PETSC;
+            bool verbose = false;
 
-            bool verbose = Traits::Backend == PETSC;
-
-            PrimalInteriorPointSolver<Matrix, Vector> pips;
+            PrimalInteriorPointSolver<Matrix, Vector> solver;
 
             ConjugateGradient<Matrix, Vector, HOMEMADE> linear_solver;
             linear_solver.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector>>());
-            pips.set_linear_solver(make_ref(linear_solver));
+            solver.set_linear_solver(make_ref(linear_solver));
 
-            pips.set_box_constraints(box);
-            pips.verbose(verbose);
+            solver.set_box_constraints(box);
+            solver.verbose(verbose);
 
             Vector x(layout(b), 0.);
-            pips.solve(A, b, x);
+            solver.solve(A, b, x);
 
             if (verbose) {
                 rename("x", x);
