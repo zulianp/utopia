@@ -75,9 +75,13 @@ namespace utopia {
     void BDDLinearSolver<Matrix, Vector>::init_memory(const Layout &layout) {
         // We solve a reduced size system, so we ignore this
         UTOPIA_UNUSED(layout);
-
         assert(impl_->solver);
-        impl_->solver->init_memory(impl_->op.vector_layout());
+
+        if (layout.comm().size() == 1) {
+            impl_->solver->init_memory(layout);
+        } else {
+            impl_->solver->init_memory(impl_->op.vector_layout());
+        }
     }
 
     template <typename Matrix, typename Vector>

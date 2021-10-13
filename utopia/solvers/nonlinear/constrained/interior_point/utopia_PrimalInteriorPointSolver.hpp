@@ -20,12 +20,13 @@ namespace utopia {
         using Super = utopia::QPSolver<Matrix, Vector>;
 
     public:
-        inline void set_linear_solver(const std::shared_ptr<LinearSolver> &linear_solver) {
-            linear_solver_ = linear_solver;
-        }
+        void set_linear_solver(const std::shared_ptr<LinearSolver> &linear_solver);
 
         explicit PrimalInteriorPointSolver(
-            std::shared_ptr<LinearSolver> linear_solver = std::make_shared<OmniLinearSolver<Matrix, Vector>>());
+            // std::shared_ptr<LinearSolver> linear_solver = std::make_shared<OmniLinearSolver<Matrix, Vector>>()
+            std::shared_ptr<LinearSolver> linear_solver =
+                std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>());
+
         ~PrimalInteriorPointSolver() override;
         PrimalInteriorPointSolver *clone() const override;
 
@@ -36,13 +37,10 @@ namespace utopia {
         bool apply(const Vector &b, Vector &x) override;
         void init_memory(const Layout &layout) override;
         void update(const std::shared_ptr<const Matrix> &op) override;
-        void fallback_solver(const std::shared_ptr<LinearSolver> &fallback_solver);
 
     private:
         class Impl;
-
-        std::shared_ptr<LinearSolver> linear_solver_;
-        std::unique_ptr<Impl> details_;
+        std::unique_ptr<Impl> impl_;
     };
 
 }  // namespace utopia

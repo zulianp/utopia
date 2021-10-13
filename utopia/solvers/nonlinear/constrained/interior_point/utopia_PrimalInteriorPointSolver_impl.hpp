@@ -11,29 +11,291 @@ namespace utopia {
     public:
         void init(const Layout &layout) {
             correction.zeros(layout);
-            residual.zeros(layout);
+            buff.zeros(layout);
 
-            d_lb.zeros(layout);
-            d_ub.zeros(layout);
-
-            lambda.zeros(layout);
-
-            active.zeros(layout);
+            if (linear_solver) {
+                linear_solver->init_memory(layout);
+            }
         }
 
-        Vector correction, residual;
-        Vector d_lb, d_ub;
-        Vector lambda;
-        Vector active;
+        void pre_solve(Vector &x) {
+            x = min(x, *box.upper_bound());
+            lambda.values(layout(x), 1.);
 
-        Matrix mat;
-        std::shared_ptr<LinearSolver> fallback_solver;
-    };
+            if (has_constraints_matrix()) {
+                slack = *box.upper_bound() - constraints_matrix() * x;
+            } else {
+                slack = *box.upper_bound() - x;
+            }
+
+            slack.e_max(1e-8);  // 0.1
+
+            assert(is_positive(slack));
+            assert(is_positive(lambda));
+        }
+
+        void post_solve() {}
+
+        bool step(const Vector &b, Vector &x) {
+            mu = duality_measure(lambda, slack);
+            sigma = 0;
+
+            residual_d(x, b, lambda, rd);
+            residual_p(x, slack, rp);
+            residual_s(lambda, slack, rs);
+
+            if (empty(H)) {
+                H = system_matrix();
+            } else {
+                // FIXME
+                // H.same_nnz_pattern_copy(system_matrix());
+                H = system_matrix();
+            }
+
+            e_pseudo_inv(slack, slack_inv);
+            e_pseudo_inv(lambda, lambda_inv);
+
+            Vector temp_vec = e_mul(slack_inv, lambda);
+            // apply_bc(temp_vec);
+
+            if (has_constraints_matrix()) {
+                Matrix temp_mat = diag(temp_vec);
+                Matrix temp_mat_2 = transpose(constraints_matrix()) * temp_mat * constraints_matrix();
+                H += temp_mat_2;
+            } else {
+                H += diag(temp_vec);
+            }
+
+            if (has_constraints_matrix()) {
+                g = -transpose(constraints_matrix()) * e_mul(e_mul(rp, lambda) - rs, slack_inv);
+            } else {
+                g = -e_mul(e_mul(rp, lambda) - rs, slack_inv);
+            }
+
+            g -= rd;
+
+            // apply_bc(g);
+
+            correction.set(0.);
+            if (!linear_solver->solve(H, g, correction)) {
+                // break;
+            }
+
+            //////////////////////////////////////////////////////////////////////
+
+            if (has_constraints_matrix()) {
+                delta_lambda =
+                    e_mul(slack_inv, e_mul(lambda, constraints_matrix() * correction) + e_mul(lambda, rp) - rs);
+            } else {
+                delta_lambda = e_mul(slack_inv, e_mul(lambda, correction) + e_mul(lambda, rp) - rs);
+            }
+
+            delta_slack = -e_mul(lambda_inv, rs + e_mul(slack, delta_lambda));
+
+            // /////////////////////////////////////////////////////////////////////////
+            // // https://en.wikipedia.org/wiki/Mehrotra_predictor%E2%80%93corrector_method
+
+            Scalar alpha_primal = compute_alpha(slack, delta_slack);
+            assert(alpha_primal == alpha_primal);
+
+            Scalar alpha_dual = compute_alpha(lambda, delta_lambda);
+            assert(alpha_dual == alpha_dual);
+
+            Scalar alpha = std::min(alpha_primal, alpha_dual);
+
+            // Scalar mu_aff = dot(slack + alpha_primal * delta_slack, lambda + alpha_dual * delta_lambda);
+            Scalar mu_aff = dot(slack + alpha * delta_slack, lambda + alpha * delta_lambda);
+            mu_aff /= size(lambda);
+            sigma = pow(mu_aff / mu, 3);
+            assert(sigma == sigma);
+
+            // //////////////////////////////////////
+
+            buff.set(sigma * mu);
+            rs_aff = e_mul(slack, lambda) + e_mul(delta_slack, delta_lambda) - buff;
+
+            if (has_constraints_matrix()) {
+                g = -transpose(constraints_matrix()) * e_mul(slack_inv, e_mul(lambda, rp) - rs_aff);
+            } else {
+                g = -e_mul(slack_inv, e_mul(lambda, rp) - rs_aff);
+            }
+
+            g -= rd;
+
+            // apply_bc(g);
+
+            correction.set(0.);
+            if (!linear_solver->solve(H, g, correction)) {
+                // break;
+            }
+
+            if (has_constraints_matrix()) {
+                delta_lambda =
+                    e_mul(slack_inv, e_mul(lambda, constraints_matrix() * correction) + e_mul(lambda, rp) - rs_aff);
+            } else {
+                delta_lambda = e_mul(slack_inv, e_mul(lambda, correction) + e_mul(lambda, rp) - rs_aff);
+            }
+
+            delta_slack = -e_mul(lambda_inv, rs_aff + e_mul(slack, delta_lambda));
+
+            // ////////////////////////////////////////
+            Scalar tau = 1;
+            alpha_primal = compute_alpha_with_tau(slack, delta_slack, tau);
+            assert(alpha_primal == alpha_primal);
+
+            alpha_dual = compute_alpha_with_tau(lambda, delta_lambda, tau);
+            assert(alpha_dual == alpha_dual);
+            alpha = std::min(alpha_primal, alpha_dual);
+
+            x += alpha * correction;
+            lambda += alpha * delta_lambda;
+            slack += alpha * delta_slack;
+
+            // if (verbose) {
+            //     std::stringstream ss;
+            //     ss << "==============================\n";
+            //     ss << "iteration:\t" << k << "\n";
+            //     ss << "alpha:\t" << alpha << "\n";
+            //     ss << "alpha_primal:\t" << alpha_primal << "\n";
+            //     ss << "alpha_dual:\t" << alpha_dual << "\n";
+            //     ss << "mu:\t" << mu << "\n";
+            //     ss << "sigma:\t" << sigma << "\n";
+            //     x.comm().root_print(ss.str());
+            // }
+
+            return true;
+        }
+
+        Scalar duality_measure(const Vector &lambda, const Vector &s) const { return dot(lambda, s) / size(lambda); }
+
+        bool residual_d(const Vector &x, const Vector &b, const Vector &lambda, Vector &r_d) const {
+            if (has_constraints_matrix()) {
+                r_d = system_matrix() * x + transpose(constraints_matrix()) * lambda - b;
+            } else {
+                r_d = system_matrix() * x + lambda - b;
+            }
+
+            return true;
+        }
+
+        bool residual_p(const Vector &x, const Vector &s, Vector &r_p) const {
+            if (has_constraints_matrix()) {
+                r_p = constraints_matrix() * x - *box.upper_bound() + s;
+            } else {
+                r_p = x - *box.upper_bound() + s;
+            }
+            return true;
+        }
+
+        bool residual_s(const Vector &lambda, const Vector &s, Vector &r_s) {
+            buff.set(sigma * mu);
+            r_s = e_mul(s, lambda);
+            r_s -= buff;
+            return true;
+        }
+
+        bool is_positive(const Vector &x) const {
+            auto x_view = local_view_device(x);
+
+            int n_violations = 0;
+            parallel_reduce(
+                local_range_device(x),
+                UTOPIA_LAMBDA(const SizeType i)->int {
+                    auto xi = x_view.get(i);
+                    return (xi <= 0) ? 1 : 0;
+                },
+                n_violations);
+
+            n_violations = x.comm().sum(n_violations);
+
+            // if (n_violations) utopia::out() << "n_violations: " << n_violations << "/" << x.size() << "\n";
+            return n_violations == 0;
+        }
+
+        Scalar compute_alpha_with_tau(const Vector &x, const Vector &correction, const Scalar tau) {
+            {
+                auto x_view = local_view_device(x);
+                auto correction_view = local_view_device(correction);
+
+                buff.set(1.);
+
+                auto buff_view = local_view_device(buff);
+
+                parallel_for(
+                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                        auto xi = x_view.get(i);
+                        auto dxi = correction_view.get(i);
+
+                        if (xi + dxi < (1 - tau) * xi) {
+                            auto val = -xi * tau / dxi;
+                            buff_view.set(i, val);
+                        }
+                    });
+            }
+
+            return min(buff);
+        }
+
+        Scalar compute_alpha(const Vector &x, const Vector &correction) {
+            {
+                auto x_view = local_view_device(x);
+                auto correction_view = local_view_device(correction);
+
+                buff.set(1.);
+
+                auto buff_view = local_view_device(buff);
+
+                parallel_for(
+                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                        auto xi = x_view.get(i);
+                        auto dxi = correction_view.get(i);
+
+                        if (dxi < 0 && xi != 0) {
+                            auto val = -xi / dxi;
+                            buff_view.set(i, val);
+                        }
+                    });
+            }
+
+            return min(buff);
+        }
+
+        inline const Matrix &system_matrix() const { return *system_matrix_; }
+
+        inline bool has_constraints_matrix() const { return static_cast<bool>(constraints_matrix_); }
+        inline const Matrix &constraints_matrix() const {
+            assert(has_constraints_matrix());
+            return *constraints_matrix_;
+        }
+
+        std::shared_ptr<LinearSolver> linear_solver;
+
+        Matrix H;
+        Vector correction, residual;
+        Vector lambda;
+        Vector slack;
+        Vector buff;
+
+        Vector g;
+        Vector delta_lambda, delta_slack;
+        Vector rd, rp, rs, rs_aff;
+        Vector slack_inv, lambda_inv;
+
+        Scalar sigma{0};
+        Scalar mu{0};
+
+        BoxConstraints<Vector> box;
+        std::shared_ptr<const Matrix> constraints_matrix_;
+        std::shared_ptr<const Matrix> system_matrix_;
+        bool verbose{false};
+    };  // namespace utopia
 
     template <class Matrix, class Vector, int Backend>
     PrimalInteriorPointSolver<Matrix, Vector, Backend>::PrimalInteriorPointSolver(
         std::shared_ptr<LinearSolver> linear_solver)
-        : linear_solver_(std::move(linear_solver)), details_(utopia::make_unique<Impl>()) {}
+        : impl_(utopia::make_unique<Impl>()) {
+        set_linear_solver(linear_solver);
+    }
 
     template <class Matrix, class Vector, int Backend>
     PrimalInteriorPointSolver<Matrix, Vector, Backend>::~PrimalInteriorPointSolver() = default;
@@ -41,8 +303,8 @@ namespace utopia {
     template <class Matrix, class Vector, int Backend>
     PrimalInteriorPointSolver<Matrix, Vector, Backend> *PrimalInteriorPointSolver<Matrix, Vector, Backend>::clone()
         const {
-        auto ptr =
-            utopia::make_unique<PrimalInteriorPointSolver>(std::shared_ptr<LinearSolver>(linear_solver_->clone()));
+        auto ptr = utopia::make_unique<PrimalInteriorPointSolver>(
+            std::shared_ptr<LinearSolver>(impl_->linear_solver->clone()));
         if (this->has_bound()) {
             ptr->set_box_constraints(this->get_box_constraints());
         }
@@ -52,20 +314,14 @@ namespace utopia {
     template <class Matrix, class Vector, int Backend>
     void PrimalInteriorPointSolver<Matrix, Vector, Backend>::read(Input &in) {
         QPSolver<Matrix, Vector>::read(in);
-        if (linear_solver_) {
-            in.get("linear_solver", *linear_solver_);
+        if (impl_->linear_solver) {
+            in.get("linear_solver", *impl_->linear_solver);
         }
     }
 
     template <class Matrix, class Vector, int Backend>
     void PrimalInteriorPointSolver<Matrix, Vector, Backend>::print_usage(std::ostream &os) const {
         Super::print_usage(os);
-    }
-
-    template <class Matrix, class Vector, int Backend>
-    void PrimalInteriorPointSolver<Matrix, Vector, Backend>::fallback_solver(
-        const std::shared_ptr<LinearSolver> &fallback_solver) {
-        details_->fallback_solver = fallback_solver;
     }
 
     template <class Matrix, class Vector, int Backend>
@@ -78,150 +334,57 @@ namespace utopia {
     bool PrimalInteriorPointSolver<Matrix, Vector, Backend>::apply(const Vector &b, Vector &x) {
         const auto &A = *this->get_operator();
 
-        // assert(A.comm().size() == b.comm().size());
-        // assert(A.rows() == b.size());
-        // assert(x.empty() || (x.size() == b.size() && b.comm().size() == x.comm().size()));
-        // assert(this->has_bound());
-
-        // if (this->has_empty_bounds()) {
-        //     this->fill_empty_bounds(layout(b));
-        // } else {
-        //     assert(this->get_box_constraints().valid(layout(b)));
-        // }
+        assert(A.comm().size() == b.comm().size());
+        assert(A.rows() == b.size());
+        assert(x.empty() || (x.size() == b.size() && b.comm().size() == x.comm().size()));
+        assert(this->has_upper_bound());
+        // assert(!this->has_lower_bound());
 
         // auto &&lb = this->get_lower_bound();
         // auto &&ub = this->get_upper_bound();
 
-        // auto &correction = details_->correction;
-        // auto &residual = details_->residual;
+        impl_->box = this->get_box_constraints();
 
-        // auto &d_lb = details_->d_lb;
-        // auto &d_ub = details_->d_ub;
+        if (this->verbose()) {
+            this->init_solver("PrimalInteriorPointSolver comm.size = " + std::to_string(b.comm().size()),
+                              {" it. ", "      || x_k - x_{k-1} ||"});
+        }
 
-        // auto &lambda = details_->lambda;
+        impl_->verbose = this->verbose();
 
-        // auto &mat = details_->mat;
+        impl_->pre_solve(x);
 
-        // auto &active = details_->active;
+        SizeType it = 0;
+        bool converged = false;
+        while (!converged) {
+            if (!impl_->step(b, x)) {
+                break;
+            }
 
-        // lambda.set(0.0);
+            Scalar norm_c = norm2(impl_->correction);
+            ++it;
 
-        // bool converged = false;
+            converged = this->check_convergence(it, 1, 1, norm_c);
 
-        // auto r = local_range_device(b);
+            if (this->verbose()) {
+                PrintInfo::print_iter_status(it, {norm_c});
+            }
+        }
 
-        // if (this->verbose()) {
-        //     this->init_solver("PrimalInteriorPointSolver comm.size = " + std::to_string(b.comm().size()),
-        //                       {" it. ", "      || x_k - x_{k-1} ||"});
-        // }
-
-        // residual = A * x;
-        // residual = b - residual;
-
-        // SizeType it = 0;
-
-        // while (!converged) {
-        //     d_lb = x + lambda - lb;
-        //     d_ub = x + lambda - ub;
-
-        //     SizeType changed = 0;
-        //     {
-        //         auto lb_view = const_local_view_device(lb);
-        //         auto ub_view = const_local_view_device(ub);
-
-        //         auto d_lb_view = const_local_view_device(d_lb);
-        //         auto d_ub_view = const_local_view_device(d_ub);
-        //         auto active_view = local_view_device(active);
-        //         auto residual_view = local_view_device(residual);
-        //         auto x_view = local_view_device(x);
-
-        //         parallel_reduce(
-        //             r,
-        //             UTOPIA_LAMBDA(const SizeType &i)->SizeType {
-        //                 const bool prev_active_i = active_view.get(i);
-
-        //                 const Scalar d_lb_i = d_lb_view.get(i);
-        //                 const Scalar d_ub_i = d_ub_view.get(i);
-        //                 const Scalar x_i = x_view.get(i);
-
-        //                 const bool active_lb = d_lb_i <= 0.0;  // FIXME use tol
-        //                 const bool active_ub = d_ub_i >= 0.0;  // FIXME use tol
-        //                 const bool active_i = active_lb || active_ub;
-
-        //                 const Scalar val = active_lb ? (lb_view.get(i) - x_i)
-        //                                              : (active_ub ? (ub_view.get(i) - x_i) : residual_view.get(i));
-
-        //                 residual_view.set(i, val);
-        //                 active_view.set(i, active_i);
-        //                 return prev_active_i != active_i;
-        //             },
-        //             changed);
-        //     }
-
-        //     changed = b.comm().sum(changed);
-
-        //     // maybe there is a more efficent way than copy everything but this is
-        //     // probably ok
-        //     mat.same_nnz_pattern_copy(A);
-        //     set_zero_rows(mat, active, 1.0);
-
-        //     correction.set(0.0);
-        //     if (!linear_solver_->solve(mat, residual, correction)) {
-        //         utopia::err() << "PrimalInteriorPointSolver: Unable to solve linear system for subgradient"
-        //                       << std::endl;
-
-        //         if (this->details_->fallback_solver) {
-        //             correction.set(0.0);
-        //             if (!this->details_->fallback_solver->solve(mat, residual, correction)) {
-        //                 utopia::err() << "PrimalInteriorPointSolver: fallback could not solve" << std::endl;
-        //                 assert(false);
-        //                 return false;
-        //             }
-        //         }
-
-        //         const Scalar norm_r = norm2(mat * correction - residual);
-        //         const Scalar norm_rhs = norm2(residual);
-        //         if (norm_rhs < norm_r) {
-        //             utopia::err() << "PrimalInteriorPointSolver: linear solver diverged. Norm residual: " << norm_r
-        //                           << " > " << norm_rhs << std::endl;
-        //             assert(false);
-        //             return false;
-        //         }
-        //     }
-
-        //     x += correction;
-
-        //     Scalar norm_c = norm2(correction);
-        //     ++it;
-
-        //     if (this->verbose()) {
-        //         PrintInfo::print_iter_status(it, {norm_c});
-        //     }
-
-        //     if (it > 1 && !changed) {
-        //         // we converged
-        //         converged = true;
-        //     } else {
-        //         converged = this->check_convergence(it, 1, 1, norm_c);
-        //     }
-
-        //     residual = A * x;
-        //     residual = b - residual;
-
-        //     lambda = e_mul(active, residual);
-        // }
-
+        impl_->post_solve();
         return converged;
+    }
+
+    template <class Matrix, class Vector, int Backend>
+    void PrimalInteriorPointSolver<Matrix, Vector, Backend>::set_linear_solver(
+        const std::shared_ptr<LinearSolver> &linear_solver) {
+        impl_->linear_solver = linear_solver;
     }
 
     template <class Matrix, class Vector, int Backend>
     void PrimalInteriorPointSolver<Matrix, Vector, Backend>::init_memory(const Layout &layout) {
         Super::init_memory(layout);
-        if (linear_solver_) {
-            linear_solver_->init_memory(layout);
-        }
-
-        details_->init(layout);
+        impl_->init(layout);
     }
 
     template <class Matrix, class Vector, int Backend>
@@ -229,8 +392,8 @@ namespace utopia {
         Super::update(op);
         init_memory(row_layout(*op));
 
-        // copy the matrix
-        details_->mat = *op;
+        // copy ptr of the matrix
+        impl_->system_matrix_ = op;
     }
 
 }  // namespace utopia
