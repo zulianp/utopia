@@ -58,6 +58,7 @@ namespace utopia {
 
     template <typename Matrix, typename Vector>
     void BDDLinearSolver<Matrix, Vector>::read(Input &in) {
+        Super::read(in);
         impl_->read(in);
     }
 
@@ -78,6 +79,10 @@ namespace utopia {
 
     template <typename Matrix, typename Vector>
     bool BDDLinearSolver<Matrix, Vector>::apply(const Vector &b, Vector &x) {
+        if (this->verbose()) {
+            b.comm().root_print("BDDLinearSolver::apply");
+        }
+
         if (b.comm().size() == 1) {
             return impl_->solver->solve(*this->get_operator(), b, x);
         } else {

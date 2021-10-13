@@ -20,6 +20,8 @@ namespace utopia {
         using Layout = typename Super::Layout;
         using MatrixFreeLinearSolver = utopia::MatrixFreeLinearSolver<Vector>;
 
+        using Super::verbose;
+
         static_assert(Traits<Matrix>::Backend == utopia::PETSC, "only works with petsc types");
 
         void read(Input &in) override;

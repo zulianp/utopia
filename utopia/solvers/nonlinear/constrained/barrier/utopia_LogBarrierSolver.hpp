@@ -6,6 +6,7 @@
 #include "utopia_LogBarrierFunction.hpp"
 #include "utopia_LogBarrierFunctionWithSelection.hpp"
 #include "utopia_Newton.hpp"
+#include "utopia_polymorphic_LinearSolver.hpp"
 
 #include <iomanip>
 #include <limits>
@@ -31,7 +32,8 @@ namespace utopia {
     public:
         LogBarrierSolver(
             const std::shared_ptr<LinearSolver> &linear_solver =
-                std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE> >(),
+                // std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE> >(),
+            std::make_shared<OmniLinearSolver<Matrix, Vector>>(),
             const std::shared_ptr<LogBarrierFunctionBase> &barrier_function = std::make_shared<LogBarrierFunction>())
             : newton_(std::make_shared<Newton>(linear_solver)), function_(barrier_function) {}
 
