@@ -78,20 +78,29 @@ namespace utopia {
 
     template <typename Matrix, typename Vector>
     bool BDDLinearSolver<Matrix, Vector>::apply(const Vector &b, Vector &x) {
-        impl_->op.initialize(make_ref(b));
+        if (b.comm().size() == 1) {
+            return impl_->solver->solve(*this->get_operator(), b, x);
+        } else {
+            impl_->op.initialize(make_ref(b));
 
-        Vector x_G;
-        impl_->op.create_vector(x_G);
-        bool ok = impl_->solver->solve(impl_->op, impl_->op.righthand_side(), x_G);
+            Vector x_G;
+            impl_->op.create_vector(x_G);
+            bool ok = impl_->solver->solve(impl_->op, impl_->op.righthand_side(), x_G);
 
-        impl_->op.finalize(x_G, x);
-
-        return ok;
+            impl_->op.finalize(x_G, x);
+            return ok;
+        }
     }
 
     template <typename Matrix, typename Vector>
     void BDDLinearSolver<Matrix, Vector>::update(const std::shared_ptr<const Matrix> &A) {
-        impl_->op.initialize(A);
+        Super::update(A);
+
+        if (A->comm().size() == 1) {
+            // TODO
+        } else {
+            impl_->op.initialize(A);
+        }
     }
 
     template <typename Matrix, typename Vector>
