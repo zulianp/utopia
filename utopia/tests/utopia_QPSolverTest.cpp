@@ -715,6 +715,7 @@ namespace utopia {
             params.set("stol", 1e-10);
             params.set("use_preconditioner", true);
             params.set("preconditioner_type", "inv");
+            // params.set("preconditioner_type", "amg");
             // params.set("use_preconditioner", false);
 
             solver.read(params);

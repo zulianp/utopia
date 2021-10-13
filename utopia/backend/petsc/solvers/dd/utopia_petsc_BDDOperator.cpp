@@ -693,6 +693,13 @@ namespace utopia {
             auto solver = std::make_shared<Factorization<Matrix, Vector>>();
             solver->update(impl_->A_GG_);
             return solver;
+        } else if (impl_->preconditioner_type == "amg") {
+            auto solver = std::make_shared<KSPSolver<Matrix, Vector>>();
+            solver->ksp_type("preonly");
+            solver->pc_type("hypre");
+            solver->update(impl_->A_GG_);
+            solver->max_it(1);
+            return solver;
         } else {
             auto d = std::make_shared<Vector>();
             this->diag(*d);
