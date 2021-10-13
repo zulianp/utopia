@@ -659,7 +659,7 @@ namespace utopia {
         void MPRGP_DD() {
             auto &&comm = Comm::get_default();
 
-            static const bool verbose = true;
+            static const bool verbose = false;
 
             Matrix A;
             Vector b;
@@ -669,7 +669,7 @@ namespace utopia {
             std::stringstream c_ss;
             Chrono c;
 
-            if (false) {
+            if (true) {
                 c.start();
 
                 SizeType n = 1e3;
