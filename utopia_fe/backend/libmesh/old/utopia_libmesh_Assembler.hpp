@@ -104,6 +104,8 @@ namespace utopia {
                                           *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
 
                 mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
+                // FIXME
+                // MatSetOption(mat.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
             } else {
                 if (mat.is_assembled()) {
                     mat *= 0.;
@@ -219,6 +221,8 @@ namespace utopia {
                 }
 
                 mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
+                // FIXME
+                // MatSetOption(mat.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
             } else {
                 if (mat.is_assembled()) {
                     mat *= 0.;
