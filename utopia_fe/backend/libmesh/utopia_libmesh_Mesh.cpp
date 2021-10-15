@@ -56,6 +56,7 @@ namespace utopia {
         }
 
         const Mesh::Comm &Mesh::comm() const { return impl_->comm; }
+        Mesh::Comm &Mesh::comm() { return impl_->comm; }
 
         bool Mesh::empty() const { return impl_->empty(); }
 

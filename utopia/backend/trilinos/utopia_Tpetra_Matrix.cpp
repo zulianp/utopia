@@ -194,6 +194,8 @@ namespace utopia {
         }
     }
 
+    bool TpetraMatrix::is_assembled() const { return raw_type()->isFillComplete(); }
+
     void TpetraMatrix::transpose(TpetraMatrix &mat) const {
         try {
             Tpetra::RowMatrixTransposer<Scalar, LocalSizeType, SizeType, Node> transposer(mat_);

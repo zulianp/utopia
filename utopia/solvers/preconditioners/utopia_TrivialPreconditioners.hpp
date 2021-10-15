@@ -1,6 +1,8 @@
 #ifndef UTOPIA_TRIVIAL_PRECONDITIONERS_HPP
 #define UTOPIA_TRIVIAL_PRECONDITIONERS_HPP
 
+#include "utopia_Allocations.hpp"
+#include "utopia_SolverForwardDeclarations.hpp"
 #include "utopia_StoreAs.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_make_unique.hpp"
@@ -58,6 +60,22 @@ namespace utopia {
         }
 
         IdentityPreconditioner *clone() const override { return new IdentityPreconditioner(*this); }
+    };
+
+    template <class Vector>
+    class VectorPreconditioner final : public Preconditioner<Vector> {
+    public:
+        bool apply(const Vector &rhs, Vector &sol) override {
+            sol = e_mul(*vec_, rhs);
+            return true;
+        }
+
+        VectorPreconditioner *clone() const override { return new VectorPreconditioner(*this); }
+
+        VectorPreconditioner(const std::shared_ptr<Vector> &vec) : vec_(vec) {}
+
+    private:
+        std::shared_ptr<Vector> vec_;
     };
 
     template <class Vector>

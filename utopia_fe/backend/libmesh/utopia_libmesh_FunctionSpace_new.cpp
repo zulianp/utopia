@@ -239,6 +239,15 @@ namespace utopia {
             impl_->systems = std::make_shared<libMesh::EquationSystems>(mesh->raw_type());
         }
 
+        void FunctionSpace::update(const SimulationTime<Scalar> &) {
+            static bool printed = false;
+
+            if (!printed) {
+                utopia::err() << "[Warning] libmesh::FunctionSpace::update(time) not implemented!\n";
+                printed = true;
+            }
+        }
+
         bool FunctionSpace::empty() const { return !static_cast<bool>(impl_->systems); }
 
         FunctionSpace::~FunctionSpace() {}
@@ -537,6 +546,8 @@ namespace utopia {
             convert(dof_map.get_n_oz(), o_nnz);
 
             mat.sparse(ml, d_nnz, o_nnz);
+
+            // MatSetOption(mat.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
 
             UTOPIA_TRACE_REGION_END("libmesh::FunctionSpace::create_matrix");
         }

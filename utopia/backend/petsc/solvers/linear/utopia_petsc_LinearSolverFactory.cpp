@@ -11,6 +11,7 @@
 #include "utopia_petsc_RowView.hpp"
 
 #include "utopia_FactoryMethod.hpp"
+#include "utopia_petsc_BDDLinearSolver.hpp"
 #include "utopia_petsc_Factorization.hpp"
 #include "utopia_petsc_Factorizations.hpp"
 #include "utopia_petsc_GMRES.hpp"
@@ -60,6 +61,7 @@ namespace utopia {
         solvers_[Solver::direct()] = utopia::make_unique<LSFactoryMethod<Factorization<PetscMatrix, PetscVector>>>();
         solvers_["gmres"] = utopia::make_unique<LSFactoryMethod<GMRES<PetscMatrix, PetscVector>>>();
         solvers_["amg"] = utopia::make_unique<LSFactoryMethod<AlgebraicMultigrid<PetscMatrix, PetscVector>>>();
+        solvers_["bdd"] = utopia::make_unique<LSFactoryMethod<BDDLinearSolver<PetscMatrix, PetscVector>>>();
     }
 
 }  // namespace utopia

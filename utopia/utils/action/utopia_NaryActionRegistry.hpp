@@ -15,7 +15,11 @@ namespace utopia {
         using ExecuteAction = void (*)(Input &);
 
         char add_action(const std::string &action_name, ExecuteAction apply_test);
-        int apply(const std::string &action_name, Args &&... args);
+        int apply(const std::string &action_name, Args &&... args) {
+            return apply_with_backend(action_name, "", std::forward<Args>(args)...);
+        }
+
+        int apply_with_backend(const std::string &action_name, const std::string &backend, Args &&... args);
 
         void describe(std::ostream &os = std::cout) const;
 

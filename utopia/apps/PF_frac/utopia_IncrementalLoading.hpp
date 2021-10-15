@@ -135,7 +135,7 @@ namespace utopia {
         Scalar final_time_;
         SizeType time_step_counter_;
         std::string output_path_;
-        bool use_mprgp_{};
+        bool use_mprgp_{false};
 
         bool adjust_dt_on_failure_{true};
         Scalar shrinking_factor_;

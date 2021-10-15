@@ -134,5 +134,33 @@ namespace utopia {
             return impl_->elem_to_local_node_index();
         }
 
+        bool StructuredGrid::write(const Path &path) const { return dm().write(path); }
+
+        void StructuredGrid::bounding_box(AABB &output) const {
+            assert(false);
+            Utopia::Abort("IMPLEMENT ME!");
+        }
+
+        void StructuredGrid::box(const AABB &box,
+                                 const SizeType &nx,
+                                 const SizeType &ny,
+                                 const SizeType &nz,
+                                 const std::string &elem_type) {
+            assert(false);
+            Utopia::Abort("IMPLEMENT ME!");
+        }
+
+        int StructuredGrid::spatial_dimension() const {
+            assert(false);
+            Utopia::Abort("IMPLEMENT ME!");
+            return 0;
+        }
+
+        StructuredGrid::SizeType StructuredGrid::n_elements() const {
+            assert(false);
+            Utopia::Abort("IMPLEMENT ME!");
+            return 0;
+        }
+
     }  // namespace petsc
 }  // namespace utopia

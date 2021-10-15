@@ -200,6 +200,7 @@ namespace utopia {
         }
 
         inline bool empty() const override { return is_null(); }
+        bool is_assembled() const;
 
         inline Size local_size() const override {
             if (is_null()) {

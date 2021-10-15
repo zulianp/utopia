@@ -105,6 +105,8 @@ namespace utopia {
 
             ////////////////////////////////////////////////////////////
 
+            rename("rhs", rhs);
+
             if (save_output) {
                 space.write(name + "." + output_format, x);
                 space.write("rhs." + output_format, rhs);
@@ -118,15 +120,17 @@ namespace utopia {
         virtual void run() {
             UTOPIA_RUN_TEST(unit_cube_create_fe);
 
-            save_output = export_tensors = true;
+            // save_output = export_tensors = true;
             UTOPIA_RUN_TEST(unit_cube_poisson_problem);
-            save_output = export_tensors = false;
+            // save_output = export_tensors = false;
 
+            // save_output = export_tensors = true;
             UTOPIA_RUN_TEST(unit_cube_vector_poisson_problem);
+            // save_output = export_tensors = false;
+
+            save_output = export_tensors = true;
             UTOPIA_RUN_TEST(unit_cube_elasticity_problem);
-            UTOPIA_RUN_TEST(unit_cube_poisson_problem_parallel_2D);
-            UTOPIA_RUN_TEST(unit_cube_poisson_problem_parallel_3D);
-            UTOPIA_RUN_TEST(unit_cube_elasticity_problem_parallel);
+            save_output = export_tensors = false;
         }
 
     private:
@@ -185,59 +189,6 @@ namespace utopia {
 
             utopia::kokkos::NeoHookean<FE> neohookean(fe_ptr, {1.0, 1.0});
             assemble_and_solve("neohookean", space, neohookean);
-        }
-
-        void unit_cube_poisson_problem_parallel_2D() {
-            auto params = cube_space_param(1);
-
-            FunctionSpace space;
-            space.read(params);
-
-            add_cube_bc(space, 1);
-
-            auto fe_ptr = std::make_shared<FE>();
-            create_fe(space, *fe_ptr, 2);
-            utopia::kokkos::LaplaceOperator<FE> lapl(fe_ptr, {1.0});
-
-            std::stringstream ss;
-            space.describe(ss);
-
-            assemble_and_solve("unit_cube_poisson_problem_parallel_2D", space, lapl);
-        }
-
-        void unit_cube_poisson_problem_parallel_3D() {
-            auto params = cube_space_param(1);
-
-            FunctionSpace space;
-            space.read(params);
-
-            add_cube_bc(space, 1);
-
-            auto fe_ptr = std::make_shared<FE>();
-            create_fe(space, *fe_ptr, 2);
-            utopia::kokkos::LaplaceOperator<FE> lapl(fe_ptr, {1.0});
-
-            std::stringstream ss;
-            space.describe(ss);
-
-            assemble_and_solve("unit_cube_poisson_problem_parallel_3D", space, lapl);
-        }
-
-        void unit_cube_elasticity_problem_parallel() {
-            static const int Dim = 3;
-            auto params = cube_space_param(Dim);
-
-            FunctionSpace space;
-            space.read(params);
-
-            add_cube_bc(space, 3);
-
-            auto fe_ptr = std::make_shared<FE>();
-            create_fe(space, *fe_ptr, 2);
-
-            utopia::kokkos::LinearElasticity<FE, Dim> linear_elasticity(fe_ptr, {1.0, 1.0});
-
-            assemble_and_solve("unit_cube_elasticity_problem_parallel", space, linear_elasticity);
         }
     };
 }  // namespace utopia

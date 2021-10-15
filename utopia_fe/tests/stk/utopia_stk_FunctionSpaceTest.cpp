@@ -23,7 +23,7 @@ namespace utopia {
 
         void declare_field() {
             auto params = param_list(param("mesh", param_list(param("type", "cube"))));
-            FunctionSpace space;
+            FunctionSpace space(this->comm());
             space.read(params);
             space.template declare_new_nodal_field<Scalar>("velocity", 3);
 
@@ -38,7 +38,7 @@ namespace utopia {
 
         void backend_set_nodal_field() {
             auto params = param_list(param("mesh", param_list(param("type", "cube"))));
-            FunctionSpace space;
+            FunctionSpace space(this->comm());
             space.read(params);
 
             Field<FunctionSpace> field("velocity");

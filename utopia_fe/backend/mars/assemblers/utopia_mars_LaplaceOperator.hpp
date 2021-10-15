@@ -22,18 +22,11 @@ namespace utopia {
             // Same op template used in intrepid2-based backend
             using Op = utopia::kokkos::kernels::LaplaceOp<Scalar, Scalar, typename FE::Gradient, typename FE::Measure>;
 
-            bool assemble(const Vector &x, Matrix &hessian, Vector &gradient) override {
-                if (!assemble(hessian)) {
-                    return false;
-                }
-
-                assemble(x, gradient);
-                return true;
-            }
-
             bool assemble(const Vector &, Matrix &hessian) override { return assemble(hessian); }
 
-            bool assemble(const Vector &x, Vector &vec) override {
+            bool is_operator() const override { return true; }
+
+            bool apply(const Vector &x, Vector &vec) override {
                 this->ensure_fe();
 
                 auto &fe = this->fe();

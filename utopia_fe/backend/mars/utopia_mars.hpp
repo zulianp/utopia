@@ -6,5 +6,6 @@
 #include "utopia_mars_Library.hpp"
 #include "utopia_mars_Mesh.hpp"
 #include "utopia_mars_OmniAssembler.hpp"
+#include "utopia_mars_SpaceIO.hpp"
 
 #endif  // UTOPIA_MARS_HPP

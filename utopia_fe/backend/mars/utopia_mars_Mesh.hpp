@@ -1,11 +1,13 @@
 #ifndef UTOPIA_MARS_MESH_HPP
 #define UTOPIA_MARS_MESH_HPP
 
+#include "utopia_AABB.hpp"
 #include "utopia_Communicator.hpp"
 #include "utopia_Describable.hpp"
 #include "utopia_Input.hpp"
 #include "utopia_fe_base.hpp"
 #include "utopia_mars_ForwardDeclarations.hpp"
+// #include "utopia_mesh_SideSet.hpp"
 
 #include <memory>
 
@@ -14,7 +16,9 @@ namespace utopia {
     template <>
     class Traits<utopia::mars::Mesh> : public Traits<TpetraVector> {
     public:
-        // using SideSet = utopia::mars::SideSet;
+        // using SideSet = utopia::mesh::SideSet;
+        // FIXME
+        using AABB = utopia::AABB<std::vector<Traits<TpetraVector>::Scalar>>;
     };
 
     namespace mars {
@@ -35,9 +39,11 @@ namespace utopia {
             // bool write(const Path &path);
 
             void read(Input &in) override;
+            bool write(const utopia::Path &path) const;
             void describe(std::ostream &os) const override;
 
             const Comm &comm() const;
+            Comm &comm();
 
             bool empty() const;
             int spatial_dimension() const;

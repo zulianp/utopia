@@ -29,6 +29,7 @@ namespace utopia {
         }
 
         LibMeshAssembler::allocate_matrix(V.dof_map(), matrix);
+        MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
 
         USerialMatrix mat;
 

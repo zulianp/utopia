@@ -14,6 +14,8 @@
 #include "utopia_Views.hpp"
 #include "utopia_kokkos_SubView.hpp"
 
+#include "utopia_kokkos_WeakLinearThermoElasticityCouplingOp.hpp"
+
 namespace utopia {
 
     namespace kokkos {
@@ -73,51 +75,54 @@ namespace utopia {
             };
 
             using UOp = utopia::kokkos::kernels::
-                LinearElasticityOp<Dim, Scalar, FirstLameParameter, ShearModulus, Grad, typename FE::Measure>;
+                LinearElasticityOp<Dim, Scalar, FirstLameParameter, ShearModulus, Grad, Measure>;
 
             using COp = utopia::kokkos::kernels::LaplaceOp<Scalar, Scalar, Grad, Measure>;
 
-            class UCOp {
-            public:
-                using StrainKernel = utopia::kokkos::kernels::LinearizedStrain<Dim, Scalar>;
+            using UCOp =
+                utopia::kokkos::kernels::WeakLinearThermoElasticityCouplingOp<Dim, Scalar, Grad, Function, Measure>;
 
-                UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell,
-                                                         const int i,
-                                                         const int j,
-                                                         const int sub_i) const {
-                    Scalar ret = 0.0;
-                    for (int qp = 0; qp < n_quad_points; ++qp) {
-                        ret += (*this)(cell, i, j, qp, sub_i);
-                    }
-                    return ret;
-                }
+            // class UCOp {
+            // public:
+            //     using StrainKernel = utopia::kokkos::kernels::LinearizedStrain<Dim, Scalar>;
 
-                UTOPIA_INLINE_FUNCTION Scalar
-                operator()(const int cell, const int i, const int j, const int qp, const int sub_i) const {
-                    auto v = -alpha * (3 * lambda + 2 * mu) * fun(j, qp);
-                    return StrainKernel::trace(grad, cell, i, qp, sub_i) * v * measure(cell, qp);
-                }
+            //     UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell,
+            //                                              const int i,
+            //                                              const int j,
+            //                                              const int sub_i) const {
+            //         Scalar ret = 0.0;
+            //         for (int qp = 0; qp < n_quad_points; ++qp) {
+            //             ret += (*this)(cell, i, j, qp, sub_i);
+            //         }
+            //         return ret;
+            //     }
 
-                UTOPIA_INLINE_FUNCTION UCOp(const Scalar &lambda,
-                                            const Scalar &mu,
-                                            const Scalar &alpha,
-                                            const Grad &grad,
-                                            const Function &fun,
-                                            const Measure &measure)
-                    : lambda(lambda),
-                      mu(mu),
-                      alpha(alpha),
-                      grad(grad),
-                      fun(fun),
-                      measure(measure),
-                      n_quad_points(measure.extent(1)) {}
+            //     UTOPIA_INLINE_FUNCTION Scalar
+            //     operator()(const int cell, const int i, const int j, const int qp, const int sub_i) const {
+            //         auto v = -alpha * (3 * lambda + 2 * mu) * fun(j, qp);
+            //         return StrainKernel::trace(grad, cell, i, qp, sub_i) * v * measure(cell, qp);
+            //     }
 
-                Scalar lambda, mu, alpha;
-                Grad grad;
-                Function fun;
-                Measure measure;
-                int n_quad_points;
-            };
+            //     UTOPIA_INLINE_FUNCTION UCOp(const Scalar &lambda,
+            //                                 const Scalar &mu,
+            //                                 const Scalar &alpha,
+            //                                 const Grad &grad,
+            //                                 const Function &fun,
+            //                                 const Measure &measure)
+            //         : lambda(lambda),
+            //           mu(mu),
+            //           alpha(alpha),
+            //           grad(grad),
+            //           fun(fun),
+            //           measure(measure),
+            //           n_quad_points(measure.extent(1)) {}
+
+            //     Scalar lambda, mu, alpha;
+            //     Grad grad;
+            //     Function fun;
+            //     Measure measure;
+            //     int n_quad_points;
+            // };
 
             WeakLinearThermoElasticity(const std::shared_ptr<FE> &fe, Params op = Params())
                 : Super(fe), op_(std::move(op)) {

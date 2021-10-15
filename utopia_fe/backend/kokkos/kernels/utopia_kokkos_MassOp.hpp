@@ -3,13 +3,14 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_kokkos_Op.hpp"
 
 namespace utopia {
     namespace kokkos {
         namespace kernels {
 
             template <typename Scalar_, class Density, class Fun, class Measure>
-            class MassOp {
+            class MassOp : public TestTrialOp {
             public:
                 // To be used with LumedOp
                 using Scalar = Scalar_;

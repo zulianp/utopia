@@ -1053,6 +1053,205 @@ namespace utopia {
         }
     }
 
+    template <typename S, typename I, int BlockSize>
+    void disp_connectivity(const CRSMatrix<S, I, BlockSize> &mat, std::ostream &os = std::cout) {
+        using SizeType = typename std::remove_const<typename Traits<I>::ValueType>::type;
+
+        SizeType n_blocks = mat.rows();
+
+        for (SizeType block_i = 0; block_i < n_blocks; ++block_i) {
+            auto row = mat.row(block_i);
+
+            auto nb = row.n_blocks();
+
+            os << block_i << ": ";
+            for (SizeType block_k = 0; block_k < nb; ++block_k) {
+                os << row.colidx(block_k) << " ";
+            }
+
+            os << "\n";
+        }
+    }
+
+    void create_local_to_global(std::vector<PetscInt> &local_to_global) {
+        local_to_global.resize(28);
+        local_to_global[0] = 48;
+        local_to_global[1] = 49;
+        local_to_global[2] = 50;
+        local_to_global[3] = 51;
+        local_to_global[4] = 52;
+        local_to_global[5] = 53;
+        local_to_global[6] = 54;
+        local_to_global[7] = 55;
+        local_to_global[8] = 56;
+        local_to_global[9] = 57;
+        local_to_global[10] = 58;
+        local_to_global[11] = 59;
+        local_to_global[12] = 60;
+        local_to_global[13] = 61;
+        local_to_global[14] = 62;
+        local_to_global[15] = 63;
+        local_to_global[16] = 64;
+        local_to_global[17] = 65;
+        local_to_global[18] = 66;
+        local_to_global[19] = 68;
+        local_to_global[20] = 69;
+        local_to_global[21] = 70;
+        local_to_global[22] = 72;
+        local_to_global[23] = 73;
+        local_to_global[24] = 74;
+        local_to_global[25] = 76;
+        local_to_global[26] = 77;
+        local_to_global[27] = 78;
+    }
+
+    // void transform_ghost_index(PetscInt nghosts, const PetscInt *ghosts, std::vector<PetscInt> &block_ghosts) {
+    //     if (nghosts == 0) return;
+
+    //     block_ghosts.reserve(ghosts[0] / 4 + 1);
+    //     block_ghosts.push_back(ghosts[0] / 4);
+
+    //     for (PetscInt i = 1; i < nghosts; ++i) {
+    //         PetscInt block_i = ghosts[i] / 4;
+
+    //         if (block_ghosts.back() != block_i) {
+    //             block_ghosts.push_back(block_i);
+    //         }
+    //     }
+
+    //     std::stringstream ss;
+    //     ss << block_ghosts.back() << " -> " << ghosts[nghosts - 1] << " ";
+    //     ss << "size: " << block_ghosts.size() << "->" << nghosts << "\n";
+
+    //     utopia::PetscCommunicator comm;
+    //     comm.synched_print(ss.str(), std::cout);
+
+    //     // assert(block_ghosts.size() == nghosts / 4);
+    // }
+
+    void create_block_assignment(const std::vector<PetscInt> &local_to_global,
+                                 const int block_size,
+                                 std::vector<PetscInt> &block) {
+        if (local_to_global.empty()) {
+            block.clear();
+            return;
+        }
+
+        std::size_t n = local_to_global.size();
+        block.resize(n);
+
+        PetscInt min_block = local_to_global[0] / block_size;
+
+        for (PetscInt i = 0; i < n; ++i) {
+            PetscInt block_i = local_to_global[i] / block_size - min_block;
+            block[i] = block_i;
+        }
+    }
+
+    template <int BlockSize>
+    class IndexedBlockAssignment {
+    public:
+        inline constexpr SizeType operator[](const SizeType i) const { return block[i]; }
+        inline constexpr int sub(const SizeType i) const {
+            auto idx = local_to_global[i];
+            return idx - (idx / BlockSize) * BlockSize;
+        }
+
+        IndexedBlockAssignment(const std::vector<PetscInt> &block, const std::vector<PetscInt> &local_to_global)
+            : block(block), local_to_global(local_to_global) {}
+
+        const std::vector<PetscInt> &block;
+        const std::vector<PetscInt> &local_to_global;
+    };
+
+    void petsc_rectangular_block_mat_from_file() {
+        using ScalarView = utopia::ArrayView<PetscScalar>;
+        using IndexView = utopia::ArrayView<const PetscInt>;
+
+        auto &&comm = PetscCommunicator::get_default();
+
+        if (comm.size() > 1) return;
+
+        PetscInt rows = 4;
+        PetscInt cols = 8;
+
+        PetscMatrix mat;
+        read("o0", mat);
+        // disp(mat);
+
+        rename("O", mat);
+        write("o.m", mat);
+
+        PetscCrsView crs(mat.raw_type());
+
+        auto d_row_ptr = crs.row_ptr();
+        auto d_colidx = crs.colidx();
+        auto d_values = crs.values();
+
+        utopia::CRSMatrix<ScalarView, IndexView, 1> temp_crs(d_row_ptr, d_colidx, d_values, cols);
+        utopia::CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 4> block_crs;
+
+        // disp(temp_crs);
+
+        std::vector<PetscInt> local_to_global, block;
+        create_local_to_global(local_to_global);
+        create_block_assignment(local_to_global, 4, block);
+
+        convert(temp_crs,
+                BlockCRSDefaultBlockAssignment<PetscInt, 4>(),
+                IndexedBlockAssignment<4>(block, local_to_global),
+                block_crs);
+
+        // disp_connectivity(temp_crs);
+        // disp_connectivity(block_crs);
+
+        disp(block_crs);
+    }
+
+    void petsc_rectangular_block_mat() {
+        using ScalarView = utopia::ArrayView<PetscScalar>;
+        using IndexView = utopia::ArrayView<const PetscInt>;
+
+        auto &&comm = PetscCommunicator::get_default();
+
+        if (comm.size() > 1) return;
+
+        PetscInt rows = 4;
+        PetscInt cols = 8;
+
+        PetscMatrix mat;
+        mat.sparse(serial_layout(rows, cols), 3, 3);
+        {
+            Write<PetscMatrix> w(mat);
+            auto rr = row_range(mat);
+
+            mat.set(0, 0, 0.0);
+            mat.set(0, 1, 0.01);
+            mat.set(0, 7, 1.01);
+
+            mat.set(1, 2, 1.0);
+            mat.set(1, 5, 5.0);
+
+            mat.set(3, 6, 6.0);
+        }
+
+        disp(mat);
+
+        PetscCrsView crs(mat.raw_type());
+
+        auto d_row_ptr = crs.row_ptr();
+        auto d_colidx = crs.colidx();
+        auto d_values = crs.values();
+
+        utopia::CRSMatrix<ScalarView, IndexView, 1> temp_crs(d_row_ptr, d_colidx, d_values, cols);
+        utopia::CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 2> block_crs;
+        convert(temp_crs, block_crs);
+
+        // disp(temp_crs);
+
+        disp(block_crs);
+    }
+
     void petsc_block_mat() {
         auto &&comm = PetscCommunicator::get_default();
 
@@ -1365,6 +1564,8 @@ namespace utopia {
     }
 
     static void petsc_specific() {
+        // UTOPIA_RUN_TEST(petsc_rectangular_block_mat_from_file);
+        UTOPIA_RUN_TEST(petsc_rectangular_block_mat);
         UTOPIA_RUN_TEST(petsc_memcheck);
         UTOPIA_RUN_TEST(petsc_line_search);
         UTOPIA_RUN_TEST(petsc_residual);

@@ -11,6 +11,7 @@ namespace utopia {
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+        using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using Environment_t = utopia::Environment<FunctionSpace>;
         using SimulationTime = utopia::SimulationTime<Scalar_t>;
 
@@ -19,6 +20,10 @@ namespace utopia {
             H0 = utopia::make_unique<Matrix_t>();
             g0 = utopia::make_unique<Vector_t>();
         }
+
+        inline Communicator_t &comm() override { return H0->comm(); }
+
+        inline const Communicator_t &comm() const override { return H0->comm(); }
 
         void read(Input &in) override {
             function_->read(in);

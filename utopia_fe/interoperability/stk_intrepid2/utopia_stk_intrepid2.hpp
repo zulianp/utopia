@@ -67,6 +67,15 @@ namespace utopia {
         static void apply(const Field<utopia::stk::FunctionSpace> &from, Intrepid2Field<Scalar> &to, int var);
     };
 
+    template <typename Scalar>
+    class ConvertField<Intrepid2Field<Scalar>, Field<utopia::stk::FunctionSpace>> {
+    public:
+        using Vector = utopia::Traits<utopia::stk::FunctionSpace>::Vector;
+        using SizeType = utopia::Traits<utopia::stk::FunctionSpace>::SizeType;
+
+        static void apply(const Intrepid2Field<Scalar> &from, Field<utopia::stk::FunctionSpace> &to);
+    };
+
 #ifdef UTOPIA_WITH_PETSC
     template <typename Scalar>
     class LocalToGlobal<utopia::stk::FunctionSpace, StkViewDevice_t<Scalar>, PetscMatrix> {

@@ -151,7 +151,7 @@ namespace utopia {
             }
 
             bool write(const Path &path, const PetscVector &x) const {
-                // UTOPIA_TRACE_REGION_BEGIN("PetscDMbase::write(...)");
+                UTOPIA_TRACE_REGION_BEGIN("PetscDMbase::write(...)");
                 PetscIO io;
                 if (!io.open(comm(), path)) {
                     return false;
@@ -163,7 +163,7 @@ namespace utopia {
                     return false;
                 }
 
-                // UTOPIA_TRACE_REGION_END("PetscDMbase::write(...)");
+                UTOPIA_TRACE_REGION_END("PetscDMbase::write(...)");
                 return true;
             }
 
@@ -187,6 +187,8 @@ namespace utopia {
                 return ret;
             }
 
+            inline bool empty() const { return wrapper_->dm == nullptr; }
+
             void set_default_components(const int n_comp) { default_components_ = n_comp; }
             int default_components() { return default_components_; }
 
@@ -195,10 +197,7 @@ namespace utopia {
 
             class Wrapper {
             public:
-                Wrapper()
-
-                    = default;
-
+                Wrapper() = default;
                 ~Wrapper() { destroy(); }
 
                 void destroy() {

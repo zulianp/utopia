@@ -20,22 +20,41 @@ namespace utopia {
 
     template <class FunctionSpace>
     class FEFunctionInterface
-        : public Function<typename Traits<FunctionSpace>::Matrix, typename Traits<FunctionSpace>::Vector> {
+        : public Function<typename Traits<FunctionSpace>::Matrix, typename Traits<FunctionSpace>::Vector>,
+          public Operator<typename Traits<FunctionSpace>::Vector> {
     public:
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+        using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using Environment_t = utopia::Environment<FunctionSpace>;
         using OmniAssembler_t = utopia::OmniAssembler<FunctionSpace>;
         using SimulationTime = utopia::SimulationTime<Scalar_t>;
 
         virtual ~FEFunctionInterface() = default;
 
-        virtual bool apply(const Vector_t & /*x*/, Vector_t & /*hessian_times_x*/) const {
+        bool apply(const Vector_t & /*x*/, Vector_t & /*hessian_times_x*/) const override {
             assert(false);
             Utopia::Abort("Implement me!");
             return false;
         }
+
+        Size size() const override {
+            assert(false);
+            Utopia::Abort("Implement me!");
+            return {};
+        }
+
+        Size local_size() const override {
+            assert(false);
+            Utopia::Abort("Implement me!");
+            return {};
+        }
+
+        Communicator_t &comm() override = 0;
+        const Communicator_t &comm() const override = 0;
+
+        virtual bool is_operator() const { return false; }
 
         virtual void create_solution_vector(Vector_t &x) = 0;
         virtual void apply_constraints(Vector_t &x) const = 0;
@@ -83,6 +102,7 @@ namespace utopia {
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+        using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using OmniAssembler_t = utopia::OmniAssembler<FunctionSpace>;
         using Environment_t = utopia::Environment<FunctionSpace>;
         using SimulationTime = utopia::SimulationTime<Scalar_t>;
@@ -96,6 +116,15 @@ namespace utopia {
         virtual ~FEModelFunction() = default;
 
         bool is_linear() const override { return assembler()->is_linear(); }
+
+        inline Communicator_t &comm() override { return space_->mesh().comm(); }
+        inline const Communicator_t &comm() const override { return space_->mesh().comm(); }
+
+        bool is_operator() const override { return assembler()->is_operator(); }
+
+        Size size() const override { return {space_->n_dofs(), space_->n_dofs()}; }
+
+        Size local_size() const override { return {space_->n_local_dofs(), space_->n_local_dofs()}; }
 
         void set_time(const std::shared_ptr<SimulationTime> &time) override {
             assert(assembler_);
@@ -156,7 +185,13 @@ namespace utopia {
                 hessian_times_x *= 0.0;
             }
 
-            return this->assembler()->apply(x, hessian_times_x);
+            bool ok = this->assembler()->apply(x, hessian_times_x);
+
+            if (!ok) return false;
+
+            this->space()->copy_at_constrained_nodes(x, hessian_times_x);
+
+            return ok;
         }
 
         bool assemble_mass_matrix(Matrix_t &mass_matrix) override {
@@ -258,7 +293,7 @@ namespace utopia {
         bool is_time_dependent() const override { return false; }
 
         inline bool verbose() const { return verbose_; }
-        inline void verbose(const bool val) const { verbose_ = val; }
+        inline void verbose(const bool val) { verbose_ = val; }
 
         bool report_solution(const Vector_t &x) override { return space_->write(output_path_, x); }
 
@@ -303,6 +338,7 @@ namespace utopia {
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+        using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using OmniAssembler_t = utopia::OmniAssembler<FunctionSpace>;
         using Environment_t = utopia::Environment<FunctionSpace>;
         using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
@@ -326,6 +362,7 @@ namespace utopia {
 
         bool update_IVP(const Vector_t &) override {
             time()->update();
+            space()->update(*time());
             return true;
         }
 
@@ -465,6 +502,15 @@ namespace utopia {
         inline const std::shared_ptr<FEFunctionInterface_t> function() const { return fe_function_; }
 
         bool is_linear() const override { return function()->is_linear(); }
+
+        bool is_operator() const override { return function()->is_operator(); }
+
+        Size size() const override { return function()->size(); }
+
+        Size local_size() const override { return function()->local_size(); }
+
+        inline Communicator_t &comm() override { return function()->comm(); }
+        inline const Communicator_t &comm() const override { return function()->comm(); }
 
         inline void must_apply_constraints_to_assembled(const bool val) override { must_apply_constraints_ = val; }
 

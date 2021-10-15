@@ -163,7 +163,7 @@ namespace utopia {
 
     template <typename S, typename I, int BlockSize>
     void disp(const CRSMatrix<S, I, BlockSize> &mat, std::ostream &os = std::cout) {
-        using SizeType = typename Traits<I>::ValueType;
+        using SizeType = typename std::remove_const<typename Traits<I>::ValueType>::type;
 
         SizeType n_blocks = mat.rows();
 

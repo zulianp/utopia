@@ -47,11 +47,14 @@ namespace utopia {
             using Vector = Traits<FunctionSpace>::Vector;
             using Matrix = Traits<FunctionSpace>::Matrix;
             using SizeType = Traits<FunctionSpace>::SizeType;
+            using Scalar = Traits<FunctionSpace>::Scalar;
             using Comm = Traits<FunctionSpace>::Communicator;
 
             FunctionSpace(const Comm &comm = Comm::get_default());
             FunctionSpace(const std::shared_ptr<Mesh> &mesh);
             void init(const std::shared_ptr<Mesh> &mesh) override;
+            void update(const SimulationTime<Scalar> &) override;
+
             ~FunctionSpace();
 
             bool write(const Path &path, const Vector &x) override;

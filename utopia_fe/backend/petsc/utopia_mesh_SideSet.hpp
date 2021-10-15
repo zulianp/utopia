@@ -20,7 +20,7 @@ namespace utopia {
                 inline static constexpr BoundaryIdType top_id() { return 4; }
                 inline static constexpr BoundaryIdType front_id() { return 5; }
                 inline static constexpr BoundaryIdType back_id() { return 6; }
-                inline static constexpr BoundaryIdType invalid_id() { return 0; }
+                inline static constexpr BoundaryIdType invalid_id() { return -1; }
 
                 inline static std::string left() { return "left"; }
                 inline static std::string right() { return "right"; }
@@ -28,6 +28,30 @@ namespace utopia {
                 inline static std::string top() { return "top"; }
                 inline static std::string front() { return "front"; }
                 inline static std::string back() { return "back"; }
+
+                inline static BoundaryIdType id_from_user_space_name(const std::string &str_in) {
+                    return convert(str_in);
+                }
+
+                inline static std::string name_from_id(const BoundaryIdType id) {
+                    switch (id) {
+                        case left_id():
+                            return left();
+                        case right_id():
+                            return right();
+                        case bottom_id():
+                            return bottom();
+                        case top_id():
+                            return top();
+                        case front_id():
+                            return front();
+                        case back_id():
+                            return back();
+                        default: {
+                            return "Undefined";
+                        }
+                    }
+                }
 
                 inline static BoundaryIdType convert(const std::string &str_in) {
                     if (str_in.empty()) {
@@ -40,27 +64,27 @@ namespace utopia {
                     std::transform(
                         str_in.begin(), str_in.end(), str.begin(), [](unsigned char c) { return std::tolower(c); });
 
-                    if (str == "left") {
+                    if (str == left()) {
                         return left_id();
                     }
 
-                    if (str == "right") {
+                    if (str == right()) {
                         return right_id();
                     }
 
-                    if (str == "bottom") {
+                    if (str == bottom()) {
                         return bottom_id();
                     }
 
-                    if (str == "top") {
+                    if (str == top()) {
                         return top_id();
                     }
 
-                    if (str == "front") {
+                    if (str == front()) {
                         return front_id();
                     }
 
-                    if (str == "back") {
+                    if (str == back()) {
                         return back_id();
                     }
 

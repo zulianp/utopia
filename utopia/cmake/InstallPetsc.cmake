@@ -26,7 +26,7 @@ if(NOT CYGWIN)
             --download-hypre=yes
             --with-cxx-dialect=C++11
             --download-mumps=yes
-            -with-debugging=0)
+            --with-debugging=0)
 
         if(UTOPIA_PETSC_ENABLE_SUPERLU)
             set(PETSC_CONFIG_ARGS

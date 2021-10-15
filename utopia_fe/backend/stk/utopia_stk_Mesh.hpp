@@ -46,6 +46,7 @@ namespace utopia {
             void describe(std::ostream &os) const override;
 
             const Comm &comm() const;
+            Comm &comm();
 
             ::stk::mesh::BulkData &bulk_data() const;
             ::stk::mesh::MetaData &meta_data() const;
@@ -64,6 +65,7 @@ namespace utopia {
 
             void displace(const Vector &displacement);
             void scale(const Scalar &scale_factor);
+            void scale(const std::vector<Scalar> &scale_factors);
 
             void unit_cube(const SizeType &nx, const SizeType &ny, const SizeType &nz);
 
