@@ -79,7 +79,8 @@ namespace utopia {
         }
 
         IterativeSolver<Matrix, Vector>(const IterativeSolver<Matrix, Vector> &other)
-            : atol_(other.atol_),
+            : LinearSolver<Matrix, Vector>(other),
+              atol_(other.atol_),
               rtol_(other.rtol_),
               stol_(other.stol_),
               max_it_(other.max_it_),

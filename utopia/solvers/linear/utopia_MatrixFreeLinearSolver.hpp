@@ -22,6 +22,7 @@ namespace utopia {
         // using PreconditionedSolverInterface<Vector>::update;
 
         ~MatrixFreeLinearSolver() override = default;
+
         virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) = 0;
 
         /*! @brief if overriden the subclass has to also call this one first
