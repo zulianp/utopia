@@ -52,6 +52,26 @@ namespace utopia {
             HostUnorderedMap host_map;
             bool empty{true};
         };
+
+        template <class FE, class Kernel>
+        class SubdomainValueTimesKernel {
+        public:
+            using Scalar = typename FE::Scalar;
+
+            template <class... Args>
+            UTOPIA_INLINE_FUNCTION Scalar operator()(const int block_id, Args... args) {
+                auto value = subdomain_value.value(block_id);
+                return value * kernel(args...);
+            }
+
+            UTOPIA_INLINE_FUNCTION SubdomainValueTimesKernel(const SubdomainValue<FE> &subdomain_value,
+                                                             const Kernel &kernel)
+                : subdomain_value(subdomain_value), kernel(kernel) {}
+
+            SubdomainValue<FE> subdomain_value;
+            Kernel kernel;
+        };
+
     }  // namespace kokkos
 }  // namespace utopia
 

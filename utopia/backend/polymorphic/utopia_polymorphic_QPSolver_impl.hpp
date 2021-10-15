@@ -8,6 +8,7 @@
 // includes
 // HOMEMADE
 #include "utopia_LogBarrierQPSolver.hpp"
+#include "utopia_PrimalInteriorPointSolver_impl.hpp"
 #include "utopia_ProjectedConjugateGradient.hpp"
 #include "utopia_ProjectedGaussSeidel.hpp"
 #include "utopia_ProjectedGradient.hpp"
@@ -107,12 +108,14 @@ namespace utopia {
                 using HomeMadeProjectedConjugateGradient = utopia::ProjectedConjugateGradient<Matrix, Vector>;
                 using HomeMadeProjectedGaussSeidel = utopia::ProjectedGaussSeidel<Matrix, Vector>;
                 using HomeMadeLogBarrierQPSolver = utopia::LogBarrierQPSolver<Matrix, Vector>;
+                using HomeMadePrimalInteriorPointSolver = utopia::PrimalInteriorPointSolver<Matrix, Vector>;
 
                 register_solver<HomeMadeSemismoothNewton>("any", "ssnewton");
                 register_solver<HomeMadeProjectedGradient>("any", "pg");
                 register_solver<HomeMadeProjectedConjugateGradient>("any", "pcg");
                 register_solver<HomeMadeProjectedGaussSeidel>("any", "pgs");
                 register_solver<HomeMadeLogBarrierQPSolver>("any", "logbarrier");
+                register_solver<HomeMadePrimalInteriorPointSolver>("any", "ipm");
             }
 
 #ifdef UTOPIA_WITH_PETSC

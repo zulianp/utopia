@@ -25,6 +25,8 @@
 
 #include "utopia_libmesh_VectorElement.hpp"
 
+#include "utopia_LibMeshBackend.hpp"
+
 namespace utopia {
 
     template <class T>

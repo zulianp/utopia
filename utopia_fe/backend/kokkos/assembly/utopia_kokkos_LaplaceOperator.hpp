@@ -28,43 +28,8 @@ namespace utopia {
             using Gradient = typename FE::Gradient;
             using Measure = typename FE::Measure;
 
-            class Params : public Configurable {
-            public:
-                void read(Input &in) override {
-                    in.get("coeff", coeff);
-                    in.get("permeability_function", [this](Input &node) {
-                        node.get("function", [this](Input &function_node) { subdomain_function.read(function_node); });
-                    });
-
-                    in.get("diffusion_function", [this](Input &node) {
-                        node.get("function", [this](Input &function_node) { subdomain_function.read(function_node); });
-                    });
-
-                    bool verbose = false;
-                    in.get("verbose", verbose);
-
-                    if (verbose) {
-                        utopia::out() << "------------------------------\n";
-                        utopia::out() << "LaplaceOperator:\n";
-                        utopia::out() << "coeff:\t" << coeff << '\n';
-
-                        if (!subdomain_function.empty) {
-                            utopia::out() << "function: SubdomainValue\n";
-                        }
-
-                        utopia::out() << "------------------------------\n";
-                    }
-                }
-
-                Params(const DiffusionCoefficient &coeff = DiffusionCoefficient(1.0))
-                    : coeff(coeff), subdomain_function(1.0) {}
-                DiffusionCoefficient coeff;
-
-                // FIXME
-                kokkos::SubdomainValue<FE> subdomain_function;
-            };
-
-            using Op = utopia::kokkos::kernels::LaplaceOp<Scalar, DiffusionCoefficient, Gradient, Measure>;
+            using Params = utopia::kokkos::LaplaceOp<FE, DiffusionCoefficient>;
+            using Op = typename Params::UniformKernel;
 
             LaplaceOperator(const std::shared_ptr<FE> &fe, Params op = Params()) : Super(fe), op_(std::move(op)) {}
 
@@ -76,21 +41,22 @@ namespace utopia {
             inline bool is_scalar() const override { return false; }
             bool is_operator() const override { return true; }
 
-            inline Op make_op() {
-                auto &fe = this->fe();
-                return Op(op_.coeff, fe.grad(), fe.measure());
-            }
+            inline Op make_op() { return op_.uniform_kernel(this->fe()); }
 
             bool assemble_matrix() override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<LaplaceOperator>::assemble");
                 this->ensure_matrix_accumulator();
 
+                // if (op_.is_uniform()) {
                 this->loop_cell_test_trial("Assemble<LaplaceOperator>::assemble",
-                                           op_and_store_cell_ij(this->matrix_data(), make_op()));
+                                           op_and_store_cell_ij(this->matrix_data(), op_.uniform_kernel(this->fe())));
+                // } else {
 
-                if (!op_.subdomain_function.empty) {
+                // }
+
+                if (!op_.subdomain_value.empty) {
                     auto data = this->matrix_data();
-                    this->scale_matrix(op_.subdomain_function, data);
+                    this->scale_matrix(op_.subdomain_value, data);
                 }
 
                 assert(check_op());
@@ -106,9 +72,9 @@ namespace utopia {
 
                 this->apply_operator("Assemble<LaplaceOperator>::apply", x, y, make_op());
 
-                if (!op_.subdomain_function.empty) {
+                if (!op_.subdomain_value.empty) {
                     auto data = this->vector_data();
-                    this->scale_vector(op_.subdomain_function, data);
+                    this->scale_vector(op_.subdomain_value, data);
                 }
 
                 UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperator>::apply");

@@ -33,6 +33,8 @@ namespace utopia {
             return _data[index];
         }
 
+        inline SizeType operator[](SizeType index) const { return get(index); }
+
         Size() = default;
 
         explicit Size(const int n) : _data(n, 0) { assert(n <= UTOPIA_MAX_TENSOR_ORDER); }

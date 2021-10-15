@@ -84,12 +84,12 @@ namespace utopia {
 
             //////////////////////////////////////
 
-            ConjugateGradient<Matrix_t, Vector_t, HOMEMADE> cg;
-            cg.apply_gradient_descent_step(true);
+            // ConjugateGradient<Matrix_t, Vector_t, HOMEMADE> cg;
+            // cg.apply_gradient_descent_step(true);
 
             //////////////////////////////////////
 
-            // BiCGStab<Matrix_t, Vector_t, HOMEMADE> cg;
+            BiCGStab<Matrix_t, Vector_t, HOMEMADE> cg;
 
             //////////////////////////////////////
 

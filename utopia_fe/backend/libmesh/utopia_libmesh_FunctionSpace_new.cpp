@@ -547,6 +547,8 @@ namespace utopia {
 
             mat.sparse(ml, d_nnz, o_nnz);
 
+            // MatSetOption(mat.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+
             UTOPIA_TRACE_REGION_END("libmesh::FunctionSpace::create_matrix");
         }
 

@@ -2,13 +2,14 @@
 #define UTOPIA_KOKKOS_WEAK_THERMO_ELASTICITY_COUPLING_HPP
 
 #include "utopia_kokkos_LinearElasticityOp.hpp"
+#include "utopia_kokkos_Op.hpp"
 
 namespace utopia {
     namespace kokkos {
         namespace kernels {
 
             template <int Dim, typename Scalar, class Grad, class Function, class Measure>
-            class WeakLinearThermoElasticityCouplingOp {
+            class WeakLinearThermoElasticityCouplingOp : public TestTrialOp {
             public:
                 using StrainKernel = utopia::kokkos::kernels::LinearizedStrain<Dim, Scalar>;
 

@@ -2,6 +2,7 @@
 #define UTOPIA_KOKKOS_NEOHOOKEAN_OP_HPP
 
 #include "utopia_Base.hpp"
+#include "utopia_kokkos_Op.hpp"
 #include "utopia_kokkos_StrainOp.hpp"
 
 namespace utopia {
@@ -100,7 +101,7 @@ namespace utopia {
                     stress_lin += (-beta) * FGF + (lambda * inner_F_grad_trial) * F_inv_t;
                 }
 
-                class ApplyHessian {
+                class ApplyHessian : public TestTrialOp {
                 public:
                     ApplyHessian(const FirstLameParameter &lambda,
                                  const ShearModulus &mu,
@@ -164,7 +165,7 @@ namespace utopia {
                 };
 
                 template <class Output>
-                class StoreHessian {
+                class StoreHessian : public TestTrialOp {
                 public:
                     StoreHessian(const FirstLameParameter &lambda,
                                  const ShearModulus &mu,
@@ -246,7 +247,7 @@ namespace utopia {
                 };
 
                 template <class Output>
-                class StoreGradient {
+                class StoreGradient : public TestOp {
                 public:
                     StoreGradient(const FirstLameParameter &lambda,
                                   const ShearModulus &mu,

@@ -12,6 +12,7 @@
 #include "utopia_mars_FEBuilder.hpp"
 
 #include "mars_distributed_base_data_management.hpp"
+#include "utopia_kokkos_Commons.hpp"
 
 namespace utopia {
     namespace mars {
@@ -170,6 +171,13 @@ namespace utopia {
                 auto fe_dof_map = handler->get_fe_dof_map();
                 auto dof_handler = sp.get_dof_handler();
 
+                auto matrix = hessian.raw_type()->getLocalMatrix();
+                //TODO: Add execution space for the Range policy
+                Kokkos::parallel_for(
+                    "Reset values to 0", Kokkos::RangePolicy<>(0, matrix.values.extent(0)), UTOPIA_LAMBDA(const int i) {
+                        matrix.values(i) = 0.0;
+                    });
+
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
 
@@ -196,7 +204,7 @@ namespace utopia {
                                         const Scalar val = op(elem_index, i, j, sub_i, sub_j);
 
                                         assert(val == val);
-                                        sp.atomic_add_value(local_dof_i, local_dof_j, val);
+                                        sp.atomic_add_value(local_dof_i, local_dof_j, val, matrix);
                                     }
                                 }
                             }
@@ -204,16 +212,6 @@ namespace utopia {
                     }
                 });
 
-                UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::block_op_assemble_matrix::Tpetra::CrsMatrix()");
-
-                // // FIXME Bad it should not do this
-                auto mat_impl =
-                    Teuchos::rcp(new Matrix::CrsMatrixType(this->handler()->get_sparsity_pattern().get_matrix(),
-                                                           hessian.raw_type()->getRowMap(),
-                                                           hessian.raw_type()->getColMap()));
-                hessian.wrap(mat_impl, false);
-
-                UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_assemble_matrix::Tpetra::CrsMatrix()");
                 UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_assemble_matrix");
                 return true;
             }
