@@ -248,7 +248,7 @@ namespace utopia {
             return n_violations == 0;
         }
 
-        Scalar compute_alpha_with_tau(const Vector &x, const Vector &correction, const Scalar tau) {
+        Scalar compute_alpha_with_dumping(const Vector &x, const Vector &correction, const Scalar tau) {
             {
                 auto x_view = local_view_device(x);
                 auto correction_view = local_view_device(correction);
@@ -319,6 +319,7 @@ namespace utopia {
 
         Scalar sigma{0};
         Scalar mu{0};
+        Scalar dumping_parameter{1};
 
         BoxConstraints<Vector> box;
         std::shared_ptr<const Matrix> constraints_matrix_;
@@ -350,6 +351,8 @@ namespace utopia {
     template <class Matrix, class Vector, int Backend>
     void PrimalInteriorPointSolver<Matrix, Vector, Backend>::read(Input &in) {
         QPSolver<Matrix, Vector>::read(in);
+
+        in.get("dumping_parameter", impl_->dumping_parameter);
         if (impl_->linear_solver) {
             in.get("linear_solver", *impl_->linear_solver);
         }
