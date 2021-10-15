@@ -234,7 +234,7 @@ namespace utopia {
         void interior_point_qp_solver_test() {
             auto &&comm = Comm::get_default();
 
-            SizeType n = 2000;
+            SizeType n = 200;
             if (Traits::Backend == BLAS) {
                 n = 20;
             }
@@ -252,6 +252,7 @@ namespace utopia {
 
             ConjugateGradient<Matrix, Vector, HOMEMADE> linear_solver;
             linear_solver.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector>>());
+            linear_solver.max_it(10000);
             solver.set_linear_solver(make_ref(linear_solver));
 
             solver.set_box_constraints(box);
@@ -260,10 +261,10 @@ namespace utopia {
             Vector x(layout(b), 0.);
             solver.solve(A, b, x);
 
-            if (verbose) {
-                rename("x", x);
-                write("IP_X.m", x);
-            }
+            // if (verbose) {
+            //     rename("x", x);
+            //     write("IP_X.m", x);
+            // }
         }
 
         void MPRGP_test() const {

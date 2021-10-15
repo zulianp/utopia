@@ -4,6 +4,8 @@
 #include "utopia_PrimalInteriorPointSolver.hpp"
 #include "utopia_make_unique.hpp"
 
+#include "utopia_ElementWisePseudoInverse.hpp"
+
 namespace utopia {
 
     template <class Matrix, class Vector, int Backend>
@@ -47,16 +49,14 @@ namespace utopia {
             if (empty(H)) {
                 H = system_matrix();
             } else {
-                // FIXME
-                // H.same_nnz_pattern_copy(system_matrix());
-                H = system_matrix();
+                H.same_nnz_pattern_copy(system_matrix());
+                // H = system_matrix();
             }
 
             e_pseudo_inv(slack, slack_inv);
             e_pseudo_inv(lambda, lambda_inv);
 
             Vector temp_vec = e_mul(slack_inv, lambda);
-            // apply_bc(temp_vec);
 
             if (has_constraints_matrix()) {
                 Matrix temp_mat = diag(temp_vec);
@@ -69,12 +69,15 @@ namespace utopia {
             if (has_constraints_matrix()) {
                 g = -transpose(constraints_matrix()) * e_mul(e_mul(rp, lambda) - rs, slack_inv);
             } else {
-                g = -e_mul(e_mul(rp, lambda) - rs, slack_inv);
+                // g = -e_mul(e_mul(rp, lambda) - rs, slack_inv);
+
+                g = e_mul(rp, lambda);
+                g -= rs;
+                g = e_mul(g, slack_inv);
+                g = -g;
             }
 
             g -= rd;
-
-            // apply_bc(g);
 
             correction.set(0.);
 
@@ -90,10 +93,19 @@ namespace utopia {
                 delta_lambda =
                     e_mul(slack_inv, e_mul(lambda, constraints_matrix() * correction) + e_mul(lambda, rp) - rs);
             } else {
-                delta_lambda = e_mul(slack_inv, e_mul(lambda, correction) + e_mul(lambda, rp) - rs);
+                // delta_lambda = e_mul(slack_inv, e_mul(lambda, correction) + e_mul(lambda, rp) - rs);
+                delta_lambda = e_mul(lambda, correction);
+                delta_lambda += e_mul(lambda, rp);
+                delta_lambda -= rs;
+                delta_lambda = e_mul(delta_lambda, slack_inv);
             }
 
-            delta_slack = -e_mul(lambda_inv, rs + e_mul(slack, delta_lambda));
+            // delta_slack = -e_mul(lambda_inv, rs + e_mul(slack, delta_lambda));
+
+            delta_slack = e_mul(slack, delta_lambda);
+            delta_slack += rs;
+            delta_slack = e_mul(delta_slack, lambda_inv);
+            delta_slack = -delta_slack;
 
             // /////////////////////////////////////////////////////////////////////////
             // // https://en.wikipedia.org/wiki/Mehrotra_predictor%E2%80%93corrector_method
@@ -106,26 +118,33 @@ namespace utopia {
 
             Scalar alpha = std::min(alpha_primal, alpha_dual);
 
-            // Scalar mu_aff = dot(slack + alpha_primal * delta_slack, lambda + alpha_dual * delta_lambda);
-            Scalar mu_aff = dot(slack + alpha * delta_slack, lambda + alpha * delta_lambda);
+            // Scalar mu_aff = dot(slack + alpha * delta_slack, lambda + alpha * delta_lambda);
+
+            buff = slack + alpha * delta_slack;
+            buff = e_mul(buff, lambda + alpha * delta_lambda);
+            Scalar mu_aff = sum(buff);
+
             mu_aff /= size(lambda);
             sigma = pow(mu_aff / mu, 3);
             assert(sigma == sigma);
 
             // //////////////////////////////////////
-
-            buff.set(sigma * mu);
-            rs_aff = e_mul(slack, lambda) + e_mul(delta_slack, delta_lambda) - buff;
+            // rs_aff = e_mul(slack, lambda) + e_mul(delta_slack, delta_lambda);
+            rs_aff = e_mul(slack, lambda);
+            buff = e_mul(delta_slack, delta_lambda);
+            rs_aff += buff;
+            rs_aff.shift(-sigma * mu);
 
             if (has_constraints_matrix()) {
                 g = -transpose(constraints_matrix()) * e_mul(slack_inv, e_mul(lambda, rp) - rs_aff);
             } else {
-                g = -e_mul(slack_inv, e_mul(lambda, rp) - rs_aff);
+                // g = -e_mul(slack_inv, e_mul(lambda, rp) - rs_aff);
+                g = e_mul(lambda, rp) - rs_aff;
+                g = e_mul(g, slack_inv);
+                g = -g;
             }
 
             g -= rd;
-
-            // apply_bc(g);
 
             correction.set(0.);
             if (!linear_solver->apply(g, correction)) {
@@ -136,10 +155,20 @@ namespace utopia {
                 delta_lambda =
                     e_mul(slack_inv, e_mul(lambda, constraints_matrix() * correction) + e_mul(lambda, rp) - rs_aff);
             } else {
-                delta_lambda = e_mul(slack_inv, e_mul(lambda, correction) + e_mul(lambda, rp) - rs_aff);
+                // delta_lambda = e_mul(slack_inv, e_mul(lambda, correction) + e_mul(lambda, rp) - rs_aff);
+                delta_lambda = e_mul(lambda, correction);
+                buff = e_mul(lambda, rp);
+                delta_lambda += buff;
+                delta_lambda -= rs_aff;
+                delta_lambda = e_mul(delta_lambda, slack_inv);
             }
 
-            delta_slack = -e_mul(lambda_inv, rs_aff + e_mul(slack, delta_lambda));
+            // delta_slack = -e_mul(lambda_inv, rs_aff + e_mul(slack, delta_lambda));
+
+            delta_slack = e_mul(slack, delta_lambda);
+            delta_slack += rs_aff;
+            delta_slack = e_mul(delta_slack, lambda_inv);
+            delta_slack = -delta_slack;
 
             // ////////////////////////////////////////
             Scalar tau = 1;
@@ -175,7 +204,10 @@ namespace utopia {
             if (has_constraints_matrix()) {
                 r_d = system_matrix() * x + transpose(constraints_matrix()) * lambda - b;
             } else {
-                r_d = system_matrix() * x + lambda - b;
+                // r_d = system_matrix() * x + lambda - b;
+                r_d = system_matrix() * x;
+                r_d += lambda;
+                r_d -= b;
             }
 
             return true;
@@ -185,15 +217,16 @@ namespace utopia {
             if (has_constraints_matrix()) {
                 r_p = constraints_matrix() * x - *box.upper_bound() + s;
             } else {
-                r_p = x - *box.upper_bound() + s;
+                // r_p = x - *box.upper_bound() + s;
+                r_p = x - *box.upper_bound();
+                r_p += s;
             }
             return true;
         }
 
         bool residual_s(const Vector &lambda, const Vector &s, Vector &r_s) {
-            buff.set(sigma * mu);
             r_s = e_mul(s, lambda);
-            r_s -= buff;
+            r_s.shift(-sigma * mu);
             return true;
         }
 

@@ -220,6 +220,12 @@ namespace utopia {
             BLASAlgorithms<T>::axpy(size(), a, x.ptr(), 1, ptr(), 1);
         }
 
+        inline void shift(const T &value) {
+            for (auto &e : entries_) {
+                e += value;
+            }
+        }
+
         ///< T>DOT - dot product
         inline T dot(const BlasVector &other) const override {
             assert(size() == other.size());

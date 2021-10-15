@@ -141,6 +141,11 @@ namespace utopia {
             owner_ = true;
         }
 
+        void same_nnz_pattern_copy(const TpetraMatrix &other) {
+            // TODO FIXME
+            copy(other);
+        }
+
         void select(const IndexSet &row_index, const IndexSet &col_index, TpetraMatrix &result) const override;
 
         ///////////////////////////////////////////////////////////////////////////

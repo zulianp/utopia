@@ -1,5 +1,14 @@
 cmake_minimum_required(VERSION 3.13)
-project(utopia_fe)
+# project(utopia_fe)
+
+project(
+    utopia_fe
+    VERSION 0.1.0
+    LANGUAGES "CXX"
+    HOMEPAGE_URL "https://bitbucket.org/zulianp/utopia"
+    DESCRIPTION
+        "Library for portable finite element discretizations."
+)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE
@@ -506,3 +515,7 @@ add_custom_target(complete)
 add_dependencies(complete apps utopia_fe_test)
 
 # ##############################################################################
+
+# include(cmake/PostInstall.cmake)
+
+

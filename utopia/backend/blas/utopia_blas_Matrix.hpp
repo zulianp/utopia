@@ -375,6 +375,8 @@ namespace utopia {
             BLASAlgorithms<T>::copy(x.n_elements(), x.ptr(), 1, ptr(), 1);
         }
 
+        inline void same_nnz_pattern_copy(const BlasMatrix &x) { copy(x); }
+
         ///< T>AXPY - y = a*x + y
         inline void axpy(const T &a, const BlasMatrix &x) override {
             assert(n_elements() == x.n_elements());
