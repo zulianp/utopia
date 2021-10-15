@@ -34,6 +34,9 @@ namespace utopia {
             this->initialize(x, g);
         }
 
+        Scalar eps() const { return eps_; }
+        void eps(const Scalar &eps) { eps_ = eps; }
+
         inline JFNK<Vector> *clone() const override { return new JFNK<Vector>(*this); }
 
         bool update(const Vector & /*s*/, const Vector & /*y*/, const Vector &x, const Vector &g) override {
@@ -50,15 +53,22 @@ namespace utopia {
 
         // TODO:: make more memory efficient
         bool apply_H(const Vector &v, Vector &result) override {
+            Scalar norm_v = norm2(v);
+
+            if (norm_v <= 1e-15) {
+                result = v;
+            }
+
             x_p_ = std::sqrt(eps_) * (ones_ + x_k_);
             Scalar sum_a = sum(x_p_);
 
             SizeType n_glob = size(result).get(0);
 
             Scalar per_ = 0.0;
+            // Scalar norm_v = norm2(v);
 
-            if (norm2(v) > eps_) {
-                per_ = 1. / (n_glob * Scalar(norm2(v)));
+            if (norm_v > eps_) {
+                per_ = 1. / (n_glob * norm_v);
                 per_ *= sum_a;
             } else {
                 per_ = sum_a / n_glob;

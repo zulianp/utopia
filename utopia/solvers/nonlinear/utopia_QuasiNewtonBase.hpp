@@ -114,7 +114,11 @@ namespace utopia {
         inline bool linear_solve(const Vector &rhs, Vector &sol) {
             auto multiplication_action = hessian_approx_strategy_->build_apply_H();
             this->solution_status_.num_linear_solves++;
-            return mf_linear_solver_->solve(*multiplication_action, rhs, sol);
+            auto flg = mf_linear_solver_->solve(*multiplication_action, rhs, sol);
+            auto sol_status_ls = mf_linear_solver_->solution_status();
+            this->solution_status_.sum_linear_its += sol_status_ls.iterates;
+
+            return flg;
         }
 
         inline Scalar get_alpha(FunctionBase<Vector> &fun, const Vector &g, const Vector &x, const Vector &s) {

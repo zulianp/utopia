@@ -17,6 +17,8 @@ namespace utopia {
 
         void run() {
             UTOPIA_RUN_TEST(petsc_cg);
+            UTOPIA_RUN_TEST(petsc_cg_operator);
+
             UTOPIA_RUN_TEST(petsc_bicgstab);
             UTOPIA_RUN_TEST(petsc_gmres);
 // FIXME make it work also without mumps
@@ -50,11 +52,57 @@ namespace utopia {
             cg.rtol(1e-6);
             cg.atol(1e-6);
             cg.max_it(500);
-            // cg.verbose(true);
+            cg.verbose(false);
 
             x = rhs;
             cg.update(std::make_shared<PetscMatrix>(A));
             cg.apply(rhs, x);
+
+            utopia_test_assert(approxeq(rhs, A * x, 1e-5));
+        }
+
+        void petsc_cg_operator() {
+            Poisson1D<PetscMatrix, PetscVector> fun(100, 2);
+            PetscVector x = fun.initial_guess();
+            PetscVector rhs;
+            fun.get_rhs(rhs);
+            PetscMatrix A;
+            fun.hessian(x, A);
+            rhs *= 0.00001;
+
+            KSP_MF<PetscMatrix, PetscVector> cg;
+            cg.rtol(1e-6);
+            cg.atol(1e-6);
+            cg.max_it(500);
+            cg.verbose(false);
+
+            // stupid, as Matrix is already operator, but for sake of testing, lets do it...
+            class CustomOperator final : public Operator<PetscVector> {
+            public:
+                using Communicator = typename utopia::Traits<PetscVector>::Communicator;
+                CustomOperator(const PetscMatrix &A) : A_(A) {}
+
+                bool apply(const PetscVector &v, PetscVector &result) const override {
+                    result = A_ * v;
+                    return true;
+                }
+                Size size() const override { return Size(A_.size()); }
+                Size local_size() const override { return Size(A_.local_size()); }
+
+                Communicator &comm() override { return A_.comm(); }
+                const Communicator &comm() const override { return A_.comm(); }
+
+            private:
+                PetscMatrix A_;
+            };
+
+            auto matrix_operator = CustomOperator(A);
+            x = rhs;
+
+            // test also with our preconditioner
+            // cg.set_preconditioner(std::make_shared<IdentityPreconditioner<PetscVector>>());
+            cg.ksp_type("cg");
+            cg.solve(matrix_operator, rhs, x);
 
             utopia_test_assert(approxeq(rhs, A * x, 1e-5));
         }

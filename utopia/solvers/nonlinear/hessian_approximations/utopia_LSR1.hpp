@@ -160,9 +160,9 @@ namespace utopia {
             return true;
         }
 
-        void set_memory_size(const SizeType &m) { m_ = m; }
+        void memory_size(const SizeType &m) { m_ = m; }
 
-        SizeType get_memory_size() const { return m_; }
+        SizeType memory_size() const override { return m_; }
 
         void read(Input &in) override {
             HessianApproximation<Vector>::read(in);

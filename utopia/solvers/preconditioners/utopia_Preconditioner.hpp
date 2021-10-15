@@ -6,6 +6,7 @@
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Input.hpp"
 #include "utopia_Memory.hpp"
+#include "utopia_Monitor.hpp"
 #include "utopia_Operator.hpp"
 #include "utopia_StoreAs.hpp"
 #include "utopia_Traits.hpp"

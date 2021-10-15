@@ -214,7 +214,11 @@ namespace utopia {
     void petsc_matrix_accessors() {
         auto &&comm = PetscCommunicator::get_default();
         const PetscInt n = 10 * comm.size();
-        auto ml = layout(comm, 10, PetscTraits::decide(), n, 2);
+
+        const PetscInt m = 10; 
+        const PetscInt mn = 2; 
+
+        auto ml = layout(comm, m, PetscTraits::decide(), n, mn);
 
         PetscMatrix x;
         x.dense(ml, 1.0);
@@ -244,7 +248,11 @@ namespace utopia {
         //! [Read write matrix]
         auto &&comm = PetscCommunicator::get_default();
         const PetscInt n = 10 * comm.size();
-        auto ml = layout(comm, 10, PetscTraits::decide(), n, 10);
+
+        const PetscInt m = 10; 
+        const PetscInt mn = 10; 
+
+        auto ml = layout(comm, m, PetscTraits::decide(), n, mn);
 
         PetscMatrix x;
         x.sparse(ml, 7, 7);

@@ -22,7 +22,6 @@
 #include "utopia_LogBarrierQPSolver.hpp"
 
 #include "utopia_ElementWisePseudoInverse.hpp"
-
 #include "utopia_PrimalInteriorPointSolver_impl.hpp"
 
 #ifdef UTOPIA_WITH_PETSC
