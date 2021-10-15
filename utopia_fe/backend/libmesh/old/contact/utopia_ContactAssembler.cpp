@@ -1,6 +1,6 @@
 #include "utopia_ContactAssembler.hpp"
 
-#include "utopia_DualBasis.hpp"
+#include "utopia_DualBasis_impl.hpp"
 #include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_LibMeshBackend.hpp"
 #include "utopia_LibMeshShape.hpp"
