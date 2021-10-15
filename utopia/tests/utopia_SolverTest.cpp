@@ -270,15 +270,15 @@ namespace utopia {
                 params.set("stol", 1e-11);
                 params.set("verbose", false);
 
-                auto lsolver = std::make_shared<ConjugateGradient<Matrix, Vector>>();
+                auto lsolver = std::make_shared<GMRES<Matrix, Vector>>();
                 Newton<Matrix, Vector> nlsolver1(lsolver);
                 Newton<Matrix, Vector> nlsolver2(lsolver);
 
                 auto strategy_sbc = std::make_shared<utopia::SimpleBacktracking<Vector>>();
-                auto strategy_bc = std::make_shared<utopia::Backtracking<Vector, HOMEMADE>>();
+                // auto strategy_bc = std::make_shared<utopia::SimpleBacktracking<Vector, HOMEMADE>>();
 
                 nlsolver1.set_line_search_strategy(strategy_sbc);
-                nlsolver2.set_line_search_strategy(strategy_bc);
+                nlsolver2.set_line_search_strategy(strategy_sbc);
 
                 nlsolver1.read(params);
                 nlsolver2.read(params);
