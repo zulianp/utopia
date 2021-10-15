@@ -171,11 +171,11 @@ namespace utopia {
             delta_slack = -delta_slack;
 
             // ////////////////////////////////////////
-            Scalar tau = 1;
-            alpha_primal = compute_alpha_with_tau(slack, delta_slack, tau);
+
+            alpha_primal = compute_alpha_with_dumping(slack, delta_slack, dumping_parameter);
             assert(alpha_primal == alpha_primal);
 
-            alpha_dual = compute_alpha_with_tau(lambda, delta_lambda, tau);
+            alpha_dual = compute_alpha_with_dumping(lambda, delta_lambda, dumping_parameter);
             assert(alpha_dual == alpha_dual);
             alpha = std::min(alpha_primal, alpha_dual);
 
