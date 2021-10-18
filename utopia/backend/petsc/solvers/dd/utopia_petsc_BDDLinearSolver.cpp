@@ -8,6 +8,7 @@
 #include "utopia_petsc_Vector.hpp"
 
 #include "utopia_OmniMatrixFreeLinearSolver_impl.hpp"
+#include "utopia_petsc_LinearSolverFactory.hpp"
 
 namespace utopia {
 

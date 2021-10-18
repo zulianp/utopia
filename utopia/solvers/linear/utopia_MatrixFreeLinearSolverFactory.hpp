@@ -26,10 +26,14 @@ namespace utopia {
         using LSFactoryMethod = FactoryMethod<MatrixFreeLinearSolver, Alg>;
         std::map<std::string, std::shared_ptr<FactoryMethodT>> solvers_;
 
-        BasicMatrixFreeLinearSolverFactory() {
+        BasicMatrixFreeLinearSolverFactory() {}
+
+        virtual void register_solvers() {
             register_solver<ConjugateGradient<typename Traits<Vector>::Matrix, Vector, HOMEMADE>>("cg");
             register_solver<BiCGStab<typename Traits<Vector>::Matrix, Vector, HOMEMADE>>("bcgs");
         }
+
+        bool empty() const { return solvers_.empty(); }
 
         static MatrixFreeLinearSolverPtr new_linear_solver(const std::string &tag) {
             auto it = instance().solvers_.find(tag);
@@ -51,6 +55,10 @@ namespace utopia {
 
         static BasicMatrixFreeLinearSolverFactory<Vector> &instance() {
             static BasicMatrixFreeLinearSolverFactory<Vector> instance_;
+            if (instance_.empty()) {
+                instance_.register_solvers();
+            }
+
             return instance_;
         }
     };
@@ -62,15 +70,7 @@ namespace utopia {
      * @tparam     Backend
      */
     template <typename Vector, int Backend = Traits<Vector>::Backend>
-    class MatrixFreeLinearSolverFactory : public BasicMatrixFreeLinearSolverFactory<Vector> {
-    public:
-        MatrixFreeLinearSolverFactory() {}
-
-        static MatrixFreeLinearSolverFactory<Vector> &instance() {
-            static MatrixFreeLinearSolverFactory<Vector> instance_;
-            return instance_;
-        }
-    };
+    class MatrixFreeLinearSolverFactory {};
 
     /**
      * @brief      Returns linear solver based on tag.

@@ -1137,7 +1137,7 @@ namespace utopia {
             return;
         }
 
-        std::size_t n = local_to_global.size();
+        PetscInt n = local_to_global.size();
         block.resize(n);
 
         PetscInt min_block = local_to_global[0] / block_size;
@@ -1172,7 +1172,7 @@ namespace utopia {
 
         if (comm.size() > 1) return;
 
-        PetscInt rows = 4;
+        // PetscInt rows = 4;
         PetscInt cols = 8;
 
         PetscMatrix mat;
@@ -1223,7 +1223,7 @@ namespace utopia {
         mat.sparse(serial_layout(rows, cols), 3, 3);
         {
             Write<PetscMatrix> w(mat);
-            auto rr = row_range(mat);
+            // auto rr = row_range(mat);
 
             mat.set(0, 0, 0.0);
             mat.set(0, 1, 0.01);
@@ -1235,7 +1235,7 @@ namespace utopia {
             mat.set(3, 6, 6.0);
         }
 
-        disp(mat);
+        // disp(mat);
 
         PetscCrsView crs(mat.raw_type());
 

@@ -30,8 +30,8 @@
 
 namespace utopia {
 
-    MatrixFreeLinearSolverFactory<PetscVector, PETSC>::MatrixFreeLinearSolverFactory() {
-        // TODO
+    void MatrixFreeLinearSolverFactory<PetscVector, PETSC>::register_solvers() {
+        Super::register_solvers();
         this->register_solver<KSP_MF<PetscMatrix, PetscVector, PETSC>>(Solver::ksp());
     }
 

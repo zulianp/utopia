@@ -428,6 +428,7 @@ namespace utopia {
             auto &&comm = Comm::get_default();
 
             static const bool verbose = false;
+            // static const bool verbose = Traits::Backend == PETSC;
 
             Matrix A;
             Vector b;
@@ -481,6 +482,7 @@ namespace utopia {
             params.set("atol", 1e-10);
             params.set("rtol", 1e-10);
             params.set("stol", 1e-10);
+            // if (verbose) params.set("type", "ksp");
             params.set("use_preconditioner", true);
             // params.set("preconditioner_type", "inv");
             params.set("preconditioner_type", "amg");

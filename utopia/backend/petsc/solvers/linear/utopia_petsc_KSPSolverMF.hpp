@@ -37,12 +37,12 @@ namespace utopia {
             ksp_.read(in);
         }
 
-        bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) {
+        bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override {
             update(A);
             return apply(b, x);
         }
 
-        void update(const Operator<Vector> &A) {
+        void update(const Operator<Vector> &A) override {
             ksp_.handle_reset(A.comm());
             ksp_.set_monitor_options(ksp_.implementation());
 
@@ -76,7 +76,9 @@ namespace utopia {
 
         void update(const std::shared_ptr<const Matrix> &op) override { ksp_.update(op); }
 
-        void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) { ksp_.set_preconditioner(precond); }
+        void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) override {
+            ksp_.set_preconditioner(precond);
+        }
 
         // necessary, as ksp_ is resetting options with every apply...
         void atol(const Scalar &atol_in) override { ksp_.atol(atol_in); }
@@ -88,7 +90,7 @@ namespace utopia {
         void pc_type(const std::string &pc_type_flg) { ksp_.pc_type(pc_type_flg); }
         void ksp_type(const std::string &ksp_type_flg) { ksp_.ksp_type(ksp_type_flg); }
         void solver_package(const std::string &package_flg) { ksp_.solver_package(package_flg); }
-        bool smooth(const Vector &rhs, Vector &x) { return ksp_.smooth(rhs, x); }
+        bool smooth(const Vector &rhs, Vector &x) override { return ksp_.smooth(rhs, x); }
         void set_monitor_options(KSP &ksp) const { ksp_.set_monitor_options(ksp); }
 
     private:
