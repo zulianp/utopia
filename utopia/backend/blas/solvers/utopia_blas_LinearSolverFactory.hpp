@@ -7,6 +7,7 @@
 #include "utopia_LinearSolver.hpp"
 #include "utopia_LinearSolverFactory.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_make_unique.hpp"
 
 #ifdef UTOPIA_WITH_LAPACK
 #include "utopia_Lapack.hpp"
@@ -27,20 +28,24 @@ namespace utopia {
     class LinearSolverFactory<Matrix, Vector, BLAS> {
     public:
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolverT;
-        using LinearSolverPtr = std::shared_ptr<LinearSolverT>;
+        using LinearSolverPtr = std::unique_ptr<LinearSolverT>;
         using FactoryMethodT = utopia::IFactoryMethod<LinearSolverT>;
 
         template <class Alg>
         using LSFactoryMethod = FactoryMethod<LinearSolverT, Alg>;
         std::map<std::string, std::shared_ptr<FactoryMethodT>> solvers_;
 
-        inline static LinearSolverPtr new_linear_solver(const SolverType &tag) {
+        inline static LinearSolverPtr new_linear_solver(const std::string &tag) {
             auto it = instance().solvers_.find(tag);
             if (it == instance().solvers_.end()) {
-                return std::make_shared<ConjugateGradient<Matrix, Vector>>();
+                return utopia::make_unique<ConjugateGradient<Matrix, Vector>>();
             } else {
                 return LinearSolverPtr(it->second->make());
             }
+        }
+
+        inline static LinearSolverPtr default_linear_solver() {
+            return utopia::make_unique<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
         }
 
     private:

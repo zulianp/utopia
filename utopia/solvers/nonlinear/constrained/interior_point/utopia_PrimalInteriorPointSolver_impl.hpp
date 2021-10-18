@@ -5,6 +5,7 @@
 #include "utopia_make_unique.hpp"
 
 #include "utopia_ElementWisePseudoInverse.hpp"
+#include "utopia_polymorphic_LinearSolver.hpp"
 
 namespace utopia {
 
@@ -20,9 +21,25 @@ namespace utopia {
             }
         }
 
-        void pre_solve(Vector &x) {
-            x = min(x, *box.upper_bound());
-            lambda.values(layout(x), 1.);
+        void pre_solve(const Vector &b, Vector &x) {
+            if (box.has_upper_bound()) {
+                x = min(x, *box.upper_bound());
+            }
+
+            // Lower bound is not supported yet though
+            if (box.has_lower_bound()) {
+                x = max(x, *box.lower_bound());
+            }
+
+            Scalar norm_x = norm1(x);
+
+            if (norm_x == 0 || has_constraints_matrix()) {
+                lambda.values(layout(x), 1.);
+            } else {
+                lambda = system_matrix() * x;
+                lambda = b - lambda;
+                lambda.e_max(min_val);
+            }
 
             if (has_constraints_matrix()) {
                 slack = *box.upper_bound() - constraints_matrix() * x;
@@ -30,13 +47,33 @@ namespace utopia {
                 slack = *box.upper_bound() - x;
             }
 
-            slack.e_max(1e-8);  // 0.1
+            slack.e_max(min_val);  // 0.1
 
-            assert(is_positive(slack));
-            assert(is_positive(lambda));
+            if (debug) {
+                rename("s", slack);
+                rename("l", lambda);
+                rename("x", x);
+
+                write("IP_pre_x.m", x);
+                write("IP_pre_s.m", slack);
+                write("IP_pre_l.m", lambda);
+            }
+
+            // assert(is_positive(slack));
+            // assert(is_positive(lambda));
         }
 
-        void post_solve() {}
+        void post_solve(Vector &x) {
+            if (debug) {
+                rename("s", slack);
+                rename("l", lambda);
+                rename("x", x);
+
+                write("IP_post_x.m", x);
+                write("IP_post_s.m", slack);
+                write("IP_post_l.m", lambda);
+            }
+        }
 
         bool step(const Vector &b, Vector &x) {
             mu = duality_measure(lambda, slack);
@@ -320,11 +357,13 @@ namespace utopia {
         Scalar sigma{0};
         Scalar mu{0};
         Scalar dumping_parameter{1};
+        Scalar min_val{1e-10};
 
         BoxConstraints<Vector> box;
         std::shared_ptr<const Matrix> constraints_matrix_;
         std::shared_ptr<const Matrix> system_matrix_;
         bool verbose{false};
+        bool debug{false};
     };
 
     template <class Matrix, class Vector, int Backend>
@@ -332,6 +371,12 @@ namespace utopia {
         std::shared_ptr<LinearSolver> linear_solver)
         : impl_(utopia::make_unique<Impl>()) {
         set_linear_solver(linear_solver);
+    }
+
+    template <class Matrix, class Vector, int Backend>
+    PrimalInteriorPointSolver<Matrix, Vector, Backend>::PrimalInteriorPointSolver()
+        : impl_(utopia::make_unique<Impl>()) {
+        set_linear_solver(std::make_shared<OmniLinearSolver<Matrix, Vector>>());
     }
 
     template <class Matrix, class Vector, int Backend>
@@ -353,6 +398,9 @@ namespace utopia {
         QPSolver<Matrix, Vector>::read(in);
 
         in.get("dumping_parameter", impl_->dumping_parameter);
+        in.get("min_val", impl_->min_val);
+        in.get("debug", impl_->debug);
+
         if (impl_->linear_solver) {
             in.get("linear_solver", *impl_->linear_solver);
         }
@@ -383,12 +431,12 @@ namespace utopia {
 
         if (this->verbose()) {
             this->init_solver("PrimalInteriorPointSolver comm.size = " + std::to_string(b.comm().size()),
-                              {" it. ", "      || x_k - x_{k-1} ||"});
+                              {" it. ", "      || x_k - x_{k-1} ||", "duality_measure"});
         }
 
         impl_->verbose = this->verbose();
 
-        impl_->pre_solve(x);
+        impl_->pre_solve(b, x);
 
         SizeType it = 0;
         bool converged = false;
@@ -403,11 +451,11 @@ namespace utopia {
             converged = this->check_convergence(it, 1, 1, norm_c);
 
             if (this->verbose()) {
-                PrintInfo::print_iter_status(it, {norm_c});
+                PrintInfo::print_iter_status(it, {norm_c, impl_->mu});
             }
         }
 
-        impl_->post_solve();
+        impl_->post_solve(x);
         return converged;
     }
 

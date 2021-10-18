@@ -249,6 +249,11 @@ namespace utopia {
 
             PrimalInteriorPointSolver<Matrix, Vector> solver;
 
+            InputParameters params;
+            params.set("min_val", 1e-18);
+            params.set("debug", verbose);
+            solver.read(params);
+
             ConjugateGradient<Matrix, Vector, HOMEMADE> linear_solver;
             linear_solver.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector>>());
             linear_solver.max_it(10000);
@@ -258,6 +263,13 @@ namespace utopia {
             solver.verbose(verbose);
 
             Vector x(layout(b), 0.);
+            solver.solve(A, b, x);
+
+            // solver.verbose(true);
+
+            params.set("min_val", 0);
+            params.set("debug", verbose);
+            solver.read(params);
             solver.solve(A, b, x);
 
             // if (verbose) {
@@ -386,7 +398,7 @@ namespace utopia {
             if (mpi_world_size() > 1) return;
 
             print_backend_info();
-            UTOPIA_RUN_TEST(MG_QR_test);
+            // UTOPIA_RUN_TEST(MG_QR_test);
         }
 
         QPSolverTest() : n(20) {}

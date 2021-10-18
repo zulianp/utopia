@@ -4,8 +4,6 @@
 #include "utopia_Core.hpp"
 #include "utopia_QPSolver.hpp"
 
-#include "utopia_polymorphic_LinearSolver.hpp"
-
 #include <memory>
 #include <vector>
 
@@ -22,10 +20,9 @@ namespace utopia {
     public:
         void set_linear_solver(const std::shared_ptr<LinearSolver> &linear_solver);
 
-        explicit PrimalInteriorPointSolver(
-            // std::shared_ptr<LinearSolver> linear_solver = std::make_shared<OmniLinearSolver<Matrix, Vector>>()
-            std::shared_ptr<LinearSolver> linear_solver =
-                std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>());
+        explicit PrimalInteriorPointSolver(std::shared_ptr<LinearSolver> linear_solver);
+
+        PrimalInteriorPointSolver();
 
         ~PrimalInteriorPointSolver() override;
         PrimalInteriorPointSolver *clone() const override;
