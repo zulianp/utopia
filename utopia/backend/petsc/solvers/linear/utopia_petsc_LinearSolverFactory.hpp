@@ -4,6 +4,7 @@
 #include "utopia_FactoryMethod.hpp"
 #include "utopia_LinearSolver.hpp"
 #include "utopia_LinearSolverFactory.hpp"
+#include "utopia_MatrixFreeLinearSolverFactory.hpp"
 #include "utopia_Traits.hpp"
 
 #include "utopia_petsc_Types.hpp"
@@ -13,6 +14,17 @@
 #include <string>
 
 namespace utopia {
+
+    template <>
+    class MatrixFreeLinearSolverFactory<PetscVector, PETSC> : public BasicMatrixFreeLinearSolverFactory<PetscVector> {
+    public:
+        MatrixFreeLinearSolverFactory();
+
+        static MatrixFreeLinearSolverFactory<PetscVector> &instance() {
+            static MatrixFreeLinearSolverFactory<PetscVector> instance_;
+            return instance_;
+        }
+    };
 
     template <>
     class LinearSolverFactory<PetscMatrix, PetscVector, PETSC> {

@@ -215,7 +215,7 @@ namespace utopia {
             }
         }
 
-        bool project_onto_feasibile_region(Vector &x) const override {
+        bool extend_project_onto_feasibile_region(Vector &x) const override {
             // bool verbose = verbose_;
             if (this->box_->has_upper_bound()) {
                 auto ub_view = local_view_device(*this->box_->upper_bound());

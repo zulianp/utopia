@@ -96,6 +96,7 @@ namespace utopia {
             Vector temp_vec = e_mul(slack_inv, lambda);
 
             if (has_constraints_matrix()) {
+                // FIXME
                 Matrix temp_mat = diag(temp_vec);
                 Matrix temp_mat_2 = transpose(constraints_matrix()) * temp_mat * constraints_matrix();
                 H += temp_mat_2;
@@ -104,7 +105,13 @@ namespace utopia {
             }
 
             if (has_constraints_matrix()) {
-                g = -transpose(constraints_matrix()) * e_mul(e_mul(rp, lambda) - rs, slack_inv);
+                // g = -transpose(constraints_matrix()) * e_mul(e_mul(rp, lambda) - rs, slack_inv);
+
+                buff = e_mul(rp, lambda) - rs;
+                buff = e_mul(buff, slack_inv);
+                g = transpose(constraints_matrix()) * buff;
+                g = -g;
+
             } else {
                 // g = -e_mul(e_mul(rp, lambda) - rs, slack_inv);
 

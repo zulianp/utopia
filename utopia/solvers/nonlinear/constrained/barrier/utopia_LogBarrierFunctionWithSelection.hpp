@@ -219,7 +219,7 @@ namespace utopia {
             value -= (ub_value - lb_value);
         }
 
-        bool project_onto_feasibile_region(Vector &x) const override {
+        bool extend_project_onto_feasibile_region(Vector &x) const override {
             if (skip_projection_) return true;
 
             assert(boolean_selector_);

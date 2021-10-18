@@ -7,6 +7,8 @@
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Vector.hpp"
 
+#include "utopia_OmniMatrixFreeLinearSolver_impl.hpp"
+
 namespace utopia {
 
     template <typename Matrix, typename Vector>
@@ -21,7 +23,10 @@ namespace utopia {
             op.read(in);
         }
 
-        Impl() : solver(std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>()) {}
+        Impl()
+            : solver(
+                  // std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>()
+                  std::make_shared<OmniMatrixFreeLinearSolver<Vector>>()) {}
 
         std::shared_ptr<MatrixFreeLinearSolver> solver;
         BDDOperator<Matrix, Vector> op;

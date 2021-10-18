@@ -215,8 +215,8 @@ namespace utopia {
         auto &&comm = PetscCommunicator::get_default();
         const PetscInt n = 10 * comm.size();
 
-        const PetscInt m = 10; 
-        const PetscInt mn = 2; 
+        const PetscInt m = 10;
+        const PetscInt mn = 2;
 
         auto ml = layout(comm, m, PetscTraits::decide(), n, mn);
 
@@ -249,8 +249,8 @@ namespace utopia {
         auto &&comm = PetscCommunicator::get_default();
         const PetscInt n = 10 * comm.size();
 
-        const PetscInt m = 10; 
-        const PetscInt mn = 10; 
+        const PetscInt m = 10;
+        const PetscInt mn = 10;
 
         auto ml = layout(comm, m, PetscTraits::decide(), n, mn);
 
@@ -1205,7 +1205,7 @@ namespace utopia {
         // disp_connectivity(temp_crs);
         // disp_connectivity(block_crs);
 
-        disp(block_crs);
+        // disp(block_crs);
     }
 
     void petsc_rectangular_block_mat() {
@@ -1249,7 +1249,7 @@ namespace utopia {
 
         // disp(temp_crs);
 
-        disp(block_crs);
+        // disp(block_crs);
     }
 
     void petsc_block_mat() {

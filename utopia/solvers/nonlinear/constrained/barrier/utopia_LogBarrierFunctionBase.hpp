@@ -23,13 +23,9 @@ namespace utopia {
         virtual void extend_hessian(const Vector &x, Matrix &H) const = 0;
         virtual void extend_gradient(const Vector &x, Vector &g) const = 0;
         virtual void extend_value(const Vector &x, Scalar &value) const = 0;
+        virtual bool extend_project_onto_feasibile_region(Vector &x) const = 0;
 
         virtual std::string function_type() const = 0;
-
-        bool project_onto_feasibile_region(Vector &) const override {
-            assert(false);
-            return false;
-        }
 
         void read(Input &in) override {
             if (!Options()
@@ -61,7 +57,7 @@ namespace utopia {
                                const std::shared_ptr<BoxConstraints> &box)
             : unconstrained_(unconstrained), box_(box) {}
 
-        bool hessian(const Vector &x, Matrix &H) const override {
+        bool hessian(const Vector &x, Matrix &H) const final {
             if (!unconstrained_->hessian(x, H)) {
                 return false;
             }
@@ -69,21 +65,168 @@ namespace utopia {
             extend_hessian(x, H);
             return true;
         }
-        bool hessian(const Vector &x, Matrix &H, Matrix &preconditioner) const override {
+
+        bool hessian(const Vector &x, Matrix &H, Matrix &preconditioner) const final {
             if (!unconstrained_->hessian(x, H, preconditioner)) {
                 return false;
             }
 
-            extend_hessian(x, H);
+            if (has_orthogonal_transformation()) {
+                Vector temp_x = *orthogonal_transformation() * x;
+                Matrix temp_H;
+                temp_H.identity(layout(H), 0.);
+                extend_hessian(temp_x, temp_H);
+
+                H += *orthogonal_transformation() * temp_H;
+
+            } else {
+                extend_hessian(x, H);
+            }
+
             return true;
         }
 
-        bool hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const override {
+        bool hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const final {
             if (!unconstrained_->hessian_and_gradient(x, H, g)) {
                 return false;
             }
+
+            if (has_orthogonal_transformation()) {
+                Vector temp_x = *orthogonal_transformation() * x;
+                Vector temp_g(layout(g), 0.);
+
+                Matrix temp_H;
+                temp_H.identity(layout(H), 0.);
+
+                extend_hessian_and_gradient(temp_x, temp_H, temp_g);
+
+                H += *orthogonal_transformation() * temp_H;
+                g += *orthogonal_transformation() * temp_g;
+
+            } else {
+                extend_hessian_and_gradient(x, H, g);
+            }
+
+            return true;
+        }
+
+        bool project_onto_feasibile_region(Vector &x) const final {
+            if (has_orthogonal_transformation()) {
+                Vector temp_x = *orthogonal_transformation() * x;
+                bool ok = extend_project_onto_feasibile_region(temp_x);
+                x = *orthogonal_transformation() * temp_x;
+                return ok;
+
+            } else {
+                return extend_project_onto_feasibile_region(x);
+            }
+        }
+
+        bool hessian_and_gradient(const Vector &x, Matrix &H, Matrix &preconditioner, Vector &g) const override {
+            if (!unconstrained_->hessian_and_gradient(x, H, preconditioner, g)) {
+                return false;
+            }
+
             extend_hessian_and_gradient(x, H, g);
             return true;
+        }
+
+        inline bool has_preconditioner() const override { return unconstrained_->has_preconditioner(); }
+
+        bool initialize_hessian(Matrix &H, Matrix &preconditioner) const override {
+            if (!unconstrained_->initialize_hessian(H, preconditioner)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        bool value(const Vector &x, Scalar &value) const override {
+            if (!unconstrained_->value(x, value)) {
+                // return false;
+                value = 0.0;
+            }
+
+            if (has_orthogonal_transformation()) {
+                Vector temp_x = *orthogonal_transformation() * x;
+                extend_value(x, value);
+            } else {
+                extend_value(x, value);
+            }
+
+            return true;
+        }
+
+        bool gradient(const Vector &x, Vector &g) const override {
+            if (!unconstrained_->gradient(x, g)) {
+                return false;
+            }
+
+            if (has_orthogonal_transformation()) {
+                Vector temp_x = *orthogonal_transformation() * x;
+                Vector temp_g(layout(g), 0.);
+                extend_gradient(temp_x, temp_g);
+                g += *orthogonal_transformation() * temp_g;
+
+            } else {
+                extend_gradient(x, g);
+            }
+
+            return true;
+        }
+
+        bool update(const Vector &x) override {
+            if (!unconstrained_->update(x)) {
+                return false;
+            }
+
+            update_barrier();
+            return true;
+        }
+
+        inline void set_barrier_parameter(const Scalar value) {
+            barrier_parameter_ = value;
+            current_barrier_parameter_ = value;
+        }
+
+        inline void set_barrier_parameter_shrinking_factor(const Scalar value) {
+            barrier_parameter_shrinking_factor_ = value;
+        }
+
+        inline void set_min_barrier_parameter(const Scalar value) { min_barrier_parameter_ = value; }
+
+        virtual void reset() { current_barrier_parameter_ = barrier_parameter_; }
+
+        inline bool verbose() const { return verbose_; }
+
+        inline void set_orthogonal_transformation(const std::shared_ptr<Matrix> &orthogonal_transformation) {
+            orthogonal_transformation_ = orthogonal_transformation;
+        }
+
+        inline const std::shared_ptr<Matrix> &orthogonal_transformation() const { return orthogonal_transformation_; }
+
+        inline bool has_orthogonal_transformation() const { return static_cast<bool>(orthogonal_transformation_); }
+
+    protected:
+        std::shared_ptr<Function> unconstrained_;
+        std::shared_ptr<BoxConstraints> box_;
+        std::shared_ptr<Matrix> orthogonal_transformation_;
+
+        Scalar barrier_parameter_{1e-10};
+        Scalar barrier_parameter_shrinking_factor_{0.1};
+        Scalar min_barrier_parameter_{1e-10};
+        Scalar current_barrier_parameter_{1e-10};
+        Scalar soft_boundary_{1e-7};
+        Scalar zero_{1e-20};
+        bool verbose_{false};
+
+        void update_barrier() {
+            current_barrier_parameter_ =
+                std::max(current_barrier_parameter_ * barrier_parameter_shrinking_factor_, min_barrier_parameter_);
+
+            if (verbose_) {
+                utopia::out() << "current_barrier_parameter: " << current_barrier_parameter_ << '\n';
+            }
         }
 
         void compute_diff_upper_bound(const Vector &x, Vector &diff) const {
@@ -134,87 +277,6 @@ namespace utopia {
 
                     diff_view.set(i, d);
                 });
-        }
-
-        bool hessian_and_gradient(const Vector &x, Matrix &H, Matrix &preconditioner, Vector &g) const override {
-            if (!unconstrained_->hessian_and_gradient(x, H, preconditioner, g)) {
-                return false;
-            }
-
-            extend_hessian_and_gradient(x, H, g);
-            return true;
-        }
-
-        bool has_preconditioner() const override { return unconstrained_->has_preconditioner(); }
-
-        bool initialize_hessian(Matrix &H, Matrix &preconditioner) const override {
-            if (!unconstrained_->initialize_hessian(H, preconditioner)) {
-                return false;
-            }
-
-            return true;
-        }
-
-        bool value(const Vector &x, Scalar &value) const override {
-            if (!unconstrained_->value(x, value)) {
-                // return false;
-                value = 0.0;
-            }
-
-            extend_value(x, value);
-            return true;
-        }
-
-        bool gradient(const Vector &x, Vector &g) const override {
-            if (!unconstrained_->gradient(x, g)) {
-                return false;
-            }
-
-            extend_gradient(x, g);
-            return true;
-        }
-
-        bool update(const Vector &x) override {
-            if (!unconstrained_->update(x)) {
-                return false;
-            }
-
-            update_barrier();
-            return true;
-        }
-
-        void set_barrier_parameter(const Scalar value) {
-            barrier_parameter_ = value;
-            current_barrier_parameter_ = value;
-        }
-
-        void set_barrier_parameter_shrinking_factor(const Scalar value) { barrier_parameter_shrinking_factor_ = value; }
-
-        void set_min_barrier_parameter(const Scalar value) { min_barrier_parameter_ = value; }
-
-        virtual void reset() { current_barrier_parameter_ = barrier_parameter_; }
-
-        inline bool verbose() const { return verbose_; }
-
-    protected:
-        std::shared_ptr<Function> unconstrained_;
-        std::shared_ptr<BoxConstraints> box_;
-
-        Scalar barrier_parameter_{1e-10};
-        Scalar barrier_parameter_shrinking_factor_{0.1};
-        Scalar min_barrier_parameter_{1e-10};
-        Scalar current_barrier_parameter_{1e-10};
-        Scalar soft_boundary_{1e-7};
-        Scalar zero_{1e-20};
-        bool verbose_{false};
-
-        void update_barrier() {
-            current_barrier_parameter_ =
-                std::max(current_barrier_parameter_ * barrier_parameter_shrinking_factor_, min_barrier_parameter_);
-
-            if (verbose_) {
-                utopia::out() << "current_barrier_parameter: " << current_barrier_parameter_ << '\n';
-            }
         }
     };
 
