@@ -245,8 +245,8 @@ namespace utopia {
             create_symm_lapl_test_data(comm, A, b, box, n);
             box.lower_bound() = nullptr;
 
-            // bool verbose = Traits::Backend == PETSC;
-            bool verbose = false;
+            bool verbose = Traits::Backend == PETSC;
+            // bool verbose = false;
 
             PrimalInteriorPointSolver<Matrix, Vector> solver;
 
@@ -428,8 +428,8 @@ namespace utopia {
         void MPRGP_DD() {
             auto &&comm = Comm::get_default();
 
-            // static const bool verbose = false;
-            static const bool verbose = Traits::Backend == PETSC;
+            static const bool verbose = false;
+            // static const bool verbose = Traits::Backend == PETSC;
 
             Matrix A;
             Vector b;
@@ -545,7 +545,7 @@ namespace utopia {
                 qp_params.set("rtol", 1e-10);
                 qp_params.set("stol", 1e-10);
                 qp_params.set("infinity", 0.55);
-                qp_params.set("max-it", 1e2);
+                qp_params.set("max-it", 2000);
                 qp_solver.read(qp_params);
 
                 qp_solver.set_box_constraints(box);

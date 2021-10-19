@@ -57,7 +57,7 @@ namespace utopia {
         in.get("infinity", impl_->infinity);
 
         if (impl_->solver) {
-            in.get("solver", *impl_->solver);
+            impl_->solver->read(in);
         }
     }
 
@@ -82,6 +82,7 @@ namespace utopia {
 
         bool ok = true;
         if (b.comm().size() == 1) {
+            impl_->solver->set_box_constraints(this->get_box_constraints());
             ok = impl_->solver->solve(*this->get_operator(), b, x);
         } else {
             impl_->op.initialize(make_ref(b));

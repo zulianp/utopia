@@ -31,9 +31,11 @@ namespace utopia {
                 x = max(x, *box.lower_bound());
             }
 
-            Scalar norm_x = norm1(x);
+            // Scalar norm_x = norm1(x);
 
-            if (norm_x == 0 || has_constraints_matrix()) {
+            if (
+                // norm_x == 0 ||
+                has_constraints_matrix()) {
                 lambda.values(layout(x), 1.);
             } else {
                 lambda = system_matrix() * x;
@@ -270,7 +272,11 @@ namespace utopia {
 
         bool residual_s(const Vector &lambda, const Vector &s, Vector &r_s) {
             r_s = e_mul(s, lambda);
-            r_s.shift(-sigma * mu);
+
+            if (sigma != 0) {
+                r_s.shift(-sigma * mu);
+            }
+
             return true;
         }
 
