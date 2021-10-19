@@ -17,6 +17,8 @@ namespace utopia {
     class KSP_MF<Matrix, Vector, PETSC> : public OperatorBasedLinearSolver<Matrix, Vector> {
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
+        using Super = utopia::OperatorBasedLinearSolver<Matrix, Vector>;
+        using Super::solve;
 
         typedef utopia::OperatorBasedLinearSolver<Matrix, Vector> OperatorBasedLinearSolver;
 
@@ -52,8 +54,8 @@ namespace utopia {
             MatCreateShell(A.comm().get(),
                            A.local_size().get(0),
                            A.local_size().get(1),
-                           PETSC_DECIDE,
-                           PETSC_DECIDE,
+                           A.size().get(0),
+                           A.size().get(1),
                            A_nonconst_ref,
                            &op_mat);
 

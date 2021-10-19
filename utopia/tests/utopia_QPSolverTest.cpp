@@ -482,7 +482,13 @@ namespace utopia {
             params.set("atol", 1e-10);
             params.set("rtol", 1e-10);
             params.set("stol", 1e-10);
-            // if (verbose) params.set("type", "ksp");
+
+            // if (verbose) {
+            //     // Does not work
+            //     params.set("type", "ksp");
+            //     params.set("pc_type", "shell");
+            // }
+
             params.set("use_preconditioner", true);
             // params.set("preconditioner_type", "inv");
             params.set("preconditioner_type", "amg");
@@ -593,8 +599,8 @@ namespace utopia {
 
             utopia_test_assert(amg.solve(H, g, x));
 
-            rename("x", x);
-            write("X.m", x);
+            // rename("x", x);
+            // write("X.m", x);
         }
 
         void monotone_mg_test() {
