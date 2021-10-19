@@ -545,7 +545,7 @@ namespace utopia {
                 qp_params.set("rtol", 1e-10);
                 qp_params.set("stol", 1e-10);
                 qp_params.set("infinity", 0.55);
-                qp_params.set("max-it", 1e4);
+                qp_params.set("max-it", 1e2);
                 qp_solver.read(qp_params);
 
                 qp_solver.set_box_constraints(box);
@@ -565,7 +565,7 @@ namespace utopia {
                 c_ss << "BDDLinearSolver::solve\n" << c << "\n";
 
                 rename("x", x_qp);
-                write("loca_XQP.m", x_qp);
+                write("load_XQP.m", x_qp);
             }
 
             ///////////////////////////////////////////////////////////////
