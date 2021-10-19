@@ -120,7 +120,7 @@ namespace utopia {
         }
 
         UTOPIA_TRACE_REGION_END("BDDQPSolver::apply");
-        return false;
+        return ok;
     }
 
     template <class Matrix, class Vector, int Backend>
@@ -151,8 +151,9 @@ namespace utopia {
         } else {
             if (impl_->op.selector().empty()) {
                 determine_boolean_selector();
-                impl_->op.initialize(op);
             }
+
+            impl_->op.initialize(op);
         }
 
         init_memory(row_layout(*op));

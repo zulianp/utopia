@@ -461,11 +461,11 @@ namespace utopia {
             Scalar norm_c = norm2(impl_->correction);
             ++it;
 
-            converged = this->check_convergence(it, 1, 1, norm_c);
-
             if (this->verbose()) {
                 PrintInfo::print_iter_status(it, {norm_c, impl_->mu});
             }
+
+            converged = this->check_convergence(it, 1, 1, norm_c);
         }
 
         impl_->post_solve(x);

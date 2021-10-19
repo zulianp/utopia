@@ -753,6 +753,7 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     typename BDDOperator<Matrix, Vector>::Layout BDDOperator<Matrix, Vector>::vector_layout() const {
+        assert(impl_->A_GG_);
         return row_layout(*impl_->A_GG_);
     }
 

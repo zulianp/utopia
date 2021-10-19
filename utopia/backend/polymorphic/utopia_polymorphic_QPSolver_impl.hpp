@@ -240,8 +240,8 @@ namespace utopia {
         assert(static_cast<bool>(impl_));
         if (!impl_) return false;
 
-        impl_->update(this->get_operator());
         impl_->set_box_constraints(this->get_box_constraints());
+        impl_->update(this->get_operator());
         return impl_->apply(rhs, sol);
     }
 
