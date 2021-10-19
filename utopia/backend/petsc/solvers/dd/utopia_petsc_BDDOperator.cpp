@@ -683,6 +683,11 @@ namespace utopia {
     }
 
     template <class Matrix, class Vector>
+    std::shared_ptr<Matrix> BDDOperator<Matrix, Vector>::reduced_matrix() const {
+        return impl_->A_GG_;
+    }
+
+    template <class Matrix, class Vector>
     bool BDDOperator<Matrix, Vector>::apply(const Vector &x_G, Vector &rhs_G) const {
         return impl_->apply(x_G, rhs_G);
     }
@@ -754,6 +759,24 @@ namespace utopia {
     template <class Matrix, class Vector>
     void BDDOperator<Matrix, Vector>::create_vector(Vector &x_G) {
         x_G.zeros(this->vector_layout());
+    }
+
+    template <class Matrix, class Vector>
+    void BDDOperator<Matrix, Vector>::select(const Vector &x, Vector &x_G) const {
+        auto &&comm = x.comm();
+        auto G_layout = layout(comm, impl_->local_size_G(), Traits::determine());
+
+        {
+            x_G.zeros(G_layout);
+
+            auto x_G_view = local_view_device(x_G);
+            auto x_view = local_view_device(x);
+
+            for (SizeType i = 0; i < impl_->local_size_G(); ++i) {
+                SizeType original_local_idx = impl_->local_interface_idx[i];
+                x_G_view.set(i, x_view.get(original_local_idx));
+            }
+        }
     }
 
     template <class Matrix, class Vector>

@@ -427,8 +427,8 @@ namespace utopia {
         void MPRGP_DD() {
             auto &&comm = Comm::get_default();
 
-            static const bool verbose = false;
-            // static const bool verbose = Traits::Backend == PETSC;
+            // static const bool verbose = false;
+            static const bool verbose = Traits::Backend == PETSC;
 
             Matrix A;
             Vector b;
@@ -483,14 +483,15 @@ namespace utopia {
             params.set("rtol", 1e-10);
             params.set("stol", 1e-10);
 
-            // if (verbose) {
-            //     // Does not work
-            //     params.set("type", "ksp");
-            //     params.set("pc_type", "shell");
+            // Test MFKSP
+            if (false) {
+                params.set("type", "ksp");
+                params.set("pc_type", "none");
+                params.set("ksp_type", "gmres");
 
-            // This works
-            // params.set("type", "bcgs");
-            // }
+                // This works
+                // params.set("type", "bcgs");
+            }
 
             params.set("use_preconditioner", true);
             // params.set("preconditioner_type", "inv");

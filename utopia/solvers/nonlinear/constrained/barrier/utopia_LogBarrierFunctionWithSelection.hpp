@@ -53,68 +53,70 @@ namespace utopia {
         void determine_boolean_selector() const {
             if (!this->box_) return;
 
-            if (this->verbose()) {
-                utopia::out() << "LogBarrierFunctionWithSelection::determine_boolean_selector()\n";
-            }
+            this->box_->determine_boolean_selector(-infinity_, infinity_, *boolean_selector_);
 
-            if (empty(*boolean_selector_)) {
-                if (this->box_->has_upper_bound()) {
-                    boolean_selector_->zeros(layout(*this->box_->upper_bound()));
-                } else if (this->box_->has_lower_bound()) {
-                    boolean_selector_->zeros(layout(*this->box_->lower_bound()));
-                }
-            }
+            // if (this->verbose()) {
+            //     utopia::out() << "LogBarrierFunctionWithSelection::determine_boolean_selector()\n";
+            // }
 
-            if (this->box_->has_upper_bound() && this->box_->has_lower_bound()) {
-                auto lb_view = local_view_device(*this->box_->lower_bound());
-                auto ub_view = local_view_device(*this->box_->upper_bound());
-                auto selector_view = local_view_device(*boolean_selector_);
+            // if (empty(*boolean_selector_)) {
+            //     if (this->box_->has_upper_bound()) {
+            //         boolean_selector_->zeros(layout(*this->box_->upper_bound()));
+            //     } else if (this->box_->has_lower_bound()) {
+            //         boolean_selector_->zeros(layout(*this->box_->lower_bound()));
+            //     }
+            // }
 
-                Scalar infinity = infinity_;
-                parallel_for(
-                    local_range_device(*boolean_selector_), UTOPIA_LAMBDA(const SizeType i) {
-                        auto ubi = ub_view.get(i);
-                        auto lbi = lb_view.get(i);
+            // if (this->box_->has_upper_bound() && this->box_->has_lower_bound()) {
+            //     auto lb_view = local_view_device(*this->box_->lower_bound());
+            //     auto ub_view = local_view_device(*this->box_->upper_bound());
+            //     auto selector_view = local_view_device(*boolean_selector_);
 
-                        if (ubi < infinity || lbi > -infinity) {
-                            selector_view.set(i, 1.);
-                        }
-                    });
+            //     Scalar infinity = infinity_;
+            //     parallel_for(
+            //         local_range_device(*boolean_selector_), UTOPIA_LAMBDA(const SizeType i) {
+            //             auto ubi = ub_view.get(i);
+            //             auto lbi = lb_view.get(i);
 
-            } else if (this->box_->has_upper_bound()) {
-                auto ub_view = local_view_device(*this->box_->upper_bound());
-                auto selector_view = local_view_device(*boolean_selector_);
+            //             if (ubi < infinity || lbi > -infinity) {
+            //                 selector_view.set(i, 1.);
+            //             }
+            //         });
 
-                Scalar infinity = infinity_;
-                parallel_for(
-                    local_range_device(*boolean_selector_), UTOPIA_LAMBDA(const SizeType i) {
-                        auto bound = ub_view.get(i);
+            // } else if (this->box_->has_upper_bound()) {
+            //     auto ub_view = local_view_device(*this->box_->upper_bound());
+            //     auto selector_view = local_view_device(*boolean_selector_);
 
-                        if (bound < infinity) {
-                            selector_view.set(i, 1.);
-                        }
-                    });
-            } else if (this->box_->has_lower_bound()) {
-                auto lb_view = local_view_device(*this->box_->lower_bound());
-                auto selector_view = local_view_device(*boolean_selector_);
+            //     Scalar infinity = infinity_;
+            //     parallel_for(
+            //         local_range_device(*boolean_selector_), UTOPIA_LAMBDA(const SizeType i) {
+            //             auto bound = ub_view.get(i);
 
-                Scalar infinity = infinity_;
-                parallel_for(
-                    local_range_device(*boolean_selector_), UTOPIA_LAMBDA(const SizeType i) {
-                        auto bound = lb_view.get(i);
+            //             if (bound < infinity) {
+            //                 selector_view.set(i, 1.);
+            //             }
+            //         });
+            // } else if (this->box_->has_lower_bound()) {
+            //     auto lb_view = local_view_device(*this->box_->lower_bound());
+            //     auto selector_view = local_view_device(*boolean_selector_);
 
-                        if (bound > -infinity) {
-                            selector_view.set(i, 1.);
-                        }
-                    });
-            }
+            //     Scalar infinity = infinity_;
+            //     parallel_for(
+            //         local_range_device(*boolean_selector_), UTOPIA_LAMBDA(const SizeType i) {
+            //             auto bound = lb_view.get(i);
 
-            if (this->verbose()) {
-                Scalar sum_selected = sum(*boolean_selector_);
-                if (boolean_selector_->comm().rank() == 0) {
-                    utopia::out() << "Selected: " << SizeType(sum_selected) << "\n";
-                }
-            }
+            //             if (bound > -infinity) {
+            //                 selector_view.set(i, 1.);
+            //             }
+            //         });
+            // }
+
+            // if (this->verbose()) {
+            //     Scalar sum_selected = sum(*boolean_selector_);
+            //     if (boolean_selector_->comm().rank() == 0) {
+            //         utopia::out() << "Selected: " << SizeType(sum_selected) << "\n";
+            //     }
+            // }
         }
 
         void extend_hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const override {
