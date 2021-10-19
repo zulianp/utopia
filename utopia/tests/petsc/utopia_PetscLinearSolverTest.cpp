@@ -71,6 +71,9 @@ namespace utopia {
             rhs *= 0.00001;
 
             KSP_MF<PetscMatrix, PetscVector> cg;
+
+            // FIXME
+            cg.pc_type("none");
             cg.rtol(1e-6);
             cg.atol(1e-6);
             cg.max_it(500);
