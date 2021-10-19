@@ -27,6 +27,7 @@
 #ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_BDDLinearSolver.hpp"
 #include "utopia_petsc_BDDOperator.hpp"
+#include "utopia_petsc_BDDQPSolver.hpp"
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
 #endif  // UTOPIA_WITH_PETSC
@@ -475,7 +476,6 @@ namespace utopia {
             c.start();
 
             Vector x(layout(b), 0.);
-            BDDLinearSolver<Matrix, Vector> solver;
 
             InputParameters params;
             params.set("verbose", verbose);
@@ -489,21 +489,23 @@ namespace utopia {
                 params.set("pc_type", "none");
                 params.set("ksp_type", "gmres");
 
-                // This works
                 // params.set("type", "bcgs");
             }
 
             params.set("use_preconditioner", true);
-            // params.set("preconditioner_type", "inv");
             params.set("preconditioner_type", "amg");
+
+            // params.set("preconditioner_type", "inv");
             // params.set("use_preconditioner", false);
 
-            solver.read(params);
+            ///////////////////////////////////////////////////////////////
 
+            BDDLinearSolver<Matrix, Vector> solver;
+            solver.read(params);
             solver.update(make_ref(A));
 
             c.stop();
-            c_ss << "BDDOperator initialization\n" << c << "\n";
+            c_ss << "BDDLinearSolver::update\n" << c << "\n";
 
             ///////////////////////////////////////////////////////////////
 
@@ -512,7 +514,59 @@ namespace utopia {
             solver.apply(b, x);
 
             c.stop();
-            c_ss << "solve\n" << c << "\n";
+            c_ss << "BDDLinearSolver::solve\n" << c << "\n";
+
+            ///////////////////////////////////////////////////////////////
+
+            if (box.has_bound()) {
+                BDDQPSolver<Matrix, Vector> qp_solver;
+
+                /// Changing the input data
+                box.lower_bound() = nullptr;
+                auto &&u = *box.upper_bound();
+
+                auto u_view = view_device(u);
+                SizeType n_half = u.size() / 2;
+
+                // Allow for unconstrained nodes
+                parallel_for(
+                    range_device(u), UTOPIA_LAMBDA(const SizeType i) {
+                        if (i > n_half) {
+                            u_view.set(i, 0.6);
+                        }
+                    });
+
+                c.start();
+
+                InputParameters qp_params;
+                qp_params.set("verbose", true);
+                qp_params.set("debug", true);
+                qp_params.set("atol", 1e-10);
+                qp_params.set("rtol", 1e-10);
+                qp_params.set("stol", 1e-10);
+                qp_params.set("infinity", 0.55);
+                qp_params.set("max-it", 1e4);
+                qp_solver.read(qp_params);
+
+                qp_solver.set_box_constraints(box);
+                qp_solver.update(make_ref(A));
+
+                c.stop();
+                c_ss << "BDDQPSolver::update\n" << c << "\n";
+
+                ///////////////////////////////////////////////////////////////
+
+                c.start();
+
+                Vector x_qp(layout(b));
+                qp_solver.apply(b, x_qp);
+
+                c.stop();
+                c_ss << "BDDLinearSolver::solve\n" << c << "\n";
+
+                rename("x", x_qp);
+                write("loca_XQP.m", x_qp);
+            }
 
             ///////////////////////////////////////////////////////////////
 

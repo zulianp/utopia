@@ -32,7 +32,9 @@ namespace utopia {
 
     template <class Matrix, class Vector, int Backend>
     BDDQPSolver<Matrix, Vector, Backend>::BDDQPSolver() : impl_(utopia::make_unique<Impl>()) {
-        set_solver(std::make_shared<MPRGP<Matrix, Vector>>());
+        auto mprgp = std::make_shared<MPRGP<Matrix, Vector>>();
+        mprgp->verbose(true);
+        set_solver(mprgp);
     }
 
     template <class Matrix, class Vector, int Backend>
@@ -86,6 +88,14 @@ namespace utopia {
 
             Vector x_G;
             impl_->op.create_vector(x_G);
+
+            if (impl_->debug) {
+                std::stringstream ss;
+                ss << "size: " << x.size() << "\n";
+                ss << "G_size: " << x_G.size() << "\n";
+
+                b.comm().root_print(ss.str());
+            }
 
             if (this->has_upper_bound()) {
                 auto u_G = std::make_shared<Vector>();
@@ -156,7 +166,7 @@ namespace utopia {
         auto selector_view = local_view_device(*boolean_selector);
 
         auto &&selection = impl_->op.selector();
-        if (selection.size() != boolean_selector->local_size()) {
+        if (SizeType(selection.size()) != boolean_selector->local_size()) {
             selection.resize(boolean_selector->local_size());
         }
 
