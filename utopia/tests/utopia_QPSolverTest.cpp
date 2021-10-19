@@ -487,6 +487,9 @@ namespace utopia {
             //     // Does not work
             //     params.set("type", "ksp");
             //     params.set("pc_type", "shell");
+
+            // This works
+            // params.set("type", "bcgs");
             // }
 
             params.set("use_preconditioner", true);

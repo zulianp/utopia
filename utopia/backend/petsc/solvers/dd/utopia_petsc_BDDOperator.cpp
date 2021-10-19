@@ -220,9 +220,6 @@ namespace utopia {
 
             for (SizeType i = 0; i < impl_->n_interface; ++i) {
                 SizeType original_local_idx = impl_->local_interface_idx[i];
-                // SizeType new_row = interface_offset + i;
-                // b_G.set(new_row, b_view.get(original_local_idx));
-
                 b_G_view.set(i, b_view.get(original_local_idx));
             }
 
@@ -356,7 +353,6 @@ namespace utopia {
             std::vector<SizeType> encountered_ranks;
             std::vector<bool> is_rank_counted(comm.size(), false);
 
-            // SizeType local_rows = o_crs_view.rows();
             for (SizeType i = 0; i < n_interface; ++i) {
                 SizeType original_local_idx = local_interface_idx[i];
                 auto row_begin = o_row_ptr[original_local_idx];
@@ -398,8 +394,6 @@ namespace utopia {
             }
 
             // Fill send_list with global indices
-
-            // ss << "---------------------------\n";
             for (SizeType i = 0; i < n_interface; ++i) {
                 SizeType original_local_idx = local_interface_idx[i];
                 SizeType new_global_idx = interface_offset + i;
@@ -484,11 +478,9 @@ namespace utopia {
                     SizeType original_local_idx = local_interface_idx[i];
                     auto row_begin = d_row_ptr[original_local_idx];
                     auto row_end = d_row_ptr[original_local_idx + 1];
-                    // auto n_cols = row_end - row_begin;
 
                     for (SizeType k = row_begin; k < row_end; ++k) {
                         SizeType col = d_colidx[k];
-                        // if (!r.inside(min_idx[col]) || !r.inside(max_idx[col])) {
                         if (impl_->owned_is_interface(col)) {
                             ++d_nnz[i];
                         }
@@ -515,7 +507,6 @@ namespace utopia {
                     SizeType original_local_idx = local_interface_idx[i];
                     auto row_begin = d_row_ptr[original_local_idx];
                     auto row_end = d_row_ptr[original_local_idx + 1];
-                    // auto n_cols = row_end - row_begin;
                     SizeType new_row = interface_offset + i;
 
                     for (SizeType k = row_begin; k < row_end; ++k) {
@@ -535,7 +526,6 @@ namespace utopia {
                     SizeType original_local_idx = local_interface_idx[i];
                     auto row_begin = o_row_ptr[original_local_idx];
                     auto row_end = o_row_ptr[original_local_idx + 1];
-                    // auto n_cols = row_end - row_begin;
                     SizeType new_row = interface_offset + i;
 
                     for (SizeType k = row_begin; k < row_end; ++k) {
@@ -565,7 +555,6 @@ namespace utopia {
 
                     for (SizeType k = row_begin; k < row_end; ++k) {
                         SizeType col = d_colidx[k];
-                        // if (r.inside(min_idx[col]) && r.inside(max_idx[col]))
                         if (!impl_->owned_is_interface(col)) {
                             ++d_nnz[i];
                         }
@@ -580,11 +569,9 @@ namespace utopia {
                     SizeType original_local_idx = local_interface_idx[i];
                     auto row_begin = d_row_ptr[original_local_idx];
                     auto row_end = d_row_ptr[original_local_idx + 1];
-                    // auto n_cols = row_end - row_begin;
 
                     for (SizeType k = row_begin; k < row_end; ++k) {
                         SizeType col = d_colidx[k];
-                        // if (r.inside(min_idx[col]) && r.inside(max_idx[col])) {
                         if (!impl_->owned_is_interface(col)) {
                             Scalar value = d_values[k];
                             A_GI.set(i, col, value);
@@ -605,12 +592,10 @@ namespace utopia {
                 for (SizeType i = 0; i < n_local; ++i) {
                     auto row_begin = d_row_ptr[i];
                     auto row_end = d_row_ptr[i + 1];
-                    // auto n_cols = row_end - row_begin;
 
                     for (SizeType k = row_begin; k < row_end; ++k) {
                         SizeType col = d_colidx[k];
 
-                        // if (!r.inside(min_idx[col]) || !r.inside(max_idx[col]))
                         if (!impl_->owned_is_interface(col)) {
                             ++d_nnz[i];
                         }
@@ -621,12 +606,10 @@ namespace utopia {
                 Write<Matrix> w_A(A_IG);
 
                 for (SizeType i = 0; i < n_local; ++i) {
-                    // if (global_to_local[i] != -1) continue;
                     if (impl_->owned_is_interface(i)) continue;
 
                     auto row_begin = d_row_ptr[i];
                     auto row_end = d_row_ptr[i + 1];
-                    // auto n_cols = row_end - row_begin;
 
                     for (SizeType k = row_begin; k < row_end; ++k) {
                         SizeType col = d_colidx[k];
