@@ -133,16 +133,19 @@ namespace utopia {
             });
 
             n_interface = 0;
+            n_selected = 0;
             for (SizeType i = 0; i < n_local; ++i) {
                 if (!original_range.inside(min_idx[i]) || !original_range.inside(max_idx[i])) {
                     ++n_interface;
+                } else if (owned_is_selected(i)) {
+                    ++n_selected;
                 }
             }
 
-            local_interface_idx.resize(n_interface);
+            local_interface_idx.resize(n_interface + n_selected);
             std::fill(std::begin(local_interface_idx), std::end(local_interface_idx), 0);
 
-            local_to_global.resize(n_interface);
+            local_to_global.resize(n_interface + n_selected);
             std::fill(std::begin(local_to_global), std::end(local_to_global), 0);
 
             global_to_local.resize(n_local);
@@ -157,9 +160,29 @@ namespace utopia {
                 }
             }
 
-            // TODO handle also selection
+            if (n_selected) {
+                n_selected = 0;
+                for (SizeType i = 0; i < n_local; ++i) {
+                    if (global_to_local[i] == -1 && owned_is_selected(i)) {
+                        local_to_global[n_interface + n_selected] = (i + original_range.begin());
+                        global_to_local[i] = n_interface + n_selected;
+                        local_interface_idx[n_interface + n_selected] = i;
+                        ++n_selected;
+                    }
+                }
+            }
+
             interface_offset = 0;
-            comm.exscan_sum(&n_interface, &interface_offset, 1);
+            selected_offset = 0;
+
+            SizeType temp_buff_1[2] = {n_interface, n_selected};
+            SizeType temp_buff_2[2] = {0, 0};
+            comm.exscan_sum(temp_buff_1, temp_buff_2, 2);
+
+            // comm.exscan_sum(&n_interface, &interface_offset, 1);
+
+            interface_offset = temp_buff_2[0];
+            selected_offset = temp_buff_2[1];
         }
 
         void build_A_II(const Matrix &A, Matrix &A_II) const {
@@ -170,7 +193,7 @@ namespace utopia {
             set_zero_rows(A_II, local_interface_idx, 1);
 
             A_II.transform_ijv([&](const SizeType i, const SizeType j, const Scalar value) -> Scalar {
-                bool is_removed = this->owned_is_interface(j) || this->owned_is_selected(j);
+                bool is_removed = this->owned_is_in_G(j);
                 if (is_removed) {
                     return i == j ? 1.0 : 0.;
                 } else {
@@ -389,7 +412,7 @@ namespace utopia {
 
                         for (SizeType k = row_begin; k < row_end; ++k) {
                             SizeType col = d_colidx[k];
-                            if (this->owned_is_interface(col) || this->owned_is_selected(col)) {
+                            if (this->owned_is_in_G(col)) {
                                 ++d_nnz[i];
                             }
                         }
@@ -463,7 +486,7 @@ namespace utopia {
 
                         for (SizeType k = row_begin; k < row_end; ++k) {
                             SizeType col = d_colidx[k];
-                            if (!(this->owned_is_interface(col) || this->owned_is_selected(col))) {
+                            if (!this->owned_is_in_G(col)) {
                                 ++d_nnz[i];
                             }
                         }
@@ -480,7 +503,7 @@ namespace utopia {
 
                         for (SizeType k = row_begin; k < row_end; ++k) {
                             SizeType col = d_colidx[k];
-                            if (!(this->owned_is_interface(col) || this->owned_is_selected(col))) {
+                            if (!this->owned_is_in_G(col)) {
                                 Scalar value = d_values[k];
                                 A_GI.set(i, col, value);
                             }
@@ -504,7 +527,7 @@ namespace utopia {
                         for (SizeType k = row_begin; k < row_end; ++k) {
                             SizeType col = d_colidx[k];
 
-                            if (!(this->owned_is_interface(col) || this->owned_is_selected(col))) {
+                            if (!this->owned_is_in_G(col)) {
                                 ++d_nnz[i];
                             }
                         }
@@ -514,7 +537,7 @@ namespace utopia {
                     Write<Matrix> w_A(A_IG);
 
                     for (SizeType i = 0; i < n_local; ++i) {
-                        if (this->owned_is_interface(i) || this->owned_is_selected(i)) continue;
+                        if (this->owned_is_in_G(i)) continue;
 
                         auto row_begin = d_row_ptr[i];
                         auto row_end = d_row_ptr[i + 1];
@@ -534,18 +557,18 @@ namespace utopia {
             }
         }
 
-        inline bool owned_is_interface(const SizeType i_owned) const {
+        inline bool owned_is_in_G(const SizeType i_owned) const {
             assert(i_owned < SizeType(global_to_local.size()));
             return (global_to_local[i_owned] != -1);
         }
 
         inline bool owned_is_selected(const SizeType i_owned) const {
-            // TODO
-            return false;
+            assert(selector.empty() || i_owned < SizeType(selector.size()));
+            return (!selector.empty()) && selector[i_owned];
         }
 
-        inline SizeType global_offset_G() const { return interface_offset; }
-        inline SizeType local_size_G() const { return n_interface; }
+        inline SizeType global_offset_G() const { return interface_offset + selected_offset; }
+        inline SizeType local_size_G() const { return n_interface + n_selected; }
 
         std::shared_ptr<Matrix> A_GG_, A_GI_, A_II_, A_IG_;
         std::shared_ptr<Vector> secant_G_;
@@ -558,9 +581,13 @@ namespace utopia {
         IndexSet global_to_local;
         IndexSet local_to_global;
         SizeType interface_offset{0};
+        SizeType selected_offset{0};
         SizeType n_interface{0};
+        SizeType n_selected{0};
         Range original_range;
         SizeType n_global{0};
+
+        Selector selector;
 
         std::string preconditioner_type{"inv_diag"};
         bool verbose{false};
@@ -609,7 +636,7 @@ namespace utopia {
             auto b_I_view = local_view_device(b_I);
 
             for (SizeType i = 0; i < n_local; ++i) {
-                if (impl_->global_to_local[i] != -1) continue;
+                if (impl_->owned_is_in_G(i)) continue;
                 b_I_view.set(i, b_view.get(i));
             }
         }
@@ -618,6 +645,11 @@ namespace utopia {
 
         UTOPIA_TRACE_REGION_END("BDDOperator::initialize(vector)");
         return ok;
+    }
+
+    template <class Matrix, class Vector>
+    typename BDDOperator<Matrix, Vector>::Selector &BDDOperator<Matrix, Vector>::selector() {
+        return impl_->selector;
     }
 
     template <class Matrix, class Vector>

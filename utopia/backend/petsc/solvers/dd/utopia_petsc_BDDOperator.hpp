@@ -6,6 +6,7 @@
 #include "utopia_Preconditioner.hpp"
 
 #include <memory>
+#include <vector>
 
 namespace utopia {
 
@@ -19,6 +20,7 @@ namespace utopia {
         using IndexArray = typename Traits::IndexArray;
         using IndexSet = typename Traits::IndexSet;
         using Layout = typename Traits::Layout;
+        using Selector = std::vector<bool>;
 
         BDDOperator();
         ~BDDOperator();
@@ -45,6 +47,8 @@ namespace utopia {
 
         Communicator &comm() override;
         const Communicator &comm() const override;
+
+        Selector &selector();
 
     private:
         class Impl;
