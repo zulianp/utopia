@@ -8,8 +8,8 @@
 
 #include "utopia_MPRGP.hpp"
 
-#include "utopia_petsc_Matrix.hpp"
-#include "utopia_petsc_Vector.hpp"
+#include "utopia_petsc_Matrix_impl.hpp"
+#include "utopia_petsc_Vector_impl.hpp"
 
 #include "utopia_petsc_BDDOperator.hpp"
 
