@@ -59,7 +59,7 @@ namespace utopia {
                 params.read(in);
                 // Must be created for every process independently and the same
                 Mesh_t obstacle_mesh(Communicator_t::self());
-                obstacle->read(in);
+                obstacle_mesh.read(in);
 
                 obs->set_params(params);
                 obs->init_obstacle(obstacle_mesh);

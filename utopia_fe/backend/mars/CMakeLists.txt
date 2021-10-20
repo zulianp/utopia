@@ -14,20 +14,22 @@ if(UTOPIA_ENABLE_MARS)
         TRUE
         PARENT_SCOPE)
 
-    find_package(
-        VTK
-        COMPONENTS vtkCommonCore vtkCommonDataModel vtkFiltersGeneral vtkIOXML vtkIOParallel vtkIOParallelXML
-        REQUIRED)
+    if(UTOPIA_ENABLE_MARS_VTK)
+        find_package(
+            VTK
+            COMPONENTS vtkCommonCore vtkCommonDataModel vtkFiltersGeneral vtkIOXML vtkIOParallel vtkIOParallelXML
+            REQUIRED)
 
-    if(VTK_FOUND)
-        target_link_libraries(utopia_mars PUBLIC ${VTK_LIBRARIES})
+        if(VTK_FOUND)
+            target_link_libraries(utopia_mars PUBLIC ${VTK_LIBRARIES})
 
-        set(UTOPIA_WITH_VTK
-            TRUE
-            PARENT_SCOPE)
+            set(UTOPIA_WITH_VTK
+                TRUE
+                PARENT_SCOPE)
 
-    else()
-        message(FATAL_ERROR "VTK not FOUND")
+        else()
+            message(FATAL_ERROR "VTK not FOUND")
+        endif()
     endif()
 
 endif()
