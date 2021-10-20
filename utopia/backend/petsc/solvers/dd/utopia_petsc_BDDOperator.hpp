@@ -46,8 +46,9 @@ namespace utopia {
         Communicator &comm() override;
         const Communicator &comm() const override;
 
-    private:
+    UTOPIA_NVCC_PRIVATE
         class Impl;
+    private:
         std::unique_ptr<Impl> impl_;
     };
 
