@@ -72,7 +72,8 @@ namespace utopia {
             }
 
             if (has_orthogonal_transformation()) {
-                Vector temp_x = *orthogonal_transformation() * x;
+                Vector temp_x;
+                orthogonal_transformation()->apply(x, temp_x);
                 Matrix temp_H;
                 temp_H.identity(layout(H), 0.);
                 extend_hessian(temp_x, temp_H);
@@ -92,7 +93,8 @@ namespace utopia {
             }
 
             if (has_orthogonal_transformation()) {
-                Vector temp_x = *orthogonal_transformation() * x;
+                Vector temp_x;
+                orthogonal_transformation()->apply(x, temp_x);
                 Vector temp_g(layout(g), 0.);
 
                 Matrix temp_H;
@@ -112,7 +114,8 @@ namespace utopia {
 
         bool project_onto_feasibile_region(Vector &x) const final {
             if (has_orthogonal_transformation()) {
-                Vector temp_x = *orthogonal_transformation() * x;
+                Vector temp_x;
+                orthogonal_transformation()->apply(x, temp_x);
                 bool ok = extend_project_onto_feasibile_region(temp_x);
                 x = *orthogonal_transformation() * temp_x;
                 return ok;
@@ -148,7 +151,8 @@ namespace utopia {
             }
 
             if (has_orthogonal_transformation()) {
-                Vector temp_x = *orthogonal_transformation() * x;
+                Vector temp_x;
+                orthogonal_transformation()->apply(x, temp_x);
                 extend_value(x, value);
             } else {
                 extend_value(x, value);
@@ -163,7 +167,8 @@ namespace utopia {
             }
 
             if (has_orthogonal_transformation()) {
-                Vector temp_x = *orthogonal_transformation() * x;
+                Vector temp_x;
+                orthogonal_transformation()->apply(x, temp_x);
                 Vector temp_g(layout(g), 0.);
                 extend_gradient(temp_x, temp_g);
                 g += *orthogonal_transformation() * temp_g;

@@ -8,6 +8,8 @@
 #include "utopia_Newton.hpp"
 #include "utopia_polymorphic_LinearSolver.hpp"
 
+#include "utopia_LogBarrierFunctionFactory.hpp"
+
 #include <iomanip>
 #include <limits>
 
@@ -80,12 +82,7 @@ namespace utopia {
                             "Type of LogBarrier. Options={LogBarrierFunctionWithSelection|LogBarrierFunction}")
                 .parse(in);
 
-            if (function_type == "LogBarrierFunctionWithSelection") {
-                function_ = std::make_shared<LogBarrierFunctionWithSelection>();
-            } else if (function_type == "BoundedLogBarrierFunction") {
-                function_ = std::make_shared<BoundedLogBarrierFunction>();
-            }
-
+            function_ = LogBarrierFunctionFactory<Matrix, Vector>::new_log_barrier_function(function_type);
             function_->read(in);
         }
 

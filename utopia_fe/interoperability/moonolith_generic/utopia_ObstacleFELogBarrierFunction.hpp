@@ -1,5 +1,7 @@
-#ifndef UTOPIA_OBSTACLEF_EF_UNCTION_HPP
-#define UTOPIA_OBSTACLEF_EF_UNCTION_HPP
+#ifndef UTOPIA_OBSTACLE_FE_LOG_BARRIER_FUNCTION_HPP
+#define UTOPIA_OBSTACLE_FE_LOG_BARRIER_FUNCTION_HPP
+
+#include "utopia_LogBarrierFunctionFactory.hpp"
 
 #include "utopia_BoxConstrainedFEFunction.hpp"
 #include "utopia_IObstacle.hpp"
@@ -15,7 +17,7 @@
 namespace utopia {
 
     template <class FunctionSpace>
-    class ObstacleFEFunction final : public BoxConstrainedFEFunction<FunctionSpace> {
+    class ObstacleFELogBarrierFunction final : public FEFunctionInterface<FunctionSpace> {
     public:
         using Super = utopia::BoxConstrainedFEFunction<FunctionSpace>;
         using Vector_t = typename Traits<FunctionSpace>::Vector;
@@ -31,13 +33,13 @@ namespace utopia {
         using ImplicitObstacle_t = utopia::ImplicitObstacle<FunctionSpace>;
         using AnalyticObstacle_t = utopia::AnalyticObstacle<FunctionSpace>;
 
-        bool has_nonlinear_constraints() const override { return !linear_obstacle_; }
+        // bool has_nonlinear_constraints() const override { return !linear_obstacle_; }
 
-        inline std::shared_ptr<Vector_t> selection() override {
-            auto s = std::make_shared<Vector_t>(obstacle_->is_contact());
-            // this->space()->apply_zero_constraints(*s);
-            return s;
-        }
+        // inline std::shared_ptr<Vector_t> selection() override {
+        //     auto s = std::make_shared<Vector_t>(obstacle_->is_contact());
+        //     // this->space()->apply_zero_constraints(*s);
+        //     return s;
+        // }
 
         bool update_constraints(const Vector_t &x) {
             utopia::out() << "update_constraints\n";
@@ -54,28 +56,7 @@ namespace utopia {
             return ok;
         }
 
-        bool has_transformation() const override { return true; }
-
-        void transform(const Vector_t &x, Vector_t &x_constrained) override { obstacle_->transform(x, x_constrained); }
-
-        void inverse_transform(const Vector_t &x_constrained, Vector_t &x) override {
-            obstacle_->inverse_transform(x_constrained, x);
-        }
-
-        void transform(const Matrix_t &H, Matrix_t &H_constrained) override { obstacle_->transform(H, H_constrained); }
-
-        bool constraints_gradient(const Vector_t &x, BoxConstraints<Vector_t> &box) override {
-            update_constraints(x);
-
-            if (!box.upper_bound()) {
-                box.upper_bound() = std::make_shared<Vector_t>();
-            }
-
-            (*box.upper_bound()) = obstacle_->gap();
-            return true;
-        }
-
-        ObstacleFEFunction(const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &unconstrained)
+        ObstacleFELogBarrierFunction(const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &unconstrained)
             : Super(unconstrained) {}
 
         void ouput_debug_data(const Size_t iter_debug, const Vector_t &) const {
@@ -108,7 +89,6 @@ namespace utopia {
         void read(Input &in) override {
             Super::read(in);
 
-            in.get("linear_obstacle", linear_obstacle_);
             in.get("debug", debug_);
 
             if (!obstacle_) {
@@ -116,27 +96,18 @@ namespace utopia {
                 in.get("obstacle",
                        [&](Input &node) { obstacle_ = ObstacleFactory<FunctionSpace>::new_obstacle(node); });
             }
+
+            std::string function_type;
+            function_ = LogBarrierFunctionFactory<Matrix, Vector>::new_log_barrier_function(function_type);
+            function_->read(in);
         }
-
-        // bool report_solution(const Vector_t &x) override {
-        //     if (!Super::report_solution(x)) {
-        //         return false;
-        //     }
-
-        //     if (debug_) {
-        //         static int iter_debug = 0;
-        //         ouput_debug_data(iter_debug++, x);
-        //     }
-
-        //     return true;
-        // }
 
     private:
         std::shared_ptr<IObstacle<FunctionSpace>> obstacle_;
-        bool linear_obstacle_{false};
+        std::shared_ptr<LogBarrierFunctionBase> function_;
         bool debug_{false};
     };
 
 }  // namespace utopia
 
-#endif  // UTOPIA_OBSTACLE_FE_FUNCTION_HPP
+#endif  // UTOPIA_OBSTACLE_FE_LOG_BARRIER_FUNCTION_HPP
