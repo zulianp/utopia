@@ -94,16 +94,16 @@ namespace utopia {
             // else if(ext == "gmsh") {
 
             // }
-#if defined(PETSC_HAVE_HDF5)
-            else if (ext == "h5") {
-                PetscViewerHDF5Open(mpi_comm, path.c_str(), FILE_MODE_WRITE, &viewer);
+            // #if defined(PETSC_HAVE_HDF5)
+            //             else if (ext == "h5") {
+            //                 PetscViewerHDF5Open(mpi_comm, path.c_str(), FILE_MODE_WRITE, &viewer);
 
-                if (ierr != 0) {
-                    assert(false);
-                    return false;
-                }
-            }
-#endif
+            //                 if (ierr != 0) {
+            //                     assert(false);
+            //                     return false;
+            //                 }
+            //             }
+            // #endif
             // #if defined(PETSC_HAVE_EXODUSII)
             //             else if (ext == "e") {
             //                 ierr = PetscViewerExodusIIOpen(mpi_comm, path.c_str(), FILE_MODE_WRITE, &viewer);
