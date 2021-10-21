@@ -146,18 +146,34 @@ namespace utopia {
 
             const SizeType n = selector.size();
 
+            SizeType n_selected_before = 0;
+            SizeType n_selected_after = 0;
+
             for (SizeType i = 0; i < n; i += block_size) {
                 bool is_selected = false;
 
                 for (int d = 0; d < block_size; ++d) {
-                    is_selected |= selector[i + d];
+                    bool is_selected_i = selector[i + d];
+                    is_selected = is_selected || is_selected_i;
+
+                    n_selected_before += is_selected_i;
                 }
 
                 if (is_selected) {
                     for (int d = 0; d < block_size; ++d) {
                         selector[i + d] = true;
                     }
+
+                    n_selected_after += block_size;
                 }
+            }
+
+            if (verbose) {
+                std::stringstream ss;
+
+                ss << "n_selected_before:\t" << n_selected_before << "\n";
+                ss << "n_selected_after:\t" << n_selected_after << "\n";
+                Communicator().root_print(ss.str());
             }
         }
 

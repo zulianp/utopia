@@ -21,6 +21,7 @@ namespace utopia {
         BDDOperator<Matrix, Vector> op;
         std::shared_ptr<MatrixFreeQPSolver> solver;
         bool debug{false};
+        bool determine_boolean_selector{false};
         Scalar infinity{1000};
     };
 
@@ -55,6 +56,7 @@ namespace utopia {
         QPSolver<Matrix, Vector>::read(in);
         in.get("debug", impl_->debug);
         in.get("infinity", impl_->infinity);
+        in.get("determine_boolean_selector", impl_->determine_boolean_selector);
 
         if (impl_->solver) {
             // impl_->solver->read(in);
@@ -152,7 +154,7 @@ namespace utopia {
 
         if (op->comm().size() == 1) {
         } else {
-            if (impl_->op.selector().empty()) {
+            if (impl_->op.selector().empty() || impl_->determine_boolean_selector) {
                 determine_boolean_selector();
             }
 
@@ -184,6 +186,8 @@ namespace utopia {
     template <class Matrix, class Vector, int Backend>
     void BDDQPSolver<Matrix, Vector, Backend>::determine_boolean_selector() {
         UTOPIA_TRACE_REGION_BEGIN("BDDQPSolver::determine_boolean_selector");
+
+        // std::cout << "infinity: " << impl_->infinity << "\n";
 
         auto selector = std::make_shared<Vector>();
         bool ok = this->get_box_constraints().determine_boolean_selector(-impl_->infinity, impl_->infinity, *selector);
