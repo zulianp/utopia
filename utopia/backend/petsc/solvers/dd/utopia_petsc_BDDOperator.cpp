@@ -13,6 +13,8 @@
 
 #include "utopia_petsc_Utils.hpp"
 
+#include <sstream>
+
 namespace utopia {
 
     template <class Matrix, class Vector>
@@ -117,7 +119,52 @@ namespace utopia {
             return true;
         }
 
+        void check(const Matrix &A) const {
+            if (!debug) return;
+
+            Matrix c_A = A;
+
+            c_A.transform([](const Scalar &) { return 1; });
+
+            Matrix diff = c_A - transpose(c_A);
+            SizeType n_diff = norm1(diff);
+
+            if (n_diff != 0) {
+                std::stringstream ss;
+                ss << "[Error] matrix does not have a symmetric graph. N diff = " << SizeType(n_diff) << "\n";
+                A.comm().root_print(ss.str());
+                A.comm().barrier();
+
+                assert(false);
+
+                Utopia::Abort("Quitting!");
+            }
+        }
+
+        void fix_selected() {
+            if (block_size <= 1) return;
+
+            const SizeType n = selector.size();
+
+            for (SizeType i = 0; i < n; i += block_size) {
+                bool is_selected = false;
+
+                for (int d = 0; d < block_size; ++d) {
+                    is_selected |= selector[i + d];
+                }
+
+                if (is_selected) {
+                    for (int d = 0; d < block_size; ++d) {
+                        selector[i + d] = true;
+                    }
+                }
+            }
+        }
+
         void init_interface(const Matrix &A) {
+            check(A);
+            fix_selected();
+
             auto &&comm = A.comm();
 
             original_range = row_range(A);
@@ -591,12 +638,17 @@ namespace utopia {
 
         std::string preconditioner_type{"inv_diag"};
         bool verbose{false};
+        bool debug{false};
+
+        int block_size{1};
     };
 
     template <class Matrix, class Vector>
     void BDDOperator<Matrix, Vector>::read(Input &in) {
         in.get("preconditioner_type", impl_->preconditioner_type);
         in.get("verbose", impl_->verbose);
+        in.get("debug", impl_->debug);
+        in.get("block_size", impl_->block_size);
     }
 
     template <class Matrix, class Vector>

@@ -59,6 +59,8 @@ namespace utopia {
         if (impl_->solver) {
             impl_->solver->read(in);
         }
+
+        impl_->op.read(in);
     }
 
     template <class Matrix, class Vector, int Backend>

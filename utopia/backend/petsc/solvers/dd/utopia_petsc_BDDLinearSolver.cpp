@@ -10,6 +10,8 @@
 #include "utopia_OmniMatrixFreeLinearSolver_impl.hpp"
 #include "utopia_petsc_LinearSolverFactory.hpp"
 
+#include "utopia_InputParameters.hpp"
+
 namespace utopia {
 
     template <typename Matrix, typename Vector>
@@ -71,6 +73,12 @@ namespace utopia {
     void BDDLinearSolver<Matrix, Vector>::read(Input &in) {
         Super::read(in);
         impl_->read(in);
+
+        if (this->verbose() && impl_->solver) {
+            InputParameters params;
+            params.set("verbose", true);
+            impl_->solver->read(params);
+        }
     }
 
     template <typename Matrix, typename Vector>
