@@ -17,7 +17,8 @@ namespace utopia {
     public:
         void read(Input &in) override {
             if (solver) {
-                solver->read(in);
+                // solver->read(in);
+                in.get("inner_solver", *solver);
             }
 
             in.get("use_preconditioner", use_preconditioner);
