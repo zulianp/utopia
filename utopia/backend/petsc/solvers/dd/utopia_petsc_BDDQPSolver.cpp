@@ -57,7 +57,8 @@ namespace utopia {
         in.get("infinity", impl_->infinity);
 
         if (impl_->solver) {
-            impl_->solver->read(in);
+            // impl_->solver->read(in);
+            in.get("inner_solver", *impl_->solver);
         }
 
         impl_->op.read(in);

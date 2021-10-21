@@ -18,13 +18,12 @@ namespace utopia {
     class BDDLinearSolver<Matrix, Vector>::Impl : public Configurable {
     public:
         void read(Input &in) override {
-            if (solver) {
-                // solver->read(in);
-                in.get("inner_solver", *solver);
-            }
-
             in.get("use_preconditioner", use_preconditioner);
             op.read(in);
+
+            if (solver) {
+                in.get("inner_solver", *solver);
+            }
         }
 
         Impl()
@@ -74,11 +73,11 @@ namespace utopia {
         Super::read(in);
         impl_->read(in);
 
-        if (this->verbose() && impl_->solver) {
-            InputParameters params;
-            params.set("verbose", true);
-            impl_->solver->read(params);
-        }
+        // if (this->verbose() && impl_->solver) {
+        //     InputParameters params;
+        //     params.set("verbose", true);
+        //     impl_->solver->read(params);
+        // }
     }
 
     template <typename Matrix, typename Vector>
