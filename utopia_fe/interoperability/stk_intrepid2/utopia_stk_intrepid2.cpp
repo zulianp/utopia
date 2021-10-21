@@ -81,7 +81,7 @@ namespace utopia {
         static bool apply(const ::stk::mesh::BulkData &bulk_data, const BucketVector_t &buckets, FE &fe, int degree) {
             // assert(buckets.begin() != buckets.end());
             if (buckets.begin() == buckets.end()) {
-                utopia::err() << "[Warning] buckets.begin() == buckets.end()\n";
+                // utopia::err() << "[Warning] buckets.begin() == buckets.end()\n";
                 return false;
             }
 

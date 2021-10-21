@@ -25,6 +25,7 @@ namespace utopia {
             using Scalar = Traits<FunctionSpace>::Scalar;
             using SizeType = Traits<FunctionSpace>::SizeType;
             using IndexSet = Traits<FunctionSpace>::IndexSet;
+            using IndexArray = Traits<FunctionSpace>::IndexArray;
             using Comm = Traits<FunctionSpace>::Communicator;
 
             FunctionSpace(const Comm &comm = Comm::get_default());
@@ -108,6 +109,8 @@ namespace utopia {
             const DirichletBoundary &dirichlet_boundary() const;
 
             void set_print_map(const bool val);
+
+            void create_boundary_node_list(IndexArray &node_list) const;
 
         private:
             class Impl;

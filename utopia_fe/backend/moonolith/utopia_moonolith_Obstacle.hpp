@@ -19,6 +19,7 @@ namespace utopia {
             using Vector = Traits<FunctionSpace>::Vector;
             using Matrix = Traits<FunctionSpace>::Matrix;
             using Scalar = Traits<FunctionSpace>::Scalar;
+            using IndexArray = Traits<FunctionSpace>::IndexArray;
             using Comm = Traits<FunctionSpace>::Communicator;
 
             void read(Input &in) override;
@@ -33,6 +34,10 @@ namespace utopia {
             const Vector &gap() const;
             const Vector &is_contact() const;
             const Vector &normals() const;
+
+            Vector &gap();
+            Vector &is_contact();
+            Vector &normals();
 
             Obstacle();
             ~Obstacle();
@@ -57,6 +62,8 @@ namespace utopia {
 
             void set_params(const Params &params);
             inline const Params &params() const { return *params_; }
+
+            void set_banned_nodes(const std::shared_ptr<IndexArray> &banned_nodes);
 
         private:
             class Impl;

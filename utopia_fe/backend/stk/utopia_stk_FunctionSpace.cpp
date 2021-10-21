@@ -807,6 +807,68 @@ namespace utopia {
 
         bool FunctionSpace::empty() const { return !impl_->mesh || impl_->mesh->empty(); }
 
+        void FunctionSpace::create_boundary_node_list(IndexArray &node_list) const {
+            using Bucket_t = ::stk::mesh::Bucket;
+
+            auto &meta_data = mesh().meta_data();
+            auto &bulk_data = mesh().bulk_data();
+
+            const SizeType nl_nodes = mesh().n_local_nodes();
+            node_list.clear();
+            node_list.reserve(nl_nodes);
+
+            const int nv = n_var();
+
+            auto &&local_to_global = dof_map().local_to_global();
+
+            if (local_to_global.empty()) {
+                for (auto &bc_ptr : impl_->dirichlet_boundary) {
+                    auto &bc = *bc_ptr;
+                    auto *part = meta_data.get_part(bc.name);
+                    if (part) {
+                        auto &buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, *part);
+
+                        for (auto *b_ptr : buckets) {
+                            auto &b = *b_ptr;
+                            const Bucket_t::size_type length = b.size();
+
+                            for (Bucket_t::size_type k = 0; k < length; ++k) {
+                                auto node = b[k];
+                                // auto idx = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node));
+                                SizeType idx = utopia::stk::convert_entity_to_index(node);
+                                assert(idx < nl_nodes);
+                                node_list.push_back(idx);
+                            }
+                        }
+                    }
+                }
+            } else {
+                // auto rr = row_range(m);
+
+                for (auto &bc_ptr : impl_->dirichlet_boundary) {
+                    auto &bc = *bc_ptr;
+
+                    auto *part = meta_data.get_part(bc.name);
+                    if (part) {
+                        auto &buckets =
+                            bulk_data.get_buckets(::stk::topology::NODE_RANK, *part & meta_data.locally_owned_part());
+
+                        for (auto *b_ptr : buckets) {
+                            auto &b = *b_ptr;
+                            const Bucket_t::size_type length = b.size();
+
+                            for (Bucket_t::size_type k = 0; k < length; ++k) {
+                                auto node = b[k];
+                                auto local_idx = utopia::stk::convert_entity_to_index(node);
+                                assert(local_idx < local_to_global.size());
+                                node_list.push_back(local_to_global.global_node_id(local_idx));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         void FunctionSpace::add_dirichlet_boundary_condition(const std::string &name,
                                                              const Scalar &value,
                                                              const int component) {
