@@ -214,11 +214,10 @@ macro(add_utopiafe_app app_name)
     # include)
 endmacro(add_utopiafe_app)
 
-list(APPEND UTOPIA_FE_MODULES frontend)
+list(APPEND UTOPIA_FE_MODULES frontend interoperability)
 
 if(UTOPIA_ENABLE_LIBMESH)
     list(APPEND UTOPIA_FE_MODULES backend/libmesh edsl)
-
 endif()
 
 if(UTOPIA_ENABLE_MOONOLITH)
@@ -256,7 +255,7 @@ endif()
 
 
 
-list(APPEND UTOPIA_FE_MODULES base interoperability core)
+list(APPEND UTOPIA_FE_MODULES base core)
 
 # if(UTOPIA_INSTALL_LIBMESH)
 #     include(InstallLIBMESH)
@@ -381,6 +380,10 @@ function(append_list_to_string_for_cmake OUTPUT_STRING PRE_LIST POST_LIST
         ${TEMPSTR}
         PARENT_SCOPE)
 endfunction()
+
+if(UTOPIA_FE_LIBRARIES_TRAILING)
+    list(APPEND UTOPIA_FE_LIBRARIES ${UTOPIA_FE_LIBRARIES_TRAILING})
+endif()
 
 # Generate files useful for dependent build systems
 set(CONFIG_CONTENT
@@ -519,3 +522,4 @@ add_dependencies(complete apps utopia_fe_test)
 
 # include(cmake/PostInstall.cmake)
 
+message(STATUS "UTOPIA_FE_LIBRARIES=${UTOPIA_FE_LIBRARIES}")
