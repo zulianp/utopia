@@ -26,6 +26,7 @@ namespace utopia {
 
             using Intrepid2FE_t = utopia::intrepid2::FE<Scalar_t>;
             using Intrepid2Field_t = utopia::kokkos::Field<Intrepid2FE_t>;
+            using Intrepid2QPField_t = utopia::kokkos::QPField<Intrepid2FE_t>;
             using Intrepid2Gradient_t = utopia::kokkos::Gradient<Intrepid2FE_t>;
             using Intrepid2Strain_t = utopia::kokkos::Strain<Intrepid2FE_t>;
 
@@ -63,6 +64,11 @@ namespace utopia {
 
             void run() {
                 if (!valid()) return;
+
+                if (verbose_) {
+                    int dim = space_.mesh().spatial_dimension();
+                    utopia::out() << "Dim:" << dim << " \n";
+                }
 
                 auto fe = std::make_shared<Intrepid2FE_t>();
 
@@ -130,10 +136,10 @@ namespace utopia {
                     intrepid_strain.avg(avg_strain);
                     avg_strain.set_elem_type(ELEMENT_TYPE);
 
-                    Field_t avg_strain_global("avgstrain", make_ref(space_), std::make_shared<Vector_t>());
-                    convert_field(avg_strain, avg_strain_global);
-
                     {
+                        Field_t avg_strain_global("avgstrain", make_ref(space_), std::make_shared<Vector_t>());
+                        convert_field(avg_strain, avg_strain_global);
+
                         IO_t io(space_);
                         io.set_output_path("strain.e");
                         io.write(avg_strain_global);
@@ -149,6 +155,23 @@ namespace utopia {
                     auto intrepid_det = det(intrepid_strain);
                     utopia::out() << "Strain determinant:\n";
                     intrepid_det.describe(utopia::out().stream());
+
+                    Intrepid2QPField_t principal_strains(fe);
+                    intrepid_strain.eig(principal_strains);
+
+                    Intrepid2Field_t avg_principal_strains(fe);
+                    principal_strains.avg(avg_principal_strains);
+                    avg_principal_strains.set_elem_type(ELEMENT_TYPE);
+
+                    {
+                        Field_t avg_principal_strains_global(
+                            "principal_strains", make_ref(space_), std::make_shared<Vector_t>());
+                        convert_field(avg_principal_strains, avg_principal_strains_global);
+
+                        IO_t io(space_);
+                        io.set_output_path("principal_strains.e");
+                        io.write(avg_principal_strains_global);
+                    }
                 }
             }
 
