@@ -212,7 +212,7 @@ namespace utopia {
 
         inline bool has_orthogonal_transformation() const { return static_cast<bool>(orthogonal_transformation_); }
 
-    protected:
+        UTOPIA_NVCC_PRIVATE
         std::shared_ptr<Function> unconstrained_;
         std::shared_ptr<BoxConstraints> box_;
         std::shared_ptr<Matrix> orthogonal_transformation_;
