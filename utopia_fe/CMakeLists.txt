@@ -188,7 +188,8 @@ function(utopiafe_add_module module_name libraryRootDir subDirs)
         ARCHIVE DESTINATION lib)
 
     target_link_libraries(utopia_fe PUBLIC ${module_name})
-
+    list(APPEND UTOPIA_FE_LIBRARIES "${module_name}")
+    set(UTOPIA_FE_LIBRARIES ${UTOPIA_FE_LIBRARIES} PARENT_SCOPE)
 endfunction()
 
 macro(add_utopiafe_app app_name)
@@ -517,5 +518,4 @@ add_dependencies(complete apps utopia_fe_test)
 # ##############################################################################
 
 # include(cmake/PostInstall.cmake)
-
 

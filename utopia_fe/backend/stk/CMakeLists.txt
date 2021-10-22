@@ -54,6 +54,10 @@ if(Trilinos_FOUND)
         TRUE
         PARENT_SCOPE)
 
+    set(UTOPIA_FE_LIBRARIES
+        ${UTOPIA_FE_LIBRARIES}
+        PARENT_SCOPE)
+
 else()
     message(WARNING "[Warning] did not find Trilinos")
 endif()

@@ -116,6 +116,10 @@ if(INTEROP_EXISTS)
         ${INTEROP_INCLUDES}
         PARENT_SCOPE)
 
+    set(UTOPIA_FE_LIBRARIES
+        ${UTOPIA_FE_LIBRARIES}
+        PARENT_SCOPE)
+
 endif()
 
 # ##############################################################################

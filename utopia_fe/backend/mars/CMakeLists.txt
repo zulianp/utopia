@@ -32,4 +32,9 @@ if(UTOPIA_ENABLE_MARS)
         endif()
     endif()
 
+
+    set(UTOPIA_FE_LIBRARIES
+        ${UTOPIA_FE_LIBRARIES}
+        PARENT_SCOPE)
+
 endif()
