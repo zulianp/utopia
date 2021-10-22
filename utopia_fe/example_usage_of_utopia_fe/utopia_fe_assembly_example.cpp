@@ -5,6 +5,8 @@
 
 #include "utopia_libmesh_old.hpp"
 
+#include "utopia_MeshTransferOperator.hpp"
+
 int main(int argc, char *argv[]) {
     using namespace libMesh;
     using namespace std;
@@ -27,6 +29,8 @@ int main(int argc, char *argv[]) {
     UVector d = local_zeros(10);
 
     disp(d);
+
+    MeshTransferOperator op(nullptr, nullptr, nullptr, nullptr);
 
     return EXIT_SUCCESS;
 }

@@ -65,7 +65,7 @@ namespace utopia {
 
             void set_banned_nodes(const std::shared_ptr<IndexArray> &banned_nodes);
 
-        private:
+            UTOPIA_NVCC_PRIVATE
             class Impl;
             class Output;
 

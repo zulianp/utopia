@@ -73,4 +73,8 @@ if(NOT MOONOLITH_FOUND OR FORCE_INSTALL_MOONOLITH)
     FetchContent_MakeAvailable(moonolith)
 
     add_library(ParMoonolith::par_moonolith ALIAS par_moonolith)
+
+    list(APPEND UTOPIA_FE_LIBRARIES "par_moonolith")
+    set(UTOPIA_FE_LIBRARIES ${UTOPIA_FE_LIBRARIES} PARENT_SCOPE)
+
 endif()
