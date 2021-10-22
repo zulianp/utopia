@@ -52,7 +52,7 @@ namespace utopia {
 
         Selector &selector();
 
-    private:
+        UTOPIA_NVCC_PRIVATE
         class Impl;
         std::unique_ptr<Impl> impl_;
     };
