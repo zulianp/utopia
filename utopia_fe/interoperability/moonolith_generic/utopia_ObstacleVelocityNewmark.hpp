@@ -93,6 +93,13 @@ namespace utopia {
             Vector_t x = this->x_old();
             update_x(velocity, x);
 
+            if (x.has_nan_or_inf()) {
+                this->~ObstacleVelocityNewmark();
+                x.comm().barrier();
+                assert(false);
+                Utopia::Abort("update_IVP: NaN detected!");
+            }
+
             if (!trivial_obstacle_) {
                 update_constraints(x);
             }
@@ -122,12 +129,12 @@ namespace utopia {
                 // Remove contribution from boundary conditions
                 this->space()->apply_constraints(temp_H, 0);
 
-                {
-                    Scalar_t norm_B_H = norm2(temp_H);
-                    std::stringstream ss;
-                    ss << "norm_B_H: " << norm_B_H << "\n";
-                    x.comm().root_print(ss.str());
-                }
+                // {
+                //     Scalar_t norm_B_H = norm2(temp_H);
+                //     std::stringstream ss;
+                //     ss << "norm_B_H: " << norm_B_H << "\n";
+                //     x.comm().root_print(ss.str());
+                // }
 
                 H += temp_H;
             }
@@ -153,14 +160,21 @@ namespace utopia {
 
                 obstacle_->inverse_transform(barrier_g, barrier_temp);
 
-                {
-                    Scalar_t norm_B_g = norm2(barrier_temp);
-                    std::stringstream ss;
-                    ss << "norm_B_g: " << norm_B_g << "\n";
-                    x.comm().root_print(ss.str());
-                }
+                // {
+                //     Scalar_t norm_B_g = norm2(barrier_temp);
+                //     std::stringstream ss;
+                //     ss << "norm_B_g: " << norm_B_g << "\n";
+                //     x.comm().root_print(ss.str());
+                // }
 
                 g += barrier_temp;
+
+                if (g.has_nan_or_inf()) {
+                    this->~ObstacleVelocityNewmark();
+                    g.comm().barrier();
+                    assert(false);
+                    Utopia::Abort("barrier_gradient: NaN detected!");
+                }
             }
         }
 
