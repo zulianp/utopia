@@ -64,6 +64,8 @@ namespace utopia {
             Super::read(in);
 
             in.get("debug", debug_);
+            in.get("debug_from_iteration", debug_from_iteration_);
+            in.get("trivial_obstacle", trivial_obstacle_);
 
             if (!obstacle_) {
                 std::string type;
@@ -80,6 +82,8 @@ namespace utopia {
 
         bool setup_IVP(Vector_t &x) override {
             update_constraints(x);
+            barrier_->reset();
+
             return Super::setup_IVP(x);
         }
 
@@ -88,7 +92,10 @@ namespace utopia {
         }
 
         bool update_IVP(const Vector_t &x) override {
-            // update_constraints(x);
+            if (!trivial_obstacle_) {
+                update_constraints(x);
+            }
+
             barrier_->reset();
             return Super::update_IVP(x);
         }
@@ -98,9 +105,15 @@ namespace utopia {
                 Vector_t barrier_temp(layout(x), 0);
                 Matrix_t barrier_H, temp_H;
 
-                obstacle_->transform(x, barrier_temp);
+                if (trivial_obstacle_) {
+                    obstacle_->transform(x, barrier_temp);
+                } else {
+                    Vector_t delta_x = x - this->x_old();
+                    obstacle_->transform(delta_x, barrier_temp);
+                }
 
                 barrier_H.identity(square_matrix_layout(layout(x)), 0);
+
                 barrier_->hessian(barrier_temp, barrier_H);
 
                 obstacle_->transform(barrier_H, temp_H);
@@ -124,7 +137,17 @@ namespace utopia {
                 Vector_t barrier_temp(layout(x), 0);
                 Vector_t barrier_g(layout(g), 0);
 
-                obstacle_->transform(x, barrier_temp);
+                if (trivial_obstacle_) {
+                    obstacle_->transform(x, barrier_temp);
+                } else {
+                    // Use barrier_g as a temporary for the delta_x
+                    barrier_g = x - this->x_old();
+                    obstacle_->transform(barrier_g, barrier_temp);
+
+                    // Reset barrier_g to zero
+                    barrier_g.set(0.);
+                }
+
                 barrier_->gradient(barrier_temp, barrier_g);
 
                 obstacle_->inverse_transform(barrier_g, barrier_temp);
@@ -152,9 +175,9 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("ObstacleNewmark::integrate_hessian");
         }
 
-        bool hessian_and_gradient(const Vector_t &x, Matrix_t &H, Vector_t &g) const override {
-            return Super::hessian_and_gradient(x, H, g);
-        }
+        // bool hessian_and_gradient(const Vector_t &x, Matrix_t &H, Vector_t &g) const override {
+        //     return Super::hessian_and_gradient(x, H, g);
+        // }
 
         ////////////////////////////////////////////////////////////////////////////////
 
@@ -173,11 +196,23 @@ namespace utopia {
             bool ok = true;
             if (barrier_) {
                 Vector_t barrier_x(layout(x), 0);
-                obstacle_->transform(x, barrier_x);
+                Vector_t delta_x;
+
+                if (trivial_obstacle_) {
+                    obstacle_->transform(x, barrier_x);
+                } else {
+                    delta_x = x - this->x_old();
+                    obstacle_->transform(delta_x, barrier_x);
+                }
 
                 ok = barrier_->project_onto_feasibile_region(barrier_x);
 
-                obstacle_->inverse_transform(barrier_x, x);
+                if (trivial_obstacle_) {
+                    obstacle_->inverse_transform(barrier_x, x);
+                } else {
+                    obstacle_->inverse_transform(barrier_x, delta_x);
+                    x = this->x_old() + delta_x;
+                }
             }
 
             return ok;
@@ -187,6 +222,8 @@ namespace utopia {
         std::shared_ptr<IObstacle<FunctionSpace>> obstacle_;
         std::shared_ptr<LogBarrierBase> barrier_;
         bool debug_{false};
+        int debug_from_iteration_{0};
+        bool trivial_obstacle_{false};
 
         bool update_constraints(const Vector_t &x) {
             utopia::out() << "update_constraints\n";
@@ -196,7 +233,11 @@ namespace utopia {
 
             if (debug_) {
                 static int iter_debug = 0;
-                ouput_debug_data(iter_debug++, x);
+                if (iter_debug >= debug_from_iteration_) {
+                    ouput_debug_data(iter_debug, x);
+                }
+
+                iter_debug++;
             }
 
             this->space()->displace(-x);
@@ -205,8 +246,6 @@ namespace utopia {
                 x.comm().root_print("[Warning] no barrier!");
                 barrier_ = std::make_shared<LogBarrier<Matrix_t, Vector_t>>();
             }
-
-            barrier_->reset();
 
             barrier_->set_box_constraints(
                 std::make_shared<BoxConstraints<Vector_t>>(nullptr, std::make_shared<Vector_t>(obstacle_->gap())));
