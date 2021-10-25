@@ -578,6 +578,7 @@ namespace utopia {
             Quadrature q;
 
             auto c_val = c_fun.value(q);
+            auto c_old = c_old_fun.value(q);
             auto p_val = press_fun.value(q);
 
             auto c_grad = c_fun.gradient(q);
@@ -603,6 +604,7 @@ namespace utopia {
                 auto space_view = this->space_.view_device();
 
                 auto c_view = c_val.view_device();
+                auto c_old_view = c_old.view_device();
                 auto p_view = p_val.view_device();
 
                 auto c_grad_view = c_grad.view_device();
@@ -642,8 +644,10 @@ namespace utopia {
                         CElem c_e;
                         C_view.elem(i, c_e);
                         StaticVector<Scalar, NQuadPoints> c;
+                        StaticVector<Scalar, NQuadPoints> c_old;
                         StaticVector<Scalar, NQuadPoints> p;
                         c_view.get(c_e, c);
+                        c_old_view.get(c_e, c_old);
                         p_view.get(c_e, p);
 
                         auto dx = differential_view.make(c_e);
@@ -682,7 +686,10 @@ namespace utopia {
                                     }
 
                                     if (this->params_.use_penalty_irreversibility) {
-                                        val += this->params_.penalty_param * c_shape_j_l_prod * dx(qp);
+                                        auto c_cold = c[qp] - c_old[qp];
+                                        auto c_cold_bracket = c_cold <= 0.0 ? 1.0 : 0.0;
+
+                                        val += this->params_.penalty_param * c_cold_bracket * c_shape_j_l_prod * dx(qp);
                                     }
 
                                     val = (l == j) ? (0.5 * val) : val;

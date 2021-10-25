@@ -65,7 +65,10 @@ namespace utopia {
             KSPSetOperators(ksp_.implementation(), op_mat, op_mat);
         }
 
-        bool apply(const Vector &b, Vector &x) override { return ksp_.apply(b, x); }
+        bool apply(const Vector &b, Vector &x) override {
+            return ksp_.apply(b, x);
+            ksp_.solution_status(this->solution_status_);
+        }
 
         void print_usage(std::ostream &os) const override {
             OperatorBasedLinearSolver::print_usage(os);
