@@ -245,8 +245,8 @@ namespace utopia {
             create_symm_lapl_test_data(comm, A, b, box, n);
             box.lower_bound() = nullptr;
 
-            bool verbose = Traits::Backend == PETSC;
-            // bool verbose = false;
+            // bool verbose = Traits::Backend == PETSC;
+            bool verbose = false;
 
             PrimalInteriorPointSolver<Matrix, Vector> solver;
 
@@ -477,11 +477,12 @@ namespace utopia {
 
             Vector x(layout(b), 0.);
 
-            InputParameters params;
-            params.set("verbose", verbose);
-            params.set("atol", 1e-10);
-            params.set("rtol", 1e-10);
-            params.set("stol", 1e-10);
+            auto params = param_list(param("inner_solver",
+                                           param_list(param("verbose", verbose),
+                                                      param("atol", 1e-10),
+                                                      param("rtol", 1e-10),
+                                                      param("stol", 1e-10),
+                                                      param("max-it", 2000))));
 
             // Test MFKSP
             if (false) {
@@ -538,14 +539,15 @@ namespace utopia {
 
                 c.start();
 
-                InputParameters qp_params;
-                qp_params.set("verbose", true);
-                qp_params.set("debug", true);
-                qp_params.set("atol", 1e-10);
-                qp_params.set("rtol", 1e-10);
-                qp_params.set("stol", 1e-10);
-                qp_params.set("infinity", 0.55);
-                qp_params.set("max-it", 2000);
+                auto qp_params = param_list(param("infinity", 0.55),
+                                            param("debug", verbose),
+                                            param("inner_solver",
+                                                  param_list(param("verbose", verbose),
+                                                             param("atol", 1e-10),
+                                                             param("rtol", 1e-10),
+                                                             param("stol", 1e-10),
+                                                             param("max-it", 2000))));
+
                 qp_solver.read(qp_params);
 
                 qp_solver.set_box_constraints(box);

@@ -34,7 +34,6 @@ namespace utopia {
     template <class Matrix, class Vector, int Backend>
     BDDQPSolver<Matrix, Vector, Backend>::BDDQPSolver() : impl_(utopia::make_unique<Impl>()) {
         auto mprgp = std::make_shared<MPRGP<Matrix, Vector>>();
-        mprgp->verbose(true);
         set_solver(mprgp);
     }
 

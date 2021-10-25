@@ -13,7 +13,7 @@ namespace utopia {
     class LogBarrierFunctionFactory {
     public:
         using LogBarrierFunction = utopia::LogBarrierFunction<Matrix, Vector>;
-        using BoundedLogBarrierFunction = utopia::BoundedLogBarrierFunction<Matrix, Vector>;
+        // using BoundedLogBarrierFunction = utopia::BoundedLogBarrierFunction<Matrix, Vector>;
         using LogBarrierFunctionWithSelection = utopia::LogBarrierFunctionWithSelection<Matrix, Vector>;
         using LogBarrierFunctionBase = utopia::LogBarrierFunctionBase<Matrix, Vector>;
         using LogBarrierFunctionBasePtr = std::unique_ptr<LogBarrierFunctionBase>;
@@ -23,9 +23,11 @@ namespace utopia {
 
             if (function_type == "LogBarrierFunctionWithSelection") {
                 function = utopia::make_unique<LogBarrierFunctionWithSelection>();
-            } else if (function_type == "BoundedLogBarrierFunction") {
-                function = utopia::make_unique<BoundedLogBarrierFunction>();
-            } else {
+            }
+            // else if (function_type == "BoundedLogBarrierFunction") {
+            //     function = utopia::make_unique<BoundedLogBarrierFunction>();
+            // }
+            else {
                 function = utopia::make_unique<LogBarrierFunction>();
             }
 

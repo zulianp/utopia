@@ -25,7 +25,6 @@ namespace utopia {
         using Layout = typename Traits<Vector>::Layout;
         using Newton = utopia::Newton<Matrix, Vector>;
         using LogBarrierFunction = utopia::LogBarrierFunction<Matrix, Vector>;
-        using BoundedLogBarrierFunction = utopia::BoundedLogBarrierFunction<Matrix, Vector>;
         using LogBarrierFunctionWithSelection = utopia::LogBarrierFunctionWithSelection<Matrix, Vector>;
         using LogBarrierFunctionBase = utopia::LogBarrierFunctionBase<Matrix, Vector>;
         using LSStrategy = utopia::LSStrategy<Vector>;

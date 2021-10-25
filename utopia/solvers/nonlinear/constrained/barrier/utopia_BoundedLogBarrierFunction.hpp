@@ -1,266 +1,266 @@
-#ifndef UTOPIA_BOUNDED_LOG_BARRIER_FUNCTION_HPP
-#define UTOPIA_BOUNDED_LOG_BARRIER_FUNCTION_HPP
+// #ifndef UTOPIA_BOUNDED_LOG_BARRIER_FUNCTION_HPP
+// #define UTOPIA_BOUNDED_LOG_BARRIER_FUNCTION_HPP
 
-#include "utopia_BoxConstraints.hpp"
-#include "utopia_Core.hpp"
-#include "utopia_Function.hpp"
-#include "utopia_Layout.hpp"
-#include "utopia_Options.hpp"
+// #include "utopia_BoxConstraints.hpp"
+// #include "utopia_Core.hpp"
+// #include "utopia_Function.hpp"
+// #include "utopia_Layout.hpp"
+// #include "utopia_Options.hpp"
 
-#include "utopia_LogBarrierFunctionBase.hpp"
+// #include "utopia_LogBarrierFunctionBase.hpp"
 
-#include <limits>
+// #include <limits>
 
-namespace utopia {
-    template <class Matrix, class Vector>
-    class BoundedLogBarrierFunction : public LogBarrierFunctionBase<Matrix, Vector> {
-    public:
-        using Scalar = typename Traits<Vector>::Scalar;
-        using SizeType = typename Traits<Vector>::SizeType;
-        using Function = utopia::Function<Matrix, Vector>;
-        using BoxConstraints = utopia::BoxConstraints<Vector>;
-        using Super = utopia::LogBarrierFunctionBase<Matrix, Vector>;
+// namespace utopia {
+//     template <class Matrix, class Vector>
+//     class BoundedLogBarrierFunction : public LogBarrierFunctionBase<Matrix, Vector> {
+//     public:
+//         using Scalar = typename Traits<Vector>::Scalar;
+//         using SizeType = typename Traits<Vector>::SizeType;
+//         using Function = utopia::Function<Matrix, Vector>;
+//         using BoxConstraints = utopia::BoxConstraints<Vector>;
+//         using Super = utopia::LogBarrierFunctionBase<Matrix, Vector>;
 
-        BoundedLogBarrierFunction() {}
+//         BoundedLogBarrierFunction() {}
 
-        BoundedLogBarrierFunction(const std::shared_ptr<Function> &unconstrained,
-                                  const std::shared_ptr<BoxConstraints> &box)
-            : Super(unconstrained, box) {}
+//         BoundedLogBarrierFunction(const std::shared_ptr<Function> &unconstrained,
+//                                   const std::shared_ptr<BoxConstraints> &box)
+//             : Super(unconstrained, box) {}
 
-        inline std::string function_type() const override { return "BoundedLogBarrierFunction"; }
+//         inline std::string function_type() const override { return "BoundedLogBarrierFunction"; }
 
-        void read(Input &in) override {
-            Super::read(in);
-            if (!Options()
-                     .add_option("barrier_thickness",
-                                 barrier_thickness_,
-                                 "see: Technical Supplement to Incremental Potential Contact: Intersection- and "
-                                 "Inversion-free, Large-Deformation Dynamics.")
-                     .parse(in)) {
-                return;
-            }
-        }
+//         void read(Input &in) override {
+//             Super::read(in);
+//             if (!Options()
+//                      .add_option("barrier_thickness",
+//                                  barrier_thickness_,
+//                                  "see: Technical Supplement to Incremental Potential Contact: Intersection- and "
+//                                  "Inversion-free, Large-Deformation Dynamics.")
+//                      .parse(in)) {
+//                 return;
+//             }
+//         }
 
-        void add_barrier_gradient(const Vector &diff, Vector &g) const {
-            auto diff_view = local_view_device(diff);
-            auto g_view = local_view_device(g);
+//         void add_barrier_gradient(const Vector &diff, Vector &g) const {
+//             auto diff_view = local_view_device(diff);
+//             auto g_view = local_view_device(g);
 
-            auto d_hat = barrier_thickness_;
+//             auto d_hat = barrier_thickness_;
 
-            // Currently it is not adaptive like in the paper
-            auto stiffness = barrier_stiffness();
-            const Scalar sign = -1;
+//             // Currently it is not adaptive like in the paper
+//             auto stiffness = barrier_stiffness();
+//             const Scalar sign = -1;
 
-            // diff = u - x
+//             // diff = u - x
 
-            parallel_for(
-                local_range_device(diff), UTOPIA_LAMBDA(const SizeType i) {
-                    auto d_i = diff_view.get(i);
-                    auto d_m_d_hat = d_i - d_hat;
+//             parallel_for(
+//                 local_range_device(diff), UTOPIA_LAMBDA(const SizeType i) {
+//                     auto d_i = diff_view.get(i);
+//                     auto d_m_d_hat = d_i - d_hat;
 
-                    // ((u - x) - d_hat) * (- 2 * (u - x) * log((u-x)/d_hat) + d_hat - (u - x))/(u - x)
-                    // (d - d_hat) * (-2 * d * log(d/d_hat) + d_hat - d)/d
-                    // d_m_d_hat * (-2 d * log(d_div_d_hat) -  d_m_d_hat)/d
+//                     // ((u - x) - d_hat) * (- 2 * (u - x) * log((u-x)/d_hat) + d_hat - (u - x))/(u - x)
+//                     // (d - d_hat) * (-2 * d * log(d/d_hat) + d_hat - d)/d
+//                     // d_m_d_hat * (-2 d * log(d_div_d_hat) -  d_m_d_hat)/d
 
-                    if (d_m_d_hat < 0) {
-                        // Inside the thickness of the barrier
-                        auto d_div_d_hat = d_i / d_hat;
-                        // auto d_hat_div_d = d_hat / d_i;
-                        auto b_g = d_m_d_hat * (-2 * device::log(d_div_d_hat) - d_m_d_hat);
-                        b_g *= sign * stiffness / d_i;
+//                     if (d_m_d_hat < 0) {
+//                         // Inside the thickness of the barrier
+//                         auto d_div_d_hat = d_i / d_hat;
+//                         // auto d_hat_div_d = d_hat / d_i;
+//                         auto b_g = d_m_d_hat * (-2 * device::log(d_div_d_hat) - d_m_d_hat);
+//                         b_g *= sign * stiffness / d_i;
 
-                        assert(b_g == b_g);
+//                         assert(b_g == b_g);
 
-                        auto g_i = g_view.get(i);
-                        g_view.set(i, g_i + b_g);
-                    }
-                });
+//                         auto g_i = g_view.get(i);
+//                         g_view.set(i, g_i + b_g);
+//                     }
+//                 });
 
-            // static int iter = 0;
-            // rename("g", g);
-            // write("G" + std::to_string(iter++) + ".m", g);
-        }
+//             // static int iter = 0;
+//             // rename("g", g);
+//             // write("G" + std::to_string(iter++) + ".m", g);
+//         }
 
-        // !!! diff is modified inside !!!
-        void add_barrier_hessian(Vector &diff, Matrix &hessian) const {
-            {
-                auto diff_view = local_view_device(diff);
-                auto d_hat = barrier_thickness_;
+//         // !!! diff is modified inside !!!
+//         void add_barrier_hessian(Vector &diff, Matrix &hessian) const {
+//             {
+//                 auto diff_view = local_view_device(diff);
+//                 auto d_hat = barrier_thickness_;
 
-                // Currently it is not adaptive like in the paper
-                auto stiffness = barrier_stiffness();
-                const Scalar sign = -1;
+//                 // Currently it is not adaptive like in the paper
+//                 auto stiffness = barrier_stiffness();
+//                 const Scalar sign = -1;
 
-                parallel_for(
-                    local_range_device(diff), UTOPIA_LAMBDA(const SizeType i) {
-                        auto d_i = diff_view.get(i);
-                        auto d_m_d_hat = d_i - d_hat;
+//                 parallel_for(
+//                     local_range_device(diff), UTOPIA_LAMBDA(const SizeType i) {
+//                         auto d_i = diff_view.get(i);
+//                         auto d_m_d_hat = d_i - d_hat;
 
-                        // diff = u - x
-                        // - d_hat*d_hat/(d_i*d_i) - 2*d_hat/d_i + 2*log(d_i/d_hat) + 3
-                        //
+//                         // diff = u - x
+//                         // - d_hat*d_hat/(d_i*d_i) - 2*d_hat/d_i + 2*log(d_i/d_hat) + 3
+//                         //
 
-                        if (d_m_d_hat < 0) {
-                            // Inside the thickness of the barrier
-                            auto b_H = -sign * stiffness * (d_hat * d_hat) / (d_i * d_i) - 2.0 * d_hat / d_i +
-                                       2 * device::log(d_i / d_hat) + 3;
+//                         if (d_m_d_hat < 0) {
+//                             // Inside the thickness of the barrier
+//                             auto b_H = -sign * stiffness * (d_hat * d_hat) / (d_i * d_i) - 2.0 * d_hat / d_i +
+//                                        2 * device::log(d_i / d_hat) + 3;
 
-                            assert(b_H == b_H);
+//                             assert(b_H == b_H);
 
-                            diff_view.set(i, b_H);
-                        } else {
-                            diff_view.set(i, 0.);
-                        }
-                    });
-            }
+//                             diff_view.set(i, b_H);
+//                         } else {
+//                             diff_view.set(i, 0.);
+//                         }
+//                     });
+//             }
 
-            hessian.shift_diag(diff);
-        }
+//             hessian.shift_diag(diff);
+//         }
 
-        void extend_hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const override {
-            Vector diff;
+//         void extend_hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const override {
+//             Vector diff;
 
-            if (this->box_->has_upper_bound()) {
-                this->compute_diff_upper_bound(x, diff);
-                add_barrier_gradient(diff, g);
-                add_barrier_hessian(diff, H);
-            }
+//             if (this->box_->has_upper_bound()) {
+//                 this->compute_diff_upper_bound(x, diff);
+//                 add_barrier_gradient(diff, g);
+//                 add_barrier_hessian(diff, H);
+//             }
 
-            if (this->box_->has_lower_bound()) {
-                this->compute_diff_lower_bound(x, diff);
-                add_barrier_gradient(diff, g);
-                add_barrier_hessian(diff, H);
-            }
-        }
+//             if (this->box_->has_lower_bound()) {
+//                 this->compute_diff_lower_bound(x, diff);
+//                 add_barrier_gradient(diff, g);
+//                 add_barrier_hessian(diff, H);
+//             }
+//         }
 
-        void extend_hessian(const Vector &x, Matrix &H) const override {
-            Vector diff;
+//         void extend_hessian(const Vector &x, Matrix &H) const override {
+//             Vector diff;
 
-            if (this->box_->has_upper_bound()) {
-                this->compute_diff_upper_bound(x, diff);
-                add_barrier_hessian(diff, H);
-            }
+//             if (this->box_->has_upper_bound()) {
+//                 this->compute_diff_upper_bound(x, diff);
+//                 add_barrier_hessian(diff, H);
+//             }
 
-            if (this->box_->has_lower_bound()) {
-                this->compute_diff_lower_bound(x, diff);
-                add_barrier_hessian(diff, H);
-            }
-        }
+//             if (this->box_->has_lower_bound()) {
+//                 this->compute_diff_lower_bound(x, diff);
+//                 add_barrier_hessian(diff, H);
+//             }
+//         }
 
-        void extend_gradient(const Vector &x, Vector &g) const override {
-            Vector diff;
+//         void extend_gradient(const Vector &x, Vector &g) const override {
+//             Vector diff;
 
-            if (this->box_->has_upper_bound()) {
-                this->compute_diff_upper_bound(x, diff);
-                add_barrier_gradient(diff, g);
-            }
+//             if (this->box_->has_upper_bound()) {
+//                 this->compute_diff_upper_bound(x, diff);
+//                 add_barrier_gradient(diff, g);
+//             }
 
-            if (this->box_->has_lower_bound()) {
-                this->compute_diff_lower_bound(x, diff);
-                add_barrier_gradient(diff, g);
-            }
-        }
+//             if (this->box_->has_lower_bound()) {
+//                 this->compute_diff_lower_bound(x, diff);
+//                 add_barrier_gradient(diff, g);
+//             }
+//         }
 
-        void add_barrier_value(const Vector &diff, Scalar &val) const {
-            auto diff_view = local_view_device(diff);
+//         void add_barrier_value(const Vector &diff, Scalar &val) const {
+//             auto diff_view = local_view_device(diff);
 
-            auto d_hat = barrier_thickness_;
+//             auto d_hat = barrier_thickness_;
 
-            // Currently it is not adaptive like in the paper
-            auto stiffness = barrier_stiffness();
-            const Scalar sign = -1;
+//             // Currently it is not adaptive like in the paper
+//             auto stiffness = barrier_stiffness();
+//             const Scalar sign = -1;
 
-            Scalar b_val = 0.;
-            parallel_reduce(
-                local_range_device(diff),
-                UTOPIA_LAMBDA(const SizeType i) {
-                    auto d_i = diff_view.get(i);
-                    auto d_m_d_hat = d_i - d_hat;
+//             Scalar b_val = 0.;
+//             parallel_reduce(
+//                 local_range_device(diff),
+//                 UTOPIA_LAMBDA(const SizeType i) {
+//                     auto d_i = diff_view.get(i);
+//                     auto d_m_d_hat = d_i - d_hat;
 
-                    if (d_m_d_hat < 0) {
-                        auto d_div_d_hat = d_i / d_hat;
-                        // Inside the thickness of the barrier
-                        return sign * stiffness * d_m_d_hat * d_m_d_hat * device::log(d_div_d_hat);
-                    } else {
-                        return 0.0;
-                    }
-                },
-                b_val);
+//                     if (d_m_d_hat < 0) {
+//                         auto d_div_d_hat = d_i / d_hat;
+//                         // Inside the thickness of the barrier
+//                         return sign * stiffness * d_m_d_hat * d_m_d_hat * device::log(d_div_d_hat);
+//                     } else {
+//                         return 0.0;
+//                     }
+//                 },
+//                 b_val);
 
-            val += b_val;
-        }
+//             val += b_val;
+//         }
 
-        void extend_value(const Vector &x, Scalar &value) const override {
-            bool must_all_reduce = false;
+//         void extend_value(const Vector &x, Scalar &value) const override {
+//             bool must_all_reduce = false;
 
-            Vector diff;
+//             Vector diff;
 
-            Scalar ub_value = 0.0;
-            if (this->box_->has_upper_bound()) {
-                must_all_reduce = true;
-                diff = *this->box_->upper_bound() - x;
-                add_barrier_value(diff, ub_value);
-            }
+//             Scalar ub_value = 0.0;
+//             if (this->box_->has_upper_bound()) {
+//                 must_all_reduce = true;
+//                 diff = *this->box_->upper_bound() - x;
+//                 add_barrier_value(diff, ub_value);
+//             }
 
-            Scalar lb_value = 0.0;
-            if (this->box_->has_lower_bound()) {
-                must_all_reduce = true;
-                diff = x - *this->box_->lower_bound();
-                add_barrier_value(diff, lb_value);
-            }
+//             Scalar lb_value = 0.0;
+//             if (this->box_->has_lower_bound()) {
+//                 must_all_reduce = true;
+//                 diff = x - *this->box_->lower_bound();
+//                 add_barrier_value(diff, lb_value);
+//             }
 
-            if (must_all_reduce) {
-                auto global_value = x.comm().sum(lb_value + ub_value);
-                value += global_value;
-            }
-        }
+//             if (must_all_reduce) {
+//                 auto global_value = x.comm().sum(lb_value + ub_value);
+//                 value += global_value;
+//             }
+//         }
 
-        bool extend_project_onto_feasibile_region(Vector &x) const override {
-            // bool verbose = verbose_;
-            if (this->box_->has_upper_bound()) {
-                auto ub_view = local_view_device(*this->box_->upper_bound());
-                auto x_view = local_view_device(x);
+//         bool extend_project_onto_feasibile_region(Vector &x) const override {
+//             // bool verbose = verbose_;
+//             if (this->box_->has_upper_bound()) {
+//                 auto ub_view = local_view_device(*this->box_->upper_bound());
+//                 auto x_view = local_view_device(x);
 
-                Scalar soft_boundary = this->soft_boundary_;
-                parallel_for(
-                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                        auto xi = x_view.get(i);
-                        auto ubi = ub_view.get(i);
+//                 Scalar soft_boundary = this->soft_boundary_;
+//                 parallel_for(
+//                     local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+//                         auto xi = x_view.get(i);
+//                         auto ubi = ub_view.get(i);
 
-                        if (xi > ubi) {
-                            x_view.set(i, ubi - soft_boundary);
-                        }
-                    });
-            }
+//                         if (xi > ubi) {
+//                             x_view.set(i, ubi - soft_boundary);
+//                         }
+//                     });
+//             }
 
-            if (this->box_->has_lower_bound()) {
-                auto lb_view = local_view_device(*this->box_->lower_bound());
-                auto x_view = local_view_device(x);
+//             if (this->box_->has_lower_bound()) {
+//                 auto lb_view = local_view_device(*this->box_->lower_bound());
+//                 auto x_view = local_view_device(x);
 
-                Scalar soft_boundary = this->soft_boundary_;
-                parallel_for(
-                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                        auto xi = x_view.get(i);
-                        auto lbi = lb_view.get(i);
+//                 Scalar soft_boundary = this->soft_boundary_;
+//                 parallel_for(
+//                     local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+//                         auto xi = x_view.get(i);
+//                         auto lbi = lb_view.get(i);
 
-                        if (xi < lbi) {
-                            x_view.set(i, lbi + soft_boundary);
-                        }
-                    });
-            }
+//                         if (xi < lbi) {
+//                             x_view.set(i, lbi + soft_boundary);
+//                         }
+//                     });
+//             }
 
-            return true;
-        }
+//             return true;
+//         }
 
-        inline Scalar barrier_stiffness() const {
-            return this->current_barrier_parameter_;
-            // return 1;
-        }
+//         inline Scalar barrier_stiffness() const {
+//             return this->current_barrier_parameter_;
+//             // return 1;
+//         }
 
-    private:
-        Scalar barrier_thickness_{1e-4};
-    };
+//     private:
+//         Scalar barrier_thickness_{1e-4};
+//     };
 
-}  // namespace utopia
+// }  // namespace utopia
 
-#endif  // UTOPIA_BOUNDED_LOG_BARRIER_FUNCTION_HPP
+// #endif  // UTOPIA_BOUNDED_LOG_BARRIER_FUNCTION_HPP

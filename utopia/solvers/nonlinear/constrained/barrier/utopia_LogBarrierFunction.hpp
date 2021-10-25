@@ -12,23 +12,20 @@
 #include <limits>
 
 namespace utopia {
+
     template <class Matrix, class Vector>
-    class LogBarrierFunction : public LogBarrierFunctionBase<Matrix, Vector> {
+    class LogBarrier : public LogBarrierBase<Matrix, Vector> {
     public:
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Function = utopia::Function<Matrix, Vector>;
         using BoxConstraints = utopia::BoxConstraints<Vector>;
-        using Super = utopia::LogBarrierFunctionBase<Matrix, Vector>;
+        using Super = utopia::LogBarrierBase<Matrix, Vector>;
 
-        LogBarrierFunction() {}
+        LogBarrier() = default;
+        explicit LogBarrier(const std::shared_ptr<BoxConstraints> &box) : Super(box) {}
 
-        LogBarrierFunction(const std::shared_ptr<Function> &unconstrained, const std::shared_ptr<BoxConstraints> &box)
-            : Super(unconstrained, box) {}
-
-        inline std::string function_type() const override { return "LogBarrierFunction"; }
-
-        void extend_hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const override {
+        void hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const override {
             Vector diff;
 
             if (this->box_->has_upper_bound()) {
@@ -53,7 +50,7 @@ namespace utopia {
             }
         }
 
-        void extend_hessian(const Vector &x, Matrix &H) const override {
+        void hessian(const Vector &x, Matrix &H) const override {
             Vector diff;
 
             if (this->box_->has_upper_bound()) {
@@ -73,7 +70,7 @@ namespace utopia {
             }
         }
 
-        void extend_gradient(const Vector &x, Vector &g) const override {
+        void gradient(const Vector &x, Vector &g) const override {
             Vector diff;
             if (this->box_->has_upper_bound()) {
                 this->compute_diff_upper_bound(x, diff);
@@ -86,7 +83,7 @@ namespace utopia {
             }
         }
 
-        void extend_value(const Vector &x, Scalar &value) const override {
+        void value(const Vector &x, Scalar &value) const override {
             Scalar ub_value = 0.0;
             if (this->box_->has_upper_bound()) {
                 ub_value = this->current_barrier_parameter_ * sum(logn(*this->box_->upper_bound() - x));
@@ -100,8 +97,7 @@ namespace utopia {
             value -= (ub_value - lb_value);
         }
 
-        bool extend_project_onto_feasibile_region(Vector &x) const override {
-            // bool verbose = verbose_;
+        bool project_onto_feasibile_region(Vector &x) const override {
             if (this->box_->has_upper_bound()) {
                 auto ub_view = local_view_device(*this->box_->upper_bound());
                 auto x_view = local_view_device(x);
@@ -136,6 +132,26 @@ namespace utopia {
 
             return true;
         }
+
+        void read(Input &in) override { Super::read(in); }
+    };
+
+    template <class Matrix, class Vector>
+    class LogBarrierFunction : public LogBarrierFunctionBase<Matrix, Vector> {
+    public:
+        using Scalar = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Function = utopia::Function<Matrix, Vector>;
+        using BoxConstraints = utopia::BoxConstraints<Vector>;
+        using Super = utopia::LogBarrierFunctionBase<Matrix, Vector>;
+        using LogBarrier = utopia::LogBarrier<Matrix, Vector>;
+
+        LogBarrierFunction() { this->set_barrier(std::make_shared<LogBarrier>()); }
+
+        LogBarrierFunction(const std::shared_ptr<Function> &unconstrained, const std::shared_ptr<BoxConstraints> &box)
+            : Super(unconstrained, std::make_shared<LogBarrier>(box)) {}
+
+        inline std::string function_type() const override { return "LogBarrierFunction"; }
     };
 
 }  // namespace utopia
