@@ -10,6 +10,8 @@
 
 #include "utopia_ImplicitEulerIntegrator.hpp"
 #include "utopia_NewmarkIntegrator.hpp"
+#include "utopia_ObstacleNewmark.hpp"
+#include "utopia_ObstacleVelocityNewmark.hpp"
 #include "utopia_SemiGeometricMultigridNew.hpp"
 #include "utopia_VelocityImplicitEulerIntegrator.hpp"
 #include "utopia_VelocityNewmarkIntegrator.hpp"
@@ -28,6 +30,9 @@ namespace utopia {
 
         using NewmarkIntegrator_t = utopia::NewmarkIntegrator<FunctionSpace>;
         using VelocityNewmarkIntegratorIntegrator_t = utopia::VelocityNewmarkIntegrator<FunctionSpace>;
+
+        using ObstacleNewmark_t = utopia::ObstacleNewmark<FunctionSpace>;
+        using ObstacleVelocityNewmark_t = utopia::ObstacleVelocityNewmark<FunctionSpace>;
 
         using TimeDependentFunction_t = utopia::TimeDependentFunction<FunctionSpace>;
         using Multgrid_t = utopia::SemiGeometricMultigridNew<FunctionSpace>;
@@ -49,7 +54,25 @@ namespace utopia {
             std::shared_ptr<Newton_t> solver;
 
             auto space_ = std::make_shared<FunctionSpace>();
-            in.require("space", *space_);
+            // in.require("space", *space_);
+
+            in.require("space", [&](Input &in) {
+                bool read_state = false;
+                in.get("read_state", read_state);
+
+                if (read_state) {
+                    auto x = std::make_shared<Field<FunctionSpace>>();
+                    space_->read_with_state(in, *x);
+
+                    const Scalar_t norm_x = norm2(x->data());
+                    utopia::out() << "norm_x: " << norm_x << std::endl;
+
+                    nlsolve_.set_solution(x);
+
+                } else {
+                    space_->read(in);
+                }
+            });
 
             if (space_->empty()) {
                 return;
@@ -75,6 +98,12 @@ namespace utopia {
                 function = time_dependent_function;
             } else if (integrator == "VelocityNewmark") {
                 time_dependent_function = utopia::make_unique<VelocityNewmarkIntegratorIntegrator_t>(problem);
+                function = time_dependent_function;
+            } else if (integrator == "ObstacleVelocityNewmark") {
+                time_dependent_function = utopia::make_unique<ObstacleVelocityNewmark_t>(problem);
+                function = time_dependent_function;
+            } else if (integrator == "ObstacleNewmark") {
+                time_dependent_function = utopia::make_unique<ObstacleNewmark_t>(problem);
                 function = time_dependent_function;
             } else {
                 function = problem;

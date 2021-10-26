@@ -8,6 +8,11 @@
 #include "utopia_VelocityImplicitEulerIntegrator.hpp"
 #include "utopia_VelocityNewmarkIntegrator.hpp"
 
+#ifdef UTOPIA_WITH_MOONOLITH
+#include "utopia_ObstacleNewmark.hpp"
+#include "utopia_ObstacleVelocityNewmark.hpp"
+#endif  // UTOPIA_WITH_MOONOLITH
+
 namespace utopia {
 
     template <class FunctionSpace>
@@ -25,6 +30,11 @@ namespace utopia {
 
         using TimeDependentFunction_t = utopia::TimeDependentFunction<FunctionSpace>;
         using IncrementalLoading_t = utopia::IncrementalLoading<FunctionSpace>;
+
+#ifdef UTOPIA_WITH_MOONOLITH
+        using ObstacleNewmark_t = utopia::ObstacleNewmark<FunctionSpace>;
+        using ObstacleVelocityNewmark_t = utopia::ObstacleVelocityNewmark<FunctionSpace>;
+#endif  // UTOPIA_WITH_MOONOLITH
 
         static std::unique_ptr<FEFunctionInterface<FunctionSpace>> make(const std::shared_ptr<FunctionSpace> &space,
                                                                         Input &in) {
@@ -52,7 +62,15 @@ namespace utopia {
                 return utopia::make_unique<VelocityImplicitEulerIntegrator_t>(std::move(fun));
             } else if (integrator == "IncrementalLoading") {
                 return utopia::make_unique<IncrementalLoading_t>(std::move(fun));
-            } else {
+            }
+#ifdef UTOPIA_WITH_MOONOLITH
+            else if (integrator == "ObstacleVelocityNewmark") {
+                return utopia::make_unique<ObstacleVelocityNewmark_t>(std::move(fun));
+            } else if (integrator == "ObstacleNewmark") {
+                return utopia::make_unique<ObstacleNewmark_t>(std::move(fun));
+            }
+#endif  // UTOPIA_WITH_MOONOLITH
+            else {
                 Utopia::Abort("Specified time integrator does not exists!");
                 // Compiler needs a return type!
                 return nullptr;

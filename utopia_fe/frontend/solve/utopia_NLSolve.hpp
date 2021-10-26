@@ -186,6 +186,12 @@ namespace utopia {
         }
 
         bool solve() {
+            if (!solution_) {
+                solution_ = std::make_shared<Field<FunctionSpace>>("x", function_->space());
+                solution_->zero();
+                // function_->space()->create_field(*solution_); // FIXME
+            }
+
             if (function_->is_linear() && !function_->is_time_dependent()) {
                 // Tivial problem, lets keep it simple
                 if (use_pseudo_newton_) {
@@ -194,8 +200,7 @@ namespace utopia {
                     return solve_trivial();
                 }
             } else {
-                Vector_t x;
-                function_->create_solution_vector(x);
+                Vector_t &x = solution_->data();
 
                 function_->setup_IVP(x);
 
@@ -245,12 +250,14 @@ namespace utopia {
         }
 
         void set_matrix_free(const bool val) { matrix_free_ = val; }
+        void set_solution(const std::shared_ptr<Field<FunctionSpace>> &solution) { solution_ = solution; }
 
     private:
         Communicator_t comm_;
         std::shared_ptr<Environment_t> environment_;
         std::shared_ptr<FEFunctionInterface_t> function_;
         std::shared_ptr<NewtonBase_t> solver_;
+        std::shared_ptr<Field<FunctionSpace>> solution_;
         bool verbose_{true};
         bool use_pseudo_newton_{false};
         bool export_rhs_{false};
