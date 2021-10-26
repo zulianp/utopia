@@ -269,6 +269,7 @@ namespace utopia {
             barrier_->set_box_constraints(
                 std::make_shared<BoxConstraints<Vector_t>>(nullptr, std::make_shared<Vector_t>(obstacle_->gap())));
 
+            barrier_->set_selection(std::make_shared<Vector_t>(obstacle_->is_contact()));
             return ok;
         }
     };
