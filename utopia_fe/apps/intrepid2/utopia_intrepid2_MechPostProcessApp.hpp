@@ -8,6 +8,7 @@
 // Utopia/Kokkos includes
 #include "utopia_kokkos_Field.hpp"
 #include "utopia_kokkos_Gradient.hpp"
+#include "utopia_kokkos_LinearElasticity.hpp"
 #include "utopia_kokkos_Strain.hpp"
 
 // Utopia/intrepid2 includes
@@ -29,12 +30,7 @@ namespace utopia {
             using Intrepid2QPField_t = utopia::kokkos::QPField<Intrepid2FE_t>;
             using Intrepid2Gradient_t = utopia::kokkos::Gradient<Intrepid2FE_t>;
             using Intrepid2Strain_t = utopia::kokkos::Strain<Intrepid2FE_t>;
-
-            // Dummy
-            class Material {
-            public:
-                bool is_linear() const { return true; }
-            };
+            using ElasticMaterial_t = utopia::kokkos::ElasticMaterial<Intrepid2FE_t>;
 
             void read(Input &in) override {
                 valid_ = true;
@@ -43,6 +39,7 @@ namespace utopia {
                          .add_option("verbose", verbose, "Verbose output.")
                          .add_option("quadrature_order", quadrature_order, "Specify the quadrature order.")
                          .add_option("output_path", output_path, "Path to output file.")
+                         .add_option("export_strains", export_strains, "Export strains instead of stress.")
                          .parse(in)) {
                     valid_ = false;
                     return;
@@ -62,7 +59,27 @@ namespace utopia {
                     return;
                 }
 
-                material = std::make_shared<Material>();
+                // Intrepid 2 stuff
+                fe = std::make_shared<Intrepid2FE_t>();
+                create_fe(space, *fe, quadrature_order);
+
+                switch (space.mesh().spatial_dimension()) {
+                    case 2: {
+                        material = std::make_shared<kokkos::LinearElasticity<Intrepid2FE_t, 2>>(fe);
+                        break;
+                    }
+                    case 3: {
+                        material = std::make_shared<kokkos::LinearElasticity<Intrepid2FE_t, 3>>(fe);
+                        break;
+                    }
+                    default: {
+                        break;
+                    }
+                }
+
+                if (material) {
+                    in.get("material", *material);
+                }
             }
 
             bool valid() const { return valid_; }
@@ -75,46 +92,69 @@ namespace utopia {
                     utopia::out() << "Dim:" << dim << " \n";
                 }
 
-                Field_t avg_principal_strains("principal_strains", make_ref(space), std::make_shared<Vector_t>());
-
                 ////////////////////////////////////////////////////
 
-                {
-                    // Intrepid 2 stuff
+                if (export_strains) {
+                    Field_t avg_principal_strains("principal_strains", make_ref(space), std::make_shared<Vector_t>());
 
-                    auto fe = std::make_shared<Intrepid2FE_t>();
+                    {
+                        // Intrepid 2 stuff
+                        Intrepid2Field_t i2_displacement(fe);
+                        Intrepid2Gradient_t i2_gradient(fe);
+                        Intrepid2Strain_t i2_intrepid_strain(fe);
+                        Intrepid2QPField_t i2_principal_strains(fe);
+                        Intrepid2Field_t i2_avg_principal_strains(fe);
 
-                    // One gradient per element
-                    create_fe(space, *fe, quadrature_order);
+                        convert_field(displacement_field, i2_displacement);
+                        i2_gradient.init(i2_displacement);
 
-                    Intrepid2Field_t i2_displacement(fe);
-                    Intrepid2Gradient_t i2_gradient(fe);
-                    Intrepid2Strain_t i2_intrepid_strain(fe);
-                    Intrepid2QPField_t i2_principal_strains(fe);
-                    Intrepid2Field_t i2_avg_principal_strains(fe);
+                        if (!material->is_linear()) {
+                            i2_gradient.add_identity();
+                            // auto intrepid_det = det(i2_gradient);
+                        } else {
+                            i2_intrepid_strain.init_linearized(i2_displacement);
+                        }
 
-                    convert_field(displacement_field, i2_displacement);
-                    i2_gradient.init(i2_displacement);
+                        i2_intrepid_strain.eig(i2_principal_strains);
+                        i2_principal_strains.avg(i2_avg_principal_strains);
+                        i2_avg_principal_strains.set_elem_type(ELEMENT_TYPE);
 
-                    if (!material->is_linear()) {
-                        i2_gradient.add_identity();
-                        // auto intrepid_det = det(i2_gradient);
-                    } else {
-                        i2_intrepid_strain.init_linearized(i2_displacement);
+                        convert_field(i2_avg_principal_strains, avg_principal_strains);
                     }
 
-                    i2_intrepid_strain.eig(i2_principal_strains);
-                    i2_principal_strains.avg(i2_avg_principal_strains);
-                    i2_avg_principal_strains.set_elem_type(ELEMENT_TYPE);
-
-                    convert_field(i2_avg_principal_strains, avg_principal_strains);
+                    {
+                        space.displace(displacement_field.data());  // FIXME
+                        IO_t io(space);
+                        io.set_output_path(output_path);
+                        io.write(avg_principal_strains);
+                    }
                 }
 
                 ////////////////////////////////////////////////////
 
-                IO_t io(space);
-                io.set_output_path(output_path);
-                io.write(avg_principal_strains);
+                else if (material) {
+                    Field_t principal_stresses("principal_stresses", make_ref(space), std::make_shared<Vector_t>());
+
+                    {
+                        // Intrepid 2 stuff
+                        Intrepid2Field_t i2_displacement(fe);
+                        Intrepid2Field_t i2_principal_stresses(fe);
+
+                        convert_field(displacement_field, i2_displacement);
+
+                        material->principal_stresses(i2_displacement.data(), i2_principal_stresses.data());
+                        i2_principal_stresses.set_elem_type(ELEMENT_TYPE);
+
+                        convert_field(i2_principal_stresses, principal_stresses);
+                    }
+
+                    {
+                        space.displace(displacement_field.data());  // FIXME
+                        IO_t io(space);
+                        io.set_output_path(output_path);
+                        io.write(principal_stresses);
+                    }
+                }
             }
 
             FunctionSpace space;
@@ -122,11 +162,13 @@ namespace utopia {
 
             bool valid_{false};
             bool verbose{false};
+            bool export_strains{false};
             int quadrature_order{0};
 
             Path output_path{"out.e"};
 
-            std::shared_ptr<Material> material;
+            std::shared_ptr<ElasticMaterial_t> material;
+            std::shared_ptr<Intrepid2FE_t> fe;
         };
 
     }  // namespace intrepid2

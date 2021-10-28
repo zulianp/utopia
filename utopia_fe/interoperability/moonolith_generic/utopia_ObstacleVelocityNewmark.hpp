@@ -300,7 +300,7 @@ namespace utopia {
         }
 
         bool update_constraints(const Vector_t &x) {
-            utopia::out() << "update_constraints\n";
+            utopia::out() << "ObstacleVelocityNewmark::update_constraints\n";
 
             this->space()->displace(x);
             bool ok = obstacle_->assemble(*this->space());
