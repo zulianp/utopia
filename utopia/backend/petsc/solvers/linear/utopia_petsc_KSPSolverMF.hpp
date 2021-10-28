@@ -66,8 +66,9 @@ namespace utopia {
         }
 
         bool apply(const Vector &b, Vector &x) override {
-            return ksp_.apply(b, x);
+            auto flg = ksp_.apply(b, x);
             ksp_.solution_status(this->solution_status_);
+            return flg;
         }
 
         void print_usage(std::ostream &os) const override {
