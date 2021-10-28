@@ -108,7 +108,7 @@ namespace utopia {
                       class ShearModulus,
                       class Gradient,
                       class Measure>
-            class InlineCoeffLinearElasticityOp {
+            class InterpolateLinearElasticityOp {
             public:
                 UTOPIA_INLINE_FUNCTION Scalar strain(const int cell,
                                                      const int qp,
@@ -158,7 +158,7 @@ namespace utopia {
 
                 UTOPIA_INLINE_FUNCTION static constexpr int dim() { return Dim; }
 
-                UTOPIA_INLINE_FUNCTION InlineCoeffLinearElasticityOp(const FirstLameParameter &lambda,
+                UTOPIA_INLINE_FUNCTION InterpolateLinearElasticityOp(const FirstLameParameter &lambda,
                                                                      const ShearModulus &mu,
                                                                      const Gradient &grad,
                                                                      // const Measure &measure,

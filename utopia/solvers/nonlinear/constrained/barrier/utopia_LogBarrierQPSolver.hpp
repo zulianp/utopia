@@ -59,6 +59,10 @@ namespace utopia {
             solver_->set_selection(selection);
         }
 
+        virtual void set_linear_solver(const std::shared_ptr<LinearSolver> &linear_solver) {
+            solver_->set_linear_solver(linear_solver);
+        }
+
     private:
         std::shared_ptr<LogBarrierSolver> solver_;
         std::shared_ptr<QuadraticFunction> quadratic_function_;

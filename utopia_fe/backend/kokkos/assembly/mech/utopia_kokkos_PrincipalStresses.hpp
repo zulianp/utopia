@@ -32,7 +32,6 @@ namespace utopia {
                 Scalar cell_measure = 0.0;
                 for (int qp = 0; qp < n_quad_points; ++qp) {
                     (*this)(cell, qp);
-
                     cell_measure += measure(cell, qp);
                 }
 

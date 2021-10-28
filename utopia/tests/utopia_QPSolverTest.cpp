@@ -181,20 +181,29 @@ namespace utopia {
             Matrix A;
             Vector b;
             BoxConstraints<Vector> box;
-            create_symm_lapl_test_data(comm, A, b, box);
+            SizeType n = 200;
+            create_symm_lapl_test_data(comm, A, b, box, n);
             box.lower_bound() = nullptr;
+            // box.upper_bound() = nullptr;
 
             InputParameters params;
             // params.set("verbose", true);
-            params.set("barrier_parameter", 1e-5);
+            params.set("barrier_parameter", 1e-2);
             params.set("barrier_thickness", 0.01);
-            params.set("barrier_parameter_shrinking_factor", 0.7);
-            params.set("min_barrier_parameter", 1e-8);
+            params.set("barrier_parameter_shrinking_factor", 0.1);
+            params.set("min_barrier_parameter", 1e-5);
             params.set("verbose", verbose);
             params.set("function_type", barrier_function_type);
-            params.set("max-it", 10);
+            params.set("max-it", 200);
+            params.set("enable_line_search", true);
 
             LogBarrierQPSolver<Matrix, Vector> solver;
+
+            ConjugateGradient<Matrix, Vector, HOMEMADE> linear_solver;
+            linear_solver.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector>>());
+            linear_solver.max_it(100);
+            solver.set_linear_solver(make_ref(linear_solver));
+
             solver.set_box_constraints(box);
             solver.read(params);
 
@@ -224,8 +233,8 @@ namespace utopia {
         }
 
         void log_barrier_qp_solver_test() {
-            // log_barrier_qp_solver_test("LogBarrierFunction", true);
-            log_barrier_qp_solver_test("LogBarrierFunction", false);
+            log_barrier_qp_solver_test("LogBarrierFunction", true);
+            // log_barrier_qp_solver_test("LogBarrierFunction", false);
             // log_barrier_qp_solver_test("BoundedLogBarrierFunction", true);
 
             // Utopia::Abort("BYE");
@@ -442,7 +451,7 @@ namespace utopia {
             if (true) {
                 c.start();
 
-                SizeType n = 1e3;
+                SizeType n = 200;
                 QPSolverTest<Matrix, Vector>::create_symm_lapl_test_data(comm, A, b, box, n, true);
 
                 c.stop();

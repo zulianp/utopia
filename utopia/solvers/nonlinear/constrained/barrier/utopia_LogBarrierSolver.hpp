@@ -8,6 +8,7 @@
 #include "utopia_Newton.hpp"
 #include "utopia_polymorphic_LinearSolver.hpp"
 
+#include "utopia_LineSearchBoxProjection.hpp"
 #include "utopia_LogBarrierFunctionFactory.hpp"
 
 #include <iomanip>
@@ -64,6 +65,11 @@ namespace utopia {
                 newton_->linear_solver()->solve(H, g, x);
             }
 
+            if (enable_line_search_) {
+                auto ls = std::make_shared<LineSearchBoxProjection<Vector>>(make_ref(this->get_box_constraints()));
+                newton_->set_line_search_strategy(ls);
+            }
+
             return newton_->solve(*function_, x);
         }
 
@@ -76,6 +82,8 @@ namespace utopia {
                 .add_option("linear_solver_pass",
                             linear_solver_pass_,
                             "Performs a linear solve before integrating the barrier function.")
+                .add_option(
+                    "enable_line_search", enable_line_search_, "Enable line search for staying in feasble region.")
                 .add_option("function_type",
                             function_type,
                             "Type of LogBarrier. Options={LogBarrierFunctionWithSelection|LogBarrierFunction}")
@@ -105,10 +113,15 @@ namespace utopia {
             }
         }
 
+        virtual void set_linear_solver(const std::shared_ptr<LinearSolver> &linear_solver) {
+            newton_->set_linear_solver(linear_solver);
+        }
+
     private:
         std::shared_ptr<Newton> newton_;
         std::shared_ptr<LogBarrierFunctionBase> function_;
-        bool linear_solver_pass_{true};
+        bool linear_solver_pass_{false};
+        bool enable_line_search_{false};
     };
 
 }  // namespace utopia

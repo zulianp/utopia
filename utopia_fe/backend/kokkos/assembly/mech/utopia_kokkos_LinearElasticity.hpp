@@ -13,6 +13,7 @@
 #include "utopia_kokkos_ElasticMaterial.hpp"
 
 #include "utopia_kokkos_PrincipalStresses.hpp"
+#include "utopia_kokkos_StrainOp.hpp"
 #include "utopia_kokkos_StressLinearElasticityOp.hpp"
 
 namespace utopia {
@@ -100,11 +101,17 @@ namespace utopia {
                 ////////////////////////////////////////////////////////////////////////////
                 using GradientOp = typename utopia::kokkos::kernels::GradientOp<Scalar, Gradient, VectorView>::Rank2;
 
-                using StressOp = utopia::kokkos::kernels::
-                    InlineCoeffLinearElasticityOp<Dim, Scalar, FirstLameParameter, ShearModulus, GradientOp, Measure>;
+                using InterpolateStressOp = utopia::kokkos::kernels::
+                    InterpolateLinearElasticityOp<Dim, Scalar, FirstLameParameter, ShearModulus, GradientOp, Measure>;
+
+                // using InterpolateStrainOp =
+                //     utopia::kokkos::kernels::InterpolateLinearizedStrainOp<Dim, Scalar, GradientOp, VectorView>;
 
                 using PrincipalStressesOp =
-                    utopia::kokkos::StorePrincipalStress<Dim, Scalar, StressOp, Measure, VectorView>;
+                    utopia::kokkos::StorePrincipalStress<Dim, Scalar, InterpolateStressOp, Measure, VectorView>;
+
+                // using PrincipalStrainsOp =
+                //     utopia::kokkos::StorePrincipalStress<Dim, Scalar, InterpolateStrainOp, Measure, VectorView>;
                 ////////////////////////////////////////////////////////////////////////////
 
                 UTOPIA_TRACE_REGION_BEGIN("LinearElasticity::principal_stresses");
@@ -115,8 +122,11 @@ namespace utopia {
 
                 GradientOp g(this->fe().grad(), displacement);
 
-                StressOp stress(op_.lambda, op_.mu, g, 0);
+                InterpolateStressOp stress(op_.lambda, op_.mu, g, 0);
                 PrincipalStressesOp op(stress, this->fe().measure(), result);
+
+                // InterpolateStrainOp strain(g, x);
+                // PrincipalStrainsOp op(strain, this->fe().measure(), result);
 
                 this->loop_cell("LinearElasticity::principal_stresses", op);
 
