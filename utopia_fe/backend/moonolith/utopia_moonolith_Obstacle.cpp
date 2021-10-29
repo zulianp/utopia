@@ -355,6 +355,10 @@ namespace utopia {
             out = transpose(output().orthogonal_trafo) * in * output().orthogonal_trafo;
         }
 
+        std::shared_ptr<Obstacle::Matrix> Obstacle::orthogonal_transformation() {
+            return make_ref(output().orthogonal_trafo);
+        }
+
         void Obstacle::transform(const Vector &in, Vector &out) { out = transpose(output().orthogonal_trafo) * in; }
 
         void Obstacle::inverse_transform(const Vector &in, Vector &out) { out = output().orthogonal_trafo * in; }

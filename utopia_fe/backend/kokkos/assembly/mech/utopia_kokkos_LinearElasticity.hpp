@@ -116,7 +116,7 @@ namespace utopia {
 
                 UTOPIA_TRACE_REGION_BEGIN("LinearElasticity::principal_stresses");
 
-                if (result.extent(0) != this->fe().n_cells() || int(result.extent(1)) != Dim) {
+                if (SizeType(result.extent(0)) != this->fe().n_cells() || int(result.extent(1)) != Dim) {
                     result = VectorView("principal_stresses", this->fe().n_cells(), Dim);
                 }
 

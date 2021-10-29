@@ -5,6 +5,8 @@
 #include "utopia_InputParameters.hpp"
 #include "utopia_ui.hpp"
 
+#include "utopia_LS_Strategy.hpp"
+
 #include "utopia_Field.hpp"
 #include "utopia_fe_Core.hpp"
 #include "utopia_fe_Environment.hpp"
@@ -93,6 +95,8 @@ namespace utopia {
         }
 
         virtual void set_time(const std::shared_ptr<SimulationTime> &time) = 0;
+
+        virtual std::shared_ptr<LSStrategy<Vector_t>> line_search() { return nullptr; }
     };
 
     template <class FunctionSpace>

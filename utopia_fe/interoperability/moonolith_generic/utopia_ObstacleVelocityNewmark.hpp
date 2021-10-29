@@ -60,12 +60,15 @@ namespace utopia {
             }
         }
 
+        inline std::shared_ptr<LSStrategy<Vector_t>> line_search() override { return line_search_; }
+
         void read(Input &in) override {
             Super::read(in);
 
             in.get("debug", debug_);
             in.get("debug_from_iteration", debug_from_iteration_);
             in.get("trivial_obstacle", trivial_obstacle_);
+            in.get("enable_line_search", enable_line_search_);
 
             if (!obstacle_) {
                 std::string type;
@@ -266,6 +269,9 @@ namespace utopia {
         bool debug_{false};
         int debug_from_iteration_{0};
         bool trivial_obstacle_{false};
+        bool enable_line_search_{false};
+
+        std::shared_ptr<LineSearchBoxProjection<Vector_t>> line_search_;
 
         bool project_x_onto_feasibile_region(Vector_t &x) const {
             bool ok = true;
@@ -323,10 +329,31 @@ namespace utopia {
 
             barrier_->reset();
 
-            barrier_->set_box_constraints(
-                std::make_shared<BoxConstraints<Vector_t>>(nullptr, std::make_shared<Vector_t>(obstacle_->gap())));
+            auto box =
+                std::make_shared<BoxConstraints<Vector_t>>(nullptr, std::make_shared<Vector_t>(obstacle_->gap()));
+            barrier_->set_box_constraints(box);
 
             barrier_->set_selection(std::make_shared<Vector_t>(obstacle_->is_contact()));
+
+            if (enable_line_search_) {
+                if (!line_search_) {
+                    line_search_ = std::make_shared<LineSearchBoxProjection<Vector_t>>(box, make_ref(this->x_old()));
+                } else {
+                    line_search_->set_box_constraints(box);
+                    line_search_->set_offset_vector(make_ref(this->x_old()));
+                }
+
+                auto trafo = obstacle_->orthogonal_transformation();
+                assert(trafo);
+                if (!trafo) {
+                    Utopia::Abort(
+                        "ObstacleVelocityNewmark:update_constraints: orthogonal_transformation is mandatory for "
+                        "line_search!");
+                }
+
+                line_search_->set_transform(trafo);
+            }
+
             return ok;
         }
     };

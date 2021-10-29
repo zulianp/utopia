@@ -20,7 +20,7 @@ namespace utopia {
         virtual void transform(const Vector &in, Vector &out) = 0;
         virtual void inverse_transform(const Vector &in, Vector &out) = 0;
 
-        virtual std::shared_ptr<Matrix> orthogonal_transformation() const { return nullptr; }
+        virtual std::shared_ptr<Matrix> orthogonal_transformation() { return nullptr; }
 
         virtual const Vector &gap() const = 0;
         virtual const Vector &is_contact() const = 0;

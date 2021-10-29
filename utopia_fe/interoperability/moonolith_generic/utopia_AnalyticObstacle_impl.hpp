@@ -296,8 +296,8 @@ namespace utopia {
     }
 
     template <class FunctionSpace>
-    std::shared_ptr<typename Traits<FunctionSpace>::Matrix> AnalyticObstacle<FunctionSpace>::orthogonal_transformation()
-        const {
+    std::shared_ptr<typename Traits<FunctionSpace>::Matrix>
+    AnalyticObstacle<FunctionSpace>::orthogonal_transformation() {
         return make_ref(impl_->orthogonal_trafo);
     }
 

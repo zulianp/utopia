@@ -212,6 +212,19 @@ namespace utopia {
                     this->status("Timestep: " + std::to_string(n_time_steps++));
 
                     function_->space()->apply_constraints_update(x);
+
+                    {  // If we have a newton solver we can add ad-hoc line-search strategies to it
+                        auto newton = std::dynamic_pointer_cast<Newton_t>(solver_);
+
+                        if (newton) {
+                            auto ls = function_->line_search();
+
+                            if (ls) {
+                                newton->set_line_search_strategy(ls);
+                            }
+                        }
+                    }
+
                     if (!solver_->solve(*function_, x)) {
                         error("Solver failed to solve");
                         return false;

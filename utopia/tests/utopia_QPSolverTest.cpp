@@ -181,7 +181,7 @@ namespace utopia {
             Matrix A;
             Vector b;
             BoxConstraints<Vector> box;
-            SizeType n = 200;
+            SizeType n = 100;
             create_symm_lapl_test_data(comm, A, b, box, n);
             box.lower_bound() = nullptr;
             // box.upper_bound() = nullptr;
@@ -233,8 +233,8 @@ namespace utopia {
         }
 
         void log_barrier_qp_solver_test() {
-            log_barrier_qp_solver_test("LogBarrierFunction", true);
-            // log_barrier_qp_solver_test("LogBarrierFunction", false);
+            // log_barrier_qp_solver_test("LogBarrierFunction", true);
+            log_barrier_qp_solver_test("LogBarrierFunction", false);
             // log_barrier_qp_solver_test("BoundedLogBarrierFunction", true);
 
             // Utopia::Abort("BYE");
@@ -243,7 +243,7 @@ namespace utopia {
         void interior_point_qp_solver_test() {
             auto &&comm = Comm::get_default();
 
-            SizeType n = 200;
+            SizeType n = 100;
             if (Traits::Backend == BLAS) {
                 n = 20;
             }
@@ -451,7 +451,7 @@ namespace utopia {
             if (true) {
                 c.start();
 
-                SizeType n = 200;
+                SizeType n = 100;
                 QPSolverTest<Matrix, Vector>::create_symm_lapl_test_data(comm, A, b, box, n, true);
 
                 c.stop();

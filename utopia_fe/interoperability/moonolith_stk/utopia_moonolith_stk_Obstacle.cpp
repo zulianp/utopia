@@ -85,5 +85,9 @@ namespace utopia {
 
         void Obstacle::inverse_transform(const Vector &in, Vector &out) { impl_->obstacle.inverse_transform(in, out); }
 
+        std::shared_ptr<Obstacle::Matrix> Obstacle::orthogonal_transformation() {
+            return impl_->obstacle.orthogonal_transformation();
+        }
+
     }  // namespace stk
 }  // namespace utopia

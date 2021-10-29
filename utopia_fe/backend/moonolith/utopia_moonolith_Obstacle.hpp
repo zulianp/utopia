@@ -42,6 +42,8 @@ namespace utopia {
             Obstacle();
             ~Obstacle();
 
+            std::shared_ptr<Matrix> orthogonal_transformation();
+
             // class SurfaceDescriptor {
             // public:
             //     std::string name;

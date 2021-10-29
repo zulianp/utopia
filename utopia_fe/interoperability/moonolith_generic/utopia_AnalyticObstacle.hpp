@@ -33,7 +33,7 @@ namespace utopia {
         void transform(const Vector &in, Vector &out) override;
         void inverse_transform(const Vector &in, Vector &out) override;
 
-        std::shared_ptr<Matrix> orthogonal_transformation() const override;
+        std::shared_ptr<Matrix> orthogonal_transformation() override;
 
         const Vector &gap() const override;
         const Vector &is_contact() const override;
