@@ -4,6 +4,7 @@ import subprocess
 import rich
 import sys, getopt
 import glob
+import time
 
 console = rich.get_console()
 
@@ -88,18 +89,18 @@ class Executable(yaml.YAMLObject):
             return exec_str
 
 
-    def run(self):
+    def run(self, current_work_dir = './'):
         exec_str = self.mpi_wrap(f"{self.path} ")
 
         console.print(locals())
         console.print(exec_str, style='bold blue')
         return subprocess.run(exec_str,  shell=True, check=True, capture_output=(not self.verbose))
 
-    def run_with_args(self, args):
+    def run_with_args(self, args, current_work_dir = './'):
         exec_str = self.mpi_wrap(f"{self.path} {args}")
         console.print(locals())
         console.print(exec_str, style='bold blue')
-        return subprocess.run(exec_str,  shell=True, check=True, capture_output=(not self.verbose))
+        return subprocess.run(exec_str,  shell=True, check=True, capture_output=(not self.verbose), cwd = current_work_dir)
 
     def describe(self):
         console.print("Using executable: %s=%s" % (self.name, self.path))
@@ -118,8 +119,8 @@ class Env:
         return str(self.next_step_id())
 
     def __init__(self, mpi_processes=1):
-        utopia_fe_exec = Executable('UTOPIA_FE_EXEC')
-        trilinos_decompo_exec = Executable('TRILINOS_DECOMP')
+        utopia_fe_exec = Executable('UTOPIA_FE_EXEC', mpi_processes)
+        trilinos_decompo_exec = Executable('TRILINOS_DECOMP', mpi_processes)
 
         utopia_fe_exec.describe()
         trilinos_decompo_exec.describe()
@@ -134,21 +135,42 @@ class Env:
 class Mesh(yaml.YAMLObject):
     yaml_tag = u'!Mesh'
 
-    def __init__(self, env, path):
+    def __init__(self, env, path, auto_decompose = True):
         self.type = 'file'
         self.path = path
         self.auto_aura = True
         self.env = env
+        self.auto_decompose = auto_decompose
 
-        if env.mpi_processes > 1:
-            pattern = path + "." + str(env.mpi_processes) + ".*"
-            if not glob.glob(pattern):
-                print("Decomposed file not found pattern=" + pattern)
-                self.partition(env.mpi_processes)
+    def __repr__(self):
+        return "%s(type=%r,path=%r,auto_aura=%r)" % (
+            self.__class__.__name__, self.type, self.path, self.auto_aura)
 
-    def partition(self, num_paritions):
-        args = f"-p {num_paritions} {self.path}"
-        self.env.trilinos_decompo_exec.run_with_args(args)
+    def ensure(self):
+        if self.auto_decompose and self.env.mpi_processes > 1:
+            pattern = self.path + "." + str(self.env.mpi_processes) + ".*"
+            decomposed_files = glob.glob(pattern)
+            if not decomposed_files:
+                print("Decomposed file not found! Generating decomposition...")
+                # print(os.path.dirname(path))
+                self.partition(env.mpi_processes, os.path.dirname(self.path))
+            else:
+                time_decomp = os.path.getmtime(decomposed_files[0])
+                time_original = os.path.getmtime(self.path)
+
+                if time_decomp < time_original:
+                    print("Decomposed file are older than original mesh file!\n"
+                        "Original:\t" + time.ctime(time_original) + "\nDecomposition:\t" + time.ctime(time_decomp) +
+                        ".\nGenerating decomposition...")
+                    self.partition(env.mpi_processes, os.path.dirname(self.path))
+                else:
+                    print("found files:\n")
+                    for f in decomposed_files:
+                        print("\t" + f)
+
+    def partition(self, num_paritions, output_dir):
+        args = f"-p {num_paritions} {os.path.basename(self.path)}"
+        self.env.trilinos_decompo_exec.run_with_args(args, output_dir)
 
 class DirichletBC(yaml.YAMLObject):
     yaml_tag = u'!DirichletBC'
@@ -176,7 +198,8 @@ class FunctionSpace(yaml.YAMLObject):
         self.variables = variables
         self.boundary_conditions = boundary_conditions
 
-
+    def ensure(self):
+        self.mesh.ensure()
 
 class FEProblem(yaml.YAMLObject):
     yaml_tag = u'!FEProblem'
@@ -199,6 +222,7 @@ class NLSolve(yaml.YAMLObject):
         out.close()
 
     def run(self):
+        self.space.ensure()
         self.generate_YAML()
         args = f"@file {self.input_file}"
         self.executable.run_with_args(args)
@@ -225,6 +249,7 @@ class ObstacleSimulation(yaml.YAMLObject):
         out.close()
 
     def run(self):
+        self.space.ensure()
         self.generate_YAML()
         args = f"@file {self.input_file}"
         self.executable.run_with_args(args)
@@ -248,6 +273,36 @@ class VectorLaplaceOperator(Material):
     def __init__(self, quadrature_order = 0):
         super().__init__("VectorLaplaceOperator", quadrature_order)
 
+class ElasticMaterial(Material):
+    yaml_tag = u'!ElasticMaterial'
+
+    def __init__(self, type,  quadrature_order = 0):
+        super().__init__(type, quadrature_order)
+
+    def set_shear_modulus(self, shear_modulus):
+        self.shear_modulus = shear_modulus
+
+    def set_bulk_modulus(self, bulk_modulus):
+        self.bulk_modulus = bulk_modulus
+
+    def set_first_lame_parameter(self, first_lame_parameter):
+        self.first_lame_parameter = first_lame_parameter
+
+    def set_poisson_ratio(self, poisson_ratio):
+        self.poisson_ratio = poisson_ratio
+
+    def set_young_modulus(self, young_modulus):
+        self.young_modulus = young_modulus
+
+class LinearElasticity(ElasticMaterial):
+    yaml_tag = u'!LinearElasticity'
+    def __init__(self, quadrature_order = 0):
+        super().__init__("LinearElasticity", quadrature_order)
+
+class CompressibleNeoHookean(ElasticMaterial):
+    yaml_tag = u'!CompressibleNeoHookean'
+    def __init__(self, quadrature_order = 0):
+        super().__init__("NeoHookean", quadrature_order)
 
 class Assembly(yaml.YAMLObject):
     yaml_tag = u'!Assembly'
@@ -329,6 +384,8 @@ class FSI:
 
         implitic_obstacle_db = workspace_dir + '/distance.e'
         implitic_obstacle_result_db = workspace_dir + '/contained_solid.e'
+        obstacle_at_rest_result_db = workspace_dir + '/obstacle_at_rest.e'
+        obstacle_mesh = Mesh(env, implitic_obstacle_db)
 
         #################################################################
 
@@ -348,8 +405,6 @@ class FSI:
 
         step1_sim = GenerateDistanceFunction(env, distance_fs, 1000, implitic_obstacle_db)
 
-        # console.print(yaml.dump(step1_sim))
-
         #########################################################
 
         solid_fs = FunctionSpace(
@@ -366,7 +421,7 @@ class FSI:
         #########################################################
 
         domain = DistanceField(
-            Mesh(env, implitic_obstacle_db), [
+            obstacle_mesh, [
                 distance_var
             ])
 
@@ -374,11 +429,19 @@ class FSI:
             env, solid_fs, VectorLaplaceOperator(), [], ImplicitObstacle(domain),
             ObstacleSolver(MPRGP(), 30, 30), implitic_obstacle_result_db)
 
-        # print(yaml.dump(step2_sim))
-
         #########################################################
 
-        self.steps = [step1_sim, step2_sim]
+        dummy_material = LinearElasticity(0)
+        dummy_material.set_shear_modulus(0.2)
+        dummy_material.set_first_lame_parameter(0.2)
+
+        step3_sim = ObstacleSimulation(
+            env, solid_fs, dummy_material, [], MeshObstacle(fluid_mesh),
+            ObstacleSolver(MPRGP(), 30, 30), obstacle_at_rest_result_db)
+
+
+        #########################################################
+        self.steps = [step1_sim, step2_sim, step3_sim]
 
     def run_step(self, step_num):
         self.steps[step_num].run()
@@ -401,9 +464,11 @@ def main(argv):
     # Outputs
     workspace_dir = './workspace'
     mpi_processes = 1
+    run_step = -1
+    generate_YAML = False
 
     try:
-        opts, args = getopt.getopt(argv,"hs:f:w:p:",["help", "solid=", "fluid=", "workspace=", "processes="])
+        opts, args = getopt.getopt(argv,"hs:f:w:p:r:g",["help", "solid=", "fluid=", "workspace=", "processes=", "run_step=", "generate"])
     except getopt.GetoptError:
         print('obstacle.py -s <solid_mesh> -f <fluid_mesh>')
         sys.exit(2)
@@ -419,11 +484,20 @@ def main(argv):
             mpi_processes = int(arg)
         elif opt in ("-w", "--workspace"):
            workspace_dir = arg
+        elif opt in ("-r", "--run_step"):
+           run_step = int(arg)
+        elif opt in ("-g", "--generate"):
+           generate_YAML = True
 
     env = Env(mpi_processes)
     fsi = FSI(env, solid_mesh, fluid_mesh, workspace_dir)
-    # fsi.generate_YAML_files()
-    # fsi.run_step(1)
+
+    if generate_YAML:
+        fsi.generate_YAML_files()
+
+    if run_step != -1:
+        fsi.run_step(run_step)
+
 
 
 if __name__ == '__main__':
