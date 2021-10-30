@@ -2,6 +2,8 @@ import os
 import yaml
 import subprocess
 import rich
+import sys, getopt
+import glob
 
 console = rich.get_console()
 
@@ -42,13 +44,29 @@ class MPRGP(QPSolver):
     #         self.__class__.__name__, self.name)
 
 
+    # verbose: true
+    # max_it: 20
+    # atol: 0.0001
+    # max_constraints_iterations: 30
+class ObstacleSolver(yaml.YAMLObject):
+    yaml_tag = u'!ObstacleSolver'
+
+    def __init__(self, qp_solver, max_it = 20, max_constraints_iterations = 30, atol = 0.0001, verbose = True):
+        self.qp_solver = qp_solver
+        self.max_it = max_it
+        self.max_constraints_iterations = max_constraints_iterations
+        self.atol = atol
+        self.verbose = verbose
+
+
 class Executable(yaml.YAMLObject):
     yaml_tag = u'!Executable'
-    def __init__(self, name):
+    def __init__(self, name, mpi_processes = 1):
         self.name = name
         self.path = self.find_path()
         self.check_path()
         self.verbose = True
+        self.mpi_processes = mpi_processes
 
     # def __repr__(self):
     #     return "%s(name=%r,path=%r)" % (
@@ -63,26 +81,43 @@ class Executable(yaml.YAMLObject):
             print("ERROR: Environment variable " + self.name + " must be defined! For instance with \'export " + self.name + "=<path_to_executable>")
             exit()
 
+    def mpi_wrap(self, exec_str):
+        if self.mpi_processes > 1:
+            return f"mpiexec -np {self.mpi_processes} {exec_str}"
+        else:
+            return exec_str
+
 
     def run(self):
-        exec_str = f"{self.path} --verbose"
+        exec_str = self.mpi_wrap(f"{self.path} ")
+
         console.print(locals())
         console.print(exec_str, style='bold blue')
         return subprocess.run(exec_str,  shell=True, check=True, capture_output=(not self.verbose))
 
     def run_with_args(self, args):
-        exec_str = f"{self.path} --verbose {args}"
+        exec_str = self.mpi_wrap(f"{self.path} {args}")
         console.print(locals())
         console.print(exec_str, style='bold blue')
         return subprocess.run(exec_str,  shell=True, check=True, capture_output=(not self.verbose))
 
     def describe(self):
-        console.print("Using runs executable: %s=%s" % (self.name, self.path))
+        console.print("Using executable: %s=%s" % (self.name, self.path))
 
 
 class Env:
     """Env"""
-    def __init__(self):
+    step_id = 0
+
+    def next_step_id(self):
+        ret = self.step_id
+        self.step_id += 1
+        return ret
+
+    def next_step_id_str(self):
+        return str(self.next_step_id())
+
+    def __init__(self, mpi_processes=1):
         utopia_fe_exec = Executable('UTOPIA_FE_EXEC')
         trilinos_decompo_exec = Executable('TRILINOS_DECOMP')
 
@@ -91,15 +126,29 @@ class Env:
 
         self.utopia_fe_exec = utopia_fe_exec
         self.trilinos_decompo_exec = trilinos_decompo_exec
+        self.mpi_processes = mpi_processes
+
+        console.print("MPI processes: " + str(mpi_processes))
 
 
 class Mesh(yaml.YAMLObject):
     yaml_tag = u'!Mesh'
 
-    def __init__(self, path):
+    def __init__(self, env, path):
         self.type = 'file'
         self.path = path
         self.auto_aura = True
+        self.env = env
+
+        if env.mpi_processes > 1:
+            pattern = path + "." + str(env.mpi_processes) + ".*"
+            if not glob.glob(pattern):
+                print("Decomposed file not found pattern=" + pattern)
+                self.partition(env.mpi_processes)
+
+    def partition(self, num_paritions):
+        args = f"-p {num_paritions} {self.path}"
+        self.env.trilinos_decompo_exec.run_with_args(args)
 
 class DirichletBC(yaml.YAMLObject):
     yaml_tag = u'!DirichletBC'
@@ -142,12 +191,15 @@ class NLSolve(yaml.YAMLObject):
         self.problem = problem
         self.solver = solver
         self.executable = env.utopia_fe_exec
-        self.input_file = os.environ.get('PWD') + '/' + self.app + '.yaml'
+        self.input_file = os.environ.get('PWD') + '/' + env.next_step_id_str() + '_' + self.app + '.yaml'
 
-    def run(self):
+    def generate_YAML(self):
         out = open(self.input_file, "w")
         n = out.write(yaml.dump(self))
         out.close()
+
+    def run(self):
+        self.generate_YAML()
         args = f"@file {self.input_file}"
         self.executable.run_with_args(args)
 
@@ -155,21 +207,25 @@ class NLSolve(yaml.YAMLObject):
 class ObstacleSimulation(yaml.YAMLObject):
     yaml_tag = u'!ObstacleSimulation'
 
-    def __init__(self, env, space,  material, forcing_functions, obstacle, solver):
+    def __init__(self, env, space,  material, forcing_functions, obstacle, solver, output_path):
         self.app = 'stk_obs'
         self.executable = env.utopia_fe_exec
         self.space = space
         self.obstacle = obstacle
-        self.input_file = os.environ.get('PWD') + '/' + self.app + '.yaml'
+        self.input_file = os.environ.get('PWD') + '/'  + env.next_step_id_str() + '_' + self.app + '.yaml'
         self.solver = solver
+        self.output_path = output_path
 
         # problem = Problem(assembly, output_path)
         self.assembly = assembly = Assembly(material, forcing_functions)
 
-    def run(self):
+    def generate_YAML(self):
         out = open(self.input_file, "w")
         n = out.write(yaml.dump(self))
         out.close()
+
+    def run(self):
+        self.generate_YAML()
         args = f"@file {self.input_file}"
         self.executable.run_with_args(args)
 
@@ -242,8 +298,8 @@ class MeshObstacle(yaml.YAMLObject):
         self.gap_positive_bound = 5.e-4
         self.invert_face_orientation = True
 
-class Domain(yaml.YAMLObject):
-    yaml_tag = u'!Domain'
+class DistanceField(yaml.YAMLObject):
+    yaml_tag = u'!DistanceField'
 
     def __init__(self, db, fields):
         self.mesh = db
@@ -266,68 +322,109 @@ class ImplicitObstacle(yaml.YAMLObject):
     #     return "%s(name=%r,type=%r,path=%r)" % (
     #         self.__class__.__name__, self.name, self.type, self.name)
 
+class FSI:
+    def __init__(self, env, solid_mesh, fluid_mesh, workspace_dir):
+        if not os.path.exists(workspace_dir):
+            os.mkdir(workspace_dir)
 
-if __name__ == '__main__':
-    env = Env()
+        implitic_obstacle_db = workspace_dir + '/distance.e'
+        implitic_obstacle_result_db = workspace_dir + '/contained_solid.e'
 
+        #################################################################
+
+        distance_var =  Var("distance")
+
+        distance_fs = FunctionSpace(
+            Mesh(env, fluid_mesh),
+            [distance_var],
+            [
+                DirichletBC('inlet', 0.),
+                DirichletBC('outlet', 0.),
+                DirichletBC('inlettube', 0.),
+                DirichletBC('walls', 0.),
+                DirichletBC('symmetry', 0)
+            ])
+
+
+        step1_sim = GenerateDistanceFunction(env, distance_fs, 1000, implitic_obstacle_db)
+
+        # console.print(yaml.dump(step1_sim))
+
+        #########################################################
+
+        solid_fs = FunctionSpace(
+            Mesh(env, solid_mesh),
+            [Var("disp", 3)],
+            [
+                DirichletBC('valvesym', 0., 0),
+                DirichletBC('valvesym', 0., 2)
+            ]
+        )
+
+        solid_fs.read_state = False
+
+        #########################################################
+
+        domain = DistanceField(
+            Mesh(env, implitic_obstacle_db), [
+                distance_var
+            ])
+
+        step2_sim = ObstacleSimulation(
+            env, solid_fs, VectorLaplaceOperator(), [], ImplicitObstacle(domain),
+            ObstacleSolver(MPRGP(), 30, 30), implitic_obstacle_result_db)
+
+        # print(yaml.dump(step2_sim))
+
+        #########################################################
+
+        self.steps = [step1_sim, step2_sim]
+
+    def run_step(self, step_num):
+        self.steps[step_num].run()
+
+    def run_all(self):
+        for s in self.steps:
+            s.run()
+
+    def generate_YAML_files(self):
+        for s in self.steps:
+            s.generate_YAML()
+
+
+#################################################################
+def main(argv):
+    # Inputs
     solid_mesh = "/Users/zulianp/Desktop/in_the_cloud/owncloud_HSLU/Patrick/discharge_2/struct_halfDomain_21K.exo"
     fluid_mesh = "/Users/zulianp/Desktop/in_the_cloud/owncloud_HSLU/Patrick/discharge_2/fluid_halfDomain_155K.exo"
 
-    implitic_obstacle_db = 'distance.e'
-    distance_var =  Var("distance")
+    # Outputs
+    workspace_dir = './workspace'
+    mpi_processes = 1
 
-    distance_fs = FunctionSpace(
-        Mesh(fluid_mesh),
-        [distance_var],
-        [
-            DirichletBC('inlet', 0.),
-            DirichletBC('outlet', 0.),
-            DirichletBC('inlettube', 0.),
-            DirichletBC('walls', 0.),
-            DirichletBC('symmetry', 0)
-        ])
+    try:
+        opts, args = getopt.getopt(argv,"hs:f:w:p:",["help", "solid=", "fluid=", "workspace=", "processes="])
+    except getopt.GetoptError:
+        print('obstacle.py -s <solid_mesh> -f <fluid_mesh>')
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt in ('-h', '--help'):
+            print('obstacle.py -i <inputfile> -o <outputfile>')
+            sys.exit()
+        elif opt in ("-s", "--solid"):
+            solid_mesh = arg
+        elif opt in ("-f", "--fluid"):
+            fluid_mesh = arg
+        elif opt in ("-p", "--processes"):
+            mpi_processes = int(arg)
+        elif opt in ("-w", "--workspace"):
+           workspace_dir = arg
 
-
-    step1_sim = GenerateDistanceFunction(env, distance_fs, 1000, implitic_obstacle_db)
-
-    # console.print(yaml.dump(step1_sim))
-
-
-    solid_fs = FunctionSpace(
-        Mesh(solid_mesh),
-        [Var("disp", 3)],
-        [
-            DirichletBC('valvesym', 0., 0),
-            DirichletBC('valvesym', 0., 2)
-        ]
-    )
-
-    solid_fs.read_state = False
-
-    #########################################################
-
-    domain = Domain(Mesh(implitic_obstacle_db), [
-        distance_var
-        ])
-
-    step2_sim = ObstacleSimulation(env, solid_fs, VectorLaplaceOperator(), [], ImplicitObstacle(domain), MPRGP())
-
-    print(yaml.dump(step2_sim))
-
-    #########################################################
+    env = Env(mpi_processes)
+    fsi = FSI(env, solid_mesh, fluid_mesh, workspace_dir)
+    # fsi.generate_YAML_files()
+    # fsi.run_step(1)
 
 
-
-    step1_sim.run()
-    step2_sim.run()
-
-    # obs=MeshObstacle("mesh.e")
-    # solver = MPRGP()
-    # sim=ObstacleSimulation("stk_create_mesh", env.utopia_fe_exec, obs, solver)
-    # sim.run()
-
-
-
-    # # print(yaml.dump({'name': 'Silenthand Olleander', 'race': 'Human', 'traits': ['ONE_HAND', 'ONE_EYE']}))
-    # print(yaml.dump(mprgp))
-
+if __name__ == '__main__':
+    main(sys.argv[1:])
