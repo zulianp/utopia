@@ -15,13 +15,38 @@ except ImportError:
     from yaml import Loader, Dumper
 
 
+class Newton(yaml.YAMLObject):
+    yaml_tag = u'!Newton'
+    def __init__(self, linear_solver, max_it = 40, verbose = True):
+        self.linear_solver = linear_solver
+        self.verbose = verbose
+        self.max_it = max_it
+
 class LinearSolver(yaml.YAMLObject):
     yaml_tag = u'!LinearSolver'
-    def __init__(self, backend, type, verbose: False):
+    def __init__(self, backend, type, verbose = False):
         self.backend = backend
         self.type = type
         self.verbose = verbose
         # self.max_it =
+    def set_pc_type(self, pc_type):
+        self.pc_type = pc_type
+
+    def set_ksp_type(self, ksp_type):
+        self.ksp_type = ksp_type
+
+class BDDLinearSolver(LinearSolver):
+    yaml_tag = u'!LinearSolver'
+
+    def __init__(self, max_it = 5000, verbose = False):
+        super().__init__("petsc", "bdd", verbose)
+        self.preconditioner_type = "amg"
+        # self.inner_solver = LinearSolver("any", "cg", verbose)
+        self.inner_solver = LinearSolver("petsc", "ksp", verbose)
+        self.inner_solver.set_pc_type("hypre")
+        self.inner_solver.set_ksp_type("gmres")
+        self.inner_solver.max_it = max_it
+        self.max_it = max_it
 
 
 class QPSolver(yaml.YAMLObject):
@@ -64,12 +89,13 @@ class ObstacleSolver(yaml.YAMLObject):
 
 class Executable(yaml.YAMLObject):
     yaml_tag = u'!Executable'
-    def __init__(self, name, mpi_processes = 1):
+    def __init__(self, name, mpi_processes = 1, launch_cmd = "mpiexec"):
         self.name = name
         self.path = self.find_path()
         self.check_path()
         self.verbose = True
         self.mpi_processes = mpi_processes
+        self.launch_cmd = launch_cmd
 
     # def __repr__(self):
     #     return "%s(name=%r,path=%r)" % (
@@ -86,7 +112,7 @@ class Executable(yaml.YAMLObject):
 
     def mpi_wrap(self, exec_str):
         if self.mpi_processes > 1:
-            return f"mpiexec -np {self.mpi_processes} {exec_str}"
+            return f"{self.launch_cmd} -np {self.mpi_processes} {exec_str}"
         else:
             return exec_str
 
@@ -123,9 +149,17 @@ class Env(yaml.YAMLObject):
         return str(self.next_step_id())
 
     def __init__(self, mpi_processes=1):
-        utopia_fe_exec = Executable('UTOPIA_FE_EXEC', mpi_processes)
-        trilinos_decompo_exec = Executable('TRILINOS_DECOMP', 1)
-        trilinos_epu_exec = Executable('TRILINOS_EPU', 1)
+
+        launch_cmd = "mpiexec"
+        env_launch_cmd = os.environ.get('UTOPIA_LAUNCH_CMD')
+        if env_launch_cmd:
+            console.print(f"Overriding launch_cmd: {env_launch_cmd}")
+            launch_cmd = env_launch_cmd
+
+        utopia_fe_exec = Executable('UTOPIA_FE_EXEC', mpi_processes, launch_cmd)
+        trilinos_decompo_exec = Executable('TRILINOS_DECOMP', 1, launch_cmd)
+        trilinos_epu_exec = Executable('TRILINOS_EPU', 1, launch_cmd)
+
 
         utopia_fe_exec.describe()
         trilinos_decompo_exec.describe()
@@ -135,6 +169,7 @@ class Env(yaml.YAMLObject):
         self.trilinos_decompo_exec = trilinos_decompo_exec
         self.trilinos_epu_exec = trilinos_epu_exec
         self.mpi_processes = mpi_processes
+
 
         console.print("MPI processes: " + str(mpi_processes))
 
@@ -182,7 +217,7 @@ class Mesh(yaml.YAMLObject):
                         print("Decomposed file are older than original mesh file!\n"
                             "Original:\t" + time.ctime(time_original) + "\nDecomposition:\t" + time.ctime(time_decomp) +
                             ".\nGenerating decomposition...")
-                        self.partition(env.mpi_processes, os.path.dirname(self.path))
+                        self.partition(self.env.mpi_processes, os.path.dirname(self.path))
 
                 print("found files:\n")
                 for f in decomposed_files:
@@ -257,6 +292,7 @@ class NLSolve(yaml.YAMLObject):
     yaml_tag = u'!ObstacleSimulation'
 
     def __init__(self, env, space, problem, solver):
+        self.env = env
         self.app = 'stk_nlsolve'
         self.space = space
         self.problem = problem
@@ -283,6 +319,7 @@ class ObstacleSimulation(yaml.YAMLObject):
     yaml_tag = u'!ObstacleSimulation'
 
     def __init__(self, env, space,  material, forcing_functions, obstacle, solver, output_path):
+        self.env = env
         self.app = 'stk_obs'
         self.executable = env.utopia_fe_exec
         self.space = space
@@ -393,9 +430,48 @@ class GenerateDistanceFunction(NLSolve):
         forcing_functions = [DomainForcingFunction(rhs_value, 1, 0)]
         assembly = Assembly(material, forcing_functions)
         problem = Problem(assembly, output_path)
-        solver = LinearSolver('petsc', 'bdd', True)
+        solver = Newton(LinearSolver('petsc', 'bdd', True))
 
         super().__init__(env, space, problem, solver)
+
+class Time(yaml.YAMLObject):
+    yaml_tag = u'!Time'
+
+    def __init__(self, delta, n_steps):
+        self.delta = delta
+        self.n_steps = n_steps
+
+class BarrierProblem(yaml.YAMLObject):
+    yaml_tag = u'!BarrierProblem'
+
+    def __init__(self, space,  material, forcing_functions, obstacle, time, output_path):
+        self.obstacle = obstacle
+        self.output_path = output_path
+        self.time = time
+
+        self.function_type = 'LogBarrierWithSelection'
+        self.assembly = Assembly(material, forcing_functions)
+        self.infinity = 5.e-4
+        self.trivial_obstacle = False
+        self.barrier_parameter = 1e-16
+        self.barrier_parameter_shrinking_factor = 0.5
+        self.min_barrier_parameter = 1e-16
+        self.soft_boundary = 1e-12
+        self.zero = 1e-20
+        self.allow_projection = True
+
+
+
+
+class BarrierTest(NLSolve):
+    yaml_tag = u'!BarrierTest'
+
+    def __init__(self, env, space,  material, forcing_functions, obstacle, time, solver, output_path):
+        self.integrator = 'ObstacleVelocityNewmark'
+
+        problem =  BarrierProblem(space, material, forcing_functions, obstacle, time, output_path)
+        super().__init__(env, space, problem, solver)
+
 
 class MeshObstacle(yaml.YAMLObject):
     yaml_tag = u'!MeshObstacle'
@@ -431,7 +507,7 @@ class ImplicitObstacle(yaml.YAMLObject):
     #     return "%s(name=%r,type=%r,path=%r)" % (
     #         self.__class__.__name__, self.name, self.type, self.name)
 
-class FSI:
+class FSIInit:
     def __init__(self, env, solid_mesh, fluid_mesh, workspace_dir):
         if not os.path.exists(workspace_dir):
             os.mkdir(workspace_dir)
@@ -440,6 +516,7 @@ class FSI:
         implitic_obstacle_result_db = workspace_dir + '/contained_solid.e'
         obstacle_at_rest_result_db = workspace_dir + '/obstacle_at_rest.e'
         nonlinear_obstacle_at_rest_result_db = workspace_dir + '/nonlinear_obstacle_at_rest.e'
+        solid_test_db = workspace_dir + '/solid_test.e'
 
         obstacle_mesh = Mesh(env, implitic_obstacle_db)
 
@@ -459,7 +536,7 @@ class FSI:
             ])
 
 
-        step1_sim = GenerateDistanceFunction(env, distance_fs, 1000, implitic_obstacle_db)
+        step0_sim = GenerateDistanceFunction(env, distance_fs, 1000, implitic_obstacle_db)
 
         #########################################################
 
@@ -481,7 +558,7 @@ class FSI:
                 distance_var
             ])
 
-        step2_sim = ObstacleSimulation(
+        step1_sim = ObstacleSimulation(
             env, solid_fs, VectorLaplaceOperator(), [], ImplicitObstacle(domain),
             ObstacleSolver(MPRGP(), 30, 30), implitic_obstacle_result_db)
 
@@ -492,12 +569,12 @@ class FSI:
         dummy_material.set_first_lame_parameter(0.2)
 
         # Clone the space, since we are changing its content
-        solid_fs_3 = solid_fs.clone()
-        solid_fs_3.read_state = True
-        solid_fs_3.mesh.path = implitic_obstacle_result_db
+        solid_fs_2 = solid_fs.clone()
+        solid_fs_2.read_state = True
+        solid_fs_2.mesh.path = implitic_obstacle_result_db
 
-        step3_sim = ObstacleSimulation(
-            env, solid_fs_3, dummy_material, [], MeshObstacle(fluid_mesh),
+        step2_sim = ObstacleSimulation(
+            env, solid_fs_2, dummy_material, [], MeshObstacle(fluid_mesh),
             ObstacleSolver(MPRGP(1e-14), 10, 10), obstacle_at_rest_result_db)
 
         #########################################################
@@ -505,19 +582,38 @@ class FSI:
         elastic_material = CompressibleNeoHookean(0)
         elastic_material.set_young_modulus(9.174e6)
         elastic_material.set_poisson_ratio(0.4)
+        self.elastic_material = elastic_material
 
         # Clone the space, since we are changing its content
-        solid_fs_4 = solid_fs.clone()
-        solid_fs_4.read_state = True
-        solid_fs_4.mesh.path = obstacle_at_rest_result_db
+        solid_fs_3 = solid_fs.clone()
+        solid_fs_3.read_state = True
+        solid_fs_3.mesh.path = obstacle_at_rest_result_db
 
-        step4_sim = ObstacleSimulation(
-            env, solid_fs_4, elastic_material, [], MeshObstacle(fluid_mesh),
+        step3_sim = ObstacleSimulation(
+            env, solid_fs_3, elastic_material, [], MeshObstacle(fluid_mesh),
             ObstacleSolver(MPRGP(1e-14), 10, 10), nonlinear_obstacle_at_rest_result_db)
 
         #########################################################
 
-        self.steps = [step1_sim, step2_sim, step3_sim, step4_sim]
+        self.steps = [step0_sim, step1_sim, step2_sim, step3_sim]
+
+
+        #########################################################
+
+        test_elastic_material = elastic_material
+
+        # test_elastic_material = CompressibleNeoHookean(0)
+        # test_elastic_material.set_young_modulus(5e2)
+        # test_elastic_material.set_poisson_ratio(0.4)
+
+        solid_fs_test = solid_fs.clone()
+        solid_fs_test.read_state = True
+        solid_fs_test.mesh.path = nonlinear_obstacle_at_rest_result_db
+        forcing_functions = [DomainForcingFunction(-1e2, 3, 1)]
+
+        self.test = BarrierTest(env, solid_fs_test,
+         test_elastic_material, forcing_functions,
+         MeshObstacle(fluid_mesh), Time(1e-4, 100), Newton(BDDLinearSolver(20, True), 10), solid_test_db)
 
     def run_step(self, step_num):
         self.steps[step_num].run()
@@ -530,27 +626,39 @@ class FSI:
         for s in self.steps:
             s.generate_YAML()
 
+        self.test.generate_YAML()
+
 
 #################################################################
 def main(argv):
     # Inputs
     solid_mesh = "/Users/zulianp/Desktop/in_the_cloud/owncloud_HSLU/Patrick/discharge_2/struct_halfDomain_21K.exo"
     fluid_mesh = "/Users/zulianp/Desktop/in_the_cloud/owncloud_HSLU/Patrick/discharge_2/fluid_halfDomain_155K.exo"
+    young_modulus = 9.174e6
+    poisson_ratio = 0.4
+    barrier_parameter = 1e-10
+    dt = 1e-5
 
     # Outputs
     workspace_dir = './workspace'
     mpi_processes = 1
     run_step = -1
     generate_YAML = False
+    run_all = False
+    run_test = False
 
     try:
-        opts, args = getopt.getopt(argv,"hs:f:w:p:r:g",["help", "solid=", "fluid=", "workspace=", "processes=", "run_step=", "generate"])
+        opts, args = getopt.getopt(
+            argv,"hs:f:w:p:r:gat",
+            ["help", "solid=", "fluid=", "workspace=", "processes=", "run_step=", "generate", "all", "test",
+              "young_modulus=", "poisson_ratio=", "barrier_parameter=", "dt="
+            ])
     except getopt.GetoptError:
         print('obstacle.py -s <solid_mesh> -f <fluid_mesh>')
         sys.exit(2)
     for opt, arg in opts:
         if opt in ('-h', '--help'):
-            print('obstacle.py -i <inputfile> -o <outputfile>')
+            print('obstacle.py -s <solid_mesh> -f <fluid_mesh>')
             sys.exit()
         elif opt in ("-s", "--solid"):
             solid_mesh = arg
@@ -564,17 +672,50 @@ def main(argv):
            run_step = int(arg)
         elif opt in ("-g", "--generate"):
            generate_YAML = True
+        elif opt in ("-a", "--all"):
+           run_all = True
+        elif opt in ("-t", "--test"):
+           run_test = True
+        elif opt in ("--young_modulus"):
+           young_modulus = float(arg)
+        elif opt in ("--poisson_ratio"):
+           poisson_ratio = float(arg)
+        elif opt in ("--barrier_parameter"):
+           barrier_parameter = float(arg)
+        elif opt in ("--dt"):
+           dt = float(arg)
+
 
     env = Env(mpi_processes)
-    fsi = FSI(env, solid_mesh, fluid_mesh, workspace_dir)
+    fsi = FSIInit(env, solid_mesh, fluid_mesh, workspace_dir)
+
+    fsi.elastic_material.set_young_modulus(young_modulus)
+    fsi.elastic_material.set_poisson_ratio(poisson_ratio)
+
+    #######################################################################
+    # Play with parameters in barrier for the test
+    fsi.test.problem.infinity = 5.e-3
+    fsi.test.problem.trivial_obstacle = False
+    fsi.test.problem.barrier_parameter = barrier_parameter
+    fsi.test.problem.barrier_parameter_shrinking_factor = 0.5
+    fsi.test.problem.min_barrier_parameter = barrier_parameter
+    fsi.test.problem.soft_boundary = 1e-12
+    fsi.test.problem.zero = 1e-20
+    fsi.test.problem.time.delta = dt
+    fsi.test.problem.allow_projection = True
+    #######################################################################
 
     if generate_YAML:
         fsi.generate_YAML_files()
 
-    if run_step != -1:
+    if run_all:
+        fsi.run_all()
+    elif run_step != -1:
         fsi.run_step(run_step)
 
-
+    if run_test:
+        fsi.test.run()
 
 if __name__ == '__main__':
+    # console.print(sys.argv[1:])
     main(sys.argv[1:])
