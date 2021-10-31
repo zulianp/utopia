@@ -5,6 +5,7 @@ import rich
 import sys, getopt
 import glob
 import time
+import copy
 
 console = rich.get_console()
 
@@ -36,9 +37,10 @@ class QPSolver(yaml.YAMLObject):
 
 class MPRGP(QPSolver):
     yaml_tag = u'!MPRGP'
-    def __init__(self):
+    def __init__(self,atol=1e-11):
         super().__init__("mprgp")
         self.backend = 'any'
+        self.atol = atol
 
     # def __repr__(self):
     #     return "%s(name=%r)" % (
@@ -106,8 +108,10 @@ class Executable(yaml.YAMLObject):
         console.print("Using executable: %s=%s" % (self.name, self.path))
 
 
-class Env:
+class Env(yaml.YAMLObject):
     """Env"""
+    yaml_tag = u'!Env'
+
     step_id = 0
 
     def next_step_id(self):
@@ -120,13 +124,16 @@ class Env:
 
     def __init__(self, mpi_processes=1):
         utopia_fe_exec = Executable('UTOPIA_FE_EXEC', mpi_processes)
-        trilinos_decompo_exec = Executable('TRILINOS_DECOMP', mpi_processes)
+        trilinos_decompo_exec = Executable('TRILINOS_DECOMP', 1)
+        trilinos_epu_exec = Executable('TRILINOS_EPU', 1)
 
         utopia_fe_exec.describe()
         trilinos_decompo_exec.describe()
+        trilinos_epu_exec.describe()
 
         self.utopia_fe_exec = utopia_fe_exec
         self.trilinos_decompo_exec = trilinos_decompo_exec
+        self.trilinos_epu_exec = trilinos_epu_exec
         self.mpi_processes = mpi_processes
 
         console.print("MPI processes: " + str(mpi_processes))
@@ -142,35 +149,62 @@ class Mesh(yaml.YAMLObject):
         self.env = env
         self.auto_decompose = auto_decompose
 
+    def clone(self):
+        c = Mesh()
+        c.type = self.type;
+        c.path = self.path;
+        c.auto_aura = self.auto_aura;
+        c.env = self.env;
+        c.auto_decompose = self.auto_decompose;
+        return c
+
     def __repr__(self):
         return "%s(type=%r,path=%r,auto_aura=%r)" % (
             self.__class__.__name__, self.type, self.path, self.auto_aura)
 
+    def find_decomposed_files(self):
+        pattern = self.path + "." + str(self.env.mpi_processes) + ".*"
+        decomposed_files = glob.glob(pattern)
+        return sorted(decomposed_files)
+
     def ensure(self):
         if self.auto_decompose and self.env.mpi_processes > 1:
-            pattern = self.path + "." + str(self.env.mpi_processes) + ".*"
-            decomposed_files = glob.glob(pattern)
+            decomposed_files = self.find_decomposed_files()
             if not decomposed_files:
                 print("Decomposed file not found! Generating decomposition...")
                 # print(os.path.dirname(path))
                 self.partition(env.mpi_processes, os.path.dirname(self.path))
             else:
                 time_decomp = os.path.getmtime(decomposed_files[0])
-                time_original = os.path.getmtime(self.path)
 
-                if time_decomp < time_original:
-                    print("Decomposed file are older than original mesh file!\n"
-                        "Original:\t" + time.ctime(time_original) + "\nDecomposition:\t" + time.ctime(time_decomp) +
-                        ".\nGenerating decomposition...")
-                    self.partition(env.mpi_processes, os.path.dirname(self.path))
-                else:
-                    print("found files:\n")
-                    for f in decomposed_files:
-                        print("\t" + f)
+                if os.path.exists(self.path):
+                    time_original = os.path.getmtime(self.path)
+
+                    if time_decomp < time_original:
+                        print("Decomposed file are older than original mesh file!\n"
+                            "Original:\t" + time.ctime(time_original) + "\nDecomposition:\t" + time.ctime(time_decomp) +
+                            ".\nGenerating decomposition...")
+                        self.partition(env.mpi_processes, os.path.dirname(self.path))
+
+                print("found files:\n")
+                for f in decomposed_files:
+                    print("\t" + f)
 
     def partition(self, num_paritions, output_dir):
         args = f"-p {num_paritions} {os.path.basename(self.path)}"
         self.env.trilinos_decompo_exec.run_with_args(args, output_dir)
+
+    def unify(self):
+        decomposed_files = self.find_decomposed_files()
+
+        if decomposed_files:
+            file0 = decomposed_files[0]
+            output_dir = os.path.dirname(file0)
+            base_name = os.path.basename(file0)
+            args = f"-auto {base_name}"
+            self.env.trilinos_epu_exec.run_with_args(args, output_dir)
+
+
 
 class DirichletBC(yaml.YAMLObject):
     yaml_tag = u'!DirichletBC'
@@ -179,6 +213,10 @@ class DirichletBC(yaml.YAMLObject):
         self.name = name
         self.value= value
         self.var = var
+
+    def clone(self):
+        c = DirichletBC(self.name, self.value, self.var)
+        return c
 
 
 class Var(yaml.YAMLObject):
@@ -189,6 +227,9 @@ class Var(yaml.YAMLObject):
         self.n_components = n_components
         self.order = order
 
+    def clone(self):
+        c = Var(self.name, self.n_components, self.order)
+        return c
 
 class FunctionSpace(yaml.YAMLObject):
     yaml_tag = u'!FunctionSpace'
@@ -198,8 +239,14 @@ class FunctionSpace(yaml.YAMLObject):
         self.variables = variables
         self.boundary_conditions = boundary_conditions
 
+    def clone(self):
+        c = FunctionSpace(mesh.clone(), copy.deepcopy(variables), copy.deepcopy(boundary_conditions))
+
     def ensure(self):
         self.mesh.ensure()
+
+    # def unify(self):
+    #     self.mesh.unify()
 
 class FEProblem(yaml.YAMLObject):
     yaml_tag = u'!FEProblem'
@@ -227,6 +274,9 @@ class NLSolve(yaml.YAMLObject):
         args = f"@file {self.input_file}"
         self.executable.run_with_args(args)
 
+        out_db = Mesh(self.space.mesh.env, self.problem.output_path)
+        out_db.unify()
+
 
 class ObstacleSimulation(yaml.YAMLObject):
     yaml_tag = u'!ObstacleSimulation'
@@ -253,6 +303,9 @@ class ObstacleSimulation(yaml.YAMLObject):
         self.generate_YAML()
         args = f"@file {self.input_file}"
         self.executable.run_with_args(args)
+
+        out_db = Mesh(self.space.mesh.env, self.output_path)
+        out_db.unify()
 
 class Material(yaml.YAMLObject):
     yaml_tag = u'!Material'
@@ -385,6 +438,8 @@ class FSI:
         implitic_obstacle_db = workspace_dir + '/distance.e'
         implitic_obstacle_result_db = workspace_dir + '/contained_solid.e'
         obstacle_at_rest_result_db = workspace_dir + '/obstacle_at_rest.e'
+        nonlinear_obstacle_at_rest_result_db = workspace_dir + '/nonlinear_obstacle_at_rest.e'
+
         obstacle_mesh = Mesh(env, implitic_obstacle_db)
 
         #################################################################
@@ -435,12 +490,31 @@ class FSI:
         dummy_material.set_shear_modulus(0.2)
         dummy_material.set_first_lame_parameter(0.2)
 
-        step3_sim = ObstacleSimulation(
-            env, solid_fs, dummy_material, [], MeshObstacle(fluid_mesh),
-            ObstacleSolver(MPRGP(), 30, 30), obstacle_at_rest_result_db)
+        solid_fs_3 = solid_fs.clone()
+        solid_fs_3.read_state = True
+        solid_fs_3.mesh.path = implitic_obstacle_result_db
 
+        step3_sim = ObstacleSimulation(
+            env, solid_fs_3, dummy_material, [], MeshObstacle(fluid_mesh),
+            ObstacleSolver(MPRGP(1e-14), 10, 10), obstacle_at_rest_result_db)
 
         #########################################################
+
+        elastic_material = CompressibleNeoHookean(0)
+        elastic_material.set_young_modulus(9.174e6)
+        elastic_material.set_poisson_ratio(0.4)
+
+        solid_fs_3 = solid_fs.clone()
+        solid_fs_4.read_state = True
+        solid_fs_4.mesh.path = obstacle_at_rest_result_db
+
+        step4_sim = ObstacleSimulation(
+            env, solid_fs_4, elastic_material, [], MeshObstacle(fluid_mesh),
+            ObstacleSolver(MPRGP(1e-14), 10, 10), nonlinear_obstacle_at_rest_result_db)
+
+        #########################################################
+
+
         self.steps = [step1_sim, step2_sim, step3_sim]
 
     def run_step(self, step_num):
