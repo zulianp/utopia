@@ -150,12 +150,10 @@ class Mesh(yaml.YAMLObject):
         self.auto_decompose = auto_decompose
 
     def clone(self):
-        c = Mesh()
+        c = Mesh(self.env, self.path, self.auto_decompose)
         c.type = self.type;
-        c.path = self.path;
         c.auto_aura = self.auto_aura;
         c.env = self.env;
-        c.auto_decompose = self.auto_decompose;
         return c
 
     def __repr__(self):
@@ -238,9 +236,12 @@ class FunctionSpace(yaml.YAMLObject):
         self.mesh = mesh
         self.variables = variables
         self.boundary_conditions = boundary_conditions
+        self.read_state = False
 
     def clone(self):
-        c = FunctionSpace(mesh.clone(), copy.deepcopy(variables), copy.deepcopy(boundary_conditions))
+        c = FunctionSpace(self.mesh.clone(), copy.deepcopy(self.variables), copy.deepcopy(self.boundary_conditions))
+        c.read_state = self.read_state
+        return c
 
     def ensure(self):
         self.mesh.ensure()
@@ -490,6 +491,7 @@ class FSI:
         dummy_material.set_shear_modulus(0.2)
         dummy_material.set_first_lame_parameter(0.2)
 
+        # Clone the space, since we are changing its content
         solid_fs_3 = solid_fs.clone()
         solid_fs_3.read_state = True
         solid_fs_3.mesh.path = implitic_obstacle_result_db
@@ -504,7 +506,8 @@ class FSI:
         elastic_material.set_young_modulus(9.174e6)
         elastic_material.set_poisson_ratio(0.4)
 
-        solid_fs_3 = solid_fs.clone()
+        # Clone the space, since we are changing its content
+        solid_fs_4 = solid_fs.clone()
         solid_fs_4.read_state = True
         solid_fs_4.mesh.path = obstacle_at_rest_result_db
 
@@ -514,8 +517,7 @@ class FSI:
 
         #########################################################
 
-
-        self.steps = [step1_sim, step2_sim, step3_sim]
+        self.steps = [step1_sim, step2_sim, step3_sim, step4_sim]
 
     def run_step(self, step_num):
         self.steps[step_num].run()
