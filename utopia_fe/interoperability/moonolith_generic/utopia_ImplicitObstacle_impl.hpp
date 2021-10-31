@@ -33,6 +33,7 @@ namespace utopia {
         bool shift_field{false};
         bool volume_to_surface{false};
         bool has_covering{false};
+        bool debug_{false};
         Scalar field_rescale{1.0};
         Scalar field_offset{0.0};
     };
@@ -65,6 +66,7 @@ namespace utopia {
         in.get("field_offset", impl_->field_offset);
         in.get("volume_to_surface", impl_->volume_to_surface);
         in.get("has_covering", impl_->has_covering);
+        in.get("debug", impl_->debug_);
 
         if (impl_->shift_field) {
             Scalar min_dd = min(impl_->domain_distance->data());
@@ -90,7 +92,7 @@ namespace utopia {
         impl_->domain_gradients->data() *= -1;
 
         // Comment me out
-        {
+        if (impl_->debug_) {
             utopia::out() << "n_var: " << impl_->domain->n_var() << " "
                           << "n_dofs: " << impl_->domain->n_dofs() << " n_nodes: " << impl_->domain->mesh().n_nodes()
                           << " tensor_size: " << impl_->domain_gradients->tensor_size() << " "
