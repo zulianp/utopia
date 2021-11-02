@@ -14,7 +14,6 @@ try:
 except ImportError:
     from yaml import Loader, Dumper
 
-
 class Newton(yaml.YAMLObject):
     yaml_tag = u'!Newton'
     def __init__(self, linear_solver, max_it = 40, verbose = True):
@@ -35,6 +34,13 @@ class LinearSolver(yaml.YAMLObject):
     def set_ksp_type(self, ksp_type):
         self.ksp_type = ksp_type
 
+class AMG(LinearSolver):
+    yaml_tag = u'!AMG'
+    def __init__(self, verbose = False):
+        super().__init__("petsc", "ksp", verbose)
+        self.set_pc_type("hypre")
+        self.set_ksp_type("gmres")
+
 class BDDLinearSolver(LinearSolver):
     yaml_tag = u'!LinearSolver'
 
@@ -48,17 +54,12 @@ class BDDLinearSolver(LinearSolver):
         self.inner_solver.max_it = max_it
         self.max_it = max_it
 
-
 class QPSolver(yaml.YAMLObject):
     yaml_tag = u'!QPSolver'
     def __init__(self, type):
         self.type = type
         self.backend = "any"
         self.verbose = True
-
-    # def __repr__(self):
-    #     return "%s(name=%r,backend=%r)" % (
-    #         self.__class__.__name__, self.name, self.backend)
 
 class MPRGP(QPSolver):
     yaml_tag = u'!MPRGP'
@@ -67,15 +68,6 @@ class MPRGP(QPSolver):
         self.backend = 'any'
         self.atol = atol
 
-    # def __repr__(self):
-    #     return "%s(name=%r)" % (
-    #         self.__class__.__name__, self.name)
-
-
-    # verbose: true
-    # max_it: 20
-    # atol: 0.0001
-    # max_constraints_iterations: 30
 class ObstacleSolver(yaml.YAMLObject):
     yaml_tag = u'!ObstacleSolver'
 
@@ -86,7 +78,6 @@ class ObstacleSolver(yaml.YAMLObject):
         self.atol = atol
         self.verbose = verbose
 
-
 class Executable(yaml.YAMLObject):
     yaml_tag = u'!Executable'
     def __init__(self, name, mpi_processes = 1, launch_cmd = "mpiexec"):
@@ -96,10 +87,6 @@ class Executable(yaml.YAMLObject):
         self.verbose = True
         self.mpi_processes = mpi_processes
         self.launch_cmd = launch_cmd
-
-    # def __repr__(self):
-    #     return "%s(name=%r,path=%r)" % (
-    #         self.__class__.__name__, self.name, self.path)
 
     def find_path(self):
         path = os.environ.get(self.name)
@@ -132,7 +119,6 @@ class Executable(yaml.YAMLObject):
 
     def describe(self):
         console.print("Using executable: %s=%s" % (self.name, self.path))
-
 
 class Env(yaml.YAMLObject):
     """Env"""
@@ -180,7 +166,6 @@ class Env(yaml.YAMLObject):
 
 
         console.print("MPI processes: " + str(mpi_processes))
-
 
 class Mesh(yaml.YAMLObject):
     yaml_tag = u'!Mesh'
@@ -245,8 +230,6 @@ class Mesh(yaml.YAMLObject):
             args = f"-auto {base_name}"
             self.env.trilinos_epu_exec.run_with_args(args, output_dir)
 
-
-
 class DirichletBC(yaml.YAMLObject):
     yaml_tag = u'!DirichletBC'
 
@@ -258,7 +241,6 @@ class DirichletBC(yaml.YAMLObject):
     def clone(self):
         c = DirichletBC(self.name, self.value, self.var)
         return c
-
 
 class Var(yaml.YAMLObject):
     yaml_tag = u'!Var'
@@ -288,9 +270,6 @@ class FunctionSpace(yaml.YAMLObject):
 
     def ensure(self):
         self.mesh.ensure()
-
-    # def unify(self):
-    #     self.mesh.unify()
 
 class FEProblem(yaml.YAMLObject):
     yaml_tag = u'!FEProblem'
@@ -418,8 +397,9 @@ class CompressibleNeoHookean(ElasticMaterial):
 class Assembly(yaml.YAMLObject):
     yaml_tag = u'!Assembly'
 
-    def __init__(self, material, forcing_functions: []):
+    def __init__(self, material, forcing_functions: [], debug = True):
         self.material = material
+        self.debug = debug
 
         if(len(forcing_functions) != 0):
             self.forcing_functions = forcing_functions
@@ -484,9 +464,6 @@ class BarrierProblem(yaml.YAMLObject):
         self.zero = 1e-20
         self.allow_projection = True
 
-
-
-
 class BarrierObstacleSimulation(NLSolve):
     yaml_tag = u'!BarrierObstacleSimulation'
 
@@ -496,15 +473,14 @@ class BarrierObstacleSimulation(NLSolve):
         problem =  BarrierProblem(space, material, mass, forcing_functions, obstacle, time, output_path)
         super().__init__(env, space, problem, solver)
 
-
 class MeshObstacle(yaml.YAMLObject):
     yaml_tag = u'!MeshObstacle'
 
     def __init__(self, path):
         self.type = 'file'
         self.path = path
-        self.gap_negative_bound = -5.0e-04
-        self.gap_positive_bound = 5.e-4
+        self.gap_negative_bound = -1.0e-04
+        self.gap_positive_bound = 1.e-4
         self.invert_face_orientation = True
 
 class DistanceField(yaml.YAMLObject):
@@ -524,12 +500,6 @@ class ImplicitObstacle(yaml.YAMLObject):
         self.field_rescale = 1
         self.field_offset: -2e-5
         self.export_tensor = False
-
-
-
-    # def __repr__(self):
-    #     return "%s(name=%r,type=%r,path=%r)" % (
-    #         self.__class__.__name__, self.name, self.type, self.name)
 
 class FSIInit:
     def __init__(self, env, solid_mesh, fluid_mesh, workspace_dir):
@@ -630,9 +600,12 @@ class FSIInit:
         solid_fs_4.read_state = True
         solid_fs_4.mesh.path = nonlinear_obstacle_at_rest_result_db
 
+        # linear_solver = BDDLinearSolver(200, True)
+        linear_solver = AMG(False)
+
         step4_sim = BarrierObstacleSimulation(env, solid_fs_4,
                  elastic_material, mass, [],
-                 MeshObstacle(fluid_mesh), Time(1e-4, 1), Newton(BDDLinearSolver(200, True), 20), fsi_ready_db)
+                 MeshObstacle(fluid_mesh), Time(1e-4, 1), Newton(linear_solver, 20), fsi_ready_db)
 
 
         #########################################################
@@ -642,7 +615,7 @@ class FSIInit:
         solid_fs_test.read_state = True
         solid_fs_test.mesh.path = fsi_ready_db
 
-        force = DomainForcingFunction(-1e2, 3, 1)
+        force = DomainForcingFunction(-1e3, 3, 1)
         force.density = mass.density
         forcing_functions = [force]
 
@@ -656,7 +629,7 @@ class FSIInit:
 
         self.test = BarrierObstacleSimulation(env, solid_fs_test,
          elastic_material, mass, forcing_functions,
-         MeshObstacle(fluid_mesh), Time(1e-4, 100), Newton(BDDLinearSolver(100, True), 20), solid_test_db)
+         MeshObstacle(fluid_mesh), Time(1e-4, 100), Newton(linear_solver, 20), solid_test_db)
 
         self.solid = solid_fs_test
         self.fluid_mesh_path = fluid_mesh
@@ -694,7 +667,7 @@ class Launcher:
         fluid_mesh = "/Users/zulianp/Desktop/in_the_cloud/owncloud_HSLU/Patrick/discharge_2/fluid_halfDomain_155K.exo"
         young_modulus = 9.174e6
         poisson_ratio = 0.4
-        barrier_parameter = 1e-10
+        barrier_parameter = 1e-8
         dt = 1e-5
         mass_density = 998
 
