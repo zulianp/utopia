@@ -360,6 +360,14 @@ class Material(yaml.YAMLObject):
         self.type = type
         self.quadrature_order = quadrature_order
 
+class Mass(Material):
+    yaml_tag = u'!Mass'
+    def __init__(self, density, n_components, quadrature_order = 2):
+        super().__init__("Mass", quadrature_order)
+        self.density = density
+        self.n_components = n_components
+
+
 class LaplaceOperator(Material):
     yaml_tag = u'!LaplaceOperator'
 
@@ -452,13 +460,15 @@ class Time(yaml.YAMLObject):
 class BarrierProblem(yaml.YAMLObject):
     yaml_tag = u'!BarrierProblem'
 
-    def __init__(self, space,  material, forcing_functions, obstacle, time, output_path):
+    def __init__(self, space,  material, mass, forcing_functions, obstacle, time, output_path):
         self.obstacle = obstacle
         self.output_path = output_path
         self.time = time
 
         self.function_type = 'LogBarrierWithSelection'
         self.assembly = Assembly(material, forcing_functions)
+        self.mass = mass
+
         self.infinity = 5.e-4
         self.trivial_obstacle = False
         self.barrier_parameter = 1e-16
@@ -471,13 +481,13 @@ class BarrierProblem(yaml.YAMLObject):
 
 
 
-class BarrierTest(NLSolve):
-    yaml_tag = u'!BarrierTest'
+class BarrierObstacleSimulation(NLSolve):
+    yaml_tag = u'!BarrierObstacleSimulation'
 
-    def __init__(self, env, space,  material, forcing_functions, obstacle, time, solver, output_path):
+    def __init__(self, env, space,  material, mass, forcing_functions, obstacle, time, solver, output_path):
         self.integrator = 'ObstacleVelocityNewmark'
 
-        problem =  BarrierProblem(space, material, forcing_functions, obstacle, time, output_path)
+        problem =  BarrierProblem(space, material, mass, forcing_functions, obstacle, time, output_path)
         super().__init__(env, space, problem, solver)
 
 
@@ -524,6 +534,7 @@ class FSIInit:
         implitic_obstacle_result_db = workspace_dir + '/contained_solid.e'
         obstacle_at_rest_result_db = workspace_dir + '/obstacle_at_rest.e'
         nonlinear_obstacle_at_rest_result_db = workspace_dir + '/nonlinear_obstacle_at_rest.e'
+        fsi_ready_db = workspace_dir + '/solid.e'
         solid_test_db = workspace_dir + '/solid_test.e'
 
         obstacle_mesh = Mesh(env, implitic_obstacle_db)
@@ -606,20 +617,35 @@ class FSIInit:
             ObstacleSolver(MPRGP(1e-14), 10, 10), nonlinear_obstacle_at_rest_result_db)
 
         #########################################################
+        ### Step 4
+        mass = Mass(1, 3)
 
-        self.steps = [step0_sim, step1_sim, step2_sim, step3_sim]
+        solid_fs_4 = solid_fs.clone()
+        solid_fs_4.read_state = True
+        solid_fs_4.mesh.path = nonlinear_obstacle_at_rest_result_db
+
+        step4_sim = BarrierObstacleSimulation(env, solid_fs_4,
+                 elastic_material, mass, [],
+                 MeshObstacle(fluid_mesh), Time(1, 1), Newton(BDDLinearSolver(20, True), 20), fsi_ready_db)
+
 
         #########################################################
         ### Test (cheaper than FSI for testing barrier)
 
-        test_elastic_material = elastic_material
         solid_fs_test = solid_fs.clone()
         solid_fs_test.read_state = True
-        solid_fs_test.mesh.path = nonlinear_obstacle_at_rest_result_db
+        solid_fs_test.mesh.path = fsi_ready_db
         forcing_functions = [DomainForcingFunction(-1e2, 3, 1)]
 
-        self.test = BarrierTest(env, solid_fs_test,
-         test_elastic_material, forcing_functions,
+        #########################################################
+        ## Store states for outside modification
+
+        self.steps = [step0_sim, step1_sim, step2_sim, step3_sim, step4_sim]
+
+        self.mass = mass
+
+        self.test = BarrierObstacleSimulation(env, solid_fs_test,
+         elastic_material, mass, forcing_functions,
          MeshObstacle(fluid_mesh), Time(1e-4, 100), Newton(BDDLinearSolver(20, True), 20), solid_test_db)
 
         self.solid = solid_fs_test
@@ -660,6 +686,7 @@ class Launcher:
         poisson_ratio = 0.4
         barrier_parameter = 1e-10
         dt = 1e-5
+        mass_density = 998
 
         # Outputs
         workspace_dir = './workspace'
@@ -673,7 +700,7 @@ class Launcher:
             opts, args = getopt.getopt(
                 argv,"hs:f:w:p:r:gat",
                 ["help", "solid=", "fluid=", "workspace=", "processes=", "run_step=", "generate", "all", "test",
-                  "young_modulus=", "poisson_ratio=", "barrier_parameter=", "dt="
+                  "young_modulus=", "poisson_ratio=", "barrier_parameter=", "dt=", "mass="
                 ])
         except getopt.GetoptError:
             print('obstacle.py -s <solid_mesh> -f <fluid_mesh>')
@@ -706,6 +733,8 @@ class Launcher:
                barrier_parameter = float(arg)
             elif opt in ("--dt"):
                dt = float(arg)
+            elif opt in ("--mass"):
+               mass_density = float(arg)
 
 
         env = Env(mpi_processes)
@@ -716,6 +745,7 @@ class Launcher:
 
         fsi.elastic_material.set_young_modulus(young_modulus)
         fsi.elastic_material.set_poisson_ratio(poisson_ratio)
+        fsi.mass.density = mass_density
 
         #######################################################################
         # Play with parameters in barrier for the test

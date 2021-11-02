@@ -10,11 +10,15 @@
 
 #include "utopia_ImplicitEulerIntegrator.hpp"
 #include "utopia_NewmarkIntegrator.hpp"
-#include "utopia_ObstacleNewmark.hpp"
-#include "utopia_ObstacleVelocityNewmark.hpp"
+
 #include "utopia_SemiGeometricMultigridNew.hpp"
 #include "utopia_VelocityImplicitEulerIntegrator.hpp"
 #include "utopia_VelocityNewmarkIntegrator.hpp"
+
+#ifndef UTOPIA_WITH_MARS
+#include "utopia_ObstacleNewmark.hpp"
+#include "utopia_ObstacleVelocityNewmark.hpp"
+#endif  // UTOPIA_WITH_MARS
 
 #include "utopia_NLSolve.hpp"
 
@@ -31,8 +35,10 @@ namespace utopia {
         using NewmarkIntegrator_t = utopia::NewmarkIntegrator<FunctionSpace>;
         using VelocityNewmarkIntegratorIntegrator_t = utopia::VelocityNewmarkIntegrator<FunctionSpace>;
 
+#ifndef UTOPIA_WITH_MARS
         using ObstacleNewmark_t = utopia::ObstacleNewmark<FunctionSpace>;
         using ObstacleVelocityNewmark_t = utopia::ObstacleVelocityNewmark<FunctionSpace>;
+#endif  // UTOPIA_WITH_MARS
 
         using TimeDependentFunction_t = utopia::TimeDependentFunction<FunctionSpace>;
         using Multgrid_t = utopia::SemiGeometricMultigridNew<FunctionSpace>;
@@ -57,6 +63,8 @@ namespace utopia {
             // in.require("space", *space_);
 
             in.require("space", [&](Input &in) {
+
+#ifndef UTOPIA_WITH_MARS
                 bool read_state = false;
                 in.get("read_state", read_state);
 
@@ -69,7 +77,9 @@ namespace utopia {
 
                     nlsolve_.set_solution(x);
 
-                } else {
+                } else
+#endif  // UTOPIA_WITH_MARS
+                {
                     space_->read(in);
                 }
             });
@@ -99,13 +109,17 @@ namespace utopia {
             } else if (integrator == "VelocityNewmark") {
                 time_dependent_function = utopia::make_unique<VelocityNewmarkIntegratorIntegrator_t>(problem);
                 function = time_dependent_function;
-            } else if (integrator == "ObstacleVelocityNewmark") {
+            }
+#ifndef UTOPIA_WITH_MARS
+            else if (integrator == "ObstacleVelocityNewmark") {
                 time_dependent_function = utopia::make_unique<ObstacleVelocityNewmark_t>(problem);
                 function = time_dependent_function;
             } else if (integrator == "ObstacleNewmark") {
                 time_dependent_function = utopia::make_unique<ObstacleNewmark_t>(problem);
                 function = time_dependent_function;
-            } else {
+            }
+#endif  // UTOPIA_WITH_MARS
+            else {
                 function = problem;
             }
 
