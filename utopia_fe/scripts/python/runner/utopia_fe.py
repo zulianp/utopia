@@ -367,6 +367,7 @@ class Mass(Material):
         self.density = density
         self.n_components = n_components
         self.lumped = True
+        self.verbose = True
 
 
 class LaplaceOperator(Material):
@@ -406,11 +407,13 @@ class LinearElasticity(ElasticMaterial):
     yaml_tag = u'!LinearElasticity'
     def __init__(self, quadrature_order = 0):
         super().__init__("LinearElasticity", quadrature_order)
+        self.verbose = True
 
 class CompressibleNeoHookean(ElasticMaterial):
     yaml_tag = u'!CompressibleNeoHookean'
     def __init__(self, quadrature_order = 0):
         super().__init__("NeoHookean", quadrature_order)
+        self.verbose = True
 
 class Assembly(yaml.YAMLObject):
     yaml_tag = u'!Assembly'
@@ -429,6 +432,8 @@ class DomainForcingFunction(yaml.YAMLObject):
         self.n_components = n_components
         self.component = component
         self.type = 'value'
+        self.density = 1
+        self.verbose = True
 
 
 class Problem(yaml.YAMLObject):
@@ -470,7 +475,7 @@ class BarrierProblem(yaml.YAMLObject):
         self.assembly = Assembly(material, forcing_functions)
         self.mass = Assembly(mass, [])
 
-        self.infinity = 5.e-4
+        self.infinity = 5.e-3
         self.trivial_obstacle = False
         self.barrier_parameter = 1e-16
         self.barrier_parameter_shrinking_factor = 0.5
@@ -619,7 +624,7 @@ class FSIInit:
 
         #########################################################
         ### Step 4
-        mass = Mass(1, 3)
+        mass = Mass(998, 3)
 
         solid_fs_4 = solid_fs.clone()
         solid_fs_4.read_state = True
@@ -627,7 +632,7 @@ class FSIInit:
 
         step4_sim = BarrierObstacleSimulation(env, solid_fs_4,
                  elastic_material, mass, [],
-                 MeshObstacle(fluid_mesh), Time(1, 1), Newton(BDDLinearSolver(20, True), 20), fsi_ready_db)
+                 MeshObstacle(fluid_mesh), Time(1e-4, 1), Newton(BDDLinearSolver(200, True), 20), fsi_ready_db)
 
 
         #########################################################
@@ -636,7 +641,10 @@ class FSIInit:
         solid_fs_test = solid_fs.clone()
         solid_fs_test.read_state = True
         solid_fs_test.mesh.path = fsi_ready_db
-        forcing_functions = [DomainForcingFunction(-1e2, 3, 1)]
+
+        force = DomainForcingFunction(-1e2, 3, 1)
+        force.density = mass.density
+        forcing_functions = [force]
 
         #########################################################
         ## Store states for outside modification
@@ -644,10 +652,11 @@ class FSIInit:
         self.steps = [step0_sim, step1_sim, step2_sim, step3_sim, step4_sim]
 
         self.mass = mass
+        self.force = force
 
         self.test = BarrierObstacleSimulation(env, solid_fs_test,
          elastic_material, mass, forcing_functions,
-         MeshObstacle(fluid_mesh), Time(1e-4, 100), Newton(BDDLinearSolver(20, True), 20), solid_test_db)
+         MeshObstacle(fluid_mesh), Time(1e-4, 100), Newton(BDDLinearSolver(100, True), 20), solid_test_db)
 
         self.solid = solid_fs_test
         self.fluid_mesh_path = fluid_mesh
@@ -742,23 +751,18 @@ class Launcher:
         fsi = FSIInit(env, solid_mesh, fluid_mesh, workspace_dir)
 
         #######################################################################
-        # Change fundamental parmeters
+        # Material parmeters
 
         fsi.elastic_material.set_young_modulus(young_modulus)
         fsi.elastic_material.set_poisson_ratio(poisson_ratio)
         fsi.mass.density = mass_density
+        fsi.force.density = mass_density
 
         #######################################################################
-        # Play with parameters in barrier for the test
-        fsi.test.problem.infinity = 5.e-3
-        fsi.test.problem.trivial_obstacle = False
+        # Barrier parameters
+
         fsi.test.problem.barrier_parameter = barrier_parameter
-        fsi.test.problem.barrier_parameter_shrinking_factor = 0.5
         fsi.test.problem.min_barrier_parameter = barrier_parameter
-        fsi.test.problem.soft_boundary = 1e-12
-        fsi.test.problem.zero = 1e-20
-        fsi.test.problem.time.delta = dt
-        fsi.test.problem.allow_projection = True
         #######################################################################
 
         self.fsi = fsi
