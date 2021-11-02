@@ -16,10 +16,11 @@ except ImportError:
 
 class Newton(yaml.YAMLObject):
     yaml_tag = u'!Newton'
-    def __init__(self, linear_solver, max_it = 40, verbose = True):
+    def __init__(self, linear_solver, max_it = 40, atol = 1e-8, verbose = True):
         self.linear_solver = linear_solver
         self.verbose = verbose
         self.max_it = max_it
+        self.atol = atol
 
 class LinearSolver(yaml.YAMLObject):
     yaml_tag = u'!LinearSolver'
@@ -67,6 +68,22 @@ class MPRGP(QPSolver):
         super().__init__("mprgp")
         self.backend = 'any'
         self.atol = atol
+
+class BarrierQPSolver(QPSolver):
+    yaml_tag = u'!BarrierQPSolver'
+    def __init__(self, atol=1e-11):
+        super().__init__("logbarrier")
+        self.backend = 'any'
+        self.function_type = 'LogBarrierFunctionWithSelection'
+        self.atol = atol
+        self.infinity = 5.e-3
+        self.trivial_obstacle = False
+        self.barrier_parameter = 1e-9
+        self.barrier_parameter_shrinking_factor = 0.5
+        self.min_barrier_parameter = 1e-9
+        self.soft_boundary = 1e-16
+        self.zero = 1e-20
+        self.allow_projection = True
 
 class ObstacleSolver(yaml.YAMLObject):
     yaml_tag = u'!ObstacleSolver'
@@ -457,10 +474,10 @@ class BarrierProblem(yaml.YAMLObject):
 
         self.infinity = 5.e-3
         self.trivial_obstacle = False
-        self.barrier_parameter = 1e-16
+        self.barrier_parameter = 1e-9
         self.barrier_parameter_shrinking_factor = 0.5
-        self.min_barrier_parameter = 1e-16
-        self.soft_boundary = 1e-12
+        self.min_barrier_parameter = 1e-9
+        self.soft_boundary = 1e-16
         self.zero = 1e-20
         self.allow_projection = True
 
@@ -602,10 +619,17 @@ class FSIInit:
 
         # linear_solver = BDDLinearSolver(200, True)
         linear_solver = AMG(False)
+        newton = Newton(linear_solver, 50, 1e-10)
 
-        step4_sim = BarrierObstacleSimulation(env, solid_fs_4,
-                 elastic_material, mass, [],
-                 MeshObstacle(fluid_mesh), Time(1e-4, 1), Newton(linear_solver, 20), fsi_ready_db)
+        # step4_sim = BarrierObstacleSimulation(env, solid_fs_4,
+        #          elastic_material, mass, [],
+        #          MeshObstacle(fluid_mesh), Time(1, 1), newton, fsi_ready_db)
+
+        barrier_solver = BarrierQPSolver(1e-14)
+
+        step4_sim = ObstacleSimulation(
+            env, solid_fs_4, elastic_material, [], MeshObstacle(fluid_mesh),
+            ObstacleSolver(barrier_solver, 10, 10), fsi_ready_db)
 
 
         #########################################################
@@ -633,6 +657,7 @@ class FSIInit:
 
         self.solid = solid_fs_test
         self.fluid_mesh_path = fluid_mesh
+        self.barrier_solver = barrier_solver
 
     def run_step(self, step_num):
         self.steps[step_num].run()
@@ -667,7 +692,7 @@ class Launcher:
         fluid_mesh = "/Users/zulianp/Desktop/in_the_cloud/owncloud_HSLU/Patrick/discharge_2/fluid_halfDomain_155K.exo"
         young_modulus = 9.174e6
         poisson_ratio = 0.4
-        barrier_parameter = 1e-8
+        barrier_parameter = 3e-9
         dt = 1e-5
         mass_density = 998
 
@@ -736,6 +761,9 @@ class Launcher:
 
         fsi.test.problem.barrier_parameter = barrier_parameter
         fsi.test.problem.min_barrier_parameter = barrier_parameter
+        fsi.barrier_solver.barrier_parameter = barrier_parameter
+        fsi.barrier_solver.min_barrier_parameter = barrier_parameter
+
         #######################################################################
 
         self.fsi = fsi
