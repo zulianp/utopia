@@ -366,6 +366,7 @@ class Mass(Material):
         super().__init__("Mass", quadrature_order)
         self.density = density
         self.n_components = n_components
+        self.lumped = True
 
 
 class LaplaceOperator(Material):
@@ -467,7 +468,7 @@ class BarrierProblem(yaml.YAMLObject):
 
         self.function_type = 'LogBarrierWithSelection'
         self.assembly = Assembly(material, forcing_functions)
-        self.mass = mass
+        self.mass = Assembly(mass, [])
 
         self.infinity = 5.e-4
         self.trivial_obstacle = False

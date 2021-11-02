@@ -52,6 +52,12 @@ namespace utopia {
 
         void FunctionSpace::read(Input &in) { impl_->read(in); }
 
+        bool FunctionSpace::read_with_state(Input &in, Field<FunctionSpace> &val) {
+            assert(false);
+            Utopia::Abort("IMPLEMENT ME!");
+            return false;
+        }
+
         const FunctionSpace::Mesh &FunctionSpace::mesh() const {
             assert(impl_->mesh);
             return *impl_->mesh;

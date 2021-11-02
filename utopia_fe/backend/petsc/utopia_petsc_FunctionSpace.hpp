@@ -34,6 +34,7 @@ namespace utopia {
             ~FunctionSpace();
 
             void read(Input &in) override;
+            bool read_with_state(Input &in, Field<FunctionSpace> &val);
 
             //////////////////////////////////////////
 

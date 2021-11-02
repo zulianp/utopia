@@ -15,10 +15,17 @@
 #include "utopia_VelocityImplicitEulerIntegrator.hpp"
 #include "utopia_VelocityNewmarkIntegrator.hpp"
 
+// FIXME
 #ifndef UTOPIA_WITH_MARS
+#ifndef UTOPIA_WITH_PETSCDM
+#define UTOPIA_ENABLE_NC_METHODS
+#endif
+#endif
+
+#ifndef UTOPIA_ENABLE_NC_METHODS
 #include "utopia_ObstacleNewmark.hpp"
 #include "utopia_ObstacleVelocityNewmark.hpp"
-#endif  // UTOPIA_WITH_MARS
+#endif  // UTOPIA_ENABLE_NC_METHODS
 
 #include "utopia_NLSolve.hpp"
 
@@ -35,10 +42,10 @@ namespace utopia {
         using NewmarkIntegrator_t = utopia::NewmarkIntegrator<FunctionSpace>;
         using VelocityNewmarkIntegratorIntegrator_t = utopia::VelocityNewmarkIntegrator<FunctionSpace>;
 
-#ifndef UTOPIA_WITH_MARS
+#ifndef UTOPIA_ENABLE_NC_METHODS
         using ObstacleNewmark_t = utopia::ObstacleNewmark<FunctionSpace>;
         using ObstacleVelocityNewmark_t = utopia::ObstacleVelocityNewmark<FunctionSpace>;
-#endif  // UTOPIA_WITH_MARS
+#endif  // UTOPIA_ENABLE_NC_METHODS
 
         using TimeDependentFunction_t = utopia::TimeDependentFunction<FunctionSpace>;
         using Multgrid_t = utopia::SemiGeometricMultigridNew<FunctionSpace>;
@@ -64,7 +71,7 @@ namespace utopia {
 
             in.require("space", [&](Input &in) {
 
-#ifndef UTOPIA_WITH_MARS
+#ifndef UTOPIA_ENABLE_NC_METHODS
                 bool read_state = false;
                 in.get("read_state", read_state);
 
@@ -78,7 +85,7 @@ namespace utopia {
                     nlsolve_.set_solution(x);
 
                 } else
-#endif  // UTOPIA_WITH_MARS
+#endif  // UTOPIA_ENABLE_NC_METHODS
                 {
                     space_->read(in);
                 }
@@ -110,7 +117,7 @@ namespace utopia {
                 time_dependent_function = utopia::make_unique<VelocityNewmarkIntegratorIntegrator_t>(problem);
                 function = time_dependent_function;
             }
-#ifndef UTOPIA_WITH_MARS
+#ifndef UTOPIA_ENABLE_NC_METHODS
             else if (integrator == "ObstacleVelocityNewmark") {
                 time_dependent_function = utopia::make_unique<ObstacleVelocityNewmark_t>(problem);
                 function = time_dependent_function;
@@ -118,7 +125,7 @@ namespace utopia {
                 time_dependent_function = utopia::make_unique<ObstacleNewmark_t>(problem);
                 function = time_dependent_function;
             }
-#endif  // UTOPIA_WITH_MARS
+#endif  // UTOPIA_ENABLE_NC_METHODS
             else {
                 function = problem;
             }
@@ -128,8 +135,7 @@ namespace utopia {
             bool use_mg = false;
             in.get("use_mg", use_mg);
 
-#ifndef UTOPIA_WITH_MARS  // FIXME
-
+#ifndef UTOPIA_ENABLE_NC_METHODS  // FIXME
             if (use_mg) {
                 auto mg = std::make_shared<SemiGeometricMultigridNew<FunctionSpace>>();
                 mg->set_fine_space(space_);

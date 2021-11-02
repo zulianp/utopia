@@ -24,6 +24,7 @@ namespace utopia {
                 return false;
             }
 
+            assert(this->mass_matrix());
             Scalar_t sum_mm = sum(*this->mass_matrix());
             has_zero_density_ = sum_mm == 0.0;
 
