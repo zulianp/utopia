@@ -190,10 +190,6 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("ObstacleNewmark::integrate_hessian");
         }
 
-        // bool hessian_and_gradient(const Vector_t &x, Matrix_t &H, Vector_t &g) const override {
-        //     return Super::hessian_and_gradient(x, H, g);
-        // }
-
         ////////////////////////////////////////////////////////////////////////////////
 
         const Vector_t &solution() const override { return this->x_old(); }

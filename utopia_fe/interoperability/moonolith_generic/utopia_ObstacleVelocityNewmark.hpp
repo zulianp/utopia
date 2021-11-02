@@ -206,7 +206,10 @@ namespace utopia {
             return true;
         }
 
-        void integrate_gradient(const Vector_t &x, Vector_t &g) const override { barrier_gradient(x, g); }
+        void integrate_gradient(const Vector_t &x, Vector_t &g) const override {
+            Super::integrate_gradient(x, g);
+            barrier_gradient(x, g);
+        }
 
         bool hessian(const Vector_t &velocity, Matrix_t &H) const override {
             Vector_t x;
