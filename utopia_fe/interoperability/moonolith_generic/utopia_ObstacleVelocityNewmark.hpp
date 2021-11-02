@@ -263,16 +263,6 @@ namespace utopia {
             return ok;
         }
 
-    private:
-        std::shared_ptr<IObstacle<FunctionSpace>> obstacle_;
-        std::shared_ptr<LogBarrierBase> barrier_;
-        bool debug_{false};
-        int debug_from_iteration_{0};
-        bool trivial_obstacle_{false};
-        bool enable_line_search_{false};
-
-        std::shared_ptr<LineSearchBoxProjection<Vector_t>> line_search_;
-
         bool project_x_onto_feasibile_region(Vector_t &x) const {
             bool ok = true;
 
@@ -299,6 +289,16 @@ namespace utopia {
 
             return ok;
         }
+
+    private:
+        std::shared_ptr<IObstacle<FunctionSpace>> obstacle_;
+        std::shared_ptr<LogBarrierBase> barrier_;
+        bool debug_{false};
+        int debug_from_iteration_{0};
+        bool trivial_obstacle_{false};
+        bool enable_line_search_{false};
+
+        std::shared_ptr<LineSearchBoxProjection<Vector_t>> line_search_;
 
         void update_x(const Vector_t &velocity, Vector_t &x) const {
             x = this->x_old();
