@@ -519,7 +519,7 @@ class ImplicitObstacle(yaml.YAMLObject):
         self.export_tensor = False
 
 class FSIInit:
-    def __init__(self, env, solid_mesh, fluid_mesh, workspace_dir):
+    def __init__(self, env, solid_mesh, fluid_mesh, workspace_dir, containement_iterations = 30):
         if not os.path.exists(workspace_dir):
             os.mkdir(workspace_dir)
 
@@ -567,14 +567,14 @@ class FSIInit:
         #########################################################
         ### Step 1
 
-        domain = DistanceField(
+        distance_field = DistanceField(
             obstacle_mesh, [
                 distance_var
             ])
 
         step1_sim = ObstacleSimulation(
-            env, solid_fs, VectorLaplaceOperator(), [], ImplicitObstacle(domain),
-            ObstacleSolver(MPRGP(), 30, 30), implitic_obstacle_result_db)
+            env, solid_fs, VectorLaplaceOperator(), [], ImplicitObstacle(distance_field),
+            ObstacleSolver(MPRGP(), 30, containement_iterations), implitic_obstacle_result_db)
 
         #########################################################
         ### Step 2
@@ -617,14 +617,6 @@ class FSIInit:
         solid_fs_4.read_state = True
         solid_fs_4.mesh.path = nonlinear_obstacle_at_rest_result_db
 
-        # linear_solver = BDDLinearSolver(200, True)
-        linear_solver = AMG(False)
-        newton = Newton(linear_solver, 50, 1e-10)
-
-        # step4_sim = BarrierObstacleSimulation(env, solid_fs_4,
-        #          elastic_material, mass, [],
-        #          MeshObstacle(fluid_mesh), Time(1, 1), newton, fsi_ready_db)
-
         barrier_solver = BarrierQPSolver(1e-14)
 
         step4_sim = ObstacleSimulation(
@@ -643,18 +635,20 @@ class FSIInit:
         force.density = mass.density
         forcing_functions = [force]
 
-        #########################################################
-        ## Store states for outside modification
+        # linear_solver = BDDLinearSolver(200, True)
+        linear_solver = AMG(False)
 
-        self.steps = [step0_sim, step1_sim, step2_sim, step3_sim, step4_sim]
-
-        self.mass = mass
-        self.force = force
-
-        self.test = BarrierObstacleSimulation(env, solid_fs_test,
+        test = BarrierObstacleSimulation(env, solid_fs_test,
          elastic_material, mass, forcing_functions,
          MeshObstacle(fluid_mesh), Time(1e-4, 100), Newton(linear_solver, 20), solid_test_db)
 
+        #########################################################
+        ## Store states for outside modification/manipulation
+
+        self.test = test
+        self.steps = [step0_sim, step1_sim, step2_sim, step3_sim, step4_sim]
+        self.mass = mass
+        self.force = force
         self.solid = solid_fs_test
         self.fluid_mesh_path = fluid_mesh
         self.barrier_solver = barrier_solver
@@ -687,32 +681,76 @@ class Launcher:
         self.fsi.test.run()
 
     def __init__(self, argv):
-        # Inputs
+        ###############################
+        # INPUT
+        ###############################
+
+        # Solid mesh db
         solid_mesh = "/Users/zulianp/Desktop/in_the_cloud/owncloud_HSLU/Patrick/discharge_2/struct_halfDomain_21K.exo"
+
+        # Fluid mesh db
         fluid_mesh = "/Users/zulianp/Desktop/in_the_cloud/owncloud_HSLU/Patrick/discharge_2/fluid_halfDomain_155K.exo"
+
+        # Young's modulus for the solid material
         young_modulus = 9.174e6
+
+        # Poisson's ratio
         poisson_ratio = 0.4
+
+        # Initial barrier parameter
         barrier_parameter = 3e-9
+
+        # Final barrier parameter, if 0 is set to barrier_parameter
+        min_barrier_parameter = 0
+
+
+        barrier_parameter_shrinking_factor = 0.5
+
+        # Number of containement iterations. The higher the mesh resolution the more iterations are necessary
+        containement_iterations = 30
+
+        # Number of MPI processes for computation
+        mpi_processes = 1
+
+        ## TEST PROBLEM
+        # Delta time for the test problem
         dt = 1e-5
         mass_density = 998
 
-        # Outputs
+
+        ###############################
+        # OUTPUT
+        ###############################
+
+        # Folder where all the outputs are saved
         workspace_dir = './workspace'
-        mpi_processes = 1
-        run_step = -1
+
+        # Generate YAML input-files
         generate_YAML = False
+
+        ## Run programs
+
+        # Run specific step [0, 4]
+        run_step = -1
+
+        # Run all steps
         run_all = False
+
+        # Run test-case
         run_test = False
 
         try:
             opts, args = getopt.getopt(
                 argv,"hs:f:w:p:r:gat",
                 ["help", "solid=", "fluid=", "workspace=", "processes=", "run_step=", "generate", "all", "test",
-                  "young_modulus=", "poisson_ratio=", "barrier_parameter=", "dt=", "mass="
+                  "young_modulus=", "poisson_ratio=", "barrier_parameter=", "min_barrier_parameter=", "dt=", "mass=", "containement_iterations=", "barrier_parameter_shrinking_factor="
                 ])
-        except getopt.GetoptError:
+
+        except getopt.GetoptError as err:
+            print(err)
             print('obstacle.py -s <solid_mesh> -f <fluid_mesh>')
             sys.exit(2)
+
         for opt, arg in opts:
             if opt in ('-h', '--help'):
                 print('obstacle.py -s <solid_mesh> -f <fluid_mesh>')
@@ -739,17 +777,23 @@ class Launcher:
                poisson_ratio = float(arg)
             elif opt in ("--barrier_parameter"):
                barrier_parameter = float(arg)
+            elif opt in ("--min_barrier_parameter"):
+               min_barrier_parameter = float(arg)
+            elif opt in ("--barrier_parameter_shrinking_factor"):
+               barrier_parameter_shrinking_factor = float(arg)
             elif opt in ("--dt"):
                dt = float(arg)
             elif opt in ("--mass"):
                mass_density = float(arg)
-
+            elif opt in ("--containement_iterations"):
+               containement_iterations = int(arg)
 
         env = Env(mpi_processes)
-        fsi = FSIInit(env, solid_mesh, fluid_mesh, workspace_dir)
+        fsi = FSIInit(env, solid_mesh, fluid_mesh, workspace_dir, containement_iterations)
 
         #######################################################################
         # Material parmeters
+        #######################################################################
 
         fsi.elastic_material.set_young_modulus(young_modulus)
         fsi.elastic_material.set_poisson_ratio(poisson_ratio)
@@ -758,11 +802,17 @@ class Launcher:
 
         #######################################################################
         # Barrier parameters
+        #######################################################################
+
+        if min_barrier_parameter == 0:
+            min_barrier_parameter = barrier_parameter
 
         fsi.test.problem.barrier_parameter = barrier_parameter
-        fsi.test.problem.min_barrier_parameter = barrier_parameter
+        fsi.test.problem.min_barrier_parameter = min_barrier_parameter
+        fsi.test.problem.barrier_parameter_shrinking_factor = barrier_parameter_shrinking_factor
         fsi.barrier_solver.barrier_parameter = barrier_parameter
-        fsi.barrier_solver.min_barrier_parameter = barrier_parameter
+        fsi.barrier_solver.min_barrier_parameter = min_barrier_parameter
+        fsi.barrier_solver.barrier_parameter_shrinking_factor = barrier_parameter_shrinking_factor
 
         #######################################################################
 
@@ -778,3 +828,8 @@ class Launcher:
 
         if run_test:
             self.test()
+
+
+if __name__ == '__main__':
+    # console.print(sys.argv[1:])
+    Launcher(sys.argv[1:])
