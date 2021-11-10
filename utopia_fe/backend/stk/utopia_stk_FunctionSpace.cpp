@@ -669,6 +669,72 @@ namespace utopia {
             set_zero_rows(m, constrains, diag_value);
         }
 
+        void FunctionSpace::overwrite_parts(const std::vector<std::string> &parts,
+                                            const std::vector<int> &components,
+                                            const Vector &source,
+                                            Vector &destination) const {
+            using Bucket_t = ::stk::mesh::Bucket;
+
+            auto &meta_data = mesh().meta_data();
+            auto &bulk_data = mesh().bulk_data();
+
+            auto &&local_to_global = dof_map().local_to_global();
+
+            const int nv = n_var();
+
+            if (local_to_global.empty()) {
+                auto source_view = local_view_device(source);
+                auto destination_view = local_view_device(destination);
+
+                for (auto &part_name : parts) {
+                    auto *part = meta_data.get_part(part_name);
+                    if (part) {
+                        auto &buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, *part);
+
+                        for (auto *b_ptr : buckets) {
+                            auto &b = *b_ptr;
+                            const Bucket_t::size_type length = b.size();
+
+                            for (Bucket_t::size_type k = 0; k < length; ++k) {
+                                auto node = b[k];
+                                auto idx = utopia::stk::convert_entity_to_index(node);
+
+                                for (int c : components) {
+                                    auto k = idx * nv + c;
+                                    destination_view.set(k, source_view.get(k));
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                Write<Vector> w(destination, utopia::GLOBAL_INSERT);
+                Read<Vector> r(source);
+
+                for (auto &part_name : parts) {
+                    auto *part = meta_data.get_part(part_name);
+                    if (part) {
+                        auto &buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, *part);
+
+                        for (auto *b_ptr : buckets) {
+                            auto &b = *b_ptr;
+                            const Bucket_t::size_type length = b.size();
+
+                            for (Bucket_t::size_type k = 0; k < length; ++k) {
+                                auto node = b[k];
+                                auto idx = utopia::stk::convert_entity_to_index(node);
+
+                                for (int c : components) {
+                                    auto k = local_to_global(idx, c);
+                                    destination.c_set(k, source.get(k));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         void FunctionSpace::apply_constraints(Vector &v) const {
             using Bucket_t = ::stk::mesh::Bucket;
 

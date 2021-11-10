@@ -63,6 +63,11 @@ namespace utopia {
             void apply_constraints(Matrix &m, Vector &v) const override;
             void apply_zero_constraints(Vector &vec) const override;
 
+            void overwrite_parts(const std::vector<std::string> &parts,
+                                 const std::vector<int> &components,
+                                 const Vector &source,
+                                 Vector &destination) const;
+
             void add_dirichlet_boundary_condition(const std::string &name,
                                                   const Scalar &value,
                                                   const int component = 0) override;
