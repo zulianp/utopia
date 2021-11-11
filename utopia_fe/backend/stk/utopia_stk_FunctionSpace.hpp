@@ -27,6 +27,7 @@ namespace utopia {
             using IndexSet = Traits<FunctionSpace>::IndexSet;
             using IndexArray = Traits<FunctionSpace>::IndexArray;
             using Comm = Traits<FunctionSpace>::Communicator;
+            using DirichletBoundary = utopia::DirichletBoundary<Traits<FunctionSpace>>;
 
             FunctionSpace(const Comm &comm = Comm::get_default());
             FunctionSpace(const std::shared_ptr<Mesh> &mesh);

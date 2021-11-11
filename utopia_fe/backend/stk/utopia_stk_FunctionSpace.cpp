@@ -596,7 +596,9 @@ namespace utopia {
             }
         }
 
-        const DirichletBoundary &FunctionSpace::dirichlet_boundary() const { return impl_->dirichlet_boundary; }
+        const FunctionSpace::DirichletBoundary &FunctionSpace::dirichlet_boundary() const {
+            return impl_->dirichlet_boundary;
+        }
 
         void FunctionSpace::apply_constraints(Matrix &m, const Scalar diag_value) const {
             using Bucket_t = ::stk::mesh::Bucket;

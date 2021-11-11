@@ -90,7 +90,7 @@ namespace utopia {
             std::shared_ptr<Mesh> mesh;
 
             std::string name;
-            DirichletBoundary dirichlet_boundary;
+            DirichletBoundary<Traits<FunctionSpace>> dirichlet_boundary;
             std::vector<FEVar> variables;
 
             std::function<bool(const Path &, const Vector &)> write;
@@ -248,7 +248,7 @@ namespace utopia {
                                                              const Scalar &value,
                                                              const int component) {
             assert(component < n_var());
-            DirichletBoundary::UniformCondition dirichlet_boundary{name, value, component};
+            DirichletBoundary<Traits<FunctionSpace>>::UniformCondition dirichlet_boundary{name, value, component};
             impl_->dirichlet_boundary.add(dirichlet_boundary);
         }
 

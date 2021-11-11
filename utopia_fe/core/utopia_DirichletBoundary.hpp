@@ -12,6 +12,7 @@
 
 namespace utopia {
 
+    template <class Traits>
     class DirichletBoundary : public Configurable, public Describable {
     public:
         class Condition : public Configurable, public Describable {
@@ -141,7 +142,7 @@ namespace utopia {
             }
         }
 
-        using ConstIterator = std::vector<std::shared_ptr<Condition>>::const_iterator;
+        using ConstIterator = typename std::vector<std::shared_ptr<Condition>>::const_iterator;
 
         inline ConstIterator begin() const { return conditions.cbegin(); }
         inline ConstIterator end() const { return conditions.cend(); }
