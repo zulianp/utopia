@@ -69,6 +69,8 @@ namespace utopia {
                                  const Vector &source,
                                  Vector &destination) const;
 
+            void set_overwrite_vector(const Vector &v);
+
             void add_dirichlet_boundary_condition(const std::string &name,
                                                   const Scalar &value,
                                                   const int component = 0) override;

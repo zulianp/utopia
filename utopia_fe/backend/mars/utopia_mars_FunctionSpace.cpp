@@ -90,7 +90,7 @@ namespace utopia {
             std::shared_ptr<Mesh> mesh;
 
             std::string name;
-            DirichletBoundary<Traits<FunctionSpace>> dirichlet_boundary;
+            DirichletBoundary dirichlet_boundary;
             std::vector<FEVar> variables;
 
             std::function<bool(const Path &, const Vector &)> write;
@@ -219,7 +219,13 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("FunctionSpace::apply_constraints(v)");
 
             for (auto &bc : impl_->dirichlet_boundary) {
-                handler()->vector_apply_constraints(v, bc->value(), bc->name, bc->component);
+                auto u_bc = std::dynamic_pointer_cast<DirichletBoundary::UniformCondition>(bc);
+
+                if (u_bc) {
+                    handler()->vector_apply_constraints(v, u_bc->value(), u_bc->name, u_bc->component);
+                } else {
+                    assert(false);
+                }
             }
 
             UTOPIA_TRACE_REGION_END("FunctionSpace::apply_constraints(v)");
@@ -229,8 +235,14 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("FunctionSpace::apply_constraints(m, v)");
 
             for (auto &bc : impl_->dirichlet_boundary) {
-                handler()->matrix_apply_constraints(m, 1.0, bc->name, bc->component);
-                handler()->vector_apply_constraints(v, bc->value(), bc->name, bc->component);
+                auto u_bc = std::dynamic_pointer_cast<DirichletBoundary::UniformCondition>(bc);
+
+                if (u_bc) {
+                    handler()->matrix_apply_constraints(m, 1.0, u_bc->name, u_bc->component);
+                    handler()->vector_apply_constraints(v, u_bc->value(), u_bc->name, u_bc->component);
+                } else {
+                    assert(false);
+                }
             }
 
             UTOPIA_TRACE_REGION_END("FunctionSpace::apply_constraints(m, v)");
@@ -239,7 +251,7 @@ namespace utopia {
         void FunctionSpace::apply_zero_constraints(Vector &vec) const {
             UTOPIA_TRACE_REGION_BEGIN("FunctionSpace::apply_zero_constraints(vec)");
             for (auto &bc : impl_->dirichlet_boundary) {
-                handler()->vector_apply_constraints(vec, bc->value(), bc->name, bc->component);
+                handler()->vector_apply_constraints(vec, 0., bc->name, bc->component);
             }
             UTOPIA_TRACE_REGION_END("FunctionSpace::apply_zero_constraints(vec)");
         }
@@ -248,7 +260,7 @@ namespace utopia {
                                                              const Scalar &value,
                                                              const int component) {
             assert(component < n_var());
-            DirichletBoundary<Traits<FunctionSpace>>::UniformCondition dirichlet_boundary{name, value, component};
+            DirichletBoundary::UniformCondition dirichlet_boundary{name, value, component};
             impl_->dirichlet_boundary.add(dirichlet_boundary);
         }
 

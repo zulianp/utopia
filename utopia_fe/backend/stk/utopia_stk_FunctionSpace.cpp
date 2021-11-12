@@ -754,9 +754,16 @@ namespace utopia {
 
                 for (auto &bc_ptr : impl_->dirichlet_boundary) {
                     auto &bc = *bc_ptr;
-
                     auto *part = meta_data.get_part(bc.name);
                     if (part) {
+                        double value = 0;
+                        const bool is_uniform = bc.is_uniform();
+                        if (is_uniform) {
+                            value = static_cast<DirichletBoundary::UniformCondition &>(bc).value();
+                        } else {
+                            continue;
+                        }
+
                         auto &buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, *part);
 
                         for (auto *b_ptr : buckets) {
@@ -765,9 +772,13 @@ namespace utopia {
 
                             for (Bucket_t::size_type k = 0; k < length; ++k) {
                                 auto node = b[k];
-                                // auto idx = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node));
                                 auto idx = utopia::stk::convert_entity_to_index(node);
-                                v_view.set(idx * nv + bc.component, bc.value());
+
+                                // if (!is_uniform) {
+                                //     // TODO
+                                // }
+
+                                v_view.set(idx * nv + bc.component, value);
                             }
                         }
                     }
@@ -782,6 +793,14 @@ namespace utopia {
                     auto &bc = *bc_ptr;
                     auto *part = meta_data.get_part(bc.name);
                     if (part) {
+                        double value = 0;
+                        const bool is_uniform = bc.is_uniform();
+                        if (is_uniform) {
+                            value = static_cast<DirichletBoundary::UniformCondition &>(bc).value();
+                        } else {
+                            continue;
+                        }
+
                         auto &buckets =
                             bulk_data.get_buckets(::stk::topology::NODE_RANK, *part & meta_data.locally_owned_part());
 
@@ -794,10 +813,55 @@ namespace utopia {
                                 auto local_idx = utopia::stk::convert_entity_to_index(node);
                                 assert(local_idx < local_to_global.size());
 
-                                v.c_set(local_to_global(local_idx, bc.component), bc.value());
+                                // if (!is_uniform) {
+                                //     // TODO
+                                // }
+
+                                v.c_set(local_to_global(local_idx, bc.component), value);
                             }
                         }
                     }
+                }
+            }
+
+            for (auto &bc_ptr : impl_->dirichlet_boundary) {
+                if (bc_ptr->is_uniform()) continue;
+
+                auto ow_bc = std::dynamic_pointer_cast<DirichletBoundary::OverwriteCondition>(bc_ptr);
+
+                if (ow_bc && ow_bc->vector) {
+                    overwrite_parts({ow_bc->name}, {ow_bc->component}, *ow_bc->vector, v);
+                } else {
+                    assert(false && "IMPLEMENT ME");
+                    Utopia::Abort("Invalid BC!");
+                }
+            }
+        }
+
+        void FunctionSpace::set_overwrite_vector(const Vector &v) {
+            bool has_ow_bc = false;
+            for (auto &bc_ptr : impl_->dirichlet_boundary) {
+                if (bc_ptr->is_uniform()) continue;
+
+                if (std::dynamic_pointer_cast<DirichletBoundary::OverwriteCondition>(bc_ptr)) {
+                    has_ow_bc = true;
+                    break;
+                }
+            }
+
+            if (!has_ow_bc) return;
+
+            // v.comm().root_print("SUCCESS set_overwrite_vector!");
+
+            auto copy = std::make_shared<Vector>(v);
+
+            for (auto &bc_ptr : impl_->dirichlet_boundary) {
+                if (bc_ptr->is_uniform()) continue;
+
+                auto ow_bc = std::dynamic_pointer_cast<DirichletBoundary::OverwriteCondition>(bc_ptr);
+
+                if (ow_bc) {
+                    ow_bc->vector = copy;
                 }
             }
         }

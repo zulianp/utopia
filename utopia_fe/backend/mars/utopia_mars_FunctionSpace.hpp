@@ -5,6 +5,8 @@
 #include "utopia_Field.hpp"
 #include "utopia_fe_Core.hpp"
 
+#include "utopia_DirichletBoundary.hpp"
+
 #include "utopia_mars_ForwardDeclarations.hpp"
 #include "utopia_mars_Mesh.hpp"
 
@@ -69,6 +71,7 @@ namespace utopia {
             using LocalSizeType = Traits<Matrix>::LocalSizeType;
             using IndexSet = Traits<FunctionSpace>::IndexSet;
             using Comm = Traits<FunctionSpace>::Communicator;
+            using DirichletBoundary = utopia::DirichletBoundary<Traits<FunctionSpace>>;
 
             FunctionSpace(const Comm &comm = Comm::get_default());
             FunctionSpace(const std::shared_ptr<Mesh> &mesh);
