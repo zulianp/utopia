@@ -716,7 +716,8 @@ namespace utopia {
                 for (auto &part_name : parts) {
                     auto *part = meta_data.get_part(part_name);
                     if (part) {
-                        auto &buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, *part);
+                        auto &buckets =
+                            bulk_data.get_buckets(::stk::topology::NODE_RANK, *part & meta_data.locally_owned_part());
 
                         for (auto *b_ptr : buckets) {
                             auto &b = *b_ptr;
@@ -724,10 +725,11 @@ namespace utopia {
 
                             for (Bucket_t::size_type k = 0; k < length; ++k) {
                                 auto node = b[k];
-                                auto idx = utopia::stk::convert_entity_to_index(node);
+                                auto local_idx = utopia::stk::convert_entity_to_index(node);
+                                assert(local_idx < local_to_global.size());
 
                                 for (int c : components) {
-                                    auto k = local_to_global(idx, c);
+                                    auto k = local_to_global(local_idx, c);
                                     destination.c_set(k, source.get(k));
                                 }
                             }
