@@ -42,7 +42,6 @@ namespace utopia {
                 // BC set constrained rows to zero, except diagonal where you set diag_value
                 auto sp = *sparsity_pattern;
                 auto mat = m.raw_type()->getLocalMatrix();
-                auto sp_dof_handler = sp.get_dof_handler();
 
                 dof_handler->boundary_dof_iterate(
                     MARS_LAMBDA(const ::mars::Integer local_dof) {
@@ -56,25 +55,26 @@ namespace utopia {
                                           const Scalar value,
                                           const std::string side,
                                           const int component) override {
-                auto sp = *sparsity_pattern;
+                // auto sp = *sparsity_pattern;
                 auto vec = v.raw_type()->getLocalView<::mars::KokkosSpace>();
                 auto sp_dof_handler = get_dof_handler();
                 // BC set values to constraint value (i.e., boundary value)
                 dof_handler->boundary_dof_iterate(
                     MARS_LAMBDA(const ::mars::Integer local_dof) {
-                        sp.vector_apply_constraints(local_dof, vec, value);
+                        sp_dof_handler.vector_apply_constraints(local_dof, vec, value);
                     },
                     side,
                     component);
             }
 
             void apply_zero_constraints(Vector &v, const std::string side, const int component) override {
-                auto sp = *sparsity_pattern;
                 auto vec = v.raw_type()->getLocalView<::mars::KokkosSpace>();
                 auto dof_handler = get_dof_handler();
                 // BC set values to constraint value to zero
                 dof_handler.boundary_dof_iterate(
-                    MARS_LAMBDA(const ::mars::Integer local_dof) { sp.apply_zero_constraints(local_dof, vec); },
+                    MARS_LAMBDA(const ::mars::Integer local_dof) {
+                        dof_handler.apply_zero_constraints(local_dof, vec);
+                    },
                     side,
                     component);
             }
@@ -86,7 +86,6 @@ namespace utopia {
                 // auto sp = *sparsity_pattern;
                 auto in_view = in.raw_type()->getLocalView<::mars::KokkosSpace>();
                 auto out_view = out.raw_type()->getLocalView<::mars::KokkosSpace>();
-
                 auto sp_dof_handler = get_dof_handler();
 
                 // BC set values to constraint value (i.e., boundary value)
