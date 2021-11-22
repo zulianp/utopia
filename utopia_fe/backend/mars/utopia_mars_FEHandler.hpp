@@ -116,7 +116,7 @@ namespace utopia {
 
                 fe_dof_map = std::make_shared<FEDofMap>(build_fe_dof_map(*dof_handler));
 
-                ensure_sparsity_pattern();
+                // ensure_sparsity_pattern();
             }
 
             void ensure_sparsity_pattern() override {
