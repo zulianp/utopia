@@ -166,7 +166,7 @@ namespace utopia {
             void collect_ghost_layer_with_callback(const Vector &in,
                                                    ::mars::ViewVectorType<Scalar> &out,
                                                    Callback callback) {
-                UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::collect_ghost_layer");
+                UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::collect_ghost_layer_with_callback");
 
                 auto handler = this->handler();
                 auto sp = handler->get_sparsity_pattern();
@@ -182,7 +182,7 @@ namespace utopia {
                 ::mars::set_locally_owned_data(dof_handler, out, x_view_rank1);
                 ::mars::gather_ghost_data(dof_handler, out, callback);
 
-                UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::collect_ghost_layer");
+                UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::collect_ghost_layer_with_callback");
             }
 
             ////////////////////////
@@ -216,7 +216,7 @@ namespace utopia {
 
                 assert(block_size == dof_handler.get_block());
 
-                fe_dof_map.iterate(MARS_LAMBDA(const ::mars::Integer elem_index) {
+                auto kernel = MARS_LAMBDA(const ::mars::Integer elem_index) {
                     for (int i = 0; i < n_fun; i++) {
                         for (int sub_i = 0; sub_i < block_size; ++sub_i) {
                             auto offset_i = dof_handler.compute_block_index(i, sub_i);
@@ -237,7 +237,9 @@ namespace utopia {
                             }
                         }
                     }
-                });
+                };
+
+                fe_dof_map.iterate(kernel);
 
                 UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_assemble_matrix");
                 return true;
@@ -271,10 +273,14 @@ namespace utopia {
                 bool ok = false;
                 if (compute_communicate_overlap_) {
                     collect_ghost_layer_with_callback(x, x_current_local_view, [&]() {
+                        UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::block_op_apply(INTERIOR)");
                         ok = add_offsetted_block_op_to_vector(INTERIOR, 0, 0, op, x_current_local_view, y_view);
+                        UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_apply(INTERIOR)");
                     });
 
+                    UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::block_op_apply(GHOSTS)");
                     ok = ok && add_offsetted_block_op_to_vector(GHOSTS, 0, 0, op, x_current_local_view, y_view);
+                    UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_apply(GHOSTS)");
 
                 } else {
                     collect_ghost_layer(x, x_current_local_view);
