@@ -66,6 +66,8 @@ namespace utopia {
             std::shared_ptr<LinearSolver_t> linear_solver;
             std::shared_ptr<Newton_t> solver;
 
+            nlsolve_.status("Reading FunctionSpace");
+
             auto space_ = std::make_shared<FunctionSpace>();
             // in.require("space", *space_);
 
@@ -92,8 +94,11 @@ namespace utopia {
             });
 
             if (space_->empty()) {
+                nlsolve_.error("FunctionSpace is empty");
                 return;
             }
+
+            nlsolve_.status("Setting-up problem");
 
             std::shared_ptr<FEFunctionInterface<FunctionSpace>> problem;
             std::string functiontype = "";
@@ -146,6 +151,8 @@ namespace utopia {
                 linear_solver = std::make_shared<OmniLinearSolver_t>();
             }
 
+            nlsolve_.status("Setting-up solver");
+
             solver = std::make_shared<Newton_t>(linear_solver);
             solver->verbose(true);
             in.get("solver", *solver);
@@ -155,6 +162,8 @@ namespace utopia {
             nlsolve_.init(function);
             nlsolve_.set_solver(solver);
             valid_ = true;
+
+            nlsolve_.status("Set-up complete");
         }
 
         bool valid() const { return valid_; }
