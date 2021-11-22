@@ -155,6 +155,7 @@ namespace utopia {
                 ::mars::ViewVectorType<Scalar> x_view_rank1(::Kokkos::subview(x_view, ::Kokkos::ALL, 0));
                 ::mars::set_locally_owned_data(dof_handler, out, x_view_rank1);
                 ::mars::gather_ghost_data(dof_handler, out);
+                Kokkos::fence();
 
                 UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::collect_ghost_layer");
             }
@@ -177,6 +178,7 @@ namespace utopia {
                 ::mars::ViewVectorType<Scalar> x_view_rank1(::Kokkos::subview(x_view, ::Kokkos::ALL, 0));
                 ::mars::set_locally_owned_data(dof_handler, out, x_view_rank1);
                 ::mars::gather_ghost_data(dof_handler, out, callback);
+                Kokkos::fence();
 
                 UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::collect_ghost_layer_with_callback");
             }
@@ -200,6 +202,8 @@ namespace utopia {
                     "Reset values to 0", Kokkos::RangePolicy<>(0, matrix.values.extent(0)), UTOPIA_LAMBDA(const int i) {
                         matrix.values(i) = 0.0;
                     });
+
+                Kokkos::fence();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -236,6 +240,7 @@ namespace utopia {
                 };
 
                 fe_dof_map.iterate(kernel);
+                Kokkos::fence();
 
                 UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_assemble_matrix");
                 return true;
@@ -350,6 +355,7 @@ namespace utopia {
                     }
                 }
 
+                Kokkos::fence();
                 return true;
             }
 
@@ -405,6 +411,7 @@ namespace utopia {
                     }
                 });
 
+                Kokkos::fence();
                 return true;
             }
 
