@@ -55,6 +55,8 @@ namespace utopia {
 
             // virtual void system_apply_constraints(Matrix &m, Vector &v) = 0;
 
+            virtual void ensure_sparsity_pattern() = 0;
+
             virtual SizeType n_local_dofs() = 0;
 
             virtual SizeType n_dofs() = 0;

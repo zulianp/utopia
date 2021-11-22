@@ -58,7 +58,7 @@ namespace utopia {
                                           const int component) override {
                 auto sp = *sparsity_pattern;
                 auto vec = v.raw_type()->getLocalView<::mars::KokkosSpace>();
-                auto sp_dof_handler = sp.get_dof_handler();
+                auto sp_dof_handler = get_dof_handler();
                 // BC set values to constraint value (i.e., boundary value)
                 dof_handler->boundary_dof_iterate(
                     MARS_LAMBDA(const ::mars::Integer local_dof) {
@@ -71,12 +71,10 @@ namespace utopia {
             void apply_zero_constraints(Vector &v, const std::string side, const int component) override {
                 auto sp = *sparsity_pattern;
                 auto vec = v.raw_type()->getLocalView<::mars::KokkosSpace>();
-                auto sp_dof_handler = sp.get_dof_handler();
+                auto dof_handler = get_dof_handler();
                 // BC set values to constraint value to zero
-                dof_handler->boundary_dof_iterate(
-                    MARS_LAMBDA(const ::mars::Integer local_dof) {
-                        sp.apply_zero_constraints(local_dof, vec);
-                    },
+                dof_handler.boundary_dof_iterate(
+                    MARS_LAMBDA(const ::mars::Integer local_dof) { sp.apply_zero_constraints(local_dof, vec); },
                     side,
                     component);
             }
@@ -85,11 +83,11 @@ namespace utopia {
                                            Vector &out,
                                            const std::string side,
                                            const int component) override {
-                auto sp = *sparsity_pattern;
+                // auto sp = *sparsity_pattern;
                 auto in_view = in.raw_type()->getLocalView<::mars::KokkosSpace>();
                 auto out_view = out.raw_type()->getLocalView<::mars::KokkosSpace>();
 
-                auto sp_dof_handler = sp.get_dof_handler();
+                auto sp_dof_handler = get_dof_handler();
 
                 // BC set values to constraint value (i.e., boundary value)
                 dof_handler->boundary_dof_iterate(
@@ -119,11 +117,20 @@ namespace utopia {
 
                 fe_dof_map = std::make_shared<FEDofMap>(build_fe_dof_map(*dof_handler));
 
-                sparsity_pattern = std::make_shared<SPattern>(*dof_handler);
-                sparsity_pattern->build_pattern(*fe_dof_map);
+                ensure_sparsity_pattern();
             }
 
-            inline SPattern &get_sparsity_pattern() { return *sparsity_pattern; }
+            void ensure_sparsity_pattern() override {
+                if (!sparsity_pattern) {
+                    sparsity_pattern = std::make_shared<SPattern>(*dof_handler);
+                    sparsity_pattern->build_pattern(*fe_dof_map);
+                }
+            }
+
+            inline SPattern &get_sparsity_pattern() {
+                ensure_sparsity_pattern();
+                return *sparsity_pattern;
+            }
             inline DofHandler &get_dof_handler() { return *dof_handler; }
             inline FEDofMap &get_fe_dof_map() { return *fe_dof_map; }
 

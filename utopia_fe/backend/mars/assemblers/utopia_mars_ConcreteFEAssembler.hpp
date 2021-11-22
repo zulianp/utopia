@@ -54,7 +54,7 @@ namespace utopia {
                 auto handler = this->handler();
                 auto sp = handler->get_sparsity_pattern();
 
-                if (!add_offsetted_scalar_op_to_matrix(0, 0, op, sp)) {
+                if (!add_offsetted_scalar_op_to_matrix(0, 0, op)) {
                     return false;
                 }
 
@@ -85,9 +85,11 @@ namespace utopia {
                 }
 
                 auto handler = this->handler();
-                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+
+                // auto sp = handler->get_sparsity_pattern();
+                // auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -110,9 +112,8 @@ namespace utopia {
                 ensure_fe();
 
                 auto handler = this->handler();
-                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -146,9 +147,10 @@ namespace utopia {
                 UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::collect_ghost_layer");
 
                 auto handler = this->handler();
-                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                // auto sp = handler->get_sparsity_pattern();
+                // auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 auto x_view = local_view_device(in).raw_type();  // Rank 2 tensor N x 1
                 if (out.extent(0) != dof_handler.get_dof_size()) {
@@ -169,9 +171,8 @@ namespace utopia {
                 UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::collect_ghost_layer_with_callback");
 
                 auto handler = this->handler();
-                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 auto x_view = local_view_device(in).raw_type();  // Rank 2 tensor N x 1
                 if (out.extent(0) != dof_handler.get_dof_size()) {
@@ -196,7 +197,7 @@ namespace utopia {
                 auto handler = this->handler();
                 auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 auto matrix = hessian.raw_type()->getLocalMatrix();
                 // TODO: Add execution space for the Range policy
@@ -249,6 +250,10 @@ namespace utopia {
 
             template <class Op>
             bool block_op_apply(Op op, const Vector &x, Vector &y) {
+                // x.comm().root_print("block_op_apply...");
+                // x.comm().barrier();
+                // x.comm().root_print("OK");
+
                 UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::block_op_apply");
                 ensure_fe();
 
@@ -259,9 +264,8 @@ namespace utopia {
                 }
 
                 auto handler = this->handler();
-                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -377,9 +381,10 @@ namespace utopia {
                 ensure_fe();
 
                 auto handler = this->handler();
-                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                // auto sp = handler->get_sparsity_pattern();
+                // auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -425,9 +430,10 @@ namespace utopia {
                 ensure_fe();
 
                 auto handler = this->handler();
-                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                // auto sp = handler->get_sparsity_pattern();
+                // auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -435,9 +441,9 @@ namespace utopia {
                 int block_size = vec_op.dim();
                 assert(block_size <= dof_handler.get_block());
 
-                bool ok = add_offsetted_block_op_to_matrix(vector_var, vector_var, vec_op, sp) &&
-                          add_offsetted_scalar_op_to_matrix(scalar_var, scalar_var, scalar_op, sp) &&
-                          add_offsetted_block_x_scalar_op_to_matrix(vector_var, scalar_var, couple_vec_scalar_op, sp);
+                bool ok = add_offsetted_block_op_to_matrix(vector_var, vector_var, vec_op) &&
+                          add_offsetted_scalar_op_to_matrix(scalar_var, scalar_var, scalar_op) &&
+                          add_offsetted_block_x_scalar_op_to_matrix(vector_var, scalar_var, couple_vec_scalar_op);
 
                 if (!ok) return false;
 
@@ -467,9 +473,10 @@ namespace utopia {
                 }
 
                 auto handler = this->handler();
-                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                // auto sp = handler->get_sparsity_pattern();
+                // auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -491,12 +498,13 @@ namespace utopia {
             ////////////////////
 
             template <class Op>
-            bool add_offsetted_scalar_op_to_matrix(const int s_offset_i, const int s_offset_j, Op op, SPattern &sp) {
+            bool add_offsetted_scalar_op_to_matrix(const int s_offset_i, const int s_offset_j, Op op) {
                 ensure_fe();
 
                 auto handler = this->handler();
+                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -526,12 +534,13 @@ namespace utopia {
             ////////////////////
 
             template <class Op>
-            bool add_offsetted_block_op_to_matrix(const int b_offset_i, const int b_offset_j, Op op, SPattern &sp) {
+            bool add_offsetted_block_op_to_matrix(const int b_offset_i, const int b_offset_j, Op op) {
                 ensure_fe();
 
                 auto handler = this->handler();
+                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -573,15 +582,13 @@ namespace utopia {
             ////////////////////
 
             template <class Op>
-            bool add_offsetted_block_x_scalar_op_to_matrix(const int b_offset_i,
-                                                           const int s_offset_j,
-                                                           Op op,
-                                                           SPattern &sp) {
+            bool add_offsetted_block_x_scalar_op_to_matrix(const int b_offset_i, const int s_offset_j, Op op) {
                 ensure_fe();
 
                 auto handler = this->handler();
+                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();

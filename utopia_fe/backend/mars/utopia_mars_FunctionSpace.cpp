@@ -178,6 +178,8 @@ namespace utopia {
 
             using MapType = Matrix::MapType;
 
+            handler()->ensure_sparsity_pattern();
+
             SizeType n_global = this->n_dofs();
             SizeType n_local = this->n_local_dofs();
 
