@@ -287,6 +287,8 @@ namespace utopia {
                     ok = add_offsetted_block_op_to_vector(0, 0, op, x_current_local_view, y_view);
                 }
 
+                Kokkos::fence();
+
                 UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_apply");
                 return ok;
             }
@@ -355,7 +357,6 @@ namespace utopia {
                     }
                 }
 
-                Kokkos::fence();
                 return true;
             }
 
