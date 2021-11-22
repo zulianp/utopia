@@ -36,6 +36,7 @@ namespace utopia {
         KokkosOp<Scalar, Op> kop;
         MatDataOpFunctor<Data, KokkosOp<Scalar, Op>, Scalar> functor{kop, data, initial_value};
         Kokkos::parallel_reduce(data.extent(0), functor, ret);
+        Kokkos::fence();
         return ret;
     }
 
@@ -61,6 +62,8 @@ namespace utopia {
 
         Kokkos::parallel_for(
             data.extent(0), UTOPIA_LAMBDA(const SizeType i) { data(i) = op(data(i)); });
+
+        Kokkos::fence();
     }
 
     template <class Op>
@@ -94,6 +97,8 @@ namespace utopia {
                     val = op(row_map.getGlobalElement(row_ind), col_map.getGlobalElement(col_ind), val);
                 });
             });
+
+        Kokkos::fence();
     }
 
     template <class Op>
@@ -129,6 +134,8 @@ namespace utopia {
                     op(row_map.getGlobalElement(row_ind), col_map.getGlobalElement(col_ind), val);
                 });
             });
+
+        Kokkos::fence();
     }
 
 }  // namespace utopia

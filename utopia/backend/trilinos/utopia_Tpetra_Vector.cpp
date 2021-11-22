@@ -473,6 +473,8 @@ namespace utopia {
         assert(k_res.extent(0) > 0);
         Kokkos::parallel_for(
             k_res.extent(0), KOKKOS_LAMBDA(const int i) { k_res(i, 0) += x; });
+
+        Kokkos::fence();
     }
 
 }  // namespace utopia

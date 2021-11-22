@@ -31,6 +31,8 @@ namespace utopia {
             KokkosOp<Scalar, Op> k_op;
             Kokkos::parallel_for(
                 k_lhs.extent(0), KOKKOS_LAMBDA(const int i) { k_res(i, 0) = k_op.apply(k_lhs(i, 0), k_rhs(i, 0)); });
+
+            Kokkos::fence();
         }
 
         inline static void eval(const Vector &lhs, const Op &, const Scalar &rhs, Vector &result) {
@@ -48,6 +50,8 @@ namespace utopia {
             KokkosOp<Scalar, Op> k_op;
             Kokkos::parallel_for(
                 k_lhs.extent(0), KOKKOS_LAMBDA(const int i) { k_res(i, 0) = k_op.apply(k_lhs(i, 0), rhs); });
+
+            Kokkos::fence();
         }
     };
 }  // namespace utopia

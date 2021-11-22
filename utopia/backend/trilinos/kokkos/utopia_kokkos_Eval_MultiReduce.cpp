@@ -112,15 +112,14 @@ namespace utopia {
                                 Tuple<Scalar, 2> &result) {
             using Data = decltype(t1.raw_type()->template getLocalView<ExecutionSpaceT>());
 
-            Tuple<Data, 2> data {
-                t1.raw_type()->template getLocalView<ExecutionSpaceT>(),
-                t2.raw_type()->template getLocalView<ExecutionSpaceT>()
-            };
+            Tuple<Data, 2> data{t1.raw_type()->template getLocalView<ExecutionSpaceT>(),
+                                t2.raw_type()->template getLocalView<ExecutionSpaceT>()};
 
             KokkosOp<Scalar, Op> kop;
             MultiOpReducer<Scalar, Data, ExecutionSpaceT, KokkosOp<Scalar, Op>, 2> reducer(kop, data, initial_value);
 
             Kokkos::parallel_reduce(data[0].extent(0), reducer, result);
+            Kokkos::fence();
         }
     };
 
@@ -171,6 +170,8 @@ namespace utopia {
                     t[1] += d21(i, 0) * d22(i, 0);
                 },
                 tuple_result);
+
+            Kokkos::fence();
 
             result[0] = tuple_result[0];
             result[1] = tuple_result[1];
@@ -223,6 +224,8 @@ namespace utopia {
                     t[2] += d31(i, 0) * d32(i, 0);
                 },
                 tuple_result);
+
+            Kokkos::fence();
 
             result[0] = tuple_result[0];
             result[1] = tuple_result[1];

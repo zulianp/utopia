@@ -45,6 +45,7 @@ namespace utopia {
             KokkosOp<Scalar, Op> kop;
             OpFunctor<Data, KokkosOp<Scalar, Op>, Scalar> functor{kop, data, initial_value};
             Kokkos::parallel_reduce(data.extent(0), functor, ret);
+            Kokkos::fence();
 
             return ret;
         }

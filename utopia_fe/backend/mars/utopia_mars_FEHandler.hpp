@@ -127,7 +127,10 @@ namespace utopia {
             }
 
             inline SPattern &get_sparsity_pattern() {
-                ensure_sparsity_pattern();
+                if (!sparsity_pattern) {
+                    Utopia::Abort("sparsity_pattern needs to be initialized with \"ensure_sparsity_pattern\"");
+                }
+
                 return *sparsity_pattern;
             }
             inline DofHandler &get_dof_handler() { return *dof_handler; }
