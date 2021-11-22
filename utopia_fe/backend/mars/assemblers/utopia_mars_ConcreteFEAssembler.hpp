@@ -86,9 +86,6 @@ namespace utopia {
 
                 auto handler = this->handler();
                 auto fe_dof_map = handler->get_fe_dof_map();
-
-                // auto sp = handler->get_sparsity_pattern();
-                // auto dof_handler = sp.get_dof_handler();
                 auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
@@ -148,8 +145,6 @@ namespace utopia {
 
                 auto handler = this->handler();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                // auto sp = handler->get_sparsity_pattern();
-                // auto dof_handler = sp.get_dof_handler();
                 auto dof_handler = handler->get_dof_handler();
 
                 auto x_view = local_view_device(in).raw_type();  // Rank 2 tensor N x 1
@@ -250,10 +245,6 @@ namespace utopia {
 
             template <class Op>
             bool block_op_apply(Op op, const Vector &x, Vector &y) {
-                // x.comm().root_print("block_op_apply...");
-                // x.comm().barrier();
-                // x.comm().root_print("OK");
-
                 UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::block_op_apply");
                 ensure_fe();
 
@@ -305,9 +296,8 @@ namespace utopia {
                 ensure_fe();
 
                 auto handler = this->handler();
-                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -382,8 +372,6 @@ namespace utopia {
 
                 auto handler = this->handler();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                // auto sp = handler->get_sparsity_pattern();
-                // auto dof_handler = sp.get_dof_handler();
                 auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
@@ -431,8 +419,6 @@ namespace utopia {
 
                 auto handler = this->handler();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                // auto sp = handler->get_sparsity_pattern();
-                // auto dof_handler = sp.get_dof_handler();
                 auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
