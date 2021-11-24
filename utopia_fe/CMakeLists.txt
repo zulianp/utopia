@@ -32,7 +32,8 @@ option(UTOPIA_ENABLE_MOOSE_ENV_MODE
 option(UTOPIA_ENABLE_TRILINOS_ALGEBRA
        "Allows to use the moose installation compilers" OFF)
 option(UTOPIA_ENABLE_MARS "Tries to use mars backend" OFF)
-option(UTOPIA_ENABLE_MARS_VTK "Enable vtk output for mars" ON)
+option(UTOPIA_ENABLE_MARS_VTK "Enable vtk output for mars" OFF)
+option(UTOPIA_ENABLE_MARS_ADIOS2,  "Enable adios2 output for mars" ON)
 option(UTOPIA_ENABLE_INTREPID2 "Tries to use the intrepid2 related features"
        OFF)
 option(UTOPIA_ENABLE_NEW_TRANSFER "Use new transfer features" ON)
@@ -99,6 +100,8 @@ if(UTOPIA_ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         )
     endif()
 endif()
+
+
 
 # ################################# Include cmake functions and find modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_FE_ROOT_PATH}/cmake")
@@ -254,7 +257,6 @@ endif()
 ##################################################
 
 
-
 list(APPEND UTOPIA_FE_MODULES base core)
 
 # if(UTOPIA_INSTALL_LIBMESH)
@@ -263,6 +265,12 @@ list(APPEND UTOPIA_FE_MODULES base core)
 
 
 add_library(utopia_fe utopia_fe.cpp)
+
+# if(UTOPIA_ENABLE_MARS_ADIOS2)
+#     find_package(adios2 REQUIRED)
+#     target_link_libraries(utopia_fe PUBLIC adios2::adios2)
+# endif()
+
 set_utopia_compiler_features(utopia_fe)
 target_include_directories(
     utopia_fe BEFORE PUBLIC $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>

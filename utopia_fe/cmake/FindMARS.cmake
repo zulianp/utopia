@@ -59,6 +59,12 @@ if(UTOPIA_ENABLE_MARS_VTK)
   )
 endif()
 
+if(UTOPIA_ENABLE_MARS_ADIOS2)
+  list(APPEND MARS_LIBRARIES
+    ${MARS_LIB_PATH}/libmars_adios2.a
+  )
+endif()
+
 endif()
 
 

@@ -33,7 +33,6 @@ namespace utopia {
     public:
         static void apply(const utopia::stk::FunctionSpace &in, utopia::moonolith::FunctionSpace &out);
     };
-
 }  // namespace utopia
 
 #endif  // UTOPIA_MOONOLITH_STK_HPP

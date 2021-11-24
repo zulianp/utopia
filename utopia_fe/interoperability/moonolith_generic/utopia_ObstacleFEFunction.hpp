@@ -7,6 +7,7 @@
 
 #include "utopia_AnalyticObstacle_impl.hpp"
 #include "utopia_ImplicitObstacle_impl.hpp"
+#include "utopia_ObstacleStabilizedNewmark.hpp"
 
 #include "utopia_ObstacleFactory.hpp"
 
@@ -115,6 +116,11 @@ namespace utopia {
                 std::string type;
                 in.get("obstacle",
                        [&](Input &node) { obstacle_ = ObstacleFactory<FunctionSpace>::new_obstacle(node); });
+            }
+
+            auto ptr = std::dynamic_pointer_cast<ObstacleDependentFunction<FunctionSpace>>(this->unconstrained());
+            if (ptr) {
+                ptr->set_obstacle(obstacle_);
             }
         }
 

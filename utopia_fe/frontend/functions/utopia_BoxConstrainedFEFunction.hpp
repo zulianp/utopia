@@ -90,6 +90,8 @@ namespace utopia {
 
         inline const Communicator_t &comm() const override { return unconstrained_->comm(); }
 
+        const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &unconstrained() const { return unconstrained_; };
+
     private:
         std::shared_ptr<FEFunctionInterface<FunctionSpace>> unconstrained_;
     };

@@ -6,6 +6,7 @@
 #include "utopia_BoxConstrainedFEFunction.hpp"
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_IObstacle.hpp"
+#include "utopia_NewmarkIntegrator.hpp"
 #include "utopia_fe_Core.hpp"
 
 #include "utopia_AnalyticObstacle_impl.hpp"
