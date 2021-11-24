@@ -32,6 +32,7 @@ namespace utopia {
 
             // in.get("linear_obstacle", linear_obstacle_);
             in.get("debug", debug_);
+            in.get("stabilized_formulation", stabilized_formulation_);
 
             // Obstacle is initialized outside
             // {
@@ -41,10 +42,14 @@ namespace utopia {
             //                [&](Input &node) { obstacle_ = ObstacleFactory<FunctionSpace>::new_obstacle(node); });
             //     }
             // }
+
+            if (stabilized_formulation_) {
+                utopia::out() << "Using stabilized formulation!\n";
+            }
         }
 
         bool update_constraints(const Vector_t &x) {
-            utopia::out() << "update_constraints\n";
+            utopia::out() << "ObstacleStabilizedNewmark::update_constraints\n";
 
             this->space()->displace(x);
             bool ok = obstacle_->assemble(*this->space());
@@ -61,13 +66,19 @@ namespace utopia {
         void update_predictor() {
             assert(obstacle_);
 
-            const Scalar_t dt = this->delta_time();
-            Vector_t temp;
-            obstacle_->transform(velocity_old_, temp);
-            temp *= dt;
-            temp = utopia::min(temp, obstacle_->gap());
+            if (stabilized_formulation_) {
+                const Scalar_t dt = this->delta_time();
+                Vector_t temp;
+                obstacle_->transform(velocity_old_, temp);
+                temp *= dt;
+                temp = utopia::min(temp, obstacle_->gap());
 
-            obstacle_->inverse_transform(temp, delta_predictor_);
+                obstacle_->inverse_transform(temp, predictor_);
+            } else {
+                predictor_ = this->delta_time() * velocity_old_;
+            }
+
+            predictor_ += x_old_;
         }
 
         bool setup_IVP(Vector_t &x) override {
@@ -86,7 +97,10 @@ namespace utopia {
             velocity_old_.zeros(vlo);
             acceleration_old_.zeros(vlo);
 
-            update_constraints(x);
+            if (stabilized_formulation_) {
+                update_constraints(x);
+            }
+
             update_predictor();
             return true;
         }
@@ -100,7 +114,10 @@ namespace utopia {
             // Store current solution
             x_old_ = x;
 
-            update_constraints(x);
+            if (stabilized_formulation_) {
+                update_constraints(x);
+            }
+
             update_predictor();
             return true;
         }
@@ -110,20 +127,15 @@ namespace utopia {
             const Scalar_t dt2 = dt * dt;
 
             acceleration = -acceleration_old_;
-            acceleration += (4 / dt2) * (x - x_old_ - delta_predictor_);
+            acceleration += (4 / dt2) * (x - predictor_);
             return true;
         }
 
         bool time_derivative(const Vector_t &x, Vector_t &velocity) const override {
-            velocity = -velocity_old_;
-            velocity += (2 / this->delta_time()) * (x - x_old_ - delta_predictor_);
-            return true;
-        }
-
-        bool time_second_derivative_contact(const Vector_t &x, const Vector_t &acceleration, Vector_t &a_con) {
             const Scalar_t dt = this->delta_time();
-            a_con = 2 / dt * (x_old_ + delta_predictor_ - x);
-            a_con += 0.5 * (acceleration + acceleration_old_);
+            velocity = velocity_old_;
+            velocity += (2 / dt) * (x - predictor_);
+            return true;
         }
 
         template <class... Args>
@@ -135,8 +147,7 @@ namespace utopia {
             const Scalar_t dt2 = this->delta_time() * this->delta_time();
 
             if (!has_zero_density_) {
-                Vector_t mom = (x - x_old_);
-                mom -= delta_predictor_;
+                Vector_t mom = (x - predictor_);
                 mom *= (4.0 / dt2);
                 mom -= acceleration_old_;
 
@@ -176,11 +187,12 @@ namespace utopia {
 
     private:
         Vector_t x_old_, velocity_old_, acceleration_old_;
-        Vector_t delta_predictor_;
+        Vector_t predictor_;
         bool has_zero_density_{false};
 
         std::shared_ptr<IObstacle<FunctionSpace>> obstacle_;
         bool debug_{false};
+        bool stabilized_formulation_{true};
     };
 
 }  // namespace utopia
