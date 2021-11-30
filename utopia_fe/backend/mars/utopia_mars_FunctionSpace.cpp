@@ -34,7 +34,7 @@ namespace utopia {
                     MarsIOImpl<typename FEHandler::FEDofMap> w(handler_impl->get_fe_dof_map());
 
                     auto x_kokkos = x.raw_type()->getLocalViewHost();
-                    return w.write(path.to_string(), x_kokkos);
+                    return w.write_tpetra(path.to_string(), x_kokkos);
                 };
 #else
                 write = [](const Path &, const Vector &) -> bool { return false; };

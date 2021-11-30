@@ -1,0 +1,344 @@
+#ifndef UTOPIA_OBSTACLE_STABILIZED_VELOCITY_NEWMARK_INTEGRATOR_HPP
+#define UTOPIA_OBSTACLE_STABILIZED_VELOCITY_NEWMARK_INTEGRATOR_HPP
+
+#include "utopia_FEModelFunction.hpp"
+#include "utopia_IObstacle.hpp"
+#include "utopia_ObstacleFactory.hpp"
+
+#include "utopia_LogBarrierFunctionFactory.hpp"
+#include "utopia_ObstacleStabilizedNewmark.hpp"
+
+#include <utility>
+
+namespace utopia {
+
+    // https://en.wikipedia.org/wiki/Newmark-beta_method
+    // Unconditionally Stable gamma = 0.5, beta = 0.25
+    template <class FunctionSpace>
+    class ObstacleStabilizedVelocityNewmark : public TimeDependentFunction<FunctionSpace>,
+                                              public ObstacleDependentFunction<FunctionSpace> {
+    public:
+        using Super = utopia::TimeDependentFunction<FunctionSpace>;
+        using Vector_t = typename Traits<FunctionSpace>::Vector;
+        using Matrix_t = typename Traits<FunctionSpace>::Matrix;
+        using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+
+        using LogBarrierBase = utopia::LogBarrierBase<Matrix_t, Vector_t>;
+
+        void read(Input &in) override {
+            Super::read(in);
+
+            in.get("debug", debug_);
+            in.get("stabilized_formulation", stabilized_formulation_);
+            in.get("trivial_obstacle", trivial_obstacle_);
+
+            if (!obstacle_) {
+                std::string type;
+                in.get("obstacle",
+                       [&](Input &node) { obstacle_ = ObstacleFactory<FunctionSpace>::new_obstacle(node); });
+            }
+
+            if (stabilized_formulation_) {
+                utopia::out() << "Using stabilized formulation!\n";
+            }
+
+            ////////////////////////////////////////////////////////////////////////////////
+            std::string function_type;
+            in.get("function_type", function_type);
+            barrier_ = LogBarrierFunctionFactory<Matrix_t, Vector_t>::new_log_barrier(function_type);
+            barrier_->read(in);
+        }
+
+        bool update_constraints(const Vector_t &x) {
+            utopia::out() << "ObstacleStabilizedVelocityNewmark::update_constraints\n";
+
+            this->space()->displace(x);
+            bool ok = obstacle_->assemble(*this->space());
+            this->space()->displace(-x);
+            return ok;
+        }
+
+        void update_predictor() {
+            assert(obstacle_);
+
+            if (stabilized_formulation_) {
+                const Scalar_t dt = this->delta_time();
+                Vector_t temp;
+                obstacle_->transform(velocity_old_, temp);
+                temp *= dt;
+                temp = utopia::min(temp, obstacle_->gap());
+
+                obstacle_->inverse_transform(temp, predictor_);
+            } else {
+                predictor_ = this->delta_time() * velocity_old_;
+            }
+
+            predictor_ += x_old_;
+        }
+
+        bool setup_IVP(Vector_t &x) override {
+            if (!this->assemble_mass_matrix()) {
+                return false;
+            }
+
+            assert(this->mass_matrix());
+            Scalar_t sum_mm = sum(*this->mass_matrix());
+            has_zero_density_ = sum_mm == 0.0;
+
+            auto vlo = layout(x);
+
+            x_old_ = x;
+            velocity_old_.zeros(vlo);
+            force_old_.zeros(vlo);
+
+            update_constraints(x);
+
+            update_predictor();
+            return true;
+        }
+
+        bool update_IVP(const Vector_t &velocity) override {
+            Vector_t x;
+            update_x(velocity, x);
+
+            this->function()->gradient(x, force_old_);
+
+            // Store current solution
+            x_old_ = x;
+            velocity_old_ = velocity;
+
+            if (!trivial_obstacle_) {
+                update_constraints(x);
+            }
+
+            bool ok = Super::update_IVP(x);
+            update_predictor();
+            barrier_->reset();
+            return ok;
+        }
+
+        bool time_derivative(const Vector_t &x, Vector_t &velocity) const override {
+            const Scalar_t dt = this->delta_time();
+            velocity = velocity_old_;
+            velocity += (2 / dt) * (x - predictor_);
+            return true;
+        }
+
+        template <class... Args>
+        ObstacleStabilizedVelocityNewmark(Args &&... args) : Super(std::forward<Args>(args)...) {}
+
+        virtual ~ObstacleStabilizedVelocityNewmark() = default;
+
+        bool gradient(const Vector_t &velocity, Vector_t &g) const override {
+            Vector_t x;
+            update_x(velocity, x);
+            if (!this->function()->gradient(x, g)) {
+                return false;
+            }
+
+            integrate_gradient(x, g);
+            return true;
+        }
+
+        void integrate_gradient(const Vector_t &x, Vector_t &g) const override {
+            const Scalar_t dt2 = this->delta_time() * this->delta_time();
+
+            if (!has_zero_density_) {
+                Vector_t mom = (x - predictor_);
+                mom *= (4.0 / dt2);
+                g += (*this->mass_matrix()) * mom;
+                g += force_old_;
+            }
+
+            barrier_gradient(x, g);
+
+            if (this->must_apply_constraints_to_assembled()) {
+                this->space()->apply_zero_constraints(g);
+            }
+        }
+
+        bool hessian(const Vector_t &velocity, Matrix_t &H) const override {
+            Vector_t x;
+            update_x(velocity, x);
+            return Super::hessian(x, H);
+        }
+
+        void integrate_hessian(const Vector_t &x, Matrix_t &H) const override {
+            if (!has_zero_density_) {
+                const Scalar_t dt2 = this->delta_time() * this->delta_time();
+                H += (4. / dt2) * (*this->mass_matrix());
+            }
+
+            barrier_hessian(x, H);
+            H *= (this->delta_time() / 2);
+
+            this->space()->apply_constraints(H);
+        }
+
+        bool hessian_and_gradient(const Vector_t &velocity, Matrix_t &H, Vector_t &g) const override {
+            Vector_t x;
+            update_x(velocity, x);
+            return Super::hessian_and_gradient(x, H, g);
+        }
+
+        bool update(const Vector_t & /*x*/) override {
+            if (barrier_) {
+                barrier_->update_barrier();
+            }
+
+            return true;
+        }
+
+        inline Vector_t &x_old() { return x_old_; }
+        inline const Vector_t &x_old() const { return x_old_; }
+
+        const Vector_t &solution() const override { return x_old(); }
+        const Vector_t &velocity() const { return velocity_old_; }
+
+        bool report_solution(const Vector_t &) override { return Super::report_solution(solution()); }
+
+        bool set_initial_condition(const Vector_t &x) override {
+            x_old_ = x;
+            return true;
+        }
+
+        inline void set_obstacle(const std::shared_ptr<IObstacle<FunctionSpace>> obstacle) override {
+            obstacle_ = obstacle;
+        }
+
+        bool project_onto_feasibile_region(Vector_t &velocity) const final {
+            bool ok = true;
+            if (barrier_) {
+                Vector_t x;
+                update_x(velocity, x);
+
+                project_x_onto_feasibile_region(x);
+
+                Super::time_derivative(x, velocity);
+            }
+
+            return ok;
+        }
+
+        bool project_x_onto_feasibile_region(Vector_t &x) const {
+            bool ok = true;
+
+            if (barrier_) {
+                Vector_t barrier_x(layout(x), 0);
+                Vector_t delta_x;
+
+                if (trivial_obstacle_) {
+                    obstacle_->transform(x, barrier_x);
+                } else {
+                    delta_x = x - this->x_old();
+                    obstacle_->transform(delta_x, barrier_x);
+                }
+
+                ok = barrier_->project_onto_feasibile_region(barrier_x);
+
+                if (trivial_obstacle_) {
+                    obstacle_->inverse_transform(barrier_x, x);
+                } else {
+                    obstacle_->inverse_transform(barrier_x, delta_x);
+                    x = this->x_old() + delta_x;
+                }
+            }
+
+            return ok;
+        }
+
+    protected:
+        const Vector_t &velocity_old() const { return velocity_old_; }
+
+    private:
+        Vector_t x_old_, velocity_old_;
+        Vector_t predictor_;
+        Vector_t force_old_;
+        bool has_zero_density_{false};
+
+        std::shared_ptr<IObstacle<FunctionSpace>> obstacle_;
+        bool debug_{false};
+        bool stabilized_formulation_{true};
+
+        std::shared_ptr<LogBarrierBase> barrier_;
+        bool trivial_obstacle_{false};
+
+        void update_x(const Vector_t &velocity, Vector_t &x) const {
+            x = predictor_;
+            x += (0.5 * this->delta_time()) * (velocity - this->velocity_old());
+        }
+
+        void barrier_gradient(const Vector_t &x, Vector_t &g) const {
+            if (barrier_) {
+                Vector_t barrier_temp(layout(x), 0);
+                Vector_t barrier_g(layout(g), 0);
+
+                if (trivial_obstacle_) {
+                    obstacle_->transform(x, barrier_temp);
+                } else {
+                    // Use barrier_g as a temporary for the delta_x
+                    barrier_g = x - this->x_old();
+                    obstacle_->transform(barrier_g, barrier_temp);
+
+                    // Reset barrier_g to zero
+                    barrier_g.set(0.);
+                }
+
+                barrier_->gradient(barrier_temp, barrier_g);
+
+                obstacle_->inverse_transform(barrier_g, barrier_temp);
+
+                // {
+                //     Scalar_t norm_B_g = norm2(barrier_temp);
+                //     std::stringstream ss;
+                //     ss << "norm_B_g: " << norm_B_g << "\n";
+                //     x.comm().root_print(ss.str());
+                // }
+
+                g += barrier_temp;
+
+                if (g.has_nan_or_inf()) {
+                    this->~ObstacleStabilizedVelocityNewmark();
+                    g.comm().barrier();
+                    assert(false);
+                    Utopia::Abort("barrier_gradient: NaN detected!");
+                }
+            }
+        }
+
+        void barrier_hessian(const Vector_t &x, Matrix_t &H) const {
+            if (barrier_) {
+                Vector_t barrier_temp(layout(x), 0);
+                Matrix_t barrier_H, temp_H;
+
+                if (trivial_obstacle_) {
+                    obstacle_->transform(x, barrier_temp);
+                } else {
+                    Vector_t delta_x = x - this->x_old();
+                    obstacle_->transform(delta_x, barrier_temp);
+                }
+
+                barrier_H.identity(square_matrix_layout(layout(x)), 0);
+
+                barrier_->hessian(barrier_temp, barrier_H);
+
+                obstacle_->transform(barrier_H, temp_H);
+
+                // Remove contribution from boundary conditions
+                this->space()->apply_constraints(temp_H, 0);
+
+                // {
+                //     Scalar_t norm_B_H = norm2(temp_H);
+                //     std::stringstream ss;
+                //     ss << "norm_B_H: " << norm_B_H << "\n";
+                //     x.comm().root_print(ss.str());
+                // }
+
+                H += temp_H;
+            }
+        }
+    };
+
+}  // namespace utopia
+
+#endif  // UTOPIA_OBSTACLE_STABILIZED_VELOCITY_NEWMARK_INTEGRATOR_HPP

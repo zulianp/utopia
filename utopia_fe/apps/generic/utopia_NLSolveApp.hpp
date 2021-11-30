@@ -24,6 +24,7 @@
 
 #ifdef UTOPIA_ENABLE_NC_METHODS
 #include "utopia_ObstacleNewmark.hpp"
+#include "utopia_ObstacleStabilizedVelocityNewmark.hpp"
 #include "utopia_ObstacleVelocityNewmark.hpp"
 #endif  // UTOPIA_ENABLE_NC_METHODS
 
@@ -45,6 +46,7 @@ namespace utopia {
 #ifdef UTOPIA_ENABLE_NC_METHODS
         using ObstacleNewmark_t = utopia::ObstacleNewmark<FunctionSpace>;
         using ObstacleVelocityNewmark_t = utopia::ObstacleVelocityNewmark<FunctionSpace>;
+        using ObstacleStabilizedVelocityNewmark_t = utopia::ObstacleStabilizedVelocityNewmark<FunctionSpace>;
 #endif  // UTOPIA_ENABLE_NC_METHODS
 
         using TimeDependentFunction_t = utopia::TimeDependentFunction<FunctionSpace>;
@@ -125,6 +127,9 @@ namespace utopia {
 #ifdef UTOPIA_ENABLE_NC_METHODS
             else if (integrator == "ObstacleVelocityNewmark") {
                 time_dependent_function = utopia::make_unique<ObstacleVelocityNewmark_t>(problem);
+                function = time_dependent_function;
+            } else if (integrator == "ObstacleStabilizedVelocityNewmark") {
+                time_dependent_function = utopia::make_unique<ObstacleStabilizedVelocityNewmark_t>(problem);
                 function = time_dependent_function;
             } else if (integrator == "ObstacleNewmark") {
                 time_dependent_function = utopia::make_unique<ObstacleNewmark_t>(problem);
