@@ -55,6 +55,16 @@ namespace utopia {
             this->space()->displace(x);
             bool ok = obstacle_->assemble(*this->space());
             this->space()->displace(-x);
+
+            if (!barrier_) {
+                x.comm().root_print("[Warning] no barrier!");
+                barrier_ = std::make_shared<LogBarrier<Matrix_t, Vector_t>>();
+            }
+
+            barrier_->set_box_constraints(
+                std::make_shared<BoxConstraints<Vector_t>>(nullptr, std::make_shared<Vector_t>(obstacle_->gap())));
+
+            barrier_->set_selection(std::make_shared<Vector_t>(obstacle_->is_contact()));
             return ok;
         }
 
