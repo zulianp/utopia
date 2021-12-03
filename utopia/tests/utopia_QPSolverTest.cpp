@@ -194,7 +194,7 @@ namespace utopia {
             params.set("min_barrier_parameter", 1e-5);
             params.set("verbose", verbose);
             params.set("function_type", barrier_function_type);
-            params.set("max-it", 200);
+            params.set("max_it", 200);
             params.set("enable_line_search", true);
 
             LogBarrierQPSolver<Matrix, Vector> solver;
@@ -243,9 +243,9 @@ namespace utopia {
         void interior_point_qp_solver_test() {
             auto &&comm = Comm::get_default();
 
-            SizeType n = 100;
+            SizeType n = 400;
             if (Traits::Backend == BLAS) {
-                n = 20;
+                n = 30;
             }
 
             Matrix A;
@@ -254,8 +254,23 @@ namespace utopia {
             create_symm_lapl_test_data(comm, A, b, box, n);
             box.lower_bound() = nullptr;
 
-            // bool verbose = Traits::Backend == PETSC;
-            bool verbose = false;
+            Vector selector(layout(b), 1.);
+
+            if (true)  // Enable partial selection
+            {
+                Scalar start = 0.2;
+                Scalar end = 0.25;
+                auto selector_view = view_device(selector);
+                parallel_for(
+                    range_device(selector), UTOPIA_LAMBDA(const SizeType i) {
+                        Scalar x = i * 1. / (n - 1);
+                        bool val = x >= start && x <= end;
+                        selector_view.set(i, val);
+                    });
+            }
+
+            bool verbose = Traits::Backend == PETSC;
+            // bool verbose = false;
 
             PrimalInteriorPointSolver<Matrix, Vector> solver;
 
@@ -270,22 +285,16 @@ namespace utopia {
             solver.set_linear_solver(make_ref(linear_solver));
 
             solver.set_box_constraints(box);
+            solver.set_selection(make_ref(selector));
             solver.verbose(verbose);
 
             Vector x(layout(b), 0.);
             solver.solve(A, b, x);
 
-            // solver.verbose(true);
-
-            params.set("min_val", 0);
-            params.set("debug", verbose);
-            solver.read(params);
-            solver.solve(A, b, x);
-
-            // if (verbose) {
-            //     rename("x", x);
-            //     write("IP_X.m", x);
-            // }
+            if (verbose) {
+                rename("x", x);
+                write("IP_X.m", x);
+            }
         }
 
         void MPRGP_test() const {

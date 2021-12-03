@@ -31,11 +31,7 @@ namespace utopia {
                 x = max(x, *box.lower_bound());
             }
 
-            // Scalar norm_x = norm1(x);
-
-            if (
-                // norm_x == 0 ||
-                has_constraints_matrix()) {
+            if (has_constraints_matrix()) {
                 lambda.values(layout(x), 1.);
             } else {
                 lambda = system_matrix() * x;
@@ -49,7 +45,7 @@ namespace utopia {
                 slack = *box.upper_bound() - x;
             }
 
-            slack.e_max(min_val);  // 0.1
+            slack.e_max(min_val);
 
             if (debug) {
                 rename("s", slack);
@@ -60,9 +56,6 @@ namespace utopia {
                 write("IP_pre_s.m", slack);
                 write("IP_pre_l.m", lambda);
             }
-
-            // assert(is_positive(slack));
-            // assert(is_positive(lambda));
         }
 
         void post_solve(Vector &x) {
@@ -89,13 +82,16 @@ namespace utopia {
                 H = system_matrix();
             } else {
                 H.same_nnz_pattern_copy(system_matrix());
-                // H = system_matrix();
             }
 
             e_pseudo_inv(slack, slack_inv);
             e_pseudo_inv(lambda, lambda_inv);
 
             Vector temp_vec = e_mul(slack_inv, lambda);
+
+            ////////////////////////////////
+            apply_selector(temp_vec);
+            ////////////////////////////////
 
             if (has_constraints_matrix()) {
                 // FIXME
@@ -115,13 +111,15 @@ namespace utopia {
                 g = -g;
 
             } else {
-                // g = -e_mul(e_mul(rp, lambda) - rs, slack_inv);
-
                 g = e_mul(rp, lambda);
                 g -= rs;
                 g = e_mul(g, slack_inv);
                 g = -g;
             }
+
+            ////////////////////////////////
+            apply_selector(g);
+            ////////////////////////////////
 
             g -= rd;
 
@@ -139,14 +137,15 @@ namespace utopia {
                 delta_lambda =
                     e_mul(slack_inv, e_mul(lambda, constraints_matrix() * correction) + e_mul(lambda, rp) - rs);
             } else {
-                // delta_lambda = e_mul(slack_inv, e_mul(lambda, correction) + e_mul(lambda, rp) - rs);
+                ////////////////////////////////
+                apply_selector(correction);
+                ////////////////////////////////
+
                 delta_lambda = e_mul(lambda, correction);
                 delta_lambda += e_mul(lambda, rp);
                 delta_lambda -= rs;
                 delta_lambda = e_mul(delta_lambda, slack_inv);
             }
-
-            // delta_slack = -e_mul(lambda_inv, rs + e_mul(slack, delta_lambda));
 
             delta_slack = e_mul(slack, delta_lambda);
             delta_slack += rs;
@@ -163,9 +162,6 @@ namespace utopia {
             assert(alpha_dual == alpha_dual);
 
             Scalar alpha = std::min(alpha_primal, alpha_dual);
-
-            // Scalar mu_aff = dot(slack + alpha * delta_slack, lambda + alpha * delta_lambda);
-
             buff = slack + alpha * delta_slack;
             buff = e_mul(buff, lambda + alpha * delta_lambda);
             Scalar mu_aff = sum(buff);
@@ -175,7 +171,6 @@ namespace utopia {
             assert(sigma == sigma);
 
             // //////////////////////////////////////
-            // rs_aff = e_mul(slack, lambda) + e_mul(delta_slack, delta_lambda);
             rs_aff = e_mul(slack, lambda);
             buff = e_mul(delta_slack, delta_lambda);
             rs_aff += buff;
@@ -184,32 +179,37 @@ namespace utopia {
             if (has_constraints_matrix()) {
                 g = -transpose(constraints_matrix()) * e_mul(slack_inv, e_mul(lambda, rp) - rs_aff);
             } else {
-                // g = -e_mul(slack_inv, e_mul(lambda, rp) - rs_aff);
                 g = e_mul(lambda, rp) - rs_aff;
                 g = e_mul(g, slack_inv);
                 g = -g;
             }
 
+            ////////////////////////////////
+            apply_selector(g);
+            ////////////////////////////////
+
             g -= rd;
 
             correction.set(0.);
             if (!linear_solver->apply(g, correction)) {
-                // break;
+                // TODO check reason!
             }
 
             if (has_constraints_matrix()) {
                 delta_lambda =
                     e_mul(slack_inv, e_mul(lambda, constraints_matrix() * correction) + e_mul(lambda, rp) - rs_aff);
             } else {
-                // delta_lambda = e_mul(slack_inv, e_mul(lambda, correction) + e_mul(lambda, rp) - rs_aff);
                 delta_lambda = e_mul(lambda, correction);
+
+                ////////////////////////////////
+                apply_selector(delta_lambda);
+                ////////////////////////////////
+
                 buff = e_mul(lambda, rp);
                 delta_lambda += buff;
                 delta_lambda -= rs_aff;
                 delta_lambda = e_mul(delta_lambda, slack_inv);
             }
-
-            // delta_slack = -e_mul(lambda_inv, rs_aff + e_mul(slack, delta_lambda));
 
             delta_slack = e_mul(slack, delta_lambda);
             delta_slack += rs_aff;
@@ -249,8 +249,12 @@ namespace utopia {
         bool residual_d(const Vector &x, const Vector &b, const Vector &lambda, Vector &r_d) const {
             if (has_constraints_matrix()) {
                 r_d = system_matrix() * x + transpose(constraints_matrix()) * lambda - b;
+            } else if (has_selector()) {
+                r_d = lambda;
+                apply_selector(r_d);
+                r_d += system_matrix() * x;
+                r_d -= b;
             } else {
-                // r_d = system_matrix() * x + lambda - b;
                 r_d = system_matrix() * x;
                 r_d += lambda;
                 r_d -= b;
@@ -262,8 +266,12 @@ namespace utopia {
         bool residual_p(const Vector &x, const Vector &s, Vector &r_p) const {
             if (has_constraints_matrix()) {
                 r_p = constraints_matrix() * x - *box.upper_bound() + s;
+            } else if (has_selector()) {
+                r_p = x;
+                apply_selector(r_p);
+                r_p -= *box.upper_bound();
+                r_p += s;
             } else {
-                // r_p = x - *box.upper_bound() + s;
                 r_p = x - *box.upper_bound();
                 r_p += s;
             }
@@ -293,8 +301,6 @@ namespace utopia {
                 n_violations);
 
             n_violations = x.comm().sum(n_violations);
-
-            // if (n_violations) utopia::out() << "n_violations: " << n_violations << "/" << x.size() << "\n";
             return n_violations == 0;
         }
 
@@ -346,6 +352,14 @@ namespace utopia {
             return min(buff);
         }
 
+        inline void apply_selector(Vector &vec) const {
+            if (has_selector()) {
+                vec = e_mul(*boolean_selector_, vec);
+            }
+        }
+
+        inline bool has_selector() const { return static_cast<bool>(boolean_selector_); }
+
         inline const Matrix &system_matrix() const { return *system_matrix_; }
 
         inline bool has_constraints_matrix() const { return static_cast<bool>(constraints_matrix_); }
@@ -377,6 +391,8 @@ namespace utopia {
         std::shared_ptr<const Matrix> system_matrix_;
         bool verbose{false};
         bool debug{false};
+
+        std::shared_ptr<Vector> boolean_selector_;
     };
 
     template <class Matrix, class Vector, int Backend>
@@ -432,13 +448,10 @@ namespace utopia {
 
     template <class Matrix, class Vector, int Backend>
     bool PrimalInteriorPointSolver<Matrix, Vector, Backend>::apply(const Vector &b, Vector &x) {
-        // const auto &A = *this->get_operator();
-
         assert(this->get_operator()->comm().size() == b.comm().size());
         assert(this->get_operator()->rows() == b.size());
         assert(x.empty() || (x.size() == b.size() && b.comm().size() == x.comm().size()));
         assert(this->has_upper_bound());
-        // assert(!this->has_lower_bound());
 
         impl_->box = this->get_box_constraints();
 
@@ -491,6 +504,12 @@ namespace utopia {
 
         // copy ptr of the matrix
         impl_->system_matrix_ = op;
+    }
+
+    template <class Matrix, class Vector, int Backend>
+    void PrimalInteriorPointSolver<Matrix, Vector, Backend>::set_selection(
+        const std::shared_ptr<Vector> &boolean_selector) {
+        impl_->boolean_selector_ = boolean_selector;
     }
 
 }  // namespace utopia

@@ -35,8 +35,11 @@ namespace utopia {
         void init_memory(const Layout &layout) override;
         void update(const std::shared_ptr<const Matrix> &op) override;
 
-    UTOPIA_NVCC_PRIVATE
+        void set_selection(const std::shared_ptr<Vector> &boolean_selector) override;
+
+        UTOPIA_NVCC_PRIVATE
         class Impl;
+
     private:
         std::unique_ptr<Impl> impl_;
     };
