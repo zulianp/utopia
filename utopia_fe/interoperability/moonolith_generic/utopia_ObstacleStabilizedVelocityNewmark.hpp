@@ -158,35 +158,13 @@ namespace utopia {
         virtual ~ObstacleStabilizedVelocityNewmark() = default;
 
         bool gradient(const Vector_t &velocity, Vector_t &g) const override {
-            // Vector_t x;
-            // update_x(velocity, x);
-            // if (!this->function()->gradient(x, g)) {
-            //     return false;
-            // }
-
-            // integrate_gradient(x, g);
-
             Vector_t x;
             update_x(velocity, x);
-            // project_x_onto_feasibile_region(x);
-
             if (!this->function()->gradient(x, g)) {
                 return false;
             }
 
-            Vector_t mom = velocity - this->velocity();
-            mom *= 2 / this->delta_time();
-
-            g += (*this->mass_matrix()) * mom;
-            g += force_old_;
-
-            // project_x_onto_feasibile_region(x);
-            barrier_gradient(x, g);
-
-            if (this->must_apply_constraints_to_assembled()) {
-                this->space()->apply_zero_constraints(g);
-            }
-
+            integrate_gradient(x, g);
             return true;
         }
 
