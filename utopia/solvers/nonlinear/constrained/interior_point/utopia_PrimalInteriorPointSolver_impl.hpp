@@ -354,11 +354,11 @@ namespace utopia {
 
         inline void apply_selector(Vector &vec) const {
             if (has_selector()) {
-                vec = e_mul(*boolean_selector_, vec);
+                vec = e_mul(*boolean_selector, vec);
             }
         }
 
-        inline bool has_selector() const { return static_cast<bool>(boolean_selector_); }
+        inline bool has_selector() const { return static_cast<bool>(boolean_selector); }
 
         inline const Matrix &system_matrix() const { return *system_matrix_; }
 
@@ -366,6 +366,10 @@ namespace utopia {
         inline const Matrix &constraints_matrix() const {
             assert(has_constraints_matrix());
             return *constraints_matrix_;
+        }
+
+        void determine_boolean_selector() const {
+            this->box.determine_boolean_selector(-infinity, infinity, *boolean_selector);
         }
 
         std::shared_ptr<LinearSolver> linear_solver;
@@ -392,7 +396,9 @@ namespace utopia {
         bool verbose{false};
         bool debug{false};
 
-        std::shared_ptr<Vector> boolean_selector_;
+        std::shared_ptr<Vector> boolean_selector;
+        bool auto_selector{false};
+        Scalar infinity{10000};
     };
 
     template <class Matrix, class Vector, int Backend>
@@ -429,6 +435,7 @@ namespace utopia {
         in.get("dumping_parameter", impl_->dumping_parameter);
         in.get("min_val", impl_->min_val);
         in.get("debug", impl_->debug);
+        in.get("auto_selector", impl_->auto_selector);
 
         if (impl_->linear_solver) {
             in.get("linear_solver", *impl_->linear_solver);
@@ -454,6 +461,10 @@ namespace utopia {
         assert(this->has_upper_bound());
 
         impl_->box = this->get_box_constraints();
+
+        if (impl_->auto_selector) {
+            impl_->determine_boolean_selector();
+        }
 
         if (this->verbose()) {
             this->init_solver("PrimalInteriorPointSolver comm.size = " + std::to_string(b.comm().size()),
@@ -509,7 +520,7 @@ namespace utopia {
     template <class Matrix, class Vector, int Backend>
     void PrimalInteriorPointSolver<Matrix, Vector, Backend>::set_selection(
         const std::shared_ptr<Vector> &boolean_selector) {
-        impl_->boolean_selector_ = boolean_selector;
+        impl_->boolean_selector = boolean_selector;
     }
 
 }  // namespace utopia

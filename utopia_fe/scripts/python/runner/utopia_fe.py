@@ -69,6 +69,17 @@ class MPRGP(QPSolver):
         self.backend = 'any'
         self.atol = atol
 
+class InteriorPointSolver(QPSolver):
+    yaml_tag = u'!InteriorPointSolver'
+    def __init__(self,atol=1e-11):
+        super().__init__("ipm")
+        self.backend = 'any'
+        self.atol = atol
+        self.stol = 1e-10
+        self.dumping_parameter = 0.95
+        self.min_val = 1e-20
+        self.linear_solver = BDDLinearSolver(3000, False)
+
 class BarrierQPSolver(QPSolver):
     yaml_tag = u'!BarrierQPSolver'
     def __init__(self, atol=1e-11):
@@ -216,7 +227,7 @@ class Mesh(yaml.YAMLObject):
             if not decomposed_files:
                 print("Decomposed file not found! Generating decomposition...")
                 # print(os.path.dirname(path))
-                self.partition(env.mpi_processes, os.path.dirname(self.path))
+                self.partition(self.env.mpi_processes, os.path.dirname(self.path))
             else:
                 time_decomp = os.path.getmtime(decomposed_files[0])
 
@@ -607,7 +618,10 @@ class FSIInit:
 
         step3_sim = ObstacleSimulation(
             env, solid_fs_3, elastic_material, [], MeshObstacle(fluid_mesh),
-            ObstacleSolver(MPRGP(1e-14), 10, 10), nonlinear_obstacle_at_rest_result_db)
+            ObstacleSolver(
+                # MPRGP(1e-14),
+                InteriorPointSolver(1e-14),
+                10, 10), nonlinear_obstacle_at_rest_result_db)
 
         #########################################################
         ### Step 4
@@ -686,10 +700,10 @@ class Launcher:
         ###############################
 
         # Solid mesh db
-        solid_mesh = "/Users/zulianp/Desktop/in_the_cloud/owncloud_HSLU/Patrick/discharge_2/struct_halfDomain_21K.exo"
+        solid_mesh = "/Users/zulianp/Desktop/in_the_cloud/owncloud_HSLU/Patrick/discharge_2_dirichlet/workspace/solid.e"
 
         # Fluid mesh db
-        fluid_mesh = "/Users/zulianp/Desktop/in_the_cloud/owncloud_HSLU/Patrick/discharge_2/fluid_halfDomain_155K.exo"
+        fluid_mesh = "/Users/zulianp/Desktop/in_the_cloud/owncloud_HSLU/Patrick/discharge_2_dirichlet/fluid_halfDomain_155K.exo"
 
         # Young's modulus for the solid material
         young_modulus = 9.174e6
