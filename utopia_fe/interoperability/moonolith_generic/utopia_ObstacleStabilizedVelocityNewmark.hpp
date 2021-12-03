@@ -29,6 +29,7 @@ namespace utopia {
             Super::read(in);
 
             in.get("debug", debug_);
+            in.get("debug_from_iteration", debug_from_iteration_);
             in.get("stabilized_formulation", stabilized_formulation_);
             in.get("trivial_obstacle", trivial_obstacle_);
 
@@ -54,6 +55,16 @@ namespace utopia {
 
             this->space()->displace(x);
             bool ok = obstacle_->assemble(*this->space());
+
+            if (debug_) {
+                static int iter_debug = 0;
+                if (iter_debug >= debug_from_iteration_) {
+                    ouput_debug_data(iter_debug, x);
+                }
+
+                iter_debug++;
+            }
+
             this->space()->displace(-x);
 
             if (!barrier_) {
@@ -111,6 +122,13 @@ namespace utopia {
             Vector_t x;
             update_x(velocity, x);
 
+            if (x.has_nan_or_inf()) {
+                this->~ObstacleStabilizedVelocityNewmark();
+                x.comm().barrier();
+                assert(false);
+                Utopia::Abort("update_IVP: NaN detected!");
+            }
+
             this->function()->gradient(x, force_old_);
 
             // Store current solution
@@ -140,13 +158,35 @@ namespace utopia {
         virtual ~ObstacleStabilizedVelocityNewmark() = default;
 
         bool gradient(const Vector_t &velocity, Vector_t &g) const override {
+            // Vector_t x;
+            // update_x(velocity, x);
+            // if (!this->function()->gradient(x, g)) {
+            //     return false;
+            // }
+
+            // integrate_gradient(x, g);
+
             Vector_t x;
             update_x(velocity, x);
+            // project_x_onto_feasibile_region(x);
+
             if (!this->function()->gradient(x, g)) {
                 return false;
             }
 
-            integrate_gradient(x, g);
+            Vector_t mom = velocity - this->velocity();
+            mom *= 2 / this->delta_time();
+
+            g += (*this->mass_matrix()) * mom;
+            g += force_old_;
+
+            // project_x_onto_feasibile_region(x);
+            barrier_gradient(x, g);
+
+            if (this->must_apply_constraints_to_assembled()) {
+                this->space()->apply_zero_constraints(g);
+            }
+
             return true;
         }
 
@@ -224,7 +264,7 @@ namespace utopia {
 
                 project_x_onto_feasibile_region(x);
 
-                Super::time_derivative(x, velocity);
+                this->time_derivative(x, velocity);
             }
 
             return ok;
@@ -268,6 +308,7 @@ namespace utopia {
 
         std::shared_ptr<IObstacle<FunctionSpace>> obstacle_;
         bool debug_{false};
+        int debug_from_iteration_{0};
         bool stabilized_formulation_{true};
 
         std::shared_ptr<LogBarrierBase> barrier_;
@@ -345,6 +386,33 @@ namespace utopia {
                 // }
 
                 H += temp_H;
+            }
+        }
+
+        void ouput_debug_data(const Size_t iter_debug, const Vector_t &) const {
+            // Output extras
+            {
+                Vector_t gap_zeroed = e_mul(obstacle_->is_contact(), obstacle_->gap());
+                Vector_t rays = obstacle_->normals();
+
+                {
+                    auto rays_view = local_view_device(rays);
+                    auto gap_view = const_local_view_device(obstacle_->gap());
+
+                    int dim = this->space()->mesh().spatial_dimension();
+
+                    parallel_for(
+                        local_range_device(rays), UTOPIA_LAMBDA(const Size_t i) {
+                            Size_t block = i / dim;
+                            Size_t g_idx = dim * block;
+
+                            auto ri = rays_view.get(i);
+                            ri *= gap_view.get(g_idx);
+                            rays_view.set(i, ri);
+                        });
+                }
+
+                this->space()->write("rays_" + std::to_string(iter_debug) + ".e", rays);
             }
         }
     };
