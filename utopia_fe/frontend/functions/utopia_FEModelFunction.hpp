@@ -79,6 +79,8 @@ namespace utopia {
         virtual void must_apply_constraints_to_assembled(const bool) {}
         virtual bool report_solution(const Vector_t &) { return true; }
 
+        virtual void initial_guess_for_solver(Vector_t &) {}
+
         virtual bool update_IVP(const Vector_t &) { return false; }
         virtual bool setup_IVP(Vector_t &) { return false; }
         virtual bool is_IVP_solved() { return true; }

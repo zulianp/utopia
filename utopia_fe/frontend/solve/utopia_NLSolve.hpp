@@ -225,6 +225,7 @@ namespace utopia {
                         }
                     }
 
+                    function_->initial_guess_for_solver(x);
                     if (!solver_->solve(*function_, x)) {
                         error("Solver failed to solve");
                         return false;

@@ -18,11 +18,13 @@
 namespace utopia {
 
     template <class FunctionSpace>
-    class ObstacleVelocityNewmark final : public NewmarkIntegrator<FunctionSpace> {
+    class ObstacleVelocityNewmark final : public NewmarkIntegrator<FunctionSpace>,
+                                          public LSStrategy<typename Traits<FunctionSpace>::Vector> {
     public:
         using Super = utopia::NewmarkIntegrator<FunctionSpace>;
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
+        using Layout_t = typename Traits<FunctionSpace>::Layout;
 
         using Size_t = typename Traits<FunctionSpace>::SizeType;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
@@ -60,7 +62,84 @@ namespace utopia {
             }
         }
 
-        inline std::shared_ptr<LSStrategy<Vector_t>> line_search() override { return line_search_; }
+        bool get_alpha(FunctionBase<Vector_t> &fun,
+                       const Vector_t &g,
+                       const Vector_t &velocity,
+                       const Vector_t &correction,
+                       Scalar_t &alpha) override {
+            if (line_search_) {
+                Vector_t c;
+                update_x(velocity, c);
+                c -= this->x_old();
+
+                if (trivial_obstacle_) {
+                    Vector_t zero(layout(c), 0.);
+                    return line_search_->get_alpha(fun, g, zero, correction, alpha);
+                } else {
+                    return line_search_->get_alpha(fun, g, this->x_old(), correction, alpha);
+                }
+            } else {
+                alpha = 1.;
+                return false;
+            }
+        }
+
+        bool get_alpha(LeastSquaresFunctionBase<Vector_t> &fun,
+                       const Vector_t &g,
+                       const Vector_t &velocity,
+                       const Vector_t &correction,
+                       Scalar_t &alpha) override {
+            if (line_search_) {
+                Vector_t c;
+                update_x(velocity, c);
+                c -= this->x_old();
+
+                if (trivial_obstacle_) {
+                    Vector_t zero(layout(c), 0.);
+                    return line_search_->get_alpha(fun, g, zero, correction, alpha);
+                } else {
+                    return line_search_->get_alpha(fun, g, this->x_old(), correction, alpha);
+                }
+
+            } else {
+                alpha = 1.;
+                return false;
+            }
+        }
+
+        void init_memory(const Layout_t & /*layout*/) override {}
+
+        void initial_guess_for_solver(Vector_t &velocity) override {
+            Vector_t x = this->x_old();
+            update_x(velocity, x);
+            x -= this->x_old();
+
+            Scalar_t alpha = 1;
+            if (line_search_) {
+                alpha = line_search_->compute(this->x_old(), x);
+            } else {
+                // Create temporary for initial guess only
+                auto box =
+                    std::make_shared<BoxConstraints<Vector_t>>(nullptr, std::make_shared<Vector_t>(obstacle_->gap()));
+
+                auto ls = std::make_shared<LineSearchBoxProjection<Vector_t>>(box, make_ref(this->x_old()));
+                alpha = ls->compute(this->x_old(), x);
+            }
+
+            x = this->x_old() + alpha * x;
+
+            utopia::out() << "initial_guess_for_solver, alpha: " << alpha << "\n";
+
+            time_derivative(x, velocity);
+        }
+
+        inline std::shared_ptr<LSStrategy<Vector_t>> line_search() override {
+            if (line_search_) {
+                return make_ref(*this);
+            } else {
+                return nullptr;
+            }
+        }
 
         void read(Input &in) override {
             Super::read(in);

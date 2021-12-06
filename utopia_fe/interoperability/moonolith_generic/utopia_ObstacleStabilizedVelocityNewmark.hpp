@@ -275,6 +275,32 @@ namespace utopia {
             return ok;
         }
 
+        void initial_guess_for_solver(Vector_t &velocity) override {
+            Vector_t x = this->x_old();
+            update_x(velocity, x);
+            x -= this->x_old();
+
+            Scalar_t alpha = 1;
+            // if (line_search_) {
+            //     alpha = line_search_->compute(this->x_old(), x);
+            // } else {
+            // Create temporary for initial guess only
+            auto box =
+                std::make_shared<BoxConstraints<Vector_t>>(nullptr, std::make_shared<Vector_t>(obstacle_->gap()));
+
+            auto ls = std::make_shared<LineSearchBoxProjection<Vector_t>>(box, make_ref(this->x_old()));
+            alpha = ls->compute(this->x_old(), x);
+            // }
+
+            x = this->x_old() + alpha * x;
+
+            if (alpha < 0.99) {
+                utopia::out() << "initial_guess_for_solver, alpha: " << alpha << "\n";
+            }
+
+            time_derivative(x, velocity);
+        }
+
     protected:
         const Vector_t &velocity_old() const { return velocity_old_; }
 
