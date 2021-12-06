@@ -634,6 +634,8 @@ namespace utopia {
 
             if (impl_->debug && fun.has_nan_or_inf()) {
                 impl_->space->write("NaN.e", x);
+                this->~OmniAssembler();
+                assert(false);
                 utopia::Utopia::Abort("Detected NaN in material gradient!");
             }
 
@@ -667,6 +669,8 @@ namespace utopia {
 
             if (impl_->debug && vec.has_nan_or_inf()) {
                 impl_->space->write("NaN.e", x);
+                this->~OmniAssembler();
+                assert(false);
                 utopia::Utopia::Abort("Detected NaN in material gradient!");
             }
 
@@ -686,6 +690,7 @@ namespace utopia {
 
             if (impl_->debug && hessian_times_x.has_nan_or_inf()) {
                 impl_->space->write("NaN.e", x);
+                this->~OmniAssembler();
                 utopia::Utopia::Abort("Detected NaN in application of operator!");
             }
 
