@@ -79,6 +79,8 @@ class InteriorPointSolver(QPSolver):
         self.dumping_parameter = 0.95
         self.min_val = 1e-20
         self.linear_solver = BDDLinearSolver(3000, False)
+        # self.linear_solver = AMG(False)
+        self.linear_solver.rtol = 1e-8
 
 class BarrierQPSolver(QPSolver):
     yaml_tag = u'!BarrierQPSolver'
