@@ -14,6 +14,7 @@
 #include "utopia_ObstacleFactory.hpp"
 
 #include "utopia_IsNotSupported.hpp"
+#include "utopia_LineSearchBoxProjection.hpp"
 
 namespace utopia {
 

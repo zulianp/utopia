@@ -5,6 +5,7 @@
 #include "utopia_IObstacle.hpp"
 #include "utopia_ObstacleFactory.hpp"
 
+#include "utopia_LineSearchBoxProjection.hpp"
 #include "utopia_LogBarrierFunctionFactory.hpp"
 #include "utopia_ObstacleStabilizedNewmark.hpp"
 
