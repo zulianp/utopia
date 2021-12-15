@@ -38,6 +38,7 @@ namespace utopia {
             Vector &gap();
             Vector &is_contact();
             Vector &normals();
+            std::shared_ptr<Matrix> mass_matrix();
 
             Obstacle();
             ~Obstacle();

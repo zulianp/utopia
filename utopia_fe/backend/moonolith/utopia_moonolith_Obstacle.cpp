@@ -48,6 +48,7 @@ namespace utopia {
             Vector gap;
             Vector normals;
             Matrix orthogonal_trafo;
+            Matrix mass_matrix;
 
             Matrix basis_trafo;
             Vector mass_vector;
@@ -134,6 +135,8 @@ namespace utopia {
 
                 build_orthogonal_transformation(out.is_contact, out.normals, out.orthogonal_trafo);
                 replace_zeros(out.is_contact, out.gap);
+
+                out.mass_matrix = diag(mass_vector);
             }
 
             void replace_zeros(const Vector &is_contact, Vector &gap) {
@@ -374,6 +377,8 @@ namespace utopia {
         Obstacle::Vector &Obstacle::is_contact() { return output().is_contact; }
 
         Obstacle::Vector &Obstacle::normals() { return output().normals; }
+
+        std::shared_ptr<Obstacle::Matrix> Obstacle::mass_matrix() { return make_ref(output().mass_matrix); }
 
         Obstacle::Output &Obstacle::output() {
             assert(output_);

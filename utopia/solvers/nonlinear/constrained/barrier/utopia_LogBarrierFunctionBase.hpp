@@ -110,6 +110,11 @@ namespace utopia {
         inline bool verbose() const { return verbose_; }
         virtual void reset() { current_barrier_parameter_ = barrier_parameter_; }
 
+        inline void set_scaling_matrix(const std::shared_ptr<Matrix> &scaling_matrix) {
+            scaling_matrix_ = scaling_matrix;
+        }
+        inline const std::shared_ptr<Matrix> &scaling_matrix() const { return scaling_matrix_; }
+
         UTOPIA_NVCC_PRIVATE
         std::shared_ptr<LogBarrierBase> barrier_;
         std::shared_ptr<BoxConstraints> box_;
@@ -122,6 +127,8 @@ namespace utopia {
         Scalar zero_{1e-20};
 
         bool verbose_{false};
+
+        std::shared_ptr<Matrix> scaling_matrix_;
     };
 
     template <class Matrix, class Vector>

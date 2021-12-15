@@ -89,5 +89,7 @@ namespace utopia {
             return impl_->obstacle.orthogonal_transformation();
         }
 
+        std::shared_ptr<Obstacle::Matrix> Obstacle::mass_matrix() { return impl_->obstacle.mass_matrix(); }
+
     }  // namespace stk
 }  // namespace utopia

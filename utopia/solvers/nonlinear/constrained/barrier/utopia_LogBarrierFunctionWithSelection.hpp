@@ -52,13 +52,22 @@ namespace utopia {
                 this->compute_diff_upper_bound(x, diff);
                 diff_selector = this->current_barrier_parameter_ / diff;
                 diff_selector = e_mul(*boolean_selector_, diff);
-                g += diff_selector;
+
+                if (this->scaling_matrix()) {
+                    g += (*this->scaling_matrix()) * diff_selector;
+                } else {
+                    g += diff_selector;
+                }
 
                 diff = pow2(diff);
                 diff_selector = this->current_barrier_parameter_ / diff;
                 diff_selector = e_mul(*boolean_selector_, diff);
 
-                H.shift_diag(diff_selector);
+                if (this->scaling_matrix()) {
+                    H.shift_diag((*this->scaling_matrix()) * diff_selector);
+                } else {
+                    H.shift_diag(diff_selector);
+                }
             }
 
             if (this->box_->has_lower_bound()) {
@@ -66,13 +75,22 @@ namespace utopia {
 
                 diff_selector = this->current_barrier_parameter_ / diff;
                 diff_selector = e_mul(*boolean_selector_, diff);
-                g -= diff_selector;
+
+                if (this->scaling_matrix()) {
+                    g -= (*this->scaling_matrix()) * diff_selector;
+                } else {
+                    g -= diff_selector;
+                }
 
                 diff = pow2(diff);
                 diff_selector = this->current_barrier_parameter_ / diff;
                 diff_selector = e_mul(*boolean_selector_, diff);
 
-                H.shift_diag(diff_selector);
+                if (this->scaling_matrix()) {
+                    H.shift_diag((*this->scaling_matrix()) * diff_selector);
+                } else {
+                    H.shift_diag(diff_selector);
+                }
             }
         }
 
@@ -87,7 +105,11 @@ namespace utopia {
                 diff = this->current_barrier_parameter_ / diff;
                 diff = e_mul(*boolean_selector_, diff);
 
-                H.shift_diag(diff);
+                if (this->scaling_matrix()) {
+                    H.shift_diag((*this->scaling_matrix()) * diff);
+                } else {
+                    H.shift_diag(diff);
+                }
             }
 
             if (this->box_->has_lower_bound()) {
@@ -96,7 +118,11 @@ namespace utopia {
                 diff = this->current_barrier_parameter_ / diff;
                 diff = e_mul(*boolean_selector_, diff);
 
-                H.shift_diag(diff);
+                if (this->scaling_matrix()) {
+                    H.shift_diag((*this->scaling_matrix()) * diff);
+                } else {
+                    H.shift_diag(diff);
+                }
             }
         }
 
@@ -112,14 +138,24 @@ namespace utopia {
                 this->compute_diff_upper_bound(x, diff);
                 diff = this->current_barrier_parameter_ / diff;
                 diff = e_mul(*boolean_selector_, diff);
-                g += diff;
+
+                if (this->scaling_matrix()) {
+                    g += (*this->scaling_matrix()) * diff;
+                } else {
+                    g += diff;
+                }
             }
 
             if (this->box_->has_lower_bound()) {
                 this->compute_diff_lower_bound(x, diff);
                 diff = this->current_barrier_parameter_ / diff;
                 diff = e_mul(*boolean_selector_, diff);
-                g -= diff;
+
+                if (this->scaling_matrix()) {
+                    g -= (*this->scaling_matrix()) * diff;
+                } else {
+                    g -= diff;
+                }
             }
 
             if (print_norms_) {
@@ -132,14 +168,26 @@ namespace utopia {
         void value(const Vector &x, Scalar &value) const override {
             Scalar ub_value = 0.0;
             if (this->box_->has_upper_bound()) {
-                ub_value = this->current_barrier_parameter_ *
-                           sum(e_mul(*boolean_selector_, logn(*this->box_->upper_bound() - x)));
+                if (this->scaling_matrix()) {
+                    ub_value = this->current_barrier_parameter_ *
+                               sum(e_mul(*boolean_selector_,
+                                         (*this->scaling_matrix()) * logn(*this->box_->upper_bound() - x)));
+                } else {
+                    ub_value = this->current_barrier_parameter_ *
+                               sum(e_mul(*boolean_selector_, logn(*this->box_->upper_bound() - x)));
+                }
             }
 
             Scalar lb_value = 0.0;
             if (this->box_->has_lower_bound()) {
-                ub_value = this->current_barrier_parameter_ *
-                           sum(e_mul(*boolean_selector_, logn(x - *this->box_->lower_bound())));
+                if (this->scaling_matrix()) {
+                    ub_value = this->current_barrier_parameter_ *
+                               sum(e_mul(*boolean_selector_,
+                                         (*this->scaling_matrix()) * logn(x - *this->box_->lower_bound())));
+                } else {
+                    ub_value = this->current_barrier_parameter_ *
+                               sum(e_mul(*boolean_selector_, logn(x - *this->box_->lower_bound())));
+                }
             }
 
             value -= (ub_value - lb_value);

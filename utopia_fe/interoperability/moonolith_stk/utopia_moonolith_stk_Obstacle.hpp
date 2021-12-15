@@ -33,6 +33,7 @@ namespace utopia {
             void inverse_transform(const Vector &in, Vector &out) override;
 
             std::shared_ptr<Matrix> orthogonal_transformation() override;
+            std::shared_ptr<Matrix> mass_matrix() override;
 
             Obstacle();
             virtual ~Obstacle();

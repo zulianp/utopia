@@ -161,6 +161,13 @@ namespace utopia {
             in.get("function_type", function_type);
             barrier_ = LogBarrierFunctionFactory<Matrix_t, Vector_t>::new_log_barrier(function_type);
             barrier_->read(in);
+
+            bool use_barrier_mass_scaling = true;
+            in.get("use_barrier_mass_scaling", use_barrier_mass_scaling);
+
+            if (use_barrier_mass_scaling) {
+                barrier_->set_scaling_matrix(obstacle_->mass_matrix());
+            }
         }
 
         bool setup_IVP(Vector_t &x) override {
