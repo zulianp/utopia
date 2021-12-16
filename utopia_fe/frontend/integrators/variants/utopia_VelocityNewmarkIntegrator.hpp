@@ -98,6 +98,8 @@ namespace utopia {
 
         bool report_solution(const Vector_t &) override { return Super::report_solution(solution()); }
 
+        void initial_guess_for_solver(Vector_t &velocity) override { velocity.set(0.); }
+
     private:
         void update_x(const Vector_t &velocity, Vector_t &x) const {
             x = this->x_old();

@@ -33,6 +33,7 @@ namespace utopia {
             in.get("debug_from_iteration", debug_from_iteration_);
             in.get("stabilized_formulation", stabilized_formulation_);
             in.get("trivial_obstacle", trivial_obstacle_);
+            in.get("zero_initial_guess", zero_initial_guess_);
 
             if (!obstacle_) {
                 std::string type;
@@ -284,6 +285,11 @@ namespace utopia {
         }
 
         void initial_guess_for_solver(Vector_t &velocity) override {
+            if (zero_initial_guess_) {
+                velocity.set(0.);
+                return;
+            }
+
             Vector_t x = this->x_old();
             update_x(velocity, x);
             x -= this->x_old();
@@ -325,6 +331,7 @@ namespace utopia {
 
         std::shared_ptr<LogBarrierBase> barrier_;
         bool trivial_obstacle_{false};
+        bool zero_initial_guess_{true};
 
         void update_x(const Vector_t &velocity, Vector_t &x) const {
             x = predictor_;

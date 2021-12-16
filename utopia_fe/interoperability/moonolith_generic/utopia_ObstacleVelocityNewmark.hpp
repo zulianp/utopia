@@ -271,7 +271,6 @@ namespace utopia {
         bool gradient(const Vector_t &velocity, Vector_t &g) const override {
             Vector_t x;
             update_x(velocity, x);
-            // project_x_onto_feasibile_region(x);
 
             if (!this->function()->gradient(x, g)) {
                 return false;
@@ -283,7 +282,6 @@ namespace utopia {
 
             g += (*this->mass_matrix()) * mom;
 
-            // project_x_onto_feasibile_region(x);
             barrier_gradient(x, g);
 
             if (this->must_apply_constraints_to_assembled()) {
@@ -301,7 +299,6 @@ namespace utopia {
         bool hessian(const Vector_t &velocity, Matrix_t &H) const override {
             Vector_t x;
             update_x(velocity, x);
-            // project_x_onto_feasibile_region(x);
 
             if (!Super::hessian(x, H)) {
                 return false;
@@ -322,7 +319,6 @@ namespace utopia {
         bool hessian_and_gradient(const Vector_t &velocity, Matrix_t &H, Vector_t &g) const override {
             Vector_t x;
             update_x(velocity, x);
-            // project_x_onto_feasibile_region(x);
             return Super::hessian_and_gradient(x, H, g);
         }
 

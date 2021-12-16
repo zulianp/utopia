@@ -21,6 +21,8 @@ class Newton(yaml.YAMLObject):
         self.verbose = verbose
         self.max_it = max_it
         self.atol = atol
+        self.dumping = 1
+        self.inverse_diagonal_scaling = False
 
 class LinearSolver(yaml.YAMLObject):
     yaml_tag = u'!LinearSolver'
@@ -35,12 +37,22 @@ class LinearSolver(yaml.YAMLObject):
     def set_ksp_type(self, ksp_type):
         self.ksp_type = ksp_type
 
+    def set_max_it(self, max_it):
+        self.max_it = max_it
+
 class AMG(LinearSolver):
     yaml_tag = u'!AMG'
     def __init__(self, verbose = False):
         super().__init__("petsc", "ksp", verbose)
         self.set_pc_type("hypre")
         self.set_ksp_type("gmres")
+
+class LU(LinearSolver):
+    yaml_tag = u'!LU'
+    def __init__(self, verbose = False):
+        super().__init__("petsc", "ksp", verbose)
+        self.set_pc_type("lu")
+        self.set_ksp_type("preonly")
 
 class BDDLinearSolver(LinearSolver):
     yaml_tag = u'!LinearSolver'
@@ -62,6 +74,9 @@ class QPSolver(yaml.YAMLObject):
         self.backend = "any"
         self.verbose = True
 
+    def set_linear_solver(self, linear_solver):
+        self.linear_solver = linear_solver
+
 class MPRGP(QPSolver):
     yaml_tag = u'!MPRGP'
     def __init__(self,atol=1e-11):
@@ -78,7 +93,9 @@ class InteriorPointSolver(QPSolver):
         self.stol = 1e-10
         self.dumping_parameter = 0.95
         self.min_val = 1e-20
-        self.linear_solver = BDDLinearSolver(3000, False)
+        # self.linear_solver = BDDLinearSolver(3000, False)
+        self.linear_solver = AMG(False)
+        self.max_it = 40
         # self.linear_solver = AMG(False)
         self.linear_solver.rtol = 1e-8
 
@@ -485,21 +502,35 @@ class BarrierProblem(yaml.YAMLObject):
         self.assembly = Assembly(material, forcing_functions)
         self.mass = Assembly(mass, [])
 
+        # Barrier numerics
         self.infinity = 5.e-3
-        self.trivial_obstacle = False
         self.barrier_parameter = 1e-9
         self.barrier_parameter_shrinking_factor = 0.5
         self.min_barrier_parameter = 1e-9
         self.soft_boundary = 1e-16
         self.zero = 1e-20
+
+        # Algorithmic branches
+        self.trivial_obstacle = False
+
         self.allow_projection = True
+        self.use_barrier_mass_scaling = True
+        self.zero_initial_guess = False
+
+        # self.allow_projection = False
+        # self.use_barrier_mass_scaling = False
+        # self.zero_initial_guess = True
 
 class BarrierObstacleSimulation(NLSolve):
     yaml_tag = u'!BarrierObstacleSimulation'
 
     def __init__(self, env, space,  material, mass, forcing_functions, obstacle, time, solver, output_path):
-        self.integrator = 'ObstacleVelocityNewmark'
-
+        # self.integrator = 'ObstacleVelocityNewmark'
+        # self.integrator = 'ObstacleStabilizedVelocityNewmark'
+        # self.integrator = 'Newmark'
+        # self.integrator = 'VelocityNewmark'
+        self.integrator = 'ObstacleNewmark'
+        # self.integrator = 'ObstacleStabilizedNewmark'
         problem =  BarrierProblem(space, material, mass, forcing_functions, obstacle, time, output_path)
         super().__init__(env, space, problem, solver)
 
@@ -621,13 +652,13 @@ class FSIInit:
         step3_sim = ObstacleSimulation(
             env, solid_fs_3, elastic_material, [], MeshObstacle(fluid_mesh),
             ObstacleSolver(
-                # MPRGP(1e-14),
-                InteriorPointSolver(1e-14),
+                MPRGP(1e-14),
+                # InteriorPointSolver(1e-14),
                 10, 10), nonlinear_obstacle_at_rest_result_db)
 
         #########################################################
         ### Step 4
-        mass = Mass(998, 3)
+
 
         solid_fs_4 = solid_fs.clone()
         solid_fs_4.read_state = True
@@ -643,20 +674,39 @@ class FSIInit:
         #########################################################
         ### Test (cheaper than FSI for testing barrier)
 
+        mass = Mass(998, 3)
+
         solid_fs_test = solid_fs.clone()
         solid_fs_test.read_state = True
         solid_fs_test.mesh.path = fsi_ready_db
 
         force = DomainForcingFunction(-1e3, 3, 1)
+        # force = DomainForcingFunction(0, 3, 1)
         force.density = mass.density
         forcing_functions = [force]
 
-        # linear_solver = BDDLinearSolver(200, True)
-        linear_solver = AMG(False)
+        # linear_solver = BDDLinearSolver(100, True)
+        # linear_solver = AMG(False)
+        linear_solver = LU(True)
+        linear_solver.max_it = 400
+        newton_solver = Newton(linear_solver, 80)
+        # newton_solver.dumping = 1.
+        newton_solver.inverse_diagonal_scaling = False
+        newton_solver.dumping = 0.8
+        # newton_solver.inverse_diagonal_scaling = True
+
+        # newton_solver.max_it = 40
+        newton_solver.stol = 1e-18
+        newton_solver.atol = 1e-8
+        newton_solver.rtol = 1e-14
+
+        mesh_obstacle = MeshObstacle(fluid_mesh)
+        mesh_obstacle.gap_negative_bound = -1e-4
+        mesh_obstacle.gap_positive_bound = 1e-4
 
         test = BarrierObstacleSimulation(env, solid_fs_test,
          elastic_material, mass, forcing_functions,
-         MeshObstacle(fluid_mesh), Time(1e-4, 100), Newton(linear_solver, 20), solid_test_db)
+         mesh_obstacle, Time(1e-4, 100), newton_solver, solid_test_db)
 
         #########################################################
         ## Store states for outside modification/manipulation

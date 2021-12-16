@@ -59,8 +59,9 @@ namespace utopia {
 
             bool converged = false;
 
-            // notify listener
             fun.project_onto_feasibile_region(x);
+
+            // notify listener
             fun.update(x);
 
             fun.gradient(x, grad_);
