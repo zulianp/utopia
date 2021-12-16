@@ -111,6 +111,11 @@ namespace utopia {
         void init_memory(const Layout_t & /*layout*/) override {}
 
         void initial_guess_for_solver(Vector_t &velocity) override {
+            if (zero_initial_guess_) {
+                velocity.set(0.);
+                return;
+            }
+
             Vector_t x = this->x_old();
             update_x(velocity, x);
             x -= this->x_old();
@@ -129,7 +134,9 @@ namespace utopia {
 
             x = this->x_old() + alpha * x;
 
-            utopia::out() << "initial_guess_for_solver, alpha: " << alpha << "\n";
+            if (alpha != 1.) {
+                utopia::out() << "initial_guess_for_solver, alpha: " << alpha << "\n";
+            }
 
             time_derivative(x, velocity);
         }
@@ -149,6 +156,7 @@ namespace utopia {
             in.get("debug_from_iteration", debug_from_iteration_);
             in.get("trivial_obstacle", trivial_obstacle_);
             in.get("enable_line_search", enable_line_search_);
+            in.get("zero_initial_guess", zero_initial_guess_);
 
             if (!obstacle_) {
                 std::string type;
@@ -219,13 +227,6 @@ namespace utopia {
                 // Remove contribution from boundary conditions
                 this->space()->apply_constraints(temp_H, 0);
 
-                // {
-                //     Scalar_t norm_B_H = norm2(temp_H);
-                //     std::stringstream ss;
-                //     ss << "norm_B_H: " << norm_B_H << "\n";
-                //     x.comm().root_print(ss.str());
-                // }
-
                 H += temp_H;
             }
         }
@@ -247,15 +248,7 @@ namespace utopia {
                 }
 
                 barrier_->gradient(barrier_temp, barrier_g);
-
                 obstacle_->inverse_transform(barrier_g, barrier_temp);
-
-                // {
-                //     Scalar_t norm_B_g = norm2(barrier_temp);
-                //     std::stringstream ss;
-                //     ss << "norm_B_g: " << norm_B_g << "\n";
-                //     x.comm().root_print(ss.str());
-                // }
 
                 g += barrier_temp;
 
@@ -383,6 +376,7 @@ namespace utopia {
         int debug_from_iteration_{0};
         bool trivial_obstacle_{false};
         bool enable_line_search_{false};
+        bool zero_initial_guess_{true};
 
         std::shared_ptr<LineSearchBoxProjection<Vector_t>> line_search_;
 

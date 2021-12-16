@@ -51,7 +51,7 @@ namespace utopia {
             barrier_ = LogBarrierFunctionFactory<Matrix_t, Vector_t>::new_log_barrier(function_type);
             barrier_->read(in);
 
-            bool use_barrier_mass_scaling = true;
+            bool use_barrier_mass_scaling = false;
             in.get("use_barrier_mass_scaling", use_barrier_mass_scaling);
 
             if (use_barrier_mass_scaling) {
