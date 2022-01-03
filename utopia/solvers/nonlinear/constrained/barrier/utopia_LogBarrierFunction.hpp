@@ -1,6 +1,8 @@
 #ifndef UTOPIA_LOG_BARRIER_FUNCTION_HPP
 #define UTOPIA_LOG_BARRIER_FUNCTION_HPP
 
+#include "utopia_make_unique.hpp"
+
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_Function.hpp"

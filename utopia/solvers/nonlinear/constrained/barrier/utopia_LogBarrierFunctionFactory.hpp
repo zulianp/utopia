@@ -19,7 +19,7 @@ namespace utopia {
 
         using LogBarrierFunction = utopia::LogBarrierFunction<Matrix, Vector>;
         using LogBarrierFunctionWithSelection = utopia::LogBarrierFunctionWithSelection<Matrix, Vector>;
-        // using BoundedLogBarrierFunction = utopia::BoundedLogBarrierFunction<Matrix, Vector>;
+        using BoundedLogBarrierFunction = utopia::BoundedLogBarrierFunction<Matrix, Vector>;
 
         ///////////////////////////////////////////////////////
         // Log barrier functions
@@ -27,17 +27,16 @@ namespace utopia {
         using LogBarrierBasePtr = std::unique_ptr<LogBarrierBase>;
         using LogBarrier = utopia::LogBarrier<Matrix, Vector>;
         using LogBarrierWithSelection = utopia::LogBarrierWithSelection<Matrix, Vector>;
+        using BoundedLogBarrier = utopia::BoundedLogBarrier<Matrix, Vector>;
 
         static LogBarrierBasePtr new_log_barrier(const std::string &function_type) {
             LogBarrierBasePtr function;
 
             if (function_type == "LogBarrierWithSelection") {
                 function = utopia::make_unique<LogBarrierWithSelection>();
-            }
-            // else if (function_type == "BoundedLogBarrier") {
-            //     function = utopia::make_unique<BoundedLogBarrier>();
-            // }
-            else {
+            } else if (function_type == "BoundedLogBarrier") {
+                function = utopia::make_unique<BoundedLogBarrier>();
+            } else {
                 function = utopia::make_unique<LogBarrier>();
             }
 
@@ -49,11 +48,9 @@ namespace utopia {
 
             if (function_type == "LogBarrierFunctionWithSelection") {
                 function = utopia::make_unique<LogBarrierFunctionWithSelection>();
-            }
-            // else if (function_type == "BoundedLogBarrierFunction") {
-            //     function = utopia::make_unique<BoundedLogBarrierFunction>();
-            // }
-            else {
+            } else if (function_type == "BoundedLogBarrierFunction") {
+                function = utopia::make_unique<BoundedLogBarrierFunction>();
+            } else {
                 function = utopia::make_unique<LogBarrierFunction>();
             }
 
