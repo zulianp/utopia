@@ -100,13 +100,18 @@ namespace utopia {
 
         void prepare_buff(const Vector &x) {
             if (transform_) {
-                transform_->apply(x, buff_);
+                if (offset_vector_) {
+                    Vector temp = x - *offset_vector_;
+                    transform_->apply(temp, buff_);
+                } else {
+                    transform_->apply(x, buff_);
+                }
             } else {
                 buff_ = x;
-            }
 
-            if (offset_vector_) {
-                buff_ -= *offset_vector_;
+                if (offset_vector_) {
+                    buff_ -= *offset_vector_;
+                }
             }
         }
 

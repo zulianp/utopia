@@ -19,11 +19,13 @@
 namespace utopia {
 
     template <class FunctionSpace>
-    class ObstacleNewmark final : public NewmarkIntegrator<FunctionSpace> {
+    class ObstacleNewmark final : public NewmarkIntegrator<FunctionSpace>,
+                                  public LSStrategy<typename Traits<FunctionSpace>::Vector> {
     public:
         using Super = utopia::NewmarkIntegrator<FunctionSpace>;
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
+        using Layout_t = typename Traits<FunctionSpace>::Layout;
 
         using Size_t = typename Traits<FunctionSpace>::SizeType;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
@@ -68,6 +70,7 @@ namespace utopia {
             in.get("debug_from_iteration", debug_from_iteration_);
             in.get("trivial_obstacle", trivial_obstacle_);
             in.get("allow_projection", allow_projection_);
+            in.get("enable_line_search", enable_line_search_);
 
             if (!obstacle_) {
                 std::string type;
@@ -129,14 +132,6 @@ namespace utopia {
 
                 // Remove contribution from boundary conditions
                 this->space()->apply_constraints(temp_H, 0);
-
-                // {
-                //     Scalar_t norm_B_H = norm2(temp_H);
-                //     std::stringstream ss;
-                //     ss << "norm_B_H: " << norm_B_H << "\n";
-                //     x.comm().root_print(ss.str());
-                // }
-
                 H += temp_H;
             }
         }
@@ -160,15 +155,8 @@ namespace utopia {
                 barrier_->gradient(barrier_temp, barrier_g);
 
                 obstacle_->inverse_transform(barrier_g, barrier_temp);
-
-                // {
-                //     Scalar_t norm_B_g = norm2(barrier_temp);
-                //     std::stringstream ss;
-                //     ss << "norm_B_g: " << norm_B_g << "\n";
-                //     x.comm().root_print(ss.str());
-                // }
-
                 g += barrier_temp;
+                // g -= barrier_temp;
 
                 if (g.has_nan_or_inf()) {
                     this->~ObstacleNewmark();
@@ -233,6 +221,53 @@ namespace utopia {
             return ok;
         }
 
+        bool get_alpha(FunctionBase<Vector_t> &fun,
+                       const Vector_t &g,
+                       const Vector_t &x,
+                       const Vector_t &correction,
+                       Scalar_t &alpha) override {
+            if (line_search_) {
+                if (trivial_obstacle_) {
+                    Vector_t zero(layout(x), 0.);
+                    return line_search_->get_alpha(fun, g, zero, correction, alpha);
+                } else {
+                    return line_search_->get_alpha(fun, g, x, correction, alpha);
+                }
+            } else {
+                alpha = 0.99;
+                return false;
+            }
+        }
+
+        bool get_alpha(LeastSquaresFunctionBase<Vector_t> &fun,
+                       const Vector_t &g,
+                       const Vector_t &x,
+                       const Vector_t &correction,
+                       Scalar_t &alpha) override {
+            if (line_search_) {
+                if (trivial_obstacle_) {
+                    Vector_t zero(layout(x), 0.);
+                    return line_search_->get_alpha(fun, g, zero, correction, alpha);
+                } else {
+                    return line_search_->get_alpha(fun, g, x, correction, alpha);
+                }
+
+            } else {
+                alpha = 0.99;
+                return false;
+            }
+        }
+
+        void init_memory(const Layout_t & /*layout*/) override {}
+
+        inline std::shared_ptr<LSStrategy<Vector_t>> line_search() override {
+            if (line_search_) {
+                return make_ref(*this);
+            } else {
+                return nullptr;
+            }
+        }
+
     private:
         std::shared_ptr<IObstacle<FunctionSpace>> obstacle_;
         std::shared_ptr<LogBarrierBase> barrier_;
@@ -240,6 +275,9 @@ namespace utopia {
         int debug_from_iteration_{0};
         bool trivial_obstacle_{false};
         bool allow_projection_{true};
+
+        bool enable_line_search_{false};
+        std::shared_ptr<LineSearchBoxProjection<Vector_t>> line_search_;
 
         bool update_constraints(const Vector_t &x) {
             utopia::out() << "update_constraints\n";
@@ -263,10 +301,31 @@ namespace utopia {
                 barrier_ = std::make_shared<LogBarrier<Matrix_t, Vector_t>>();
             }
 
-            barrier_->set_box_constraints(
-                std::make_shared<BoxConstraints<Vector_t>>(nullptr, std::make_shared<Vector_t>(obstacle_->gap())));
+            auto box =
+                std::make_shared<BoxConstraints<Vector_t>>(nullptr, std::make_shared<Vector_t>(obstacle_->gap()));
+            barrier_->set_box_constraints(box);
 
             barrier_->set_selection(std::make_shared<Vector_t>(obstacle_->is_contact()));
+
+            if (enable_line_search_) {
+                if (!line_search_) {
+                    line_search_ = std::make_shared<LineSearchBoxProjection<Vector_t>>(box, make_ref(this->x_old()));
+                } else {
+                    line_search_->set_box_constraints(box);
+                    line_search_->set_offset_vector(make_ref(this->x_old()));
+                }
+
+                auto trafo = obstacle_->orthogonal_transformation();
+                assert(trafo);
+                if (!trafo) {
+                    Utopia::Abort(
+                        "ObstacleVelocityNewmark:update_constraints: orthogonal_transformation is mandatory for "
+                        "line_search!");
+                }
+
+                line_search_->set_transform(trafo);
+            }
+
             return ok;
         }
     };

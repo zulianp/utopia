@@ -294,7 +294,7 @@ namespace utopia {
             update_x(velocity, x);
             x -= this->x_old();
 
-            Scalar_t alpha = 1;
+            Scalar_t alpha = 0.99;
             // if (line_search_) {
             //     alpha = line_search_->compute(this->x_old(), x);
             // } else {
