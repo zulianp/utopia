@@ -235,7 +235,7 @@ namespace utopia {
         void log_barrier_qp_solver_test() {
             // log_barrier_qp_solver_test("LogBarrierFunction", true);
             log_barrier_qp_solver_test("LogBarrierFunction", false);
-            log_barrier_qp_solver_test("BoundedLogBarrierFunction", true);
+            log_barrier_qp_solver_test("BoundedLogBarrierFunction", false);
 
             // Utopia::Abort("BYE");
         }
@@ -269,8 +269,8 @@ namespace utopia {
                     });
             }
 
-            bool verbose = Traits::Backend == PETSC;
-            // bool verbose = false;
+            // bool verbose = Traits::Backend == PETSC;
+            bool verbose = false;
 
             PrimalInteriorPointSolver<Matrix, Vector> solver;
 
@@ -500,7 +500,7 @@ namespace utopia {
                                                       param("atol", 1e-10),
                                                       param("rtol", 1e-10),
                                                       param("stol", 1e-10),
-                                                      param("max-it", 2000))));
+                                                      param("max_it", 2000))));
 
             // Test MFKSP
             if (false) {
@@ -564,7 +564,7 @@ namespace utopia {
                                                              param("atol", 1e-10),
                                                              param("rtol", 1e-10),
                                                              param("stol", 1e-10),
-                                                             param("max-it", 2000))));
+                                                             param("max_it", 2000))));
 
                 qp_solver.read(qp_params);
 
@@ -622,7 +622,7 @@ namespace utopia {
             in.set("backend", "any");
             in.set("type", "pg");
             // in.set("verbose", true);
-            in.set("max-it", 2000);
+            in.set("max_it", 2000);
 
             solver.read(in);
 

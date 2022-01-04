@@ -90,7 +90,7 @@ namespace utopia {
         // FIXME
         Vector buff_;
         Scalar reach_{1};
-        Scalar dumping_{1};
+        Scalar dumping_{0.98};
         Scalar min_alpha_{1e-5};
         std::shared_ptr<BoxConstraints<Vector>> box_;
 

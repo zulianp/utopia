@@ -22,20 +22,50 @@ namespace utopia {
         using BoxConstraints = utopia::BoxConstraints<Vector>;
         using Super = utopia::LogBarrierBase<Matrix, Vector>;
 
+        class BarrierIPC {
+        public:
+            UTOPIA_INLINE_FUNCTION Scalar value(const Scalar d, Scalar mu) const {
+                return -(d < d_hat) * (mu * (d - d_hat) * (d - d_hat) * device::log(d / d_hat));
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar gradient(const Scalar d, Scalar mu) const {
+                return -(d < d_hat) * (mu * (d - d_hat) * ((d - d_hat) + 2 * d * device::log(d / d_hat)) / d);
+            }
+            UTOPIA_INLINE_FUNCTION Scalar hessian(const Scalar d, Scalar mu) const {
+                return -(d < d_hat) * mu *
+                       (-(d_hat * d_hat) / (d * d) - 2 * d_hat / d + 2 * device::log(d / d_hat) + 3);
+            }
+
+            Scalar d_hat{0.1};
+        };
+
+        class BarrierMine {
+        public:
+            UTOPIA_INLINE_FUNCTION Scalar value(const Scalar d, Scalar mu) const {
+                auto temp = ((d - d_hat) / d_hat);
+                return -(d < d_hat) * (mu * temp * temp * log(d / d_hat));
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar gradient(const Scalar d, Scalar mu) const {
+                return -(d < d_hat) *
+                       (mu * (d - d_hat) * ((d - d_hat) + 2 * d * device::log(d / d_hat)) / (d * d_hat * d_hat));
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar hessian(const Scalar d, Scalar mu) const {
+                auto d2 = d * d;
+                auto d_hat2 = d_hat * d_hat;
+                return -(d < d_hat) * mu * (2 * d2 * device::log(d / d_hat) + 3 * d2 - 2 * d * d_hat - d_hat2) /
+                       (d2 * d_hat2);
+            }
+
+            Scalar d_hat{0.1};
+        };
+
+        // using DefaultBarrier = BarrierIPC;
+        using DefaultBarrier = BarrierMine;
+
         BoundedLogBarrier() = default;
         explicit BoundedLogBarrier(const std::shared_ptr<BoxConstraints> &box) : Super(box) {}
-
-        // void hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const override {}
-
-        // void hessian(const Vector &x, Matrix &H) const override {}
-
-        // void gradient(const Vector &x, Vector &g) const override {}
-
-        // void value(const Vector &x, Scalar &value) const override {}
-
-        // bool project_onto_feasibile_region(Vector &x) const override { return false; }
-
-        // void read(Input &in) override {}
 
         void reset() override {}
 
@@ -51,6 +81,28 @@ namespace utopia {
             }
         }
 
+        void add_barrier_value(const Vector &diff, Scalar &val) const {
+            auto diff_view = local_view_device(diff);
+
+            auto d_hat = barrier_thickness_;
+
+            // Currently it is not adaptive like in the paper
+            auto stiffness = barrier_stiffness();
+
+            DefaultBarrier b{d_hat};
+
+            Scalar b_val = 0.;
+            parallel_reduce(
+                local_range_device(diff),
+                UTOPIA_LAMBDA(const SizeType i) {
+                    auto d_i = diff_view.get(i);
+                    return b.value(d_i, stiffness);
+                },
+                b_val);
+
+            val += b_val;
+        }
+
         void add_barrier_gradient(const Vector &diff, Vector &g) const {
             auto diff_view = local_view_device(diff);
             auto g_view = local_view_device(g);
@@ -60,21 +112,18 @@ namespace utopia {
             // Currently it is not adaptive like in the paper
             auto stiffness = barrier_stiffness();
 
+            DefaultBarrier b{d_hat};
+
             parallel_for(
                 local_range_device(diff), UTOPIA_LAMBDA(const SizeType i) {
                     auto d_i = diff_view.get(i);
-                    auto d_m_d_hat = d_i - d_hat;
 
-                    if (d_m_d_hat < 0) {
-                        auto d_div_d_hat = d_i / d_hat;
-                        auto b_g = -stiffness * d_m_d_hat * (d_m_d_hat + 2 * d_i * device::log(d_div_d_hat)) / d_i;
+                    auto b_g = b.gradient(d_i, stiffness);
 
-                        assert(b_g == b_g);
-                        assert(b_g <= 0);
+                    assert(b_g == b_g);
 
-                        auto g_i = g_view.get(i);
-                        g_view.set(i, g_i - b_g);
-                    }
+                    auto g_i = g_view.get(i);
+                    g_view.set(i, g_i - b_g);
                 });
         }
 
@@ -87,24 +136,16 @@ namespace utopia {
                 // Currently it is not adaptive like in the paper
                 auto stiffness = barrier_stiffness();
 
+                DefaultBarrier b{d_hat};
+
                 parallel_for(
                     local_range_device(diff), UTOPIA_LAMBDA(const SizeType i) {
                         auto d_i = diff_view.get(i);
-                        auto d_m_d_hat = d_i - d_hat;
+                        auto b_H = b.hessian(d_i, stiffness);
 
-                        if (d_m_d_hat < 0) {
-                            auto d_div_d_hat = d_i / d_hat;
+                        assert(b_H == b_H);
 
-                            auto b_H = -stiffness * (-d_hat * d_hat / (d_i * d_i) - 2 * d_hat / d_i +
-                                                     2 * device::log(d_div_d_hat) + 3);
-
-                            assert(b_H >= 0);
-                            assert(b_H == b_H);
-
-                            diff_view.set(i, b_H);
-                        } else {
-                            diff_view.set(i, 0.);
-                        }
+                        diff_view.set(i, b_H);
                     });
             }
 
@@ -153,36 +194,6 @@ namespace utopia {
                 this->compute_diff_lower_bound(x, diff);
                 add_barrier_gradient(diff, g);
             }
-        }
-
-        void add_barrier_value(const Vector &diff, Scalar &val) const {
-            auto diff_view = local_view_device(diff);
-
-            auto d_hat = barrier_thickness_;
-
-            // Currently it is not adaptive like in the paper
-            auto stiffness = barrier_stiffness();
-
-            Scalar b_val = 0.;
-            parallel_reduce(
-                local_range_device(diff),
-                UTOPIA_LAMBDA(const SizeType i) {
-                    auto d_i = diff_view.get(i);
-                    auto d_m_d_hat = d_i - d_hat;
-
-                    if (d_m_d_hat < 0) {
-                        auto d_div_d_hat = d_i / d_hat;
-                        // Inside the thickness of the barrier
-                        auto val = -stiffness * d_m_d_hat * d_m_d_hat * device::log(d_div_d_hat);
-                        assert(val >= 0);
-                        return val;
-                    } else {
-                        return 0.0;
-                    }
-                },
-                b_val);
-
-            val += b_val;
         }
 
         void value(const Vector &x, Scalar &value) const override {
