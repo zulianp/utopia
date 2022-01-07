@@ -315,6 +315,8 @@ namespace utopia {
                     line_search_->set_offset_vector(make_ref(this->x_old()));
                 }
 
+                line_search_->set_dumping(0.6);
+
                 auto trafo = obstacle_->orthogonal_transformation();
                 assert(trafo);
                 if (!trafo) {

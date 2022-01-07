@@ -117,7 +117,7 @@ namespace utopia {
             in.get("material_iter_tol", material_iter_tol_);
             in.get("max_constraints_iterations", max_constraints_iterations_);
             in.get("rescale", rescale_);
-            in.get("inverse_diagonal_scaling_", inverse_diagonal_scaling_);
+            in.get("inverse_diagonal_scaling", inverse_diagonal_scaling_);
         }
 
         void ensure_qp_solver() {

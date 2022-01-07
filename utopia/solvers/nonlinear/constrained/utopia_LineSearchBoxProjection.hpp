@@ -82,6 +82,7 @@ namespace utopia {
         inline void set_transform(const std::shared_ptr<Operator<Vector>> &transform) { transform_ = transform; }
         inline void set_box_constraints(const std::shared_ptr<BoxConstraints<Vector>> &box) { box_ = box; }
         inline void set_offset_vector(const std::shared_ptr<Vector> &offset_vector) { offset_vector_ = offset_vector; }
+        inline void set_dumping(Scalar dumping) { dumping_ = dumping; }
 
         /////////////
         UTOPIA_NVCC_PRIVATE
