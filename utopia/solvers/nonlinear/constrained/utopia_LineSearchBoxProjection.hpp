@@ -124,29 +124,29 @@ namespace utopia {
             if (box_->has_upper_bound() && box_->has_lower_bound()) {
                 // Upper bound
                 buff_ = (*box_->upper_bound()) - buff_;
-                Scalar alpha_ub = compute_projection(x, correction);
+                Scalar alpha_ub = compute_projection_upper(x, correction);
 
                 // Lower bound
                 prepare_buff(x);
                 buff_ -= (*box_->lower_bound());
-                Scalar alpha_lb = compute_projection(x, correction);
+                Scalar alpha_lb = compute_projection_lower(x, correction);
                 return std::min(alpha_lb, alpha_ub);
 
             } else if (box_->has_upper_bound()) {
                 buff_ = (*box_->upper_bound()) - buff_;
 
-                return compute_projection(x, correction);
+                return compute_projection_upper(x, correction);
 
             } else if (box_->has_lower_bound()) {
                 buff_ -= (*box_->lower_bound());
 
-                return compute_projection(x, correction);
+                return compute_projection_lower(x, correction);
             } else {
                 return 1;
             }
         }
 
-        Scalar compute_projection(const Vector &x, const Vector &correction) {
+        Scalar compute_projection_upper(const Vector &x, const Vector &correction) {
             UTOPIA_UNUSED(x);
 
             {
@@ -158,7 +158,33 @@ namespace utopia {
                         auto xi = buff_view.get(i);
                         auto dxi = correction_view.get(i);
 
-                        if (xi + dxi < (1 - reach_) * xi) {
+                        // if (xi + dxi < (1 - reach_) * xi) {
+                        if ((xi - dxi) < ((1 - reach_) * xi)) {
+                            auto val = (xi * reach_) / dxi;
+                            buff_view.set(i, val);
+                        } else {
+                            buff_view.set(i, 1);
+                        }
+                    });
+            }
+
+            return min(buff_);
+        }
+
+        Scalar compute_projection_lower(const Vector &x, const Vector &correction) {
+            UTOPIA_UNUSED(x);
+
+            {
+                auto correction_view = local_view_device(correction);
+                auto buff_view = local_view_device(buff_);
+
+                parallel_for(
+                    local_range_device(correction), UTOPIA_LAMBDA(const SizeType i) {
+                        auto xi = buff_view.get(i);
+                        auto dxi = correction_view.get(i);
+
+                        // if (xi + dxi < (1 - reach_) * xi) {
+                        if ((xi + dxi) < ((1 - reach_) * xi)) {
                             auto val = -(xi * reach_) / dxi;
                             buff_view.set(i, val);
                         } else {

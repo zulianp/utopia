@@ -35,7 +35,7 @@ namespace utopia {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
 
-        using Super = utopia::QPSolver<Matrix, Vector>;
+        using Super = utopia::NonLinearSolver<Vector>;
 
         using LinearSolver = utopia::LinearSolver<Matrix, Vector>;
         using Smoother = utopia::IterativeSolver<Matrix, Vector>;
@@ -76,14 +76,15 @@ namespace utopia {
         ~BarrierMultigrid() override = default;
 
         void read(Input &in) override {
-            // Super::read(in);
+            Super::read(in);
 
-            std::string barrier_function_type;
+            std::string barrier_function_type = "BoundedLogBarrier";
+            // std::string barrier_function_type = "LogBarrier";
 
             Options()
                 .add_option("barrier_function_type",
                             barrier_function_type,
-                            "Type of LogBarrier. Options={LogBarrierFunctionWithSelection|LogBarrierFunction}")
+                            "Type of LogBarrier. Options={LogBarrierWithSelection|LogBarrier}")
                 .add_option("debug", debug_, "TODO")
                 .add_option("use_coarse_space", use_coarse_space_, "TODO")
                 .add_option("pre_smoothing_steps", pre_smoothing_steps_, "TODO")
@@ -93,10 +94,6 @@ namespace utopia {
 
             barrier_ = LogBarrierFunctionFactory<Matrix, Vector>::new_log_barrier(barrier_function_type);
             barrier_->read(in);
-
-            // if (nl_smoother_) {
-            //     in.get("nl_smoother", *nl_smoother_);
-            // }
         }
 
         void set_transfer_operators(const std::vector<std::shared_ptr<Transfer>> &transfer_operators) {
@@ -155,15 +152,16 @@ namespace utopia {
 
             for (SizeType it = 1; it < this->max_it() && !converged; ++it) {
                 fun.hessian(x, f_hessian);
-
-                if (debug_) {
-                    write("X_" + std::to_string(it) + ".m", x);
-                }
-
                 transfer_operators_[n_coarse_levels - 1]->restrict(f_hessian, f_hessian_coarse);
 
                 if (!use_non_linear_residual_) {
                     fun.gradient(x, f_gradient);
+
+                    // disp("-----------------------------------");
+                    // disp(f_gradient);
+                    // disp(f_hessian);
+                    // disp(x);
+                    // disp("-----------------------------------");
                 }
 
                 f_diag_hessian = diag(f_hessian);
@@ -178,7 +176,16 @@ namespace utopia {
                         }
 
                         residual = f_gradient;
-                        barrier_->gradient(x, residual);
+
+                        if (!b_gradient.empty()) {
+                            b_gradient.set(0.0);
+                        } else {
+                            b_gradient.zeros(layout(x));
+                        }
+
+                        barrier_->gradient(x, b_gradient);
+
+                        residual += b_gradient;
                         residual *= -1;
 
                         // FIXME
@@ -190,12 +197,35 @@ namespace utopia {
 
                         correction = e_mul(diag_op, residual);
 
+                        {
+                            // FIXME
+                            Write<Vector> w(correction);
+                            auto r = range(correction);
+                            if (r.inside(0)) {
+                                correction.set(0, 0);
+                            }
+
+                            if (r.inside(correction.size() - 1)) {
+                                correction.set(correction.size() - 1, 0);
+                            }
+                        }
+
                         Scalar alpha = line_search_projection_->compute(x, correction);
 
                         x += alpha * correction;
 
+                        if (debug_) {
+                            std::stringstream ss;
+                            Scalar norm_c = norm2(correction);
+                            Scalar norm_r = norm2(residual);
+                            Scalar norm_b = norm2(b_gradient);
+                            ss << "it: " << it << ", s: " << s << ", ps: " << ps << ", alpha: " << alpha
+                               << ", norm_c: " << norm_c << ", norm_r: " << norm_r << ", norm_b: " << norm_b << "\n";
+                            x.comm().root_print(ss.str());
+                        }
+
                         if (!use_non_linear_residual_) {
-                            f_gradient -= alpha * (f_hessian * correction);
+                            f_gradient += alpha * (f_hessian * correction);
                         }
                     }
 
@@ -276,6 +306,18 @@ namespace utopia {
                 // if (!converged) {
                 //     x_old = x;
                 // }
+
+                barrier_->update_barrier();
+            }
+
+            if (debug_) {
+                rename("r", b_gradient);
+
+                write("R.m", b_gradient);
+
+                rename("g", f_gradient);
+                f_gradient *= -1;
+                write("G.m", f_gradient);
             }
 
             return converged;
@@ -337,8 +379,8 @@ namespace utopia {
         std::shared_ptr<LogBarrierBase> barrier_;
         std::shared_ptr<LineSearchBoxProjection<Vector>> line_search_projection_;
 
-        bool debug_{false};
-        bool use_coarse_space_{true};
+        bool debug_{true};
+        bool use_coarse_space_{false};
         bool use_non_linear_residual_{false};
 
         int mg_steps_{1};
@@ -350,7 +392,7 @@ namespace utopia {
 
         void ensure_defaults() {
             if (!barrier_) {
-                barrier_ = std::make_shared<LogBarrier<Matrix, Vector>>();
+                barrier_ = std::make_shared<BoundedLogBarrier<Matrix, Vector>>();
             }
 
             if (!line_search_projection_) {

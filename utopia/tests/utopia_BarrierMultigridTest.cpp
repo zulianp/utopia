@@ -41,7 +41,7 @@ namespace utopia {
             const static bool verbose = true;
             const static bool use_masks = false;
             int n_levels = 2;
-            int n_coarse = 50;
+            int n_coarse = 100;
 
             using ProblemType = utopia::Poisson1D<Matrix, Vector>;
             MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(n_levels, n_coarse, !use_masks);
@@ -54,10 +54,7 @@ namespace utopia {
             Vector x;
             fun->get_eq_constrains_values(x);
 
-            rename("x", x);
-            write("X.m", x);
-
-            Vector lower_bound(layout(x), -0.8), upper_bound(layout(x), 200.);
+            Vector lower_bound(layout(x), -0.8), upper_bound(layout(x), 0.1);
 
             // BoxConstraints<Vector> box(make_ref(lower_bound), make_ref(upper_bound));
             BoxConstraints<Vector> box(nullptr, make_ref(upper_bound));
@@ -69,6 +66,12 @@ namespace utopia {
             InputParameters params;
             params.set("use_coarse_space", false);
             params.set("debug", true);
+            params.set("show", true);
+            params.set("barrier_parameter", 1);
+            params.set("barrier_parameter_shrinking_factor", 0.3);
+            params.set("min_barrier_parameter", 1e-10);
+            params.set("max_it", 1000);
+            params.set("barrier_function_type", "LogBarrier");
 
             BarrierMultigrid<Matrix, Vector> mg(linear_solver);
             mg.verbose(verbose);
@@ -77,6 +80,9 @@ namespace utopia {
             mg.set_box_constraints(box);
             mg.set_transfer_operators(transfers);
             mg.solve(*fun, x);
+
+            rename("x", x);
+            write("X.m", x);
         }
     };
 
@@ -95,5 +101,5 @@ namespace utopia {
         // #endif               // UTOPIA_WITH_BLAS
     }
 
-    // UTOPIA_REGISTER_TEST_FUNCTION(barrier_mg);
+    UTOPIA_REGISTER_TEST_FUNCTION(barrier_mg);
 }  // namespace utopia
