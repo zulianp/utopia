@@ -41,7 +41,7 @@ namespace utopia {
             const static bool verbose = true;
             const static bool use_masks = false;
             int n_levels = 2;
-            int n_coarse = 100;
+            int n_coarse = 40;
 
             using ProblemType = utopia::Poisson1D<Matrix, Vector>;
             MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(n_levels, n_coarse, !use_masks);
@@ -55,8 +55,6 @@ namespace utopia {
             fun->get_eq_constrains_values(x);
 
             Vector lower_bound(layout(x), -0.8), upper_bound(layout(x), 0.1);
-
-            // BoxConstraints<Vector> box(make_ref(lower_bound), make_ref(upper_bound));
             BoxConstraints<Vector> box(nullptr, make_ref(upper_bound));
 
             auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector>>();
@@ -66,12 +64,16 @@ namespace utopia {
             InputParameters params;
             params.set("use_coarse_space", false);
             params.set("debug", true);
-            params.set("show", true);
+            // params.set("show", true);
             params.set("barrier_parameter", 1);
             params.set("barrier_parameter_shrinking_factor", 0.3);
+            // params.set("barrier_parameter_shrinking_factor", 0.9);
             params.set("min_barrier_parameter", 1e-10);
-            params.set("max_it", 1000);
-            params.set("barrier_function_type", "LogBarrier");
+            // params.set("min_barrier_parameter", 1e-15);
+            params.set("max_it", 20000);
+            params.set("barrier_function_type", "BoundedLogBarrier");
+            params.set("use_non_linear_residual", false);
+            params.set("pre_smoothing_steps", 10);
 
             BarrierMultigrid<Matrix, Vector> mg(linear_solver);
             mg.verbose(verbose);

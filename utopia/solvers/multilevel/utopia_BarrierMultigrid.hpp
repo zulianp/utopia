@@ -48,15 +48,6 @@ namespace utopia {
 
         using LogBarrierBase = utopia::LogBarrierBase<Matrix, Vector>;
 
-        // class NonLinearSmoother : public Configurable {
-        //     void update(const std::shared_ptr<const Matrix> &op) {}
-        //     bool apply(const Vector &rhs, Vector &x) { return false; }
-
-        //     void read(Input &in) override {}
-        // };
-
-        // using DefaultSmoother = NonLinearSmoother;
-
         class LevelMemory {
         public:
             Matrix matrix;
@@ -65,13 +56,7 @@ namespace utopia {
         };
 
     public:
-        BarrierMultigrid(
-            const std::shared_ptr<LinearSolver> &coarse_solver
-            // , const std::shared_ptr<NonLinearSmoother> &nl_smoother = std::make_shared<DefaultSmoother>()
-            )
-            : coarse_solver_(coarse_solver)
-        // , nl_smoother_(nl_smoother)
-        {}
+        BarrierMultigrid(const std::shared_ptr<LinearSolver> &coarse_solver) : coarse_solver_(coarse_solver) {}
 
         ~BarrierMultigrid() override = default;
 
@@ -107,8 +92,8 @@ namespace utopia {
         bool solve(Function<Matrix, Vector> &fun, Vector &x) {
             bool converged = false;
 
-            // std::string mg_header_message = "BarrierMultigrid: " + std::to_string(n_levels()) + " levels";
-            // this->init_solver(mg_header_message, {" it. ", "|| P(x-g)-x ||", "|| u - u_old ||", "# active sets"});
+            std::string mg_header_message = "BarrierMultigrid: " + std::to_string(n_levels()) + " levels";
+            this->init_solver(mg_header_message, {" it. ", "|| g ||"});
 
             // Vector x_old = x;
             // Vector grad;
@@ -149,6 +134,8 @@ namespace utopia {
 
             Matrix f_hessian_coarse;
             Vector b_hessian_coarse;
+
+            AlphaStats alpha_stats;
 
             for (SizeType it = 1; it < this->max_it() && !converged; ++it) {
                 fun.hessian(x, f_hessian);
@@ -212,6 +199,8 @@ namespace utopia {
 
                         Scalar alpha = line_search_projection_->compute(x, correction);
 
+                        alpha_stats.alpha_found(alpha);
+
                         x += alpha * correction;
 
                         if (debug_) {
@@ -220,7 +209,7 @@ namespace utopia {
                             Scalar norm_r = norm2(residual);
                             Scalar norm_b = norm2(b_gradient);
                             ss << "it: " << it << ", s: " << s << ", ps: " << ps << ", alpha: " << alpha
-                               << ", norm_c: " << norm_c << ", norm_r: " << norm_r << ", norm_b: " << norm_b << "\n";
+                               << ", norm_c: " << norm_c << ", norm_r: " << norm_r << ", norm_b: " << norm_b;
                             x.comm().root_print(ss.str());
                         }
 
@@ -291,23 +280,29 @@ namespace utopia {
                     ////////////////////////////////////////////////////////////
                     // Post-smoothing
                     ////////////////////////////////////////////////////////////
-                    // for (int ps = 0; ps < post_smoothing_steps(); ++ps) {
-                    //     if (use_non_linear_residual_) {
-                    //         fun.gradient(x, f_gradient);
-                    //     }
-
-                    //     residual = -f_gradient;
-                    //     barrier_->gradient(x, residual);
-                    // }
+                    // TODO
                 }
 
-                // converged = this->check_convergence(it, g_norm, 1, 1);
-
-                // if (!converged) {
-                //     x_old = x;
-                // }
-
                 barrier_->update_barrier();
+
+                fun.gradient(x, f_gradient);
+
+                b_gradient.set(0.);
+                barrier_->gradient(x, b_gradient);
+
+                residual = f_gradient + b_gradient;
+
+                Scalar g_norm = norm2(residual);
+                PrintInfo::print_iter_status(it, {g_norm});
+
+                converged = this->check_convergence(it, g_norm, 1, 1);
+            }
+
+            if (this->verbose()) {
+                std::stringstream ss;
+                alpha_stats.describe(ss);
+
+                x.comm().root_print(ss.str());
             }
 
             if (debug_) {
@@ -324,21 +319,6 @@ namespace utopia {
         }
 
         void init_memory(const Layout &) override { ensure_memory(); }
-
-        // inline bool step(Function<Matrix, Vector> &fun, Vector &x) {
-        //     // nl_smoother_->set_box_constraints(this->get_box_constraints());
-        //     // nl_smoother_->sweeps(pre_smoothing_steps());
-        //     // nl_smoother_->smooth(rhs, x);
-
-        //     // TODO
-
-        //     // nl_smoother_->sweeps(post_smoothing_steps());
-        //     // nl_smoother_->smooth(rhs, x);
-        //     return true;
-        // }
-
-        void pre_smoothing_steps(const SizeType n) { pre_smoothing_steps(n); }
-        void post_smoothing_steps(const SizeType n) { post_smoothing_steps(n); }
 
         int n_levels() const { return transfer_operators_.size() + 1; }
 
@@ -373,7 +353,6 @@ namespace utopia {
 
     protected:
         std::shared_ptr<LinearSolver> coarse_solver_;
-        // std::shared_ptr<NonLinearSmoother> nl_smoother_;
         std::vector<std::shared_ptr<Transfer>> transfer_operators_;
         std::vector<LevelMemory> memory_;
         std::shared_ptr<LogBarrierBase> barrier_;
@@ -389,6 +368,35 @@ namespace utopia {
 
         Scalar dumping_{0.98};
         Scalar line_search_projection_weight_{0.9};
+
+        class AlphaStats {
+        public:
+            Scalar min_{1};
+            Scalar max_{0};
+            Scalar avg_{0};
+
+            SizeType n_searches_{0};
+
+            void reset() {
+                min_ = 1;
+                max_ = 0;
+                avg_ = 0;
+                n_searches_ = 0;
+            }
+
+            void alpha_found(const Scalar alpha) {
+                Scalar scale = n_searches_ / (n_searches_ + 1.);
+                min_ = std::min(alpha, min_);
+                max_ = std::max(alpha, max_);
+                avg_ = scale * avg_ + alpha / (n_searches_ + 1);
+                n_searches_++;
+            }
+
+            void describe(std::ostream &os) const {
+                os << "Alpha) min: " << min_ << ", max: " << max_ << ", avg: " << avg_ << ", n: " << n_searches_
+                   << "\n";
+            }
+        };
 
         void ensure_defaults() {
             if (!barrier_) {
