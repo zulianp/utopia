@@ -28,6 +28,8 @@ namespace utopia {
         using Comm = typename Traits::Communicator;
         using IndexArray = typename Traits::IndexArray;
         using IndexSet = typename Traits::IndexSet;
+        using QuadraticFunction = utopia::QuadraticFunction<Matrix, Vector>;
+        using Layout = typename Traits::Layout;
 
         static void print_backend_info() {
             if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
@@ -36,11 +38,45 @@ namespace utopia {
         }
 
         void run() {
+            const static bool verbose = true;
+            const static bool use_masks = false;
+            int n_levels = 2;
+            int n_coarse = 50;
+
+            using ProblemType = utopia::Poisson1D<Matrix, Vector>;
+            MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(n_levels, n_coarse, !use_masks);
+
+            auto &&funs = ml_problem.get_functions();
+            auto &&transfers = ml_problem.get_transfer();
+
+            auto &&fun = funs.back();
+
+            Vector x;
+            fun->get_eq_constrains_values(x);
+
+            rename("x", x);
+            write("X.m", x);
+
+            Vector lower_bound(layout(x), -0.8), upper_bound(layout(x), 200.);
+
+            // BoxConstraints<Vector> box(make_ref(lower_bound), make_ref(upper_bound));
+            BoxConstraints<Vector> box(nullptr, make_ref(upper_bound));
+
             auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector>>();
             auto preconditioner = std::make_shared<InvDiagPreconditioner<Matrix, Vector>>();
             linear_solver->set_preconditioner(preconditioner);
 
+            InputParameters params;
+            params.set("use_coarse_space", false);
+            params.set("debug", true);
+
             BarrierMultigrid<Matrix, Vector> mg(linear_solver);
+            mg.verbose(verbose);
+            mg.read(params);
+
+            mg.set_box_constraints(box);
+            mg.set_transfer_operators(transfers);
+            mg.solve(*fun, x);
         }
     };
 
@@ -49,15 +85,15 @@ namespace utopia {
         BarrierMultigridTest<PetscMatrix, PetscVector>().run();
 #endif  // UTOPIA_WITH_PETSC
 
-#ifdef UTOPIA_WITH_TRILINOS
-        BarrierMultigridTest<TpetraMatrixd, TpetraVectord>().run();
-#endif  // UTOPIA_WITH_TRILINOS
+        // #ifdef UTOPIA_WITH_TRILINOS
+        //         BarrierMultigridTest<TpetraMatrixd, TpetraVectord>().run();
+        // #endif  // UTOPIA_WITH_TRILINOS
 
-#ifdef UTOPIA_WITH_BLAS
-        BarrierMultigridTest<BlasMatrixd, BlasVectord>()
-            .run();  // TODO(zulianp): : because blas is missing min operation ....
-#endif               // UTOPIA_WITH_BLAS
+        // #ifdef UTOPIA_WITH_BLAS
+        //         BarrierMultigridTest<BlasMatrixd, BlasVectord>()
+        //             .run();  // TODO(zulianp): : because blas is missing min operation ....
+        // #endif               // UTOPIA_WITH_BLAS
     }
 
-    UTOPIA_REGISTER_TEST_FUNCTION(barrier_mg);
+    // UTOPIA_REGISTER_TEST_FUNCTION(barrier_mg);
 }  // namespace utopia

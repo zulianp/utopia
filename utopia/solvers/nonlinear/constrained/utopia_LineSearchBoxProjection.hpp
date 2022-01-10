@@ -73,6 +73,8 @@ namespace utopia {
             in.get("min_alpha", min_alpha_);
         }
 
+        LineSearchBoxProjection() {}
+
         LineSearchBoxProjection(const std::shared_ptr<BoxConstraints<Vector>> &box,
                                 const std::shared_ptr<Vector> &offset_vector = nullptr)
             : box_(box), offset_vector_(offset_vector) {
