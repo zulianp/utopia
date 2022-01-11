@@ -129,27 +129,33 @@ namespace utopia {
 
         // !!! diff is modified inside !!!
         void add_barrier_hessian(Vector &diff, Matrix &hessian) const {
-            {
-                auto diff_view = local_view_device(diff);
-                auto d_hat = barrier_thickness_;
+            in_place_barrier_hessian(diff);
 
-                // Currently it is not adaptive like in the paper
-                auto stiffness = barrier_stiffness();
-
-                DefaultBarrier b{d_hat};
-
-                parallel_for(
-                    local_range_device(diff), UTOPIA_LAMBDA(const SizeType i) {
-                        auto d_i = diff_view.get(i);
-                        auto b_H = b.hessian(d_i, stiffness);
-
-                        assert(b_H == b_H);
-
-                        diff_view.set(i, b_H);
-                    });
+            if (this->scaling_matrix()) {
+                hessian.shift_diag((*this->scaling_matrix()) * diff);
+            } else {
+                hessian.shift_diag(diff);
             }
+        }
 
-            hessian.shift_diag(diff);
+        void in_place_barrier_hessian(Vector &diff_in_hessian_out) const {
+            auto diff_view = local_view_device(diff_in_hessian_out);
+            auto d_hat = barrier_thickness_;
+
+            // Currently it is not adaptive like in the paper
+            auto stiffness = barrier_stiffness();
+
+            DefaultBarrier b{d_hat};
+
+            parallel_for(
+                local_range_device(diff_in_hessian_out), UTOPIA_LAMBDA(const SizeType i) {
+                    auto d_i = diff_view.get(i);
+                    auto b_H = b.hessian(d_i, stiffness);
+
+                    assert(b_H == b_H);
+
+                    diff_view.set(i, b_H);
+                });
         }
 
         void hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const override {
@@ -165,6 +171,42 @@ namespace utopia {
                 this->compute_diff_lower_bound(x, diff);
                 add_barrier_gradient(diff, g);
                 add_barrier_hessian(diff, H);
+            }
+        }
+
+        void hessian_diag(const Vector &x, Vector &h) const override {
+            Vector diff;
+
+            if (this->box_->has_upper_bound()) {
+                this->compute_diff_upper_bound(x, diff);
+                in_place_barrier_hessian(diff);
+
+                if (h.empty()) {
+                    h.zeros(layout(diff));
+                }
+
+                if (this->scaling_matrix()) {
+                    h += (*this->scaling_matrix()) * diff;
+                } else {
+                    h += diff;
+                }
+            }
+
+            if (this->box_->has_lower_bound()) {
+                this->compute_diff_lower_bound(x, diff);
+
+                in_place_barrier_hessian(diff);
+
+                if (h.empty()) {
+                    h.zeros(layout(diff));
+                }
+
+                // TODO Is this one correct? test it
+                if (this->scaling_matrix()) {
+                    h += (*this->scaling_matrix()) * diff;
+                } else {
+                    h += diff;
+                }
             }
         }
 

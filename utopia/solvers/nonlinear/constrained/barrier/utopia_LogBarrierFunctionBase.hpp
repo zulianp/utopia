@@ -23,6 +23,7 @@ namespace utopia {
         virtual ~LogBarrierBase() = default;
         virtual void hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const = 0;
         virtual void hessian(const Vector &x, Matrix &H) const = 0;
+        virtual void hessian_diag(const Vector &x, Vector &h) const = 0;
         virtual void gradient(const Vector &x, Vector &g) const = 0;
         virtual void value(const Vector &x, Scalar &value) const = 0;
         virtual bool project_onto_feasibile_region(Vector &x) const = 0;
@@ -147,6 +148,10 @@ namespace utopia {
             return this->barrier_;
         }
 
+        virtual void extend_hessian_diag(const Vector &x, Vector &h) const {
+            if (barrier()) barrier()->hessian_diag(x, h);
+        }
+
         virtual void extend_hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const {
             if (barrier()) barrier()->hessian_and_gradient(x, H, g);
         }
@@ -191,8 +196,10 @@ namespace utopia {
             : unconstrained_(unconstrained), barrier_(barrier) {}
 
         bool hessian(const Vector &x, Matrix &H) const final {
-            if (!unconstrained_->hessian(x, H)) {
-                return false;
+            if (unconstrained_) {
+                if (!unconstrained_->hessian(x, H)) {
+                    return false;
+                }
             }
 
             extend_hessian(x, H);
@@ -200,8 +207,10 @@ namespace utopia {
         }
 
         bool hessian(const Vector &x, Matrix &H, Matrix &preconditioner) const final {
-            if (!unconstrained_->hessian(x, H, preconditioner)) {
-                return false;
+            if (unconstrained_) {
+                if (!unconstrained_->hessian(x, H, preconditioner)) {
+                    return false;
+                }
             }
 
             if (has_orthogonal_transformation()) {
@@ -221,8 +230,10 @@ namespace utopia {
         }
 
         bool hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const final {
-            if (!unconstrained_->hessian_and_gradient(x, H, g)) {
-                return false;
+            if (unconstrained_) {
+                if (!unconstrained_->hessian_and_gradient(x, H, g)) {
+                    return false;
+                }
             }
 
             if (has_orthogonal_transformation()) {
@@ -259,8 +270,10 @@ namespace utopia {
         }
 
         bool hessian_and_gradient(const Vector &x, Matrix &H, Matrix &preconditioner, Vector &g) const override {
-            if (!unconstrained_->hessian_and_gradient(x, H, preconditioner, g)) {
-                return false;
+            if (unconstrained_) {
+                if (!unconstrained_->hessian_and_gradient(x, H, preconditioner, g)) {
+                    return false;
+                }
             }
 
             extend_hessian_and_gradient(x, H, g);
@@ -270,17 +283,21 @@ namespace utopia {
         inline bool has_preconditioner() const override { return unconstrained_->has_preconditioner(); }
 
         bool initialize_hessian(Matrix &H, Matrix &preconditioner) const override {
-            if (!unconstrained_->initialize_hessian(H, preconditioner)) {
-                return false;
+            if (unconstrained_) {
+                if (!unconstrained_->initialize_hessian(H, preconditioner)) {
+                    return false;
+                }
             }
 
             return true;
         }
 
         bool value(const Vector &x, Scalar &value) const override {
-            if (!unconstrained_->value(x, value)) {
-                // return false;
-                value = 0.0;
+            if (unconstrained_) {
+                if (!unconstrained_->value(x, value)) {
+                    // return false;
+                    value = 0.0;
+                }
             }
 
             if (has_orthogonal_transformation()) {
@@ -295,8 +312,10 @@ namespace utopia {
         }
 
         bool gradient(const Vector &x, Vector &g) const override {
-            if (!unconstrained_->gradient(x, g)) {
-                return false;
+            if (unconstrained_) {
+                if (!unconstrained_->gradient(x, g)) {
+                    return false;
+                }
             }
 
             if (has_orthogonal_transformation()) {
@@ -314,8 +333,10 @@ namespace utopia {
         }
 
         bool update(const Vector &x) override {
-            if (!unconstrained_->update(x)) {
-                return false;
+            if (unconstrained_) {
+                if (!unconstrained_->update(x)) {
+                    return false;
+                }
             }
 
             update_barrier();

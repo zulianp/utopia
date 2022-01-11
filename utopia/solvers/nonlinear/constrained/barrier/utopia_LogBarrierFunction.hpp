@@ -97,6 +97,11 @@ namespace utopia {
             }
         }
 
+        void hessian_diag(const Vector &x, Vector &h) const override {
+            // TODO
+            Utopia::Abort("IMPLEMENT ME");
+        }
+
         void gradient(const Vector &x, Vector &g) const override {
             Vector diff;
             if (this->box_->has_upper_bound()) {

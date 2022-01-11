@@ -70,11 +70,14 @@ namespace utopia {
                 .add_option("barrier_function_type",
                             barrier_function_type,
                             "Type of LogBarrier. Options={LogBarrierWithSelection|LogBarrier}")
-                .add_option("debug", debug_, "TODO")
-                .add_option("use_coarse_space", use_coarse_space_, "TODO")
-                .add_option("pre_smoothing_steps", pre_smoothing_steps_, "TODO")
-                .add_option("post_smoothing_steps", post_smoothing_steps_, "TODO")
-                .add_option("use_non_linear_residual", use_non_linear_residual_, "TODO")
+                .add_option("debug", debug_, "Enable/Disable debug ouput.")
+                .add_option("use_coarse_space", use_coarse_space_, "Use the coarse space for multigrid acceleration.")
+                .add_option("pre_smoothing_steps", pre_smoothing_steps_, "Number of pre-smoothing  steps.")
+                .add_option("post_smoothing_steps", post_smoothing_steps_, "Number of post-smoothing  steps.")
+                .add_option("mg_steps", mg_steps_, "Number of multigrid iterations per Newton step.")
+                .add_option("use_non_linear_residual",
+                            use_non_linear_residual_,
+                            "Use non-linear residual, instead of linear within the multigrid iteration.")
                 .parse(in);
 
             barrier_ = LogBarrierFunctionFactory<Matrix, Vector>::new_log_barrier(barrier_function_type);
@@ -84,24 +87,11 @@ namespace utopia {
         void set_transfer_operators(const std::vector<std::shared_ptr<Transfer>> &transfer_operators) {
             this->transfer_operators_ = transfer_operators;
         }
-
-        // void init(const std::shared_ptr<NonLinearSmoother> &nl_smoother) { nl_smoother_ = nl_smoother; }
-
-        // void update(const std::shared_ptr<const Matrix> &op) override { Super::update(op); }
-
         bool solve(Function<Matrix, Vector> &fun, Vector &x) {
             bool converged = false;
 
             std::string mg_header_message = "BarrierMultigrid: " + std::to_string(n_levels()) + " levels";
             this->init_solver(mg_header_message, {" it. ", "|| g ||"});
-
-            // Vector x_old = x;
-            // Vector grad;
-            // Scalar g_norm = this->criticality_measure_inf(x, grad);
-
-            // if (this->verbose()) {
-            //     PrintInfo::print_iter_status(0, {g_norm, 0});
-            // }
 
             ensure_defaults();
 
@@ -114,28 +104,18 @@ namespace utopia {
 
             const int n_coarse_levels = this->n_levels() - 1;
 
-            Vector correction;
+            IterationState state;
 
             //  Function quantities
-            Matrix f_hessian;
-            Vector f_gradient;
-            Vector f_diag_hessian;
+            auto &f_gradient = state.f_gradient;
+            auto &f_hessian = state.f_hessian;
+            auto &f_diag_hessian = state.f_diag_hessian;
 
             // Barrier quantities
-            Vector b_gradient;
-            Matrix b_hessian;
-            b_hessian.identity(square_matrix_layout(layout(x)), 0.);
+            auto &b_gradient = state.b_gradient;
 
-            Vector b_diag_hessian;
-
-            Vector diag_op;
-            Vector residual;
-            Vector delta_x;
-
-            Matrix f_hessian_coarse;
-            Vector b_hessian_coarse;
-
-            AlphaStats alpha_stats;
+            auto &residual = state.residual;
+            auto &f_hessian_coarse = state.f_hessian_coarse;
 
             for (SizeType it = 1; it < this->max_it() && !converged; ++it) {
                 fun.hessian(x, f_hessian);
@@ -143,12 +123,6 @@ namespace utopia {
 
                 if (!use_non_linear_residual_) {
                     fun.gradient(x, f_gradient);
-
-                    // disp("-----------------------------------");
-                    // disp(f_gradient);
-                    // disp(f_hessian);
-                    // disp(x);
-                    // disp("-----------------------------------");
                 }
 
                 f_diag_hessian = diag(f_hessian);
@@ -157,130 +131,19 @@ namespace utopia {
                     ////////////////////////////////////////////////////////////
                     // Pre-smoothing
                     ////////////////////////////////////////////////////////////
-                    for (int ps = 0; ps < pre_smoothing_steps(); ++ps) {
-                        if (use_non_linear_residual_) {
-                            fun.gradient(x, f_gradient);
-                        }
-
-                        residual = f_gradient;
-
-                        if (!b_gradient.empty()) {
-                            b_gradient.set(0.0);
-                        } else {
-                            b_gradient.zeros(layout(x));
-                        }
-
-                        barrier_->gradient(x, b_gradient);
-
-                        residual += b_gradient;
-                        residual *= -1;
-
-                        // FIXME
-                        barrier_->hessian(x, b_hessian);
-                        b_diag_hessian = diag(b_hessian);
-
-                        diag_op = f_diag_hessian + b_diag_hessian;
-                        diag_op = 1. / diag_op;
-
-                        correction = e_mul(diag_op, residual);
-
-                        {
-                            // FIXME
-                            Write<Vector> w(correction);
-                            auto r = range(correction);
-                            if (r.inside(0)) {
-                                correction.set(0, 0);
-                            }
-
-                            if (r.inside(correction.size() - 1)) {
-                                correction.set(correction.size() - 1, 0);
-                            }
-                        }
-
-                        Scalar alpha = line_search_projection_->compute(x, correction);
-
-                        alpha_stats.alpha_found(alpha);
-
-                        x += alpha * correction;
-
-                        if (debug_) {
-                            std::stringstream ss;
-                            Scalar norm_c = norm2(correction);
-                            Scalar norm_r = norm2(residual);
-                            Scalar norm_b = norm2(b_gradient);
-                            ss << "it: " << it << ", s: " << s << ", ps: " << ps << ", alpha: " << alpha
-                               << ", norm_c: " << norm_c << ", norm_r: " << norm_r << ", norm_b: " << norm_b;
-                            x.comm().root_print(ss.str());
-                        }
-
-                        if (!use_non_linear_residual_) {
-                            f_gradient += alpha * (f_hessian * correction);
-                        }
-                    }
+                    this->smooth(fun, x, state, pre_smoothing_steps());
 
                     ////////////////////////////////////////////////////////////
                     // Coarse grid correction
                     ////////////////////////////////////////////////////////////
                     if (use_coarse_space_) {
-                        b_hessian *= 0.;
-                        barrier_->hessian(x, b_hessian);
-
-                        // FIXME
-                        b_diag_hessian = diag(b_hessian);
-
-                        auto &&mem = memory_[n_coarse_levels - 1];
-                        auto &&transfer = transfer_operators_[n_coarse_levels - 1];
-
-                        if (use_non_linear_residual_) {
-                            fun.gradient(x, f_gradient);
-                        }
-
-                        residual = -f_gradient;
-                        barrier_->gradient(x, residual);
-
-                        transfer->restrict(residual, mem.residual);
-                        transfer->restrict(b_diag_hessian, b_hessian_coarse);
-
-                        mem.matrix = f_hessian_coarse;
-                        mem.matrix += diag(b_hessian_coarse);
-                        mem.correction.zeros(layout(mem.residual));
-
-                        coarse_solver_->solve(mem.matrix, mem.residual, mem.correction);
-
-                        transfer->interpolate(mem.correction, correction);
-
-                        // FIXME
-
-                        delta_x = correction;
-
-                        if (box.has_upper_bound()) {
-                            delta_x = x + correction;
-                            delta_x = min(delta_x, *box.upper_bound());
-                            delta_x -= x;
-                        }
-
-                        if (box.has_lower_bound()) {
-                            delta_x += x;
-                            delta_x = max(delta_x, *box.lower_bound());
-                            delta_x -= x;
-                        }
-
-                        Scalar alpha = line_search_projection_->compute(x, correction);
-
-                        delta_x *= dumping_ * line_search_projection_weight_;
-                        delta_x += ((1 - line_search_projection_weight_) * alpha) * correction;
-
-                        x += delta_x;
-
-                        if (!use_non_linear_residual_) {
-                            f_gradient -= (f_hessian * delta_x);
-                        }
+                        coarse_correction(fun, x, state);
                     }
 
                     ////////////////////////////////////////////////////////////
                     // Post-smoothing
                     ////////////////////////////////////////////////////////////
-                    // TODO
+                    this->smooth(fun, x, state, post_smoothing_steps());
                 }
 
                 barrier_->update_barrier();
@@ -300,7 +163,7 @@ namespace utopia {
 
             if (this->verbose()) {
                 std::stringstream ss;
-                alpha_stats.describe(ss);
+                state.alpha_stats.describe(ss);
 
                 x.comm().root_print(ss.str());
             }
@@ -351,7 +214,8 @@ namespace utopia {
         inline int pre_smoothing_steps() const { return pre_smoothing_steps_; }
         inline int post_smoothing_steps() const { return post_smoothing_steps_; }
 
-    protected:
+        UTOPIA_NVCC_PRIVATE
+
         std::shared_ptr<LinearSolver> coarse_solver_;
         std::vector<std::shared_ptr<Transfer>> transfer_operators_;
         std::vector<LevelMemory> memory_;
@@ -416,7 +280,170 @@ namespace utopia {
             }
         }
 
-    };  // namespace utopia
+        class IterationState {
+        public:
+            Vector correction;
+
+            //  Function quantities
+            Matrix f_hessian;
+            Vector f_gradient;
+            Vector f_diag_hessian;
+
+            // Barrier quantities
+            Vector b_gradient;
+            Vector b_diag_hessian;
+
+            Vector diag_op;
+            Vector residual;
+            Vector delta_x;
+
+            Matrix f_hessian_coarse;
+            Vector b_hessian_coarse;
+
+            AlphaStats alpha_stats;
+        };
+
+        void handle_boundary(Vector &v) const {
+            // FIXME
+            Write<Vector> w(v);
+            auto r = range(v);
+            if (r.inside(0)) {
+                v.set(0, 0);
+            }
+
+            if (r.inside(v.size() - 1)) {
+                v.set(v.size() - 1, 0);
+            }
+        }
+
+        void coarse_correction(Function<Matrix, Vector> &fun, Vector &x, IterationState &state) {
+            auto &f_gradient = state.f_gradient;
+            auto &f_hessian = state.f_hessian;
+
+            // auto &b_gradient = state.b_gradient;
+            auto &b_diag_hessian = state.b_diag_hessian;
+
+            auto &correction = state.correction;
+            auto &residual = state.residual;
+
+            auto &delta_x = state.delta_x;
+            auto &f_hessian_coarse = state.f_hessian_coarse;
+            auto &b_hessian_coarse = state.b_hessian_coarse;
+
+            auto &&box = this->get_box_constraints();
+
+            const int n_coarse_levels = this->n_levels() - 1;
+
+            b_diag_hessian *= 0.;
+            barrier_->hessian_diag(x, b_diag_hessian);
+
+            // FIXME
+            handle_boundary(b_diag_hessian);
+
+            auto &&mem = memory_[n_coarse_levels - 1];
+            auto &&transfer = transfer_operators_[n_coarse_levels - 1];
+
+            if (use_non_linear_residual_) {
+                fun.gradient(x, f_gradient);
+            }
+
+            residual = f_gradient;
+            barrier_->gradient(x, residual);
+            residual *= -1;
+
+            handle_boundary(residual);
+
+            transfer->restrict(residual, mem.residual);
+            transfer->restrict(b_diag_hessian, b_hessian_coarse);
+
+            mem.matrix = f_hessian_coarse;
+            mem.matrix += diag(b_hessian_coarse);
+            mem.correction.zeros(layout(mem.residual));
+
+            coarse_solver_->solve(mem.matrix, mem.residual, mem.correction);
+
+            transfer->interpolate(mem.correction, correction);
+
+            handle_boundary(correction);
+
+            // FIXME
+            delta_x = correction;
+
+            if (box.has_upper_bound()) {
+                delta_x = x + correction;
+                delta_x = min(delta_x, *box.upper_bound());
+                delta_x -= x;
+            }
+
+            if (box.has_lower_bound()) {
+                delta_x += x;
+                delta_x = max(delta_x, *box.lower_bound());
+                delta_x -= x;
+            }
+
+            Scalar alpha = line_search_projection_->compute(x, correction);
+
+            delta_x *= dumping_ * line_search_projection_weight_;
+            delta_x += ((1 - line_search_projection_weight_) * alpha) * correction;
+
+            x += delta_x;
+
+            if (!use_non_linear_residual_) {
+                f_gradient += (f_hessian * delta_x);
+            }
+        }
+
+        void smooth(Function<Matrix, Vector> &fun, Vector &x, IterationState &state, int steps) {
+            auto &f_gradient = state.f_gradient;
+            auto &f_hessian = state.f_hessian;
+            auto &f_diag_hessian = state.f_diag_hessian;
+
+            auto &b_gradient = state.b_gradient;
+            auto &b_diag_hessian = state.b_diag_hessian;
+
+            auto &correction = state.correction;
+            auto &diag_op = state.diag_op;
+            auto &residual = state.residual;
+
+            for (int ps = 0; ps < steps; ++ps) {
+                if (use_non_linear_residual_) {
+                    fun.gradient(x, f_gradient);
+                }
+
+                residual = f_gradient;
+
+                if (!b_gradient.empty()) {
+                    b_gradient.set(0.0);
+                } else {
+                    b_gradient.zeros(layout(x));
+                }
+
+                barrier_->gradient(x, b_gradient);
+
+                residual += b_gradient;
+                residual *= -1;
+
+                barrier_->hessian_diag(x, b_diag_hessian);
+
+                diag_op = f_diag_hessian + b_diag_hessian;
+                diag_op = 1. / diag_op;
+
+                correction = e_mul(diag_op, residual);
+
+                handle_boundary(correction);
+
+                Scalar alpha = line_search_projection_->compute(x, correction);
+
+                state.alpha_stats.alpha_found(alpha);
+
+                x += alpha * correction;
+
+                if (!use_non_linear_residual_) {
+                    f_gradient += alpha * (f_hessian * correction);
+                }
+            }
+        }
+    };
 
 }  // namespace utopia
 

@@ -94,6 +94,11 @@ namespace utopia {
             }
         }
 
+        void hessian_diag(const Vector &x, Vector &h) const override {
+            // TODO
+            Utopia::Abort("IMPLEMENT ME");
+        }
+
         void hessian(const Vector &x, Matrix &H) const override {
             ensure_selector();
 
