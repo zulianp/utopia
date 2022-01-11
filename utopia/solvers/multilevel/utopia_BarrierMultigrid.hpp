@@ -31,9 +31,10 @@ namespace utopia {
     class BarrierMultigrid final : public NonLinearSolver<Vector>,
                                    public VariableBoundSolverInterface<Vector>,
                                    public Clonable {
-        using Layout = typename Traits<Vector>::Layout;
-        using Scalar = typename Traits<Vector>::Scalar;
-        using SizeType = typename Traits<Vector>::SizeType;
+        using Traits = utopia::Traits<Vector>;
+        using Layout = typename Traits::Layout;
+        using Scalar = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
 
         using Super = utopia::NonLinearSolver<Vector>;
 
@@ -53,6 +54,10 @@ namespace utopia {
             Matrix matrix;
             Vector residual;
             Vector correction;
+            Vector diag;
+
+            Vector barrier_diag;
+            bool matrix_changed{true};
         };
 
     public:
@@ -115,17 +120,26 @@ namespace utopia {
             auto &b_gradient = state.b_gradient;
 
             auto &residual = state.residual;
-            auto &f_hessian_coarse = state.f_hessian_coarse;
 
             for (SizeType it = 1; it < this->max_it() && !converged; ++it) {
                 fun.hessian(x, f_hessian);
-                transfer_operators_[n_coarse_levels - 1]->restrict(f_hessian, f_hessian_coarse);
+
+                //////////////////////////////////////////////////////////////////////
+                auto &mem = memory_[n_coarse_levels - 1];
+                transfer_operators_[n_coarse_levels - 1]->restrict(f_hessian, mem.matrix);
+                mem.diag = diag(mem.matrix);
+
+                for (auto &mem : memory_) {
+                    mem.matrix_changed = true;
+                }
 
                 if (!use_non_linear_residual_) {
                     fun.gradient(x, f_gradient);
                 }
 
                 f_diag_hessian = diag(f_hessian);
+
+                //////////////////////////////////////////////////////////////////////
 
                 for (int s = 0; s < mg_steps_; ++s) {
                     ////////////////////////////////////////////////////////////
@@ -168,7 +182,7 @@ namespace utopia {
                 x.comm().root_print(ss.str());
             }
 
-            if (debug_) {
+            if (debug_ && Traits::Backend == PETSC) {
                 rename("r", b_gradient);
 
                 write("R.m", b_gradient);
@@ -297,9 +311,6 @@ namespace utopia {
             Vector residual;
             Vector delta_x;
 
-            Matrix f_hessian_coarse;
-            Vector b_hessian_coarse;
-
             AlphaStats alpha_stats;
         };
 
@@ -319,26 +330,18 @@ namespace utopia {
         void coarse_correction(Function<Matrix, Vector> &fun, Vector &x, IterationState &state) {
             auto &f_gradient = state.f_gradient;
             auto &f_hessian = state.f_hessian;
-
-            // auto &b_gradient = state.b_gradient;
             auto &b_diag_hessian = state.b_diag_hessian;
 
             auto &correction = state.correction;
             auto &residual = state.residual;
 
             auto &delta_x = state.delta_x;
-            auto &f_hessian_coarse = state.f_hessian_coarse;
-            auto &b_hessian_coarse = state.b_hessian_coarse;
-
             auto &&box = this->get_box_constraints();
 
             const int n_coarse_levels = this->n_levels() - 1;
 
             b_diag_hessian *= 0.;
             barrier_->hessian_diag(x, b_diag_hessian);
-
-            // FIXME
-            handle_boundary(b_diag_hessian);
 
             auto &&mem = memory_[n_coarse_levels - 1];
             auto &&transfer = transfer_operators_[n_coarse_levels - 1];
@@ -354,17 +357,18 @@ namespace utopia {
             handle_boundary(residual);
 
             transfer->restrict(residual, mem.residual);
-            transfer->restrict(b_diag_hessian, b_hessian_coarse);
+            transfer->restrict(b_diag_hessian, mem.barrier_diag);
 
-            mem.matrix = f_hessian_coarse;
-            mem.matrix += diag(b_hessian_coarse);
+            if (!mem.matrix_changed) {
+                mem.matrix.set_diag(mem.diag);
+            }
+
+            mem.matrix.shift_diag(mem.barrier_diag);
             mem.correction.zeros(layout(mem.residual));
 
             coarse_solver_->solve(mem.matrix, mem.residual, mem.correction);
 
             transfer->interpolate(mem.correction, correction);
-
-            handle_boundary(correction);
 
             // FIXME
             delta_x = correction;

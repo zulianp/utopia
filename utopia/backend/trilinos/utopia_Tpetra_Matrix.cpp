@@ -683,8 +683,18 @@ namespace utopia {
     void TpetraMatrix::shift_diag(const TpetraVector &d) {
         auto d_view = const_view_device(d);
 
+        // FIXME?
         this->transform_ijv(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &v)->Scalar {
             return (i == j) ? (v + d_view.get(i)) : v;
+        });
+    }
+
+    void TpetraMatrix::set_diag(const TpetraVector &d) {
+        auto d_view = const_view_device(d);
+
+        // FIXME?
+        this->transform_ijv(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &v)->Scalar {
+            return (i == j) ? (d_view.get(i)) : v;
         });
     }
 

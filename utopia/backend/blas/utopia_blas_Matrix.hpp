@@ -751,6 +751,14 @@ namespace utopia {
             }
         }
 
+        inline void set_diag(const BlasVector &v) {
+            auto n = std::min(rows_, cols_);
+
+            for (SizeType i = 0; i < n; ++i) {
+                ref(i, i) = v.get(i);
+            }
+        }
+
         inline void diag_scale_left(const BlasVector &v) {
             assert(v.size() == rows_);
 

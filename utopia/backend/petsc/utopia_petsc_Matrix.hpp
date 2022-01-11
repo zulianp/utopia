@@ -789,6 +789,7 @@ namespace utopia {
         void col(const SizeType id, PetscVector &result) const;
 
         inline void shift_diag(const Scalar factor) { check_error(MatShift(implementation(), factor)); }
+        void set_diag(const PetscVector &d);
 
         void shift_diag(const PetscVector &d);
         void dense_init_diag(MatType dense_type, const PetscVector &diag);

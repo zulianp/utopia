@@ -533,6 +533,7 @@ namespace utopia {
         inline bool is_alias(const TpetraMatrix &other) const { return mat_ == other.mat_; }
 
         void shift_diag(const TpetraVector &d);
+        void set_diag(const TpetraVector &d);
 
     private:
         TrilinosCommunicator comm_;

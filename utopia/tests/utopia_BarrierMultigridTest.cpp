@@ -42,6 +42,8 @@ namespace utopia {
             const static bool use_masks = false;
             int n_levels = 2;
             int n_coarse = 12000;
+            // int n_coarse = 20000;
+            // int n_coarse = 40000;
 
             using ProblemType = utopia::Poisson1D<Matrix, Vector>;
             MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(n_levels, n_coarse, !use_masks);
@@ -74,7 +76,8 @@ namespace utopia {
             params.set("pre_smoothing_steps", 5);
             params.set("post_smoothing_steps", 5);
             params.set("atol", 1e-6);
-            params.set("mg_steps", 1);
+            // params.set("mg_steps", 1);
+            params.set("mg_steps", 3);
 
             BarrierMultigrid<Matrix, Vector> mg(linear_solver);
             mg.verbose(verbose);
