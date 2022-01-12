@@ -57,10 +57,10 @@ namespace utopia {
             params.set("barrier_function_type", "BoundedLogBarrier");
             // params.set("barrier_function_type", "LogBarrier");
             params.set("use_non_linear_residual", false);
-            params.set("pre_smoothing_steps", 10);
-            params.set("post_smoothing_steps", 10);
+            params.set("pre_smoothing_steps", 3);
+            params.set("post_smoothing_steps", 3);
             params.set("atol", 1e-6);
-            params.set("mg_steps", 3);
+            params.set("mg_steps", 1);
             params.set("keep_initial_coarse_spaces", true);
             params.set("amg_n_coarse_spaces", n_levels - 1);
 
@@ -87,8 +87,8 @@ namespace utopia {
         void test_ml_problem() {
             const static bool verbose = true;
             const static bool use_masks = false;
-            int n_levels = 8;
-            int n_coarse = 1000;
+            int n_levels = 9;
+            int n_coarse = 2001;
 
             using ProblemType = utopia::Poisson1D<Matrix, Vector>;
             MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(n_levels, n_coarse, !use_masks);

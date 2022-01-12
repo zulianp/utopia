@@ -370,25 +370,27 @@ namespace utopia {
             } else {
                 // Jacobi method
 
-                // for (int ps = 0; ps < pre_smoothing_steps(); ++ps) {
-                //     mem.work = mem.diag + mem.barrier_diag;
-                //     mem.work = mem.residual / mem.work;
-                //     mem.correction += mem.work;
-                //     mem.residual -= *mem.matrix * mem.work;
-                // }
+                for (int ps = 0; ps < pre_smoothing_steps(); ++ps) {
+                    jacobi(mem);
+                }
 
                 linear_mg(l - 1);
 
-                // for (int ps = 0; ps < post_smoothing_steps(); ++ps) {
-                //     mem.work = mem.diag + mem.barrier_diag;
-                //     mem.work = mem.residual / mem.work;
-                //     mem.correction += mem.work;
-                //     mem.residual -= *mem.matrix * mem.work;
-                // }
+                for (int ps = 0; ps < post_smoothing_steps(); ++ps) {
+                    jacobi(mem);
+                }
             }
 
             transfer->interpolate(memory_[l].correction, memory_[l + 1].work);
             memory_[l + 1].correction += memory_[l + 1].work;
+        }
+
+        void jacobi(LevelMemory &mem) {
+            mem.work = mem.diag + mem.barrier_diag;
+            mem.work = mem.residual / mem.work;
+            mem.correction += mem.work;
+            mem.residual -= *mem.matrix * mem.work;
+            mem.residual -= e_mul(mem.barrier_diag, mem.work);
         }
 
         void coarse_correction(Function<Matrix, Vector> &fun, Vector &x, NonlinearIterationState &state) {
