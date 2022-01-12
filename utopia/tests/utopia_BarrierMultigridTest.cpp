@@ -37,7 +37,53 @@ namespace utopia {
             }
         }
 
-        void run() {
+        static std::unique_ptr<BarrierMultigrid<Matrix, Vector>> create_barrier_mg(const int n_levels,
+                                                                                   const bool algebraic,
+                                                                                   bool verbose) {
+            auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+            auto preconditioner = std::make_shared<InvDiagPreconditioner<Matrix, Vector>>();
+            linear_solver->set_preconditioner(preconditioner);
+            linear_solver->max_it(500);
+            // linear_solver->verbose(true);
+
+            InputParameters params;
+            params.set("use_coarse_space", true);
+            params.set("debug", true);
+            params.set("barrier_parameter", 1);
+            params.set("barrier_parameter_shrinking_factor", 0.3);
+            params.set("min_barrier_parameter", 1e-10);
+            params.set("max_it", 120);
+            params.set("barrier_function_type", "BoundedLogBarrier");
+            // params.set("barrier_function_type", "LogBarrier");
+            params.set("use_non_linear_residual", false);
+            params.set("pre_smoothing_steps", 5);
+            params.set("post_smoothing_steps", 5);
+            params.set("atol", 1e-6);
+            params.set("mg_steps", 3);
+            params.set("keep_initial_coarse_spaces", true);
+            params.set("amg_n_coarse_spaces", n_levels - 1);
+
+            auto mg = utopia::make_unique<BarrierMultigrid<Matrix, Vector>>(linear_solver);
+            mg->verbose(verbose);
+            mg->read(params);
+
+#ifdef UTOPIA_WITH_PETSC
+            if (algebraic) {
+                auto agg = std::make_shared<Agglomerate<Matrix>>();
+
+                InputParameters agg_params;
+                agg_params.set("bmax", 4);
+                agg->read(agg_params);
+
+                agg->verbose(true);
+                mg->set_agglomerator(agg);
+            }
+#endif
+
+            return mg;
+        }
+
+        void test_ml_problem() {
             const static bool verbose = true;
             const static bool use_masks = false;
             int n_levels = 4;
@@ -59,58 +105,25 @@ namespace utopia {
             Vector lower_bound(layout(x), -0.8), upper_bound(layout(x), 0.1);
             BoxConstraints<Vector> box(nullptr, make_ref(upper_bound));
 
-            auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
-            auto preconditioner = std::make_shared<InvDiagPreconditioner<Matrix, Vector>>();
-            linear_solver->set_preconditioner(preconditioner);
-            linear_solver->max_it(500);
-            // linear_solver->verbose(true);
+            bool algebraic = Traits::Backend == PETSC;
+            auto mg = create_barrier_mg(n_levels, algebraic, verbose);
+            mg->set_box_constraints(box);
 
-            InputParameters params;
-            params.set("use_coarse_space", true);
-            params.set("debug", true);
-            params.set("barrier_parameter", 1);
-            params.set("barrier_parameter_shrinking_factor", 0.3);
-            params.set("min_barrier_parameter", 1e-10);
-            params.set("max_it", 120);
-            params.set("barrier_function_type", "BoundedLogBarrier");
-            params.set("use_non_linear_residual", false);
-            params.set("pre_smoothing_steps", 5);
-            params.set("post_smoothing_steps", 5);
-            params.set("atol", 1e-6);
-            params.set("mg_steps", 3);
-            params.set("keep_initial_coarse_spaces", true);
-            params.set("amg_n_coarse_spaces", n_levels - 1);
-
-            BarrierMultigrid<Matrix, Vector> mg(linear_solver);
-            mg.verbose(verbose);
-            mg.read(params);
-
-            mg.set_box_constraints(box);
-
-#ifdef UTOPIA_WITH_PETSC
-            bool amg = Traits::Backend == PETSC;
-            // bool amg = false;
-            if (amg) {
-                auto agg = std::make_shared<Agglomerate<Matrix>>();
-
-                InputParameters agg_params;
-                agg_params.set("bmax", 4);
-                agg->read(agg_params);
-
-                agg->verbose(true);
-                mg.set_agglomerator(agg);
-            } else
-#endif
-            {
-                mg.set_transfer_operators(transfers);
+            if (!algebraic) {
+                mg->set_transfer_operators(transfers);
             }
 
-            mg.solve(*fun, x);
+            mg->solve(*fun, x);
 
             if (Traits::Backend == PETSC) {
                 rename("x", x);
                 write("X.m", x);
             }
+        }
+
+        void run() {
+            print_backend_info();
+            UTOPIA_RUN_TEST(test_ml_problem);
         }
     };
 
