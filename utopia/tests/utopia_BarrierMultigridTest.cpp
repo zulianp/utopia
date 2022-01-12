@@ -40,10 +40,10 @@ namespace utopia {
         void run() {
             const static bool verbose = true;
             const static bool use_masks = false;
-            int n_levels = 2;
-            int n_coarse = 12000;
-            // int n_coarse = 20000;
-            // int n_coarse = 40000;
+            int n_levels = 4;
+            // int n_coarse = 4;
+            int n_coarse = 20000;
+            // int n_coarse = 2000;
 
             using ProblemType = utopia::Poisson1D<Matrix, Vector>;
             MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(n_levels, n_coarse, !use_masks);
@@ -62,7 +62,8 @@ namespace utopia {
             auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
             auto preconditioner = std::make_shared<InvDiagPreconditioner<Matrix, Vector>>();
             linear_solver->set_preconditioner(preconditioner);
-            linear_solver->max_it(1000);
+            linear_solver->max_it(500);
+            // linear_solver->verbose(true);
 
             InputParameters params;
             params.set("use_coarse_space", true);
@@ -76,15 +77,34 @@ namespace utopia {
             params.set("pre_smoothing_steps", 5);
             params.set("post_smoothing_steps", 5);
             params.set("atol", 1e-6);
-            // params.set("mg_steps", 1);
             params.set("mg_steps", 3);
+            params.set("keep_initial_coarse_spaces", true);
+            params.set("amg_n_coarse_spaces", n_levels - 1);
 
             BarrierMultigrid<Matrix, Vector> mg(linear_solver);
             mg.verbose(verbose);
             mg.read(params);
 
             mg.set_box_constraints(box);
-            mg.set_transfer_operators(transfers);
+
+#ifdef UTOPIA_WITH_PETSC
+            bool amg = Traits::Backend == PETSC;
+            // bool amg = false;
+            if (amg) {
+                auto agg = std::make_shared<Agglomerate<Matrix>>();
+
+                InputParameters agg_params;
+                agg_params.set("bmax", 4);
+                agg->read(agg_params);
+
+                agg->verbose(true);
+                mg.set_agglomerator(agg);
+            } else
+#endif
+            {
+                mg.set_transfer_operators(transfers);
+            }
+
             mg.solve(*fun, x);
 
             if (Traits::Backend == PETSC) {
@@ -99,9 +119,9 @@ namespace utopia {
         BarrierMultigridTest<PetscMatrix, PetscVector>().run();
 #endif  // UTOPIA_WITH_PETSC
 
-#ifdef UTOPIA_WITH_TRILINOS
-        BarrierMultigridTest<TpetraMatrixd, TpetraVectord>().run();
-#endif  // UTOPIA_WITH_TRILINOS
+        // #ifdef UTOPIA_WITH_TRILINOS
+        //         BarrierMultigridTest<TpetraMatrixd, TpetraVectord>().run();
+        // #endif  // UTOPIA_WITH_TRILINOS
 
         // #ifdef UTOPIA_WITH_BLAS
         //         BarrierMultigridTest<BlasMatrixd, BlasVectord>()

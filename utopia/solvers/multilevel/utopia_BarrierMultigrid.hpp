@@ -17,6 +17,9 @@
 #include "utopia_LogBarrierFunctionBase.hpp"
 #include "utopia_LogBarrierFunctionFactory.hpp"
 
+#include "utopia_Agglomerate.hpp"
+#include "utopia_MatrixAgglomerator.hpp"
+
 #include <cassert>
 #include <ctime>
 
@@ -49,15 +52,66 @@ namespace utopia {
 
         using LogBarrierBase = utopia::LogBarrierBase<Matrix, Vector>;
 
+        class AlphaStats {
+        public:
+            Scalar min_{1};
+            Scalar max_{0};
+            Scalar avg_{0};
+
+            SizeType n_searches_{0};
+
+            void reset() {
+                min_ = 1;
+                max_ = 0;
+                avg_ = 0;
+                n_searches_ = 0;
+            }
+
+            void alpha_found(const Scalar alpha) {
+                Scalar scale = n_searches_ / (n_searches_ + 1.);
+                min_ = std::min(alpha, min_);
+                max_ = std::max(alpha, max_);
+                avg_ = scale * avg_ + alpha / (n_searches_ + 1);
+                n_searches_++;
+            }
+
+            void describe(std::ostream &os) const {
+                os << "Alpha) min: " << min_ << ", max: " << max_ << ", avg: " << avg_ << ", n: " << n_searches_
+                   << "\n";
+            }
+        };
+
         class LevelMemory {
         public:
-            Matrix matrix;
+            std::shared_ptr<Matrix> matrix;
             Vector residual;
             Vector correction;
             Vector diag;
+            Vector work;
 
             Vector barrier_diag;
             bool matrix_changed{true};
+
+            void ensure() {
+                if (!matrix) {
+                    matrix = std::make_shared<Matrix>();
+                }
+            }
+        };
+
+        class NonlinearIterationState {
+        public:
+            // Function quantities
+            Vector function_gradient;
+
+            // Barrier quantities
+            Vector barrier_gradient;
+
+            // Constraints and boundary conditions
+            Vector contraints_mask;
+
+            // Stats
+            AlphaStats alpha_stats;
         };
 
     public:
@@ -69,7 +123,6 @@ namespace utopia {
             Super::read(in);
 
             std::string barrier_function_type = "BoundedLogBarrier";
-            // std::string barrier_function_type = "LogBarrier";
 
             Options()
                 .add_option("barrier_function_type",
@@ -83,6 +136,12 @@ namespace utopia {
                 .add_option("use_non_linear_residual",
                             use_non_linear_residual_,
                             "Use non-linear residual, instead of linear within the multigrid iteration.")
+                .add_option("keep_initial_coarse_spaces",
+                            keep_initial_coarse_spaces_,
+                            "Compute the transfer operators only the first iteration.")
+                .add_option("amg_n_coarse_spaces",
+                            amg_n_coarse_spaces_,
+                            "If an agglomerator is provide, define how many coarse spaces have to be generated,")
                 .parse(in);
 
             barrier_ = LogBarrierFunctionFactory<Matrix, Vector>::new_log_barrier(barrier_function_type);
@@ -92,6 +151,7 @@ namespace utopia {
         void set_transfer_operators(const std::vector<std::shared_ptr<Transfer>> &transfer_operators) {
             this->transfer_operators_ = transfer_operators;
         }
+
         bool solve(Function<Matrix, Vector> &fun, Vector &x) {
             bool converged = false;
 
@@ -100,44 +160,31 @@ namespace utopia {
 
             ensure_defaults();
 
-            auto &&box = this->get_box_constraints();
+            NonlinearIterationState state;
 
-            barrier_->set_box_constraints(make_ref(box));
-            barrier_->reset();
-
-            line_search_projection_->set_box_constraints(make_ref(box));
-
-            const int n_coarse_levels = this->n_levels() - 1;
-
-            IterationState state;
-
-            //  Function quantities
-            auto &f_gradient = state.f_gradient;
-            auto &f_hessian = state.f_hessian;
-            auto &f_diag_hessian = state.f_diag_hessian;
-
-            // Barrier quantities
-            auto &b_gradient = state.b_gradient;
-
-            auto &residual = state.residual;
+            int top_level = n_levels() - 1;
+            auto &mem = memory_[top_level];
 
             for (SizeType it = 1; it < this->max_it() && !converged; ++it) {
-                fun.hessian(x, f_hessian);
+                fun.hessian(x, *mem.matrix);
 
                 //////////////////////////////////////////////////////////////////////
-                auto &mem = memory_[n_coarse_levels - 1];
-                transfer_operators_[n_coarse_levels - 1]->restrict(f_hessian, mem.matrix);
-                mem.diag = diag(mem.matrix);
 
-                for (auto &mem : memory_) {
-                    mem.matrix_changed = true;
+                if (empty(state.contraints_mask)) {
+                    generate_mask_from_matrix(*mem.matrix, state.contraints_mask, 1, 0);
+                }
+
+                //////////////////////////////////////////////////////////////////////
+
+                if (agglomerator_) {
+                    init_algebraic();
+                } else {
+                    init_with_use_transfer_operators();
                 }
 
                 if (!use_non_linear_residual_) {
-                    fun.gradient(x, f_gradient);
+                    fun.gradient(x, state.function_gradient);
                 }
-
-                f_diag_hessian = diag(f_hessian);
 
                 //////////////////////////////////////////////////////////////////////
 
@@ -145,7 +192,7 @@ namespace utopia {
                     ////////////////////////////////////////////////////////////
                     // Pre-smoothing
                     ////////////////////////////////////////////////////////////
-                    this->smooth(fun, x, state, pre_smoothing_steps());
+                    nonlinear_smooth(fun, x, state, pre_smoothing_steps());
 
                     ////////////////////////////////////////////////////////////
                     // Coarse grid correction
@@ -157,22 +204,27 @@ namespace utopia {
                     ////////////////////////////////////////////////////////////
                     // Post-smoothing
                     ////////////////////////////////////////////////////////////
-                    this->smooth(fun, x, state, post_smoothing_steps());
+                    nonlinear_smooth(fun, x, state, post_smoothing_steps());
                 }
 
                 barrier_->update_barrier();
 
-                fun.gradient(x, f_gradient);
+                /////////////////////////////////////////////
+                // Convergence check
 
-                b_gradient.set(0.);
-                barrier_->gradient(x, b_gradient);
+                fun.gradient(x, state.function_gradient);
 
-                residual = f_gradient + b_gradient;
+                state.barrier_gradient.set(0.);
+                barrier_->gradient(x, state.barrier_gradient);
 
-                Scalar g_norm = norm2(residual);
+                mem.residual = state.function_gradient + state.barrier_gradient;
+
+                Scalar g_norm = norm2(mem.residual);
                 PrintInfo::print_iter_status(it, {g_norm});
 
                 converged = this->check_convergence(it, g_norm, 1, 1);
+
+                /////////////////////////////////////////////
             }
 
             if (this->verbose()) {
@@ -183,13 +235,13 @@ namespace utopia {
             }
 
             if (debug_ && Traits::Backend == PETSC) {
-                rename("r", b_gradient);
+                rename("r", state.barrier_gradient);
 
-                write("R.m", b_gradient);
+                write("R.m", state.barrier_gradient);
 
-                rename("g", f_gradient);
-                f_gradient *= -1;
-                write("G.m", f_gradient);
+                rename("g", state.function_gradient);
+                state.function_gradient *= -1;
+                write("G.m", state.function_gradient);
             }
 
             return converged;
@@ -198,6 +250,10 @@ namespace utopia {
         void init_memory(const Layout &) override { ensure_memory(); }
 
         int n_levels() const { return transfer_operators_.size() + 1; }
+
+        void set_agglomerator(const std::shared_ptr<MatrixAgglomerator<Matrix>> &agglomerator) {
+            agglomerator_ = agglomerator;
+        }
 
     public:
         BarrierMultigrid *clone() const override {
@@ -239,42 +295,17 @@ namespace utopia {
         bool debug_{true};
         bool use_coarse_space_{false};
         bool use_non_linear_residual_{false};
+        bool keep_initial_coarse_spaces_{false};
 
         int mg_steps_{1};
         int pre_smoothing_steps_{3};
         int post_smoothing_steps_{3};
 
+        int amg_n_coarse_spaces_{1};
+
         Scalar dumping_{0.98};
         Scalar line_search_projection_weight_{0.9};
-
-        class AlphaStats {
-        public:
-            Scalar min_{1};
-            Scalar max_{0};
-            Scalar avg_{0};
-
-            SizeType n_searches_{0};
-
-            void reset() {
-                min_ = 1;
-                max_ = 0;
-                avg_ = 0;
-                n_searches_ = 0;
-            }
-
-            void alpha_found(const Scalar alpha) {
-                Scalar scale = n_searches_ / (n_searches_ + 1.);
-                min_ = std::min(alpha, min_);
-                max_ = std::max(alpha, max_);
-                avg_ = scale * avg_ + alpha / (n_searches_ + 1);
-                n_searches_++;
-            }
-
-            void describe(std::ostream &os) const {
-                os << "Alpha) min: " << min_ << ", max: " << max_ << ", avg: " << avg_ << ", n: " << n_searches_
-                   << "\n";
-            }
-        };
+        std::shared_ptr<MatrixAgglomerator<Matrix>> agglomerator_;
 
         void ensure_defaults() {
             if (!barrier_) {
@@ -286,166 +317,264 @@ namespace utopia {
             }
 
             ensure_memory();
+
+            auto &&box = this->get_box_constraints();
+            barrier_->set_box_constraints(make_ref(box));
+            barrier_->reset();
+            line_search_projection_->set_box_constraints(make_ref(box));
         }
 
         void ensure_memory() {
-            if (memory_.size() != transfer_operators_.size()) {
-                memory_.resize(transfer_operators_.size());
+            if (agglomerator_) {
+                if (memory_.empty() || static_cast<int>(memory_.size()) != amg_n_coarse_spaces_ + 1) {
+                    memory_.resize(amg_n_coarse_spaces_ + 1);
+                    transfer_operators_.resize(amg_n_coarse_spaces_);
+                }
+            } else {
+                if (memory_.size() != transfer_operators_.size() + 1) {
+                    memory_.resize(transfer_operators_.size() + 1);
+                }
+            }
+
+            for (auto &mem : memory_) {
+                mem.ensure();
             }
         }
 
-        class IterationState {
-        public:
-            Vector correction;
-
-            //  Function quantities
-            Matrix f_hessian;
-            Vector f_gradient;
-            Vector f_diag_hessian;
-
-            // Barrier quantities
-            Vector b_gradient;
-            Vector b_diag_hessian;
-
-            Vector diag_op;
-            Vector residual;
-            Vector delta_x;
-
-            AlphaStats alpha_stats;
-        };
-
-        void handle_boundary(Vector &v) const {
-            // FIXME
-            Write<Vector> w(v);
-            auto r = range(v);
-            if (r.inside(0)) {
-                v.set(0, 0);
-            }
-
-            if (r.inside(v.size() - 1)) {
-                v.set(v.size() - 1, 0);
-            }
+        void handle_eq_constraints(const NonlinearIterationState &state, Vector &v) const {
+            v = e_mul(state.contraints_mask, v);
         }
 
-        void coarse_correction(Function<Matrix, Vector> &fun, Vector &x, IterationState &state) {
-            auto &f_gradient = state.f_gradient;
-            auto &f_hessian = state.f_hessian;
-            auto &b_diag_hessian = state.b_diag_hessian;
+        void linear_mg(const int l) {
+            auto &&mem = memory_[l];
+            auto &&transfer = transfer_operators_[l];
 
-            auto &correction = state.correction;
-            auto &residual = state.residual;
+            transfer->restrict(memory_[l + 1].residual, mem.residual);
+            transfer->restrict(memory_[l + 1].barrier_diag, mem.barrier_diag);
 
-            auto &delta_x = state.delta_x;
-            auto &&box = this->get_box_constraints();
+            if (empty(mem.correction)) {
+                mem.correction.zeros(layout(mem.residual));
+            } else {
+                mem.correction.set(0.);
+            }
+
+            if (l == 0) {
+                if (!mem.matrix_changed) {
+                    mem.matrix->set_diag(mem.diag);
+                }
+
+                mem.matrix->shift_diag(mem.barrier_diag);
+
+                coarse_solver_->solve(*mem.matrix, mem.residual, mem.correction);
+            } else {
+                // Jacobi method
+
+                for (int ps = 0; ps < pre_smoothing_steps(); ++ps) {
+                    mem.work = mem.diag + mem.barrier_diag;
+                    mem.work = 1. / mem.work;
+
+                    mem.correction += e_mul(mem.work, mem.residual);
+
+                    mem.residual -= *mem.matrix * mem.correction;
+                }
+
+                linear_mg(l - 1);
+
+                for (int ps = 0; ps < post_smoothing_steps(); ++ps) {
+                    mem.work = mem.diag + mem.barrier_diag;
+                    mem.work = 1. / mem.work;
+
+                    mem.correction += e_mul(mem.work, mem.residual);
+
+                    mem.residual -= *mem.matrix * mem.correction;
+                }
+            }
+
+            transfer->interpolate(memory_[l].correction, memory_[l + 1].work);
+            memory_[l + 1].correction += memory_[l + 1].work;
+        }
+
+        void coarse_correction(Function<Matrix, Vector> &fun, Vector &x, NonlinearIterationState &state) {
+            ////////////////////////////////////////////////////////////////////////////////
+            {
+                // Refresh barrier function quantities
+
+                int top_level = n_levels() - 1;
+                auto &mem = memory_[top_level];
+
+                mem.barrier_diag *= 0.;
+                barrier_->hessian_diag(x, mem.barrier_diag);
+
+                if (use_non_linear_residual_) {
+                    fun.gradient(x, state.function_gradient);
+                }
+
+                mem.residual = state.function_gradient;
+                barrier_->gradient(x, mem.residual);
+                mem.residual *= -1;
+
+                handle_eq_constraints(state, mem.residual);
+
+                mem.correction.set(0.0);
+            }
+
+            ////////////////////////////////////////////////////////////////////////////////
 
             const int n_coarse_levels = this->n_levels() - 1;
 
-            b_diag_hessian *= 0.;
-            barrier_->hessian_diag(x, b_diag_hessian);
+            linear_mg(n_coarse_levels - 1);
 
-            auto &&mem = memory_[n_coarse_levels - 1];
-            auto &&transfer = transfer_operators_[n_coarse_levels - 1];
+            //////////////////////////////////////////////////////////////////////
 
-            if (use_non_linear_residual_) {
-                fun.gradient(x, f_gradient);
-            }
+            {
+                int top_level = n_levels() - 1;
+                auto &mem = memory_[top_level];
 
-            residual = f_gradient;
-            barrier_->gradient(x, residual);
-            residual *= -1;
+                mem.work = x + mem.correction;
+                barrier_->project_onto_feasibile_region(mem.work);
+                mem.work -= x;
 
-            handle_boundary(residual);
+                Scalar alpha = line_search_projection_->compute(x, mem.correction);
 
-            transfer->restrict(residual, mem.residual);
-            transfer->restrict(b_diag_hessian, mem.barrier_diag);
+                mem.work *= dumping_ * line_search_projection_weight_;
+                mem.work += ((1 - line_search_projection_weight_) * alpha) * mem.correction;
 
-            if (!mem.matrix_changed) {
-                mem.matrix.set_diag(mem.diag);
-            }
+                x += mem.work;
 
-            mem.matrix.shift_diag(mem.barrier_diag);
-            mem.correction.zeros(layout(mem.residual));
-
-            coarse_solver_->solve(mem.matrix, mem.residual, mem.correction);
-
-            transfer->interpolate(mem.correction, correction);
-
-            // FIXME
-            delta_x = correction;
-
-            if (box.has_upper_bound()) {
-                delta_x = x + correction;
-                delta_x = min(delta_x, *box.upper_bound());
-                delta_x -= x;
-            }
-
-            if (box.has_lower_bound()) {
-                delta_x += x;
-                delta_x = max(delta_x, *box.lower_bound());
-                delta_x -= x;
-            }
-
-            Scalar alpha = line_search_projection_->compute(x, correction);
-
-            delta_x *= dumping_ * line_search_projection_weight_;
-            delta_x += ((1 - line_search_projection_weight_) * alpha) * correction;
-
-            x += delta_x;
-
-            if (!use_non_linear_residual_) {
-                f_gradient += (f_hessian * delta_x);
+                if (!use_non_linear_residual_) {
+                    state.function_gradient += ((*mem.matrix) * mem.work);
+                }
             }
         }
 
-        void smooth(Function<Matrix, Vector> &fun, Vector &x, IterationState &state, int steps) {
-            auto &f_gradient = state.f_gradient;
-            auto &f_hessian = state.f_hessian;
-            auto &f_diag_hessian = state.f_diag_hessian;
+        void nonlinear_smooth(Function<Matrix, Vector> &fun, Vector &x, NonlinearIterationState &state, int steps) {
+            int top_level = n_levels() - 1;
 
-            auto &b_gradient = state.b_gradient;
-            auto &b_diag_hessian = state.b_diag_hessian;
-
-            auto &correction = state.correction;
-            auto &diag_op = state.diag_op;
-            auto &residual = state.residual;
+            auto &mem = memory_[top_level];
 
             for (int ps = 0; ps < steps; ++ps) {
                 if (use_non_linear_residual_) {
-                    fun.gradient(x, f_gradient);
+                    fun.gradient(x, state.function_gradient);
                 }
 
-                residual = f_gradient;
+                mem.residual = state.function_gradient;
 
-                if (!b_gradient.empty()) {
-                    b_gradient.set(0.0);
+                if (!state.barrier_gradient.empty()) {
+                    state.barrier_gradient.set(0.0);
                 } else {
-                    b_gradient.zeros(layout(x));
+                    state.barrier_gradient.zeros(layout(x));
                 }
 
-                barrier_->gradient(x, b_gradient);
+                barrier_->gradient(x, state.barrier_gradient);
 
-                residual += b_gradient;
-                residual *= -1;
+                mem.residual += state.barrier_gradient;
+                mem.residual *= -1;
 
-                barrier_->hessian_diag(x, b_diag_hessian);
+                barrier_->hessian_diag(x, mem.barrier_diag);
 
-                diag_op = f_diag_hessian + b_diag_hessian;
-                diag_op = 1. / diag_op;
+                mem.work = mem.diag + mem.barrier_diag;
+                mem.work = 1. / mem.work;
 
-                correction = e_mul(diag_op, residual);
+                mem.correction = e_mul(mem.work, mem.residual);
 
-                handle_boundary(correction);
+                handle_eq_constraints(state, mem.correction);
 
-                Scalar alpha = line_search_projection_->compute(x, correction);
+                Scalar alpha = line_search_projection_->compute(x, mem.correction);
 
                 state.alpha_stats.alpha_found(alpha);
 
-                x += alpha * correction;
+                x += alpha * mem.correction;
 
                 if (!use_non_linear_residual_) {
-                    f_gradient += alpha * (f_hessian * correction);
+                    state.function_gradient += alpha * (*mem.matrix * mem.correction);
                 }
             }
+        }
+
+        static void generate_mask_from_matrix(const Matrix &A,
+                                              Vector &mask,
+                                              const Scalar on_value,
+                                              const Scalar off_value) {
+            const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon() * 1e6;
+
+            // FIXME once atomic_store is avaialable
+            mask.values(row_layout(A), off_value);
+
+            {
+                auto mask_view = view_device(mask);
+
+                A.read(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &value) {
+                    if (i == j) return;
+
+                    if (device::abs(value) > off_diag_tol) {
+                        // mask_view.atomic_add(i, 1.0);
+                        mask_view.set(i, on_value);
+                    }
+                });
+            }
+        }
+
+        void init_with_use_transfer_operators() {
+            int n_coarse_levels = n_levels() - 1;
+
+            for (int i = n_coarse_levels - 1; i >= 0; --i) {
+                auto &mem = memory_[i];
+                transfer_operators_[i]->restrict(*memory_[i + 1].matrix, *mem.matrix);
+            }
+
+            for (auto &mem : memory_) {
+                mem.diag = diag(*mem.matrix);
+                mem.matrix_changed = true;
+            }
+        }
+
+        void init_algebraic() {
+            UTOPIA_TRACE_REGION_BEGIN("BarrierMultigrid::init_algebraic");
+
+            if (amg_n_coarse_spaces_ == 0) {
+                Utopia::Abort("BarrierMultigrid: Invalid number of coarse levels!");
+            }
+
+            //////////////////////////////////////////////////////////////////
+
+            if (!keep_initial_coarse_spaces_ || !transfer_operators_[0]) {
+                auto fine_matrix = memory_[amg_n_coarse_spaces_].matrix;
+
+                for (SizeType l = amg_n_coarse_spaces_ - 1; l >= 0; --l) {
+                    auto &mem = memory_[l];
+
+                    assert(bool(fine_matrix));
+                    assert(!empty(*fine_matrix));
+                    assert(bool(mem.matrix));
+
+                    auto t = agglomerator_->create_transfer(*fine_matrix);
+                    t->restrict(*fine_matrix, *mem.matrix);
+
+                    // disp(static_cast<MatrixTransfer<Matrix, Vector> &>(*t).I());
+
+                    transfer_operators_[l] = t;
+                    fine_matrix = mem.matrix;
+                }
+            } else if (keep_initial_coarse_spaces_) {
+                auto fine_matrix = memory_[amg_n_coarse_spaces_].matrix;
+
+                for (SizeType l = amg_n_coarse_spaces_ - 1; l >= 0; --l) {
+                    auto &mem = memory_[l];
+
+                    transfer_operators_[l]->restrict(*fine_matrix, *mem.matrix);
+
+                    fine_matrix = mem.matrix;
+                }
+            }
+
+            //////////////////////////////////////////////////////////////////
+
+            for (auto &mem : memory_) {
+                mem.diag = diag(*mem.matrix);
+                mem.matrix_changed = true;
+            }
+
+            UTOPIA_TRACE_REGION_END("BarrierMultigrid::init_algebraic");
         }
     };
 

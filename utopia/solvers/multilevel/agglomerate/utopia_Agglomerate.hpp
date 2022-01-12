@@ -173,7 +173,7 @@ namespace utopia {
 
                 for (SizeType i = 0; i < n; ++i) {
                     if (parent[i] >= 0) {
-                        prolongator->set(rr.begin() + i, coarse_offset + parent[i], 1.0);
+                        prolongator->set(rr.begin() + i, coarse_offset + parent[i], (a_max[i] != 0) ? 1.0 : 0);
                     }
                 }
             }
