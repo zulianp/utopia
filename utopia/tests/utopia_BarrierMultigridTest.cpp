@@ -43,11 +43,12 @@ namespace utopia {
             auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
             auto preconditioner = std::make_shared<InvDiagPreconditioner<Matrix, Vector>>();
             linear_solver->set_preconditioner(preconditioner);
-            linear_solver->max_it(500);
+            linear_solver->max_it(1000);
             // linear_solver->verbose(true);
 
             InputParameters params;
             params.set("use_coarse_space", true);
+            // params.set("use_coarse_space", false);
             params.set("debug", true);
             params.set("barrier_parameter", 1);
             params.set("barrier_parameter_shrinking_factor", 0.3);
@@ -56,8 +57,8 @@ namespace utopia {
             params.set("barrier_function_type", "BoundedLogBarrier");
             // params.set("barrier_function_type", "LogBarrier");
             params.set("use_non_linear_residual", false);
-            params.set("pre_smoothing_steps", 5);
-            params.set("post_smoothing_steps", 5);
+            params.set("pre_smoothing_steps", 10);
+            params.set("post_smoothing_steps", 10);
             params.set("atol", 1e-6);
             params.set("mg_steps", 3);
             params.set("keep_initial_coarse_spaces", true);
@@ -86,10 +87,8 @@ namespace utopia {
         void test_ml_problem() {
             const static bool verbose = true;
             const static bool use_masks = false;
-            int n_levels = 4;
-            // int n_coarse = 4;
-            int n_coarse = 20000;
-            // int n_coarse = 2000;
+            int n_levels = 8;
+            int n_coarse = 1000;
 
             using ProblemType = utopia::Poisson1D<Matrix, Vector>;
             MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(n_levels, n_coarse, !use_masks);
@@ -102,10 +101,12 @@ namespace utopia {
             Vector x;
             fun->get_eq_constrains_values(x);
 
-            Vector lower_bound(layout(x), -0.8), upper_bound(layout(x), 0.1);
+            Vector lower_bound(layout(x), -0.8), upper_bound(layout(x), 0.8);
             BoxConstraints<Vector> box(nullptr, make_ref(upper_bound));
 
-            bool algebraic = Traits::Backend == PETSC;
+            // bool algebraic = Traits::Backend == PETSC;
+            bool algebraic = false;
+
             auto mg = create_barrier_mg(n_levels, algebraic, verbose);
             mg->set_box_constraints(box);
 

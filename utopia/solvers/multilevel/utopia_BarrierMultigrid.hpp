@@ -20,6 +20,8 @@
 #include "utopia_Agglomerate.hpp"
 #include "utopia_MatrixAgglomerator.hpp"
 
+#include "utopia_ElementWisePseudoInverse.hpp"
+
 #include <cassert>
 #include <ctime>
 
@@ -244,6 +246,7 @@ namespace utopia {
                 write("G.m", state.function_gradient);
             }
 
+            clear_memory();
             return converged;
         }
 
@@ -341,6 +344,8 @@ namespace utopia {
             }
         }
 
+        void clear_memory() { memory_.clear(); }
+
         void handle_eq_constraints(const NonlinearIterationState &state, Vector &v) const {
             v = e_mul(state.contraints_mask, v);
         }
@@ -359,35 +364,27 @@ namespace utopia {
             }
 
             if (l == 0) {
-                if (!mem.matrix_changed) {
-                    mem.matrix->set_diag(mem.diag);
-                }
-
                 mem.matrix->shift_diag(mem.barrier_diag);
-
                 coarse_solver_->solve(*mem.matrix, mem.residual, mem.correction);
+                mem.matrix->set_diag(mem.diag);
             } else {
                 // Jacobi method
 
-                for (int ps = 0; ps < pre_smoothing_steps(); ++ps) {
-                    mem.work = mem.diag + mem.barrier_diag;
-                    mem.work = 1. / mem.work;
-
-                    mem.correction += e_mul(mem.work, mem.residual);
-
-                    mem.residual -= *mem.matrix * mem.correction;
-                }
+                // for (int ps = 0; ps < pre_smoothing_steps(); ++ps) {
+                //     mem.work = mem.diag + mem.barrier_diag;
+                //     mem.work = mem.residual / mem.work;
+                //     mem.correction += mem.work;
+                //     mem.residual -= *mem.matrix * mem.work;
+                // }
 
                 linear_mg(l - 1);
 
-                for (int ps = 0; ps < post_smoothing_steps(); ++ps) {
-                    mem.work = mem.diag + mem.barrier_diag;
-                    mem.work = 1. / mem.work;
-
-                    mem.correction += e_mul(mem.work, mem.residual);
-
-                    mem.residual -= *mem.matrix * mem.correction;
-                }
+                // for (int ps = 0; ps < post_smoothing_steps(); ++ps) {
+                //     mem.work = mem.diag + mem.barrier_diag;
+                //     mem.work = mem.residual / mem.work;
+                //     mem.correction += mem.work;
+                //     mem.residual -= *mem.matrix * mem.work;
+                // }
             }
 
             transfer->interpolate(memory_[l].correction, memory_[l + 1].work);
