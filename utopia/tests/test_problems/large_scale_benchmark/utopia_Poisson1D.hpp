@@ -15,6 +15,8 @@ namespace utopia {
         using SizeType = typename Traits::SizeType;
         using Comm = typename Traits::Communicator;
 
+        bool is_hessian_constant() const override { return true; }
+
         Poisson1D(const SizeType &n, const SizeType &problem_type = 2)
             : pi_(3.14159265358979323846), problem_type_(problem_type), n_(n) {
             if (problem_type_ == 1) {

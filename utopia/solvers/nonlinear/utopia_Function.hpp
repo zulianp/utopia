@@ -35,6 +35,8 @@ namespace utopia {
 
         ~Function() override = default;
 
+        virtual bool is_hessian_constant() const { return false; }
+
         virtual bool hessian(const Vector &x, Matrix &H) const = 0;
         virtual bool hessian(const Vector & /*point*/, Matrix & /*result*/, Matrix & /*preconditioner*/) const {
             return false;

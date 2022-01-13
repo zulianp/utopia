@@ -195,6 +195,16 @@ namespace utopia {
                                const std::shared_ptr<LogBarrierBase> &barrier)
             : unconstrained_(unconstrained), barrier_(barrier) {}
 
+        bool hessian_diag(const Vector &x, Vector &h) const {
+            if (unconstrained_) {
+                assert(false);
+                Utopia::Abort("IMPLEMENT ME");
+            }
+
+            barrier()->hessian_diag(x, h);
+            return true;
+        }
+
         bool hessian(const Vector &x, Matrix &H) const final {
             if (unconstrained_) {
                 if (!unconstrained_->hessian(x, H)) {

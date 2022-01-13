@@ -43,7 +43,11 @@ namespace utopia {
             auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
             auto preconditioner = std::make_shared<InvDiagPreconditioner<Matrix, Vector>>();
             linear_solver->set_preconditioner(preconditioner);
-            linear_solver->max_it(1000);
+            linear_solver->max_it(10000);
+
+            // auto linear_solver = std::make_shared<Factorization<Matrix, Vector>>();
+
+            // auto linear_solver = std::make_shared<ILU<Matrix, Vector>>();
             // linear_solver->verbose(true);
 
             InputParameters params;
@@ -53,20 +57,27 @@ namespace utopia {
             params.set("barrier_parameter", 1);
             params.set("barrier_parameter_shrinking_factor", 0.3);
             params.set("min_barrier_parameter", 1e-10);
-            params.set("max_it", 120);
-            params.set("barrier_function_type", "BoundedLogBarrier");
+            params.set("max_it", 230);
+            // params.set("barrier_function_type", "BoundedLogBarrier");
+            params.set("barrier_function_type", "BoundedLogBarrierFunction");
+
             // params.set("barrier_function_type", "LogBarrier");
             params.set("use_non_linear_residual", false);
-            params.set("pre_smoothing_steps", 3);
-            params.set("post_smoothing_steps", 3);
-            params.set("atol", 1e-6);
+            params.set("pre_smoothing_steps", 5);
+            params.set("post_smoothing_steps", 5);
+            params.set("atol", 1e-7);
+            params.set("rtol", 1e-8);
             params.set("mg_steps", 1);
             params.set("keep_initial_coarse_spaces", true);
             params.set("amg_n_coarse_spaces", n_levels - 1);
+            params.set("non_smooth_projection_weight", 0.9);
 
             auto mg = utopia::make_unique<BarrierMultigrid<Matrix, Vector>>(linear_solver);
             mg->verbose(verbose);
             mg->read(params);
+
+            // Use external linear smoothing (internally uses Jacobi)
+            mg->set_linear_smoother(std::make_shared<ILU<Matrix, Vector>>());
 
 #ifdef UTOPIA_WITH_PETSC
             if (algebraic) {
@@ -87,8 +98,8 @@ namespace utopia {
         void test_ml_problem() {
             const static bool verbose = true;
             const static bool use_masks = false;
-            int n_levels = 9;
-            int n_coarse = 2001;
+            int n_levels = 11;
+            int n_coarse = 500;
 
             using ProblemType = utopia::Poisson1D<Matrix, Vector>;
             MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(n_levels, n_coarse, !use_masks);

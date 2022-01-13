@@ -16,6 +16,7 @@ namespace utopia {
         PetscCrsView(Mat raw_mat);
         ~PetscCrsView();
         void set(Mat raw_mat);
+        void clear();
 
         ArrayView<const PetscInt> row_ptr() const;
         ArrayView<const PetscInt> colidx() const;

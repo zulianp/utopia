@@ -43,6 +43,7 @@ namespace utopia {
                 assert(err == 0);
                 UTOPIA_UNUSED(err);
                 raw_mat = nullptr;
+                array = nullptr;
             }
         }
 
@@ -75,6 +76,8 @@ namespace utopia {
             }
         }
     };
+
+    void PetscCrsView::clear() { impl_->destroy(); }
 
     PetscCrsView::PetscCrsView(Mat raw_mat) : impl_(std::make_shared<Impl>(raw_mat)) {}
     PetscCrsView::PetscCrsView() : impl_(std::make_shared<Impl>()) {}

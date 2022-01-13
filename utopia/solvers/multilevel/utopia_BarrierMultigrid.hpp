@@ -52,7 +52,9 @@ namespace utopia {
         using IPTransfer = utopia::IPTransfer<Matrix, Vector>;
         using VariableBoundSolverInterface = utopia::VariableBoundSolverInterface<Vector>;
 
-        using LogBarrierBase = utopia::LogBarrierBase<Matrix, Vector>;
+        // using LogBarrierBase = utopia::LogBarrierBase<Matrix, Vector>;
+
+        using LogBarrierFunctionBase = utopia::LogBarrierFunctionBase<Matrix, Vector>;
 
         class AlphaStats {
         public:
@@ -90,9 +92,12 @@ namespace utopia {
             Vector correction;
             Vector diag;
             Vector work;
+            Vector modified_diag_op;
 
             Vector barrier_diag;
             bool matrix_changed{true};
+
+            std::unique_ptr<Smoother> linear_smoother;
 
             void ensure() {
                 if (!matrix) {
@@ -124,7 +129,8 @@ namespace utopia {
         void read(Input &in) override {
             Super::read(in);
 
-            std::string barrier_function_type = "BoundedLogBarrier";
+            // std::string barrier_function_type = "BoundedLogBarrier";
+            std::string barrier_function_type = "BoundedLogBarrierFunction";
 
             Options()
                 .add_option("barrier_function_type",
@@ -144,9 +150,13 @@ namespace utopia {
                 .add_option("amg_n_coarse_spaces",
                             amg_n_coarse_spaces_,
                             "If an agglomerator is provide, define how many coarse spaces have to be generated,")
+                .add_option("line_search_projection_weight",
+                            non_smooth_projection_weight_,
+                            "Coarse grid correction is projected in a non-smooth way. Value in [0, 1].")
                 .parse(in);
 
-            barrier_ = LogBarrierFunctionFactory<Matrix, Vector>::new_log_barrier(barrier_function_type);
+            // barrier_ = LogBarrierFunctionFactory<Matrix, Vector>::new_log_barrier(barrier_function_type);
+            barrier_ = LogBarrierFunctionFactory<Matrix, Vector>::new_log_barrier_function(barrier_function_type);
             barrier_->read(in);
         }
 
@@ -154,35 +164,52 @@ namespace utopia {
             this->transfer_operators_ = transfer_operators;
         }
 
+        bool update_hessian(Function<Matrix, Vector> &fun,
+                            const Vector &x,
+                            NonlinearIterationState &state,
+                            LevelMemory &mem) {
+            if (!fun.hessian(x, *mem.matrix)) {
+                return false;
+            }
+
+            if (empty(state.contraints_mask)) {
+                generate_mask_from_matrix(*mem.matrix, state.contraints_mask, 1, 0);
+            }
+
+            if (agglomerator_) {
+                init_algebraic();
+            } else {
+                init_with_user_transfer_operators();
+            }
+
+            return true;
+        }
+
         bool solve(Function<Matrix, Vector> &fun, Vector &x) {
             bool converged = false;
 
             std::string mg_header_message = "BarrierMultigrid: " + std::to_string(n_levels()) + " levels";
-            this->init_solver(mg_header_message, {" it. ", "|| g ||"});
+            this->init_solver(mg_header_message, {" it. ", "|| g ||", "||g||/||g_0||"});
 
             ensure_defaults();
 
             NonlinearIterationState state;
-
             int top_level = n_levels() - 1;
             auto &mem = memory_[top_level];
 
+            Scalar g_norm_0 = compute_norm_gradient_objective(fun, x, state, mem);
+            PrintInfo::print_iter_status(0, {g_norm_0, 1});
+
+            if (fun.is_hessian_constant()) {
+                update_hessian(fun, x, state, mem);
+            }
+
             for (SizeType it = 1; it < this->max_it() && !converged; ++it) {
-                fun.hessian(x, *mem.matrix);
-
-                //////////////////////////////////////////////////////////////////////
-
-                if (empty(state.contraints_mask)) {
-                    generate_mask_from_matrix(*mem.matrix, state.contraints_mask, 1, 0);
+                if (!fun.is_hessian_constant()) {
+                    update_hessian(fun, x, state, mem);
                 }
 
                 //////////////////////////////////////////////////////////////////////
-
-                if (agglomerator_) {
-                    init_algebraic();
-                } else {
-                    init_with_use_transfer_operators();
-                }
 
                 if (!use_non_linear_residual_) {
                     fun.gradient(x, state.function_gradient);
@@ -214,17 +241,9 @@ namespace utopia {
                 /////////////////////////////////////////////
                 // Convergence check
 
-                fun.gradient(x, state.function_gradient);
-
-                state.barrier_gradient.set(0.);
-                barrier_->gradient(x, state.barrier_gradient);
-
-                mem.residual = state.function_gradient + state.barrier_gradient;
-
-                Scalar g_norm = norm2(mem.residual);
-                PrintInfo::print_iter_status(it, {g_norm});
-
-                converged = this->check_convergence(it, g_norm, 1, 1);
+                Scalar g_norm = compute_norm_gradient_objective(fun, x, state, mem);
+                PrintInfo::print_iter_status(it, {g_norm, g_norm / g_norm_0});
+                converged = this->check_convergence(it, g_norm, (g_norm / g_norm_0), 1);
 
                 /////////////////////////////////////////////
             }
@@ -250,6 +269,26 @@ namespace utopia {
             return converged;
         }
 
+        Scalar compute_norm_gradient_objective(Function<Matrix, Vector> &fun,
+                                               const Vector &x,
+                                               NonlinearIterationState &state,
+                                               LevelMemory &mem) {
+            fun.gradient(x, state.function_gradient);
+
+            if (empty(state.barrier_gradient)) {
+                state.barrier_gradient.zeros(layout(x));
+            } else {
+                state.barrier_gradient.set(0.);
+            }
+
+            barrier_->gradient(x, state.barrier_gradient);
+
+            mem.residual = state.function_gradient + state.barrier_gradient;
+
+            Scalar g_norm = norm2(mem.residual);
+            return g_norm;
+        }
+
         void init_memory(const Layout &) override { ensure_memory(); }
 
         int n_levels() const { return transfer_operators_.size() + 1; }
@@ -258,9 +297,16 @@ namespace utopia {
             agglomerator_ = agglomerator;
         }
 
+        inline void set_barrier(const std::shared_ptr<LogBarrierFunctionBase> &barrier) { barrier_ = barrier; }
+        inline const std::shared_ptr<LogBarrierFunctionBase> &barrier() { return barrier_; }
+
     public:
         BarrierMultigrid *clone() const override {
             auto ret = utopia::make_unique<BarrierMultigrid>(std::shared_ptr<LinearSolver>(coarse_solver_->clone()));
+            if (linear_smoother_clonable_) {
+                ret->linear_smoother_clonable_ = std::shared_ptr<Smoother>(linear_smoother_clonable_->clone());
+            }
+
             return ret.release();
         }
 
@@ -287,13 +333,16 @@ namespace utopia {
         inline int pre_smoothing_steps() const { return pre_smoothing_steps_; }
         inline int post_smoothing_steps() const { return post_smoothing_steps_; }
 
+        void set_linear_smoother(const std::shared_ptr<Smoother> &smoother) { linear_smoother_clonable_ = smoother; }
+
         UTOPIA_NVCC_PRIVATE
 
         std::shared_ptr<LinearSolver> coarse_solver_;
         std::vector<std::shared_ptr<Transfer>> transfer_operators_;
         std::vector<LevelMemory> memory_;
-        std::shared_ptr<LogBarrierBase> barrier_;
+        std::shared_ptr<LogBarrierFunctionBase> barrier_;
         std::shared_ptr<LineSearchBoxProjection<Vector>> line_search_projection_;
+        std::shared_ptr<Smoother> linear_smoother_clonable_;
 
         bool debug_{true};
         bool use_coarse_space_{false};
@@ -307,12 +356,13 @@ namespace utopia {
         int amg_n_coarse_spaces_{1};
 
         Scalar dumping_{0.98};
-        Scalar line_search_projection_weight_{0.9};
+        Scalar non_smooth_projection_weight_{0.9};
         std::shared_ptr<MatrixAgglomerator<Matrix>> agglomerator_;
 
         void ensure_defaults() {
             if (!barrier_) {
-                barrier_ = std::make_shared<BoundedLogBarrier<Matrix, Vector>>();
+                // barrier_ = std::make_shared<BoundedLogBarrier<Matrix, Vector>>();
+                barrier_ = std::make_shared<BoundedLogBarrierFunction<Matrix, Vector>>();
             }
 
             if (!line_search_projection_) {
@@ -341,6 +391,10 @@ namespace utopia {
 
             for (auto &mem : memory_) {
                 mem.ensure();
+
+                if (linear_smoother_clonable_) {
+                    mem.linear_smoother = std::unique_ptr<Smoother>(linear_smoother_clonable_->clone());
+                }
             }
         }
 
@@ -368,29 +422,72 @@ namespace utopia {
                 coarse_solver_->solve(*mem.matrix, mem.residual, mem.correction);
                 mem.matrix->set_diag(mem.diag);
             } else {
-                // Jacobi method
+                update_linear_smoother_pre(mem);
 
-                for (int ps = 0; ps < pre_smoothing_steps(); ++ps) {
-                    jacobi(mem);
-                }
+                linear_smooth(pre_smoothing_steps(), mem);
 
                 linear_mg(l - 1);
 
-                for (int ps = 0; ps < post_smoothing_steps(); ++ps) {
-                    jacobi(mem);
-                }
+                linear_smooth(post_smoothing_steps(), mem);
+
+                update_linear_smoother_post(mem);
             }
 
             transfer->interpolate(memory_[l].correction, memory_[l + 1].work);
             memory_[l + 1].correction += memory_[l + 1].work;
         }
 
-        void jacobi(LevelMemory &mem) {
-            mem.work = mem.diag + mem.barrier_diag;
-            mem.work = mem.residual / mem.work;
-            mem.correction += mem.work;
-            mem.residual -= *mem.matrix * mem.work;
-            mem.residual -= e_mul(mem.barrier_diag, mem.work);
+        void update_linear_smoother_pre(LevelMemory &mem) {
+            bool disable = true;
+            if (!disable && mem.linear_smoother) {
+                mem.matrix->shift_diag(mem.barrier_diag);
+                mem.linear_smoother->update(mem.matrix);
+            } else {
+                // Jacobi
+                mem.modified_diag_op = mem.diag + mem.barrier_diag;
+                mem.modified_diag_op = 1. / mem.modified_diag_op;
+            }
+        }
+
+        void update_linear_smoother_post(LevelMemory &mem) {
+            if (mem.linear_smoother) {
+                mem.matrix->set_diag(mem.diag);
+            }
+        }
+
+        void linear_smooth(const int steps, LevelMemory &mem) {
+            bool disable = true;
+            if (!disable && mem.linear_smoother) {
+                mem.linear_smoother->sweeps(steps);
+
+                if (empty(mem.work)) {
+                    mem.work.zeros(layout(mem.residual));
+                } else {
+                    mem.work.set(0.);
+                }
+
+                mem.linear_smoother->smooth(mem.residual, mem.work);
+
+                // Update correction
+                mem.correction += mem.work;
+
+                // Update residual
+                mem.residual -= *mem.matrix * mem.work;
+                mem.residual -= e_mul(mem.barrier_diag, mem.work);
+
+            } else {
+                for (int ps = 0; ps < steps; ++ps) {
+                    // Jacobi
+                    mem.work = e_mul(mem.modified_diag_op, mem.residual);
+
+                    // Update correction
+                    mem.correction += mem.work;
+
+                    // Update residual
+                    mem.residual -= *mem.matrix * mem.work;
+                    mem.residual -= e_mul(mem.barrier_diag, mem.work);
+                }
+            }
         }
 
         void coarse_correction(Function<Matrix, Vector> &fun, Vector &x, NonlinearIterationState &state) {
@@ -429,14 +526,23 @@ namespace utopia {
                 int top_level = n_levels() - 1;
                 auto &mem = memory_[top_level];
 
-                mem.work = x + mem.correction;
-                barrier_->project_onto_feasibile_region(mem.work);
-                mem.work -= x;
+                if (non_smooth_projection_weight_ != 0) {
+                    mem.work = x + mem.correction;
+                    barrier_->project_onto_feasibile_region(mem.work);
+                    mem.work -= x;
+                    mem.work *= dumping_;
+                } else {
+                    mem.work.set(0.);
+                }
 
-                Scalar alpha = line_search_projection_->compute(x, mem.correction);
+                if (non_smooth_projection_weight_ != 1.0) {
+                    Scalar alpha = line_search_projection_->compute(x, mem.correction);
 
-                mem.work *= dumping_ * line_search_projection_weight_;
-                mem.work += ((1 - line_search_projection_weight_) * alpha) * mem.correction;
+                    state.alpha_stats.alpha_found(alpha);
+
+                    mem.work *= non_smooth_projection_weight_;
+                    mem.work += ((1 - non_smooth_projection_weight_) * alpha) * mem.correction;
+                }
 
                 x += mem.work;
 
@@ -471,12 +577,33 @@ namespace utopia {
 
                 barrier_->hessian_diag(x, mem.barrier_diag);
 
-                mem.work = mem.diag + mem.barrier_diag;
-                mem.work = 1. / mem.work;
+                handle_eq_constraints(state, mem.residual);
+                handle_eq_constraints(state, mem.barrier_diag);
 
-                mem.correction = e_mul(mem.work, mem.residual);
+                //////////////////////////////////////////////////
+                if (mem.linear_smoother) {
+                    mem.linear_smoother->sweeps(1);
+                    mem.matrix->shift_diag(mem.barrier_diag);
+                    mem.linear_smoother->update(mem.matrix);
 
-                handle_eq_constraints(state, mem.correction);
+                    if (empty(mem.correction)) {
+                        mem.correction.zeros(layout(mem.residual));
+                    } else {
+                        mem.correction.set(0.);
+                    }
+
+                    mem.linear_smoother->smooth(mem.residual, mem.correction);
+
+                    mem.matrix->set_diag(mem.diag);
+                } else {
+                    // Jacobi
+                    mem.work = mem.diag + mem.barrier_diag;
+                    mem.work = 1. / mem.work;
+
+                    mem.correction = e_mul(mem.work, mem.residual);
+                }
+
+                //////////////////////////////////////////////////
 
                 Scalar alpha = line_search_projection_->compute(x, mem.correction);
 
@@ -513,7 +640,7 @@ namespace utopia {
             }
         }
 
-        void init_with_use_transfer_operators() {
+        void init_with_user_transfer_operators() {
             int n_coarse_levels = n_levels() - 1;
 
             for (int i = n_coarse_levels - 1; i >= 0; --i) {
@@ -575,7 +702,7 @@ namespace utopia {
 
             UTOPIA_TRACE_REGION_END("BarrierMultigrid::init_algebraic");
         }
-    };
+    };  // namespace utopia
 
 }  // namespace utopia
 

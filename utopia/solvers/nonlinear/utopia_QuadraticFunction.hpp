@@ -17,6 +17,8 @@ namespace utopia {
             // this->data()->H = H;
         }
 
+        bool is_hessian_constant() const override { return true; }
+
         bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const override {
             // H = *this->data()->H;
             H = *H_;
