@@ -26,7 +26,6 @@ namespace utopia {
         PetscBool done{PETSC_FALSE};
         PetscErrorCode err{0};
 
-    private:
         void destroy() {
             if (raw_mat) {
                 if (PetscMatrix::is_block(raw_mat)) {
