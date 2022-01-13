@@ -67,7 +67,7 @@ namespace utopia {
         BoundedLogBarrier() = default;
         explicit BoundedLogBarrier(const std::shared_ptr<BoxConstraints> &box) : Super(box) {}
 
-        void reset() override {}
+        void reset() override { Super::reset(); }
 
         void read(Input &in) override {
             Super::read(in);
