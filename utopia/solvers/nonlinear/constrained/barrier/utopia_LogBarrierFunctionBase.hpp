@@ -7,6 +7,8 @@
 #include "utopia_Layout.hpp"
 #include "utopia_Options.hpp"
 
+#include "utopia_TransformedBoxConstraints.hpp"
+
 #include <limits>
 
 namespace utopia {
@@ -27,7 +29,21 @@ namespace utopia {
         virtual void gradient(const Vector &x, Vector &g) const = 0;
         virtual void value(const Vector &x, Scalar &value) const = 0;
         virtual bool project_onto_feasibile_region(Vector &x) const = 0;
-        virtual void set_selection(const std::shared_ptr<Vector> &) {}
+
+        void set_selection(const std::shared_ptr<Vector> &selection) { selection_ = selection; }
+
+        virtual void apply_selection(Vector &barrier_value) const {
+            if (has_selection()) {
+                barrier_value = e_mul(*selection_, barrier_value);
+            }
+        }
+
+        bool has_selection() const { return static_cast<bool>(selection_); }
+
+        inline const Vector &selection() const {
+            assert(has_selection());
+            return *selection_;
+        }
 
         void set_box_constraints(const std::shared_ptr<BoxConstraints> &box) { box_ = box; }
         const std::shared_ptr<BoxConstraints> &box() { return box_; }
@@ -130,6 +146,10 @@ namespace utopia {
         bool verbose_{false};
 
         std::shared_ptr<Matrix> scaling_matrix_;
+
+        /// Selector
+        std::shared_ptr<Vector> selection_;
+        Scalar infinity_{std::numeric_limits<Scalar>::max()};
     };
 
     template <class Matrix, class Vector>

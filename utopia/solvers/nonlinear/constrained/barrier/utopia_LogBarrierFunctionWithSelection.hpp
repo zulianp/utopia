@@ -257,9 +257,7 @@ namespace utopia {
             in.get("print_norms", print_norms_);
         }
 
-        void set_selection(const std::shared_ptr<Vector> &boolean_selector) override {
-            boolean_selector_ = boolean_selector;
-        }
+        void set_selection(const std::shared_ptr<Vector> &boolean_selector) { boolean_selector_ = boolean_selector; }
 
         void reset() override {
             Super::reset();
