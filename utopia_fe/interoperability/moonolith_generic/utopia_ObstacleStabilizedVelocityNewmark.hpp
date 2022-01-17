@@ -17,12 +17,14 @@ namespace utopia {
     // Unconditionally Stable gamma = 0.5, beta = 0.25
     template <class FunctionSpace>
     class ObstacleStabilizedVelocityNewmark : public TimeDependentFunction<FunctionSpace>,
-                                              public ObstacleDependentFunction<FunctionSpace> {
+                                              public ObstacleDependentFunction<FunctionSpace>,
+                                              public LSStrategy<typename Traits<FunctionSpace>::Vector> {
     public:
         using Super = utopia::TimeDependentFunction<FunctionSpace>;
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+        using Layout_t = typename Traits<FunctionSpace>::Layout;
 
         using LogBarrierBase = utopia::LogBarrierBase<Matrix_t, Vector_t>;
 
@@ -34,6 +36,7 @@ namespace utopia {
             in.get("stabilized_formulation", stabilized_formulation_);
             in.get("trivial_obstacle", trivial_obstacle_);
             in.get("zero_initial_guess", zero_initial_guess_);
+            in.get("enable_line_search", enable_line_search_);
 
             if (!obstacle_) {
                 std::string type;
@@ -81,12 +84,82 @@ namespace utopia {
                 barrier_ = std::make_shared<LogBarrier<Matrix_t, Vector_t>>();
             }
 
-            barrier_->set_box_constraints(
-                std::make_shared<BoxConstraints<Vector_t>>(nullptr, std::make_shared<Vector_t>(obstacle_->gap())));
+            auto box =
+                std::make_shared<BoxConstraints<Vector_t>>(nullptr, std::make_shared<Vector_t>(obstacle_->gap()));
+
+            barrier_->set_box_constraints(box);
 
             barrier_->set_selection(std::make_shared<Vector_t>(obstacle_->is_contact()));
+
+            if (enable_line_search_) {
+                if (!line_search_) {
+                    line_search_ = std::make_shared<LineSearchBoxProjection<Vector_t>>(box, make_ref(this->x_old()));
+                } else {
+                    line_search_->set_box_constraints(box);
+                    line_search_->set_offset_vector(make_ref(this->x_old()));
+                }
+
+                auto trafo = obstacle_->orthogonal_transformation();
+                assert(trafo);
+                if (!trafo) {
+                    Utopia::Abort(
+                        "ObstacleStabilizedVelocityNewmark:update_constraints: orthogonal_transformation is mandatory "
+                        "for "
+                        "line_search!");
+                }
+
+                line_search_->set_transform(trafo);
+            }
+
             return ok;
         }
+
+        bool get_alpha(FunctionBase<Vector_t> &fun,
+                       const Vector_t &g,
+                       const Vector_t &velocity,
+                       const Vector_t &correction,
+                       Scalar_t &alpha) override {
+            if (line_search_) {
+                Vector_t c;
+                update_x(velocity, c);
+                c -= this->x_old();
+
+                if (trivial_obstacle_) {
+                    Vector_t zero(layout(c), 0.);
+                    return line_search_->get_alpha(fun, g, zero, correction, alpha);
+                } else {
+                    return line_search_->get_alpha(fun, g, this->x_old(), correction, alpha);
+                }
+            } else {
+                alpha = 1.;
+                return false;
+            }
+        }
+
+        bool get_alpha(LeastSquaresFunctionBase<Vector_t> &fun,
+                       const Vector_t &g,
+                       const Vector_t &velocity,
+                       const Vector_t &correction,
+                       Scalar_t &alpha) override {
+            if (line_search_) {
+                Vector_t c;
+                update_x(velocity, c);
+                c -= this->x_old();
+
+                if (trivial_obstacle_) {
+                    Vector_t zero(layout(c), 0.);
+                    return line_search_->get_alpha(fun, g, zero, correction, alpha);
+                } else {
+                    return line_search_->get_alpha(fun, g, this->x_old(), correction, alpha);
+                }
+
+            } else {
+                alpha = 1.;
+                return false;
+            }
+        }
+
+        void init_memory(const Layout_t & /*layout*/) override {}
 
         void update_predictor() {
             assert(obstacle_);
@@ -332,6 +405,9 @@ namespace utopia {
         std::shared_ptr<LogBarrierBase> barrier_;
         bool trivial_obstacle_{false};
         bool zero_initial_guess_{true};
+
+        std::shared_ptr<LineSearchBoxProjection<Vector_t>> line_search_;
+        bool enable_line_search_{false};
 
         void update_x(const Vector_t &velocity, Vector_t &x) const {
             x = predictor_;
