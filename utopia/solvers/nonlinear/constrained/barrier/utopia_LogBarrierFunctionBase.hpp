@@ -18,17 +18,313 @@ namespace utopia {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using BoxConstraints = utopia::BoxConstraints<Vector>;
+        using Transformation = utopia::Transformation<Matrix, Vector>;
 
         LogBarrierBase() = default;
         explicit LogBarrierBase(const std::shared_ptr<BoxConstraints> &box) : box_(box) {}
-
         virtual ~LogBarrierBase() = default;
-        virtual void hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const = 0;
-        virtual void hessian(const Vector &x, Matrix &H) const = 0;
-        virtual void hessian_diag(const Vector &x, Vector &h) const = 0;
-        virtual void gradient(const Vector &x, Vector &g) const = 0;
-        virtual void value(const Vector &x, Scalar &value) const = 0;
-        virtual bool project_onto_feasibile_region(Vector &x) const = 0;
+
+        virtual bool barrier_gradient(const Vector &x, Vector &g) const = 0;
+        virtual bool barrier_hessian(const Vector &x, Vector &H) const = 0;
+        virtual bool barrier_value(const Vector &x, Vector &v) const = 0;
+        virtual std::string function_type() const = 0;
+
+        virtual bool hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const final {
+            return gradient(x, g) && hessian(x, H);
+        }
+
+        virtual bool hessian(const Vector &x, Vector &H) const final {
+            Vector work, h(layout(x), 0.);
+
+            if (has_transform()) {
+                // Transform to constraint base
+                transform_->transform(x, work);
+                if (!barrier_hessian(work, h)) {
+                    return false;
+                }
+
+                h *= current_barrier_parameter_;
+                apply_selection(h);
+
+                // Scale contribuions
+                if (has_scaling_matrix()) {
+                    scaling_matrix()->apply(h, work);
+                    h = work;
+                }
+
+                // Transform to problem base
+                transform_->inverse_transform_direction(h, work);
+                H += (work);
+            } else {
+                if (!barrier_hessian(x, h)) {
+                    return false;
+                }
+
+                h *= current_barrier_parameter_;
+                apply_selection(h);
+
+                if (has_scaling_matrix()) {
+                    scaling_matrix()->apply(h, work);
+                    if (empty(H)) {
+                        H = work;
+                    } else {
+                        H += (work);
+                    }
+                } else {
+                    if (empty(H)) {
+                        H = h;
+                    } else {
+                        H += (h);
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        virtual bool hessian(const Vector &x, Matrix &H) const final {
+            Vector work, h(layout(x), 0.);
+
+            if (has_transform()) {
+                // Transform to constraint base
+                transform_->transform(x, work);
+                if (!barrier_hessian(work, h)) {
+                    return false;
+                }
+
+                h *= current_barrier_parameter_;
+
+                apply_selection(h);
+
+                // Scale contribuions
+                if (has_scaling_matrix()) {
+                    scaling_matrix()->apply(h, work);
+                    h = work;
+                }
+
+                // Transform to problem base
+                transform_->inverse_transform_direction(h, work);
+                H.shift_diag(work);
+            } else {
+                if (!barrier_hessian(x, h)) {
+                    return false;
+                }
+
+                h *= current_barrier_parameter_;
+
+                apply_selection(h);
+
+                if (has_scaling_matrix()) {
+                    scaling_matrix()->apply(h, work);
+                    H.shift_diag(work);
+                } else {
+                    H.shift_diag(h);
+                }
+            }
+
+            return true;
+        }
+
+        virtual bool value(const Vector &x, Scalar &value) const final {
+            Vector work, v(layout(x), 0.);
+
+            if (has_transform()) {
+                // Transform to constraint base
+                transform_->transform(x, work);
+                if (!barrier_value(work, v)) {
+                    return false;
+                }
+
+                v *= current_barrier_parameter_;
+                apply_selection(v);
+
+                // Scale contribuions
+                if (has_scaling_matrix()) {
+                    scaling_matrix()->apply(v, work);
+                    v = work;
+                }
+
+                // Transform to problem base
+                transform_->inverse_transform_direction(v, work);
+                value = sum(v);
+            } else {
+                if (!barrier_value(x, v)) {
+                    return false;
+                }
+
+                v *= current_barrier_parameter_;
+                apply_selection(v);
+
+                if (has_scaling_matrix()) {
+                    scaling_matrix()->apply(v, work);
+                    value = sum(work);
+                } else {
+                    value = sum(v);
+                }
+            }
+
+            return true;
+        }
+
+        virtual bool gradient(const Vector &x, Vector &grad) const final {
+            Vector work, g(layout(x), 0.);
+
+            if (has_transform()) {
+                // Transform to constraint base
+                transform_->transform(x, work);
+                if (!barrier_gradient(work, g)) {
+                    return false;
+                }
+
+                g *= current_barrier_parameter_;
+                apply_selection(g);
+
+                // Scale contribuions
+                if (has_scaling_matrix()) {
+                    scaling_matrix()->apply(g, work);
+                    g = work;
+                }
+
+                // Transform to problem base
+                transform_->inverse_transform_direction(g, work);
+                grad += work;
+            } else {
+                if (!barrier_gradient(x, g)) {
+                    return false;
+                }
+
+                g *= current_barrier_parameter_;
+                apply_selection(g);
+
+                if (has_scaling_matrix()) {
+                    scaling_matrix()->apply(g, work);
+                    grad += work;
+                } else {
+                    grad += g;
+                }
+            }
+
+            return true;
+        }
+
+        virtual bool project_onto_feasibile_region(Vector &x) const {
+            bool ok = false;
+            if (has_transform()) {
+                Vector temp_x;
+                transform()->transform(x, temp_x);
+
+                if (has_selection()) {
+                    ok = extend_project_onto_feasibile_region_with_selection(temp_x);
+                } else {
+                    ok = extend_project_onto_feasibile_region(temp_x);
+                }
+
+                transform()->inverse_transform(temp_x, x);
+
+            } else {
+                if (has_selection()) {
+                    ok = extend_project_onto_feasibile_region_with_selection(x);
+                } else {
+                    ok = extend_project_onto_feasibile_region(x);
+                }
+            }
+
+            return ok;
+        }
+
+        bool extend_project_onto_feasibile_region_with_selection(Vector &x) const {
+            if (this->box_->has_upper_bound()) {
+                auto ub_view = local_view_device(*this->box_->upper_bound());
+                auto x_view = local_view_device(x);
+                auto selector_view = local_view_device(*selection_);
+
+                Scalar soft_boundary = this->soft_boundary_;
+                parallel_for(
+                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                        auto s = selector_view.get(i);
+
+                        if (s > 0.99) {
+                            auto xi = x_view.get(i);
+                            auto ubi = ub_view.get(i);
+
+                            if (xi > ubi) {
+                                x_view.set(i, ubi - soft_boundary);
+                            }
+                        }
+                    });
+            }
+
+            if (this->box_->has_lower_bound()) {
+                auto lb_view = local_view_device(*this->box_->lower_bound());
+                auto x_view = local_view_device(x);
+                auto selector_view = local_view_device(*selection_);
+
+                Scalar soft_boundary = this->soft_boundary_;
+
+                parallel_for(
+                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                        auto s = selector_view.get(i);
+
+                        if (s > 0.99) {
+                            auto xi = x_view.get(i);
+                            auto lbi = lb_view.get(i);
+
+                            if (xi < lbi) {
+                                x_view.set(i, lbi + soft_boundary);
+                            }
+                        }
+                    });
+            }
+
+            return true;
+        }
+
+        bool extend_project_onto_feasibile_region(Vector &x) const {
+            if (this->box_->has_upper_bound()) {
+                auto ub_view = local_view_device(*this->box_->upper_bound());
+                auto x_view = local_view_device(x);
+
+                Scalar soft_boundary = this->soft_boundary_;
+                parallel_for(
+                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                        auto xi = x_view.get(i);
+                        auto ubi = ub_view.get(i);
+
+                        if (xi > ubi) {
+                            x_view.set(i, ubi - soft_boundary);
+                        }
+                    });
+            }
+
+            if (this->box_->has_lower_bound()) {
+                auto lb_view = local_view_device(*this->box_->lower_bound());
+                auto x_view = local_view_device(x);
+
+                Scalar soft_boundary = this->soft_boundary_;
+                parallel_for(
+                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                        auto xi = x_view.get(i);
+                        auto lbi = lb_view.get(i);
+
+                        if (xi < lbi) {
+                            x_view.set(i, lbi + soft_boundary);
+                        }
+                    });
+            }
+
+            return true;
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+
+        inline bool has_transform() const { return static_cast<bool>(transform_); }
+        void set_transform(const std::shared_ptr<Transformation> &t) { transform_ = t; }
+        const std::shared_ptr<Transformation> &transform() const {
+            assert(has_transform());
+            return transform_;
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
 
         void set_selection(const std::shared_ptr<Vector> &selection) { selection_ = selection; }
 
@@ -45,6 +341,20 @@ namespace utopia {
             return *selection_;
         }
 
+        void auto_selector(const bool val) { auto_selector_ = val; }
+
+        void determine_boolean_selector() const {
+            if (!this->box_) return;
+
+            if (!selection_) {
+                selection_ = std::make_shared<Vector>();
+            }
+
+            this->box_->determine_boolean_selector(-infinity_, infinity_, *selection_);
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+
         void set_box_constraints(const std::shared_ptr<BoxConstraints> &box) { box_ = box; }
         const std::shared_ptr<BoxConstraints> &box() { return box_; }
 
@@ -54,23 +364,6 @@ namespace utopia {
 
             if (verbose_) {
                 utopia::out() << "current_barrier_parameter: " << current_barrier_parameter_ << '\n';
-            }
-        }
-
-        void read(Input &in) override {
-            if (!Options()
-                     .add_option(
-                         "barrier_parameter", barrier_parameter_, "see Numerical Optimization - J. Nocedal, S. Wright.")
-                     .add_option("barrier_parameter_shrinking_factor",
-                                 barrier_parameter_shrinking_factor_,
-                                 "Factor with which the barrier term is reduced.")
-                     .add_option("min_barrier_parameter", min_barrier_parameter_, "Smallest barrier parameter allowed.")
-                     .add_option(
-                         "soft_boundary", soft_boundary_, "A value in (0,0.01) used to project in the feasible region.")
-                     .add_option("verbose", verbose_, "Enable/Disable verbose output.")
-                     .add_option("zero", zero_, "numerical zero (>0)")
-                     .parse(in)) {
-                return;
             }
         }
 
@@ -127,298 +420,59 @@ namespace utopia {
         inline bool verbose() const { return verbose_; }
         virtual void reset() { current_barrier_parameter_ = barrier_parameter_; }
 
+        inline bool has_scaling_matrix() const { return static_cast<bool>(scaling_matrix_); }
+
         inline void set_scaling_matrix(const std::shared_ptr<Matrix> &scaling_matrix) {
             scaling_matrix_ = scaling_matrix;
         }
-        inline const std::shared_ptr<Matrix> &scaling_matrix() const { return scaling_matrix_; }
+        inline const std::shared_ptr<Matrix> &scaling_matrix() const {
+            assert(has_scaling_matrix());
+            return scaling_matrix_;
+        }
+
+        void read(Input &in) override {
+            if (!Options()
+                     .add_option(
+                         "barrier_parameter", barrier_parameter_, "see Numerical Optimization - J. Nocedal, S. Wright.")
+                     .add_option("barrier_parameter_shrinking_factor",
+                                 barrier_parameter_shrinking_factor_,
+                                 "Factor with which the barrier term is reduced.")
+                     .add_option("min_barrier_parameter", min_barrier_parameter_, "Smallest barrier parameter allowed.")
+                     .add_option(
+                         "soft_boundary", soft_boundary_, "A value in (0,0.01) used to project in the feasible region.")
+                     .add_option("verbose", verbose_, "Enable/Disable verbose output.")
+                     .add_option("zero", zero_, "numerical zero (>0)")
+                     .add_option(
+                         "auto_selector", auto_selector_, "Determine selection automatically (use it for testing only)")
+                     .parse(in)) {
+                return;
+            }
+        }
 
         UTOPIA_NVCC_PRIVATE
+
+        // Barrier requirements
         std::shared_ptr<LogBarrierBase> barrier_;
         std::shared_ptr<BoxConstraints> box_;
+        std::shared_ptr<Transformation> transform_;
+        std::shared_ptr<Matrix> scaling_matrix_;
+        std::shared_ptr<Vector> selection_;
 
+        // Barrier parameters
         Scalar barrier_parameter_{1e-10};
         Scalar barrier_parameter_shrinking_factor_{0.1};
         Scalar min_barrier_parameter_{1e-10};
         Scalar current_barrier_parameter_{1e-10};
+
+        // Soft limit
         Scalar soft_boundary_{1e-7};
         Scalar zero_{1e-20};
 
-        bool verbose_{false};
-
-        std::shared_ptr<Matrix> scaling_matrix_;
-
-        /// Selector
-        std::shared_ptr<Vector> selection_;
+        // Auto selector tol
         Scalar infinity_{std::numeric_limits<Scalar>::max()};
-    };
+        bool auto_selector_{false};
 
-    template <class Matrix, class Vector>
-    class LogBarrierFunctionBase : public Function<Matrix, Vector> {
-    public:
-        using Scalar = typename Traits<Vector>::Scalar;
-        using SizeType = typename Traits<Vector>::SizeType;
-        using Function = utopia::Function<Matrix, Vector>;
-        using BoxConstraints = utopia::BoxConstraints<Vector>;
-        using Super = Function;
-        using LogBarrierBase = utopia::LogBarrierBase<Matrix, Vector>;
-
-        void set_barrier(const std::shared_ptr<LogBarrierBase> &barrier) { this->barrier_ = barrier; }
-        const std::shared_ptr<LogBarrierBase> &barrier() const {
-            assert(barrier_);
-            return this->barrier_;
-        }
-
-        virtual void extend_hessian_diag(const Vector &x, Vector &h) const {
-            if (barrier()) barrier()->hessian_diag(x, h);
-        }
-
-        virtual void extend_hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const {
-            if (barrier()) barrier()->hessian_and_gradient(x, H, g);
-        }
-
-        virtual void extend_hessian(const Vector &x, Matrix &H) const {
-            if (barrier()) barrier()->hessian(x, H);
-        }
-
-        virtual void extend_gradient(const Vector &x, Vector &g) const {
-            if (barrier()) barrier()->gradient(x, g);
-        }
-
-        virtual void extend_value(const Vector &x, Scalar &value) const {
-            if (barrier()) barrier()->value(x, value);
-        }
-
-        virtual bool extend_project_onto_feasibile_region(Vector &x) const {
-            if (barrier()) return barrier()->project_onto_feasibile_region(x);
-            return false;
-        }
-
-        virtual std::string function_type() const = 0;
-
-        void read(Input &in) override {
-            if (barrier()) barrier()->read(in);
-            reset();
-        }
-
-        LogBarrierFunctionBase() {}
-
-        inline void set_unconstrained_function(const std::shared_ptr<Function> &unconstrained) {
-            unconstrained_ = unconstrained;
-        }
-
-        void set_box_constraints(const std::shared_ptr<BoxConstraints> &box) { barrier()->set_box_constraints(box); }
-        void set_selection(const std::shared_ptr<Vector> &boolean_selector) {
-            barrier()->set_selection(boolean_selector);
-        }
-
-        LogBarrierFunctionBase(const std::shared_ptr<Function> &unconstrained,
-                               const std::shared_ptr<LogBarrierBase> &barrier)
-            : unconstrained_(unconstrained), barrier_(barrier) {}
-
-        bool hessian_diag(const Vector &x, Vector &h) const {
-            if (unconstrained_) {
-                assert(false);
-                Utopia::Abort("IMPLEMENT ME");
-            }
-
-            barrier()->hessian_diag(x, h);
-            return true;
-        }
-
-        bool hessian(const Vector &x, Matrix &H) const final {
-            if (unconstrained_) {
-                if (!unconstrained_->hessian(x, H)) {
-                    return false;
-                }
-            }
-
-            extend_hessian(x, H);
-            return true;
-        }
-
-        bool hessian(const Vector &x, Matrix &H, Matrix &preconditioner) const final {
-            if (unconstrained_) {
-                if (!unconstrained_->hessian(x, H, preconditioner)) {
-                    return false;
-                }
-            }
-
-            if (has_orthogonal_transformation()) {
-                Vector temp_x;
-                orthogonal_transformation()->apply(x, temp_x);
-                Matrix temp_H;
-                temp_H.identity(layout(H), 0.);
-                extend_hessian(temp_x, temp_H);
-
-                H += *orthogonal_transformation() * temp_H;
-
-            } else {
-                extend_hessian(x, H);
-            }
-
-            return true;
-        }
-
-        bool hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const final {
-            if (unconstrained_) {
-                if (!unconstrained_->hessian_and_gradient(x, H, g)) {
-                    return false;
-                }
-            }
-
-            if (has_orthogonal_transformation()) {
-                Vector temp_x;
-                orthogonal_transformation()->apply(x, temp_x);
-                Vector temp_g(layout(g), 0.);
-
-                Matrix temp_H;
-                temp_H.identity(layout(H), 0.);
-
-                extend_hessian_and_gradient(temp_x, temp_H, temp_g);
-
-                H += *orthogonal_transformation() * temp_H;
-                g += *orthogonal_transformation() * temp_g;
-
-            } else {
-                extend_hessian_and_gradient(x, H, g);
-            }
-
-            return true;
-        }
-
-        bool project_onto_feasibile_region(Vector &x) const final {
-            if (has_orthogonal_transformation()) {
-                Vector temp_x;
-                orthogonal_transformation()->apply(x, temp_x);
-                bool ok = extend_project_onto_feasibile_region(temp_x);
-                x = *orthogonal_transformation() * temp_x;
-                return ok;
-
-            } else {
-                return extend_project_onto_feasibile_region(x);
-            }
-        }
-
-        bool hessian_and_gradient(const Vector &x, Matrix &H, Matrix &preconditioner, Vector &g) const override {
-            if (unconstrained_) {
-                if (!unconstrained_->hessian_and_gradient(x, H, preconditioner, g)) {
-                    return false;
-                }
-            }
-
-            extend_hessian_and_gradient(x, H, g);
-            return true;
-        }
-
-        inline bool has_preconditioner() const override { return unconstrained_->has_preconditioner(); }
-
-        bool initialize_hessian(Matrix &H, Matrix &preconditioner) const override {
-            if (unconstrained_) {
-                if (!unconstrained_->initialize_hessian(H, preconditioner)) {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        bool value(const Vector &x, Scalar &value) const override {
-            if (unconstrained_) {
-                if (!unconstrained_->value(x, value)) {
-                    // return false;
-                    value = 0.0;
-                }
-            }
-
-            if (has_orthogonal_transformation()) {
-                Vector temp_x;
-                orthogonal_transformation()->apply(x, temp_x);
-                extend_value(x, value);
-            } else {
-                extend_value(x, value);
-            }
-
-            return true;
-        }
-
-        bool gradient(const Vector &x, Vector &g) const override {
-            if (unconstrained_) {
-                if (!unconstrained_->gradient(x, g)) {
-                    return false;
-                }
-            }
-
-            if (has_orthogonal_transformation()) {
-                Vector temp_x;
-                orthogonal_transformation()->apply(x, temp_x);
-                Vector temp_g(layout(g), 0.);
-                extend_gradient(temp_x, temp_g);
-                g += *orthogonal_transformation() * temp_g;
-
-            } else {
-                extend_gradient(x, g);
-            }
-
-            return true;
-        }
-
-        bool update(const Vector &x) override {
-            if (unconstrained_) {
-                if (!unconstrained_->update(x)) {
-                    return false;
-                }
-            }
-
-            update_barrier();
-            return true;
-        }
-
-        inline void set_barrier_parameter(const Scalar value) {
-            barrier()->barrier_parameter_ = value;
-            barrier()->current_barrier_parameter_ = value;
-        }
-
-        inline void set_barrier_parameter_shrinking_factor(const Scalar value) {
-            barrier()->barrier_parameter_shrinking_factor_ = value;
-        }
-
-        inline void set_min_barrier_parameter(const Scalar value) { barrier()->min_barrier_parameter_ = value; }
-
-        virtual void reset() {
-            if (barrier()) barrier()->reset();
-        }
-
-        inline bool verbose() const {
-            if (barrier())
-                return barrier()->verbose();
-            else
-                return false;
-        }
-
-        inline void set_orthogonal_transformation(const std::shared_ptr<Matrix> &orthogonal_transformation) {
-            orthogonal_transformation_ = orthogonal_transformation;
-        }
-
-        inline const std::shared_ptr<Matrix> &orthogonal_transformation() const { return orthogonal_transformation_; }
-
-        inline bool has_orthogonal_transformation() const { return static_cast<bool>(orthogonal_transformation_); }
-
-        UTOPIA_NVCC_PRIVATE
-        std::shared_ptr<Function> unconstrained_;
-        std::shared_ptr<LogBarrierBase> barrier_;
-        std::shared_ptr<Matrix> orthogonal_transformation_;
-
-        void update_barrier() {
-            if (barrier()) barrier()->update_barrier();
-        }
-
-        void compute_diff_upper_bound(const Vector &x, Vector &diff) const {
-            if (barrier()) barrier()->compute_diff_upper_bound(x, diff);
-        }
-
-        void compute_diff_lower_bound(const Vector &x, Vector &diff) const {
-            if (barrier()) barrier()->compute_diff_lower_bound(x, diff);
-        }
+        bool verbose_{false};
     };
 
 }  // namespace utopia

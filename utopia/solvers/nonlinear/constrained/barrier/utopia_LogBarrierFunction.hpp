@@ -27,183 +27,285 @@ namespace utopia {
         LogBarrier() = default;
         explicit LogBarrier(const std::shared_ptr<BoxConstraints> &box) : Super(box) {}
 
-        void hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const override {
-            Vector diff;
-
-            if (this->box_->has_upper_bound()) {
-                this->compute_diff_upper_bound(x, diff);
-
-                if (this->scaling_matrix()) {
-                    g += (*this->scaling_matrix()) * (this->current_barrier_parameter_ / diff);
-                } else {
-                    g += this->current_barrier_parameter_ / diff;
-                }
-
-                diff = pow2(diff);
-                diff = this->current_barrier_parameter_ / diff;
-
-                if (this->scaling_matrix()) {
-                    H.shift_diag((*this->scaling_matrix()) * diff);
-                } else {
-                    H.shift_diag(diff);
-                }
-            }
-
-            if (this->box_->has_lower_bound()) {
-                this->compute_diff_lower_bound(x, diff);
-
-                if (this->scaling_matrix()) {
-                    g += (*this->scaling_matrix()) * (this->current_barrier_parameter_ / diff);
-                } else {
-                    g += this->current_barrier_parameter_ / diff;
-                }
-
-                diff = pow2(diff);
-                diff = this->current_barrier_parameter_ / diff;
-
-                if (this->scaling_matrix()) {
-                    H.shift_diag((*this->scaling_matrix()) * diff);
-                } else {
-                    H.shift_diag(diff);
-                }
-            }
-        }
-
-        void hessian(const Vector &x, Matrix &H) const override {
+        bool barrier_hessian(const Vector &x, Vector &H) const override {
             Vector diff;
 
             if (this->box_->has_upper_bound()) {
                 this->compute_diff_upper_bound(x, diff);
                 diff = pow2(diff);
-                diff = this->current_barrier_parameter_ / diff;
-
-                if (this->scaling_matrix()) {
-                    H.shift_diag((*this->scaling_matrix()) * diff);
-                } else {
-                    H.shift_diag(diff);
-                }
+                H += 1. / diff;
             }
 
             if (this->box_->has_lower_bound()) {
                 this->compute_diff_lower_bound(x, diff);
                 diff = pow2(diff);
-                diff = this->current_barrier_parameter_ / diff;
-
-                if (this->scaling_matrix()) {
-                    H.shift_diag((*this->scaling_matrix()) * diff);
-                } else {
-                    H.shift_diag(diff);
-                }
-            }
-        }
-
-        void hessian_diag(const Vector &x, Vector &h) const override {
-            // TODO
-            Utopia::Abort("IMPLEMENT ME");
-        }
-
-        void gradient(const Vector &x, Vector &g) const override {
-            Vector diff;
-            if (this->box_->has_upper_bound()) {
-                this->compute_diff_upper_bound(x, diff);
-
-                if (this->scaling_matrix()) {
-                    g += (*this->scaling_matrix()) * (this->current_barrier_parameter_ / diff);
-                } else {
-                    g += this->current_barrier_parameter_ / diff;
-                }
-            }
-
-            if (this->box_->has_lower_bound()) {
-                this->compute_diff_lower_bound(x, diff);
-
-                if (this->scaling_matrix()) {
-                    g -= (*this->scaling_matrix()) * (this->current_barrier_parameter_ / diff);
-                } else {
-                    g -= this->current_barrier_parameter_ / diff;
-                }
-            }
-        }
-
-        void value(const Vector &x, Scalar &value) const override {
-            Scalar ub_value = 0.0;
-            if (this->box_->has_upper_bound()) {
-                if (this->scaling_matrix()) {
-                    ub_value = this->current_barrier_parameter_ *
-                               sum((*this->scaling_matrix()) * logn(*this->box_->upper_bound() - x));
-                } else {
-                    ub_value = this->current_barrier_parameter_ * sum(logn(*this->box_->upper_bound() - x));
-                }
-            }
-
-            Scalar lb_value = 0.0;
-            if (this->box_->has_lower_bound()) {
-                if (this->scaling_matrix()) {
-                    ub_value = this->current_barrier_parameter_ *
-                               sum((*this->scaling_matrix()) * logn(x - *this->box_->lower_bound()));
-                } else {
-                    ub_value = this->current_barrier_parameter_ * sum(logn(x - *this->box_->lower_bound()));
-                }
-            }
-
-            value -= (ub_value - lb_value);
-        }
-
-        bool project_onto_feasibile_region(Vector &x) const override {
-            if (this->box_->has_upper_bound()) {
-                auto ub_view = local_view_device(*this->box_->upper_bound());
-                auto x_view = local_view_device(x);
-
-                Scalar soft_boundary = this->soft_boundary_;
-                parallel_for(
-                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                        auto xi = x_view.get(i);
-                        auto ubi = ub_view.get(i);
-
-                        if (xi > ubi) {
-                            x_view.set(i, ubi - soft_boundary);
-                        }
-                    });
-            }
-
-            if (this->box_->has_lower_bound()) {
-                auto lb_view = local_view_device(*this->box_->lower_bound());
-                auto x_view = local_view_device(x);
-
-                Scalar soft_boundary = this->soft_boundary_;
-                parallel_for(
-                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                        auto xi = x_view.get(i);
-                        auto lbi = lb_view.get(i);
-
-                        if (xi < lbi) {
-                            x_view.set(i, lbi + soft_boundary);
-                        }
-                    });
+                H += 1. / diff;
             }
 
             return true;
         }
 
+        bool barrier_gradient(const Vector &x, Vector &g) const override {
+            Vector diff;
+            if (this->box_->has_upper_bound()) {
+                this->compute_diff_upper_bound(x, diff);
+                g += 1. / diff;
+            }
+
+            if (this->box_->has_lower_bound()) {
+                this->compute_diff_lower_bound(x, diff);
+                g -= 1. / diff;
+            }
+
+            return true;
+        }
+
+        bool barrier_value(const Vector &x, Vector &value) const override {
+            if (this->box_->has_upper_bound()) {
+                value -= logn(*this->box_->upper_bound() - x);
+            }
+
+            if (this->box_->has_lower_bound()) {
+                value += logn(x - *this->box_->lower_bound());
+            }
+
+            return true;
+        }
+
+        inline std::string function_type() const override { return "LogBarrier"; }
+
         void read(Input &in) override { Super::read(in); }
     };
 
     template <class Matrix, class Vector>
-    class LogBarrierFunction : public LogBarrierFunctionBase<Matrix, Vector> {
+    class LogBarrierFunction : public Function<Matrix, Vector> {
     public:
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Function = utopia::Function<Matrix, Vector>;
         using BoxConstraints = utopia::BoxConstraints<Vector>;
-        using Super = utopia::LogBarrierFunctionBase<Matrix, Vector>;
-        using LogBarrier = utopia::LogBarrier<Matrix, Vector>;
+        using Super = Function;
+        using LogBarrierBase = utopia::LogBarrierBase<Matrix, Vector>;
+        using Transformation = utopia::Transformation<Matrix, Vector>;
 
-        LogBarrierFunction() { this->set_barrier(std::make_shared<LogBarrier>()); }
+        void set_barrier(const std::shared_ptr<LogBarrierBase> &barrier) { this->barrier_ = barrier; }
 
-        LogBarrierFunction(const std::shared_ptr<Function> &unconstrained, const std::shared_ptr<BoxConstraints> &box)
-            : Super(unconstrained, std::make_shared<LogBarrier>(box)) {}
+        const std::shared_ptr<LogBarrierBase> &barrier() const {
+            assert(barrier_);
+            return this->barrier_;
+        }
 
-        inline std::string function_type() const override { return "LogBarrierFunction"; }
+        void set_transform(const std::shared_ptr<Transformation> &t) { barrier()->set_transform(t); }
+
+        void set_scaling_matrix(const std::shared_ptr<Matrix> &scaling_matrix) {
+            barrier()->set_scaling_matrix(scaling_matrix);
+        }
+
+        virtual bool extend_hessian_diag(const Vector &x, Vector &h) const {
+            if (barrier()) {
+                return barrier()->hessian(x, h);
+            }
+            return false;
+        }
+
+        virtual bool extend_hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const {
+            if (barrier()) {
+                return barrier()->hessian_and_gradient(x, H, g);
+            }
+            return false;
+        }
+
+        virtual bool extend_hessian(const Vector &x, Matrix &H) const {
+            if (barrier()) {
+                return barrier()->hessian(x, H);
+            }
+            return false;
+        }
+
+        virtual bool extend_gradient(const Vector &x, Vector &g) const {
+            if (barrier()) {
+                return barrier()->gradient(x, g);
+            }
+            return false;
+        }
+
+        virtual bool extend_value(const Vector &x, Scalar &value) const {
+            if (barrier()) {
+                return barrier()->value(x, value);
+            }
+            return false;
+        }
+
+        virtual bool extend_project_onto_feasibile_region(Vector &x) const {
+            if (barrier()) return barrier()->project_onto_feasibile_region(x);
+            return false;
+        }
+
+        virtual std::string function_type() const { return barrier()->function_type(); }
+
+        void read(Input &in) override {
+            if (barrier()) barrier()->read(in);
+            reset();
+        }
+
+        inline void set_unconstrained_function(const std::shared_ptr<Function> &unconstrained) {
+            unconstrained_ = unconstrained;
+        }
+
+        void set_box_constraints(const std::shared_ptr<BoxConstraints> &box) { barrier()->set_box_constraints(box); }
+        void set_selection(const std::shared_ptr<Vector> &boolean_selector) {
+            barrier()->set_selection(boolean_selector);
+        }
+
+        bool hessian_diag(const Vector &x, Vector &h) const {
+            if (unconstrained_) {
+                assert(false);
+                Utopia::Abort("IMPLEMENT ME");
+            }
+
+            return barrier()->hessian(x, h);
+        }
+
+        bool hessian(const Vector &x, Matrix &H) const final {
+            if (unconstrained_) {
+                if (!unconstrained_->hessian(x, H)) {
+                    return false;
+                }
+            }
+
+            return extend_hessian(x, H);
+        }
+
+        bool hessian(const Vector &x, Matrix &H, Matrix &preconditioner) const final {
+            if (unconstrained_) {
+                if (!unconstrained_->hessian(x, H, preconditioner)) {
+                    return false;
+                }
+            }
+
+            return extend_hessian(x, H);
+        }
+
+        bool hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const final {
+            if (unconstrained_) {
+                if (!unconstrained_->hessian_and_gradient(x, H, g)) {
+                    return false;
+                }
+            }
+
+            return extend_hessian_and_gradient(x, H, g);
+        }
+
+        bool project_onto_feasibile_region(Vector &x) const final {
+            return barrier()->project_onto_feasibile_region(x);
+        }
+
+        bool hessian_and_gradient(const Vector &x, Matrix &H, Matrix &preconditioner, Vector &g) const override {
+            if (unconstrained_) {
+                if (!unconstrained_->hessian_and_gradient(x, H, preconditioner, g)) {
+                    return false;
+                }
+            }
+
+            return extend_hessian_and_gradient(x, H, g);
+        }
+
+        inline bool has_preconditioner() const override { return unconstrained_->has_preconditioner(); }
+
+        bool initialize_hessian(Matrix &H, Matrix &preconditioner) const override {
+            if (unconstrained_) {
+                if (!unconstrained_->initialize_hessian(H, preconditioner)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        bool value(const Vector &x, Scalar &value) const override {
+            if (unconstrained_) {
+                if (!unconstrained_->value(x, value)) {
+                    value = 0.0;
+                }
+            }
+
+            return extend_value(x, value);
+        }
+
+        bool gradient(const Vector &x, Vector &g) const override {
+            if (unconstrained_) {
+                if (!unconstrained_->gradient(x, g)) {
+                    return false;
+                }
+            }
+
+            return extend_gradient(x, g);
+        }
+
+        bool update(const Vector &x) override {
+            if (unconstrained_) {
+                if (!unconstrained_->update(x)) {
+                    return false;
+                }
+            }
+
+            update_barrier();
+            return true;
+        }
+
+        inline void set_barrier_parameter(const Scalar value) {
+            barrier()->barrier_parameter_ = value;
+            barrier()->current_barrier_parameter_ = value;
+        }
+
+        inline void set_barrier_parameter_shrinking_factor(const Scalar value) {
+            barrier()->barrier_parameter_shrinking_factor_ = value;
+        }
+
+        inline void set_min_barrier_parameter(const Scalar value) { barrier()->min_barrier_parameter_ = value; }
+
+        virtual void reset() {
+            if (!barrier_) {
+                barrier_ = std::make_shared<LogBarrier<Matrix, Vector>>();
+            }
+
+            if (barrier()) barrier()->reset();
+        }
+
+        inline bool verbose() const {
+            if (barrier())
+                return barrier()->verbose();
+            else
+                return false;
+        }
+
+        inline bool has_transformation() const { return barrier()->has_transformation(); }
+
+        void update_barrier() {
+            if (barrier()) barrier()->update_barrier();
+        }
+
+        void compute_diff_upper_bound(const Vector &x, Vector &diff) const {
+            if (barrier()) barrier()->compute_diff_upper_bound(x, diff);
+        }
+
+        void compute_diff_lower_bound(const Vector &x, Vector &diff) const {
+            if (barrier()) barrier()->compute_diff_lower_bound(x, diff);
+        }
+
+        void auto_selector(const bool val) { barrier()->auto_selector(val); }
+
+        LogBarrierFunction() : barrier_(std::make_shared<LogBarrier<Matrix, Vector>>()) {}
+
+        LogBarrierFunction(const std::shared_ptr<Function> &unconstrained,
+                           const std::shared_ptr<LogBarrierBase> &barrier)
+            : unconstrained_(unconstrained), barrier_(barrier) {}
+
+        LogBarrierFunction(const std::shared_ptr<LogBarrierBase> &barrier) : barrier_(barrier) {}
+
+        UTOPIA_NVCC_PRIVATE
+        std::shared_ptr<Function> unconstrained_;
+        std::shared_ptr<LogBarrierBase> barrier_;
     };
 
 }  // namespace utopia

@@ -52,16 +52,14 @@ namespace utopia {
 
             InputParameters params;
             params.set("use_coarse_space", true);
-            // params.set("use_coarse_space", false);
             params.set("debug", true);
             params.set("barrier_parameter", 1);
             params.set("barrier_parameter_shrinking_factor", 0.3);
             params.set("min_barrier_parameter", 1e-10);
-            params.set("max_it", 230);
-            // params.set("barrier_function_type", "BoundedLogBarrier");
-            params.set("barrier_function_type", "BoundedLogBarrierFunction");
-
+            params.set("max_it", 30);
+            params.set("barrier_function_type", "BoundedLogBarrier");
             // params.set("barrier_function_type", "LogBarrier");
+
             params.set("use_non_linear_residual", false);
             params.set("pre_smoothing_steps", 5);
             params.set("post_smoothing_steps", 5);
@@ -76,7 +74,7 @@ namespace utopia {
             mg->verbose(verbose);
             mg->read(params);
 
-            // Use external linear smoothing (internally uses Jacobi)
+            // Use external linear smoothing (otherwise internally uses Jacobi)
             mg->set_linear_smoother(std::make_shared<ILU<Matrix, Vector>>());
 
 #ifdef UTOPIA_WITH_PETSC
@@ -98,7 +96,7 @@ namespace utopia {
         void test_ml_problem() {
             const static bool verbose = true;
             const static bool use_masks = false;
-            int n_levels = 11;
+            int n_levels = 7;
             int n_coarse = 500;
 
             using ProblemType = utopia::Poisson1D<Matrix, Vector>;
@@ -115,8 +113,8 @@ namespace utopia {
             Vector lower_bound(layout(x), -0.8), upper_bound(layout(x), 0.8);
             BoxConstraints<Vector> box(nullptr, make_ref(upper_bound));
 
-            // bool algebraic = Traits::Backend == PETSC;
-            bool algebraic = false;
+            bool algebraic = Traits::Backend == PETSC;
+            // bool algebraic = false;
 
             auto mg = create_barrier_mg(n_levels, algebraic, verbose);
             mg->set_box_constraints(box);

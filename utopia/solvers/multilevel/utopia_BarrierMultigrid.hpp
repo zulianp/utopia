@@ -14,8 +14,8 @@
 #include "utopia_Utils.hpp"
 
 #include "utopia_LineSearchBoxProjection.hpp"
-#include "utopia_LogBarrierFunctionBase.hpp"
-#include "utopia_LogBarrierFunctionFactory.hpp"
+#include "utopia_LogBarrierFactory.hpp"
+#include "utopia_LogBarrierFunction.hpp"
 
 #include "utopia_Agglomerate.hpp"
 #include "utopia_MatrixAgglomerator.hpp"
@@ -54,7 +54,7 @@ namespace utopia {
 
         // using LogBarrierBase = utopia::LogBarrierBase<Matrix, Vector>;
 
-        using LogBarrierFunctionBase = utopia::LogBarrierFunctionBase<Matrix, Vector>;
+        using LogBarrierFunction = utopia::LogBarrierFunction<Matrix, Vector>;
 
         class AlphaStats {
         public:
@@ -129,13 +129,12 @@ namespace utopia {
         void read(Input &in) override {
             Super::read(in);
 
-            // std::string barrier_function_type = "BoundedLogBarrier";
-            std::string barrier_function_type = "BoundedLogBarrierFunction";
+            std::string barrier_function_type = "BoundedLogBarrier";
 
             Options()
                 .add_option("barrier_function_type",
                             barrier_function_type,
-                            "Type of LogBarrier. Options={LogBarrierWithSelection|LogBarrier}")
+                            "Type of LogBarrier. Options={LogBarrier|BoundedLogBarrier}")
                 .add_option("debug", debug_, "Enable/Disable debug ouput.")
                 .add_option("use_coarse_space", use_coarse_space_, "Use the coarse space for multigrid acceleration.")
                 .add_option("pre_smoothing_steps", pre_smoothing_steps_, "Number of pre-smoothing  steps.")
@@ -155,8 +154,8 @@ namespace utopia {
                             "Coarse grid correction is projected in a non-smooth way. Value in [0, 1].")
                 .parse(in);
 
-            // barrier_ = LogBarrierFunctionFactory<Matrix, Vector>::new_log_barrier(barrier_function_type);
-            barrier_ = LogBarrierFunctionFactory<Matrix, Vector>::new_log_barrier_function(barrier_function_type);
+            // barrier_ = LogBarrierFactory<Matrix, Vector>::new_log_barrier(barrier_function_type);
+            barrier_ = LogBarrierFactory<Matrix, Vector>::new_log_barrier_function(barrier_function_type);
             barrier_->read(in);
         }
 
@@ -297,8 +296,8 @@ namespace utopia {
             agglomerator_ = agglomerator;
         }
 
-        inline void set_barrier(const std::shared_ptr<LogBarrierFunctionBase> &barrier) { barrier_ = barrier; }
-        inline const std::shared_ptr<LogBarrierFunctionBase> &barrier() { return barrier_; }
+        inline void set_barrier(const std::shared_ptr<LogBarrierFunction> &barrier) { barrier_ = barrier; }
+        inline const std::shared_ptr<LogBarrierFunction> &barrier() { return barrier_; }
 
     public:
         BarrierMultigrid *clone() const override {
@@ -340,7 +339,7 @@ namespace utopia {
         std::shared_ptr<LinearSolver> coarse_solver_;
         std::vector<std::shared_ptr<Transfer>> transfer_operators_;
         std::vector<LevelMemory> memory_;
-        std::shared_ptr<LogBarrierFunctionBase> barrier_;
+        std::shared_ptr<LogBarrierFunction> barrier_;
         std::shared_ptr<LineSearchBoxProjection<Vector>> line_search_projection_;
         std::shared_ptr<Smoother> linear_smoother_clonable_;
 
@@ -362,7 +361,7 @@ namespace utopia {
         void ensure_defaults() {
             if (!barrier_) {
                 // barrier_ = std::make_shared<BoundedLogBarrier<Matrix, Vector>>();
-                barrier_ = std::make_shared<BoundedLogBarrierFunction<Matrix, Vector>>();
+                barrier_ = std::make_shared<LogBarrierFunction>(std::make_shared<BoundedLogBarrier<Matrix, Vector>>());
             }
 
             if (!line_search_projection_) {
