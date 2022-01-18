@@ -107,11 +107,20 @@ namespace utopia {
     public:
         inline std::shared_ptr<Solver> linear_solver() const { return linear_solver_; }
 
+        void init_memory(const Layout &layout) { linear_solver_->init_memory(layout); }
+
     protected:
         inline bool linear_solve(const Matrix &mat, const Vector &rhs, Vector &sol) {
             linear_solver_->update(make_ref(mat));
             this->solution_status_.num_linear_solves++;
-            return linear_solver_->apply(rhs, sol);
+            auto flg = linear_solver_->apply(rhs, sol);
+
+            if (auto *it_solver = dynamic_cast<IterativeSolver<Matrix, Vector> *>(linear_solver_.get())) {
+                auto sol_status_ls = it_solver->solution_status();
+                this->solution_status_.sum_linear_its += sol_status_ls.iterates;
+            }
+
+            return flg;
         }
 
         inline bool has_preconditioned_solver() {
@@ -122,10 +131,14 @@ namespace utopia {
             static_cast<PreconditionedSolver<Matrix, Vector> *>(linear_solver_.get())
                 ->update(make_ref(mat), make_ref(prec));
             this->solution_status_.num_linear_solves++;
-            return linear_solver_->apply(rhs, sol);
-        }
+            auto flg = linear_solver_->apply(rhs, sol);
+            if (auto *it_solver = dynamic_cast<IterativeSolver<Matrix, Vector> *>(linear_solver_.get())) {
+                auto sol_status_ls = it_solver->solution_status();
+                this->solution_status_.sum_linear_its += sol_status_ls.iterates;
+            }
 
-        void init_memory(const Layout &layout) { linear_solver_->init_memory(layout); }
+            return flg;
+        }
 
         std::shared_ptr<Solver> linear_solver_; /*!< Linear solver parameters. */
         DiffController controller_;

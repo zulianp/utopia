@@ -27,8 +27,6 @@ namespace utopia {
             // UTOPIA_RUN_TEST(RMTR_test);
             // UTOPIA_RUN_TEST(RMTR_inf_test);
             // UTOPIA_RUN_TEST(RMTR_inf_bound_test);
-
-            utopia::out() << "TODO:: Fix Multilevel tests .... \n";
         }
 
         void TR_test() {

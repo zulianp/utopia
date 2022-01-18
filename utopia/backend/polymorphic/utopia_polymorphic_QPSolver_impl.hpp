@@ -8,6 +8,7 @@
 // includes
 // HOMEMADE
 #include "utopia_LogBarrierQPSolver.hpp"
+#include "utopia_MPRGP.hpp"
 #include "utopia_PrimalInteriorPointSolver_impl.hpp"
 #include "utopia_ProjectedConjugateGradient.hpp"
 #include "utopia_ProjectedGaussSeidel.hpp"
@@ -17,6 +18,7 @@
 // PETSC
 #ifdef UTOPIA_WITH_PETSC
 #include "petsctao.h"
+#include "utopia_petsc_BDDQPSolver.hpp"
 #include "utopia_petsc_Factorizations.hpp"
 #include "utopia_petsc_LinearSolvers.hpp"
 #include "utopia_petsc_RowView.hpp"
@@ -109,6 +111,7 @@ namespace utopia {
                 using HomeMadeProjectedGaussSeidel = utopia::ProjectedGaussSeidel<Matrix, Vector>;
                 using HomeMadeLogBarrierQPSolver = utopia::LogBarrierQPSolver<Matrix, Vector>;
                 using HomeMadePrimalInteriorPointSolver = utopia::PrimalInteriorPointSolver<Matrix, Vector>;
+                using HomeMadeMPRGP = utopia::MPRGP<Matrix, Vector>;
 
                 register_solver<HomeMadeSemismoothNewton>("any", "ssnewton");
                 register_solver<HomeMadeProjectedGradient>("any", "pg");
@@ -116,6 +119,7 @@ namespace utopia {
                 register_solver<HomeMadeProjectedGaussSeidel>("any", "pgs");
                 register_solver<HomeMadeLogBarrierQPSolver>("any", "logbarrier");
                 register_solver<HomeMadePrimalInteriorPointSolver>("any", "ipm");
+                register_solver<HomeMadeMPRGP>("any", "mprgp");
             }
 
 #ifdef UTOPIA_WITH_PETSC
@@ -123,9 +127,11 @@ namespace utopia {
                 // Petsc
                 using PetscSemiSmoothNewton = utopia::SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL>;
                 using PetscTaoQPSolver = utopia::TaoQPSolver<Matrix, Vector>;
+                using PetscBDDQPSolver = utopia::BDDQPSolver<Matrix, Vector>;
 
                 register_solver<PetscSemiSmoothNewton>("petsc", "ssnewton");
                 register_solver<PetscTaoQPSolver>("petsc", "taoqp");
+                register_solver<PetscBDDQPSolver>("petsc", "bdd");
 
 #ifdef UTOPIA_WITH_BLAS
                 using PetscRASPatchSmoother = utopia::RASPatchSmoother<Matrix, utopia::BlasMatrix<Scalar>>;
@@ -237,8 +243,8 @@ namespace utopia {
         assert(static_cast<bool>(impl_));
         if (!impl_) return false;
 
-        impl_->update(this->get_operator());
         impl_->set_box_constraints(this->get_box_constraints());
+        impl_->update(this->get_operator());
         return impl_->apply(rhs, sol);
     }
 

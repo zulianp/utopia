@@ -4,6 +4,8 @@
 #include "utopia_Traits.hpp"
 #include "utopia_Views.hpp"
 
+#include "utopia_DeviceOperations.hpp"
+
 #include "utopia_kokkos_Commons.hpp"
 #include "utopia_kokkos_FE.hpp"
 #include "utopia_kokkos_FEAssembler.hpp"
@@ -111,6 +113,70 @@ namespace utopia {
                         printf("\n");
                     });
             }
+
+            class EigenvaluesOpAndStore {
+            public:
+                EigenvaluesOpAndStore(const int n, const DynRankView &data, DynRankView &result)
+                    : n(n), data(data), result(result) {}
+
+                UTOPIA_INLINE_FUNCTION void operator()(int cell, int qp) const {
+                    switch (n) {
+                        case 1: {
+                            result(cell, qp, 0) = data(cell, qp, 0);
+                            break;
+                        }
+
+                        case 2: {
+                            StaticVector<Scalar, 2> e;
+                            StaticMatrix<Scalar, 2, 2> mat;
+
+                            mat(0, 0) = data(cell, qp, 0);
+                            mat(0, 1) = data(cell, qp, 1);
+                            mat(1, 0) = data(cell, qp, 2);
+                            mat(1, 1) = data(cell, qp, 3);
+
+                            utopia::eig(mat, e);
+
+                            result(cell, qp, 0) = e[0];
+                            result(cell, qp, 1) = e[1];
+                            break;
+                        }
+
+                        case 3: {
+                            StaticVector<Scalar, 3> e;
+                            StaticMatrix<Scalar, 3, 3> mat;
+
+                            mat(0, 0) = data(cell, qp, 0);
+                            mat(0, 1) = data(cell, qp, 1);
+                            mat(0, 2) = data(cell, qp, 2);
+
+                            mat(1, 0) = data(cell, qp, 3);
+                            mat(1, 1) = data(cell, qp, 4);
+                            mat(1, 2) = data(cell, qp, 5);
+
+                            mat(2, 0) = data(cell, qp, 6);
+                            mat(2, 1) = data(cell, qp, 7);
+                            mat(2, 2) = data(cell, qp, 8);
+
+                            utopia::eig(mat, e);
+
+                            result(cell, qp, 0) = e[0];
+                            result(cell, qp, 1) = e[1];
+                            result(cell, qp, 2) = e[2];
+                            break;
+                        }
+
+                        default: {
+                            assert(false);
+                            break;
+                        }
+                    }
+                }
+
+                int n;
+                DynRankView data;
+                DynRankView result;
+            };
 
             class DetOp {
             public:
@@ -232,6 +298,33 @@ namespace utopia {
                 ::Kokkos::parallel_for(
                     this->fe()->cell_qp_range(),
                     UTOPIA_LAMBDA(int cell, int qp) { result(cell, qp, 0) = op(cell, qp); });
+            }
+
+            void eig(QPField<FE> &field) {
+                field.set_tensor_size(rows());
+                eig(field.data());
+            }
+
+            void eig(DynRankView &result) const {
+                if (rows() != cols()) {
+                    assert(false);
+                    Utopia::Abort("Trying to call eig on non-square QPTensorField");
+                }
+
+                const SizeType n_cells = this->fe()->n_cells();
+                const SizeType n_quad_points = this->fe()->n_quad_points();
+                const SizeType n = this->rows();
+
+                if (SizeType(result.extent(0)) != n_cells || SizeType(result.extent(1)) != n_quad_points ||
+                    SizeType(result.extent(2)) != n) {
+                    result = DynRankView("eig(QPTensorField)", n_cells, n_quad_points, n);
+                }
+
+                auto data = this->data();
+
+                EigenvaluesOpAndStore op(n, data, result);
+                ::Kokkos::parallel_for(
+                    this->fe()->cell_qp_range(), UTOPIA_LAMBDA(int cell, int qp) { op(cell, qp); });
             }
 
             inline Rank1Range rank1_range() {

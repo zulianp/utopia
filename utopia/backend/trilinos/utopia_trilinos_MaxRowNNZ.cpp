@@ -30,10 +30,13 @@ namespace utopia {
         Kokkos::parallel_for(
             "MaxRowNNZ::apply", n, UTOPIA_LAMBDA(const int &i) { nnz(i, 0) = local_mat.row(i).length; });
 
+        Kokkos::fence();
+
         Scalar ret = 0;
         KokkosOp<Scalar, Max> kop;
         OpFunctor<ViewType, KokkosOp<Scalar, Max>, Scalar> functor{kop, nnz, ret};
         Kokkos::parallel_reduce(nnz.extent(0), functor, ret);
+        Kokkos::fence();
         return ret;
     }
 }  // namespace utopia

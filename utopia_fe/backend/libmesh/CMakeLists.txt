@@ -52,4 +52,9 @@ if(LIBMESH_FOUND)
     set(UTOPIA_WITH_LIBMESH
         TRUE
         PARENT_SCOPE)
+
+    set(UTOPIA_FE_LIBRARIES
+        ${UTOPIA_FE_LIBRARIES}
+        PARENT_SCOPE)
+
 endif()

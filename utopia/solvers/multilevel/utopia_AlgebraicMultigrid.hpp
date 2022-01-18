@@ -152,6 +152,10 @@ namespace utopia {
             algorithm_.max_it(max_it_in);
         }
 
+        void set_agglomerator(const std::shared_ptr<MatrixAgglomerator<Matrix>> &agglomerator) {
+            agglomerator_ = agglomerator;
+        }
+
         AlgebraicMultigrid(const std::shared_ptr<Smoother> &smoother = std::make_shared<ILU>(),
                            const std::shared_ptr<Solver> &coarse_solver = std::make_shared<ILU>(),
                            const std::shared_ptr<MatrixAgglomerator<Matrix>> &agglomerator = nullptr)

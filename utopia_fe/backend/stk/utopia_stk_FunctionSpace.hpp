@@ -25,7 +25,9 @@ namespace utopia {
             using Scalar = Traits<FunctionSpace>::Scalar;
             using SizeType = Traits<FunctionSpace>::SizeType;
             using IndexSet = Traits<FunctionSpace>::IndexSet;
+            using IndexArray = Traits<FunctionSpace>::IndexArray;
             using Comm = Traits<FunctionSpace>::Communicator;
+            using DirichletBoundary = utopia::DirichletBoundary<Traits<FunctionSpace>>;
 
             FunctionSpace(const Comm &comm = Comm::get_default());
             FunctionSpace(const std::shared_ptr<Mesh> &mesh);
@@ -61,6 +63,13 @@ namespace utopia {
             void apply_constraints(Vector &v) const override;
             void apply_constraints(Matrix &m, Vector &v) const override;
             void apply_zero_constraints(Vector &vec) const override;
+
+            void overwrite_parts(const std::vector<std::string> &parts,
+                                 const std::vector<int> &components,
+                                 const Vector &source,
+                                 Vector &destination) const;
+
+            void set_overwrite_vector(const Vector &v);
 
             void add_dirichlet_boundary_condition(const std::string &name,
                                                   const Scalar &value,
@@ -108,6 +117,8 @@ namespace utopia {
             const DirichletBoundary &dirichlet_boundary() const;
 
             void set_print_map(const bool val);
+
+            void create_boundary_node_list(IndexArray &node_list) const;
 
         private:
             class Impl;

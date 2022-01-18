@@ -28,12 +28,14 @@ namespace utopia {
             using SizeType = Traits::SizeType;
             using Communicator = Traits::Communicator;
             using Mesh = Traits::Mesh;
+            using DirichletBoundary = utopia::DirichletBoundary<Traits>;
 
             FunctionSpace(const Communicator &comm = Communicator::get_default());
             FunctionSpace(const std::shared_ptr<Mesh> &mesh);
             ~FunctionSpace();
 
             void read(Input &in) override;
+            bool read_with_state(Input &in, Field<FunctionSpace> &val);
 
             //////////////////////////////////////////
 

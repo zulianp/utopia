@@ -59,17 +59,21 @@ namespace utopia {
 
             bool converged = false;
 
-            // notify listener
             fun.project_onto_feasibile_region(x);
+
+            // notify listener
             fun.update(x);
 
             fun.gradient(x, grad_);
             g0_norm = norm2(grad_);
             g_norm = g0_norm;
 
+            Scalar J;
+            fun.value(x, J);
+
             this->init_solver("NEWTON", {" it. ", "|| g ||", "J", "r_norm", "|| p_k || ", "alpha_k"});
 
-            if (this->verbose_) PrintInfo::print_iter_status(it, {g_norm, 1, 0});
+            if (this->verbose_) PrintInfo::print_iter_status(it, {g_norm, J});
             it++;
 
             while (!converged) {
@@ -101,6 +105,8 @@ namespace utopia {
 
                     if (!this->check_values(it, fun, x, grad_, hessian)) return false;
 
+                    pre_solve(hessian, grad_neg_);
+
                     this->linear_solve(hessian, grad_neg_, step_);
                 }
 
@@ -126,7 +132,6 @@ namespace utopia {
                 norms2(grad_, step_, g_norm, s_norm);
                 r_norm = g_norm / g0_norm;
 
-                Scalar J;
                 fun.value(x, J);
 
                 // // print iteration status on every iteration
@@ -145,6 +150,7 @@ namespace utopia {
         void read(Input &in) override {
             NewtonBase<Matrix, Vector>::read(in);
             in.get("dumping", alpha_);
+            in.get("inverse_diagonal_scaling", inverse_diagonal_scaling_);
 
             if (ls_strategy_) {
                 in.get("linear_search", *ls_strategy_);
@@ -186,6 +192,16 @@ namespace utopia {
         std::shared_ptr<LSStrategy> ls_strategy_; /*!< Strategy used in order to
                                                      obtain step \f$ \alpha_k \f$ */
         Vector grad_neg_, step_, grad_;
+        bool inverse_diagonal_scaling_{false};
+
+        void pre_solve(Matrix &H, Vector &g) const {
+            if (inverse_diagonal_scaling_) {
+                Vector d = diag(H);
+                d = 1. / d;
+                H.diag_scale_left(d);
+                g = e_mul(g, d);
+            }
+        }
     };
 
 }  // namespace utopia

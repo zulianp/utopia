@@ -11,4 +11,9 @@ if(UTOPIA_ENABLE_ARBORX)
     utopiafe_add_module(utopia_arborx ${CMAKE_CURRENT_SOURCE_DIR} ".")
     target_link_libraries(utopia_arborx ArborX::ArborX Utopia::utopia)
 
+
+    set(UTOPIA_FE_LIBRARIES
+        ${UTOPIA_FE_LIBRARIES}
+        PARENT_SCOPE)
+
 endif()

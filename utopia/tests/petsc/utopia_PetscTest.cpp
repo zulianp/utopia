@@ -214,7 +214,11 @@ namespace utopia {
     void petsc_matrix_accessors() {
         auto &&comm = PetscCommunicator::get_default();
         const PetscInt n = 10 * comm.size();
-        auto ml = layout(comm, 10, PetscTraits::decide(), n, 2);
+
+        const PetscInt m = 10;
+        const PetscInt mn = 2;
+
+        auto ml = layout(comm, m, PetscTraits::decide(), n, mn);
 
         PetscMatrix x;
         x.dense(ml, 1.0);
@@ -244,7 +248,11 @@ namespace utopia {
         //! [Read write matrix]
         auto &&comm = PetscCommunicator::get_default();
         const PetscInt n = 10 * comm.size();
-        auto ml = layout(comm, 10, PetscTraits::decide(), n, 10);
+
+        const PetscInt m = 10;
+        const PetscInt mn = 10;
+
+        auto ml = layout(comm, m, PetscTraits::decide(), n, mn);
 
         PetscMatrix x;
         x.sparse(ml, 7, 7);
@@ -1129,7 +1137,7 @@ namespace utopia {
             return;
         }
 
-        std::size_t n = local_to_global.size();
+        PetscInt n = local_to_global.size();
         block.resize(n);
 
         PetscInt min_block = local_to_global[0] / block_size;
@@ -1164,7 +1172,7 @@ namespace utopia {
 
         if (comm.size() > 1) return;
 
-        PetscInt rows = 4;
+        // PetscInt rows = 4;
         PetscInt cols = 8;
 
         PetscMatrix mat;
@@ -1197,7 +1205,7 @@ namespace utopia {
         // disp_connectivity(temp_crs);
         // disp_connectivity(block_crs);
 
-        disp(block_crs);
+        // disp(block_crs);
     }
 
     void petsc_rectangular_block_mat() {
@@ -1215,7 +1223,7 @@ namespace utopia {
         mat.sparse(serial_layout(rows, cols), 3, 3);
         {
             Write<PetscMatrix> w(mat);
-            auto rr = row_range(mat);
+            // auto rr = row_range(mat);
 
             mat.set(0, 0, 0.0);
             mat.set(0, 1, 0.01);
@@ -1227,7 +1235,7 @@ namespace utopia {
             mat.set(3, 6, 6.0);
         }
 
-        disp(mat);
+        // disp(mat);
 
         PetscCrsView crs(mat.raw_type());
 
@@ -1241,7 +1249,7 @@ namespace utopia {
 
         // disp(temp_crs);
 
-        disp(block_crs);
+        // disp(block_crs);
     }
 
     void petsc_block_mat() {

@@ -6,6 +6,7 @@
 #include "utopia_petsc_Factorizations.hpp"
 #include "utopia_petsc_GMRES.hpp"
 #include "utopia_petsc_KSPSolver.hpp"
+#include "utopia_petsc_KSPSolverMF.hpp"
 #include "utopia_petsc_KSPSolver_impl.hpp"
 #include "utopia_petsc_KSPSolvers.hpp"
 #include "utopia_petsc_KSPTypes.hpp"

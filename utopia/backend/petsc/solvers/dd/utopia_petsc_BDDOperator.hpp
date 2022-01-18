@@ -6,6 +6,7 @@
 #include "utopia_Preconditioner.hpp"
 
 #include <memory>
+#include <vector>
 
 namespace utopia {
 
@@ -19,6 +20,7 @@ namespace utopia {
         using IndexArray = typename Traits::IndexArray;
         using IndexSet = typename Traits::IndexSet;
         using Layout = typename Traits::Layout;
+        using Selector = std::vector<bool>;
 
         BDDOperator();
         ~BDDOperator();
@@ -35,7 +37,9 @@ namespace utopia {
         void diag(Vector &d) const;
 
         std::shared_ptr<Preconditioner<Vector>> create_preconditioner() const;
+        std::shared_ptr<Matrix> reduced_matrix() const;
 
+        void select(const Vector &x, Vector &x_G) const;
         bool apply(const Vector &x_G, Vector &rhs_G) const override;
         Size size() const override;
 
@@ -46,9 +50,10 @@ namespace utopia {
         Communicator &comm() override;
         const Communicator &comm() const override;
 
-    UTOPIA_NVCC_PRIVATE
+        Selector &selector();
+
+        UTOPIA_NVCC_PRIVATE
         class Impl;
-    private:
         std::unique_ptr<Impl> impl_;
     };
 

@@ -7,21 +7,29 @@
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Vector.hpp"
 
+#include "utopia_OmniMatrixFreeLinearSolver_impl.hpp"
+#include "utopia_petsc_LinearSolverFactory.hpp"
+
+#include "utopia_InputParameters.hpp"
+
 namespace utopia {
 
     template <typename Matrix, typename Vector>
     class BDDLinearSolver<Matrix, Vector>::Impl : public Configurable {
     public:
         void read(Input &in) override {
-            if (solver) {
-                solver->read(in);
-            }
-
             in.get("use_preconditioner", use_preconditioner);
             op.read(in);
+
+            if (solver) {
+                in.get("inner_solver", *solver);
+            }
         }
 
-        Impl() : solver(std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>()) {}
+        Impl()
+            : solver(
+                  // std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>()
+                  std::make_shared<OmniMatrixFreeLinearSolver<Vector>>()) {}
 
         std::shared_ptr<MatrixFreeLinearSolver> solver;
         BDDOperator<Matrix, Vector> op;
@@ -64,6 +72,12 @@ namespace utopia {
     void BDDLinearSolver<Matrix, Vector>::read(Input &in) {
         Super::read(in);
         impl_->read(in);
+
+        // if (this->verbose() && impl_->solver) {
+        //     InputParameters params;
+        //     params.set("verbose", true);
+        //     impl_->solver->read(params);
+        // }
     }
 
     template <typename Matrix, typename Vector>
@@ -73,8 +87,6 @@ namespace utopia {
 
     template <typename Matrix, typename Vector>
     void BDDLinearSolver<Matrix, Vector>::init_memory(const Layout &layout) {
-        // We solve a reduced size system, so we ignore this
-        UTOPIA_UNUSED(layout);
         assert(impl_->solver);
 
         if (layout.comm().size() == 1) {

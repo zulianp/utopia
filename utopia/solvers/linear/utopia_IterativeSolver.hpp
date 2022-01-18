@@ -17,14 +17,14 @@ namespace utopia {
      * @tparam     Vector
      */
     template <class Matrix, class Vector>
-    class IterativeSolver : public LinearSolver<Matrix, Vector>, public Monitor<Vector> {
+    class IterativeSolver : public LinearSolver<Matrix, Vector>, virtual public Monitor<Vector> {
     public:
         using Scalar = typename utopia::Traits<Matrix>::Scalar;
         using SizeType = typename utopia::Traits<Matrix>::SizeType;
 
         IterativeSolver() : atol_(1e-9), rtol_(1e-9), stol_(1e-11), max_it_(1000), norm_freq_(1.0) {}
 
-        IterativeSolver(const IterativeSolver &other) = default;
+        // IterativeSolver(const IterativeSolver &other) = default;
         IterativeSolver(IterativeSolver &&other) = default;
         IterativeSolver &operator=(const IterativeSolver &) = default;
         IterativeSolver &operator=(IterativeSolver &&) = default;
@@ -37,8 +37,10 @@ namespace utopia {
             in.get("atol", atol_);
             in.get("rtol", rtol_);
             in.get("stol", stol_);
-            in.get("max-it", max_it_);
             in.get("verbose", verbose_);
+
+            in.get("max_it", max_it_);
+            in.get_deprecated("max-it", "max_it", max_it_);
         }
 
         void print_usage(std::ostream &os) const override {
@@ -68,6 +70,24 @@ namespace utopia {
         Scalar get_time() { return _time.get_seconds(); }
 
         IterativeSolver<Matrix, Vector> *clone() const override = 0;
+
+        void copy(const IterativeSolver<Matrix, Vector> &other) {
+            atol_ = other.atol_;
+            rtol_ = other.rtol_;
+            stol_ = other.stol_;
+            max_it_ = other.max_it_;
+            verbose_ = other.verbose_;
+            norm_freq_ = other.norm_freq_;
+        }
+
+        IterativeSolver<Matrix, Vector>(const IterativeSolver<Matrix, Vector> &other)
+            : LinearSolver<Matrix, Vector>(other),
+              atol_(other.atol_),
+              rtol_(other.rtol_),
+              stol_(other.stol_),
+              max_it_(other.max_it_),
+              verbose_(other.verbose_),
+              norm_freq_(other.norm_freq_) {}
 
     protected:
         /**

@@ -33,6 +33,7 @@ namespace utopia {
         bool shift_field{false};
         bool volume_to_surface{false};
         bool has_covering{false};
+        bool debug_{false};
         Scalar field_rescale{1.0};
         Scalar field_offset{0.0};
     };
@@ -65,6 +66,7 @@ namespace utopia {
         in.get("field_offset", impl_->field_offset);
         in.get("volume_to_surface", impl_->volume_to_surface);
         in.get("has_covering", impl_->has_covering);
+        in.get("debug", impl_->debug_);
 
         if (impl_->shift_field) {
             Scalar min_dd = min(impl_->domain_distance->data());
@@ -90,7 +92,7 @@ namespace utopia {
         impl_->domain_gradients->data() *= -1;
 
         // Comment me out
-        {
+        if (impl_->debug_) {
             utopia::out() << "n_var: " << impl_->domain->n_var() << " "
                           << "n_dofs: " << impl_->domain->n_dofs() << " n_nodes: " << impl_->domain->mesh().n_nodes()
                           << " tensor_size: " << impl_->domain_gradients->tensor_size() << " "
@@ -193,19 +195,29 @@ namespace utopia {
                 });
         }
 
-        space.apply_zero_constraints(impl_->is_contact);
+        Vector ones(layout(impl_->is_contact), 1);
+        space.apply_zero_constraints(ones);
 
         {
+            auto one_view = local_view_device(ones);
             auto is_contact_view = local_view_device(impl_->is_contact);
 
             // Remove Dirichlet
             parallel_for(
                 rd, UTOPIA_LAMBDA(const SizeType i) {
-                    bool is_c = is_contact_view.get(i * n_var) > 0.99;
+                    bool is_dirichlet = false;
+                    for (int k = 0; k < n_var; ++k) {
+                        if (one_view.get(i * n_var + k) < 0.99) {
+                            is_dirichlet = true;
+                        }
+                    }
+
+                    bool is_c = (!is_dirichlet) && (is_contact_view.get(i * n_var) > 0.99);
 
                     if (!is_c) {
                         for (int k = 0; k < n_var; ++k) {
                             gap_view.set(i * n_var + k, infty);
+                            is_contact_view.set(i * n_var + k, 0);
                         }
                     }
                 });
@@ -275,6 +287,12 @@ namespace utopia {
     const typename ImplicitObstacle<FunctionSpace>::Vector &ImplicitObstacle<FunctionSpace>::normals() const {
         assert(impl_->normals);
         return impl_->normals->data();
+    }
+
+    template <class FunctionSpace>
+    std::shared_ptr<typename Traits<FunctionSpace>::Matrix>
+    ImplicitObstacle<FunctionSpace>::orthogonal_transformation() {
+        return make_ref(impl_->orthogonal_trafo);
     }
 
 }  // namespace utopia

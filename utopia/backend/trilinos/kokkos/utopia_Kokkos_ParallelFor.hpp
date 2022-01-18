@@ -23,12 +23,16 @@ namespace utopia {
             auto extent = end - begin;
             Kokkos::parallel_for(
                 extent, KOKKOS_LAMBDA(const int i) { f(begin + i); });
+
+            Kokkos::fence();
         }
 
         template <typename F>
         inline static void apply(const std::size_t &n, F f) {
             Kokkos::parallel_for(
                 n, KOKKOS_LAMBDA(const int i) { f(i); });
+
+            Kokkos::fence();
         }
     };
 }  // namespace utopia

@@ -1,6 +1,8 @@
 #ifndef UTOPIA_FE_FUNCTION_FACTORY_HPP
 #define UTOPIA_FE_FUNCTION_FACTORY_HPP
 
+#include "utopia_fe_config.hpp"
+
 #include "utopia_FEModelFunction.hpp"
 #include "utopia_ImplicitEulerIntegrator.hpp"
 #include "utopia_IncrementalLoading.hpp"
@@ -14,7 +16,7 @@ namespace utopia {
     class CoupledFEFunction;
 
     template <class FunctionSpace>
-    class FEFunctionFactory {
+    class FEFunctionFactoryBase {
     public:
         using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
         using ImplicitEulerIntegrator_t = utopia::ImplicitEulerIntegrator<FunctionSpace>;
@@ -35,13 +37,16 @@ namespace utopia {
         }
 
         static std::unique_ptr<FEFunctionInterface<FunctionSpace>> make(const std::shared_ptr<FunctionSpace> &space,
-                                                                        const std::string &integrator) {
-            return make_time_integrator(utopia::make_unique<FEModelFunction_t>(space), integrator);
+                                                                        const std::string &integrator,
+                                                                        const bool fail_if_unregistered = true) {
+            return make_time_integrator(
+                utopia::make_unique<FEModelFunction_t>(space), integrator, fail_if_unregistered);
         }
 
         static std::unique_ptr<FEFunctionInterface<FunctionSpace>> make_time_integrator(
             const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &fun,
-            const std::string &integrator) {
+            const std::string &integrator,
+            const bool fail_if_unregistered = true) {
             if (integrator == "Newmark") {
                 return utopia::make_unique<NewmarkIntegrator_t>(std::move(fun));
             } else if (integrator == "ImplicitEuler") {
@@ -52,21 +57,26 @@ namespace utopia {
                 return utopia::make_unique<VelocityImplicitEulerIntegrator_t>(std::move(fun));
             } else if (integrator == "IncrementalLoading") {
                 return utopia::make_unique<IncrementalLoading_t>(std::move(fun));
-            } else {
+            } else if (fail_if_unregistered) {
                 Utopia::Abort("Specified time integrator does not exists!");
-                // Compiler needs a return type!
-                return nullptr;
             }
+
+            return nullptr;
         }
 
-        static inline FEFunctionFactory &instance() {
-            static FEFunctionFactory instance_;
+        static inline FEFunctionFactoryBase &instance() {
+            static FEFunctionFactoryBase instance_;
             return instance_;
         }
 
+        virtual ~FEFunctionFactoryBase() = default;
+
     private:
-        FEFunctionFactory() = default;
+        FEFunctionFactoryBase() = default;
     };
+
+    template <class FunctionSpace>
+    class FEFunctionFactory : public FEFunctionFactoryBase<FunctionSpace> {};
 
 }  // namespace utopia
 

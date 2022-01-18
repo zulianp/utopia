@@ -35,9 +35,9 @@ namespace utopia {
 
                 Coordinates coords("coords");
 
-                auto sp = handler.get_sparsity_pattern();
+                // auto sp = handler.get_sparsity_pattern();
                 auto fe_dof_map = handler.get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler.get_dof_handler();
                 int block_size = dof_handler.get_block();
 
                 fe_dof_map.iterate(MARS_LAMBDA(const ::mars::Integer elem_index) {

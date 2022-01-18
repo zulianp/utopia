@@ -17,6 +17,8 @@ namespace utopia {
         using IndexView = utopia::ArrayView<const PetscInt>;
 
         bool update(const PetscMatrix &mat) {
+            crs_view.clear();
+
             if (mat.comm().size() == 1) {
                 local_mat.copy(mat);
             } else {

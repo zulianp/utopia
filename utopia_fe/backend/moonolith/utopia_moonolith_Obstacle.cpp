@@ -48,6 +48,7 @@ namespace utopia {
             Vector gap;
             Vector normals;
             Matrix orthogonal_trafo;
+            Matrix mass_matrix;
 
             Matrix basis_trafo;
             Vector mass_vector;
@@ -128,10 +129,14 @@ namespace utopia {
                 out.gap = e_mul(out.inverse_mass_vector, gap_x);
                 out.normals = e_mul(out.inverse_mass_vector, out.normals);
 
+                process_banned_nodes(out.is_contact, out.normals);
+
                 normalize(out.normals);
 
                 build_orthogonal_transformation(out.is_contact, out.normals, out.orthogonal_trafo);
                 replace_zeros(out.is_contact, out.gap);
+
+                out.mass_matrix = diag(mass_vector);
             }
 
             void replace_zeros(const Vector &is_contact, Vector &gap) {
@@ -147,12 +152,16 @@ namespace utopia {
                 }
             }
 
+            virtual void process_banned_nodes(Vector &is_contact, Vector &normals) const = 0;
+
             virtual bool init(const Params &params, const Mesh &mesh) = 0;
             virtual bool assemble(const FunctionSpace &space, const Params &params, Output &output) = 0;
             virtual void normalize(Vector &normal) = 0;
             virtual void build_orthogonal_transformation(const Vector &is_contact,
                                                          const Vector &normal,
                                                          Matrix &trafo) = 0;
+
+            std::shared_ptr<IndexArray> banned_nodes;
         };
 
         template <int Dim>
@@ -182,6 +191,30 @@ namespace utopia {
                         normal.set(i + d, n[d]);
                     }
                 }
+            }
+
+            void process_banned_nodes(Vector &is_contact, Vector &normals) const override {
+                if (!banned_nodes) return;
+
+                auto ic_view = local_view_device(is_contact);
+                auto n_view = local_view_device(normals);
+
+                // FIXME
+                auto &&bn_view = *banned_nodes;
+
+                auto r = range(is_contact);
+
+                RangeDevice<Vector> rd(0, bn_view.size());
+
+                parallel_for(
+                    rd, UTOPIA_LAMBDA(const SizeType i) {
+                        auto local_node_i = bn_view[i] * Dim - r.begin();
+                        ic_view.set(local_node_i, 0);
+
+                        for (int d = 0; d < Dim; ++d) {
+                            n_view.set(local_node_i + d, 0);
+                        }
+                    });
             }
 
             void build_orthogonal_transformation(const Vector &is_contact,
@@ -325,6 +358,10 @@ namespace utopia {
             out = transpose(output().orthogonal_trafo) * in * output().orthogonal_trafo;
         }
 
+        std::shared_ptr<Obstacle::Matrix> Obstacle::orthogonal_transformation() {
+            return make_ref(output().orthogonal_trafo);
+        }
+
         void Obstacle::transform(const Vector &in, Vector &out) { out = transpose(output().orthogonal_trafo) * in; }
 
         void Obstacle::inverse_transform(const Vector &in, Vector &out) { out = output().orthogonal_trafo * in; }
@@ -335,6 +372,14 @@ namespace utopia {
 
         const Obstacle::Vector &Obstacle::normals() const { return output().normals; }
 
+        Obstacle::Vector &Obstacle::gap() { return output().gap; }
+
+        Obstacle::Vector &Obstacle::is_contact() { return output().is_contact; }
+
+        Obstacle::Vector &Obstacle::normals() { return output().normals; }
+
+        std::shared_ptr<Obstacle::Matrix> Obstacle::mass_matrix() { return make_ref(output().mass_matrix); }
+
         Obstacle::Output &Obstacle::output() {
             assert(output_);
             return *output_;
@@ -342,6 +387,10 @@ namespace utopia {
         const Obstacle::Output &Obstacle::output() const {
             assert(output_);
             return *output_;
+        }
+
+        void Obstacle::set_banned_nodes(const std::shared_ptr<IndexArray> &banned_nodes) {
+            impl_->banned_nodes = banned_nodes;
         }
 
     }  // namespace moonolith

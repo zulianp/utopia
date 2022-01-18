@@ -1502,6 +1502,10 @@ namespace utopia {
         check_error(MatDiagonalSet(raw_type(), d.raw_type(), ADD_VALUES));
     }
 
+    void PetscMatrix::set_diag(const PetscVector &d) {
+        check_error(MatDiagonalSet(raw_type(), d.raw_type(), INSERT_VALUES));
+    }
+
     void PetscMatrix::set(const Scalar &val) {
         if (val == 0.0) {
             scale(0.0);

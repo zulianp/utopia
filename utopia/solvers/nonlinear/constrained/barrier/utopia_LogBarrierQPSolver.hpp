@@ -25,8 +25,8 @@ namespace utopia {
 
     public:
         LogBarrierQPSolver(const std::shared_ptr<LinearSolver> &linear_solver =
-                               std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>())
-            // std::make_shared<OmniLinearSolver<Matrix, Vector>>())
+                               // std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>())
+                           std::make_shared<OmniLinearSolver<Matrix, Vector>>())
             : solver_(std::make_shared<LogBarrierSolver>(linear_solver)) {}
 
         LogBarrierQPSolver(const LogBarrierSolver &other) : Super(other) { solver_ = other.solver_->clone(); }
@@ -57,6 +57,10 @@ namespace utopia {
         void set_selection(const std::shared_ptr<Vector> &selection) override {
             assert(solver_);
             solver_->set_selection(selection);
+        }
+
+        virtual void set_linear_solver(const std::shared_ptr<LinearSolver> &linear_solver) {
+            solver_->set_linear_solver(linear_solver);
         }
 
     private:

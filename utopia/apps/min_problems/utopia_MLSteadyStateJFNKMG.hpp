@@ -3,6 +3,7 @@
 
 #include "utopia_BlockQPSolver.hpp"
 #include "utopia_Chebyshev3level.hpp"
+#include "utopia_ConjugateGradient_QN_Precond.hpp"
 #include "utopia_IPTransfer.hpp"
 #include "utopia_Input.hpp"
 #include "utopia_MassMatrix.hpp"
@@ -225,17 +226,21 @@ namespace utopia {
 
             // std::cout << "--------- print ---------- \n";
 
-            auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+            // auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+            Scalar memory_size = 20;
+            auto lbfgs_precond = std::make_shared<LBFGSInv<Vector>>(memory_size);
+            auto linear_solver = std::make_shared<ConjugateGradientQNPrecond<Matrix, Vector, HOMEMADE>>(lbfgs_precond);
+            // linear_solver->sample_curvature_uniformly(false);
             linear_solver->verbose(false);
-            jfnk_mg_->max_it(1);
-            jfnk_mg_->verbose(false);
-            linear_solver->set_preconditioner(jfnk_mg_);
+            // jfnk_mg_->max_it(1);
+            // jfnk_mg_->verbose(false);
+            // linear_solver->set_preconditioner(jfnk_mg_);
 
             QuasiNewton<Matrix, Vector> nlsolver(hess_approx, linear_solver);
             nlsolver.atol(1e-6);
             nlsolver.rtol(1e-15);
             nlsolver.stol(1e-15);
-            nlsolver.max_it(10);
+            nlsolver.max_it(100);
             nlsolver.verbose(true);
 
             auto ls_strat = std::make_shared<utopia::Backtracking<Vector>>();

@@ -33,7 +33,7 @@ public:
 #endif  // UTOPIA_WITH_BLAS
 
     SizeType n_dofs{40};
-    bool verbose{true};
+    bool verbose{false};
 
     void run() {
         UTOPIA_RUN_TEST(test_qp_patch_smoother_RAS);

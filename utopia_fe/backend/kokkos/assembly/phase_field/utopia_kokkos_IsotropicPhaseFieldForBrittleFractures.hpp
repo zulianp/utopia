@@ -212,7 +212,7 @@ namespace utopia {
 
                 // Function and operators
                 DegradationFunction degradation_function(x, phase_field);
-                CoeffLinearElasticityOp stress_op(op_.lambda, op_.mu, grad_x, measure, displacement);
+                CoeffLinearElasticityOp stress_op(op_.lambda, op_.mu, grad_x, /*measure,*/ displacement);
 
                 this->loop_cell(
                     "IsotropicPhaseFieldForBrittleFractures::assemble_scalar", UTOPIA_LAMBDA(const int &cell) {
@@ -445,7 +445,7 @@ namespace utopia {
 
                 // Function and operators
                 DegradationFunction degradation_function(x, phase_field);
-                CoeffLinearElasticityOp stress_op(op_.lambda, op_.mu, grad_x, measure, displacement);
+                CoeffLinearElasticityOp stress_op(op_.lambda, op_.mu, grad_x, /*measure,*/ displacement);
                 LinearElasticityOp elasticity_op(op_.lambda, op_.mu, grad, measure);
 
                 // Displacement
@@ -547,7 +547,7 @@ namespace utopia {
 
                 // Function and operators
                 DegradationFunction degradation_function(x, phase_field);
-                CoeffLinearElasticityOp stress_op(op_.lambda, op_.mu, grad_x, measure, displacement);
+                CoeffLinearElasticityOp stress_op(op_.lambda, op_.mu, grad_x, /*measure,*/ displacement);
 
                 this->loop_cell_test(
                     "IsotropicPhaseFieldForBrittleFractures::assemble_vector",
@@ -647,7 +647,7 @@ namespace utopia {
 
                 // Function and operators
                 DegradationFunction degradation_function(sol, phase_field);
-                CoeffLinearElasticityOp stress_op(op_.lambda, op_.mu, grad_x, measure, displacement);
+                CoeffLinearElasticityOp stress_op(op_.lambda, op_.mu, grad_x, /*measure,*/ displacement);
                 LinearElasticityOp elasticity_op(op_.lambda, op_.mu, grad, measure);
 
                 // Displacement

@@ -29,6 +29,7 @@ namespace utopia {
             OperatorBasedQPSolver<Matrix, Vector>::read(in);
             in.get("eig_comp_tol", eps_eig_est_);
             in.get("power_method_max_it", power_method_max_it_);
+            in.get("hardik_variant", hardik_variant_);
         }
 
         void print_usage(std::ostream &os) const override {
@@ -97,7 +98,11 @@ namespace utopia {
             }
 
             const Scalar gamma = 1.0;
-            const Scalar alpha_bar = 1.95 / this->get_normA(A);
+            Scalar alpha_bar = 1;
+            if (!hardik_variant_) {
+                alpha_bar = 1.95 / this->get_normA(A);
+            }
+
             Scalar pAp, beta_beta, fi_fi, gp_dot, g_betta, beta_Abeta;
 
             SizeType it = 0;
@@ -134,26 +139,46 @@ namespace utopia {
                     }
 
                     alpha_cg = gp_dot / pAp;
-                    y = x - alpha_cg * p;
                     alpha_f = get_alpha_f(x, p, *lb, *ub, help_f1, help_f2);
 
-                    if (alpha_cg <= alpha_f) {
-                        x = y;
-                        g = g - alpha_cg * Ap;
-                        this->get_fi(x, g, *lb, *ub, fi);
-                        beta_sc = dot(fi, Ap) / pAp;
-                        p = fi - beta_sc * p;
+                    if (hardik_variant_) {
+                        x -= alpha_cg * p;
+
+                        if (alpha_cg <= alpha_f) {
+                            g -= alpha_cg * Ap;
+
+                            this->get_fi(x, g, *lb, *ub, fi);
+                            beta_sc = dot(fi, Ap) / pAp;
+                            p = fi - beta_sc * p;
+
+                        } else {
+                            this->project(*lb, *ub, x);
+                            A.apply(x, g);
+                            g -= rhs;
+                            this->get_fi(x, g, *lb, *ub, p);
+                        }
+
                     } else {
-                        x = x - alpha_f * p;
-                        g = g - alpha_f * Ap;
-                        this->get_fi(x, g, *lb, *ub, fi);
+                        y = x - alpha_cg * p;
 
-                        help_f1 = x - (alpha_bar * fi);
-                        this->project(help_f1, *lb, *ub, x);
+                        if (alpha_cg <= alpha_f) {
+                            x = y;
+                            g = g - alpha_cg * Ap;
+                            this->get_fi(x, g, *lb, *ub, fi);
+                            beta_sc = dot(fi, Ap) / pAp;
+                            p = fi - beta_sc * p;
+                        } else {
+                            x = x - alpha_f * p;
+                            g = g - alpha_f * Ap;
+                            this->get_fi(x, g, *lb, *ub, fi);
 
-                        A.apply(x, Ax);
-                        g = Ax - rhs;
-                        this->get_fi(x, g, *lb, *ub, p);
+                            help_f1 = x - (alpha_bar * fi);
+                            this->project(help_f1, *lb, *ub, x);
+
+                            A.apply(x, Ax);
+                            g = Ax - rhs;
+                            this->get_fi(x, g, *lb, *ub, p);
+                        }
                     }
                 } else {
                     A.apply(beta, Abeta);
@@ -351,6 +376,7 @@ namespace utopia {
         Layout layout_;
 
         std::shared_ptr<Preconditioner<Vector> > precond_;
+        bool hardik_variant_{false};
     };
 }  // namespace utopia
 

@@ -595,6 +595,7 @@ namespace utopia {
             bool is_linear_{true};
             bool ensure_scalar_matrix{true};
             bool fail_if_unregistered{true};
+            bool debug{false};
         };
 
         template <class FunctionSpace, class FE>
@@ -631,6 +632,13 @@ namespace utopia {
                 return false;
             }
 
+            if (impl_->debug && fun.has_nan_or_inf()) {
+                impl_->space->write("NaN.e", x);
+                this->~OmniAssembler();
+                assert(false);
+                utopia::Utopia::Abort("Detected NaN in material gradient!");
+            }
+
             return true;
         }
 
@@ -659,6 +667,13 @@ namespace utopia {
                 return false;
             }
 
+            if (impl_->debug && vec.has_nan_or_inf()) {
+                impl_->space->write("NaN.e", x);
+                this->~OmniAssembler();
+                assert(false);
+                utopia::Utopia::Abort("Detected NaN in material gradient!");
+            }
+
             return true;
         }
 
@@ -671,6 +686,12 @@ namespace utopia {
             impl_->update(x);
             if (!impl_->apply(hessian_times_x)) {
                 return false;
+            }
+
+            if (impl_->debug && hessian_times_x.has_nan_or_inf()) {
+                impl_->space->write("NaN.e", x);
+                this->~OmniAssembler();
+                utopia::Utopia::Abort("Detected NaN in application of operator!");
             }
 
             return true;
@@ -736,6 +757,7 @@ namespace utopia {
             impl_->is_linear_ = true;
 
             in.get("ensure_scalar_matrix", impl_->ensure_scalar_matrix);
+            in.get("debug", impl_->debug);
 
             in.get("material", [this](Input &node) {
                 auto assembler = impl_->registry.make_assembler(impl_->domain.fe, node);

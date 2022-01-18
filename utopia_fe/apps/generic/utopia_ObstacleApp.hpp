@@ -18,6 +18,7 @@
 #include "utopia_FEFunctionFactory.hpp"
 #include "utopia_NewmarkIntegrator.hpp"
 #include "utopia_ObstacleFEFunction.hpp"
+#include "utopia_moonolith_ObstacleFEFunctionFactory.hpp"
 
 #include <memory>
 
@@ -81,7 +82,7 @@ namespace utopia {
                 }
 
             } else {
-                fun = FEFunctionFactory<FunctionSpace>::make_time_integrator(fun, integrator);
+                fun = ObstacleFEFunctionFactory<FunctionSpace>::make_time_integrator(fun, integrator);
             }
 
             auto obs_fun = std::make_shared<ObstacleFEFunction_t>(fun);

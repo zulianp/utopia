@@ -980,7 +980,7 @@ namespace utopia {
     }
 
     template <typename Matrix, typename Vector>
-    void KSPSolver<Matrix, Vector, PETSC>::handle_reset(const Matrix &op) {
+    void KSPSolver<Matrix, Vector, PETSC>::handle_reset(const PetscCommunicator &com) {
         bool must_reset = true;
         // bool must_reset = false;
 
@@ -998,7 +998,7 @@ namespace utopia {
         // }
 
         if (must_reset) {
-            auto temp_ksp = utopia::make_unique<Impl>(op.comm().get());
+            auto temp_ksp = utopia::make_unique<Impl>(com.get());
             temp_ksp->copy_settings_from(*ksp_);
             ksp_ = std::move(temp_ksp);
 
@@ -1013,7 +1013,7 @@ namespace utopia {
                                                   const std::shared_ptr<const Matrix> &prec) {
         UTOPIA_TRACE_REGION_BEGIN("KSPSolver::update(op,prec)");
 
-        handle_reset(*op);
+        handle_reset(op->comm());
         set_monitor_options(ksp_->implementation());
 
         PreconditionedSolver::update(op, prec);
@@ -1026,7 +1026,7 @@ namespace utopia {
     void KSPSolver<Matrix, Vector, PETSC>::update(const std::shared_ptr<const Matrix> &op) {
         UTOPIA_TRACE_REGION_BEGIN("KSPSolver::update");
 
-        handle_reset(*op);
+        handle_reset(op->comm());
 
         PreconditionedSolver::update(op);
         set_monitor_options(ksp_->implementation());
