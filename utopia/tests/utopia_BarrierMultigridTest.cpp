@@ -53,7 +53,7 @@ namespace utopia {
             params.set("barrier_parameter", 1);
             params.set("barrier_parameter_shrinking_factor", 0.1);
             params.set("min_barrier_parameter", 1e-10);
-            params.set("max_it", 30);
+            params.set("max_it", 40);
             params.set("barrier_function_type", "BoundedLogBarrier");
             // params.set("barrier_function_type", "LogBarrier");
 
@@ -94,7 +94,7 @@ namespace utopia {
             const static bool verbose = true;
             const static bool use_masks = false;
             int n_levels = 7;
-            int n_coarse = 500;
+            int n_coarse = 501;
 
             using ProblemType = utopia::Poisson1D<Matrix, Vector>;
             MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(n_levels, n_coarse, !use_masks);
@@ -110,8 +110,8 @@ namespace utopia {
             Vector lower_bound(layout(x), -0.8), upper_bound(layout(x), 0.8);
             BoxConstraints<Vector> box(nullptr, make_ref(upper_bound));
 
-            bool algebraic = Traits::Backend == PETSC;
-            // bool algebraic = false;
+            // bool algebraic = Traits::Backend == PETSC;
+            bool algebraic = false;
 
             auto mg = create_barrier_mg(n_levels, algebraic, verbose);
             mg->set_box_constraints(box);

@@ -361,10 +361,6 @@ namespace utopia {
         virtual void update_barrier() {
             current_barrier_parameter_ =
                 std::max(current_barrier_parameter_ * barrier_parameter_shrinking_factor_, min_barrier_parameter_);
-
-            if (verbose_) {
-                utopia::out() << "current_barrier_parameter: " << current_barrier_parameter_ << '\n';
-            }
         }
 
         void compute_diff_upper_bound(const Vector &x, Vector &diff) const {

@@ -54,8 +54,6 @@ namespace utopia {
 
         using LogBarrierBase = utopia::LogBarrierBase<Matrix, Vector>;
 
-        // using LogBarrierFunction = utopia::LogBarrierFunction<Matrix, Vector>;
-
         class AlphaStats {
         public:
             Scalar min_{1};
