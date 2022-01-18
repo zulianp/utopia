@@ -86,9 +86,13 @@ namespace utopia {
         bool barrier_hessian(const Vector &x, Vector &h) const override {
             Vector work;
 
+            auto d_hat = barrier_thickness_;
+            DefaultBarrier b{d_hat};
+
             if (this->box_->has_upper_bound()) {
                 this->compute_diff_upper_bound(x, work);
-                in_place_barrier_hessian(work);
+
+                in_place_barrier_hessian(work, b);
 
                 if (h.empty()) {
                     h.zeros(layout(work));
@@ -100,7 +104,7 @@ namespace utopia {
             if (this->box_->has_lower_bound()) {
                 this->compute_diff_lower_bound(x, work);
 
-                in_place_barrier_hessian(work);
+                in_place_barrier_hessian(work, b);
 
                 if (h.empty()) {
                     h.zeros(layout(work));
@@ -115,15 +119,22 @@ namespace utopia {
         bool barrier_gradient(const Vector &x, Vector &g) const override {
             Vector work;
 
+            auto d_hat = barrier_thickness_;
+            DefaultBarrier b{d_hat};
+
             if (this->box_->has_upper_bound()) {
                 this->compute_diff_upper_bound(x, work);
-                in_place_barrier_gradient(work);
+
+                in_place_barrier_gradient(work, b);
+
                 g += work;
             }
 
             if (this->box_->has_lower_bound()) {
                 this->compute_diff_lower_bound(x, work);
-                in_place_barrier_gradient(work);
+
+                in_place_barrier_gradient(work, b);
+
                 g -= work;
             }
 
@@ -133,15 +144,22 @@ namespace utopia {
         bool barrier_value(const Vector &x, Vector &value) const override {
             Vector work;
 
+            auto d_hat = barrier_thickness_;
+            DefaultBarrier b{d_hat};
+
             if (this->box_->has_upper_bound()) {
                 work = *this->box_->upper_bound() - x;
-                in_place_barrier_value(work);
+
+                in_place_barrier_value(work, b);
+
                 value += work;
             }
 
             if (this->box_->has_lower_bound()) {
                 work = x - *this->box_->lower_bound();
-                in_place_barrier_value(work);
+
+                in_place_barrier_value(work, b);
+
                 value += work;
             }
 
@@ -151,11 +169,11 @@ namespace utopia {
         UTOPIA_NVCC_PRIVATE
         Scalar barrier_thickness_{0.01};
 
-        void in_place_barrier_value(Vector &diff_in_value_out) const {
-            auto view = local_view_device(diff_in_value_out);
+        //////////////////////// Helper methods ////////////////////////
 
-            auto d_hat = barrier_thickness_;
-            DefaultBarrier b{d_hat};
+        template <class Barrier>
+        void in_place_barrier_value(Vector &diff_in_value_out, Barrier b) const {
+            auto view = local_view_device(diff_in_value_out);
 
             parallel_for(
                 local_range_device(diff_in_value_out), UTOPIA_LAMBDA(const SizeType i) {
@@ -168,11 +186,9 @@ namespace utopia {
                 });
         }
 
-        void in_place_barrier_gradient(Vector &diff_in_gradient_out) const {
+        template <class Barrier>
+        void in_place_barrier_gradient(Vector &diff_in_gradient_out, Barrier b) const {
             auto view = local_view_device(diff_in_gradient_out);
-
-            auto d_hat = barrier_thickness_;
-            DefaultBarrier b{d_hat};
 
             parallel_for(
                 local_range_device(diff_in_gradient_out), UTOPIA_LAMBDA(const SizeType i) {
@@ -185,11 +201,9 @@ namespace utopia {
                 });
         }
 
-        void in_place_barrier_hessian(Vector &diff_in_hessian_out) const {
+        template <class Barrier>
+        void in_place_barrier_hessian(Vector &diff_in_hessian_out, Barrier b) const {
             auto view = local_view_device(diff_in_hessian_out);
-
-            auto d_hat = barrier_thickness_;
-            DefaultBarrier b{d_hat};
 
             parallel_for(
                 local_range_device(diff_in_hessian_out), UTOPIA_LAMBDA(const SizeType i) {

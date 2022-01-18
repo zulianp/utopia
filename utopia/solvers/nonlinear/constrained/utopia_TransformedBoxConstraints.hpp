@@ -91,6 +91,9 @@ namespace utopia {
             }
         }
 
+        inline const std::shared_ptr<Matrix> &transform() const { return transform_; }
+        inline const std::shared_ptr<Vector> &offset_vector() const { return offset_vector_; }
+
     private:
         Vector work_;
 

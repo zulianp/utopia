@@ -52,9 +52,9 @@ namespace utopia {
         using IPTransfer = utopia::IPTransfer<Matrix, Vector>;
         using VariableBoundSolverInterface = utopia::VariableBoundSolverInterface<Vector>;
 
-        // using LogBarrierBase = utopia::LogBarrierBase<Matrix, Vector>;
+        using LogBarrierBase = utopia::LogBarrierBase<Matrix, Vector>;
 
-        using LogBarrierFunction = utopia::LogBarrierFunction<Matrix, Vector>;
+        // using LogBarrierFunction = utopia::LogBarrierFunction<Matrix, Vector>;
 
         class AlphaStats {
         public:
@@ -154,8 +154,7 @@ namespace utopia {
                             "Coarse grid correction is projected in a non-smooth way. Value in [0, 1].")
                 .parse(in);
 
-            // barrier_ = LogBarrierFactory<Matrix, Vector>::new_log_barrier(barrier_function_type);
-            barrier_ = LogBarrierFactory<Matrix, Vector>::new_log_barrier_function(barrier_function_type);
+            barrier_ = LogBarrierFactory<Matrix, Vector>::new_log_barrier(barrier_function_type);
             barrier_->read(in);
         }
 
@@ -193,8 +192,11 @@ namespace utopia {
             ensure_defaults();
 
             NonlinearIterationState state;
+            state.barrier_gradient.zeros(layout(x));
+
             int top_level = n_levels() - 1;
             auto &mem = memory_[top_level];
+            mem.barrier_diag.zeros(layout(x));
 
             Scalar g_norm_0 = compute_norm_gradient_objective(fun, x, state, mem);
             PrintInfo::print_iter_status(0, {g_norm_0, 1});
@@ -274,11 +276,7 @@ namespace utopia {
                                                LevelMemory &mem) {
             fun.gradient(x, state.function_gradient);
 
-            if (empty(state.barrier_gradient)) {
-                state.barrier_gradient.zeros(layout(x));
-            } else {
-                state.barrier_gradient.set(0.);
-            }
+            state.barrier_gradient.set(0.);
 
             barrier_->gradient(x, state.barrier_gradient);
 
@@ -296,8 +294,8 @@ namespace utopia {
             agglomerator_ = agglomerator;
         }
 
-        inline void set_barrier(const std::shared_ptr<LogBarrierFunction> &barrier) { barrier_ = barrier; }
-        inline const std::shared_ptr<LogBarrierFunction> &barrier() { return barrier_; }
+        inline void set_barrier(const std::shared_ptr<LogBarrierBase> &barrier) { barrier_ = barrier; }
+        inline const std::shared_ptr<LogBarrierBase> &barrier() { return barrier_; }
 
     public:
         BarrierMultigrid *clone() const override {
@@ -339,7 +337,7 @@ namespace utopia {
         std::shared_ptr<LinearSolver> coarse_solver_;
         std::vector<std::shared_ptr<Transfer>> transfer_operators_;
         std::vector<LevelMemory> memory_;
-        std::shared_ptr<LogBarrierFunction> barrier_;
+        std::shared_ptr<LogBarrierBase> barrier_;
         std::shared_ptr<LineSearchBoxProjection<Vector>> line_search_projection_;
         std::shared_ptr<Smoother> linear_smoother_clonable_;
 
@@ -360,8 +358,7 @@ namespace utopia {
 
         void ensure_defaults() {
             if (!barrier_) {
-                // barrier_ = std::make_shared<BoundedLogBarrier<Matrix, Vector>>();
-                barrier_ = std::make_shared<LogBarrierFunction>(std::make_shared<BoundedLogBarrier<Matrix, Vector>>());
+                barrier_ = std::make_shared<BoundedLogBarrier<Matrix, Vector>>();
             }
 
             if (!line_search_projection_) {
@@ -497,8 +494,8 @@ namespace utopia {
                 int top_level = n_levels() - 1;
                 auto &mem = memory_[top_level];
 
-                mem.barrier_diag *= 0.;
-                barrier_->hessian_diag(x, mem.barrier_diag);
+                mem.barrier_diag.set(0.);
+                barrier_->hessian(x, mem.barrier_diag);
 
                 if (use_non_linear_residual_) {
                     fun.gradient(x, state.function_gradient);
@@ -563,18 +560,15 @@ namespace utopia {
 
                 mem.residual = state.function_gradient;
 
-                if (!state.barrier_gradient.empty()) {
-                    state.barrier_gradient.set(0.0);
-                } else {
-                    state.barrier_gradient.zeros(layout(x));
-                }
+                state.barrier_gradient.set(0.0);
+                mem.barrier_diag.set(0.);
 
                 barrier_->gradient(x, state.barrier_gradient);
 
                 mem.residual += state.barrier_gradient;
                 mem.residual *= -1;
 
-                barrier_->hessian_diag(x, mem.barrier_diag);
+                barrier_->hessian(x, mem.barrier_diag);
 
                 handle_eq_constraints(state, mem.residual);
                 handle_eq_constraints(state, mem.barrier_diag);

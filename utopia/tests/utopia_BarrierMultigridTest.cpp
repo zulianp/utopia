@@ -47,14 +47,11 @@ namespace utopia {
 
             // auto linear_solver = std::make_shared<Factorization<Matrix, Vector>>();
 
-            // auto linear_solver = std::make_shared<ILU<Matrix, Vector>>();
-            // linear_solver->verbose(true);
-
             InputParameters params;
             params.set("use_coarse_space", true);
             params.set("debug", true);
             params.set("barrier_parameter", 1);
-            params.set("barrier_parameter_shrinking_factor", 0.3);
+            params.set("barrier_parameter_shrinking_factor", 0.1);
             params.set("min_barrier_parameter", 1e-10);
             params.set("max_it", 30);
             params.set("barrier_function_type", "BoundedLogBarrier");

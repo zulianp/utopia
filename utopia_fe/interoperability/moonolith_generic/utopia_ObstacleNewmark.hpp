@@ -1,7 +1,7 @@
 #ifndef UTOPIA_OBSTACLE_NEWMARK_HPP
 #define UTOPIA_OBSTACLE_NEWMARK_HPP
 
-#include "utopia_LogBarrierFunctionFactory.hpp"
+#include "utopia_LogBarrierFactory.hpp"
 
 #include "utopia_BoxConstrainedFEFunction.hpp"
 #include "utopia_BoxConstraints.hpp"
@@ -81,7 +81,7 @@ namespace utopia {
             ////////////////////////////////////////////////////////////////////////////////
             std::string function_type;
             in.get("function_type", function_type);
-            barrier_ = LogBarrierFunctionFactory<Matrix_t, Vector_t>::new_log_barrier(function_type);
+            barrier_ = LogBarrierFactory<Matrix_t, Vector_t>::new_log_barrier(function_type);
             barrier_->read(in);
         }
 
