@@ -129,12 +129,12 @@ namespace utopia {
                 using PetscSemiSmoothNewton = utopia::SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL>;
                 using PetscTaoQPSolver = utopia::TaoQPSolver<Matrix, Vector>;
                 using PetscBDDQPSolver = utopia::BDDQPSolver<Matrix, Vector>;
-                // using PetscLogBarrierQPMultigrid = utopia::LogBarrierQPMultigrid<Matrix, Vector>;
+                using PetscLogBarrierQPMultigrid = utopia::LogBarrierQPMultigrid<Matrix, Vector>;
 
                 register_solver<PetscSemiSmoothNewton>("petsc", "ssnewton");
                 register_solver<PetscTaoQPSolver>("petsc", "taoqp");
                 register_solver<PetscBDDQPSolver>("petsc", "bdd");
-                // register_solver<PetscLogBarrierQPMultigrid>("petsc", "logbarrier_mg");
+                register_solver<PetscLogBarrierQPMultigrid>("petsc", "logbarrier_mg");
 
 #ifdef UTOPIA_WITH_BLAS
                 using PetscRASPatchSmoother = utopia::RASPatchSmoother<Matrix, utopia::BlasMatrix<Scalar>>;

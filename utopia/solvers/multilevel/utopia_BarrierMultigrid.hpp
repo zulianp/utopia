@@ -157,6 +157,14 @@ namespace utopia {
             }
 
             barrier_->read(in);
+
+            if (coarse_solver_) {
+                in.get("coarse_solver", *coarse_solver_);
+            }
+
+            if (agglomerator_) {
+                in.get("agglomerator", *agglomerator_);
+            }
         }
 
         void set_transfer_operators(const std::vector<std::shared_ptr<Transfer>> &transfer_operators) {

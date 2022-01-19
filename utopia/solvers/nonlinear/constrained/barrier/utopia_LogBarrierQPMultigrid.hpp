@@ -29,19 +29,30 @@ namespace utopia {
         using MatrixAgglomerator = utopia::MatrixAgglomerator<Matrix>;
 
     public:
-        LogBarrierQPMultigrid(const std::shared_ptr<MatrixAgglomerator> &agglomerator,
-                              const std::shared_ptr<LinearSolver> &linear_solver,
+        LogBarrierQPMultigrid(const std::shared_ptr<LinearSolver> &linear_solver,
+                              const std::shared_ptr<MatrixAgglomerator> &agglomerator = nullptr,
                               const std::shared_ptr<IterativeSolver> &linear_smoother = nullptr)
             : solver_(std::make_shared<BarrierMultigrid>(linear_solver)) {
             solver_->set_agglomerator(agglomerator);
-            solver_->set_linear_smoother(linear_smoother);
 
+            if (!linear_smoother) {
+                solver_->set_linear_smoother(std::make_shared<ILU<Matrix, Vector>>());
+            } else {
+                solver_->set_linear_smoother(linear_smoother);
+            }
+
+            ensure_agglomerator();
             init_defaults();
         }
 
-        LogBarrierQPMultigrid(const std::shared_ptr<LinearSolver> &linear_solver)
-            : solver_(std::make_shared<BarrierMultigrid>(linear_solver)) {
-            solver_->set_linear_smoother(std::make_shared<ILU<Matrix, Vector>>());
+        LogBarrierQPMultigrid() {
+            auto linear_solver = std::make_shared<OmniLinearSolver<Matrix, Vector>>();
+
+            solver_ = std::make_shared<BarrierMultigrid>(linear_solver);
+
+            auto linear_smoother = std::make_shared<ILU<Matrix, Vector>>();
+            solver_->set_linear_smoother(linear_smoother);
+
             ensure_agglomerator();
             init_defaults();
         }
