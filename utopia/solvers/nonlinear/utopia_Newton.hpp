@@ -76,10 +76,19 @@ namespace utopia {
             if (this->verbose_) PrintInfo::print_iter_status(it, {g_norm, J});
             it++;
 
+            // Conditions for preconditioned solve
+            bool precondition = this->has_preconditioned_solver() && fun.has_preconditioner();
+
+            // If hessian is constant we compute it once
+            if (fun.is_hessian_constant()) {
+                fun.hessian(x, hessian);
+            }
+
             while (!converged) {
                 // find direction step
                 step_.set(0.0);
 
+                //////////////////////////////////////////////////////////////////////////////////////////
                 // setting up adaptive stopping criterium for linear solver
                 if (this->has_forcing_strategy()) {
                     if (auto *iterative_solver =
@@ -92,7 +101,9 @@ namespace utopia {
                     }
                 }
 
-                if (this->has_preconditioned_solver() && fun.has_preconditioner()) {
+                //////////////////////////////////////////////////////////////////////////////////////////
+
+                if (precondition) {
                     fun.hessian(x, hessian, preconditioner);
                     grad_neg_ = -1.0 * grad_;
 
@@ -100,15 +111,23 @@ namespace utopia {
 
                     this->linear_solve(hessian, preconditioner, grad_neg_, step_);
                 } else {
-                    fun.hessian(x, hessian);
+                    // If hessian is not constant we re-compute it here
+                    if (!fun.is_hessian_constant()) {
+                        fun.hessian(x, hessian);
+                    }
+
                     grad_neg_ = -1.0 * grad_;
 
                     if (!this->check_values(it, fun, x, grad_, hessian)) return false;
 
-                    pre_solve(hessian, grad_neg_);
+                    if (!fun.is_hessian_constant()) {  // FIXME
+                        pre_solve(hessian, grad_neg_);
+                    }
 
                     this->linear_solve(hessian, grad_neg_, step_);
                 }
+
+                //////////////////////////////////////////////////////////////////////////////////////////
 
                 if (ls_strategy_) {
                     ls_strategy_->get_alpha(fun, grad_, x, step_, alpha_);
@@ -121,6 +140,8 @@ namespace utopia {
                         x += alpha_ * step_;
                     }
                 }
+
+                //////////////////////////////////////////////////////////////////////////////////////////
 
                 fun.project_onto_feasibile_region(x);
 

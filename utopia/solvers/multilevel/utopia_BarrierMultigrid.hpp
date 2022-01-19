@@ -152,7 +152,10 @@ namespace utopia {
                             "Coarse grid correction is projected in a non-smooth way. Value in [0, 1].")
                 .parse(in);
 
-            barrier_ = LogBarrierFactory<Matrix, Vector>::new_log_barrier(barrier_function_type);
+            if (!barrier_ || barrier_->function_type() != barrier_function_type) {
+                barrier_ = LogBarrierFactory<Matrix, Vector>::new_log_barrier(barrier_function_type);
+            }
+
             barrier_->read(in);
         }
 
@@ -287,6 +290,8 @@ namespace utopia {
         void init_memory(const Layout &) override { ensure_memory(); }
 
         int n_levels() const { return transfer_operators_.size() + 1; }
+
+        inline bool has_agglomerator() const { return static_cast<bool>(agglomerator_); }
 
         void set_agglomerator(const std::shared_ptr<MatrixAgglomerator<Matrix>> &agglomerator) {
             agglomerator_ = agglomerator;

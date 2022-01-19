@@ -54,14 +54,6 @@ namespace utopia {
                 }
             }
 
-            if (linear_solver_pass_) {
-                // One linear solver pass
-                Matrix H;
-                Vector g;
-                fun.hessian_and_gradient(x, H, g);
-                newton_->linear_solver()->solve(H, g, x);
-            }
-
             if (enable_line_search_) {
                 auto ls = std::make_shared<LineSearchBoxProjection<Vector>>(make_ref(this->get_box_constraints()));
                 newton_->set_line_search_strategy(ls);
@@ -76,9 +68,6 @@ namespace utopia {
             std::string function_type;
 
             Options()
-                .add_option("linear_solver_pass",
-                            linear_solver_pass_,
-                            "Performs a linear solve before integrating the barrier function.")
                 .add_option(
                     "enable_line_search", enable_line_search_, "Enable line search for staying in feasble region.")
                 .add_option(
@@ -112,7 +101,6 @@ namespace utopia {
     private:
         std::shared_ptr<Newton> newton_;
         std::shared_ptr<LogBarrierFunction> function_;
-        bool linear_solver_pass_{false};
         bool enable_line_search_{false};
     };
 

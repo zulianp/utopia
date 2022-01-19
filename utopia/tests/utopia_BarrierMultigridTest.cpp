@@ -11,6 +11,7 @@
 #include "utopia_ElementWisePseudoInverse.hpp"
 
 #include "utopia_BarrierMultigrid.hpp"
+#include "utopia_LogBarrierQPMultigrid.hpp"
 
 #ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
@@ -110,8 +111,8 @@ namespace utopia {
             Vector lower_bound(layout(x), -0.8), upper_bound(layout(x), 0.8);
             BoxConstraints<Vector> box(nullptr, make_ref(upper_bound));
 
-            // bool algebraic = Traits::Backend == PETSC;
-            bool algebraic = false;
+            bool algebraic = Traits::Backend == PETSC;
+            // bool algebraic = false;
 
             auto mg = create_barrier_mg(n_levels, algebraic, verbose);
             mg->set_box_constraints(box);
@@ -128,9 +129,57 @@ namespace utopia {
             }
         }
 
+        void test_qp_problem() {
+            //////////////////////////////////////////////////////////////////////////////////////////
+            // Problem set-up
+            const static bool verbose = true;
+            const static bool use_masks = false;
+            int n_levels = 7;
+            int n_coarse = 501;
+
+            using ProblemType = utopia::Poisson1D<Matrix, Vector>;
+            MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(n_levels, n_coarse, !use_masks);
+
+            Matrix A;
+            Vector x, b;
+
+            auto &&funs = ml_problem.get_functions();
+            auto &&fun = funs.back();
+            fun->get_eq_constrains_values(x);
+            fun->gradient(x, b);
+            fun->hessian(x, A);
+
+            // Negative gradient!
+            b = -b;
+
+            Vector lower_bound(layout(x), -0.8), upper_bound(layout(x), 0.8);
+            BoxConstraints<Vector> box(nullptr, make_ref(upper_bound));
+
+            //////////////////////////////////////////////////////////////////////////////////////////
+            // Solver set-up
+            auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+            auto preconditioner = std::make_shared<InvDiagPreconditioner<Matrix, Vector>>();
+            linear_solver->set_preconditioner(preconditioner);
+            linear_solver->max_it(10000);
+
+            LogBarrierQPMultigrid<Matrix, Vector> mg(linear_solver);
+
+            mg.set_box_constraints(box);
+            mg.verbose(verbose);
+
+            // Solves
+            mg.solve(A, b, x);
+
+            if (Traits::Backend == PETSC) {
+                rename("x", x);
+                write("X_qp.m", x);
+            }
+        }
+
         void run() {
             print_backend_info();
             UTOPIA_RUN_TEST(test_ml_problem);
+            UTOPIA_RUN_TEST(test_qp_problem);
         }
     };
 
