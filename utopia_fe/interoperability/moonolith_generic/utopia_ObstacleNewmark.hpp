@@ -306,6 +306,7 @@ namespace utopia {
             barrier_->set_box_constraints(box);
 
             barrier_->set_selection(std::make_shared<Vector_t>(obstacle_->is_contact()));
+            barrier_->set_scaling_matrix(obstacle_->mass_matrix());
 
             if (enable_line_search_) {
                 if (!line_search_) {
@@ -315,7 +316,7 @@ namespace utopia {
                     line_search_->set_offset_vector(make_ref(this->x_old()));
                 }
 
-                line_search_->set_dumping(0.6);
+                line_search_->set_dumping(0.98);
 
                 auto trafo = obstacle_->orthogonal_transformation();
                 assert(trafo);

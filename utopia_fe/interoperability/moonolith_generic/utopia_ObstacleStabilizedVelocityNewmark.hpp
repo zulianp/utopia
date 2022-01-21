@@ -84,19 +84,24 @@ namespace utopia {
                 barrier_ = std::make_shared<LogBarrier<Matrix_t, Vector_t>>();
             }
 
+            barrier_->reset();
+
             auto box =
                 std::make_shared<BoxConstraints<Vector_t>>(nullptr, std::make_shared<Vector_t>(obstacle_->gap()));
 
             barrier_->set_box_constraints(box);
 
             barrier_->set_selection(std::make_shared<Vector_t>(obstacle_->is_contact()));
+            barrier_->set_scaling_matrix(obstacle_->mass_matrix());
 
             if (enable_line_search_) {
                 if (!line_search_) {
                     line_search_ = std::make_shared<LineSearchBoxProjection<Vector_t>>(box, make_ref(this->x_old()));
                 } else {
                     line_search_->set_box_constraints(box);
-                    line_search_->set_offset_vector(make_ref(this->x_old()));
+                    if (!trivial_obstacle_) {
+                        line_search_->set_offset_vector(make_ref(this->x_old()));
+                    }
                 }
 
                 auto trafo = obstacle_->orthogonal_transformation();
@@ -120,16 +125,10 @@ namespace utopia {
                        const Vector_t &correction,
                        Scalar_t &alpha) override {
             if (line_search_) {
-                Vector_t c;
-                update_x(velocity, c);
-                c -= this->x_old();
+                Vector_t x;
+                update_x(velocity, x);
+                return line_search_->get_alpha(fun, g, x, correction, alpha);
 
-                if (trivial_obstacle_) {
-                    Vector_t zero(layout(c), 0.);
-                    return line_search_->get_alpha(fun, g, zero, correction, alpha);
-                } else {
-                    return line_search_->get_alpha(fun, g, this->x_old(), correction, alpha);
-                }
             } else {
                 alpha = 1.;
                 return false;
@@ -142,17 +141,9 @@ namespace utopia {
                        const Vector_t &correction,
                        Scalar_t &alpha) override {
             if (line_search_) {
-                Vector_t c;
-                update_x(velocity, c);
-                c -= this->x_old();
-
-                if (trivial_obstacle_) {
-                    Vector_t zero(layout(c), 0.);
-                    return line_search_->get_alpha(fun, g, zero, correction, alpha);
-                } else {
-                    return line_search_->get_alpha(fun, g, this->x_old(), correction, alpha);
-                }
-
+                Vector_t x;
+                update_x(velocity, x);
+                return line_search_->get_alpha(fun, g, x, correction, alpha);
             } else {
                 alpha = 1.;
                 return false;
@@ -358,34 +349,18 @@ namespace utopia {
         }
 
         void initial_guess_for_solver(Vector_t &velocity) override {
-            if (zero_initial_guess_) {
-                velocity.set(0.);
-                return;
-            }
-
-            Vector_t x = this->x_old();
-            update_x(velocity, x);
-            x -= this->x_old();
-
-            Scalar_t alpha = 0.99;
-            // if (line_search_) {
-            //     alpha = line_search_->compute(this->x_old(), x);
-            // } else {
-            // Create temporary for initial guess only
-            auto box =
-                std::make_shared<BoxConstraints<Vector_t>>(nullptr, std::make_shared<Vector_t>(obstacle_->gap()));
-
-            auto ls = std::make_shared<LineSearchBoxProjection<Vector_t>>(box, make_ref(this->x_old()));
-            alpha = ls->compute(this->x_old(), x);
+            // if (zero_initial_guess_) {
+            velocity.set(0.);
+            //     return;
             // }
+        }
 
-            x = this->x_old() + alpha * x;
-
-            if (alpha < 0.99) {
-                utopia::out() << "initial_guess_for_solver, alpha: " << alpha << "\n";
+        inline std::shared_ptr<LSStrategy<Vector_t>> line_search() override {
+            if (line_search_) {
+                return make_ref(*this);
+            } else {
+                return nullptr;
             }
-
-            time_derivative(x, velocity);
         }
 
     protected:
@@ -434,13 +409,6 @@ namespace utopia {
 
                 obstacle_->inverse_transform(barrier_g, barrier_temp);
 
-                // {
-                //     Scalar_t norm_B_g = norm2(barrier_temp);
-                //     std::stringstream ss;
-                //     ss << "norm_B_g: " << norm_B_g << "\n";
-                //     x.comm().root_print(ss.str());
-                // }
-
                 g += barrier_temp;
 
                 if (g.has_nan_or_inf()) {
@@ -472,13 +440,6 @@ namespace utopia {
 
                 // Remove contribution from boundary conditions
                 this->space()->apply_constraints(temp_H, 0);
-
-                // {
-                //     Scalar_t norm_B_H = norm2(temp_H);
-                //     std::stringstream ss;
-                //     ss << "norm_B_H: " << norm_B_H << "\n";
-                //     x.comm().root_print(ss.str());
-                // }
 
                 H += temp_H;
             }

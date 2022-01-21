@@ -73,7 +73,7 @@ namespace utopia {
             mg->read(params);
 
             // Use external linear smoothing (otherwise internally uses Jacobi)
-            mg->set_linear_smoother(std::make_shared<ILU<Matrix, Vector>>());
+            // mg->set_linear_smoother(std::make_shared<ILU<Matrix, Vector>>());
 
 #ifdef UTOPIA_WITH_PETSC
             if (algebraic) {
@@ -111,8 +111,8 @@ namespace utopia {
             Vector lower_bound(layout(x), -0.8), upper_bound(layout(x), 0.8);
             BoxConstraints<Vector> box(nullptr, make_ref(upper_bound));
 
-            bool algebraic = Traits::Backend == PETSC;
-            // bool algebraic = false;
+            // bool algebraic = Traits::Backend == PETSC;
+            bool algebraic = false;
 
             auto mg = create_barrier_mg(n_levels, algebraic, verbose);
             mg->set_box_constraints(box);

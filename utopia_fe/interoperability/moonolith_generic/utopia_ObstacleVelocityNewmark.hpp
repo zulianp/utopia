@@ -69,16 +69,9 @@ namespace utopia {
                        const Vector_t &correction,
                        Scalar_t &alpha) override {
             if (line_search_) {
-                Vector_t c;
-                update_x(velocity, c);
-                c -= this->x_old();
-
-                if (trivial_obstacle_) {
-                    Vector_t zero(layout(c), 0.);
-                    return line_search_->get_alpha(fun, g, zero, correction, alpha);
-                } else {
-                    return line_search_->get_alpha(fun, g, this->x_old(), correction, alpha);
-                }
+                Vector_t x;
+                update_x(velocity, x);
+                return line_search_->get_alpha(fun, g, x, correction, alpha);
             } else {
                 alpha = 1.;
                 return false;
@@ -91,17 +84,9 @@ namespace utopia {
                        const Vector_t &correction,
                        Scalar_t &alpha) override {
             if (line_search_) {
-                Vector_t c;
-                update_x(velocity, c);
-                c -= this->x_old();
-
-                if (trivial_obstacle_) {
-                    Vector_t zero(layout(c), 0.);
-                    return line_search_->get_alpha(fun, g, zero, correction, alpha);
-                } else {
-                    return line_search_->get_alpha(fun, g, this->x_old(), correction, alpha);
-                }
-
+                Vector_t x;
+                update_x(velocity, x);
+                return line_search_->get_alpha(fun, g, x, correction, alpha);
             } else {
                 alpha = 1.;
                 return false;
@@ -111,34 +96,35 @@ namespace utopia {
         void init_memory(const Layout_t & /*layout*/) override {}
 
         void initial_guess_for_solver(Vector_t &velocity) override {
-            if (zero_initial_guess_) {
-                velocity.set(0.);
-                return;
-            }
+            // if (zero_initial_guess_) {
+            velocity.set(0.);
+            //     return;
+            // }
 
-            Vector_t x = this->x_old();
-            update_x(velocity, x);
-            x -= this->x_old();
+            // Vector_t x = this->x_old();
+            // update_x(velocity, x);
+            // x -= this->x_old();
 
-            Scalar_t alpha = 1;
-            if (line_search_) {
-                alpha = line_search_->compute(this->x_old(), x);
-            } else {
-                // Create temporary for initial guess only
-                auto box =
-                    std::make_shared<BoxConstraints<Vector_t>>(nullptr, std::make_shared<Vector_t>(obstacle_->gap()));
+            // Scalar_t alpha = 1;
+            // if (line_search_) {
+            //     alpha = line_search_->compute(this->x_old(), x);
+            // } else {
+            //     // Create temporary for initial guess only
+            //     auto box =
+            //         std::make_shared<BoxConstraints<Vector_t>>(nullptr,
+            //         std::make_shared<Vector_t>(obstacle_->gap()));
 
-                auto ls = std::make_shared<LineSearchBoxProjection<Vector_t>>(box, make_ref(this->x_old()));
-                alpha = ls->compute(this->x_old(), x);
-            }
+            //     auto ls = std::make_shared<LineSearchBoxProjection<Vector_t>>(box, make_ref(this->x_old()));
+            //     alpha = ls->compute(this->x_old(), x);
+            // }
 
-            x = this->x_old() + alpha * x;
+            // x = this->x_old() + alpha * x;
 
-            if (alpha != 1.) {
-                utopia::out() << "initial_guess_for_solver, alpha: " << alpha << "\n";
-            }
+            // if (alpha != 1.) {
+            //     utopia::out() << "initial_guess_for_solver, alpha: " << alpha << "\n";
+            // }
 
-            time_derivative(x, velocity);
+            // time_derivative(x, velocity);
         }
 
         inline std::shared_ptr<LSStrategy<Vector_t>> line_search() override {
@@ -414,13 +400,17 @@ namespace utopia {
             barrier_->set_box_constraints(box);
 
             barrier_->set_selection(std::make_shared<Vector_t>(obstacle_->is_contact()));
+            barrier_->set_scaling_matrix(obstacle_->mass_matrix());
 
             if (enable_line_search_) {
                 if (!line_search_) {
                     line_search_ = std::make_shared<LineSearchBoxProjection<Vector_t>>(box, make_ref(this->x_old()));
                 } else {
                     line_search_->set_box_constraints(box);
-                    line_search_->set_offset_vector(make_ref(this->x_old()));
+
+                    if (!trivial_obstacle_) {
+                        line_search_->set_offset_vector(make_ref(this->x_old()));
+                    }
                 }
 
                 auto trafo = obstacle_->orthogonal_transformation();
