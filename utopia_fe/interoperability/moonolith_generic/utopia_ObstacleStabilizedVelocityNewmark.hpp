@@ -125,9 +125,12 @@ namespace utopia {
                        const Vector_t &correction,
                        Scalar_t &alpha) override {
             if (line_search_) {
-                Vector_t x;
+                Vector_t work;
+                Vector_t x = velocity + correction;
+                update_x(x, work);
                 update_x(velocity, x);
-                return line_search_->get_alpha(fun, g, x, correction, alpha);
+                work -= x;
+                return line_search_->get_alpha(fun, g, x, work, alpha);
 
             } else {
                 alpha = 1.;
@@ -141,9 +144,13 @@ namespace utopia {
                        const Vector_t &correction,
                        Scalar_t &alpha) override {
             if (line_search_) {
-                Vector_t x;
+                Vector_t work;
+                Vector_t x = velocity + correction;
+                update_x(x, work);
                 update_x(velocity, x);
-                return line_search_->get_alpha(fun, g, x, correction, alpha);
+                work -= x;
+                return line_search_->get_alpha(fun, g, x, work, alpha);
+
             } else {
                 alpha = 1.;
                 return false;

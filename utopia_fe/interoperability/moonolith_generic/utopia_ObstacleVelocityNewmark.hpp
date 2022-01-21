@@ -69,9 +69,13 @@ namespace utopia {
                        const Vector_t &correction,
                        Scalar_t &alpha) override {
             if (line_search_) {
-                Vector_t x;
+                Vector_t work;
+                Vector_t x = velocity + correction;
+                update_x(x, work);
                 update_x(velocity, x);
-                return line_search_->get_alpha(fun, g, x, correction, alpha);
+                work -= x;
+                return line_search_->get_alpha(fun, g, x, work, alpha);
+
             } else {
                 alpha = 1.;
                 return false;
@@ -84,14 +88,48 @@ namespace utopia {
                        const Vector_t &correction,
                        Scalar_t &alpha) override {
             if (line_search_) {
-                Vector_t x;
+                Vector_t work;
+                Vector_t x = velocity + correction;
+                update_x(x, work);
                 update_x(velocity, x);
-                return line_search_->get_alpha(fun, g, x, correction, alpha);
+                work -= x;
+                return line_search_->get_alpha(fun, g, x, work, alpha);
+
             } else {
                 alpha = 1.;
                 return false;
             }
         }
+
+        // bool get_alpha(FunctionBase<Vector_t> &fun,
+        //                const Vector_t &g,
+        //                const Vector_t &velocity,
+        //                const Vector_t &correction,
+        //                Scalar_t &alpha) override {
+        //     if (line_search_) {
+        //         Vector_t x;
+        //         update_x(velocity, x);
+        //         return line_search_->get_alpha(fun, g, x, correction, alpha);
+        //     } else {
+        //         alpha = 1.;
+        //         return false;
+        //     }
+        // }
+
+        // bool get_alpha(LeastSquaresFunctionBase<Vector_t> &fun,
+        //                const Vector_t &g,
+        //                const Vector_t &velocity,
+        //                const Vector_t &correction,
+        //                Scalar_t &alpha) override {
+        //     if (line_search_) {
+        //         Vector_t x;
+        //         update_x(velocity, x);
+        //         return line_search_->get_alpha(fun, g, x, correction, alpha);
+        //     } else {
+        //         alpha = 1.;
+        //         return false;
+        //     }
+        // }
 
         void init_memory(const Layout_t & /*layout*/) override {}
 
