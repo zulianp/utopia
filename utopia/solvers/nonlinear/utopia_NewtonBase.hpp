@@ -111,10 +111,24 @@ namespace utopia {
 
     protected:
         inline bool linear_solve(const Matrix &mat, const Vector &rhs, Vector &sol) {
-            linear_solver_->update(make_ref(mat));
+            linear_solver_update(mat);
+            return linear_solver_apply(rhs, sol);
+        }
+
+        inline bool linear_solve(const Matrix &mat, const Matrix &prec, const Vector &rhs, Vector &sol) {
+            linear_solver_update(mat, prec);
+            return linear_solver_apply(rhs, sol);
+        }
+
+        void linear_solver_update(const Matrix &mat) { linear_solver_->update(make_ref(mat)); }
+        void linear_solver_update(const Matrix &mat, const Matrix &prec) {
+            static_cast<PreconditionedSolver<Matrix, Vector> *>(linear_solver_.get())
+                ->update(make_ref(mat), make_ref(prec));
+        }
+
+        inline bool linear_solver_apply(const Vector &rhs, Vector &sol) {
             this->solution_status_.num_linear_solves++;
             auto flg = linear_solver_->apply(rhs, sol);
-
             if (auto *it_solver = dynamic_cast<IterativeSolver<Matrix, Vector> *>(linear_solver_.get())) {
                 auto sol_status_ls = it_solver->solution_status();
                 this->solution_status_.sum_linear_its += sol_status_ls.iterates;
@@ -125,19 +139,6 @@ namespace utopia {
 
         inline bool has_preconditioned_solver() {
             return dynamic_cast<PreconditionedSolver<Matrix, Vector> *>(linear_solver_.get());
-        }
-
-        inline bool linear_solve(const Matrix &mat, const Matrix &prec, const Vector &rhs, Vector &sol) {
-            static_cast<PreconditionedSolver<Matrix, Vector> *>(linear_solver_.get())
-                ->update(make_ref(mat), make_ref(prec));
-            this->solution_status_.num_linear_solves++;
-            auto flg = linear_solver_->apply(rhs, sol);
-            if (auto *it_solver = dynamic_cast<IterativeSolver<Matrix, Vector> *>(linear_solver_.get())) {
-                auto sol_status_ls = it_solver->solution_status();
-                this->solution_status_.sum_linear_its += sol_status_ls.iterates;
-            }
-
-            return flg;
         }
 
         std::shared_ptr<Solver> linear_solver_; /*!< Linear solver parameters. */

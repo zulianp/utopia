@@ -37,6 +37,7 @@ namespace utopia {
             in.get("trivial_obstacle", trivial_obstacle_);
             in.get("zero_initial_guess", zero_initial_guess_);
             in.get("enable_line_search", enable_line_search_);
+            in.get("dumping", dumping_);
 
             if (!obstacle_) {
                 std::string type;
@@ -114,6 +115,8 @@ namespace utopia {
                 }
 
                 line_search_->set_transform(trafo);
+
+                line_search_->set_dumping(dumping_);
             }
 
             return ok;
@@ -390,6 +393,8 @@ namespace utopia {
 
         std::shared_ptr<LineSearchBoxProjection<Vector_t>> line_search_;
         bool enable_line_search_{false};
+
+        Scalar_t dumping_{0.98};
 
         void update_x(const Vector_t &velocity, Vector_t &x) const {
             x = predictor_;

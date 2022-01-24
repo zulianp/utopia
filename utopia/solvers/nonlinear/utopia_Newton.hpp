@@ -82,6 +82,7 @@ namespace utopia {
             // If hessian is constant we compute it once
             if (fun.is_hessian_constant()) {
                 fun.hessian(x, hessian);
+                this->linear_solver_update(hessian);
             }
 
             while (!converged) {
@@ -122,9 +123,10 @@ namespace utopia {
 
                     if (!fun.is_hessian_constant()) {  // FIXME
                         pre_solve(hessian, grad_neg_);
+                        this->linear_solver_update(hessian);
                     }
 
-                    this->linear_solve(hessian, grad_neg_, step_);
+                    this->linear_solver_apply(grad_neg_, step_);
                 }
 
                 //////////////////////////////////////////////////////////////////////////////////////////
