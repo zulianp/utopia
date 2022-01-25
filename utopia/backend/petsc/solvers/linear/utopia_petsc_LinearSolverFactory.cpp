@@ -11,6 +11,7 @@
 #include "utopia_petsc_RowView.hpp"
 
 #include "utopia_FactoryMethod.hpp"
+#include "utopia_petsc_BDDLinearSolver.hpp"
 #include "utopia_petsc_Factorization.hpp"
 #include "utopia_petsc_Factorizations.hpp"
 #include "utopia_petsc_GMRES.hpp"
@@ -21,17 +22,24 @@
 #include "utopia_make_unique.hpp"
 #include "utopia_petsc.hpp"
 
+#include "utopia_petsc_KSPSolverMF.hpp"
+
 #include <map>
 #include <memory>
 #include <string>
 
 namespace utopia {
 
+    void MatrixFreeLinearSolverFactory<PetscVector, PETSC>::register_solvers() {
+        Super::register_solvers();
+        this->register_solver<KSP_MF<PetscMatrix, PetscVector, PETSC>>(Solver::ksp());
+    }
+
     std::unique_ptr<LinearSolver<PetscMatrix, PetscVector>>
     LinearSolverFactory<PetscMatrix, PetscVector, PETSC>::new_linear_solver(const std::string &tag) {
         auto it = instance().solvers_.find(tag);
         if (it == instance().solvers_.end()) {
-            return utopia::make_unique<ConjugateGradient<PetscMatrix, PetscVector>>();
+            return default_linear_solver();
         } else {
             return it->second->make();
         }
@@ -60,6 +68,7 @@ namespace utopia {
         solvers_[Solver::direct()] = utopia::make_unique<LSFactoryMethod<Factorization<PetscMatrix, PetscVector>>>();
         solvers_["gmres"] = utopia::make_unique<LSFactoryMethod<GMRES<PetscMatrix, PetscVector>>>();
         solvers_["amg"] = utopia::make_unique<LSFactoryMethod<AlgebraicMultigrid<PetscMatrix, PetscVector>>>();
+        solvers_["bdd"] = utopia::make_unique<LSFactoryMethod<BDDLinearSolver<PetscMatrix, PetscVector>>>();
     }
 
 }  // namespace utopia

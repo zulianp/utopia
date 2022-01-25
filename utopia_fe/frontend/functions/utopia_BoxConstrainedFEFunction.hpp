@@ -19,6 +19,8 @@ namespace utopia {
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+        using Communicator_t = typename Traits<FunctionSpace>::Communicator;
+        using SimulationTime = utopia::SimulationTime<Scalar_t>;
         using Environment_t = utopia::Environment<FunctionSpace>;
 
         ~BoxConstrainedFEFunction() override = default;
@@ -29,6 +31,7 @@ namespace utopia {
         virtual void transform(const Vector_t &x, Vector_t &x_constrained) = 0;
         virtual void inverse_transform(const Vector_t &x_constrained, Vector_t &x) = 0;
         virtual void transform(const Matrix_t &H, Matrix_t &H_constrained) = 0;
+        virtual std::shared_ptr<Vector_t> selection() = 0;
 
         bool value(const Vector_t & /*point*/, Scalar_t & /*value*/) const override { return false; }
 
@@ -76,6 +79,19 @@ namespace utopia {
             assert(unconstrained_);
         }
 
+        void set_time(const std::shared_ptr<SimulationTime> &time) override {
+            assert(unconstrained_);
+            if (unconstrained_) {
+                unconstrained_->set_time(time);
+            }
+        }
+
+        inline Communicator_t &comm() override { return unconstrained_->comm(); }
+
+        inline const Communicator_t &comm() const override { return unconstrained_->comm(); }
+
+        const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &unconstrained() const { return unconstrained_; };
+
     private:
         std::shared_ptr<FEFunctionInterface<FunctionSpace>> unconstrained_;
     };
@@ -94,17 +110,26 @@ namespace utopia {
         void read(Input &in) override {
             Super::read(in);
 
-            if (!qp_solver_) {
-                auto omni = std::make_shared<OmniQPSolver_t>();
-                qp_solver_ = omni;
-            }
+            ensure_qp_solver();
 
             in.get("qp_solver", *qp_solver_);
             in.get("update_factor", update_factor_);
             in.get("material_iter_tol", material_iter_tol_);
+            in.get("max_constraints_iterations", max_constraints_iterations_);
+            in.get("rescale", rescale_);
+            in.get("inverse_diagonal_scaling", inverse_diagonal_scaling_);
+        }
+
+        void ensure_qp_solver() {
+            if (!qp_solver_) {
+                auto omni = std::make_shared<OmniQPSolver_t>();
+                qp_solver_ = omni;
+            }
         }
 
         bool solve(Function_t &fun, Vector_t &x) {
+            ensure_qp_solver();
+
             BoxConstraints<Vector_t> box;
 
             int max_material_iterations = this->max_it();
@@ -137,6 +162,12 @@ namespace utopia {
                 for (int material_iter = 0; material_iter < max_material_iterations; ++material_iter, ++total_iter) {
                     fun.hessian_and_gradient(x, H, g);
 
+                    if (rescale_ != 1.) {
+                        // x.comm().root_print("Rescaling system with " + std::to_string(rescale_) + "\n");
+                        H *= rescale_;
+                        g *= rescale_;
+                    }
+
                     // Use negative gradient instead
                     g *= -1;
 
@@ -150,6 +181,11 @@ namespace utopia {
 
                     qp_solver_->set_box_constraints(box);
 
+                    auto selection = fun.selection();
+                    if (selection) {
+                        qp_solver_->set_selection(selection);
+                    }
+
                     bool qp_solver_converged = false;
 
                     if (fun.has_transformation()) {
@@ -160,6 +196,13 @@ namespace utopia {
                             increment_c.zeros(layout(g_c));
                         } else {
                             increment_c.set(0.);
+                        }
+
+                        if (inverse_diagonal_scaling_) {
+                            Vector_t d = diag(H_c);
+                            d = 1. / d;
+                            H_c.diag_scale_left(d);
+                            g_c = e_mul(g_c, d);
                         }
 
                         qp_solver_converged = qp_solver_->solve(H_c, g_c, increment_c);
@@ -176,6 +219,14 @@ namespace utopia {
 
                     } else {
                         increment.set(0.0);
+
+                        if (inverse_diagonal_scaling_) {
+                            Vector_t d = diag(H);
+                            d = 1. / d;
+                            H.diag_scale_left(d);
+                            g = e_mul(g, d);
+                        }
+
                         qp_solver_converged = qp_solver_->solve(H, g, increment);
 
                         if (box.upper_bound()) {
@@ -242,6 +293,8 @@ namespace utopia {
         int max_constraints_iterations_{10};
         Scalar_t update_factor_{1};
         Scalar_t material_iter_tol_{1e-6};
+        Scalar_t rescale_{1};
+        bool inverse_diagonal_scaling_{false};
 
         // FIXME move somewhere else
         static void register_fe_solvers() {

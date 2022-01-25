@@ -202,7 +202,8 @@ namespace utopia {
     inline void param_append(InputParameters &params,
                              std::pair<std::string, First> &&first,
                              std::pair<std::string, Args> &&... list) {
-        params.set(std::forward<std::string>(first.first), std::forward<First>(first.second));
+        // param_set(params, std::forward<std::string>(first.first), std::forward<First>(first.second));
+        param_set(params, std::forward<std::pair<std::string, First>>(first));
         param_append(params, std::forward<std::pair<std::string, Args>>(list)...);
     }
 

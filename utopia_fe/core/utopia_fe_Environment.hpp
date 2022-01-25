@@ -4,6 +4,8 @@
 #include "utopia_IOStream.hpp"
 #include "utopia_Instance.hpp"
 
+#include "utopia_FECoreForwardDeclarations.hpp"
+
 #include "utopia_Field.hpp"
 
 #include <cassert>
@@ -20,6 +22,8 @@ namespace utopia {
         // using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         // using Size_t = typename Traits<FunctionSpace>::SizeType;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+
+        virtual ~Environment() {}
 
         bool add_field(const std::shared_ptr<Field<FunctionSpace>> &field) {
             if (field->empty()) {
@@ -119,6 +123,9 @@ namespace utopia {
         std::map<std::string, Fields> space_to_fields_;
         std::map<std::string, std::shared_ptr<FunctionSpace>> spaces_;
     };
+
+    template <class FunctionSpace>
+    class Environment<NCFunctionSpace<FunctionSpace>> : public Environment<FunctionSpace> {};
 }  // namespace utopia
 
 #endif

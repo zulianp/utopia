@@ -40,6 +40,8 @@ namespace utopia {
         bool assemble(Matrix &hessian) override;
         bool assemble(Vector &gradient) override;
 
+        bool apply(const Vector &x, Vector &hessian_times_x) override;
+
         void read(Input &in) override;
 
         void set_environment(const std::shared_ptr<Environment> &env) override;
@@ -49,6 +51,8 @@ namespace utopia {
         std::shared_ptr<FunctionSpace> space() const override;
 
         bool is_linear() const override;
+
+        void set_time(const std::shared_ptr<SimulationTime> &time) override;
 
     private:
         class Impl;

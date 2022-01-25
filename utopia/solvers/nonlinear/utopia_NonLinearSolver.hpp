@@ -32,9 +32,11 @@ namespace utopia {
             in.get("rtol", rtol_);
             in.get("stol", stol_);
 
-            in.get("max-it", max_it_);
             in.get("verbose", verbose_);
             in.get("time-statistics", time_statistics_);
+
+            in.get("max_it", max_it_);
+            in.get_deprecated("max-it", "max_it", max_it_);
         }
 
         void print_usage(std::ostream &os) const override {

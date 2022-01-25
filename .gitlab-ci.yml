@@ -1,0 +1,30 @@
+include:
+  - remote: 'https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.cscs.yml'
+
+stages:
+  - build # build stage is running on the Kubernetes cluster
+  - test # test stage is running on PizDaint (on 1 node)
+
+variables:
+  PERSIST_IMAGE_NAME: utopia:latest
+
+build-utopia:
+  tags:
+    - docker_jfrog
+  stage: build
+  script:
+    # we are using a Dockerfile that contains the real build instructions, this script will be ignored by the docker_jfrog runner if DOCKERFILE is set
+    - "true"
+  variables:
+    DOCKERFILE: utopia/docker/cscs_ci/Dockerfile
+
+run-utopia-test:
+  extends: .daint
+  image: art.cscs.ch/contbuild/testing/anfink/${PERSIST_IMAGE_NAME}
+  variables:
+    PULL_IMAGE: 'YES'
+    CSCS_REGISTRY_LOGIN: 'YES'
+  script:
+    # the tests are not installed, so we need to run them from the build directory
+    - cd /utopia.src/build
+    - ./utopia_bench -verbose

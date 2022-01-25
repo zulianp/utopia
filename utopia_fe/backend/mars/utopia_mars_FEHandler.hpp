@@ -17,7 +17,9 @@ namespace utopia {
         class FEHandler : public IFEHandler {
         public:
             static constexpr ::mars::Integer Degree = Degree_;
-            using DofHandler = ::mars::DofHandler<DMesh, Degree>;
+            static constexpr int Dim = DMesh::Dim;
+            using DofHandler = ::mars::DofHandler<DMesh, Degree, 0>;
+            // using DofHandler = ::mars::DofHandler<DMesh, Degree, 1>;
             using FEDofMap = ::mars::FEDofMap<DofHandler>;
             using SPattern =
                 ::mars::SparsityPattern<Scalar, LocalSizeType, SizeType, DofHandler, MarsCrsMatrix::size_type>;
@@ -33,34 +35,68 @@ namespace utopia {
                 // ::mars::print_fe_dof_map(*dof_handler_impl, *fe_dof_map_impl);
             }
 
-            void matrix_apply_constraints(Matrix &m, const Scalar diag_value, const std::string side) override {
+            void matrix_apply_constraints(Matrix &m,
+                                          const Scalar diag_value,
+                                          const std::string side,
+                                          const int component) override {
                 // BC set constrained rows to zero, except diagonal where you set diag_value
                 auto sp = *sparsity_pattern;
                 auto mat = m.raw_type()->getLocalMatrix();
+
                 dof_handler->boundary_dof_iterate(
                     MARS_LAMBDA(const ::mars::Integer local_dof) {
                         sp.matrix_apply_constraints(local_dof, mat, diag_value);
                     },
-                    side);
+                    side,
+                    component);
             }
 
-            void vector_apply_constraints(Vector &v, const Scalar value, const std::string side) override {
-                auto sp = *sparsity_pattern;
+            void vector_apply_constraints(Vector &v,
+                                          const Scalar value,
+                                          const std::string side,
+                                          const int component) override {
+                // auto sp = *sparsity_pattern;
                 auto vec = v.raw_type()->getLocalView<::mars::KokkosSpace>();
+                auto sp_dof_handler = get_dof_handler();
                 // BC set values to constraint value (i.e., boundary value)
                 dof_handler->boundary_dof_iterate(
                     MARS_LAMBDA(const ::mars::Integer local_dof) {
-                        sp.vector_apply_constraints(local_dof, vec, value);
+                        sp_dof_handler.vector_apply_constraints(local_dof, vec, value);
                     },
-                    side);
+                    side,
+                    component);
             }
 
-            void apply_zero_constraints(Vector &v, const std::string side) override {
-                auto sp = *sparsity_pattern;
+            void apply_zero_constraints(Vector &v, const std::string side, const int component) override {
                 auto vec = v.raw_type()->getLocalView<::mars::KokkosSpace>();
+                auto dof_handler = get_dof_handler();
                 // BC set values to constraint value to zero
+                dof_handler.boundary_dof_iterate(
+                    MARS_LAMBDA(const ::mars::Integer local_dof) {
+                        dof_handler.apply_zero_constraints(local_dof, vec);
+                    },
+                    side,
+                    component);
+            }
+
+            void copy_at_constrained_nodes(const Vector &in,
+                                           Vector &out,
+                                           const std::string side,
+                                           const int component) override {
+                // auto sp = *sparsity_pattern;
+                auto in_view = in.raw_type()->getLocalView<::mars::KokkosSpace>();
+                auto out_view = out.raw_type()->getLocalView<::mars::KokkosSpace>();
+                auto sp_dof_handler = get_dof_handler();
+
+                // BC set values to constraint value (i.e., boundary value)
                 dof_handler->boundary_dof_iterate(
-                    MARS_LAMBDA(const ::mars::Integer local_dof) { sp.apply_zero_constraints(local_dof, vec); }, side);
+                    MARS_LAMBDA(const ::mars::Integer local_dof) {
+                        // sp.vector_apply_constraints(local_dof, vec, value);
+                        auto idx = sp_dof_handler.local_to_owned_index(local_dof);
+                        out_view(idx, 0) = in_view(idx, 0);
+                    },
+                    side,
+                    component);
             }
 
             /* void system_apply_constraints(Matrix &m, Vector &v) override {
@@ -73,17 +109,30 @@ namespace utopia {
 
             auto factory() -> Factory & override { return ConcreteFactory<DMesh>::instance(); };
 
-            void init(DMesh &mesh_impl) {
+            void init(DMesh &mesh_impl, int block_size) {
                 dof_handler = std::make_shared<DofHandler>(&mesh_impl);  //, mesh->raw_type_context());
+                dof_handler->set_block(block_size);
                 dof_handler->enumerate_dofs();
 
                 fe_dof_map = std::make_shared<FEDofMap>(build_fe_dof_map(*dof_handler));
 
-                sparsity_pattern = std::make_shared<SPattern>(*dof_handler);
-                sparsity_pattern->build_pattern(*fe_dof_map);
+                // ensure_sparsity_pattern();
             }
 
-            inline SPattern &get_sparsity_pattern() { return *sparsity_pattern; }
+            void ensure_sparsity_pattern() override {
+                if (!sparsity_pattern) {
+                    sparsity_pattern = std::make_shared<SPattern>(*dof_handler);
+                    sparsity_pattern->build_pattern(*fe_dof_map);
+                }
+            }
+
+            inline SPattern &get_sparsity_pattern() {
+                if (!sparsity_pattern) {
+                    Utopia::Abort("sparsity_pattern needs to be initialized with \"ensure_sparsity_pattern\"");
+                }
+
+                return *sparsity_pattern;
+            }
             inline DofHandler &get_dof_handler() { return *dof_handler; }
             inline FEDofMap &get_fe_dof_map() { return *fe_dof_map; }
 

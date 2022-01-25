@@ -1,7 +1,7 @@
 #ifndef UTOPIA_STK_INTREPID2_TRANSPORT_HPP
 #define UTOPIA_STK_INTREPID2_TRANSPORT_HPP
 
-#include "utopia_intrepid2_Transport.hpp"
+#include "utopia_kokkos_Transport.hpp"
 #include "utopia_stk_intrepid2_Assembler.hpp"
 
 #include <memory>

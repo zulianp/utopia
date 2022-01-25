@@ -17,7 +17,11 @@ if(UTOPIA_ENABLE_STK AND UTOPIA_ENABLE_INTREPID2)
 endif()
 
 if(UTOPIA_ENABLE_MARS)
-    list(APPEND APPS_MODULES mars utopia_fe)
+    list(APPEND APPS_MODULES mars)
+endif()
+
+if(UTOPIA_ENABLE_PETSC)
+    list(APPEND APPS_MODULES petsc)
 endif()
 
 

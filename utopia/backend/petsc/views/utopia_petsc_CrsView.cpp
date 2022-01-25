@@ -26,7 +26,6 @@ namespace utopia {
         PetscBool done{PETSC_FALSE};
         PetscErrorCode err{0};
 
-    private:
         void destroy() {
             if (raw_mat) {
                 if (PetscMatrix::is_block(raw_mat)) {
@@ -43,6 +42,7 @@ namespace utopia {
                 assert(err == 0);
                 UTOPIA_UNUSED(err);
                 raw_mat = nullptr;
+                array = nullptr;
             }
         }
 
@@ -75,6 +75,8 @@ namespace utopia {
             }
         }
     };
+
+    void PetscCrsView::clear() { impl_->destroy(); }
 
     PetscCrsView::PetscCrsView(Mat raw_mat) : impl_(std::make_shared<Impl>(raw_mat)) {}
     PetscCrsView::PetscCrsView() : impl_(std::make_shared<Impl>()) {}

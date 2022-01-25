@@ -26,6 +26,8 @@ namespace utopia {
             return idx_[local_idx];
         }
 
+        inline SizeType global_node_id(const SizeType local_idx) const { return idx_[local_idx]; }
+
         inline SizeType operator()(const SizeType local_idx, const int component) const {
             assert(component < n_var_);
             assert(local_idx < static_cast<SizeType>(idx_.size()));
@@ -55,7 +57,8 @@ namespace utopia {
             using Vector = Traits<FunctionSpace>::Vector;
             using GlobalIndex = utopia::GlobalIndex<FunctionSpace>;
 
-            void init(Mesh &mesh);
+            void set_valid_local_id_mode(const bool val);
+            void init(Mesh &mesh, const bool verbose = false);
 
             DofMap();
             ~DofMap();
@@ -89,6 +92,9 @@ namespace utopia {
             void exchange_shared_dofs(const Communicator &comm,
                                       ::stk::mesh::BulkData &bulk_data,
                                       bool add_to_nnz_pattern = true);
+
+            void describe_mesh_connectivity(Mesh &mesh);
+            void describe_debug(Mesh &mesh, std::ostream &os) const;
         };
     }  // namespace stk
 }  // namespace utopia

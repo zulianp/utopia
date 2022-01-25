@@ -7,6 +7,9 @@
 
 #include "utopia_AnalyticObstacle_impl.hpp"
 #include "utopia_ImplicitObstacle_impl.hpp"
+#include "utopia_ObstacleStabilizedNewmark.hpp"
+
+#include "utopia_ObstacleFactory.hpp"
 
 #include "utopia_IsNotSupported.hpp"
 
@@ -30,6 +33,12 @@ namespace utopia {
         using AnalyticObstacle_t = utopia::AnalyticObstacle<FunctionSpace>;
 
         bool has_nonlinear_constraints() const override { return !linear_obstacle_; }
+
+        inline std::shared_ptr<Vector_t> selection() override {
+            auto s = std::make_shared<Vector_t>(obstacle_->is_contact());
+            // this->space()->apply_zero_constraints(*s);
+            return s;
+        }
 
         bool update_constraints(const Vector_t &x) {
             utopia::out() << "update_constraints\n";
@@ -105,53 +114,13 @@ namespace utopia {
 
             if (!obstacle_) {
                 std::string type;
-                in.get("obstacle", [&type](Input &node) { node.get("type", type); });
+                in.get("obstacle",
+                       [&](Input &node) { obstacle_ = ObstacleFactory<FunctionSpace>::new_obstacle(node); });
+            }
 
-                if (type == "implicit") {
-#ifdef UTOPIA_WITH_LIBMESH
-                    // FIXME Once we go to c++17
-                    // if constexpr (IsNotSupported<ImplicitObstacle_t>::value) {
-                    Utopia::Abort("ImplicitObstacle not supported for this backend!");
-#else
-                    // } else {
-                    obstacle_ = std::make_shared<ImplicitObstacle_t>();
-                    in.get("obstacle", *obstacle_);
-#endif
-                    // }
-                } else if (type == "analytic") {
-                    // FIXME Once we go to c++17
-                    // if constexpr (IsNotSupported<AnalyticObstacle_t>::value) {
-#ifdef UTOPIA_WITH_LIBMESH
-                    Utopia::Abort("AnalyticObstacle not supported for this backend!");
-                    // } else {
-#else
-                    obstacle_ = std::make_shared<AnalyticObstacle_t>();
-                    in.get("obstacle", *obstacle_);
-                    // }
-#endif
-
-                } else {
-                    auto obs = std::make_shared<Obstacle_t>();
-                    typename Obstacle_t::Params params;
-                    in.require("obstacle", params);
-                    // Must be created for every process independently and the same
-                    Mesh_t obstacle_mesh(Communicator_t::self());
-                    in.require("obstacle", obstacle_mesh);
-
-                    obs->set_params(params);
-                    obs->init_obstacle(obstacle_mesh);
-
-                    bool export_obstacle = false;
-                    in.get("export_obstacle", export_obstacle);
-
-                    if (export_obstacle) {
-                        if (this->space()->comm().rank() == 0) {
-                            obstacle_mesh.write("obstacle.e");
-                        }
-                    }
-
-                    obstacle_ = obs;
-                }
+            auto ptr = std::dynamic_pointer_cast<ObstacleDependentFunction<FunctionSpace>>(this->unconstrained());
+            if (ptr) {
+                ptr->set_obstacle(obstacle_);
             }
         }
 

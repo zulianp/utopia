@@ -9,7 +9,8 @@
 namespace utopia {
 
     void PetscVector::shift(const Scalar &x) {
-        transform_values([x](const Scalar &val) -> Scalar { return x + val; });
+        // transform_values([x](const Scalar &val) -> Scalar { return x + val; });
+        check_error(VecShift(implementation(), x));
     }
 
     void PetscVector::transform(const Sqrt &op) { op_transform(op); }
@@ -564,6 +565,7 @@ namespace utopia {
             // assert(same_type(other) && "TYPE " );
             // assert(this->has_ghosts() && "GHOST" );
 
+            // maybe we should check this only in parallel
             assert((same_type(other) || this->has_ghosts()) &&
                    "Inconsistent vector types. Handle types properly before copying");
             assert(local_size() == other.local_size() &&
@@ -599,6 +601,13 @@ namespace utopia {
 
         check_error(VecAXPY(implementation(), alpha, x.implementation()));
     }
+
+    // void PetscVector::axpy(const Scalar &alpha, const Scalar &x) {
+    //     assert(is_consistent());
+    //     auto val = alpha * x;
+
+    //     check_error(VecShift(implementation(), val));
+    // }
 
     PetscVector::SizeType PetscVector::amax() const {
         SizeType idx = 0;

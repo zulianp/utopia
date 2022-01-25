@@ -5,6 +5,8 @@
 #include "utopia_InputParameters.hpp"
 #include "utopia_ui.hpp"
 
+#include "utopia_LS_Strategy.hpp"
+
 #include "utopia_Field.hpp"
 #include "utopia_fe_Core.hpp"
 #include "utopia_fe_Environment.hpp"
@@ -20,15 +22,41 @@ namespace utopia {
 
     template <class FunctionSpace>
     class FEFunctionInterface
-        : public Function<typename Traits<FunctionSpace>::Matrix, typename Traits<FunctionSpace>::Vector> {
+        : public Function<typename Traits<FunctionSpace>::Matrix, typename Traits<FunctionSpace>::Vector>,
+          public Operator<typename Traits<FunctionSpace>::Vector> {
     public:
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+        using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using Environment_t = utopia::Environment<FunctionSpace>;
         using OmniAssembler_t = utopia::OmniAssembler<FunctionSpace>;
+        using SimulationTime = utopia::SimulationTime<Scalar_t>;
 
         virtual ~FEFunctionInterface() = default;
+
+        bool apply(const Vector_t & /*x*/, Vector_t & /*hessian_times_x*/) const override {
+            assert(false);
+            Utopia::Abort("Implement me!");
+            return false;
+        }
+
+        Size size() const override {
+            assert(false);
+            Utopia::Abort("Implement me!");
+            return {};
+        }
+
+        Size local_size() const override {
+            assert(false);
+            Utopia::Abort("Implement me!");
+            return {};
+        }
+
+        Communicator_t &comm() override = 0;
+        const Communicator_t &comm() const override = 0;
+
+        virtual bool is_operator() const { return false; }
 
         virtual void create_solution_vector(Vector_t &x) = 0;
         virtual void apply_constraints(Vector_t &x) const = 0;
@@ -51,15 +79,26 @@ namespace utopia {
         virtual void must_apply_constraints_to_assembled(const bool) {}
         virtual bool report_solution(const Vector_t &) { return true; }
 
+        virtual void initial_guess_for_solver(Vector_t &) {}
+
         virtual bool update_IVP(const Vector_t &) { return false; }
         virtual bool setup_IVP(Vector_t &) { return false; }
         virtual bool is_IVP_solved() { return true; }
+
+        virtual bool set_initial_condition(const Vector_t &) {
+            assert(false);
+            return false;
+        }
 
         virtual bool time_derivative(const Vector_t &x, Vector_t &dfdt) const {
             UTOPIA_UNUSED(x);
             UTOPIA_UNUSED(dfdt);
             return false;
         }
+
+        virtual void set_time(const std::shared_ptr<SimulationTime> &time) = 0;
+
+        virtual std::shared_ptr<LSStrategy<Vector_t>> line_search() { return nullptr; }
     };
 
     template <class FunctionSpace>
@@ -69,8 +108,10 @@ namespace utopia {
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+        using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using OmniAssembler_t = utopia::OmniAssembler<FunctionSpace>;
         using Environment_t = utopia::Environment<FunctionSpace>;
+        using SimulationTime = utopia::SimulationTime<Scalar_t>;
 
         FEModelFunction(const std::shared_ptr<FunctionSpace> &space)
             : space_(space),
@@ -82,10 +123,27 @@ namespace utopia {
 
         bool is_linear() const override { return assembler()->is_linear(); }
 
+        inline Communicator_t &comm() override { return space_->mesh().comm(); }
+        inline const Communicator_t &comm() const override { return space_->mesh().comm(); }
+
+        bool is_operator() const override { return assembler()->is_operator(); }
+
+        Size size() const override { return {space_->n_dofs(), space_->n_dofs()}; }
+
+        Size local_size() const override { return {space_->n_local_dofs(), space_->n_local_dofs()}; }
+
+        void set_time(const std::shared_ptr<SimulationTime> &time) override {
+            assert(assembler_);
+            if (assembler_) {
+                assembler_->set_time(time);
+            }
+        }
+
         void read(Input &in) override {
             Super::read(in);
             in.get("assembly", *assembler_);
             in.get("verbose", verbose_);
+            in.get("export_tensors", export_tensors_);
 
             bool user_defined_mass = false;
             in.get("mass", [this, &user_defined_mass](Input &node) {
@@ -124,6 +182,23 @@ namespace utopia {
         inline const std::shared_ptr<Matrix_t> &mass_matrix() const override { return mass_matrix_; }
 
         bool assemble_mass_matrix() override { return assemble_mass_matrix(*mass_matrix()); }
+
+        virtual bool apply(const Vector_t &x, Vector_t &hessian_times_x) const override {
+            if (empty(hessian_times_x)) {
+                this->space()->create_vector(hessian_times_x);
+                rename("hessian_times_x", hessian_times_x);
+            } else {
+                hessian_times_x *= 0.0;
+            }
+
+            bool ok = this->assembler()->apply(x, hessian_times_x);
+
+            if (!ok) return false;
+
+            this->space()->copy_at_constrained_nodes(x, hessian_times_x);
+
+            return ok;
+        }
 
         bool assemble_mass_matrix(Matrix_t &mass_matrix) override {
             this->space()->create_matrix(mass_matrix);
@@ -178,9 +253,25 @@ namespace utopia {
                 return false;
             }
 
+            if (export_tensors_) {
+                rename("Hu", H);
+                write("load_Hu.m", H);
+
+                rename("gu", g);
+                write("load_gu.m", g);
+            }
+
             if (must_apply_constraints_) {
                 this->space()->apply_constraints(H);
                 this->space()->apply_zero_constraints(g);
+            }
+
+            if (export_tensors_) {
+                rename("H", H);
+                write("load_H.m", H);
+
+                rename("g", g);
+                write("load_g.m", g);
             }
 
             return true;
@@ -208,7 +299,7 @@ namespace utopia {
         bool is_time_dependent() const override { return false; }
 
         inline bool verbose() const { return verbose_; }
-        inline void verbose(const bool val) const { verbose_ = val; }
+        inline void verbose(const bool val) { verbose_ = val; }
 
         bool report_solution(const Vector_t &x) override { return space_->write(output_path_, x); }
 
@@ -241,6 +332,7 @@ namespace utopia {
 
         bool must_apply_constraints_{true};
         bool verbose_{false};
+        bool export_tensors_{false};
 
         utopia::Path output_path_{"output.e"};
     };
@@ -252,10 +344,12 @@ namespace utopia {
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+        using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using OmniAssembler_t = utopia::OmniAssembler<FunctionSpace>;
         using Environment_t = utopia::Environment<FunctionSpace>;
         using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
         using FEFunctionInterface_t = utopia::FEFunctionInterface<FunctionSpace>;
+        using SimulationTime = utopia::SimulationTime<Scalar_t>;
 
         using IO_t = utopia::IO<FunctionSpace>;
 
@@ -274,6 +368,7 @@ namespace utopia {
 
         bool update_IVP(const Vector_t &) override {
             time()->update();
+            space()->update(*time());
             return true;
         }
 
@@ -378,8 +473,10 @@ namespace utopia {
             fe_function_->read(in);
 
             if (!time_) {
-                time_ = std::make_shared<SimulationTime<Scalar_t>>();
+                time_ = std::make_shared<SimulationTime>();
             }
+
+            fe_function_->set_time(time_);
 
             in.get("time", *time_);
             in.get("export_tensors", export_tensors_);
@@ -394,11 +491,11 @@ namespace utopia {
         }
 
         inline Scalar_t delta_time() const { return time()->delta(); }
-        inline std::shared_ptr<SimulationTime<Scalar_t>> &time() {
+        inline std::shared_ptr<SimulationTime> &time() {
             assert(time_);
             return time_;
         }
-        inline const std::shared_ptr<SimulationTime<Scalar_t>> &time() const {
+        inline const std::shared_ptr<SimulationTime> &time() const {
             assert(time_);
             return time_;
         }
@@ -411,6 +508,15 @@ namespace utopia {
         inline const std::shared_ptr<FEFunctionInterface_t> function() const { return fe_function_; }
 
         bool is_linear() const override { return function()->is_linear(); }
+
+        bool is_operator() const override { return function()->is_operator(); }
+
+        Size size() const override { return function()->size(); }
+
+        Size local_size() const override { return function()->local_size(); }
+
+        inline Communicator_t &comm() override { return function()->comm(); }
+        inline const Communicator_t &comm() const override { return function()->comm(); }
 
         inline void must_apply_constraints_to_assembled(const bool val) override { must_apply_constraints_ = val; }
 
@@ -425,14 +531,20 @@ namespace utopia {
 
         virtual const Vector_t &solution() const = 0;
 
+        void set_time(const std::shared_ptr<SimulationTime> &time) override {
+            time_ = time;
+            fe_function_->set_time(time_);
+        }
+
     protected:
         inline bool export_tensors() const { return export_tensors_; }
+        inline bool must_apply_constraints_to_assembled() const { return must_apply_constraints_; }
 
     private:
         std::shared_ptr<FEFunctionInterface_t> fe_function_;
         std::shared_ptr<IO_t> io_;
 
-        std::shared_ptr<SimulationTime<Scalar_t>> time_;
+        std::shared_ptr<SimulationTime> time_;
 
         bool must_apply_constraints_{true};
         bool export_tensors_{false};

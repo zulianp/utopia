@@ -19,39 +19,47 @@ namespace utopia {
 
         void read(Input &in) override { Super::read(in); }
 
-        bool setup_IVP(Vector_t &) override {
+        bool setup_IVP(Vector_t &x) override {
             if (!this->assemble_mass_matrix()) {
                 return false;
             }
 
-            this->space()->create_vector(active_stress_);
-            active_stress_.set(0.);
+            assert(this->mass_matrix());
+            Scalar_t sum_mm = sum(*this->mass_matrix());
+            has_zero_density_ = sum_mm == 0.0;
 
-            auto vlo = layout(active_stress_);
+            auto vlo = layout(x);
 
-            x_old_.zeros(vlo);
-            x_older_.zeros(vlo);
-            internal_stress_old_.zeros(vlo);
-            external_force_.zeros(vlo);
+            // x_old_.zeros(vlo);
+            x_old_ = x;
+            velocity_old_.zeros(vlo);
+            acceleration_old_.zeros(vlo);
             return true;
         }
 
         bool update_IVP(const Vector_t &x) override {
             Super::update_IVP(x);
 
-            const Scalar_t dt = this->delta_time();
+            time_second_derivative(x, acceleration_old_);
+            time_derivative(x, velocity_old_);
 
-            x_older_ = x_old_;
+            // Store current solution
             x_old_ = x;
+            return true;
+        }
 
-            active_stress_ = -internal_stress_old_ + (4. * external_force_);
+        bool time_second_derivative(const Vector_t &x, Vector_t &acceleration) const {
+            const Scalar_t dt = this->delta_time();
+            const Scalar_t dt2 = dt * dt;
 
-            // In case of contact problems here we also have the contact stress
-            this->gradient(x, internal_stress_old_);
+            acceleration = -acceleration_old_;
+            acceleration += (4 / dt2) * (x - x_old_ - dt * velocity_old_);
+            return true;
+        }
 
-            active_stress_ +=
-                (4. / (dt * dt)) * ((*this->mass_matrix()) * (2. * x_old_ - x_older_)) - 2. * internal_stress_old_;
-
+        bool time_derivative(const Vector_t &x, Vector_t &velocity) const override {
+            velocity = -velocity_old_;
+            velocity += (2 / this->delta_time()) * (x - x_old_);
             return true;
         }
 
@@ -63,16 +71,24 @@ namespace utopia {
         void integrate_gradient(const Vector_t &x, Vector_t &g) const override {
             const Scalar_t dt2 = this->delta_time() * this->delta_time();
 
-            g -= active_stress_;
-            g *= (dt2 / 4.);
-            g += ((*this->mass_matrix()) * x);
+            if (!has_zero_density_) {
+                Vector_t mom = (x - x_old_);
+                mom -= this->delta_time() * velocity_old_;
+                mom *= (4.0 / dt2);
+                mom -= acceleration_old_;
+
+                g += (*this->mass_matrix()) * mom;
+            }
+
             this->space()->apply_zero_constraints(g);
         }
 
         void integrate_hessian(const Vector_t &, Matrix_t &H) const override {
-            const Scalar_t dt2 = this->delta_time() * this->delta_time();
-            H *= (dt2 / 4.);
-            H += (*this->mass_matrix());
+            if (!has_zero_density_) {
+                const Scalar_t dt2 = this->delta_time() * this->delta_time();
+                H += (4. / dt2) * (*this->mass_matrix());
+            }
+
             this->space()->apply_constraints(H);
         }
 
@@ -80,10 +96,20 @@ namespace utopia {
         inline const Vector_t &x_old() const { return x_old_; }
 
         const Vector_t &solution() const override { return x_old(); }
+        const Vector_t &velocity() const { return velocity_old_; }
+        const Vector_t &acceleration() const { return acceleration_old_; }
+
+        bool set_initial_condition(const Vector_t &x) override {
+            x_old_ = x;
+            return true;
+        }
+
+    protected:
+        const Vector_t &velocity_old() const { return velocity_old_; }
 
     private:
-        Vector_t x_old_, x_older_;
-        Vector_t active_stress_, internal_stress_old_, external_force_;
+        Vector_t x_old_, velocity_old_, acceleration_old_;
+        bool has_zero_density_{false};
     };
 
 }  // namespace utopia

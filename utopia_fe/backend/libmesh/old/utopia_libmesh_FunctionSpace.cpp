@@ -18,7 +18,9 @@ namespace utopia {
         std::cout << "lm_x_norm: " << space.equation_system().solution->l2_norm() << std::endl;
 
         if (path.extension() == "pvtu") {
-            libMesh::VTKIO(space.mesh()).write_equation_systems(path.to_string(), space.equation_systems());
+            // does not link with new libmesh
+            utopia_error("utopia_libmesh_FunctionSpace:: write function:: add support for VTK \n");
+            // libMesh::VTKIO(space.mesh()).write_equation_systems(path.to_string(), space.equation_systems());
 
         } else {
             // if (space.mesh().comm().size() == 1) {

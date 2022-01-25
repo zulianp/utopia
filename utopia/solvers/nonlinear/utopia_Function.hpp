@@ -22,9 +22,10 @@ namespace utopia {
 
         void read(Input & /*in*/) override {}
 
-        virtual bool value(const Vector & /*point*/, Scalar & /*value*/) const = 0;
-        virtual bool gradient(const Vector & /*point*/, Vector & /*result*/) const = 0;
-        virtual bool update(const Vector & /*point*/) { return true; }
+        virtual bool value(const Vector & /*x*/, Scalar & /*value*/) const = 0;
+        virtual bool gradient(const Vector & /*x*/, Vector & /*g*/) const = 0;
+        virtual bool update(const Vector & /*x*/) { return true; }
+        virtual bool project_onto_feasibile_region(Vector & /*x*/) const { return true; }
     };
 
     template <class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
@@ -33,6 +34,8 @@ namespace utopia {
         DEF_UTOPIA_SCALAR(Vector);
 
         ~Function() override = default;
+
+        virtual bool is_hessian_constant() const { return false; }
 
         virtual bool hessian(const Vector &x, Matrix &H) const = 0;
         virtual bool hessian(const Vector & /*point*/, Matrix & /*result*/, Matrix & /*preconditioner*/) const {

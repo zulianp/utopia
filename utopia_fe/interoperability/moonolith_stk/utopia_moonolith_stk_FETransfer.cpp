@@ -15,12 +15,20 @@ namespace utopia {
             moonolith::FETransfer transfer;
             bool export_converted_mesh{false};
             bool remove_constrained_dofs{false};
+            bool volume_to_surface{false};
+            bool conform_to_space{true};
+            bool conform_from_space{true};
+            bool rescale_domains{false};
         };
 
         void FETransfer::read(Input &in) {
             impl_->transfer.read(in);
             in.get("export_converted_mesh", impl_->export_converted_mesh);
             in.get("remove_constrained_dofs", impl_->remove_constrained_dofs);
+            in.get("volume_to_surface", impl_->volume_to_surface);
+            in.get("conform_to_space", impl_->conform_to_space);
+            in.get("conform_from_space", impl_->conform_from_space);
+            in.get("rescale_domains", impl_->rescale_domains);
         }
 
         void FETransfer::describe(std::ostream &os) const { impl_->transfer.describe(os); }
@@ -50,11 +58,11 @@ namespace utopia {
                 impl_->from->mesh().write("from_and_to.vtu");
             }
 
-            if(!impl_->transfer.init(impl_->from)) {
+            if (!impl_->transfer.init(impl_->from)) {
                 return false;
             }
 
-            if(impl_->remove_constrained_dofs) {
+            if (impl_->remove_constrained_dofs) {
                 from_and_to->apply_constraints(*transfer_matrix(), 0);
             }
 
@@ -62,25 +70,70 @@ namespace utopia {
         }
 
         bool FETransfer::init(const std::shared_ptr<FunctionSpace> &from, const std::shared_ptr<FunctionSpace> &to) {
+            using AABB = Traits<FunctionSpace>::AABB;
+
             impl_->from = std::make_shared<moonolith::FunctionSpace>(from->comm());
             impl_->to = std::make_shared<moonolith::FunctionSpace>(to->comm());
 
+            // Scale such that the the size of the covering domain is at least 1
+            Scalar rescale = 1;
+            if (impl_->rescale_domains) {
+                AABB box_from, box_to;
+
+                from->mesh().bounding_box(box_from);
+                to->mesh().bounding_box(box_to);
+
+                int spatial_dim = from->mesh().spatial_dimension();
+
+                for (int d = 0; d < spatial_dim; ++d) {
+                    Scalar from_range = box_from.max[d] - box_from.min[d];
+                    Scalar to_range = box_to.max[d] - box_to.min[d];
+
+                    Scalar range = std::max(from_range, to_range);
+                    rescale = std::min(rescale, range);
+                }
+
+                if (rescale != 1.) {
+                    from->mesh().scale(1. / rescale);
+                    to->mesh().scale(1. / rescale);
+                }
+            }
+
             convert_function_space(*from, *impl_->from);
-            convert_function_space(*to, *impl_->to);
+
+            if (impl_->volume_to_surface) {
+                extract_trace_space(*to, *impl_->to);
+            } else {
+                convert_function_space(*to, *impl_->to);
+            }
+
+            // Rescale to original size
+            if (rescale != 1.) {
+                from->mesh().scale(rescale);
+                to->mesh().scale(rescale);
+            }
 
             assert(from->mesh().n_local_elements() == impl_->from->mesh().n_local_elements());
-            assert(to->mesh().n_local_elements() == impl_->to->mesh().n_local_elements());
+            assert(impl_->volume_to_surface || to->mesh().n_local_elements() == impl_->to->mesh().n_local_elements());
+
+            if (impl_->conform_from_space && from->is_non_conforming()) {
+                impl_->transfer.set_constraint_matrix_from(from->constraint_matrix());
+            }
+
+            if (impl_->conform_to_space && to->is_non_conforming()) {
+                impl_->transfer.set_constraint_matrix_to(to->constraint_matrix());
+            }
 
             if (impl_->export_converted_mesh) {
                 impl_->from->mesh().write("from.vtu");
                 impl_->to->mesh().write("to.vtu");
             }
 
-            if(!impl_->transfer.init(impl_->from, impl_->to)) {
+            if (!impl_->transfer.init(impl_->from, impl_->to)) {
                 return false;
             }
 
-            if(impl_->remove_constrained_dofs) {
+            if (impl_->remove_constrained_dofs) {
                 to->apply_constraints(*transfer_matrix(), 0);
             }
 

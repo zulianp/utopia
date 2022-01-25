@@ -10,7 +10,7 @@
 #include "utopia_stk_DofMap.hpp"
 #include "utopia_stk_FunctionSpace.hpp"
 
-#include "utopia_intrepid2_L2Norm.hpp"
+#include "utopia_kokkos_L2Norm.hpp"
 
 // Stk
 #include <stk_mesh/base/BulkData.hpp>
@@ -79,8 +79,11 @@ namespace utopia {
         using Size_t = Traits<utopia::stk::Mesh>::SizeType;
 
         static bool apply(const ::stk::mesh::BulkData &bulk_data, const BucketVector_t &buckets, FE &fe, int degree) {
-            assert(buckets.begin() != buckets.end());
-            if (buckets.begin() == buckets.end()) return false;
+            // assert(buckets.begin() != buckets.end());
+            if (buckets.begin() == buckets.end()) {
+                // utopia::err() << "[Warning] buckets.begin() == buckets.end()\n";
+                return false;
+            }
 
             auto &meta_data = bulk_data.mesh_meta_data();
 
@@ -137,7 +140,7 @@ namespace utopia {
             Kokkos::deep_copy(device_element_tags, element_tags);
 
             fe.init(topo, device_cell_points, degree);
-            fe.element_tags = device_element_tags;
+            fe.element_tags() = device_element_tags;
             return true;
         }
     };
@@ -197,7 +200,7 @@ namespace utopia {
             Utopia::Abort("Unable to find part!");
         }
 
-        ::stk::mesh::Selector part = *part_ptr;
+        ::stk::mesh::Selector part = *part_ptr & meta_data.locally_owned_part();
 
         const BucketVector_t &side_buckets = bulk_data.get_buckets(meta_data.side_rank(), part);
 
@@ -230,6 +233,8 @@ namespace utopia {
 
         const int n_var = space.n_var();
 
+        UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(Stk,Intrepid2,Matrix handling)");
+
         if (!matrix.is_block() && n_var != 1) {
             matrix.clear();
         }
@@ -247,17 +252,20 @@ namespace utopia {
         }
 
         // Fix preallocation bug and REMOVE ME
-        if (space.n_var() > 1 && space.comm().size() > 1) {
+        if (!space.mesh().has_aura() && space.n_var() > 1 && space.comm().size() > 1) {
             MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
             m_utopia_warning(
                 "using: MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR,"
                 "PETSC_FALSE);");
         }
 
+        UTOPIA_TRACE_REGION_END("LocalToGlobal(Stk,Intrepid2,Matrix handling)");
+
         auto &bulk_data = space.mesh().bulk_data();
 
         const BucketVector_t &elem_buckets = utopia::stk::local_elements(bulk_data);
 
+        UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(Stk,Intrepid2,Matrix assembly)");
         {
             Write<PetscMatrix> w(matrix, utopia::GLOBAL_ADD);
 
@@ -325,6 +333,7 @@ namespace utopia {
                 }
             }
         }
+        UTOPIA_TRACE_REGION_END("LocalToGlobal(Stk,Intrepid2,Matrix assembly)");
 
         if (mode == SUBTRACT_MODE) {
             matrix *= -1.0;
@@ -354,6 +363,38 @@ namespace utopia {
                           PetscVector &vector) {
             const int n_var = space.n_var();
             apply(space, buckets, device_element_vectors, mode, vector, n_var);
+        }
+
+        static void apply_elemental(const utopia::stk::FunctionSpace &space,
+                                    // const BucketVector_t &buckets,
+                                    const StkViewDevice_t<Scalar> &device_element_vectors,
+                                    AssemblyMode mode,
+                                    PetscVector &vector) {
+            typename StkViewDevice_t<Scalar>::HostMirror element_vectors =
+                ::Kokkos::create_mirror_view(device_element_vectors);
+            ::Kokkos::deep_copy(element_vectors, device_element_vectors);
+
+            const Size_t n_cells = element_vectors.extent(0);
+            const int tensor_size = element_vectors.extent(1);
+
+            if (empty(vector)) {
+                vector.zeros(layout(space.comm(), n_cells * tensor_size, Traits<PetscVector>::determine()));
+            } else {
+                if (mode == OVERWRITE_MODE) {
+                    vector *= 0.0;
+                }
+            }
+
+            Write<PetscVector> w(vector);
+
+            auto r = range(vector);
+            for (Size_t i = 0; i < n_cells; ++i) {
+                Size_t offset_i = i * tensor_size;
+
+                for (int t = 0; t < tensor_size; ++t) {
+                    vector.add(offset_i + t, element_vectors(i, t));
+                }
+            }
         }
 
         static void apply(const utopia::stk::FunctionSpace &space,
@@ -494,7 +535,7 @@ namespace utopia {
             Utopia::Abort("Unable to find part!");
         }
 
-        ::stk::mesh::Selector part = *part_ptr;
+        ::stk::mesh::Selector part = *part_ptr & meta_data.locally_owned_part();
 
         LocalToGlobalFromBuckets<Scalar>::apply(
             space, bulk_data.get_buckets(meta_data.side_rank(), part), element_vectors, mode, vector);
@@ -506,16 +547,41 @@ namespace utopia {
 #endif
 
     template <typename Scalar>
-    void ConvertField<Field<utopia::stk::FunctionSpace>, utopia::intrepid2::Field<Scalar>>::apply(
+    void ConvertField<Field<utopia::stk::FunctionSpace>, Intrepid2Field<Scalar>>::apply(
         const Field<utopia::stk::FunctionSpace> &from,
-        utopia::intrepid2::Field<Scalar> &to) {
+        Intrepid2Field<Scalar> &to) {
         GlobalToLocal<utopia::stk::FunctionSpace, Vector, StkViewDevice_t<Scalar>>::apply(
             *from.space(), from.data(), to.data(), from.tensor_size());
 
         to.set_tensor_size(from.tensor_size());
+        to.set_elem_type(from.elem_type());
     }
 
-    template class ConvertField<Field<utopia::stk::FunctionSpace>, utopia::intrepid2::Field<StkScalar_t>>;
+    template class ConvertField<Field<utopia::stk::FunctionSpace>, Intrepid2Field<StkScalar_t>>;
+
+    template <typename Scalar>
+    void ConvertField<Intrepid2Field<Scalar>, Field<utopia::stk::FunctionSpace>>::apply(
+        const Intrepid2Field<Scalar> &from,
+        Field<utopia::stk::FunctionSpace> &to) {
+        if (from.elem_type() == ELEMENT_TYPE) {
+            LocalToGlobalFromBuckets<Scalar>::apply_elemental(
+                *to.space(),
+                // utopia::stk::local_elements(to.space()->mesh().bulk_data()),
+                from.data(),
+                OVERWRITE_MODE,
+                to.data());
+        } else {
+            assert(false && "IMPLEMENT ME");
+            Utopia::Abort("IMPLEMENT ME");
+            // LocalToGlobal<utopia::stk::FunctionSpace, Vector, StkViewDevice_t<Scalar>>::apply(
+            //     *to.space(), from.data(), OVERWRITE_MODE, to.data(), from.tensor_size());
+        }
+
+        to.set_tensor_size(from.tensor_size());
+        to.set_elem_type(from.elem_type());
+    }
+
+    template class ConvertField<Intrepid2Field<StkScalar_t>, Field<utopia::stk::FunctionSpace>>;
 
     template <typename Scalar>
     void GlobalToLocal<utopia::stk::FunctionSpace,
@@ -582,7 +648,24 @@ namespace utopia {
                                  StkViewDevice_t<StkScalar_t>>;
 
     void l2_norm(const Field<utopia::stk::FunctionSpace> &field, std::vector<StkScalar_t> &norms) {
-        intrepid2::l2_norm(field, norms);
+        using Scalar = typename Traits<utopia::stk::FunctionSpace>::Scalar;
+        utopia::kokkos::L2Norm<utopia::stk::FunctionSpace, utopia::intrepid2::FE<Scalar>>().compute(field, norms);
     }
+
+    // template <class FunctionSpace>
+    // auto l2_norm(const utopia::Field<FunctionSpace> &field) -> typename Traits<FunctionSpace>::Scalar {
+    //     using Scalar = typename Traits<FunctionSpace>::Scalar;
+    //     std::vector<Scalar> results;
+    //     L2Norm<FunctionSpace>().compute(field, results);
+
+    //     assert(results.size() == 1);
+    //     return results[0];
+    // }
+
+    // template <class FunctionSpace>
+    // void l2_norm(const utopia::Field<FunctionSpace> &field,
+    //              std::vector<typename Traits<FunctionSpace>::Scalar> &results) {
+
+    // }
 
 }  // namespace utopia

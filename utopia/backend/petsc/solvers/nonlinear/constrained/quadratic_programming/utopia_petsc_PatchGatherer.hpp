@@ -45,7 +45,7 @@ namespace utopia {
 
             void local_to_patch_at_row(const Vector &rhs, const Vector &lb, const Vector &ub, const Vector &x) {
                 SizeType n_values = col_idx.size();
-                SizeType n_patch = 0;
+                // SizeType n_patch = 0;
 
                 auto rr = range(rhs);
 

@@ -1,5 +1,5 @@
 #include "utopia_stk_intrepid2_OmniAssembler.hpp"
-#include "utopia_intrepid2_OmniAssembler_impl.hpp"
+#include "utopia_kokkos_OmniAssembler_impl.hpp"
 
 // Utopia::Intrepid2
 #include "utopia_intrepid2_OmniAssembler.hpp"
@@ -10,8 +10,9 @@
 
 namespace utopia {
 
-    namespace intrepid2 {
-        template class OmniAssembler<utopia::stk::FunctionSpace>;
+    namespace kokkos {
+        template class OmniAssembler<utopia::stk::FunctionSpace,
+                                     utopia::intrepid2::FE<utopia::stk::FunctionSpace::Scalar>>;
     }
 
     class OmniAssembler<utopia::stk::FunctionSpace>::Impl {
@@ -39,6 +40,13 @@ namespace utopia {
         impl_->space = space;
     }
 
+    void OmniAssembler<utopia::stk::FunctionSpace>::set_time(const std::shared_ptr<SimulationTime> &time) {
+        assert(impl_->assembler);
+        if (impl_->assembler) {
+            impl_->assembler->set_time(time);
+        }
+    }
+
     bool OmniAssembler<utopia::stk::FunctionSpace>::is_linear() const { return impl_->get_assembler().is_linear(); }
 
     void OmniAssembler<utopia::stk::FunctionSpace>::clear() { return impl_->get_assembler().clear(); }
@@ -54,6 +62,10 @@ namespace utopia {
     }
     bool OmniAssembler<utopia::stk::FunctionSpace>::assemble(const Vector &x, Vector &gradient) {
         return impl_->get_assembler().assemble(x, gradient);
+    }
+
+    bool OmniAssembler<utopia::stk::FunctionSpace>::apply(const Vector &x, Vector &hessian_times_x) {
+        return impl_->get_assembler().apply(x, hessian_times_x);
     }
 
     // For linear only

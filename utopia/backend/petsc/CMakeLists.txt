@@ -87,6 +87,7 @@ if(PETSC_FOUND)
         solvers/nonlinear/constrained/quadratic_programming
         solvers/nonlinear/trust_region
         solvers/nonlinear/line_search
+        solvers/dd
         views)
 
     if(UTOPIA_WITH_SLEPC)

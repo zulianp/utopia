@@ -346,6 +346,11 @@ namespace utopia {
         free_view();
     }
 
+    // void TpetraVector::axpy(const Scalar &alpha, const Scalar &x) {
+    //     const Scalar shift_value = alpha * x;
+    //     transform_values(UTOPIA_LAMBDA(Scalar v)->Scalar { return v + shift_value; });
+    // }
+
     bool TpetraVector::equals(const TpetraVector &other, const Scalar &tol) const {
         TpetraVector diff = *this;
         diff.axpy(-1, other);
@@ -468,6 +473,8 @@ namespace utopia {
         assert(k_res.extent(0) > 0);
         Kokkos::parallel_for(
             k_res.extent(0), KOKKOS_LAMBDA(const int i) { k_res(i, 0) += x; });
+
+        Kokkos::fence();
     }
 
 }  // namespace utopia

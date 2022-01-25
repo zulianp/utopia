@@ -19,6 +19,7 @@ namespace utopia {
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
         using Environment_t = utopia::Environment<FunctionSpace>;
+        using SimulationTime = utopia::SimulationTime<Scalar_t>;
 
         using FunctionPtr_t = std::shared_ptr<FEFunctionInterface<FunctionSpace>>;
         using Field_t = utopia::Field<FunctionSpace>;
@@ -137,6 +138,18 @@ namespace utopia {
             }
 
             return true;
+        }
+
+        void set_time(const std::shared_ptr<SimulationTime> &time) override {
+            assert(fluid_);
+            if (fluid_) {
+                fluid_->set_time(time);
+            }
+
+            assert(solid_);
+            if (solid_) {
+                solid_->set_time(time);
+            }
         }
 
     private:

@@ -3,6 +3,7 @@
 
 #include "utopia_Instance.hpp"
 #include "utopia_Logger.hpp"
+#include "utopia_PreconditionedSolver.hpp"
 #include "utopia_PreconditionedSolverInterface.hpp"
 #include "utopia_Preconditioner.hpp"
 #include "utopia_SolverForwardDeclarations.hpp"
@@ -18,8 +19,10 @@ namespace utopia {
         using Preconditioner<Vector>::init_memory;
         using Preconditioner<Vector>::update;
         using PreconditionedSolverInterface<Vector>::update;
+        // using PreconditionedSolverInterface<Vector>::update;
 
         ~MatrixFreeLinearSolver() override = default;
+
         virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) = 0;
 
         /*! @brief if overriden the subclass has to also call this one first
@@ -41,6 +44,11 @@ namespace utopia {
         using MatrixFreeLinearSolver<Vector>::solve;
 
         ~OperatorBasedLinearSolver() override = default;
+
+        OperatorBasedLinearSolver() = default;
+
+        OperatorBasedLinearSolver<Matrix, Vector>(const OperatorBasedLinearSolver<Matrix, Vector> &other)
+            : MatrixFreeLinearSolver<Vector>(other), PreconditionedSolver<Matrix, Vector>(other) {}
 
         bool solve(const Matrix &A, const Vector &b, Vector &x) override {
             update(make_ref(A));
@@ -89,6 +97,9 @@ namespace utopia {
     template <class Vector>
     class EmptyPrecondMatrixFreeLinearSolver final : public MatrixFreeLinearSolver<Vector> {
     public:
+        using Scalar = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+
         void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond) override {
             precond_ = precond;
         }
@@ -119,6 +130,18 @@ namespace utopia {
             if (precond_) {
                 precond_->update(A);
             }
+        }
+
+        void init_solver(const std::string & /*method*/, const std::vector<std::string> /*status_variables*/) override {
+        }
+
+        void exit_solver(const SizeType & /*it*/, const Scalar & /*convergence_reason*/) override {}
+
+        bool check_convergence(const SizeType & /*it*/,
+                               const Scalar & /*norm_grad*/,
+                               const Scalar & /*rel_norm_grad*/,
+                               const Scalar & /*norm_step*/) override {
+            return true;
         }
 
         void print_usage(std::ostream &os) const override {

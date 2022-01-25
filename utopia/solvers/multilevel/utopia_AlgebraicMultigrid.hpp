@@ -85,13 +85,17 @@ namespace utopia {
 
         void ensure_agglomerator() {
             if (!agglomerator_) {
+#ifdef UTOPIA_WITH_PETSC
                 if (block_size_ == 2) {
                     agglomerator_ = std::make_shared<BlockAgglomerate<Matrix, 2>>();
                 } else if (block_size_ == 3) {
                     agglomerator_ = std::make_shared<BlockAgglomerate<Matrix, 3>>();
                 } else if (block_size_ == 4) {
                     agglomerator_ = std::make_shared<BlockAgglomerate<Matrix, 4>>();
-                } else {
+                } else
+#endif  // UTOPIA_WITH_PETSC
+
+                {
                     agglomerator_ = std::make_shared<Agglomerate<Matrix>>();
                 }
             }
@@ -146,6 +150,10 @@ namespace utopia {
         void max_it(const SizeType &max_it_in) override {
             Super::max_it(max_it_in);
             algorithm_.max_it(max_it_in);
+        }
+
+        void set_agglomerator(const std::shared_ptr<MatrixAgglomerator<Matrix>> &agglomerator) {
+            agglomerator_ = agglomerator;
         }
 
         AlgebraicMultigrid(const std::shared_ptr<Smoother> &smoother = std::make_shared<ILU>(),

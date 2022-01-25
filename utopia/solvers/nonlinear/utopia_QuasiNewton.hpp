@@ -52,13 +52,16 @@ namespace utopia {
             g0_norm = norm2(g);
             g_norm = g0_norm;
 
+            // Scalar E = 9e9;
+            Scalar E;
+            fun.value(x, E);
+
             QuasiNewtonBase<Vector>::init_memory(x, g);
 
             if (this->verbose_) {
-                this->init_solver("QUASI NEWTON", {" it. ", "|| g ||", "r_norm", "|| p_k || ", "alpha"});
-                PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm});
+                this->init_solver("QUASI NEWTON", {" it. ", "|| g ||", "E", "r_norm", "|| p_k || ", "alpha"});
+                PrintInfo::print_iter_status(it, {g_norm, E, r_norm, s_norm});
             }
-            it++;
 
             UTOPIA_NO_ALLOC_BEGIN("Quasi_Newton");
             while (!converged) {
@@ -66,7 +69,9 @@ namespace utopia {
                 if (this->has_forcing_strategy()) {
                     if (auto *iterative_solver =
                             dynamic_cast<IterativeSolver<Matrix, Vector> *>(this->mf_linear_solver_.get())) {
-                        iterative_solver->atol(this->estimate_ls_atol(g_norm, it));
+                        auto es_tol = this->estimate_ls_atol(g_norm, it);
+                        iterative_solver->atol(es_tol);
+                        iterative_solver->stol(es_tol);
                     } else {
                         utopia_error(
                             "utopia::Newton::you can not use inexact Newton with exact "
@@ -76,6 +81,7 @@ namespace utopia {
 
                 // UTOPIA_NO_ALLOC_BEGIN("Quasi1");
                 g_minus = -1.0 * g;
+                s.set(0.0);
                 this->linear_solve(g_minus, s);
                 // UTOPIA_NO_ALLOC_END();
 
@@ -106,13 +112,16 @@ namespace utopia {
                 this->update(s, y, x, g);
                 // UTOPIA_NO_ALLOC_END();
 
+                fun.value(x, E);
+                it++;
+
                 // print iteration status on every iteration
-                if (this->verbose_) PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm, alpha});
+                if (this->verbose_) {
+                    PrintInfo::print_iter_status(it, {g_norm, E, r_norm, s_norm, alpha});
+                }
 
                 // check convergence and print interation info
                 converged = this->check_convergence(it, g_norm, r_norm, s_norm);
-
-                it++;
             }
             UTOPIA_NO_ALLOC_END();
 

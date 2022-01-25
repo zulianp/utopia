@@ -51,6 +51,11 @@ namespace utopia {
             alpha_k = 1.0;
             g_p = dot(g, p_k);
 
+            if (g_p > 0) {
+                utopia::out() << (" p_k is not descent direction   \n");
+                return false;
+            }
+
             E_k1 = E_k;
 
             x_k = x + alpha_k * p_k;

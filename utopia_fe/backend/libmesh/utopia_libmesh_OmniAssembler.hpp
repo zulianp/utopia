@@ -17,6 +17,8 @@ namespace utopia {
         public:
             using Matrix = Traits<libmesh::FunctionSpace>::Matrix;
             using Vector = Traits<libmesh::FunctionSpace>::Vector;
+            using Scalar = Traits<libmesh::FunctionSpace>::Scalar;
+            using SimulationTime = utopia::SimulationTime<Scalar>;
 
             OmniAssembler(const std::shared_ptr<libmesh::FunctionSpace> &space);
             virtual ~OmniAssembler();
@@ -24,6 +26,8 @@ namespace utopia {
             bool assemble(const Vector &x, Matrix &jacobian, Vector &fun);
             bool assemble(const Vector &x, Matrix &jacobian);
             bool assemble(const Vector &x, Vector &fun);
+            bool apply(const Vector &x, Vector &hessian_times_x);
+            bool is_operator() const { return false; }
 
             bool assemble(Matrix &jacobian);
             void read(Input &in) override;
@@ -31,6 +35,8 @@ namespace utopia {
             void set_environment(const std::shared_ptr<Environment<libmesh::FunctionSpace>> &env);
 
             bool is_linear() const;
+
+            void set_time(const std::shared_ptr<SimulationTime> &time);
 
         private:
             class Impl;

@@ -47,11 +47,70 @@ namespace utopia {
             in.get("use_pseudo_newton", use_pseudo_newton_);
             in.get("export_rhs", export_rhs_);
             in.get("export_tensors", export_tensors_);
+            in.get("matrix_free", matrix_free_);
         }
 
         inline void set_solver(const std::shared_ptr<NewtonBase_t> &solver) { solver_ = solver; }
 
+        bool solve_trivial_matrix_free() {
+            Vector_t x;
+            function_->create_solution_vector(x);
+            // zero out boundary conditions
+            x.set(0.0);
+
+            this->status("Assemblying rhs problem");
+
+            Vector_t rhs;
+            bool ok = function_->gradient(x, rhs);
+            assert(ok);
+
+            // rhs.set(0);
+            rhs *= -1;
+
+            // apply boundary conditions to rhs
+            function_->space()->apply_constraints(rhs);
+            function_->space()->apply_constraints(x);
+
+            if (export_tensors_) {
+                write("load_rhs.m", rhs);
+            }
+
+            if (export_rhs_) {
+                function_->space()->write("rhs.e", rhs);
+            }
+
+            this->status("Solving linear problem (matrix free)");
+            // Solve linear problem
+
+            //////////////////////////////////////
+
+            ConjugateGradient<Matrix_t, Vector_t, HOMEMADE> cg;
+            cg.apply_gradient_descent_step(true);
+
+            //////////////////////////////////////
+
+            // BiCGStab<Matrix_t, Vector_t, HOMEMADE> cg;
+
+            //////////////////////////////////////
+
+            cg.verbose(verbose_);
+            cg.solve(*function_, rhs, x);
+            assert(ok);
+
+            this->status("Reporting solution");
+
+            function_->report_solution(x);
+            return ok;
+        }
+
         bool solve_trivial() {
+            if (matrix_free_) {
+                if (function_->is_operator()) {
+                    return solve_trivial_matrix_free();
+                } else {
+                    this->warning("Did not use matrix free version, because assembler is not an operator!");
+                }
+            }
             Vector_t x;
             function_->create_solution_vector(x);
             // zero out boundary conditions
@@ -78,9 +137,15 @@ namespace utopia {
                 function_->space()->write("rhs.e", rhs);
             }
 
+            // disp(A);
+            // disp(rhs);
+
             this->status("Solving linear problem");
             // Solve linear problem
+
+            UTOPIA_TRACE_REGION_BEGIN("Linear solve");
             ok = solver_->linear_solver()->solve(A, rhs, x);
+            UTOPIA_TRACE_REGION_END("Linear solve");
             assert(ok);
 
             this->status("Reporting solution");
@@ -121,6 +186,12 @@ namespace utopia {
         }
 
         bool solve() {
+            if (!solution_) {
+                solution_ = std::make_shared<Field<FunctionSpace>>("x", function_->space());
+                solution_->zero();
+                // function_->space()->create_field(*solution_); // FIXME
+            }
+
             if (function_->is_linear() && !function_->is_time_dependent()) {
                 // Tivial problem, lets keep it simple
                 if (use_pseudo_newton_) {
@@ -129,8 +200,7 @@ namespace utopia {
                     return solve_trivial();
                 }
             } else {
-                Vector_t x;
-                function_->create_solution_vector(x);
+                Vector_t &x = solution_->data();
 
                 function_->setup_IVP(x);
 
@@ -141,6 +211,21 @@ namespace utopia {
                 do {
                     this->status("Timestep: " + std::to_string(n_time_steps++));
 
+                    function_->space()->apply_constraints_update(x);
+
+                    {  // If we have a newton solver we can add ad-hoc line-search strategies to it
+                        auto newton = std::dynamic_pointer_cast<Newton_t>(solver_);
+
+                        if (newton) {
+                            auto ls = function_->line_search();
+
+                            if (ls) {
+                                newton->set_line_search_strategy(ls);
+                            }
+                        }
+                    }
+
+                    function_->initial_guess_for_solver(x);
                     if (!solver_->solve(*function_, x)) {
                         error("Solver failed to solve");
                         return false;
@@ -178,15 +263,20 @@ namespace utopia {
             }
         }
 
+        void set_matrix_free(const bool val) { matrix_free_ = val; }
+        void set_solution(const std::shared_ptr<Field<FunctionSpace>> &solution) { solution_ = solution; }
+
     private:
         Communicator_t comm_;
         std::shared_ptr<Environment_t> environment_;
         std::shared_ptr<FEFunctionInterface_t> function_;
         std::shared_ptr<NewtonBase_t> solver_;
+        std::shared_ptr<Field<FunctionSpace>> solution_;
         bool verbose_{true};
         bool use_pseudo_newton_{false};
         bool export_rhs_{false};
         bool export_tensors_{false};
+        bool matrix_free_{false};
 
         void init_defaults() {
             auto linear_solver = std::make_shared<OmniLinearSolver_t>();

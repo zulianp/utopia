@@ -85,7 +85,7 @@ option(UTOPIA_ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
 option(
     UTOPIA_ENABLE_PETSC_DM_PLEX
     "For the moment is to allow the \"make petsc\" command to install DMPlex dependencies"
-    ON)
+    OFF)
 option(UTOPIA_PULL_REQUEST_MODE
        "Mode for ensuring that pull request standards are respected" OFF)
 
@@ -93,7 +93,7 @@ option(UTOPIA_ENABLE_EIGEN_3 "Look for eigen for comparing performance" OFF)
 option(UTOPIA_BUILD_DOCUMENTATION
        "Use Doxygen to create the HTML based API documentation" ON)
 
-option(UTOPIA_SCRIPTING
+option(UTOPIA_ENABLE_SCRIPTING
        "Enable exports for other languages (C, Python, etc...)" OFF)
 
 option(UTOPIA_INSTALL_TRILINOS "Install trilinos directly" ON)
@@ -513,7 +513,7 @@ if(UTOPIA_ENABLE_M3ELINSOL)
     add_subdirectory(backend/m3elinsol)
 endif()
 
-if(UTOPIA_SCRIPTING)
+if(UTOPIA_ENABLE_SCRIPTING)
     add_subdirectory(scripting)
 endif()
 

@@ -13,6 +13,8 @@ list(
     nonlinear
     nonlinear/pseudo_transient_continuation
     nonlinear/constrained
+    nonlinear/constrained/barrier
+    nonlinear/constrained/interior_point
     nonlinear/constrained/smoothers
     nonlinear/constrained/quadratic_programming
     nonlinear/line_search

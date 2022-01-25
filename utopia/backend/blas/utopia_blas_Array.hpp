@@ -14,6 +14,10 @@ namespace utopia {
         using Iterator = typename std::vector<EntryType>::iterator;
         using ConstIterator = typename std::vector<EntryType>::const_iterator;
 
+        BlasArray(const SizeType n, const EntryType_ val) : entries_(n, val) {}
+
+        BlasArray() {}
+
         ~BlasArray() {}
 
         // locks

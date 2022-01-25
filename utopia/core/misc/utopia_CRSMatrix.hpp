@@ -14,7 +14,9 @@ namespace utopia {
     template <typename T>
     class Traits<std::vector<T> > {
     public:
+        using Scalar = T;
         using ValueType = T;
+        static constexpr int StaticSize = 0;
     };
 
     template <class ScalarView, class IndexView, int BlockSize_ = 1>
@@ -161,7 +163,7 @@ namespace utopia {
 
     template <typename S, typename I, int BlockSize>
     void disp(const CRSMatrix<S, I, BlockSize> &mat, std::ostream &os = std::cout) {
-        using SizeType = typename Traits<I>::ValueType;
+        using SizeType = typename std::remove_const<typename Traits<I>::ValueType>::type;
 
         SizeType n_blocks = mat.rows();
 

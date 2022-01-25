@@ -1,10 +1,10 @@
 #include "utopia_stk_intrepid2_Assembler.hpp"
 
-#include "utopia_intrepid2_Field.hpp"
-#include "utopia_intrepid2_Gradient.hpp"
-#include "utopia_intrepid2_Mass.hpp"
-#include "utopia_intrepid2_SubdomainFunction.hpp"
-#include "utopia_intrepid2_Transport.hpp"
+#include "utopia_kokkos_Field.hpp"
+#include "utopia_kokkos_Gradient.hpp"
+#include "utopia_kokkos_Mass.hpp"
+#include "utopia_kokkos_SubdomainValue.hpp"
+#include "utopia_kokkos_Transport.hpp"
 #include "utopia_stk_intrepid2.hpp"
 
 #include "utopia_make_unique.hpp"
@@ -42,6 +42,13 @@ namespace utopia {
             std::shared_ptr<Intrepid2Assembler> assembler;
         };
 
+        void StkIntrepid2ProxyAssembler::set_time(const std::shared_ptr<SimulationTime> &time) {
+            assert(impl_->assembler);
+            if (impl_->assembler) {
+                impl_->assembler->set_time(time);
+            }
+        }
+
         void StkIntrepid2ProxyAssembler::set_assembler(const std::shared_ptr<Intrepid2Assembler> &assembler) {
             impl_->assembler = assembler;
         }
@@ -58,21 +65,21 @@ namespace utopia {
             : Super(fe), impl_(utopia::make_unique<Impl>()) {}
 
         void StkIntrepid2ProxyAssembler::set_matrix_accumulator(
-            const std::shared_ptr<TensorAccumulator> &matrix_accumulator) {
+            const std::shared_ptr<MatrixAccumulator> &matrix_accumulator) {
             Super::set_matrix_accumulator(matrix_accumulator);
             assert(impl_->assembler);
             impl_->assembler->set_matrix_accumulator(matrix_accumulator);
         }
 
         void StkIntrepid2ProxyAssembler::set_vector_accumulator(
-            const std::shared_ptr<TensorAccumulator> &vector_accumulator) {
+            const std::shared_ptr<VectorAccumulator> &vector_accumulator) {
             Super::set_vector_accumulator(vector_accumulator);
             assert(impl_->assembler);
             impl_->assembler->set_vector_accumulator(vector_accumulator);
         }
 
         void StkIntrepid2ProxyAssembler::set_scalar_accumulator(
-            const std::shared_ptr<TensorAccumulator> &scalar_accumulator) {
+            const std::shared_ptr<ScalarAccumulator> &scalar_accumulator) {
             Super::set_scalar_accumulator(scalar_accumulator);
             assert(impl_->assembler);
             impl_->assembler->set_scalar_accumulator(scalar_accumulator);
@@ -93,7 +100,7 @@ namespace utopia {
             Super::set_scalar_accumulator(assembler()->scalar_accumulator());
         }
 
-        bool StkIntrepid2ProxyAssembler::apply(const DynRankView &x, DynRankView &y) {
+        bool StkIntrepid2ProxyAssembler::apply(const VectorView &x, VectorView &y) {
             return this->assembler()->apply(x, y);
         }
 

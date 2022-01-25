@@ -10,6 +10,7 @@ export INTREPID2_DIR=$INSTALL_DIR/Trilinos/lib/cmake/Intrepid2
 export MOONOLITH_DIR=$INSTALL_DIR/par_moonolith
 export UTOPIA_DIR=$INSTALL_DIR/utopia
 export UTOPIA_FE_DIR=$INSTALL_DIR/utopia_fe
+export YAML_CPP_DIR=$INSTALL_DIR/yaml-cpp
 
 # Avoid failure of petsc configure
 unset PETSC_DIR
@@ -36,6 +37,16 @@ cd build && cmake .. -DCMAKE_INSTALL_PREFIX=$MOONOLITH_DIR && \
 ##################################################################
 
 cd $USER_DIR
+git clone https://github.com/jbeder/yaml-cpp.git
+cd yaml-cpp
+mkdir build
+cd build && cmake .. -DCMAKE_INSTALL_PREFIX=$YAML_CPP_DIR \
+    && \
+    make  -j4 && make install
+
+##################################################################
+
+cd $USER_DIR
 git clone https://bitbucket.org/zulianp/utopia.git
 cd utopia
 git checkout monotone_mg_refactor
@@ -44,7 +55,9 @@ git submodule update --init --recursive
 cd utopia && mkdir build
 cd build &&  \
     cmake .. -DUTOPIA_DEPENDENCIES_DIR=$INSTALL_DIR \
-             -DCMAKE_INSTALL_PREFIX=$UTOPIA_DIR &&  \
+             -DCMAKE_INSTALL_PREFIX=$UTOPIA_DIR \
+             -DUTOPIA_ENABLE_YAML_CPP=ON -Dyaml-cpp_DIR=$YAML_CPP_DIR/share/cmake/yaml-cpp/ \
+             && \
     unset PETSC_DIR && \
     make petsc
 
@@ -53,6 +66,7 @@ cd $USER_DIR/utopia/utopia/build
 
 export PETSC_DIR=$INSTALL_DIR/petsc \
 
+# Repeat cmake for finding PETSc
 cmake .. && \
     make -j complete && \
     make install \

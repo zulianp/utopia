@@ -27,11 +27,11 @@ namespace utopia {
         using IntViewHostMirror = utopia::intrepid2::ViewDevice<int>::HostMirror;
     }  // namespace intrepid2
 
-    template <typename Scalar_, typename... Args>
-    class Traits<intrepid2::View<Scalar_, Args...>> {
-    public:
-        using Scalar = Scalar_;
-    };
+    // template <typename Scalar_, typename... Args>
+    // class Traits<intrepid2::View<Scalar_, Args...>> {
+    // public:
+    //     using Scalar = Scalar_;
+    // };
 
     // template <typename Scalar_>
     // class Traits<intrepid2::ViewHost<Scalar_>> {

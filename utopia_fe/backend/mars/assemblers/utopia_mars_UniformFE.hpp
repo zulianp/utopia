@@ -6,6 +6,8 @@
 #include "utopia_mars_Hex8.hpp"
 #include "utopia_mars_Hex8Quadrature.hpp"
 
+#include "utopia_kokkos_UniformFE.hpp"
+
 namespace utopia {
 
     template <int Dim, typename Scalar_>
@@ -49,6 +51,9 @@ namespace utopia {
 
             void init(const Coordinates &in_coordinates) {
                 coordinates = in_coordinates;
+                auto determinant_j = det_J;
+                auto inverse_j = J_inv;
+                auto meas = measure;
 
                 Kokkos::parallel_for(
                     1, MARS_LAMBDA(const int) {
@@ -69,12 +74,12 @@ namespace utopia {
 
                         for (int d1 = 0; d1 < ManifoldDim; ++d1) {
                             for (int d2 = 0; d2 < PhysicalDim; ++d2) {
-                                J_inv(d1, d2) = J_inv_e[d1 * PhysicalDim + d2];
+                                inverse_j(d1, d2) = J_inv_e[d1 * PhysicalDim + d2];
                             }
                         }
 
                         assert(det_J_e > 0);
-                        det_J(0) = det_J_e;
+                        determinant_j(0) = det_J_e;
                     });
 
                 Quadrature q = Quadrature::make();
@@ -89,16 +94,16 @@ namespace utopia {
                         Scalar J_inv_e[ManifoldDim * PhysicalDim];
                         Scalar p_qp[ManifoldDim], grad_physical[ManifoldDim];
 
-                        assert(det_J(0) > 0);
+                        assert(determinant_j(0) > 0);
                         assert(weights(qp) != 0.0);
 
-                        measure(qp) = det_J(0) * weights(qp);
+                        meas(qp) = determinant_j(0) * weights(qp);
 
                         for (int d1 = 0; d1 < ManifoldDim; ++d1) {
                             p_qp[d1] = points(qp, d1);
 
                             for (int d2 = 0; d2 < PhysicalDim; ++d2) {
-                                J_inv_e[d1 * PhysicalDim + d2] = J_inv(d1, d2);
+                                J_inv_e[d1 * PhysicalDim + d2] = inverse_j(d1, d2);
                             }
                         }
 
@@ -139,6 +144,9 @@ namespace utopia {
 
             void init(const Coordinates &in_coordinates) {
                 coordinates = in_coordinates;
+                auto determinant_j = det_J;
+                auto inverse_j = J_inv;
+                auto meas = measure;
 
                 ::mars::ViewMatrixTextureC<Scalar, NQPoints, PhysicalDim> points("q_points");
                 ::mars::ViewVectorTextureC<Scalar, NQPoints> weights("q_weights");
@@ -167,16 +175,16 @@ namespace utopia {
 
                         for (int d1 = 0; d1 < ManifoldDim; ++d1) {
                             for (int d2 = 0; d2 < PhysicalDim; ++d2) {
-                                J_inv(d1, d2) = J_inv_e[d1 * PhysicalDim + d2];
-                                assert(J_inv(d1, d2) == J_inv(d1, d2));
+                                inverse_j(d1, d2) = J_inv_e[d1 * PhysicalDim + d2];
+                                assert(inverse_j(d1, d2) == inverse_j(d1, d2));
                             }
 
-                            assert(J_inv(d1, d1) != 0);
+                            assert(inverse_j(d1, d1) != 0);
                         }
 
                         assert(det_J_e == det_J_e);
                         assert(det_J_e > 0);
-                        det_J(0) = det_J_e;
+                        determinant_j(0) = det_J_e;
 
                         Quadrature::get(points, weights);
                     });
@@ -186,7 +194,7 @@ namespace utopia {
 
                 Kokkos::parallel_for(
                     NQPoints, MARS_LAMBDA(const int qp) {
-                        measure(qp) = det_J(0) * weights(qp);
+                        meas(qp) = determinant_j(0) * weights(qp);
 
                         Elem elem;
                         StaticVector<Scalar, PhysicalDim> h, translation;
@@ -194,8 +202,8 @@ namespace utopia {
                         StaticVector<Scalar, PhysicalDim> grad_physical;
 
                         for (int d2 = 0; d2 < PhysicalDim; ++d2) {
-                            assert(J_inv(d2, d2) != 0);
-                            h[d2] = 1. / J_inv(d2, d2);
+                            assert(inverse_j(d2, d2) != 0);
+                            h[d2] = 1. / inverse_j(d2, d2);
                             translation[d2] = in_coordinates(0, d2);
                             assert(h[d2] == h[d2]);
                         }

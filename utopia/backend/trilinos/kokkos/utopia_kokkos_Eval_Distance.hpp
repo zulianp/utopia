@@ -41,6 +41,8 @@ namespace utopia {
                 },
                 ret);
 
+            Kokkos::fence();
+
             if (finalize_reduction) {
                 return finalize(ret);
             } else {
@@ -77,6 +79,7 @@ namespace utopia {
                 },
                 ret);
 
+            Kokkos::fence();
             return ret;
         }
     };
@@ -109,6 +112,7 @@ namespace utopia {
                 },
                 ret);
 
+            Kokkos::fence();
             return ret;
         }
     };

@@ -19,6 +19,7 @@ namespace utopia {
             using Vector = Traits<FunctionSpace>::Vector;
             using Matrix = Traits<FunctionSpace>::Matrix;
             using Scalar = Traits<FunctionSpace>::Scalar;
+            using IndexArray = Traits<FunctionSpace>::IndexArray;
             using Comm = Traits<FunctionSpace>::Communicator;
 
             void read(Input &in) override;
@@ -34,8 +35,15 @@ namespace utopia {
             const Vector &is_contact() const;
             const Vector &normals() const;
 
+            Vector &gap();
+            Vector &is_contact();
+            Vector &normals();
+            std::shared_ptr<Matrix> mass_matrix();
+
             Obstacle();
             ~Obstacle();
+
+            std::shared_ptr<Matrix> orthogonal_transformation();
 
             // class SurfaceDescriptor {
             // public:
@@ -58,7 +66,9 @@ namespace utopia {
             void set_params(const Params &params);
             inline const Params &params() const { return *params_; }
 
-        private:
+            void set_banned_nodes(const std::shared_ptr<IndexArray> &banned_nodes);
+
+            UTOPIA_NVCC_PRIVATE
             class Impl;
             class Output;
 

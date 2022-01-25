@@ -2,6 +2,7 @@
 #define UTOPIA_FIELD_HPP
 
 #include "utopia_Input.hpp"
+#include "utopia_MeshElementType.hpp"
 #include "utopia_Traits.hpp"
 
 #include "utopia_Instance.hpp"
@@ -66,10 +67,13 @@ namespace utopia {
 
         /// @return true if anything goes with this field
         inline bool is_blank() const { return name_.empty(); }
-        inline bool empty() const { return !data_; }
+        inline bool empty() const { return !data_ || data_->empty(); }
 
         void set_space(const std::shared_ptr<FunctionSpace> &space) { space_ = space; }
         const std::shared_ptr<FunctionSpace> &space() const { return space_; }
+
+        void set_elem_type(MeshElementType type) { elem_type_ = type; }
+        inline MeshElementType elem_type() const { return elem_type_; }
 
     private:
         std::string name_;
@@ -77,6 +81,7 @@ namespace utopia {
         std::shared_ptr<Vector> data_;
         int offset_{0};
         int tensor_size_{1};
+        MeshElementType elem_type_{UNDEFINED_TYPE};
     };
 
 }  // namespace utopia

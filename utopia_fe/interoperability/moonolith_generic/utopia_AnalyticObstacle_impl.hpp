@@ -175,6 +175,9 @@ namespace utopia {
         space.create_field(*gap);
         space.create_field(*normals);
 
+        assert(!gap->empty());
+        assert(!normals->empty());
+
         impl_->gap = gap;
         impl_->normals = normals;
         impl_->is_contact.zeros(layout(normals->data()));
@@ -186,10 +189,17 @@ namespace utopia {
         {
             auto g_view = view_device(impl_->gap->data());
             auto n_view = view_device(impl_->normals->data());
-            auto c_view = local_view_device(impl_->is_contact);
+            auto c_view = view_device(impl_->is_contact);
+
+            Range r = range(impl_->gap->data());
+            SizeType r_begin = r.begin() / n_var;
+            SizeType r_end = r.end() / n_var;
 
             for (auto &f : impl_->functions) {
-                auto fun = [this, dim, g_view, n_view, c_view, n_var, &f](const SizeType idx, const Scalar *point) {
+                auto fun = [this, dim, g_view, n_view, c_view, n_var, r_begin, r_end, &f](const SizeType idx,
+                                                                                          const Scalar *point) {
+                    // if (idx < r_begin || idx >= r_end) return;
+
                     Scalar point3[3] = {0.0, 0.0, 0.0};
                     Scalar normal3[3] = {0.0, 0.0, 0.0};
                     Scalar g = 0;
@@ -235,6 +245,7 @@ namespace utopia {
             }
         }
 
+        // space.write("gap.e", e_mul(impl_->is_contact, impl_->gap->data()));
         // space.write("is_contact.e", impl_->is_contact);
 
         if (impl_->export_tensors) {
@@ -282,6 +293,12 @@ namespace utopia {
     const typename AnalyticObstacle<FunctionSpace>::Vector &AnalyticObstacle<FunctionSpace>::normals() const {
         assert(impl_->normals);
         return impl_->normals->data();
+    }
+
+    template <class FunctionSpace>
+    std::shared_ptr<typename Traits<FunctionSpace>::Matrix>
+    AnalyticObstacle<FunctionSpace>::orthogonal_transformation() {
+        return make_ref(impl_->orthogonal_trafo);
     }
 
 }  // namespace utopia

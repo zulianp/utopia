@@ -47,55 +47,35 @@ namespace utopia {
             return jfnk;
         }
 
-        void read(Input &in) override {
-            NonlinearMultiLevelInterface<Matrix, Vector>::read(in);
-
-            // if (_smoother) {
-            //   in.get("smoother", *_smoother);
-            // }
-            // if (_coarse_solver) {
-            //   in.get("coarse_solver", *_coarse_solver);
-            // }
-            // if (_ls_strategy) {
-            //   in.get("ls_strategy", *_ls_strategy);
-            // }
-        }
+        void read(Input &in) override { NonlinearMultiLevelInterface<Matrix, Vector>::read(in); }
 
         void print_usage(std::ostream &os) const override {
             NonlinearMultiLevelInterface<Matrix, Vector>::print_usage(os);
-
-            // this->print_param_usage(os, "coarse_solver", "NewtonBase",
-            //                         "Input parameters for coarse level QP
-            // solvers.",
-            //                         "-");
-            // this->print_param_usage(os, "smoother", "NewtonBase",
-            //                         "Input parameters for fine level QP solver.",
-            //                         "-");
-            // this->print_param_usage(os, "ls_strategy", "LSStrategy",
-            //                         "Input parameters for line-search strategy.",
-            //                         "-");
         }
 
         void update(const Vector &s, const Vector &y, const Vector &x, const Vector &g) {
             hessian_approxs_[this->n_levels() - 1]->update(s, y, x, g);
+            auto multiplication_action = hessian_approxs_[this->n_levels() - 1]->build_apply_H();
+            mf_lin_solvers_[this->n_levels() - 1]->update(*multiplication_action);
+
             this->memory_.x[this->n_levels() - 1] = x;
             this->memory_.g[this->n_levels() - 1] = g;
 
             for (auto l = this->n_levels() - 1; l > 0; l--) {
                 this->transfer(l - 1).project_down(this->memory_.x[l], this->memory_.x[l - 1]);
 
-                // this->make_iterate_feasible(this->function(l - 1),
-                //                             this->memory_.x[l - 1]);
-
-                // this->transfer(l - 1).restrict(this->memory_.g[l],
-                //                                this->memory_.g[l - 1]);
+                // added
+                this->make_iterate_feasible(this->function(l), this->memory_.x[l]);
 
                 this->function(l - 1).gradient(this->memory_.x[l - 1], this->memory_.g[l - 1]);
-
                 this->zero_correction_related_to_equality_constrain(this->function(l - 1), memory_.g[l - 1]);
 
                 hessian_approxs_[l - 1]->update(
                     this->memory_.x[l - 1], this->memory_.g[l - 1], this->memory_.x[l - 1], this->memory_.g[l - 1]);
+
+                // update should be here, as changes with Newton it, not with update...
+                auto multiplication_action = hessian_approxs_[l - 1]->build_apply_H();
+                mf_lin_solvers_[l - 1]->update(*multiplication_action);
             }
         }
 
@@ -108,21 +88,22 @@ namespace utopia {
             this->memory_.g[this->n_levels() - 1] = g;
 
             hessian_approxs_[this->n_levels() - 1]->initialize(x, g);
+            // update should be here, as changes with Newton it, not with update...
+            auto multiplication_action = hessian_approxs_[this->n_levels() - 1]->build_apply_H();
+            mf_lin_solvers_[this->n_levels() - 1]->update(*multiplication_action);
 
+            // passing down info regarding current newton iterate
             for (auto l = this->n_levels() - 1; l > 0; l--) {
                 this->transfer(l - 1).project_down(this->memory_.x[l], this->memory_.x[l - 1]);
-
-                // this->make_iterate_feasible(this->function(l - 1),
-                //                             this->memory_.x[l - 1]);
-
-                // this->transfer(l - 1).restrict(this->memory_.g[l],
-                //                                this->memory_.g[l - 1]);
+                this->make_iterate_feasible(this->function(l), this->memory_.x[l]);
 
                 this->function(l - 1).gradient(this->memory_.x[l - 1], this->memory_.g[l - 1]);
-
                 this->zero_correction_related_to_equality_constrain(this->function(l - 1), memory_.g[l - 1]);
-
                 hessian_approxs_[l - 1]->initialize(this->memory_.x[l - 1], this->memory_.g[l - 1]);
+
+                // update should be here, as changes with Newton it, not with update...
+                auto multiplication_action = hessian_approxs_[l - 1]->build_apply_H();
+                mf_lin_solvers_[l - 1]->update(*multiplication_action);
             }
         }
 
@@ -136,8 +117,6 @@ namespace utopia {
                 assert(mf_lin_solvers_[l]);
                 assert(hessian_approxs_[l]);
                 mf_lin_solvers_[l]->init_memory(this->local_level_layouts_[l]);
-                // hessian_approxs_[l]->initialize(this->memory_.x[l],
-                // this->memory_.g[l]);
             }
 
             init_mem_ = true;
@@ -181,19 +160,27 @@ namespace utopia {
 #ifdef CHECK_NUM_PRECISION_mode
                 if (has_nan_or_inf(this->memory_.x[n_levels - 1]) == 1) {
                     this->memory_.x[n_levels - 1].set(0.0);
+                    if (mpi_world_rank() == 0) {
+                        utopia::out() << "   nan or inf .... \n";
+                    }
                     return true;
                 }
 #endif
-
-                multiplication_action_finest->apply(this->memory_.x[n_levels - 1], this->memory_.res[n_levels - 1]);
-                this->memory_.res[n_levels - 1] -= rhs;
-
-                r_norm = norm2(this->memory_.res[n_levels - 1]);
-
-                rel_norm = r_norm / r0_norm;
+                if (this->compute_norm(it) || this->verbose()) {
+                    // todo:: check if not needed anywhere else
+                    multiplication_action_finest->apply(this->memory_.x[n_levels - 1], this->memory_.res[n_levels - 1]);
+                    this->memory_.res[n_levels - 1] -= rhs;
+                    r_norm = norm2(this->memory_.res[n_levels - 1]);
+                    rel_norm = r_norm / r0_norm;
+                } else {
+                    r_norm = 9e9;
+                    rel_norm = 1.0;
+                }
 
                 // print iteration status on every iteration
-                if (this->verbose()) PrintInfo::print_iter_status(it, {r_norm, rel_norm});
+                if (this->verbose()) {
+                    PrintInfo::print_iter_status(it, {r_norm, rel_norm});
+                }
 
                 // check convergence and print interation info
                 converged = this->check_convergence(it, r_norm, rel_norm, 1);
@@ -245,20 +232,21 @@ namespace utopia {
         bool multiplicative_cycle(const SizeType &l) {
             // PRE-SMOOTHING
             this->level_solve(l, this->memory_.rhs[l], this->memory_.x[l], this->pre_smoothing_steps());
-
             this->compute_residual(l, this->memory_.x[l]);
-
             this->transfer(l - 1).restrict(this->memory_.res[l], this->memory_.rhs[l - 1]);
+            this->zero_correction_related_to_equality_constrain(this->function(l - 1), memory_.rhs[l - 1]);
 
-            this->memory_.x[l - 1].set(0.0);
             if (l == 1) {
-                this->zero_correction_related_to_equality_constrain(this->function(l - 1), memory_.rhs[l - 1]);
-
+                this->memory_.x[l - 1].set(0.0);
                 const SizeType coarse_grid_its = this->memory_.rhs[l - 1].size();
-
                 this->level_solve(l - 1, this->memory_.rhs[l - 1], this->memory_.x[l - 1], coarse_grid_its);
+
             } else {
-                this->multiplicative_cycle(l - 1);
+                this->memory_.x[l - 1].set(0.0);
+
+                for (SizeType k = 0; k < this->mg_type(); k++) {
+                    this->multiplicative_cycle(l - 1);
+                }
             }
 
             // interpolate
@@ -275,7 +263,7 @@ namespace utopia {
 
         bool level_solve(const SizeType &level, const Vector &rhs, Vector &x, const SizeType &sweeps = 1000) {
             auto multiplication_action = hessian_approxs_[level]->build_apply_H();
-            mf_lin_solvers_[level]->verbose(false);
+
             mf_lin_solvers_[level]->max_it(sweeps);
             return mf_lin_solvers_[level]->solve(*multiplication_action, rhs, x);
         }

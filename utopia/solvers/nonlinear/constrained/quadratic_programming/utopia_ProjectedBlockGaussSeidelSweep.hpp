@@ -60,6 +60,10 @@ namespace utopia {
 
             std::fill(row_ptr_.begin(), row_ptr_.end(), SizeType(0));
 
+            if (row_ptr_.size() <= 1) {
+                return;
+            }
+
             SizeType n_off_diag_entries = 0;
 
             mat.read([&](const SizeType &i, const SizeType &j, const Scalar &a_ij) {
@@ -72,6 +76,7 @@ namespace utopia {
                     assert(a_ij != 0.0 || block.sub_i != block.sub_j || block.i != block.j);
                 } else {
                     if (a_ij != 0.0) {
+                        assert(i + 1 < SizeType(row_ptr_.size()));
                         ++row_ptr_[i + 1];
                         ++n_off_diag_entries;
                     }
@@ -87,7 +92,7 @@ namespace utopia {
                 row_ptr_[i + 1] += row_ptr_[i];
             }
 
-            assert(n_off_diag_entries == row_ptr_.back());
+            assert(row_ptr_.empty() || n_off_diag_entries == row_ptr_.back());
 
             if (n_off_diag_entries != SizeType(values_.size())) {
                 values_.resize(n_off_diag_entries);

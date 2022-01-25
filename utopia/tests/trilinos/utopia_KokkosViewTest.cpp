@@ -97,6 +97,8 @@ namespace utopia {
                 A2 += 0.5 * A2;
             });
 
+        Kokkos::fence();
+
         for (SizeType i = 0; i < n; ++i) {
             MatrixView<ViewType> A2(Kokkos::subview(kokkos_A2, i, Kokkos::ALL(), Kokkos::ALL()));
             // A2.describe();

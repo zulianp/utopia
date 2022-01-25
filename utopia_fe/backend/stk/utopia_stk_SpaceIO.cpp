@@ -2,6 +2,8 @@
 
 #include "utopia_stk_MeshIO.hpp"
 
+#include "utopia_stk_DofMap.hpp"
+
 namespace utopia {
     namespace stk {
 
@@ -17,6 +19,17 @@ namespace utopia {
 
         bool SpaceIO::read_with_state(Input &in, Field<FunctionSpace> &field) {
             return impl_->space.read_with_state(in, field);
+        }
+
+        bool SpaceIO::write(const Field<FunctionSpace> &field) {
+            if (!impl_->io.ensure_output()) {
+                return false;
+            }
+
+            field.space()->backend_set_elemental_field(field);
+            register_output_field(field.name());
+
+            return impl_->io.write(1, 1);
         }
 
         bool SpaceIO::write(const Vector &v) { return impl_->space.write(impl_->io.output_path(), v); }
@@ -82,6 +95,8 @@ namespace utopia {
             if (!open_input()) {
                 return false;
             }
+
+            impl_->space.dof_map().init(impl_->space.mesh());
 
             return true;
         }

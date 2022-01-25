@@ -5,6 +5,7 @@
 #include "utopia_HessianApproximations.hpp"
 #include "utopia_JFNK.hpp"
 #include "utopia_LBFGS.hpp"
+#include "utopia_LBFGSInv.hpp"
 #include "utopia_LSR1.hpp"
 
 #endif  // UTOPIA_HESSIAN_APPROX_HPP

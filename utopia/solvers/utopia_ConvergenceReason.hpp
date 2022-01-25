@@ -67,7 +67,7 @@ namespace utopia {
                               << ", no more energy reduction. \033[0m\n";
                 } else if (convergence_reason == CONVERGED_FNORM_RELATIVE) {
                     std::cout << "\033[1;32m  NonlinearSolver terminated at iteration " << num_it
-                              << ", (|| F ||/|| F_0|| < atol). \033[0m\n";
+                              << ", (|| F ||/|| F_0|| < rtol). \033[0m\n";
                 } else if (convergence_reason == CONVERGED_FNORM_ABS) {
                     std::cout << "\033[1;32m  NonlinearSolver terminated at iteration " << num_it
                               << ", (|| F || < atol). \033[0m\n";

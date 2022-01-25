@@ -81,6 +81,12 @@ namespace utopia {
 
         OmniAssembler::~OmniAssembler() = default;
 
+        bool OmniAssembler::apply(const Vector &x, Vector &hessian_times_x) {
+            assert(false);
+            Utopia::Abort("IMPLEMENT ME");
+            return false;
+        }
+
         bool OmniAssembler::assemble(const Vector &x, Matrix &jacobian, Vector &fun) {
             if (!impl_->legacy_model) {
                 return false;
@@ -184,6 +190,10 @@ namespace utopia {
             if (!impl_->legacy_model) {
                 Utopia::Abort();
             }
+        }
+
+        void OmniAssembler::set_time(const std::shared_ptr<SimulationTime> &) {
+            utopia::err() << "[Warning] libmesh::OmniAssembler ingores time, for the moment!\n";
         }
 
         bool OmniAssembler::is_linear() const {

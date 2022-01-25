@@ -36,17 +36,15 @@ namespace utopia {
 
         inline const std::string &expr() const { return expr_; }
 
-    public:
         double x_, y_, z_, t_;
-
-    private:
         std::string expr_;
-
         std::vector<te_variable> vars_;
         int err_;
 
         te_expr *e_;
     };
+
+    const std::string &SymbolicFunction::to_string() const { return impl_->expr_; }
 
     SymbolicFunction::~SymbolicFunction() = default;
 

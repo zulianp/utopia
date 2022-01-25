@@ -18,8 +18,16 @@
 #include "utopia_Poisson1D.hpp"
 
 #include "utopia_Agglomerate.hpp"
+#include "utopia_LogBarrierFunction.hpp"
+#include "utopia_LogBarrierQPSolver.hpp"
+
+#include "utopia_ElementWisePseudoInverse.hpp"
+#include "utopia_PrimalInteriorPointSolver_impl.hpp"
 
 #ifdef UTOPIA_WITH_PETSC
+#include "utopia_petsc_BDDLinearSolver.hpp"
+#include "utopia_petsc_BDDOperator.hpp"
+#include "utopia_petsc_BDDQPSolver.hpp"
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
 #endif  // UTOPIA_WITH_PETSC
@@ -33,6 +41,8 @@ namespace utopia {
         using Scalar = typename Traits::Scalar;
         using SizeType = typename Traits::SizeType;
         using Comm = typename Traits::Communicator;
+        using IndexArray = typename Traits::IndexArray;
+        using IndexSet = typename Traits::IndexSet;
 
         static void print_backend_info() {
             if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
@@ -70,16 +80,14 @@ namespace utopia {
             run_qp_solver(pgs);
         }
 
-        void MPRGP_test() const {
-            MPRGP<Matrix, Vector> qp_solver;
-            run_qp_solver(qp_solver);
-
-            auto &&comm = Comm::get_default();
-
-            SizeType n = 100;
-            Matrix A;
+        static void create_symm_lapl_test_data(Comm &comm,
+                                               Matrix &A,
+                                               Vector &b,
+                                               BoxConstraints<Vector> &box,
+                                               SizeType n = 100,
+                                               const bool boundary_conds = true) {
             A.sparse(layout(comm, Traits::decide(), Traits::decide(), n, n), 3, 2);
-            assemble_symmetric_laplacian_1D(A, true);
+            assemble_symmetric_laplacian_1D(A, boundary_conds);
 
             auto h = 1. / (n - 1.);
             A = 1. / h * A;
@@ -99,7 +107,7 @@ namespace utopia {
                 }
             }
 
-            Vector b(row_layout(A), 50.0);
+            b.values(row_layout(A), 50.0);
 
             {
                 Range row_range = range(b);
@@ -124,12 +132,185 @@ namespace utopia {
 
             b = h * b;
 
-            Vector lb(row_layout(A), -0.5);
-            Vector ub(row_layout(A), 0.5);
+            auto lb = std::make_shared<Vector>(row_layout(A), -0.5);
+            auto ub = std::make_shared<Vector>(row_layout(A), 0.5);
+
+            box = make_box_constaints(lb, ub);
+        }
+
+        void log_barrier_test() {
+            auto &&comm = Comm::get_default();
+
+            Matrix A;
+            Vector b;
+            BoxConstraints<Vector> box;
+            create_symm_lapl_test_data(comm, A, b, box);
+
+            // b *= 0.5;
+            // box.lower_bound() = nullptr;
+            // box.upper_bound() = nullptr;
+            QuadraticFunction<Matrix, Vector> fun(make_ref(A), make_ref(b));
+
+            InputParameters params;
+            // params.set("verbose", true);
+            params.set("barrier_parameter", 1e-5);
+            params.set("barrier_parameter_shrinking_factor", 0.7);
+
+            LogBarrierFunction<Matrix, Vector> barrier(make_ref(fun), make_ref(box));
+            barrier.read(params);
+
+            ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+            cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector>>());
+            // cg.verbose(true);
+            cg.max_it(20);
+
+            Newton<Matrix, Vector> newton(make_ref(cg));
+            // newton.verbose(true);
+
+            Vector x(layout(b));
+
+            // Linear solve first to get closer to solution
+            cg.solve(A, b, x);
+            barrier.project_onto_feasibile_region(x);
+            newton.solve(barrier, x);
+        }
+
+        void log_barrier_qp_solver_test(const std::string &barrier_function_type, const bool verbose) {
+            auto &&comm = Comm::get_default();
+
+            Matrix A;
+            Vector b;
+            BoxConstraints<Vector> box;
+            SizeType n = 100;
+            create_symm_lapl_test_data(comm, A, b, box, n);
+            box.lower_bound() = nullptr;
+            // box.upper_bound() = nullptr;
+
+            InputParameters params;
+            // params.set("verbose", true);
+            params.set("barrier_parameter", 1e-2);
+            params.set("barrier_thickness", 0.01);
+            params.set("barrier_parameter_shrinking_factor", 0.1);
+            params.set("min_barrier_parameter", 1e-5);
+            params.set("verbose", verbose);
+            params.set("function_type", barrier_function_type);
+            params.set("max_it", 200);
+            params.set("enable_line_search", true);
+
+            LogBarrierQPSolver<Matrix, Vector> solver;
+
+            ConjugateGradient<Matrix, Vector, HOMEMADE> linear_solver;
+            linear_solver.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector>>());
+            linear_solver.max_it(100);
+            solver.set_linear_solver(make_ref(linear_solver));
+
+            solver.set_box_constraints(box);
+            solver.read(params);
+
+            Vector x(layout(b), 0.);
+            utopia_test_assert(solver.solve(A, b, x));
+
+            if (Traits::Backend == PETSC) {
+                rename("x", x);
+                write("X.m", x);
+
+                if (box.has_lower_bound()) {
+                    rename("lb", *box.lower_bound());
+                    write("LB.m", *box.lower_bound());
+                }
+
+                if (box.has_upper_bound()) {
+                    rename("ub", *box.upper_bound());
+                    write("UB.m", *box.upper_bound());
+                }
+
+                rename("a", A);
+                write("A.m", A);
+
+                rename("b", b);
+                write("B.m", b);
+            }
+        }
+
+        void log_barrier_qp_solver_test() {
+            // log_barrier_qp_solver_test("LogBarrierFunction", true);
+            log_barrier_qp_solver_test("LogBarrierFunction", false);
+            log_barrier_qp_solver_test("BoundedLogBarrierFunction", false);
+
+            // Utopia::Abort("BYE");
+        }
+
+        void interior_point_qp_solver_test() {
+            auto &&comm = Comm::get_default();
+
+            SizeType n = 400;
+            if (Traits::Backend == BLAS) {
+                n = 30;
+            }
+
+            Matrix A;
+            Vector b;
+            BoxConstraints<Vector> box;
+            create_symm_lapl_test_data(comm, A, b, box, n);
+            box.lower_bound() = nullptr;
+
+            Vector selector(layout(b), 1.);
+
+            if (true)  // Enable partial selection
+            {
+                Scalar start = 0.2;
+                Scalar end = 0.25;
+                auto selector_view = view_device(selector);
+                parallel_for(
+                    range_device(selector), UTOPIA_LAMBDA(const SizeType i) {
+                        Scalar x = i * 1. / (n - 1);
+                        bool val = x >= start && x <= end;
+                        selector_view.set(i, val);
+                    });
+            }
+
+            // bool verbose = Traits::Backend == PETSC;
+            bool verbose = false;
+
+            PrimalInteriorPointSolver<Matrix, Vector> solver;
+
+            InputParameters params;
+            params.set("min_val", 1e-18);
+            params.set("debug", verbose);
+            solver.read(params);
+
+            ConjugateGradient<Matrix, Vector, HOMEMADE> linear_solver;
+            linear_solver.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector>>());
+            linear_solver.max_it(10000);
+            solver.set_linear_solver(make_ref(linear_solver));
+
+            solver.set_box_constraints(box);
+            solver.set_selection(make_ref(selector));
+            solver.verbose(verbose);
+
+            Vector x(layout(b), 0.);
+            solver.solve(A, b, x);
+
+            if (verbose) {
+                rename("x", x);
+                write("IP_X.m", x);
+            }
+        }
+
+        void MPRGP_test() const {
+            MPRGP<Matrix, Vector> qp_solver;
+            run_qp_solver(qp_solver);
+
+            auto &&comm = Comm::get_default();
+
+            Matrix A;
+            Vector b;
+            BoxConstraints<Vector> box;
+            create_symm_lapl_test_data(comm, A, b, box);
 
             Vector x = 0 * b;
 
-            qp_solver.set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));
+            qp_solver.set_box_constraints(box);
             qp_solver.verbose(false);
             qp_solver.max_it(n * 2);
             qp_solver.set_eig_comp_tol(1e-1);
@@ -222,7 +403,9 @@ namespace utopia {
 
         void run() {
             print_backend_info();
-
+            UTOPIA_RUN_TEST(interior_point_qp_solver_test);
+            UTOPIA_RUN_TEST(log_barrier_test);
+            UTOPIA_RUN_TEST(log_barrier_qp_solver_test);
             UTOPIA_RUN_TEST(pg_test);
             UTOPIA_RUN_TEST(pcg_test);
             UTOPIA_RUN_TEST(ngs_test);
@@ -234,7 +417,7 @@ namespace utopia {
             if (mpi_world_size() > 1) return;
 
             print_backend_info();
-            UTOPIA_RUN_TEST(MG_QR_test);
+            // UTOPIA_RUN_TEST(MG_QR_test);
         }
 
         QPSolverTest() : n(20) {}
@@ -247,9 +430,187 @@ namespace utopia {
     template <class Matrix, class Vector>
     class PQPSolverTest {
     public:
+        using Traits = utopia::Traits<Matrix>;
+        using Scalar = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm = typename Traits::Communicator;
+        using IndexArray = typename Traits::IndexArray;
+        using IndexSet = typename Traits::IndexSet;
+
         void run() {
+            UTOPIA_RUN_TEST(MPRGP_DD);
             // FIXME
             UTOPIA_RUN_TEST(poly_qp);
+        }
+
+        void MPRGP_DD() {
+            auto &&comm = Comm::get_default();
+
+            static const bool verbose = false;
+            // static const bool verbose = Traits::Backend == PETSC;
+
+            Matrix A;
+            Vector b;
+            BoxConstraints<Vector> box;
+
+            Vector oracle;
+            std::stringstream c_ss;
+            Chrono c;
+
+            if (true) {
+                c.start();
+
+                SizeType n = 100;
+                QPSolverTest<Matrix, Vector>::create_symm_lapl_test_data(comm, A, b, box, n, true);
+
+                c.stop();
+                c_ss << "Problem initialization\n" << c << "\n";
+
+                if (n <= 1e5) {
+                    c.start();
+                    Factorization<Matrix, Vector> solver;
+                    solver.solve(A, b, oracle);
+                    c.stop();
+                    c_ss << "Direct solver\n" << c << "\n";
+                }
+
+            } else {
+                c.start();
+
+                // Path dir = "../data/test/CG_DD/mats_tests_2d_tri3";
+                // Path dir = "../data/test/CG_DD/diffusion3d_P1_531k";
+                Path dir = "../data/test/CG_DD/diffusion3d_P1_69k";
+                // Path dir = "../data/test/CG_DD/diffusion2d_P2_103k";
+                read(dir / "A", A);
+                read(dir / "b", b);
+                read(dir / "x", oracle);
+
+                c.stop();
+                c_ss << "Read problem from disk\n" << c << "\n";
+            }
+
+            ///////////////////////////////////////////////////////////////
+
+            c.start();
+
+            Vector x(layout(b), 0.);
+
+            auto params = param_list(param("inner_solver",
+                                           param_list(param("verbose", verbose),
+                                                      param("atol", 1e-10),
+                                                      param("rtol", 1e-10),
+                                                      param("stol", 1e-10),
+                                                      param("max_it", 2000))));
+
+            // Test MFKSP
+            if (false) {
+                params.set("type", "ksp");
+                params.set("pc_type", "none");
+                params.set("ksp_type", "gmres");
+
+                // params.set("type", "bcgs");
+            }
+
+            params.set("use_preconditioner", true);
+            params.set("preconditioner_type", "amg");
+
+            // params.set("preconditioner_type", "inv");
+            // params.set("use_preconditioner", false);
+
+            ///////////////////////////////////////////////////////////////
+
+            BDDLinearSolver<Matrix, Vector> solver;
+            solver.read(params);
+            solver.update(make_ref(A));
+
+            c.stop();
+            c_ss << "BDDLinearSolver::update\n" << c << "\n";
+
+            ///////////////////////////////////////////////////////////////
+
+            c.start();
+
+            solver.apply(b, x);
+
+            c.stop();
+            c_ss << "BDDLinearSolver::solve\n" << c << "\n";
+
+            ///////////////////////////////////////////////////////////////
+
+            if (box.has_bound()) {
+                BDDQPSolver<Matrix, Vector> qp_solver;
+
+                /// Changing the input data
+                box.lower_bound() = nullptr;
+                auto &&u = *box.upper_bound();
+
+                auto u_view = view_device(u);
+                SizeType n_half = u.size() / 2;
+
+                // Allow for unconstrained nodes
+                parallel_for(
+                    range_device(u), UTOPIA_LAMBDA(const SizeType i) {
+                        if (i > n_half) {
+                            u_view.set(i, 0.6);
+                        }
+                    });
+
+                c.start();
+
+                auto qp_params = param_list(param("infinity", 0.55),
+                                            param("debug", verbose),
+                                            param("inner_solver",
+                                                  param_list(param("verbose", verbose),
+                                                             param("atol", 1e-10),
+                                                             param("rtol", 1e-10),
+                                                             param("stol", 1e-10),
+                                                             param("max_it", 2000))));
+
+                qp_solver.read(qp_params);
+
+                qp_solver.set_box_constraints(box);
+                qp_solver.update(make_ref(A));
+
+                c.stop();
+                c_ss << "BDDQPSolver::update\n" << c << "\n";
+
+                ///////////////////////////////////////////////////////////////
+
+                c.start();
+
+                Vector x_qp(layout(b));
+                qp_solver.apply(b, x_qp);
+
+                c.stop();
+                c_ss << "BDDLinearSolver::solve\n" << c << "\n";
+
+                rename("x", x_qp);
+                write("load_XQP.m", x_qp);
+            }
+
+            ///////////////////////////////////////////////////////////////
+
+            if (verbose) {
+                x.comm().root_print(c_ss.str());
+            }
+
+            ///////////////////////////////////////////////////////////////
+
+            if (!empty(oracle)) {
+                Scalar diff = norm2(x - oracle);
+
+                if (diff > 1e-6 && verbose) {
+                    comm.root_print(diff);
+
+                    rename("o", oracle);
+                    write("O.m", oracle);
+
+                    rename("x", x);
+                    write("X.m", x);
+                }
+
+                utopia_test_assert(diff < 1e-6);
+            }
         }
 
         void poly_qp() {
@@ -261,7 +622,7 @@ namespace utopia {
             in.set("backend", "any");
             in.set("type", "pg");
             // in.set("verbose", true);
-            in.set("max-it", 2000);
+            in.set("max_it", 2000);
 
             solver.read(in);
 
@@ -316,8 +677,8 @@ namespace utopia {
 
             utopia_test_assert(amg.solve(H, g, x));
 
-            rename("x", x);
-            write("X.m", x);
+            // rename("x", x);
+            // write("X.m", x);
         }
 
         void monotone_mg_test() {
@@ -394,10 +755,10 @@ namespace utopia {
 
     static void qp_solver() {
 #ifdef UTOPIA_WITH_PETSC
+        PQPSolverTest<PetscMatrix, PetscVector>().run();
         QPSolverTest<PetscMatrix, PetscVector>().run();
         QPSolverTest<PetscMatrix, PetscVector>().run_GS_QR();
 
-        PQPSolverTest<PetscMatrix, PetscVector>().run();
         MonotoneMGTest<PetscMatrix, PetscVector>().run();
         // ProjectedGaussSeidelNewTest<PetscMatrix, PetscVector>().run();
 

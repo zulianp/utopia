@@ -15,8 +15,10 @@
 
 #include "utopia_fe_Core.hpp"
 
+#include "utopia_FEFunctionFactory.hpp"
 #include "utopia_NewmarkIntegrator.hpp"
 #include "utopia_ObstacleFEFunction.hpp"
+#include "utopia_moonolith_ObstacleFEFunctionFactory.hpp"
 
 #include <memory>
 
@@ -42,6 +44,9 @@ namespace utopia {
         void run(Input &in) {
             FunctionSpace space;
             Field<FunctionSpace> deformation;
+            bool use_state_as_initial_condition = false;
+
+            in.get("use_state_as_initial_condition", use_state_as_initial_condition);
 
             in.require("space", [&](Input &in) {
                 bool read_state = false;
@@ -51,7 +56,7 @@ namespace utopia {
                     space.read_with_state(in, deformation);
 
                     const Scalar_t norm_deformation = norm2(deformation.data());
-                    std::cout << "norm_deformation: " << norm_deformation << std::endl;
+                    utopia::out() << "norm_deformation: " << norm_deformation << std::endl;
 
                 } else {
                     space.read(in);
@@ -65,11 +70,19 @@ namespace utopia {
 
             std::shared_ptr<FEFunctionInterface_t> fun = std::make_shared<FEModelFunction_t>(make_ref(space));
 
-            bool dynamic = false;
-            in.get("dynamic", dynamic);
+            std::string integrator;
+            in.get("integrator", integrator);
 
-            if (dynamic) {
-                fun = std::make_shared<NewmarkIntegrator_t>(fun);
+            if (integrator.empty()) {
+                bool dynamic = false;
+                in.get("dynamic", dynamic);
+
+                if (dynamic) {
+                    fun = std::make_shared<NewmarkIntegrator_t>(fun);
+                }
+
+            } else {
+                fun = ObstacleFEFunctionFactory<FunctionSpace>::make_time_integrator(fun, integrator);
             }
 
             auto obs_fun = std::make_shared<ObstacleFEFunction_t>(fun);
@@ -79,9 +92,22 @@ namespace utopia {
             in.get("solver", solver);
 
             Vector_t x;
-            space.create_vector(x);
+
+            if (deformation.empty()) {
+                space.create_vector(x);
+            } else {
+                x = deformation.data();
+            }
 
             fun->setup_IVP(x);
+
+            if (use_state_as_initial_condition) {
+                utopia::out() << "Using state as initial condition!\n";
+                assert(!deformation.empty());
+                if (deformation.empty() || !fun->set_initial_condition(deformation.data())) {
+                    Utopia::Abort("Called set_initial_condition on function that does not support it!");
+                }
+            }
 
             do {
                 if (!solver.solve(*obs_fun, x)) {

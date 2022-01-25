@@ -141,6 +141,11 @@ namespace utopia {
             owner_ = true;
         }
 
+        void same_nnz_pattern_copy(const TpetraMatrix &other) {
+            // TODO FIXME
+            copy(other);
+        }
+
         void select(const IndexSet &row_index, const IndexSet &col_index, TpetraMatrix &result) const override;
 
         ///////////////////////////////////////////////////////////////////////////
@@ -200,6 +205,7 @@ namespace utopia {
         }
 
         inline bool empty() const override { return is_null(); }
+        bool is_assembled() const;
 
         inline Size local_size() const override {
             if (is_null()) {
@@ -527,6 +533,7 @@ namespace utopia {
         inline bool is_alias(const TpetraMatrix &other) const { return mat_ == other.mat_; }
 
         void shift_diag(const TpetraVector &d);
+        void set_diag(const TpetraVector &d);
 
     private:
         TrilinosCommunicator comm_;

@@ -222,7 +222,7 @@ namespace utopia {
                 r_norm = norm2(s_);
 
                 if (this->verbose()) {
-                    PrintInfo::print_iter_status({Scalar(it), r_norm});
+                    PrintInfo::print_iter_status(it, {r_norm});
                 }
 
                 converged = this->check_convergence(it, r_norm, 1, 1);
@@ -238,7 +238,7 @@ namespace utopia {
                 r_norm = norm2(r_);
 
                 if (this->verbose()) {
-                    PrintInfo::print_iter_status({Scalar(it), r_norm});
+                    PrintInfo::print_iter_status(it, {r_norm});
                 }
 
                 converged = this->check_convergence(it, r_norm, 1, 1);

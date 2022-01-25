@@ -36,6 +36,12 @@ namespace utopia {
                 extract_trace_space(in_space, space);
                 // }
 
+                // FIXME this is a hack, we should do this with stk by defining parts
+                using IndexArray = typename Traits<FunctionSpace>::IndexArray;
+                auto banned_nodes = std::make_shared<IndexArray>();
+                in_space.create_boundary_node_list(*banned_nodes);
+                obstacle.set_banned_nodes(banned_nodes);
+
                 return obstacle.assemble(space);
             }
 
@@ -78,6 +84,12 @@ namespace utopia {
         void Obstacle::transform(const Vector &in, Vector &out) { impl_->obstacle.transform(in, out); }
 
         void Obstacle::inverse_transform(const Vector &in, Vector &out) { impl_->obstacle.inverse_transform(in, out); }
+
+        std::shared_ptr<Obstacle::Matrix> Obstacle::orthogonal_transformation() {
+            return impl_->obstacle.orthogonal_transformation();
+        }
+
+        std::shared_ptr<Obstacle::Matrix> Obstacle::mass_matrix() { return impl_->obstacle.mass_matrix(); }
 
     }  // namespace stk
 }  // namespace utopia

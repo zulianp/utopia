@@ -22,6 +22,8 @@ namespace utopia {
 
             Kokkos::parallel_for(
                 k_res.extent(0), KOKKOS_LAMBDA(const int i) { k_res(i, 0) = k_op.apply(k_res(i, 0)); });
+
+            Kokkos::fence();
         }
     };
 

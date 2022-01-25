@@ -1,6 +1,8 @@
 #include "utopia_DualBasisTest.hpp"
 #include "utopia_DualBasis.hpp"
 
+#include "MortarAssemble.hpp"
+
 namespace utopia {
 
     static void test_dual_basis(const libMesh::ElemType e_type, const int dim, const int order, const double alpha) {
