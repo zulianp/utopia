@@ -29,7 +29,7 @@ public:
     SizeType n_dofs = 100;
 
     void run() {
-        UTOPIA_RUN_TEST(test_amg_add_corr);
+        // UTOPIA_RUN_TEST(test_amg_add_corr);
         UTOPIA_RUN_TEST(test_amg);
     }
 

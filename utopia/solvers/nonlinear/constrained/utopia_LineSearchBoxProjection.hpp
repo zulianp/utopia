@@ -3,6 +3,8 @@
 
 #include "utopia_LS_Strategy.hpp"
 
+#include "utopia_TransformedBoxConstraints.hpp"
+
 #include <sstream>
 
 namespace utopia {
@@ -79,6 +81,12 @@ namespace utopia {
                                 const std::shared_ptr<Vector> &offset_vector = nullptr)
             : box_(box), offset_vector_(offset_vector) {
             // this->verbose(true);
+        }
+
+        template <class Matrix>
+        inline void set_transform(const AffineTransformation<Matrix, Vector> &trafo) {
+            set_transform(trafo.transform());
+            set_offset_vector(trafo.offset_vector());
         }
 
         inline void set_transform(const std::shared_ptr<Operator<Vector>> &transform) { transform_ = transform; }
