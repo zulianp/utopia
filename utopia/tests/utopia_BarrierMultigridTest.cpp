@@ -11,6 +11,7 @@
 #include "utopia_ElementWisePseudoInverse.hpp"
 
 #include "utopia_BarrierMultigrid.hpp"
+#include "utopia_LogBarrierQPMultigrid.hpp"
 
 #ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
@@ -47,21 +48,16 @@ namespace utopia {
 
             // auto linear_solver = std::make_shared<Factorization<Matrix, Vector>>();
 
-            // auto linear_solver = std::make_shared<ILU<Matrix, Vector>>();
-            // linear_solver->verbose(true);
-
             InputParameters params;
             params.set("use_coarse_space", true);
-            // params.set("use_coarse_space", false);
             params.set("debug", true);
             params.set("barrier_parameter", 1);
-            params.set("barrier_parameter_shrinking_factor", 0.3);
+            params.set("barrier_parameter_shrinking_factor", 0.1);
             params.set("min_barrier_parameter", 1e-10);
-            params.set("max_it", 230);
-            // params.set("barrier_function_type", "BoundedLogBarrier");
-            params.set("barrier_function_type", "BoundedLogBarrierFunction");
-
+            params.set("max_it", 40);
+            params.set("barrier_function_type", "BoundedLogBarrier");
             // params.set("barrier_function_type", "LogBarrier");
+
             params.set("use_non_linear_residual", false);
             params.set("pre_smoothing_steps", 5);
             params.set("post_smoothing_steps", 5);
@@ -76,8 +72,8 @@ namespace utopia {
             mg->verbose(verbose);
             mg->read(params);
 
-            // Use external linear smoothing (internally uses Jacobi)
-            mg->set_linear_smoother(std::make_shared<ILU<Matrix, Vector>>());
+            // Use external linear smoothing (otherwise internally uses Jacobi)
+            // mg->set_linear_smoother(std::make_shared<ILU<Matrix, Vector>>());
 
 #ifdef UTOPIA_WITH_PETSC
             if (algebraic) {
@@ -98,8 +94,8 @@ namespace utopia {
         void test_ml_problem() {
             const static bool verbose = true;
             const static bool use_masks = false;
-            int n_levels = 11;
-            int n_coarse = 500;
+            int n_levels = 7;
+            int n_coarse = 501;
 
             using ProblemType = utopia::Poisson1D<Matrix, Vector>;
             MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(n_levels, n_coarse, !use_masks);
@@ -133,9 +129,57 @@ namespace utopia {
             }
         }
 
+        void test_qp_problem() {
+            //////////////////////////////////////////////////////////////////////////////////////////
+            // Problem set-up
+            const static bool verbose = true;
+            const static bool use_masks = false;
+            int n_levels = 7;
+            int n_coarse = 501;
+
+            using ProblemType = utopia::Poisson1D<Matrix, Vector>;
+            MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(n_levels, n_coarse, !use_masks);
+
+            Matrix A;
+            Vector x, b;
+
+            auto &&funs = ml_problem.get_functions();
+            auto &&fun = funs.back();
+            fun->get_eq_constrains_values(x);
+            fun->gradient(x, b);
+            fun->hessian(x, A);
+
+            // Negative gradient!
+            b = -b;
+
+            Vector lower_bound(layout(x), -0.8), upper_bound(layout(x), 0.8);
+            BoxConstraints<Vector> box(nullptr, make_ref(upper_bound));
+
+            //////////////////////////////////////////////////////////////////////////////////////////
+            // Solver set-up
+            auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+            auto preconditioner = std::make_shared<InvDiagPreconditioner<Matrix, Vector>>();
+            linear_solver->set_preconditioner(preconditioner);
+            linear_solver->max_it(10000);
+
+            LogBarrierQPMultigrid<Matrix, Vector> mg(linear_solver);
+
+            mg.set_box_constraints(box);
+            mg.verbose(verbose);
+
+            // Solves
+            mg.solve(A, b, x);
+
+            if (Traits::Backend == PETSC) {
+                rename("x", x);
+                write("X_qp.m", x);
+            }
+        }
+
         void run() {
             print_backend_info();
             UTOPIA_RUN_TEST(test_ml_problem);
+            UTOPIA_RUN_TEST(test_qp_problem);
         }
     };
 
