@@ -14,13 +14,20 @@ d = 2
 grad_trial = trial_gradient(d)
 grad_test = test_gradient(d)
 
+###############################
 # Nonlinear quantities
+###############################
 F = deformation_gradient(d)
 J = det(F)
 F_inv = Inverse(F)
 F_inv_t = F_inv.T
 C = F.T*F
 I_C = trace(C)
+
+
+###############################
+# Strain energy function
+###############################
 
 Ogden = mu/2 *(I_C - d) - mu * log(J) + (lmbda/2) * (log(J))**2
 Bower = mu/2 *(I_C**(-Rational(2, 3)) - d) + (lmbda/2) * (J-1)**2
@@ -33,20 +40,12 @@ alpha = 1 + mu_s/lmbda_s - mu_s/(4*lmbda_s)
 
 Smith = mu_s/2 * (I_C - d) + lmbda_s/2 * (J - alpha)**2 - mu_s/2 * log(I_C + 1)
 
-
-# Strain energy function
 # W = simplify(Ogden)
 # W = simplify(Bower)
 # W = simplify(Wang)
 W = simplify(Smith)
 
-
-P00 = diff(W, F[0, 0]);
-P01 = diff(W, F[0, 1]);
-P10 = diff(W, F[1, 0]);
-P11 = diff(W, F[1, 1]);
-
-P = Matrix(2,2,[P00,P01,P10,P11])
+P = first_piola(W, F)
 
 # if False:
 if True:
@@ -116,9 +115,22 @@ if True:
 
 	print("Code hessian")
 
+	# bilinear_form = subs_gradient_trial(0, bilinear_form)
+	# bilinear_form = subs_gradient_test(1, bilinear_form)
+
 	code_hessian = ccode(simplify(bilinear_form), standard='C89')
 	print(f'{code_hessian}')
 	print("")
+
+	with open('templates/utopia_tpl_elasticity.c', 'r') as f:
+		tpl = f.read()
+		kernel = tpl.format(code=code_hessian)
+		print(kernel)
+
+		with open('kernel.c', 'w') as f:
+			f.write(kernel)
+		 
+	 
 
 
 # generator=CCodeGen(project='utopia', printer=None, preprocessor_statements=None, cse=True)

@@ -1,15 +1,17 @@
 from sympy import symbols
 from sympy import Matrix
+from sympy import shape
+from sympy import diff
 
 def deformation_gradient(d):
     if d == 1:
         f00 = symbols('f00')
         F = Matrix(1,1,[f00])
     elif d == 2:
-        f00, f01, f10, f11 = symbols('f00 f01 f10 f11')
+        f00, f01, f10, f11 = symbols('f_00 f_01 f_10 f_11')
         F = Matrix(2,2,[f00,f01,f10,f11])
     else:
-        f00, f01, f02, f10, f11, f12, f20, f21, f22  = symbols('f00 f01 f02 f10 f11 f12 f20 f21 f22')
+        f00, f01, f02, f10, f11, f12, f20, f21, f22  = symbols('f_00 f_01 f_02 f_10 f_11 f_12 f_20 f_21 f_22')
         F = Matrix(3,3,[f00, f01, f02, f10, f11, f12, f20, f21, f22])
     return F
 
@@ -66,4 +68,43 @@ def test_gradient(d):
         test_grad_10, test_grad_11, test_grad_12,
         test_grad_20, test_grad_21, test_grad_22])
     return test
+
+def subs_gradient_trial(d,f):
+    dim = 2
+    ret = f;
+    for k in range(0, dim):
+        ret = ret.subs(f'trial_grad_{d}{k}', symbols(f'trial_g_{k}'))
+
+    for k in range(0, dim):
+        if k != d:
+            for j in range(0, dim):
+                ret = ret.subs(f'trial_grad_{k}{j}', 0)
+
+    return ret
+
+def subs_gradient_test(d,f):
+    dim = 2
+    ret = f;
+    for k in range(0, dim):
+        ret = ret.subs(f'test_grad_{d}{k}', symbols(f'test_g_{k}'))
+
+    for k in range(0, dim):
+        if k != d:
+            for j in range(0, dim):
+                ret = ret.subs(f'test_grad_{k}{j}', 0)
+
+    return ret
+
+
+def first_piola(strain_energy, F):
+    shape = F.shape
+    print(shape)
+
+    P = Matrix.zeros(shape[0], shape[1])
+
+    for i in range(0, shape[0]):
+        for j in range(0, shape[1]):
+            P[i, j] = diff(strain_energy, F[i, j])
+
+    return P
 
