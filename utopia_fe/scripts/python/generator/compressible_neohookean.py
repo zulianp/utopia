@@ -2,14 +2,18 @@
 from sympy import *
 from sympy.utilities.codegen import codegen
 from sympy.utilities.codegen import CCodeGen
+from sympy.codegen.ast import Assignment
+from sympy.codegen.ast import AddAugmentedAssignment
+from sympy.printing.c import C99CodePrinter
 # from sympy.codegen.cfunctions import *
 
 from utopia_mech import *
 
 mu, lmbda = symbols('mu lmbda')
+dx = symbols('dx')
 
 
-d = 2
+d = 3
 # FE
 grad_trial = trial_gradient(d)
 grad_test = test_gradient(d)
@@ -40,119 +44,96 @@ alpha = 1 + mu_s/lmbda_s - mu_s/(4*lmbda_s)
 
 Smith = mu_s/2 * (I_C - d) + lmbda_s/2 * (J - alpha)**2 - mu_s/2 * log(I_C + 1)
 
-# W = simplify(Ogden)
+W = simplify(Ogden)
 # W = simplify(Bower)
 # W = simplify(Wang)
-W = simplify(Smith)
+# W = simplify(Smith)
 
 P = first_piola(W, F)
 
 # if False:
 if True:
 
-	code_energy = ccode(W, standard='C89')
-	print("Code energy:")
-	print(code_energy)
-	print("")
-
-	print("Code linear form:")
-
-	linear_form = simplify(trace(P.T * grad_test))
-	code_lf =  ccode(linear_form, standard='C89')
-	print(code_lf)
+	#############################################
+	# Energy
+	#############################################
+	energy = W * dx
 
 
-	print("Code gradient:")
+	#############################################
+	# Gradient
+	#############################################
+	print("Creating Gradient")
 
+	linear_form = 0
 	for i in range(0, d):
 		for j in range(0, d):
+	 		linear_form += P[i,j] * grad_test[i,j]
 
-			code_gradient =  ccode(P[i,j], standard='C89')
-			print(f'{i},{j}) {code_gradient}')
+	linear_form *= dx
 
-
-	# for i in range(0, d):
-	# 	for j in range(0, d):
-	# 		for l in range(0, d):
-	# 			for k in range(0, d):
-	# 				Hij = diff(P[l, k], F[i, j]);
-
-	# 				code_hessian =  ccode(Hij, standard='C89')
-	# 				print(f'{i},{j},{l},{k}) {code_hessian}')
-
-	print("")
+	#############################################
+	# Hessian
+	#############################################
+	print("Creating Hessian")
 
 	contraction = 0
-
 	for i in range(0, d):
 		for j in range(0, d):
 	 		contraction += P[i,j] * grad_trial[i,j]
-
-
-	print("Code stress")
 
 	bilinear_form = 0
 
 	for i in range(0, d):
 		for j in range(0, d):
 			Hij = simplify(diff(contraction, F[i, j]));
-
 			bilinear_form += Hij * grad_test[i,j]
 
-			Hijs = Hij;
+	bilinear_form *= dx
+	#############################################
+	# Substitutions
+	#############################################
+	print("Substituting variables")
 
-			# Hijs = Hij.subs(grad_trial00, 0)
-			# Hijs = Hijs.subs(grad_trial01, 1)
-			# Hijs = Hijs.subs(grad_trial10, 0)
-			# Hijs = Hijs.subs(grad_trial11, 0)
-			# Hijs = simplify(Hijs)
+	tp = TensorProductBasis(d)
 
-			code_lin_stress = ccode(Hijs, standard='C89')
-			print(f'{i},{j}) {code_lin_stress}')
-			print("")
+	expression_list = []
 
-	print("")
+	for d1 in range(0, d):
+		expression_list.append(AddAugmentedAssignment(symbols(f"lf[offset_i+{d1}]"), tp.linear_subs("i", d1, linear_form)))
 
-	print("Code hessian")
+		for d2 in range(0, d):
+			expression_list.append(AddAugmentedAssignment(symbols(f"bf[offset_ij+{d1*d + d2}]"), tp.bilinear_subs("i", d1, "j", d2, bilinear_form)))
+	
 
-	# bilinear_form = subs_gradient_trial(0, bilinear_form)
-	# bilinear_form = subs_gradient_test(1, bilinear_form)
+	expression_list.append(AddAugmentedAssignment(symbols("e"), energy))
 
-	code_hessian = ccode(simplify(bilinear_form), standard='C89')
-	print(f'{code_hessian}')
-	print("")
+
+	#############################################
+	# Generate code
+	#############################################
+
+	print("Generating code")
+
+	sub_expr, simpl_expr = cse(expression_list)
+
+	lines = []
+	printer = C99CodePrinter()
+
+	for var,expr in sub_expr:
+		lines.append(f'T {var} = {printer.doprint(expr)};')
+
+	for v in simpl_expr:
+		# if isinstance(v, ImmutableMatrix):
+			lines.append(printer.doprint(v))
+
+	code_string='\n'.join(lines)
+
 
 	with open('templates/utopia_tpl_elasticity.c', 'r') as f:
 		tpl = f.read()
-		kernel = tpl.format(code=code_hessian)
+		kernel = tpl.format(code=code_string)
 		print(kernel)
 
 		with open('kernel.c', 'w') as f:
 			f.write(kernel)
-		 
-	 
-
-
-# generator=CCodeGen(project='utopia', printer=None, preprocessor_statements=None, cse=True)
-# r = generator.routine("neohookean", W, argument_sequence=None, global_vars=None)
-# print(r)
-
-# generator.dump_c((r,r), "neohookean.C", "neohookean", header=True, empty=True)
-
-# [(c_name, c_code), (h_name, c_header)] = codegen(("neohookean", W), "C89", "test", header=False, empty=False)
-# print(c_header)
-# print(c_code)
-
-# dr = diff(r*m_inv, m[0,1])
-# # print(dr)
-
-
-# dr=simplify(dr)
-
-
-# print("C---------\n")
-# print(cc)
-
-# print("C---------\n")
-
-# # https: // docs.sympy.org/latest/modules/diffgeom.html
