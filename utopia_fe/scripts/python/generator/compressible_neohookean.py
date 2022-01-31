@@ -6,42 +6,40 @@ from sympy.utilities.codegen import CCodeGen
 
 from utopia_mech import *
 
+mu, lmbda = symbols('mu lmbda')
+
 
 d = 2
 # FE
 grad_trial = trial_gradient(d)
-# grad_trial = MatrixSymbol("grad_trial", 2, 2)
-
-grad_test00, grad_test01, grad_test10, grad_test11 = symbols('grad_test_00 grad_test_01 grad_test_10 grad_test_11')
-grad_test = Matrix(2,2,[grad_test00,grad_test01,grad_test10,grad_test11])
-# grad_test = MatrixSymbol("grad_test", 2, 2)
+grad_test = test_gradient(d)
 
 # Nonlinear quantities
-# 2D deformation gradient
-f00, f01, f10, f11 = symbols('f00 f01 f10 f11')
-C1, D1 = symbols('C1 D1')
-
 F = deformation_gradient(d)
-# F = MatrixSymbol("F", 2, 2)
-
-
 J = det(F)
-
-F_inv=Inverse(F)
+F_inv = Inverse(F)
 F_inv_t = F_inv.T
+C = F.T*F
+I_C = trace(C)
 
-I1 = trace(F)
+Ogden = mu/2 *(I_C - d) - mu * log(J) + (lmbda/2) * (log(J))**2
+Bower = mu/2 *(I_C**(-Rational(2, 3)) - d) + (lmbda/2) * (J-1)**2
+Wang  = mu/2 *(I_C**(-Rational(2, 3)) - d) + (lmbda/2) * (J-1)
 
-print("Deformation Gradient")
-print(F)
 
-print("Det")
-print(J)
+mu_s = Rational(4,3)*mu
+lmbda_s = lmbda + Rational(5,6)*lmbda
+alpha = 1 + mu_s/lmbda_s - mu_s/(4*lmbda_s)
 
-print("I1")
-print(I1)
+Smith = mu_s/2 * (I_C - d) + lmbda_s/2 * (J - alpha)**2 - mu_s/2 * log(I_C + 1)
 
-W = simplify(C1 * (I1 - d - 2 * log(J)) + D1 * (J - 1)**2)
+
+# Strain energy function
+# W = simplify(Ogden)
+# W = simplify(Bower)
+# W = simplify(Wang)
+W = simplify(Smith)
+
 
 P00 = diff(W, F[0, 0]);
 P01 = diff(W, F[0, 1]);
