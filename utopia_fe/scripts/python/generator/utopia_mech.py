@@ -140,7 +140,8 @@ def first_piola(strain_energy, F):
 
 
 class KernelGenerator:
-    # def __init__(self):
+    def __init__(self, dim):
+        self.dim = dim
 
     def generate(self, expression_list, tpl_path, output_path):
         print("Generating code")
@@ -160,7 +161,7 @@ class KernelGenerator:
 
         with open(tpl_path, 'r') as f:
             tpl = f.read()
-            kernel = tpl.format(code=code_string)
+            kernel = tpl.format(code=code_string,dim=self.dim)
 
             with open(output_path, 'w') as f:
                 f.write(kernel)

@@ -15,7 +15,7 @@ mu, lmbda = symbols('mu lmbda')
 dx = symbols('dx')
 
 
-d = 2
+d = 3
 # FE
 grad_trial = trial_gradient(d)
 grad_test = test_gradient(d)
@@ -36,8 +36,8 @@ I_C = trace(C)
 ###############################
 
 Ogden = mu/2 *(I_C - d) - mu * log(J) + (lmbda/2) * (log(J))**2
-Bower = mu/2 *(I_C**(-Rational(2, 3)) - d) + (lmbda/2) * (J-1)**2
-Wang  = mu/2 *(I_C**(-Rational(2, 3)) - d) + (lmbda/2) * (J-1)
+Bower = mu/2 *(J**(-Rational(2, 3))*I_C - d) + (lmbda/2) * (J-1)**2
+Wang  = mu/2 *(J**(-Rational(2, 3))*I_C - d) + (lmbda/2) * (J-1) # Does not work
 
 
 mu_s = Rational(4,3)*mu
@@ -125,7 +125,8 @@ if True:
 	# Generate code
 	#############################################
 
-	generator = KernelGenerator()
+	generator = KernelGenerator(d)
+
 
 	generator.generate(hessian_expression_list, 'templates/utopia_tpl_elasticity_hessian.hpp', output_dir + '/generated_AutoHyperElasticityHessian.hpp')
 	generator.generate(gradient_expression_list, 'templates/utopia_tpl_elasticity_gradient.hpp', output_dir + '/generated_AutoHyperElasticityGradient.hpp')

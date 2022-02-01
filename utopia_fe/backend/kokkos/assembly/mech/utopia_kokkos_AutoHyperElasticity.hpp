@@ -29,6 +29,8 @@ namespace utopia {
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;
 
+            static constexpr int Dim = AUTO_HYPER_ELASTICITY_DIM;
+
             class Params : public Configurable {
             public:
                 using Scalar = typename Traits<FirstLameParameter>::Scalar;
@@ -87,8 +89,6 @@ namespace utopia {
 
             bool assemble_matrix() override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<AutoHyperElasticity>::assemble_matrix");
-
-                constexpr int Dim = 2;
 
                 this->ensure_matrix_accumulator();
 
@@ -170,8 +170,6 @@ namespace utopia {
 
                 auto &fe = this->fe();
                 auto data = this->vector_data();
-
-                constexpr int Dim = 2;
 
                 {
                     assert(deformation_gradient_);

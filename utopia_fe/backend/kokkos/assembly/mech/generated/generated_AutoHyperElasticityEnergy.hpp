@@ -5,6 +5,10 @@
 
 #include "utopia_Algorithms.hpp"
 
+#ifndef AUTO_HYPER_ELASTICITY_DIM
+#define AUTO_HYPER_ELASTICITY_DIM 2
+#endif //AUTO_HYPER_ELASTICITY_DIM
+
 template <typename T>
 UTOPIA_FUNCTION void elastic_material_energy(const T mu,
                                       const T lmbda,
