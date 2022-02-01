@@ -151,7 +151,7 @@ namespace utopia {
 				bf[3] += dx*(grad_trial[0]*(grad_test[0]*(lmbda*x6 + x10*(x15*x6 + x26)) + grad_test[1]*x35) + grad_trial[1]*(grad_test[0]*x35 + grad_test[1]*(lmbda*x5 + x10*(x15*x5 + x17))));
 			}
 
-		};;
+		};
 	}
 }
 

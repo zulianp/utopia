@@ -657,7 +657,7 @@ namespace utopia {
 				bf[8] += dx*(grad_trial[0]*(grad_test[0]*(C1*(4*f[6]*x171 + x165*x72 + x35) + C2*(x167*x77 + x21*(x249 + x250) + 2*x251*x76)) + grad_test[1]*(C1*(x165*x80 + x252) + C2*(x167*x82 + x254)) + grad_test[2]*(C1*(x165*x85 + x255) + C2*(x167*x87 + x256))) + grad_trial[1]*(grad_test[0]*(C1*(x180*x72 + x252) + C2*(x183*x77 + x254)) + grad_test[1]*(C1*(4*f[7]*x181 + x180*x80 + x35) + C2*(x183*x82 + x21*(x249 + x257) + 2*x258*x82)) + grad_test[2]*(C1*(x180*x85 + x259) + C2*(x183*x87 + x261))) + grad_trial[2]*(grad_test[0]*(C1*(x192*x72 + x255) + C2*(x195*x77 + x256)) + grad_test[1]*(C1*(x192*x80 + x259) + C2*(x195*x82 + x261)) + grad_test[2]*(C1*(4*f[8]*x193 + x192*x85 + x35) + C2*(x195*x87 + x21*(x250 + x257) + 2*x260*x87))));
 			}
 
-		};;
+		};
 	}
 }
 

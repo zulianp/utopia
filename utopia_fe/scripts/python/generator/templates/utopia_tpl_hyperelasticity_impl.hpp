@@ -50,7 +50,7 @@ namespace utopia {{
 				{value}
 			}}
 
-			UTOPIA_FUNCTION void eval(const T mu,
+			UTOPIA_FUNCTION static void eval(const T mu,
 				const T lmbda,
 				const T *UTOPIA_RESTRICT f,
 				const T *grad_test,
@@ -65,7 +65,7 @@ namespace utopia {{
 				{combined}
 			}}
 
-		}};;
+		}};
 	}}
 }}
 

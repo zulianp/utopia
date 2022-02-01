@@ -119,7 +119,7 @@ namespace utopia {
 				bf[3] += dx*(grad_trial[0]*(grad_test[0]*(x10 + x2*x7) + x13*x16) + grad_trial[1]*(f[3]*x17 + grad_test[1]*(x10 + x3*x7)));
 			}
 
-		};;
+		};
 	}
 }
 
