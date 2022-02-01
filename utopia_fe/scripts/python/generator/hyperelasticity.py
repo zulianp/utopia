@@ -214,7 +214,6 @@ def main(args):
 	I1 = J**(-Rational(d-1, d))*I_C
 	I2 = J**(-Rational(d+1, d))*I_C2;
 	IncompressibleMooneyRivlin = C1 * (I1 - d) + C2 * (I2 - d)
-	name = "IncompressibleMooneyRivlin"
 
 	###############################
 	# Select model
