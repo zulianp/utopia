@@ -15,7 +15,8 @@ mu, lmbda = symbols('mu lmbda')
 dx = symbols('dx')
 
 
-simplify_expressions = True
+# simplify_expressions = True
+simplify_expressions = False
 
 d = 3
 # FE
@@ -48,10 +49,10 @@ alpha = 1 + mu_s/lmbda_s - mu_s/(4*lmbda_s)
 
 Smith = mu_s/2 * (I_C - d) + lmbda_s/2 * (J - alpha)**2 - mu_s/2 * log(I_C + 1)
 
-W = simplify(Ogden)
+# W = simplify(Ogden)
 # W = simplify(Bower)
 # W = simplify(Wang)
-# W = simplify(Smith)
+W = simplify(Smith)
 
 P = first_piola(W, F)
 
