@@ -2,6 +2,10 @@ from sympy import symbols
 from sympy import Matrix
 from sympy import shape
 from sympy import diff
+from sympy.printing.c import C99CodePrinter
+from sympy.utilities.codegen import codegen
+from sympy import cse
+
 
 # def deformation_gradient(d):
 #     if d == 1:
@@ -133,4 +137,31 @@ def first_piola(strain_energy, F):
             P[i, j] = diff(strain_energy, F[i, j])
 
     return P
+
+
+class KernelGenerator:
+    # def __init__(self):
+
+    def generate(self, expression_list, tpl_path, output_path):
+        print("Generating code")
+
+        sub_expr, simpl_expr = cse(expression_list)
+
+        lines = []
+        printer = C99CodePrinter()
+
+        for var,expr in sub_expr:
+            lines.append(f'T {var} = {printer.doprint(expr)};')
+
+        for v in simpl_expr:
+                lines.append(printer.doprint(v))
+
+        code_string='\n'.join(lines)
+
+        with open(tpl_path, 'r') as f:
+            tpl = f.read()
+            kernel = tpl.format(code=code_string)
+
+            with open(output_path, 'w') as f:
+                f.write(kernel)
 

@@ -13,7 +13,7 @@ mu, lmbda = symbols('mu lmbda')
 dx = symbols('dx')
 
 
-d = 3
+d = 2
 # FE
 grad_trial = trial_gradient(d)
 grad_test = test_gradient(d)
@@ -97,43 +97,37 @@ if True:
 
 	tp = TensorProductBasis(d)
 
-	expression_list = []
+	hessian_expression_list = []
+	gradient_expression_list = []
+	energy_expression_list = []
+
+
 
 	for d1 in range(0, d):
-		expression_list.append(AddAugmentedAssignment(symbols(f"lf[offset_i+{d1}]"), tp.linear_subs("i", d1, linear_form)))
+		gradient_expression_list.append(AddAugmentedAssignment(symbols(f"lf[offset_i+{d1}]"), tp.linear_subs("i", d1, linear_form)))
 
 		for d2 in range(0, d):
-			expression_list.append(AddAugmentedAssignment(symbols(f"bf[offset_ij+{d1*d + d2}]"), tp.bilinear_subs("i", d1, "j", d2, bilinear_form)))
+			hessian_expression_list.append(AddAugmentedAssignment(symbols(f"bf[offset_ij+{d1*d + d2}]"), tp.bilinear_subs("i", d1, "j", d2, bilinear_form)))
 	
 
-	expression_list.append(AddAugmentedAssignment(symbols("e"), energy))
+	energy_expression_list.append(AddAugmentedAssignment(symbols("e"), energy))
+
+
+	full_expression_list = []
+	full_expression_list.extend(hessian_expression_list)
+	full_expression_list.extend(gradient_expression_list)
+	full_expression_list.extend(energy_expression_list)
 
 
 	#############################################
 	# Generate code
 	#############################################
 
-	print("Generating code")
+	generator = KernelGenerator()
 
-	sub_expr, simpl_expr = cse(expression_list)
+	generator.generate(hessian_expression_list, 'templates/utopia_tpl_elasticity_hessian.hpp', 'auto_neohookean_hessian.hpp')
+	generator.generate(gradient_expression_list, 'templates/utopia_tpl_elasticity_gradient.hpp', 'auto_neohookean_gradient.hpp')
+	generator.generate(energy_expression_list, 'templates/utopia_tpl_elasticity_energy.hpp', 'auto_neohookean_energy.hpp')
 
-	lines = []
-	printer = C99CodePrinter()
+	generator.generate(full_expression_list, 'templates/utopia_tpl_elasticity.hpp', 'auto_neohookean.hpp')
 
-	for var,expr in sub_expr:
-		lines.append(f'T {var} = {printer.doprint(expr)};')
-
-	for v in simpl_expr:
-		# if isinstance(v, ImmutableMatrix):
-			lines.append(printer.doprint(v))
-
-	code_string='\n'.join(lines)
-
-
-	with open('templates/utopia_tpl_elasticity.c', 'r') as f:
-		tpl = f.read()
-		kernel = tpl.format(code=code_string)
-		print(kernel)
-
-		with open('kernel.c', 'w') as f:
-			f.write(kernel)
