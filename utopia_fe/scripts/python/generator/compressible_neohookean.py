@@ -7,6 +7,8 @@ from sympy.codegen.ast import AddAugmentedAssignment
 from sympy.printing.c import C99CodePrinter
 # from sympy.codegen.cfunctions import *
 
+output_dir = '/Users/zulianp/Desktop/code/utopia/utopia_fe/backend/kokkos/assembly/mech/generated'
+
 from utopia_mech import *
 
 mu, lmbda = symbols('mu lmbda')
@@ -104,10 +106,10 @@ if True:
 
 
 	for d1 in range(0, d):
-		gradient_expression_list.append(AddAugmentedAssignment(symbols(f"lf[offset_i+{d1}]"), tp.linear_subs("i", d1, linear_form)))
+		gradient_expression_list.append(AddAugmentedAssignment(symbols(f"lf[offset_i+{d1}]"), tp.linear_subs("test", d1, linear_form)))
 
 		for d2 in range(0, d):
-			hessian_expression_list.append(AddAugmentedAssignment(symbols(f"bf[offset_ij+{d1*d + d2}]"), tp.bilinear_subs("i", d1, "j", d2, bilinear_form)))
+			hessian_expression_list.append(AddAugmentedAssignment(symbols(f"bf[offset_ij+{d1*d + d2}]"), tp.bilinear_subs("test", d1, "trial", d2, bilinear_form)))
 	
 
 	energy_expression_list.append(AddAugmentedAssignment(symbols("e"), energy))
@@ -125,9 +127,9 @@ if True:
 
 	generator = KernelGenerator()
 
-	generator.generate(hessian_expression_list, 'templates/utopia_tpl_elasticity_hessian.hpp', 'auto_neohookean_hessian.hpp')
-	generator.generate(gradient_expression_list, 'templates/utopia_tpl_elasticity_gradient.hpp', 'auto_neohookean_gradient.hpp')
-	generator.generate(energy_expression_list, 'templates/utopia_tpl_elasticity_energy.hpp', 'auto_neohookean_energy.hpp')
+	generator.generate(hessian_expression_list, 'templates/utopia_tpl_elasticity_hessian.hpp', output_dir + '/generated_AutoHyperElasticityHessian.hpp')
+	generator.generate(gradient_expression_list, 'templates/utopia_tpl_elasticity_gradient.hpp', output_dir + '/generated_AutoHyperElasticityGradient.hpp')
+	generator.generate(energy_expression_list, 'templates/utopia_tpl_elasticity_energy.hpp', output_dir + '/generated_AutoHyperElasticityEnergy.hpp')
 
-	generator.generate(full_expression_list, 'templates/utopia_tpl_elasticity.hpp', 'auto_neohookean.hpp')
+	generator.generate(full_expression_list, 'templates/utopia_tpl_elasticity.hpp', output_dir + '/generated_AutoHyperElasticity.hpp')
 

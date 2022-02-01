@@ -7,13 +7,13 @@
 
 template <typename T>
 UTOPIA_FUNCTION void elastic_material_hessian(const T mu,
-                                      const T lmbda,
-                                      const T *UTOPIA_RESTRICT f,
-                                      const T *grad_i,
-                                      const T *grad_j,
-                                      const T dx,
-                                      T *UTOPIA_RESTRICT bf,
-                                      const int offset_ij)
+                                              const T lmbda,
+                                              const T *UTOPIA_RESTRICT f,
+                                              const T *grad_test,
+                                              const T *grad_trial,
+                                              const T dx,
+                                              T *UTOPIA_RESTRICT bf,
+                                              const int offset_ij = 0)
 {{
         using namespace utopia::device;
         // Automatically generated
@@ -22,4 +22,4 @@ UTOPIA_FUNCTION void elastic_material_hessian(const T mu,
 
 #undef UTOPIA_RESTRICT
 
-#endif //UTOPIA_TPL_ELASTICITY_HESSIAN_HPP
+#endif  // UTOPIA_TPL_ELASTICITY_HESSIAN_HPP
