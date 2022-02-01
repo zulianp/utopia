@@ -7,46 +7,52 @@
 
 template <typename T>
 UTOPIA_FUNCTION void elastic_material_hessian(const T mu,
-  const T lmbda,
-  const T *UTOPIA_RESTRICT f,
-  const T *grad_test,
-  const T *grad_trial,
-  const T dx,
-  T *UTOPIA_RESTRICT bf,
-  const int offset_ij)
+                                              const T lmbda,
+                                              const T *UTOPIA_RESTRICT f,
+                                              const T *grad_test,
+                                              const T *grad_trial,
+                                              const T dx,
+                                              T *UTOPIA_RESTRICT bf,
+                                              const int offset_ij = 0)
 {
         using namespace utopia::device;
         // Automatically generated
-        T x0 = f[0]*f[3];
-        T x1 = f[1]*f[2];
-        T x2 = x0 - x1;
-        T x3 = log(x2);
-        T x4 = lmbda*x3;
-        T x5 = mu - x4;
-        T x6 = lmbda + x5;
-        T x7 = f[3]*x6;
-        T x8 = f[2]*x7;
-        T x9 = pow(f[3], 2);
-        T x10 = lmbda*x9;
-        T x11 = pow(x2, 2);
-        T x12 = mu*x11;
-        T x13 = 1.0/x11;
-        T x14 = grad_trial[0]*x13;
-        T x15 = pow(f[2], 2);
-        T x16 = grad_trial[1]*x13;
-        T x17 = f[1]*grad_test[0];
-        T x18 = -x17*x7;
-        T x19 = x1*x6 + x2*x5;
-        T x20 = f[0]*x6;
-        T x21 = grad_test[1]*x20;
-        T x22 = -f[2]*x21;
-        T x23 = x0*x6 + x2*(-mu + x4);
-        T x24 = pow(f[1], 2);
-        T x25 = pow(f[0], 2);
-        bf[offset_ij+0] += dx*(x14*(grad_test[0]*(mu*x9 - x10*x3 + x10 + x12) - grad_test[1]*x8) + x16*(-grad_test[0]*x8 + grad_test[1]*(lmbda*x15 + mu*x15 + x12 - x15*x4)));
-        bf[offset_ij+1] += dx*(x14*(grad_test[1]*x19 + x18) + x16*(grad_test[0]*x23 + x22));
-        bf[offset_ij+2] += dx*(x14*(grad_test[1]*x23 + x18) + x16*(grad_test[0]*x19 + x22));
-        bf[offset_ij+3] += dx*(x14*(-f[1]*x21 + grad_test[0]*(lmbda*x24 + mu*x24 + x12 - x24*x4)) + x16*(grad_test[1]*(lmbda*x25 + mu*x25 + x12 - x25*x4) - x17*x20));
+        T x0 = 16*mu;
+T x1 = f[0]*f[1];
+T x2 = pow(f[0], 2);
+T x3 = pow(f[1], 2);
+T x4 = pow(f[2], 2);
+T x5 = pow(f[3], 2);
+T x6 = pow(x2 + x3 + x4 + x5 + 1, 2);
+T x7 = 11*lmbda;
+T x8 = x6*x7;
+T x9 = f[2]*x8;
+T x10 = -f[3]*x9 + x0*x1;
+T x11 = -x3;
+T x12 = -x4;
+T x13 = -x5;
+T x14 = x12 + x13 + x6 - 1;
+T x15 = 8*mu;
+T x16 = (1.0/6.0)/x6;
+T x17 = grad_trial[0]*x16;
+T x18 = -x2;
+T x19 = grad_trial[1]*x16;
+T x20 = f[2]*x0;
+T x21 = f[1]*f[3];
+T x22 = grad_test[0]*(f[0]*x20 - x21*x8);
+T x23 = f[1]*f[2];
+T x24 = 6*mu;
+T x25 = f[0]*f[3];
+T x26 = x7*(x23 - x25 + 1);
+T x27 = x0*x23 + x6*(x23*x7 + x24 + x26);
+T x28 = -grad_test[1]*(f[0]*x9 - x0*x21);
+T x29 = x0*x25 + x6*(-x24 + x25*x7 - x26);
+T x30 = -f[3]*x20 + x1*x8;
+T x31 = x11 + x18 + x6 - 1;
+bf[offset_ij+0] += dx*(x17*(grad_test[0]*(x15*(x11 + x14 + x2) + x5*x8) + grad_test[1]*x10) + x19*(grad_test[0]*x10 + grad_test[1]*(x15*(x14 + x18 + x3) + x4*x8)));
+bf[offset_ij+1] += dx*(x17*(grad_test[1]*x27 + x22) + x19*(grad_test[0]*x29 + x28));
+bf[offset_ij+2] += dx*(x17*(grad_test[1]*x29 + x22) + x19*(grad_test[0]*x27 + x28));
+bf[offset_ij+3] += dx*(x17*(grad_test[0]*(x15*(x13 + x31 + x4) + x3*x8) - grad_test[1]*x30) + x19*(-grad_test[0]*x30 + grad_test[1]*(x15*(x12 + x31 + x5) + x2*x8)));
 }
 
 #undef UTOPIA_RESTRICT

@@ -15,8 +15,8 @@ UTOPIA_FUNCTION void elastic_material_energy(const T mu,
 {
         using namespace utopia::device;
         // Automatically generated
-        T x0 = log(f[0]*f[3] - f[1]*f[2]);
-e += dx*((1.0/2.0)*lmbda*pow(x0, 2) - mu*x0 + (1.0/2.0)*mu*(pow(f[0], 2) + pow(f[1], 2) + pow(f[2], 2) + pow(f[3], 2) - 2));
+        T x0 = pow(f[0], 2) + pow(f[1], 2) + pow(f[2], 2) + pow(f[3], 2);
+e += (1.0/132.0)*dx*(88*lmbda*mu*(x0 - log(x0 + 1) - 2) + pow(11*lmbda*(-f[0]*f[3] + f[1]*f[2] + 1) + 6*mu, 2))/lmbda;
 }
 
 #undef UTOPIA_RESTRICT
