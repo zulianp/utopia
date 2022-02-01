@@ -139,11 +139,78 @@ def first_piola(strain_energy, F):
     return P
 
 
+class Template:
+    def __init__(self, header_tpl_path, impl_tpl_path, header_output_path, impl_output_path):
+    
+        self.header_tpl_path = header_tpl_path
+        self.impl_tpl_path = impl_tpl_path
+        self.header_output_path = header_output_path
+        self.impl_output_path = impl_output_path
+
+        with open(header_tpl_path, 'r') as f:
+            self.header_tpl = f.read()
+
+        with open(impl_tpl_path, 'r') as f:
+            self.impl_tpl = f.read()
+
+
 class KernelGenerator:
     def __init__(self, dim):
         self.dim = dim
 
-    def generate(self, expression_list, tpl_path, output_path):
+    def generate_class(
+        self, tpl, name, 
+        value_expression,
+        gradient_expression,
+        hessian_expression,
+        output_dir):
+
+        combined_expression = []
+        combined_expression.extend(value_expression)
+        combined_expression.extend(gradient_expression)
+        combined_expression.extend(hessian_expression)
+
+        value_string = self.generate_string(value_expression)
+        gradient_string = self.generate_string(gradient_expression)
+        hessian_string = self.generate_string(hessian_expression)
+        combined_string = self.generate_string(combined_expression)
+
+        header = tpl.header_tpl.format(
+            name=name,
+            dim=self.dim)
+
+        kernel = tpl.impl_tpl.format(
+            name=name,
+            value=value_string,
+            gradient=gradient_string,
+            hessian=hessian_string,
+            combined=combined_string,
+            dim=self.dim)
+
+        with open(tpl.impl_output_path, 'w') as f:
+            f.write(kernel)
+
+        with open(tpl.header_output_path, 'w') as f:
+            f.write(header)
+
+    def generate_string(self, expression):
+        sub_expr, simpl_expr = cse(expression)
+
+        lines = []
+        printer = C99CodePrinter()
+
+        for var,expr in sub_expr:
+            lines.append(f'T {var} = {printer.doprint(expr)};')
+
+        for v in simpl_expr:
+                lines.append(printer.doprint(v))
+
+        code_string='\n'.join(lines)
+        return code_string
+
+
+
+    def generate_files(self, expression_list, tpl_path, output_path):
         print("Generating code")
 
         sub_expr, simpl_expr = cse(expression_list)
