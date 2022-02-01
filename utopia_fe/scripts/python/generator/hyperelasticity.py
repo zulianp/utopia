@@ -187,11 +187,17 @@ def main(args):
 
 	Smith = mu_s/2 * (I_C - d) + lmbda_s/2 * (J - alpha)**2 - mu_s/2 * log(I_C + 1)
 
+	# strain_energy_function = Ogden 
+	# name ="NeohookeanOgden"
 
-	# strain_energy_function = Ogden
 	# strain_energy_function = Bower
-	# strain_energy_function = Wang
-	strain_energy_function = Smith
+	# name = "NeohookeanBower"
+
+	strain_energy_function = Wang
+	name = "NeoHookeanWang"
+
+	# strain_energy_function = Smith
+	# name = "NeohookeanSmith"
 
 
 	# base_file = Template("templates/utopia_tpl_hyperelasticity.hpp")
@@ -200,7 +206,7 @@ def main(args):
 	# with open("prova.cpp", 'w') as f:
 	# 	f.write(base_code)
 
-	HyperElasticity().generate_files(strain_energy_function, F, "NeohookeanSmith", output_dir, False)
+	HyperElasticity().generate_files(strain_energy_function, F, name, output_dir, False)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
