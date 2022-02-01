@@ -114,7 +114,7 @@ if True:
 		if simplify_expressions:
 			subsituted = simplify(subsituted)
 
-		gradient_expression_list.append(AddAugmentedAssignment(symbols(f"lf[offset_i+{d1}]"), subsituted))
+		gradient_expression_list.append(AddAugmentedAssignment(symbols(f"lf[{d1}]"), subsituted))
 
 		for d2 in range(0, d):
 			subsituted = tp.bilinear_subs("test", d1, "trial", d2, bilinear_form)
@@ -122,7 +122,7 @@ if True:
 			if simplify_expressions:
 				subsituted = simplify(subsituted)
 
-			hessian_expression_list.append(AddAugmentedAssignment(symbols(f"bf[offset_ij+{d1*d + d2}]"), subsituted))
+			hessian_expression_list.append(AddAugmentedAssignment(symbols(f"bf[{d1*d + d2}]"), subsituted))
 	
 
 	energy_expression_list.append(AddAugmentedAssignment(symbols("e"), energy))

@@ -15,8 +15,7 @@ UTOPIA_FUNCTION void elastic_material_gradient(const T mu,
                                                const T *UTOPIA_RESTRICT f,
                                                const T *grad_test,
                                                const T dx,
-                                               T *UTOPIA_RESTRICT lf,
-                                               const int offset_i = 0)
+                                               T *UTOPIA_RESTRICT lf)
 {{
         using namespace utopia::device;
         // Automatically generated

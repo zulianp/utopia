@@ -16,8 +16,7 @@ UTOPIA_FUNCTION void elastic_material_hessian(const T mu,
                                               const T *grad_test,
                                               const T *grad_trial,
                                               const T dx,
-                                              T *UTOPIA_RESTRICT bf,
-                                              const int offset_ij = 0)
+                                              T *UTOPIA_RESTRICT bf)
 {{
         using namespace utopia::device;
         // Automatically generated

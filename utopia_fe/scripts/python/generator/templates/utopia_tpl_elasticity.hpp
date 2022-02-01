@@ -18,9 +18,7 @@ UTOPIA_FUNCTION void elastic_material(const T mu,
                                       const T dx,
                                       T &e,
                                       T *UTOPIA_RESTRICT lf,
-                                      T *UTOPIA_RESTRICT bf,
-                                      const int offset_i = 0,
-                                      const int offset_ij = 0)
+                                      T *UTOPIA_RESTRICT bf)
 {{
         using namespace utopia::device;
         // Automatically generated

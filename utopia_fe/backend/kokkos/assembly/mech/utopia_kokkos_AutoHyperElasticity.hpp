@@ -141,8 +141,7 @@ namespace utopia {
                                                                  &grad_test[0],
                                                                  &grad_trial[0],
                                                                  dx,
-                                                                 &stress.raw_type()[0],
-                                                                 0);
+                                                                 &stress.raw_type()[0]);
 
                                         for (int d1 = 0; d1 < Dim; ++d1) {
                                             auto dof_i = i * Dim + d1;
@@ -208,7 +207,7 @@ namespace utopia {
                                     // Assemble
                                     stress.set(0.);
                                     elastic_material_gradient(
-                                        mu, lambda, &F_qp.raw_type()[0], &grad_test[0], dx, &stress.raw_type()[0], 0);
+                                        mu, lambda, &F_qp.raw_type()[0], &grad_test[0], dx, &stress.raw_type()[0]);
 
                                     for (int d1 = 0; d1 < Dim; ++d1) {
                                         auto dof_i = i * Dim + d1;
