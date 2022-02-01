@@ -148,7 +148,7 @@ class HyperElasticity:
 
 
 def main(args):
-	d = 2
+	d = 3
 
 	if d==2:
 		output_dir = '../../../backend/kokkos/assembly/mech/generated/2D'
@@ -176,10 +176,13 @@ def main(args):
 	# Strain energy function
 	###############################
 
+	###############################
+	# NeoHookean models
+	###############################
+
 	Ogden = mu/2 *(I_C - d) - mu * log(J) + (lmbda/2) * (log(J))**2
 	Bower = mu/2 *(J**(-Rational(2, 3))*I_C - d) + (lmbda/2) * (J-1)**2
 	Wang  = mu/2 *(J**(-Rational(2, 3))*I_C - d) + (lmbda/2) * (J-1) # Does not work
-
 
 	mu_s = Rational(4,3)*mu
 	lmbda_s = lmbda + Rational(5,6)*lmbda
@@ -187,14 +190,50 @@ def main(args):
 
 	Smith = mu_s/2 * (I_C - d) + lmbda_s/2 * (J - alpha)**2 - mu_s/2 * log(I_C + 1)
 
+	###############################
+	# Fung (https://en.wikipedia.org/wiki/Soft_tissue#Fung-elastic_material)
+	###############################
+
+	a, b, c = symbols('a b c')
+	Fung = Rational(1,2) * (a * (I_C - d) + b * (exp(c*(I_C - d) - 1)))
+
+	###############################
+	# Mooney-Rivlin (https://en.wikipedia.org/wiki/Mooney%E2%80%93Rivlin_solid)
+	###############################
+
+	C1, C2 = symbols('C1 C2')
+	
+	CikxCki = 0
+	for i in range(0, d):
+		for k in range(0, d):
+			CikxCki += C[i,k] * C[k,i]
+
+	I_C2 = Rational(1, 2) * (I_C**2 - CikxCki)
+	# I_C3 = det(C)
+
+	I1 = J**(-Rational(d-1, d))*I_C
+	I2 = J**(-Rational(d+1, d))*I_C2;
+	IncompressibleMooneyRivlin = C1 * (I1 - d) + C2 * (I2 - d)
+	name = "IncompressibleMooneyRivlin"
+
+	###############################
+	# Select model
+	###############################
+
+	strain_energy_function = IncompressibleMooneyRivlin 
+	name = "IncompressibleMooneyRivlin"
+
+	# strain_energy_function = Fung 
+	# name = "Fung"
+
 	# strain_energy_function = Ogden 
-	# name ="NeohookeanOgden"
+	# name = "NeohookeanOgden"
 
 	# strain_energy_function = Bower
 	# name = "NeohookeanBower"
 
-	strain_energy_function = Wang
-	name = "NeoHookeanWang"
+	# strain_energy_function = Wang
+	# name = "NeoHookeanWang"
 
 	# strain_energy_function = Smith
 	# name = "NeohookeanSmith"
