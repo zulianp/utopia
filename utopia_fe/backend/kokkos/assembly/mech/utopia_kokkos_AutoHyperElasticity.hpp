@@ -58,6 +58,7 @@ namespace utopia {
             inline bool is_vector() const override { return true; }
             inline bool is_scalar() const override { return false; }
             inline bool is_linear() const override { return false; }
+            inline bool is_operator() const override { return false; }
 
             inline std::string name() const override { return "AutoHyperElasticity"; }
 
@@ -87,6 +88,8 @@ namespace utopia {
             bool assemble_matrix() override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<AutoHyperElasticity>::assemble_matrix");
 
+                constexpr int Dim = 2;
+
                 this->ensure_matrix_accumulator();
 
                 auto &fe = this->fe();
@@ -95,9 +98,66 @@ namespace utopia {
                 {
                     assert(deformation_gradient_);
                     auto F = deformation_gradient_->data();
-                }
+                    auto lambda = op_.lambda;
+                    auto mu = op_.mu;
 
-                Utopia::Abort("IMPLEMENT ME");
+                    int n_quad_points = this->fe().n_quad_points();
+                    int n_shape_functions = this->fe().n_shape_functions();
+
+                    auto grad = this->fe().grad();
+                    auto measure = this->fe().measure();
+
+                    this->loop_cell(
+                        "Hessian", UTOPIA_LAMBDA(int cell) {
+                            StaticVector<Scalar, Dim> grad_test, grad_trial;
+                            StaticMatrix<Scalar, Dim, Dim> F_qp, stress;
+
+                            for (int qp = 0; qp < n_quad_points; ++qp) {
+                                // Copy deformation gradient at qp
+                                for (int d1 = 0; d1 < Dim; ++d1) {
+                                    for (int d2 = 0; d2 < Dim; ++d2) {
+                                        F_qp(d1, d2) = F(cell, qp, d1 * Dim + d2);
+                                    }
+                                }
+
+                                Scalar dx = measure(cell, qp);
+
+                                for (int i = 0; i < n_shape_functions; ++i) {
+                                    // Copy deformation gradient at qp
+                                    for (int d1 = 0; d1 < Dim; ++d1) {
+                                        grad_test[d1] = grad(cell, i, qp, d1);
+                                    }
+
+                                    for (int j = 0; j < n_shape_functions; ++j) {
+                                        for (int d1 = 0; d1 < Dim; ++d1) {
+                                            grad_trial[d1] = grad(cell, j, qp, d1);
+                                        }
+                                        // Assemble
+                                        stress.set(0.);
+
+                                        elastic_material_hessian(mu,
+                                                                 lambda,
+                                                                 &F_qp.raw_type()[0],
+                                                                 &grad_test[0],
+                                                                 &grad_trial[0],
+                                                                 dx,
+                                                                 &stress.raw_type()[0],
+                                                                 0);
+
+                                        for (int d1 = 0; d1 < Dim; ++d1) {
+                                            auto dof_i = i * Dim + d1;
+                                            for (int d2 = 0; d2 < Dim; ++d2) {
+                                                auto dof_j = j * Dim + d2;
+
+                                                assert(stress(d1, d2) == stress(d1, d2));
+                                                data(cell, dof_i, dof_j) += stress(d1, d2);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                }
 
                 UTOPIA_TRACE_REGION_END("Assemble<AutoHyperElasticity>::assemble_matrix");
                 return true;
@@ -149,10 +209,13 @@ namespace utopia {
 
                                     // Assemble
                                     stress.set(0.);
-                                    elastic_material_gradient(mu, lambda, &F_qp.raw_type()[0], &grad_test[0], dx, &stress.raw_type()[0], 0);
+                                    elastic_material_gradient(
+                                        mu, lambda, &F_qp.raw_type()[0], &grad_test[0], dx, &stress.raw_type()[0], 0);
 
                                     for (int d1 = 0; d1 < Dim; ++d1) {
                                         auto dof_i = i * Dim + d1;
+
+                                        assert(stress[d1] == stress[d1]);
                                         data(cell, dof_i) += stress[d1];
                                     }
                                 }
