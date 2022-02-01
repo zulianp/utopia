@@ -15,6 +15,8 @@ mu, lmbda = symbols('mu lmbda')
 dx = symbols('dx')
 
 
+simplify_expressions = True
+
 d = 3
 # FE
 grad_trial = trial_gradient(d)
@@ -46,10 +48,10 @@ alpha = 1 + mu_s/lmbda_s - mu_s/(4*lmbda_s)
 
 Smith = mu_s/2 * (I_C - d) + lmbda_s/2 * (J - alpha)**2 - mu_s/2 * log(I_C + 1)
 
-# W = simplify(Ogden)
+W = simplify(Ogden)
 # W = simplify(Bower)
 # W = simplify(Wang)
-W = simplify(Smith)
+# W = simplify(Smith)
 
 P = first_piola(W, F)
 
@@ -88,7 +90,8 @@ if True:
 
 	for i in range(0, d):
 		for j in range(0, d):
-			Hij = simplify(diff(contraction, F[i, j]));
+			# Hij = simplify(diff(contraction, F[i, j]));
+			Hij = diff(contraction, F[i, j]);
 			bilinear_form += Hij * grad_test[i,j]
 
 	bilinear_form *= dx
@@ -106,10 +109,20 @@ if True:
 
 
 	for d1 in range(0, d):
-		gradient_expression_list.append(AddAugmentedAssignment(symbols(f"lf[offset_i+{d1}]"), tp.linear_subs("test", d1, linear_form)))
+		subsituted = tp.linear_subs("test", d1, linear_form)
+
+		if simplify_expressions:
+			subsituted = simplify(subsituted)
+
+		gradient_expression_list.append(AddAugmentedAssignment(symbols(f"lf[offset_i+{d1}]"), subsituted))
 
 		for d2 in range(0, d):
-			hessian_expression_list.append(AddAugmentedAssignment(symbols(f"bf[offset_ij+{d1*d + d2}]"), tp.bilinear_subs("test", d1, "trial", d2, bilinear_form)))
+			subsituted = tp.bilinear_subs("test", d1, "trial", d2, bilinear_form)
+
+			if simplify_expressions:
+				subsituted = simplify(subsituted)
+
+			hessian_expression_list.append(AddAugmentedAssignment(symbols(f"bf[offset_ij+{d1*d + d2}]"), subsituted))
 	
 
 	energy_expression_list.append(AddAugmentedAssignment(symbols("e"), energy))
@@ -124,6 +137,8 @@ if True:
 	#############################################
 	# Generate code
 	#############################################
+
+	print("Generating code")
 
 	generator = KernelGenerator(d)
 
