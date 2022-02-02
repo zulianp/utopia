@@ -12,6 +12,19 @@ import sys
 from utopia_mech import *
 
 
+# class HyperElasticModel:
+# 	def __init__(self, d):
+# 		self.d = d
+# 		self.F = deformation_gradient(d)
+# 		self.J = det(self.F)
+# 		self.F_inv = Inverse(self.F)
+# 		self.F_inv_t = self.F_inv.T
+# 		self.C = self.F.T*self.F
+# 		self.I_C = trace(self.C)
+
+# 		self.strain_energy_function = 0
+
+
 class HyperElasticity:
 
 	# def __init__(self):
@@ -149,7 +162,7 @@ class HyperElasticity:
 
 
 def main(args):
-	d = 2
+	d = 3
 
 	if d==2:
 		output_dir = '../../../backend/kokkos/assembly/mech/generated/2D'
@@ -214,25 +227,23 @@ def main(args):
 
 	I1 = J**(-Rational(d-1, d))*I_C
 	I2 = J**(-Rational(d+1, d))*I_C2;
-	# I1 = I_C
-	# I2 = I_C2;
-	IncompressibleMooneyRivlin = C1 * (I1 - d) + C2 * (I2 - d)
+	MooneyRivlin = C1 * (I1 - d) + C2 * (I2 - d)
 
 	###############################
 	# Select model
 	###############################
 
-	# strain_energy_function = IncompressibleMooneyRivlin
-	# name = "IncompressibleMooneyRivlin"
-	# params = [C1, C2]
+	strain_energy_function = MooneyRivlin
+	name = "MooneyRivlin"
+	params = [C1, C2]
 
 	# strain_energy_function = Fung
 	# name = "Fung"
 	# params = [a,b,c]
 
-	strain_energy_function = Ogden
-	name = "NeohookeanOgden"
-	params = [mu, lmbda]
+	# strain_energy_function = Ogden
+	# name = "NeohookeanOgden"
+	# params = [mu, lmbda]
 
 	# strain_energy_function = Bower
 	# name = "NeohookeanBower"
@@ -245,12 +256,6 @@ def main(args):
 	# strain_energy_function = Smith
 	# name = "NeohookeanSmith"
 	# params = [mu, lmbda]
-
-	# base_file = Template("templates/utopia_tpl_hyperelasticity.hpp")
-	# base_code = base_file.tpl.format(name="Prova")
-
-	# with open("prova.cpp", 'w') as f:
-	# 	f.write(base_code)
 
 	HyperElasticity().generate_files(params, strain_energy_function, F, name, output_dir, False)
 

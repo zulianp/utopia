@@ -1,29 +1,47 @@
 #ifndef UTOPIA_TPL_HYPERELASTICITY_NeohookeanSmith_2_IMPL_hpp
 #define UTOPIA_TPL_HYPERELASTICITY_NeohookeanSmith_2_IMPL_hpp
 
+#include "utopia_Input.hpp"
+
 #include "utopia_hyperelasticity_NeohookeanSmith.hpp"
 
 namespace utopia {
 	namespace kernels {
 
-		/** 
-		 * Specialization of NeohookeanSmith for dimension 2 
+		/**
+		 * Specialization of NeohookeanSmith for dimension 2
 		 */
 		template<typename T>
 		class NeohookeanSmith<T, 2> {
 		public:
+			class Params : public Configurable {
+			public:
+				void read(Input &in) override
+				{
+					in.get("mu", mu);
+					in.get("lambda", lambda);
+				}
 
-			UTOPIA_FUNCTION static void hessian(const T mu,
-				const T lmbda,
+				T mu;
+				T lambda;
+			};
+
+			NeohookeanSmith(const Params &params)
+			{
+				mu = params.mu;
+				lambda = params.lambda;
+			}
+
+			UTOPIA_FUNCTION void hessian(
 				const T *UTOPIA_RESTRICT f,
 				const T *grad_test,
 				const T *grad_trial,
 				const T dx,
-				T *UTOPIA_RESTRICT bf)
+				T *UTOPIA_RESTRICT bf) const
 			{
 				using namespace utopia::device;
 				// Automatically generated
-				T x0 = (11.0/6.0)*lmbda;
+				T x0 = (11.0/6.0)*lambda;
 				T x1 = f[3]*x0;
 				T x2 = pow(f[0], 2);
 				T x3 = pow(f[1], 2);
@@ -38,7 +56,7 @@ namespace utopia {
 				T x12 = grad_test[0]*(-f[1]*x1 + f[2]*x8);
 				T x13 = f[1]*f[2];
 				T x14 = f[0]*f[3];
-				T x15 = x0*(-x13 + x14 - 1 - 6.0/11.0*mu/lmbda);
+				T x15 = x0*(-x13 + x14 - 1 - 6.0/11.0*mu/lambda);
 				T x16 = x0*x13 + x13*x7 - x15;
 				T x17 = f[0]*x0;
 				T x18 = f[3]*x7;
@@ -51,18 +69,17 @@ namespace utopia {
 				bf[3] += dx*(grad_trial[0]*(grad_test[0]*(x0*x3 + x11 + x4*x7) + grad_test[1]*x21) + grad_trial[1]*(grad_test[0]*x21 + grad_test[1]*(x0*x2 + x11 + x5*x7)));
 			}
 
-			UTOPIA_FUNCTION static void gradient(const T mu,
-				const T lmbda,
+			UTOPIA_FUNCTION void gradient(
 				const T *UTOPIA_RESTRICT f,
-				const T *grad_test,
+				const T *UTOPIA_RESTRICT grad_test,
 				const T dx,
-				T *UTOPIA_RESTRICT lf)
+				T *UTOPIA_RESTRICT lf) const
 			{
 				using namespace utopia::device;
 			    // Automatically generated
 				T x0 = (4.0/3.0)*mu;
 				T x1 = f[0]*x0;
-				T x2 = (11.0/6.0)*lmbda*(f[0]*f[3] - f[1]*f[2] - 1 - 6.0/11.0*mu/lmbda);
+				T x2 = (11.0/6.0)*lambda*(f[0]*f[3] - f[1]*f[2] - 1 - 6.0/11.0*mu/lambda);
 				T x3 = 1.0/(pow(f[0], 2) + pow(f[1], 2) + pow(f[2], 2) + pow(f[3], 2) + 1);
 				T x4 = f[1]*x0;
 				T x5 = f[2]*x0;
@@ -71,29 +88,27 @@ namespace utopia {
 				lf[1] += dx*(grad_test[0]*(-f[1]*x2 - x3*x5 + x5) + grad_test[1]*(f[0]*x2 - x3*x6 + x6));
 			}
 
-			UTOPIA_FUNCTION static void value(const T mu,
-				const T lmbda,
+			UTOPIA_FUNCTION void value(
 				const T *UTOPIA_RESTRICT f,
 				const T dx,
 				T &e
-				)
+				) const
 			{
 				using namespace utopia::device;
 			    // Automatically generated
 				T x0 = pow(f[0], 2) + pow(f[1], 2) + pow(f[2], 2) + pow(f[3], 2);
 				T x1 = (2.0/3.0)*mu;
-				e += dx*((11.0/12.0)*lmbda*pow(f[0]*f[3] - f[1]*f[2] - 1 - 6.0/11.0*mu/lmbda, 2) + x1*(x0 - 2) - x1*log(x0 + 1));
+				e += dx*((11.0/12.0)*lambda*pow(f[0]*f[3] - f[1]*f[2] - 1 - 6.0/11.0*mu/lambda, 2) + x1*(x0 - 2) - x1*log(x0 + 1));
 			}
 
-			UTOPIA_FUNCTION void eval(const T mu,
-				const T lmbda,
+			UTOPIA_FUNCTION void eval(
 				const T *UTOPIA_RESTRICT f,
 				const T *grad_test,
 				const T *grad_trial,
 				const T dx,
 				T &e,
 				T *UTOPIA_RESTRICT lf,
-				T *UTOPIA_RESTRICT bf)
+				T *UTOPIA_RESTRICT bf) const
 			{
 				using namespace utopia::device;
 			    // Automatically generated
@@ -106,10 +121,10 @@ namespace utopia {
 				T x6 = x4 + 1;
 				T x7 = f[0]*f[3];
 				T x8 = f[1]*f[2];
-				T x9 = x7 - x8 - 1 - 6.0/11.0*mu/lmbda;
+				T x9 = x7 - x8 - 1 - 6.0/11.0*mu/lambda;
 				T x10 = (4.0/3.0)*mu;
 				T x11 = f[0]*x10;
-				T x12 = (11.0/6.0)*lmbda;
+				T x12 = (11.0/6.0)*lambda;
 				T x13 = x12*x9;
 				T x14 = 1.0/x6;
 				T x15 = f[1]*x10;
@@ -127,7 +142,7 @@ namespace utopia {
 				T x27 = grad_test[1]*(f[1]*x26 - f[2]*x25);
 				T x28 = x12*x7 + x13 + x19*x7;
 				T x29 = -f[1]*x25 + f[2]*x26;
-				e += dx*((11.0/12.0)*lmbda*pow(x9, 2) + x5*(x4 - 2) - x5*log(x6));
+				e += dx*((11.0/12.0)*lambda*pow(x9, 2) + x5*(x4 - 2) - x5*log(x6));
 				lf[0] += dx*(grad_test[0]*(f[3]*x13 - x11*x14 + x11) + grad_test[1]*(-f[2]*x13 - x14*x15 + x15));
 				lf[1] += dx*(grad_test[0]*(-f[1]*x13 - x14*x16 + x16) + grad_test[1]*(f[0]*x13 - x14*x17 + x17));
 				bf[0] += dx*(grad_trial[0]*(grad_test[0]*(x0*x19 + x12*x3 + x22) + grad_test[1]*x21) + grad_trial[1]*(grad_test[0]*x21 + grad_test[1]*(x1*x19 + x12*x2 + x22)));
@@ -135,6 +150,9 @@ namespace utopia {
 				bf[2] += dx*(grad_trial[0]*(grad_test[1]*x28 + x23) + grad_trial[1]*(grad_test[0]*x24 + x27));
 				bf[3] += dx*(grad_trial[0]*(grad_test[0]*(x1*x12 + x19*x2 + x22) + grad_test[1]*x29) + grad_trial[1]*(grad_test[0]*x29 + grad_test[1]*(x0*x12 + x19*x3 + x22)));
 			}
+
+			T mu;
+			T lambda;
 
 		};
 	}

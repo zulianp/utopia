@@ -94,6 +94,7 @@ namespace utopia {
                 register_assembler<utopia::kokkos::NeoHookean<FE_t>>("NeoHookean");
 
                 register_assembler<utopia::kokkos::AutoHyperElasticity<FE_t, 2>>("AutoHyperElasticity");
+                register_assembler<utopia::kokkos::AutoHyperElasticity<FE_t, 3>>("AutoHyperElasticity");
 
                 register_assembler_variant<utopia::kokkos::VectorLaplaceOperator<FE_t, 1, Scalar_t>>(
                     "VectorLaplaceOperator", 1);

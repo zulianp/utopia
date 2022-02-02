@@ -78,7 +78,7 @@ namespace utopia {
 
 			UTOPIA_FUNCTION void gradient(
 				const T *UTOPIA_RESTRICT f,
-				const T *grad_test,
+				const T *UTOPIA_RESTRICT grad_test,
 				const T dx,
 				T *UTOPIA_RESTRICT lf) const
 			{

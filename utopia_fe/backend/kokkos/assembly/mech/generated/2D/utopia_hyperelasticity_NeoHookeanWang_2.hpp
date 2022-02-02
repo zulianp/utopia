@@ -14,6 +14,23 @@ namespace utopia {
 		template<typename T>
 		class NeoHookeanWang<T, 2> {
 		public:
+			class Params : public Configurable {
+			public:
+				void read(Input &in) override
+				{
+					in.get("mu", mu);
+					in.get("lambda", lambda);
+				}
+
+				T mu;
+				T lambda;
+			};
+
+			NeoHookeanWang(const Params &params)
+			{
+				mu = params.mu;
+				lambda = params.lambda;
+			}
 
 			UTOPIA_FUNCTION void hessian(
 				const T *UTOPIA_RESTRICT f,
@@ -66,7 +83,7 @@ namespace utopia {
 
 			UTOPIA_FUNCTION void gradient(
 				const T *UTOPIA_RESTRICT f,
-				const T *grad_test,
+				const T *UTOPIA_RESTRICT grad_test,
 				const T dx,
 				T *UTOPIA_RESTRICT lf) const
 			{
@@ -152,14 +169,6 @@ namespace utopia {
 			T lambda;
 
 		};
-
-		template<typename T>
-		void read_parameters(Input &in, NeoHookeanWang<T, 2> &obj)
-		{
-			in.get("mu", obj.mu);
-			in.get("lambda", obj.lambda);
-		}
-
 	}
 }
 

@@ -14,6 +14,26 @@ namespace utopia {
 		template<typename T>
 		class Fung<T, 2> {
 		public:
+			class Params : public Configurable {
+			public:
+				void read(Input &in) override
+				{
+					in.get("a", a);
+					in.get("b", b);
+					in.get("c", c);
+				}
+
+				T a;
+				T b;
+				T c;
+			};
+
+			Fung(const Params &params)
+			{
+				a = params.a;
+				b = params.b;
+				c = params.c;
+			}
 
 			UTOPIA_FUNCTION void hessian(
 				const T *UTOPIA_RESTRICT f,
@@ -48,7 +68,7 @@ namespace utopia {
 
 			UTOPIA_FUNCTION void gradient(
 				const T *UTOPIA_RESTRICT f,
-				const T *grad_test,
+				const T *UTOPIA_RESTRICT grad_test,
 				const T dx,
 				T *UTOPIA_RESTRICT lf) const
 			{
@@ -114,15 +134,6 @@ namespace utopia {
 			T c;
 
 		};
-
-		template<typename T>
-		void read_parameters(Input &in, Fung<T, 2> &obj)
-		{
-			in.get("a", obj.a);
-			in.get("b", obj.b);
-			in.get("c", obj.c);
-		}
-
 	}
 }
 
