@@ -14,6 +14,10 @@
 #include "generated_AutoHyperElasticityGradient.hpp"
 #include "generated_AutoHyperElasticityHessian.hpp"
 
+#include "utopia_hyperelasticity_NeohookeanOgden.hpp"
+#include "utopia_hyperelasticity_NeohookeanOgden_2.hpp"
+#include "utopia_hyperelasticity_NeohookeanOgden_3.hpp"
+
 namespace utopia {
     namespace kokkos {
 
@@ -29,7 +33,8 @@ namespace utopia {
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;
 
-            static constexpr int Dim = AUTO_HYPER_ELASTICITY_DIM;
+            using Material2D = utopia::kernels::NeohookeanOgden<Scalar, 2>;
+            using Material3D = utopia::kernels::NeohookeanOgden<Scalar, 3>;
 
             class Params : public Configurable {
             public:
@@ -87,7 +92,8 @@ namespace utopia {
                 return true;
             }
 
-            bool assemble_matrix() override {
+            template <int Dim, class Material>
+            bool assemble_matrix_tpl() {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<AutoHyperElasticity>::assemble_matrix");
 
                 this->ensure_matrix_accumulator();
@@ -135,13 +141,13 @@ namespace utopia {
                                         // Assemble
                                         stress.set(0.);
 
-                                        elastic_material_hessian(mu,
-                                                                 lambda,
-                                                                 &F_qp.raw_type()[0],
-                                                                 &grad_test[0],
-                                                                 &grad_trial[0],
-                                                                 dx,
-                                                                 &stress.raw_type()[0]);
+                                        Material::hessian(mu,
+                                                          lambda,
+                                                          &F_qp.raw_type()[0],
+                                                          &grad_test[0],
+                                                          &grad_trial[0],
+                                                          dx,
+                                                          &stress.raw_type()[0]);
 
                                         for (int d1 = 0; d1 < Dim; ++d1) {
                                             auto dof_i = i * Dim + d1;
@@ -162,7 +168,8 @@ namespace utopia {
                 return true;
             }
 
-            bool assemble_vector() override {
+            template <int Dim, class Material>
+            bool assemble_vector_tpl() {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<AutoHyperElasticity>::assemble_vector");
 
                 this->ensure_vector_accumulator();
@@ -206,7 +213,7 @@ namespace utopia {
 
                                     // Assemble
                                     stress.set(0.);
-                                    elastic_material_gradient(
+                                    Material::gradient(
                                         mu, lambda, &F_qp.raw_type()[0], &grad_test[0], dx, &stress.raw_type()[0]);
 
                                     for (int d1 = 0; d1 < Dim; ++d1) {
@@ -222,6 +229,22 @@ namespace utopia {
 
                 UTOPIA_TRACE_REGION_END("Assemble<AutoHyperElasticity>::assemble_vector");
                 return true;
+            }
+
+            bool assemble_matrix() override {
+                if (this->fe().spatial_dimension() == 2) {
+                    return this->assemble_matrix_tpl<2, Material2D>();
+                } else {
+                    return this->assemble_matrix_tpl<3, Material3D>();
+                }
+            }
+
+            bool assemble_vector() override {
+                if (this->fe().spatial_dimension() == 2) {
+                    return this->assemble_vector_tpl<2, Material2D>();
+                } else {
+                    return this->assemble_vector_tpl<3, Material3D>();
+                }
             }
 
             // NVCC_PRIVATE :
