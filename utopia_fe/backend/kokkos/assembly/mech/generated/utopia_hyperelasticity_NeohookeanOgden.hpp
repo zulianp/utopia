@@ -15,7 +15,7 @@ namespace utopia {
 		public:
 			static_assert(Dim < 0, "Automatically generated class -- NeohookeanOgden -- needs template specialization");
 
-		};;
+		};
 	}
 }
 

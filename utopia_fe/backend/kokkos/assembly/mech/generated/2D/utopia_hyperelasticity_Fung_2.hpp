@@ -1,27 +1,26 @@
 #ifndef UTOPIA_TPL_HYPERELASTICITY_Fung_2_IMPL_hpp
 #define UTOPIA_TPL_HYPERELASTICITY_Fung_2_IMPL_hpp
 
+#include "utopia_Input.hpp"
+
 #include "utopia_hyperelasticity_Fung.hpp"
 
 namespace utopia {
 	namespace kernels {
 
-		/** 
-		 * Specialization of Fung for dimension 2 
+		/**
+		 * Specialization of Fung for dimension 2
 		 */
 		template<typename T>
 		class Fung<T, 2> {
 		public:
 
-			UTOPIA_FUNCTION static void hessian(
-				const T a,
-				const T b,
-				const T c,
+			UTOPIA_FUNCTION void hessian(
 				const T *UTOPIA_RESTRICT f,
 				const T *grad_test,
 				const T *grad_trial,
 				const T dx,
-				T *UTOPIA_RESTRICT bf)
+				T *UTOPIA_RESTRICT bf) const
 			{
 				using namespace utopia::device;
 				// Automatically generated
@@ -47,14 +46,11 @@ namespace utopia {
 				bf[3] += dx*(grad_trial[0]*(grad_test[0]*(x2*x5 + x8) + x11*x14) + grad_trial[1]*(f[3]*x15 + grad_test[1]*(x3*x5 + x8)));
 			}
 
-			UTOPIA_FUNCTION static void gradient(
-				const T a,
-				const T b,
-				const T c,
+			UTOPIA_FUNCTION void gradient(
 				const T *UTOPIA_RESTRICT f,
 				const T *grad_test,
 				const T dx,
-				T *UTOPIA_RESTRICT lf)
+				T *UTOPIA_RESTRICT lf) const
 			{
 				using namespace utopia::device;
 			    // Automatically generated
@@ -63,14 +59,11 @@ namespace utopia {
 				lf[1] += dx*(grad_test[0]*(a*f[2] + f[2]*x0) + grad_test[1]*(a*f[3] + f[3]*x0));
 			}
 
-			UTOPIA_FUNCTION static void value(
-				const T a,
-				const T b,
-				const T c,
+			UTOPIA_FUNCTION void value(
 				const T *UTOPIA_RESTRICT f,
 				const T dx,
 				T &e
-				)
+				) const
 			{
 				using namespace utopia::device;
 			    // Automatically generated
@@ -79,16 +72,13 @@ namespace utopia {
 			}
 
 			UTOPIA_FUNCTION void eval(
-				const T a,
-				const T b,
-				const T c,
 				const T *UTOPIA_RESTRICT f,
 				const T *grad_test,
 				const T *grad_trial,
 				const T dx,
 				T &e,
 				T *UTOPIA_RESTRICT lf,
-				T *UTOPIA_RESTRICT bf)
+				T *UTOPIA_RESTRICT bf) const
 			{
 				using namespace utopia::device;
 			    // Automatically generated
@@ -119,7 +109,20 @@ namespace utopia {
 				bf[3] += dx*(grad_trial[0]*(grad_test[0]*(x10 + x2*x7) + x13*x16) + grad_trial[1]*(f[3]*x17 + grad_test[1]*(x10 + x3*x7)));
 			}
 
+			T a;
+			T b;
+			T c;
+
 		};
+
+		template<typename T>
+		void read_parameters(Input &in, Fung<T, 2> &obj)
+		{
+			in.get("a", obj.a);
+			in.get("b", obj.b);
+			in.get("c", obj.c);
+		}
+
 	}
 }
 

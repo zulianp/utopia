@@ -92,7 +92,8 @@ namespace utopia {
                 register_assembler<utopia::kokkos::ForcingFunction<FE_t>>("ForcingFunction");
                 register_assembler<utopia::kokkos::IncrementalForcingFunction<FE_t>>("IncrementalForcingFunction");
                 register_assembler<utopia::kokkos::NeoHookean<FE_t>>("NeoHookean");
-                register_assembler<utopia::kokkos::AutoHyperElasticity<FE_t>>("AutoHyperElasticity");
+
+                register_assembler<utopia::kokkos::AutoHyperElasticity<FE_t, 2>>("AutoHyperElasticity");
 
                 register_assembler_variant<utopia::kokkos::VectorLaplaceOperator<FE_t, 1, Scalar_t>>(
                     "VectorLaplaceOperator", 1);

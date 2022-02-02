@@ -16,7 +16,7 @@ class HyperElasticity:
 
 	# def __init__(self):
 
-	def generate_files(self, W, F, name, output_dir, simplify_expressions):
+	def generate_files(self, params, W, F, name, output_dir, simplify_expressions):
 		#############################################
 		# UI
 		#############################################
@@ -135,6 +135,7 @@ class HyperElasticity:
 				f"{output_dir}/../utopia_hyperelasticity_{name}.hpp",
 				f"{output_dir}/utopia_hyperelasticity_{name}_{d}.hpp"), 
 			name, 
+			params,
 	        energy_expression_list,
 	        gradient_expression_list,
 	        hessian_expression_list,
@@ -148,7 +149,7 @@ class HyperElasticity:
 
 
 def main(args):
-	d = 3
+	d = 2
 
 	if d==2:
 		output_dir = '../../../backend/kokkos/assembly/mech/generated/2D'
@@ -170,7 +171,7 @@ def main(args):
 	# Material parameters
 	###############################
 
-	mu, lmbda = symbols('mu lmbda')
+	mu, lmbda = symbols('mu lambda')
 	
 	###############################
 	# Strain energy function
@@ -213,30 +214,37 @@ def main(args):
 
 	I1 = J**(-Rational(d-1, d))*I_C
 	I2 = J**(-Rational(d+1, d))*I_C2;
+	# I1 = I_C
+	# I2 = I_C2;
 	IncompressibleMooneyRivlin = C1 * (I1 - d) + C2 * (I2 - d)
 
 	###############################
 	# Select model
 	###############################
 
-	strain_energy_function = IncompressibleMooneyRivlin 
-	name = "IncompressibleMooneyRivlin"
+	# strain_energy_function = IncompressibleMooneyRivlin
+	# name = "IncompressibleMooneyRivlin"
+	# params = [C1, C2]
 
-	# strain_energy_function = Fung 
+	# strain_energy_function = Fung
 	# name = "Fung"
+	# params = [a,b,c]
 
-	# strain_energy_function = Ogden 
-	# name = "NeohookeanOgden"
+	strain_energy_function = Ogden
+	name = "NeohookeanOgden"
+	params = [mu, lmbda]
 
 	# strain_energy_function = Bower
 	# name = "NeohookeanBower"
+	# params = [mu, lmbda]
 
 	# strain_energy_function = Wang
 	# name = "NeoHookeanWang"
+	# params = [mu, lmbda]
 
 	# strain_energy_function = Smith
 	# name = "NeohookeanSmith"
-
+	# params = [mu, lmbda]
 
 	# base_file = Template("templates/utopia_tpl_hyperelasticity.hpp")
 	# base_code = base_file.tpl.format(name="Prova")
@@ -244,7 +252,7 @@ def main(args):
 	# with open("prova.cpp", 'w') as f:
 	# 	f.write(base_code)
 
-	HyperElasticity().generate_files(strain_energy_function, F, name, output_dir, False)
+	HyperElasticity().generate_files(params, strain_energy_function, F, name, output_dir, False)
 
 if __name__ == '__main__':
     main(sys.argv[1:])

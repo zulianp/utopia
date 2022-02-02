@@ -1,25 +1,26 @@
 #ifndef UTOPIA_TPL_HYPERELASTICITY_NeoHookeanWang_2_IMPL_hpp
 #define UTOPIA_TPL_HYPERELASTICITY_NeoHookeanWang_2_IMPL_hpp
 
+#include "utopia_Input.hpp"
+
 #include "utopia_hyperelasticity_NeoHookeanWang.hpp"
 
 namespace utopia {
 	namespace kernels {
 
-		/** 
-		 * Specialization of NeoHookeanWang for dimension 2 
+		/**
+		 * Specialization of NeoHookeanWang for dimension 2
 		 */
 		template<typename T>
 		class NeoHookeanWang<T, 2> {
 		public:
 
-			UTOPIA_FUNCTION static void hessian(const T mu,
-				const T lmbda,
+			UTOPIA_FUNCTION void hessian(
 				const T *UTOPIA_RESTRICT f,
 				const T *grad_test,
 				const T *grad_trial,
 				const T dx,
-				T *UTOPIA_RESTRICT bf)
+				T *UTOPIA_RESTRICT bf) const
 			{
 				using namespace utopia::device;
 				// Automatically generated
@@ -50,7 +51,7 @@ namespace utopia {
 				T x24 = f[1]*x16;
 				T x25 = f[2]*x18;
 				T x26 = x14*(-f[1]*x20 + x24 - x25);
-				T x27 = (1.0/2.0)*lmbda;
+				T x27 = (1.0/2.0)*lambda;
 				T x28 = (2.0/3.0)*x10*x4;
 				T x29 = x13*(x15*x2 + x15*x3 + x28 + x6*x8) - x27;
 				T x30 = f[0]*x8;
@@ -63,16 +64,15 @@ namespace utopia {
 				bf[3] += dx*(grad_trial[0]*(x14*(x2*x8 + x23) + x22*x33) + grad_trial[1]*(x14*x33 + x22*(x1*x8 + x12)));
 			}
 
-			UTOPIA_FUNCTION static void gradient(const T mu,
-				const T lmbda,
+			UTOPIA_FUNCTION void gradient(
 				const T *UTOPIA_RESTRICT f,
 				const T *grad_test,
 				const T dx,
-				T *UTOPIA_RESTRICT lf)
+				T *UTOPIA_RESTRICT lf) const
 			{
 				using namespace utopia::device;
 			    // Automatically generated
-				T x0 = (1.0/2.0)*lmbda;
+				T x0 = (1.0/2.0)*lambda;
 				T x1 = f[0]*f[3] - f[1]*f[2];
 				T x2 = 2/pow(x1, 2.0/3.0);
 				T x3 = (2.0/3.0)*(pow(f[0], 2) + pow(f[1], 2) + pow(f[2], 2) + pow(f[3], 2))/pow(x1, 5.0/3.0);
@@ -81,35 +81,33 @@ namespace utopia {
 				lf[1] += dx*(grad_test[0]*(-f[1]*x0 + x4*(f[1]*x3 + f[2]*x2)) + grad_test[1]*(f[0]*x0 + x4*(-f[0]*x3 + f[3]*x2)));
 			}
 
-			UTOPIA_FUNCTION static void value(const T mu,
-				const T lmbda,
+			UTOPIA_FUNCTION void value(
 				const T *UTOPIA_RESTRICT f,
 				const T dx,
 				T &e
-				)
+				) const
 			{
 				using namespace utopia::device;
 			    // Automatically generated
 				T x0 = f[0]*f[3] - f[1]*f[2];
-				e += dx*((1.0/2.0)*lmbda*(x0 - 1) + (1.0/2.0)*mu*(-2 + (pow(f[0], 2) + pow(f[1], 2) + pow(f[2], 2) + pow(f[3], 2))/pow(x0, 2.0/3.0)));
+				e += dx*((1.0/2.0)*lambda*(x0 - 1) + (1.0/2.0)*mu*(-2 + (pow(f[0], 2) + pow(f[1], 2) + pow(f[2], 2) + pow(f[3], 2))/pow(x0, 2.0/3.0)));
 			}
 
-			UTOPIA_FUNCTION void eval(const T mu,
-				const T lmbda,
+			UTOPIA_FUNCTION void eval(
 				const T *UTOPIA_RESTRICT f,
 				const T *grad_test,
 				const T *grad_trial,
 				const T dx,
 				T &e,
 				T *UTOPIA_RESTRICT lf,
-				T *UTOPIA_RESTRICT bf)
+				T *UTOPIA_RESTRICT bf) const
 			{
 				using namespace utopia::device;
 			    // Automatically generated
 				T x0 = f[0]*f[3];
 				T x1 = f[1]*f[2];
 				T x2 = x0 - x1;
-				T x3 = (1.0/2.0)*lmbda;
+				T x3 = (1.0/2.0)*lambda;
 				T x4 = pow(x2, -2.0/3.0);
 				T x5 = pow(f[0], 2);
 				T x6 = pow(f[1], 2);
@@ -150,7 +148,18 @@ namespace utopia {
 				bf[3] += dx*(grad_trial[0]*(x17*(x14*x6 + x26) + x25*x34) + grad_trial[1]*(x17*x34 + x25*(x14*x5 + x16)));
 			}
 
+			T mu;
+			T lambda;
+
 		};
+
+		template<typename T>
+		void read_parameters(Input &in, NeoHookeanWang<T, 2> &obj)
+		{
+			in.get("mu", obj.mu);
+			in.get("lambda", obj.lambda);
+		}
+
 	}
 }
 

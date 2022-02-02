@@ -158,8 +158,31 @@ class KernelGenerator:
     def __init__(self, dim):
         self.dim = dim
 
+    def generate_fields(self, params):
+        class_fields = []
+        for p in params:
+            class_fields.append(f'T {p};')
+
+        return "\n".join(class_fields)
+
+    def generate_read_parameters(self, params):
+        class_fields = []
+        for p in params:
+            class_fields.append(f'in.get(\"{p}\", {p});')
+
+        return "\n".join(class_fields)
+
+    def generate_set_parameters(self, params):
+        class_fields = []
+        for p in params:
+            class_fields.append(f'{p} = params.{p};')
+
+        return "\n".join(class_fields)
+
+
     def generate_class(
         self, tpl, name, 
+        params,
         value_expression,
         gradient_expression,
         hessian_expression,
@@ -179,13 +202,20 @@ class KernelGenerator:
             name=name,
             dim=self.dim)
 
+        fields = self.generate_fields(params)
+        get_params = self.generate_read_parameters(params)
+        set_params = self.generate_set_parameters(params)
+
         kernel = tpl.impl_tpl.format(
             name=name,
             value=value_string,
             gradient=gradient_string,
             hessian=hessian_string,
             combined=combined_string,
-            dim=self.dim)
+            dim=self.dim,
+            fields=fields,
+            get_params=get_params,
+            set_params=set_params)
 
         with open(tpl.impl_output_path, 'w') as f:
             f.write(kernel)

@@ -16,12 +16,16 @@
 
 #include "utopia_hyperelasticity_NeohookeanOgden.hpp"
 #include "utopia_hyperelasticity_NeohookeanOgden_2.hpp"
-#include "utopia_hyperelasticity_NeohookeanOgden_3.hpp"
+// #include "utopia_hyperelasticity_NeohookeanOgden_3.hpp"
+
+// #include "utopia_hyperelasticity_IncompressibleMooneyRivlin.hpp"
+// #include "utopia_hyperelasticity_IncompressibleMooneyRivlin_2.hpp"
+// #include "utopia_hyperelasticity_IncompressibleMooneyRivlin_3.hpp"
 
 namespace utopia {
     namespace kokkos {
 
-        template <class FE_, class FirstLameParameter = typename FE_::Scalar, class ShearModulus = FirstLameParameter>
+        template <class FE_, int Dim>
         class AutoHyperElasticity : public FEAssembler<FE_, DefaultView<typename FE_::Scalar>> {
         public:
             using FE = FE_;
@@ -33,31 +37,10 @@ namespace utopia {
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;
 
-            using Material2D = utopia::kernels::NeohookeanOgden<Scalar, 2>;
-            using Material3D = utopia::kernels::NeohookeanOgden<Scalar, 3>;
+            using Material = utopia::kernels::NeohookeanOgden<Scalar, Dim>;
+            using Params = typename Material::Params;
 
-            class Params : public Configurable {
-            public:
-                using Scalar = typename Traits<FirstLameParameter>::Scalar;
-                void read(Input &in) override {
-                    StressStrainParameters<FirstLameParameter, ShearModulus> ssp;
-                    ssp.read(in);
-
-                    lambda = ssp.first_lame_parameter.get();
-                    mu = ssp.shear_modulus.get();
-                }
-
-                Params(const FirstLameParameter &lambda = FirstLameParameter(1.0),
-                       const ShearModulus &mu = FirstLameParameter(1.0),
-                       const Scalar &rescale = 1.0)
-                    : lambda(lambda), mu(mu), rescale(rescale) {}
-
-                FirstLameParameter lambda;
-                ShearModulus mu;
-                Scalar rescale;
-            };
-
-            AutoHyperElasticity(const std::shared_ptr<FE> &fe, Params op = Params()) : Super(fe), op_(std::move(op)) {}
+            AutoHyperElasticity(const std::shared_ptr<FE> &fe, Params op = Params()) : Super(fe), material_(std::move(op)) {}
 
             inline int n_vars() const override { return this->fe().spatial_dimension(); }
 
@@ -92,8 +75,7 @@ namespace utopia {
                 return true;
             }
 
-            template <int Dim, class Material>
-            bool assemble_matrix_tpl() {
+            bool assemble_matrix() override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<AutoHyperElasticity>::assemble_matrix");
 
                 this->ensure_matrix_accumulator();
@@ -104,8 +86,7 @@ namespace utopia {
                 {
                     assert(deformation_gradient_);
                     auto F = deformation_gradient_->data();
-                    auto lambda = op_.lambda;
-                    auto mu = op_.mu;
+                    auto material = material_;
 
                     int n_quad_points = this->fe().n_quad_points();
                     int n_shape_functions = this->fe().n_shape_functions();
@@ -141,9 +122,7 @@ namespace utopia {
                                         // Assemble
                                         stress.set(0.);
 
-                                        Material::hessian(mu,
-                                                          lambda,
-                                                          &F_qp.raw_type()[0],
+                                        material.hessian(&F_qp.raw_type()[0],
                                                           &grad_test[0],
                                                           &grad_trial[0],
                                                           dx,
@@ -168,8 +147,7 @@ namespace utopia {
                 return true;
             }
 
-            template <int Dim, class Material>
-            bool assemble_vector_tpl() {
+            bool assemble_vector() override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<AutoHyperElasticity>::assemble_vector");
 
                 this->ensure_vector_accumulator();
@@ -181,8 +159,7 @@ namespace utopia {
                     assert(deformation_gradient_);
                     auto F = deformation_gradient_->data();
 
-                    auto lambda = op_.lambda;
-                    auto mu = op_.mu;
+                    auto material = material_;
 
                     int n_quad_points = this->fe().n_quad_points();
                     int n_shape_functions = this->fe().n_shape_functions();
@@ -213,8 +190,7 @@ namespace utopia {
 
                                     // Assemble
                                     stress.set(0.);
-                                    Material::gradient(
-                                        mu, lambda, &F_qp.raw_type()[0], &grad_test[0], dx, &stress.raw_type()[0]);
+                                    material.gradient(&F_qp.raw_type()[0], &grad_test[0], dx, &stress.raw_type()[0]);
 
                                     for (int d1 = 0; d1 < Dim; ++d1) {
                                         auto dof_i = i * Dim + d1;
@@ -231,24 +207,8 @@ namespace utopia {
                 return true;
             }
 
-            bool assemble_matrix() override {
-                if (this->fe().spatial_dimension() == 2) {
-                    return this->assemble_matrix_tpl<2, Material2D>();
-                } else {
-                    return this->assemble_matrix_tpl<3, Material3D>();
-                }
-            }
-
-            bool assemble_vector() override {
-                if (this->fe().spatial_dimension() == 2) {
-                    return this->assemble_vector_tpl<2, Material2D>();
-                } else {
-                    return this->assemble_vector_tpl<3, Material3D>();
-                }
-            }
-
             // NVCC_PRIVATE :
-            Params op_;
+            Material material_;
             std::shared_ptr<Gradient<FE>> deformation_gradient_;
         };
     }  // namespace kokkos
