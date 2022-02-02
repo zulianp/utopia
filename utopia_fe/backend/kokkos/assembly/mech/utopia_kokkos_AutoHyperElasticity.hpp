@@ -9,14 +9,9 @@
 #include "utopia_StressStrainParameters.hpp"
 #include "utopia_Views.hpp"
 
-#include "generated_AutoHyperElasticity.hpp"
-#include "generated_AutoHyperElasticityEnergy.hpp"
-#include "generated_AutoHyperElasticityGradient.hpp"
-#include "generated_AutoHyperElasticityHessian.hpp"
-
 #include "utopia_hyperelasticity_NeohookeanOgden.hpp"
 #include "utopia_hyperelasticity_NeohookeanOgden_2.hpp"
-// #include "utopia_hyperelasticity_NeohookeanOgden_3.hpp"
+#include "utopia_hyperelasticity_NeohookeanOgden_3.hpp"
 
 // #include "utopia_hyperelasticity_IncompressibleMooneyRivlin.hpp"
 // #include "utopia_hyperelasticity_IncompressibleMooneyRivlin_2.hpp"
