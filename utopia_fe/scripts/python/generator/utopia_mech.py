@@ -181,8 +181,7 @@ class KernelGenerator:
 
 
     def generate_class(
-        self, tpl, name, 
-        params,
+        self, tpl, model,
         value_expression,
         gradient_expression,
         hessian_expression,
@@ -199,15 +198,23 @@ class KernelGenerator:
         combined_string = self.generate_string(combined_expression)
 
         header = tpl.header_tpl.format(
-            name=name,
+            name=model.name,
             dim=self.dim)
 
-        fields = self.generate_fields(params)
-        get_params = self.generate_read_parameters(params)
-        set_params = self.generate_set_parameters(params)
+        fields = self.generate_fields(model.params)
+        set_params = self.generate_set_parameters(model.params)
+
+        if(model.use_default_parameter_reader):
+            get_params = """StressStrainParameters<T, T> ssp;
+                            ssp.read(in);
+
+                            lambda = ssp.first_lame_parameter.get();
+                            mu = ssp.shear_modulus.get();"""
+        else:
+            get_params = self.generate_read_parameters(model.params)
 
         kernel = tpl.impl_tpl.format(
-            name=name,
+            name=model.name,
             value=value_string,
             gradient=gradient_string,
             hessian=hessian_string,

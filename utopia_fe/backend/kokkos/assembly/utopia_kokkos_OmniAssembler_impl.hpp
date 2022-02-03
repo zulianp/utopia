@@ -25,7 +25,7 @@
 #include "utopia_hyperelasticity_NeoHookeanOgden_3.hpp"
 
 #include "utopia_hyperelasticity_NeoHookeanSmith.hpp"
-#include "utopia_hyperelasticity_NeoHookeanSmith_2.hpp"
+// #include "utopia_hyperelasticity_NeoHookeanSmith_2.hpp"
 #include "utopia_hyperelasticity_NeoHookeanSmith_3.hpp"
 
 #include "utopia_hyperelasticity_NeoHookeanBower.hpp"
@@ -150,7 +150,7 @@ namespace utopia {
                 register_assembler_variant<utopia::kokkos::NeoHookeanOgden<FE_t, 2>>("NeoHookeanOgden",2);
                 register_assembler_variant<utopia::kokkos::NeoHookeanOgden<FE_t, 3>>("NeoHookeanOgden",3);
 
-                register_assembler_variant<utopia::kokkos::NeoHookeanSmith<FE_t, 2>>("NeoHookeanSmith",2);
+                // register_assembler_variant<utopia::kokkos::NeoHookeanSmith<FE_t, 2>>("NeoHookeanSmith",2);
                 register_assembler_variant<utopia::kokkos::NeoHookeanSmith<FE_t, 3>>("NeoHookeanSmith",3);
 
                 register_assembler_variant<utopia::kokkos::NeoHookeanBower<FE_t, 2>>("NeoHookeanBower",2);
