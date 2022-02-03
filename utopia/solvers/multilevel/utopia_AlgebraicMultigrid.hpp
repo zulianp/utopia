@@ -75,7 +75,7 @@ namespace utopia {
         AlgebraicMultigrid *clone() const override { return new AlgebraicMultigrid(*this); }
 
         AlgebraicMultigrid(const AlgebraicMultigrid &other)
-            : algorithm_(other.algorithm_),
+            : IterativeSolver(other), algorithm_(other.algorithm_),
               agglomerator_(std::shared_ptr<MatrixAgglomerator<Matrix>>(other.agglomerator_->clone())),
               n_levels_(other.n_levels_) {}
 
