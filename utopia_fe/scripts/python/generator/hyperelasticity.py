@@ -45,7 +45,6 @@ class HyperElasticModel:
 		dx = symbols('dx')
 		self.dx = dx
 
-
 		#############################################
 		# Energy
 		#############################################
@@ -95,6 +94,70 @@ class HyperElasticModel:
 
 		self.form[2] = bilinear_form
 
+	def generate_files(self, output_dir, simplify_expressions):
+		model = self
+		#############################################
+		# UI
+		#############################################
+
+		if not os.path.exists(output_dir):
+			print(f"Creating directory {output_dir}")
+			os.mkdir(output_dir)
+
+		#############################################
+		# FE
+		#############################################
+
+		model.compute_forms()
+		tp = TensorProductBasis(model.d)
+
+		hessian_expression_list = []
+		gradient_expression_list = []
+		energy_expression_list = []
+
+		for d1 in range(0, model.d):
+			subsituted = tp.linear_subs("test", d1, model.form[1])
+
+			if simplify_expressions:
+				subsituted = simplify(subsituted)
+
+			gradient_expression_list.append(AddAugmentedAssignment(symbols(f"lf[{d1}]"), subsituted))
+
+			for d2 in range(0, model.d):
+				subsituted = tp.bilinear_subs("test", d1, "trial", d2, model.form[2])
+
+				if simplify_expressions:
+					subsituted = simplify(subsituted)
+
+				hessian_expression_list.append(AddAugmentedAssignment(symbols(f"bf[{d1*model.block_size + d2}]"), subsituted))
+
+
+		energy_expression_list.append(AddAugmentedAssignment(symbols("e"), model.form[0]))
+
+		full_expression_list = []
+		full_expression_list.extend(hessian_expression_list)
+		full_expression_list.extend(gradient_expression_list)
+		full_expression_list.extend(energy_expression_list)
+
+		#############################################
+		# Generate code
+		#############################################
+
+		print("Generating code")
+
+		generator = KernelGenerator(model.d)
+		generator.generate_class(
+			Template(
+				"templates/utopia_tpl_hyperelasticity.hpp",
+				"templates/utopia_tpl_hyperelasticity_impl.hpp",
+				f"{output_dir}/../utopia_hyperelasticity_{model.name}.hpp",
+				f"{output_dir}/utopia_hyperelasticity_{model.name}_{model.d}.hpp"),
+			model,
+	        energy_expression_list,
+	        gradient_expression_list,
+	        hessian_expression_list,
+	        output_dir)
+
 class IncompressibleHyperElasticModel(HyperElasticModel):
 	def __init__(self, d):
 		super().__init__(d)
@@ -108,6 +171,7 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
 		params = self.params
 		W = self.fun
 		name = self.name
+		F = self.F
 		J = self.J
 		d = self.d
 		p = self.p
@@ -115,12 +179,16 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
 		trial = trial_function(1)
 		test = test_function(1)
 
+		grad_trial = trial_gradient(d)
+		grad_test = test_gradient(d)
+
 		#############################################
 		# Energy
 		#############################################
 
 		# should be complete with subclass model
 
+		print("Function(pressure)")
 		print(self.fun)
 
 		#############################################
@@ -129,19 +197,45 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
 		print("Gradient(pressure)")
 
 		# dWdJ = simplify(diff(self.fun, J))
-		dWdp = simplify(diff(self.fun, p)) * test * dx
-		# print(self.form[1])
-		print(dWdp)
+		dWdp = simplify(diff(self.fun, p))
 
-		# self.form[1] += (dWdJ)
+		g1 = dWdp * test * dx
+		print(g1)
+
 
 		#############################################
 		# Hessian
 		#############################################
 		print("Hessian(pressure)")
-		dWdp2 = diff(dWdp, p)
-		print(dWdp2)
-		# self.form[1] += (dWdJ)
+
+		P = first_piola(self.fun, F)
+
+		contraction = 0
+		for i in range(0, d):
+			for j in range(0, d):
+		 		contraction += P[i,j] * grad_trial[i,j]
+
+		H_10 = simplify(diff(contraction, p) * test) * dx
+		H_11 = simplify(diff(dWdp * trial, p)) * test * dx
+
+		dWdpdF = first_piola(dWdp * trial, F)
+
+		contraction = 0
+		for i in range(0, d):
+			for j in range(0, d):
+		 		contraction += dWdpdF[i,j] * grad_test[i,j]
+
+
+		H_01 = simplify(contraction) * dx
+
+		print('H_11')
+		print(H_11)
+
+		print('H_01')
+		print(simplify(H_01))
+
+		print('H_10')
+		print(simplify(H_10))
 
 
 ###############################
@@ -284,86 +378,19 @@ class IncompressibleMooneyRivlin(IncompressibleHyperElasticModel):
 		self.fun = C1 * (I_C - d) + C2 * (I_C2 - d) + p/2 * (J - 1)**2
 		self.name = 'IncompressibleMooneyRivlin'
 
-class HyperElasticity:
-
-	# def __init__(self):
-
-	def generate_files(self, model, output_dir, simplify_expressions):
-		#############################################
-		# UI
-		#############################################
-
-		if not os.path.exists(output_dir):
-			print(f"Creating directory {output_dir}")
-			os.mkdir(output_dir)
-
-		#############################################
-		# FE
-		#############################################
-
-		model.compute_forms()
-		tp = TensorProductBasis(model.block_size)
-
-		hessian_expression_list = []
-		gradient_expression_list = []
-		energy_expression_list = []
-
-		for d1 in range(0, model.block_size):
-			subsituted = tp.linear_subs("test", d1, model.form[1])
-
-			if simplify_expressions:
-				subsituted = simplify(subsituted)
-
-			gradient_expression_list.append(AddAugmentedAssignment(symbols(f"lf[{d1}]"), subsituted))
-
-			for d2 in range(0, model.block_size):
-				subsituted = tp.bilinear_subs("test", d1, "trial", d2, model.form[2])
-
-				if simplify_expressions:
-					subsituted = simplify(subsituted)
-
-				hessian_expression_list.append(AddAugmentedAssignment(symbols(f"bf[{d1*model.block_size + d2}]"), subsituted))
-
-
-		energy_expression_list.append(AddAugmentedAssignment(symbols("e"), model.form[0]))
-
-		full_expression_list = []
-		full_expression_list.extend(hessian_expression_list)
-		full_expression_list.extend(gradient_expression_list)
-		full_expression_list.extend(energy_expression_list)
-
-		#############################################
-		# Generate code
-		#############################################
-
-		print("Generating code")
-
-		generator = KernelGenerator(model.d)
-		generator.generate_class(
-			Template(
-				"templates/utopia_tpl_hyperelasticity.hpp",
-				"templates/utopia_tpl_hyperelasticity_impl.hpp",
-				f"{output_dir}/../utopia_hyperelasticity_{model.name}.hpp",
-				f"{output_dir}/utopia_hyperelasticity_{model.name}_{model.d}.hpp"),
-			model,
-	        energy_expression_list,
-	        gradient_expression_list,
-	        hessian_expression_list,
-	        output_dir)
-
 def generate_materials(d,simplify_expressions):
 	output_dir = f'../../../backend/kokkos/assembly/mech/generated/{d}D'
 	# models = [NeoHookeanOgden(d), NeoHookeanBower(d), NeoHookeanWang(d), NeoHookeanSmith(d), Fung(d), MooneyRivlin(d)]
 	# models = [NeoHookeanOgden(d)]
-	# models = [Fung(d)]
-	models=[IncompressibleMooneyRivlin(d)]
+	models = [Fung(d)]
+	# models=[IncompressibleMooneyRivlin(d)]
 
 	for m in models:
-		HyperElasticity().generate_files(m, output_dir, simplify_expressions)	
+		m.generate_files(output_dir, simplify_expressions)
 
 def main(args):
 	generate_materials(2,True)
-	# generate_materials(3, False)
+	generate_materials(3, False)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
