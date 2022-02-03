@@ -2,6 +2,8 @@
 #define UTOPIA_TPL_HYPERELASTICITY_{name}_hpp
 
 #include "utopia_Algorithms.hpp"
+#include "utopia_kokkos_AutoHyperElasticity.hpp"
+
 
 #ifndef UTOPIA_RESTRICT
 #define UTOPIA_RESTRICT __restrict__
@@ -16,6 +18,12 @@ namespace utopia {{
 			static_assert(Dim < 0, "Automatically generated class -- {name} -- needs template specialization");
 
 		}};
+	}}
+
+
+	namespace kokkos {{
+		template<class FE, int Dim>
+		using {name} = utopia::kokkos::AutoHyperElasticity<FE, utopia::kernels::{name}<typename FE::Scalar, Dim>>;
 	}}
 }}
 

@@ -14,6 +14,8 @@ namespace utopia {
 		template<typename T>
 		class NeoHookeanWang<T, 3> {
 		public:
+			static constexpr int Dim = 3;
+
 			class Params : public Configurable {
 			public:
 				void read(Input &in) override
@@ -22,8 +24,8 @@ namespace utopia {
 					in.get("lambda", lambda);
 				}
 
-				T mu;
-				T lambda;
+				T mu{1.0};
+				T lambda{1.0};
 			};
 
 			NeoHookeanWang(const Params &params)
@@ -395,8 +397,8 @@ namespace utopia {
 				bf[8] += dx*(grad_trial[0]*(x38*(x11 + x28*x79 + 4*x28*x80) + x43*(x132 + x31*x79) + x46*(x133 + x34*x79)) + grad_trial[1]*(x38*(x132 + x28*x89) + x43*(x11 + x31*x89 + 4*x31*x90) + x46*(x134 + x34*x89)) + grad_trial[2]*(x38*(x133 + x28*x97) + x43*(x134 + x31*x97) + x46*(x11 + x34*x97 + 4*x34*x98)));
 			}
 
-			T mu;
-			T lambda;
+			T mu{1.0};
+			T lambda{1.0};
 
 		};
 	}

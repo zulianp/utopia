@@ -14,6 +14,8 @@ namespace utopia {
 		template<typename T>
 		class Fung<T, 2> {
 		public:
+			static constexpr int Dim = 2;
+
 			class Params : public Configurable {
 			public:
 				void read(Input &in) override
@@ -23,9 +25,9 @@ namespace utopia {
 					in.get("c", c);
 				}
 
-				T a;
-				T b;
-				T c;
+				T a{1.0};
+				T b{1.0};
+				T c{1.0};
 			};
 
 			Fung(const Params &params)
@@ -129,9 +131,9 @@ namespace utopia {
 				bf[3] += dx*(grad_trial[0]*(grad_test[0]*(x10 + x2*x7) + x13*x16) + grad_trial[1]*(f[3]*x17 + grad_test[1]*(x10 + x3*x7)));
 			}
 
-			T a;
-			T b;
-			T c;
+			T a{1.0};
+			T b{1.0};
+			T c{1.0};
 
 		};
 	}

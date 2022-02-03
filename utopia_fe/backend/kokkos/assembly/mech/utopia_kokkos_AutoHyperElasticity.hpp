@@ -1,7 +1,6 @@
 #ifndef UTOPIA_KOKKOS_AUTOHYPERELASTICITY_HPP
 #define UTOPIA_KOKKOS_AUTOHYPERELASTICITY_HPP
 
-#include "utopia_kokkos_AutoHyperElasticity.hpp"
 #include "utopia_kokkos_FE.hpp"
 #include "utopia_kokkos_FEAssembler.hpp"
 #include "utopia_kokkos_Gradient.hpp"
@@ -9,18 +8,10 @@
 #include "utopia_StressStrainParameters.hpp"
 #include "utopia_Views.hpp"
 
-#include "utopia_hyperelasticity_NeohookeanOgden.hpp"
-#include "utopia_hyperelasticity_NeohookeanOgden_2.hpp"
-#include "utopia_hyperelasticity_NeohookeanOgden_3.hpp"
-
-// #include "utopia_hyperelasticity_IncompressibleMooneyRivlin.hpp"
-// #include "utopia_hyperelasticity_IncompressibleMooneyRivlin_2.hpp"
-// #include "utopia_hyperelasticity_IncompressibleMooneyRivlin_3.hpp"
-
 namespace utopia {
     namespace kokkos {
 
-        template <class FE_, int Dim>
+        template <class FE_, class Material>
         class AutoHyperElasticity : public FEAssembler<FE_, DefaultView<typename FE_::Scalar>> {
         public:
             using FE = FE_;
@@ -32,7 +23,7 @@ namespace utopia {
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;
 
-            using Material = utopia::kernels::NeohookeanOgden<Scalar, Dim>;
+            static constexpr int Dim = Material::Dim;
             using Params = typename Material::Params;
 
             AutoHyperElasticity(const std::shared_ptr<FE> &fe, Params op = Params()) : Super(fe), material_(std::move(op)) {}

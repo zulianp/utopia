@@ -1,19 +1,21 @@
-#ifndef UTOPIA_TPL_HYPERELASTICITY_NeohookeanSmith_3_IMPL_hpp
-#define UTOPIA_TPL_HYPERELASTICITY_NeohookeanSmith_3_IMPL_hpp
+#ifndef UTOPIA_TPL_HYPERELASTICITY_NeoHookeanSmith_3_IMPL_hpp
+#define UTOPIA_TPL_HYPERELASTICITY_NeoHookeanSmith_3_IMPL_hpp
 
 #include "utopia_Input.hpp"
 
-#include "utopia_hyperelasticity_NeohookeanSmith.hpp"
+#include "utopia_hyperelasticity_NeoHookeanSmith.hpp"
 
 namespace utopia {
 	namespace kernels {
 
 		/**
-		 * Specialization of NeohookeanSmith for dimension 3
+		 * Specialization of NeoHookeanSmith for dimension 3
 		 */
 		template<typename T>
-		class NeohookeanSmith<T, 3> {
+		class NeoHookeanSmith<T, 3> {
 		public:
+			static constexpr int Dim = 3;
+
 			class Params : public Configurable {
 			public:
 				void read(Input &in) override
@@ -22,11 +24,11 @@ namespace utopia {
 					in.get("lambda", lambda);
 				}
 
-				T mu;
-				T lambda;
+				T mu{1.0};
+				T lambda{1.0};
 			};
 
-			NeohookeanSmith(const Params &params)
+			NeoHookeanSmith(const Params &params)
 			{
 				mu = params.mu;
 				lambda = params.lambda;
@@ -344,11 +346,11 @@ namespace utopia {
 				bf[8] += dx*(grad_trial[0]*(grad_test[0]*(x44*x80 + x54*x6 + x58) + grad_test[1]*(x113 + x48*x80) + grad_test[2]*(x114 + x52*x80)) + grad_trial[1]*(grad_test[0]*(x113 + x44*x86) + grad_test[1]*(x48*x86 + x54*x7 + x58) + grad_test[2]*(x115 + x52*x86)) + grad_trial[2]*(grad_test[0]*(x114 + x44*x91) + grad_test[1]*(x115 + x48*x91) + grad_test[2]*(x52*x91 + x54*x8 + x58)));
 			}
 
-			T mu;
-			T lambda;
+			T mu{1.0};
+			T lambda{1.0};
 
 		};
 	}
 }
 
-#endif // UTOPIA_TPL_HYPERELASTICITY_NeohookeanSmith_3_IMPL_hpp
+#endif // UTOPIA_TPL_HYPERELASTICITY_NeoHookeanSmith_3_IMPL_hpp

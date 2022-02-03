@@ -19,6 +19,31 @@
 #include "utopia_kokkos_VectorLaplaceOperator.hpp"
 #include "utopia_kokkos_WeakLinearThermoElasticity.hpp"
 
+// Auto-gen kernels
+#include "utopia_hyperelasticity_NeoHookeanOgden.hpp"
+#include "utopia_hyperelasticity_NeoHookeanOgden_2.hpp"
+#include "utopia_hyperelasticity_NeoHookeanOgden_3.hpp"
+
+#include "utopia_hyperelasticity_NeoHookeanSmith.hpp"
+#include "utopia_hyperelasticity_NeoHookeanSmith_2.hpp"
+#include "utopia_hyperelasticity_NeoHookeanSmith_3.hpp"
+
+#include "utopia_hyperelasticity_NeoHookeanBower.hpp"
+#include "utopia_hyperelasticity_NeoHookeanBower_2.hpp"
+#include "utopia_hyperelasticity_NeoHookeanBower_3.hpp"
+
+#include "utopia_hyperelasticity_NeoHookeanWang.hpp"
+#include "utopia_hyperelasticity_NeoHookeanWang_2.hpp"
+#include "utopia_hyperelasticity_NeoHookeanWang_3.hpp"
+
+#include "utopia_hyperelasticity_Fung.hpp"
+#include "utopia_hyperelasticity_Fung_2.hpp"
+#include "utopia_hyperelasticity_Fung_3.hpp"
+
+#include "utopia_hyperelasticity_MooneyRivlin.hpp"
+#include "utopia_hyperelasticity_MooneyRivlin_2.hpp"
+#include "utopia_hyperelasticity_MooneyRivlin_3.hpp"
+
 // utopia/kokkos includes
 #include "utopia_kokkos_FE.hpp"
 
@@ -93,8 +118,6 @@ namespace utopia {
                 register_assembler<utopia::kokkos::IncrementalForcingFunction<FE_t>>("IncrementalForcingFunction");
                 register_assembler<utopia::kokkos::NeoHookean<FE_t>>("NeoHookean");
 
-                register_assembler<utopia::kokkos::AutoHyperElasticity<FE_t, 2>>("AutoHyperElasticity");
-                register_assembler<utopia::kokkos::AutoHyperElasticity<FE_t, 3>>("AutoHyperElasticity");
 
                 register_assembler_variant<utopia::kokkos::VectorLaplaceOperator<FE_t, 1, Scalar_t>>(
                     "VectorLaplaceOperator", 1);
@@ -121,6 +144,26 @@ namespace utopia {
                     "IsotropicPhaseFieldForBrittleFractures", 2);
                 register_assembler_variant<utopia::kokkos::IsotropicPhaseFieldForBrittleFractures<FE_t, 3>>(
                     "IsotropicPhaseFieldForBrittleFractures", 3);
+
+
+                // Auto gen materials
+                register_assembler<utopia::kokkos::NeoHookeanOgden<FE_t, 2>>("NeoHookeanOgden");
+                register_assembler<utopia::kokkos::NeoHookeanOgden<FE_t, 3>>("NeoHookeanOgden");
+
+                register_assembler<utopia::kokkos::NeoHookeanSmith<FE_t, 2>>("NeoHookeanSmith");
+                register_assembler<utopia::kokkos::NeoHookeanSmith<FE_t, 3>>("NeoHookeanSmith");
+
+                register_assembler<utopia::kokkos::NeoHookeanBower<FE_t, 2>>("NeoHookeanBower");
+                register_assembler<utopia::kokkos::NeoHookeanBower<FE_t, 3>>("NeoHookeanBower");
+
+                register_assembler<utopia::kokkos::NeoHookeanWang<FE_t, 2>>("NeoHookeanWang");
+                register_assembler<utopia::kokkos::NeoHookeanWang<FE_t, 3>>("NeoHookeanWang");
+
+                register_assembler<utopia::kokkos::Fung<FE_t, 2>>("Fung");
+                register_assembler<utopia::kokkos::Fung<FE_t, 3>>("Fung");
+
+                register_assembler<utopia::kokkos::MooneyRivlin<FE_t, 2>>("MooneyRivlin");
+                register_assembler<utopia::kokkos::MooneyRivlin<FE_t, 3>>("MooneyRivlin");
             }
         };
 

@@ -2,6 +2,8 @@
 #define UTOPIA_TPL_HYPERELASTICITY_NeoHookeanWang_hpp
 
 #include "utopia_Algorithms.hpp"
+#include "utopia_kokkos_AutoHyperElasticity.hpp"
+
 
 #ifndef UTOPIA_RESTRICT
 #define UTOPIA_RESTRICT __restrict__
@@ -16,6 +18,12 @@ namespace utopia {
 			static_assert(Dim < 0, "Automatically generated class -- NeoHookeanWang -- needs template specialization");
 
 		};
+	}
+
+
+	namespace kokkos {
+		template<class FE, int Dim>
+		using NeoHookeanWang = utopia::kokkos::AutoHyperElasticity<FE, utopia::kernels::NeoHookeanWang<typename FE::Scalar, Dim>>;
 	}
 }
 

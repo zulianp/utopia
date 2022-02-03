@@ -14,6 +14,8 @@ namespace utopia {{
 		template<typename T>
 		class {name}<T, {dim}> {{
 		public:
+			static constexpr int Dim = {dim};
+
 			class Params : public Configurable {{
 			public:
 				void read(Input &in) override

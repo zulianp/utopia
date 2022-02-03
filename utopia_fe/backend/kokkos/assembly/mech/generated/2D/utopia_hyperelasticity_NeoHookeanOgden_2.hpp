@@ -1,19 +1,21 @@
-#ifndef UTOPIA_TPL_HYPERELASTICITY_NeohookeanOgden_2_IMPL_hpp
-#define UTOPIA_TPL_HYPERELASTICITY_NeohookeanOgden_2_IMPL_hpp
+#ifndef UTOPIA_TPL_HYPERELASTICITY_NeoHookeanOgden_2_IMPL_hpp
+#define UTOPIA_TPL_HYPERELASTICITY_NeoHookeanOgden_2_IMPL_hpp
 
 #include "utopia_Input.hpp"
 
-#include "utopia_hyperelasticity_NeohookeanOgden.hpp"
+#include "utopia_hyperelasticity_NeoHookeanOgden.hpp"
 
 namespace utopia {
 	namespace kernels {
 
 		/**
-		 * Specialization of NeohookeanOgden for dimension 2
+		 * Specialization of NeoHookeanOgden for dimension 2
 		 */
 		template<typename T>
-		class NeohookeanOgden<T, 2> {
+		class NeoHookeanOgden<T, 2> {
 		public:
+			static constexpr int Dim = 2;
+
 			class Params : public Configurable {
 			public:
 				void read(Input &in) override
@@ -22,11 +24,11 @@ namespace utopia {
 					in.get("lambda", lambda);
 				}
 
-				T mu;
-				T lambda;
+				T mu{1.0};
+				T lambda{1.0};
 			};
 
-			NeohookeanOgden(const Params &params)
+			NeoHookeanOgden(const Params &params)
 			{
 				mu = params.mu;
 				lambda = params.lambda;
@@ -165,11 +167,11 @@ namespace utopia {
 				bf[3] += dx*(grad_trial[0]*(grad_test[0]*(lambda*x36 + mu*x36 + mu - x11*x36) + grad_test[1]*x35) + grad_trial[1]*(grad_test[0]*x35 + grad_test[1]*(lambda*x37 + mu*x37 + mu - x11*x37)));
 			}
 
-			T mu;
-			T lambda;
+			T mu{1.0};
+			T lambda{1.0};
 
 		};
 	}
 }
 
-#endif // UTOPIA_TPL_HYPERELASTICITY_NeohookeanOgden_2_IMPL_hpp
+#endif // UTOPIA_TPL_HYPERELASTICITY_NeoHookeanOgden_2_IMPL_hpp

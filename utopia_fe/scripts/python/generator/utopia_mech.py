@@ -161,21 +161,21 @@ class KernelGenerator:
     def generate_fields(self, params):
         class_fields = []
         for p in params:
-            class_fields.append(f'T {p};')
+            class_fields.append(f'T {p[0]}{{{p[1]}}};')
 
         return "\n".join(class_fields)
 
     def generate_read_parameters(self, params):
         class_fields = []
         for p in params:
-            class_fields.append(f'in.get(\"{p}\", {p});')
+            class_fields.append(f'in.get(\"{p[0]}\", {p[0]});')
 
         return "\n".join(class_fields)
 
     def generate_set_parameters(self, params):
         class_fields = []
         for p in params:
-            class_fields.append(f'{p} = params.{p};')
+            class_fields.append(f'{p[0]} = params.{p[0]};')
 
         return "\n".join(class_fields)
 

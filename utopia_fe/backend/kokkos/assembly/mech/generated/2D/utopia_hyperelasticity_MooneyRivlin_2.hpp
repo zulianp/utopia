@@ -14,6 +14,8 @@ namespace utopia {
 		template<typename T>
 		class MooneyRivlin<T, 2> {
 		public:
+			static constexpr int Dim = 2;
+
 			class Params : public Configurable {
 			public:
 				void read(Input &in) override
@@ -22,8 +24,8 @@ namespace utopia {
 					in.get("C2", C2);
 				}
 
-				T C1;
-				T C2;
+				T C1{1.0};
+				T C2{1.0};
 			};
 
 			MooneyRivlin(const Params &params)
@@ -223,8 +225,8 @@ namespace utopia {
 				bf[3] += dx*(grad_trial[0]*(grad_test[0]*(C1*(x32*x7 + x45) + C2*(f[1]*x30*x36 + x37*x7 + 2*x50)) + grad_test[1]*x58) + grad_trial[1]*(grad_test[0]*x58 + grad_test[1]*(C1*(x32*x4 + x34) + C2*(-f[0]*x31*x36 + x37*x4 + 2*x56))));
 			}
 
-			T C1;
-			T C2;
+			T C1{1.0};
+			T C2{1.0};
 
 		};
 	}

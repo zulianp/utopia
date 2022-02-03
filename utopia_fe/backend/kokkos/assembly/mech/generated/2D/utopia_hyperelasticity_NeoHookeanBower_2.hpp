@@ -1,19 +1,21 @@
-#ifndef UTOPIA_TPL_HYPERELASTICITY_NeohookeanBower_2_IMPL_hpp
-#define UTOPIA_TPL_HYPERELASTICITY_NeohookeanBower_2_IMPL_hpp
+#ifndef UTOPIA_TPL_HYPERELASTICITY_NeoHookeanBower_2_IMPL_hpp
+#define UTOPIA_TPL_HYPERELASTICITY_NeoHookeanBower_2_IMPL_hpp
 
 #include "utopia_Input.hpp"
 
-#include "utopia_hyperelasticity_NeohookeanBower.hpp"
+#include "utopia_hyperelasticity_NeoHookeanBower.hpp"
 
 namespace utopia {
 	namespace kernels {
 
 		/**
-		 * Specialization of NeohookeanBower for dimension 2
+		 * Specialization of NeoHookeanBower for dimension 2
 		 */
 		template<typename T>
-		class NeohookeanBower<T, 2> {
+		class NeoHookeanBower<T, 2> {
 		public:
+			static constexpr int Dim = 2;
+
 			class Params : public Configurable {
 			public:
 				void read(Input &in) override
@@ -22,11 +24,11 @@ namespace utopia {
 					in.get("lambda", lambda);
 				}
 
-				T mu;
-				T lambda;
+				T mu{1.0};
+				T lambda{1.0};
 			};
 
-			NeohookeanBower(const Params &params)
+			NeoHookeanBower(const Params &params)
 			{
 				mu = params.mu;
 				lambda = params.lambda;
@@ -166,11 +168,11 @@ namespace utopia {
 				bf[3] += dx*(grad_trial[0]*(grad_test[0]*(lambda*x6 + x10*(x15*x6 + x26)) + grad_test[1]*x35) + grad_trial[1]*(grad_test[0]*x35 + grad_test[1]*(lambda*x5 + x10*(x15*x5 + x17))));
 			}
 
-			T mu;
-			T lambda;
+			T mu{1.0};
+			T lambda{1.0};
 
 		};
 	}
 }
 
-#endif // UTOPIA_TPL_HYPERELASTICITY_NeohookeanBower_2_IMPL_hpp
+#endif // UTOPIA_TPL_HYPERELASTICITY_NeoHookeanBower_2_IMPL_hpp
