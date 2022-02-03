@@ -94,13 +94,20 @@ class Fung(HyperElasticModel):
 	def __init__(self, d):
 		super().__init__(d)
 
-		I_C = self.I_C
+		a, b, c, k = symbols('a b c k')
+		self.params = [(a, 1.0), (b, 1.0), (c, 1.0), (k, 1)]
+
+		C = self.C
 		J = self.J
+		E = (C - eye(d, d))/2
 
-		a, b, c = symbols('a b c')
-		self.params = [(a, 1.0), (b, 1.0), (c, 1.0)]
+		# Isotropic
+		trE = trace(E)
+		q = a * trE
+		Q = b * trE
 
-		self.fun = Rational(1,2) * (a * (I_C - d) + b * (exp(c*(I_C - d) - 1)))
+
+		self.fun = Rational(1,2) * (q + c * (exp(Q) - 1)) + (k/2)*(J - 1)**2
 		self.name = 'Fung'
 
 
@@ -276,14 +283,15 @@ class HyperElasticity:
 def generate_materials(d,simplify_expressions):
 	output_dir = f'../../../backend/kokkos/assembly/mech/generated/{d}D'
 	# models = [NeoHookeanOgden(d), NeoHookeanBower(d), NeoHookeanWang(d), NeoHookeanSmith(d), Fung(d), MooneyRivlin(d)]
-	models = [NeoHookeanOgden(d)]
+	# models = [NeoHookeanOgden(d)]
+	models = [Fung(d)]
 
 	for m in models:
 		HyperElasticity().generate_files(m, output_dir, simplify_expressions)	
 
 def main(args):
-	generate_materials(2)
-	generate_materials(3)
+	generate_materials(2,True)
+	generate_materials(3, False)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
