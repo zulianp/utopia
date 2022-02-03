@@ -147,23 +147,23 @@ namespace utopia {
 
 
                 // Auto gen materials
-                register_assembler<utopia::kokkos::NeoHookeanOgden<FE_t, 2>>("NeoHookeanOgden");
-                register_assembler<utopia::kokkos::NeoHookeanOgden<FE_t, 3>>("NeoHookeanOgden");
+                register_assembler_variant<utopia::kokkos::NeoHookeanOgden<FE_t, 2>>("NeoHookeanOgden",2);
+                register_assembler_variant<utopia::kokkos::NeoHookeanOgden<FE_t, 3>>("NeoHookeanOgden",3);
 
-                register_assembler<utopia::kokkos::NeoHookeanSmith<FE_t, 2>>("NeoHookeanSmith");
-                register_assembler<utopia::kokkos::NeoHookeanSmith<FE_t, 3>>("NeoHookeanSmith");
+                register_assembler_variant<utopia::kokkos::NeoHookeanSmith<FE_t, 2>>("NeoHookeanSmith",2);
+                register_assembler_variant<utopia::kokkos::NeoHookeanSmith<FE_t, 3>>("NeoHookeanSmith",3);
 
-                register_assembler<utopia::kokkos::NeoHookeanBower<FE_t, 2>>("NeoHookeanBower");
-                register_assembler<utopia::kokkos::NeoHookeanBower<FE_t, 3>>("NeoHookeanBower");
+                register_assembler_variant<utopia::kokkos::NeoHookeanBower<FE_t, 2>>("NeoHookeanBower",2);
+                register_assembler_variant<utopia::kokkos::NeoHookeanBower<FE_t, 3>>("NeoHookeanBower",3);
 
-                register_assembler<utopia::kokkos::NeoHookeanWang<FE_t, 2>>("NeoHookeanWang");
-                register_assembler<utopia::kokkos::NeoHookeanWang<FE_t, 3>>("NeoHookeanWang");
+                register_assembler_variant<utopia::kokkos::NeoHookeanWang<FE_t, 2>>("NeoHookeanWang",2);
+                register_assembler_variant<utopia::kokkos::NeoHookeanWang<FE_t, 3>>("NeoHookeanWang",3);
 
-                register_assembler<utopia::kokkos::Fung<FE_t, 2>>("Fung");
-                register_assembler<utopia::kokkos::Fung<FE_t, 3>>("Fung");
+                register_assembler_variant<utopia::kokkos::Fung<FE_t, 2>>("Fung",2);
+                register_assembler_variant<utopia::kokkos::Fung<FE_t, 3>>("Fung",3);
 
-                register_assembler<utopia::kokkos::MooneyRivlin<FE_t, 2>>("MooneyRivlin");
-                register_assembler<utopia::kokkos::MooneyRivlin<FE_t, 3>>("MooneyRivlin");
+                register_assembler_variant<utopia::kokkos::MooneyRivlin<FE_t, 2>>("MooneyRivlin",2);
+                register_assembler_variant<utopia::kokkos::MooneyRivlin<FE_t, 3>>("MooneyRivlin",3);
             }
         };
 

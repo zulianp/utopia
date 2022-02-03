@@ -26,7 +26,9 @@ namespace utopia {
             static constexpr int Dim = Material::Dim;
             using Params = typename Material::Params;
 
-            AutoHyperElasticity(const std::shared_ptr<FE> &fe, Params op = Params()) : Super(fe), material_(std::move(op)) {}
+            AutoHyperElasticity(const std::shared_ptr<FE> &fe, Params op = Params()) : Super(fe), material_(std::move(op)) {
+                assert(!fe || fe->spatial_dimension() == Dim);
+            }
 
             inline int n_vars() const override { return this->fe().spatial_dimension(); }
 
