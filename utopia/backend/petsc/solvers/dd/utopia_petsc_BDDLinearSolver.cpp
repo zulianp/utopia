@@ -160,7 +160,7 @@ namespace utopia {
     }
 
     template <typename Matrix, typename Vector>
-    BDDLinearSolver<Matrix, Vector>::BDDLinearSolver(const BDDLinearSolver &other) : Super(other) {
+    BDDLinearSolver<Matrix, Vector>::BDDLinearSolver(const BDDLinearSolver &other) : PreconditionedSolverInterface<Vector>(other), Super(other) {
         copy(other);
     }
 
