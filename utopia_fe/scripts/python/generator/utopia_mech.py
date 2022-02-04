@@ -87,10 +87,39 @@ class TensorProductBasis:
       
         self.dim = dim
 
-    def bilinear_subs(self, i_trial, d_trial, i_test, d_test, expr):
-        return self.subs_gradient_test(i_test, d_test, self.subs_gradient_trial(i_trial, d_trial, expr))
+    def bilinear_subs(self, i_test, d_test, i_trial, d_trial, expr):
+        return self.subs_test(i_test, d_test, self.subs_trial(i_trial, d_trial, expr))
 
     def linear_subs(self, i_test, d_test, expr):
+        return self.subs_test(i_test, d_test, expr);
+
+    def subs_test(self, i_test, d_test, expr):
+        ret = expr
+
+        for i in range(0, self.dim):
+            if d_test == i:
+                ret = ret.subs(f'test_{i}', f'fun_{i_test}')
+            else:
+                ret = ret.subs(f'test_{i}', 0)
+
+        return ret
+        
+
+    def subs_trial(self, i_trial, d_trial, expr):
+        ret = expr
+
+        for i in range(0, self.dim):
+            if d_trial == i:
+                ret = ret.subs(f'trial_{i}', f'fun_{i_trial}')
+            else:
+                ret = ret.subs(f'trial_{i}', 0)
+        return ret
+
+
+    def bilinear_subs_gradients(self, i_trial, d_trial, i_test, d_test, expr):
+        return self.subs_gradient_test(i_test, d_test, self.subs_gradient_trial(i_trial, d_trial, expr))
+
+    def linear_subs_gradients(self, i_test, d_test, expr):
         return self.subs_gradient_test(i_test, d_test, expr);
 
     def subs_gradient_trial(self, i, d, f):

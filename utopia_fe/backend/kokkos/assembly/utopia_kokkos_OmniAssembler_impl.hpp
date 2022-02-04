@@ -44,6 +44,11 @@
 #include "utopia_hyperelasticity_MooneyRivlin_2.hpp"
 #include "utopia_hyperelasticity_MooneyRivlin_3.hpp"
 
+
+// #include "utopia_hyperelasticity_IncompressibleMooneyRivlin.hpp"
+// #include "utopia_hyperelasticity_IncompressibleMooneyRivlin_2.hpp"
+// #include "utopia_hyperelasticity_IncompressibleMooneyRivlin_3.hpp"
+
 // utopia/kokkos includes
 #include "utopia_kokkos_FE.hpp"
 

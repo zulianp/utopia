@@ -12,6 +12,11 @@ import sys
 from utopia_mech import *
 
 
+
+# class LinearForm:
+# 	def __init__(self):
+
+
 class HyperElasticModel:
 	def __init__(self, d):
 		self.d = d
@@ -26,6 +31,7 @@ class HyperElasticModel:
 
 		self.form = zeros(3)
 		self.use_default_parameter_reader = False
+		self.is_block_system = False
 
 	def compute_forms(self):
 		params = self.params
@@ -116,7 +122,7 @@ class HyperElasticModel:
 		energy_expression_list = []
 
 		for d1 in range(0, model.d):
-			subsituted = tp.linear_subs("test", d1, model.form[1])
+			subsituted = tp.linear_subs_gradients("test", d1, model.form[1])
 
 			if simplify_expressions:
 				subsituted = simplify(subsituted)
@@ -124,7 +130,7 @@ class HyperElasticModel:
 			gradient_expression_list.append(AddAugmentedAssignment(symbols(f"lf[{d1}]"), subsituted))
 
 			for d2 in range(0, model.d):
-				subsituted = tp.bilinear_subs("test", d1, "trial", d2, model.form[2])
+				subsituted = tp.bilinear_subs_gradients("test", d1, "trial", d2, model.form[2])
 
 				if simplify_expressions:
 					subsituted = simplify(subsituted)
@@ -165,9 +171,14 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
 		self.p = symbols('p')
 		# self.J = symbols('J')
 
-	def compute_forms(self):
-		super().compute_forms()
+		self.form = [0,0,0]
+		self.form[1] = zeros(2) # Two blocks
+		self.form[2] = zeros(2, 2) # Four blocks
 
+		self.is_block_system = True
+		self.independent_variables = [self.F, self.p]
+
+	def compute_forms(self):
 		params = self.params
 		W = self.fun
 		name = self.name
@@ -175,68 +186,216 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
 		J = self.J
 		d = self.d
 		p = self.p
-		dx = self.dx
+		
+		dx = symbols('dx')
+
 		trial = trial_function(1)
 		test = test_function(1)
+
+		self.trial = trial
+		self.test = test
 
 		grad_trial = trial_gradient(d)
 		grad_test = test_gradient(d)
 
+		P = first_piola(self.fun, F)
+
 		#############################################
 		# Energy
 		#############################################
-
-		# should be complete with subclass model
-
-		print("Function(pressure)")
-		print(self.fun)
+		
+		print("Function(u,p)")
+		energy = self.fun * dx
+		self.form[0] = energy
 
 		#############################################
 		# Gradient
 		#############################################
-		print("Gradient(pressure)")
+		print("Gradient(u,p)")
 
-		# dWdJ = simplify(diff(self.fun, J))
+		linear_form_0 = 0
+		for i in range(0, d):
+			for j in range(0, d):
+		 		linear_form_0 += P[i,j] * grad_test[i,j]
+
+		linear_form_0 *= dx
+
+		self.form[1][0] = linear_form_0
+
+		# print(linear_form_0)
+
 		dWdp = simplify(diff(self.fun, p))
+		linear_form_1 = dWdp * test * dx
 
-		g1 = dWdp * test * dx
-		print(g1)
-
-
+		self.form[1][1] = linear_form_1
+		
 		#############################################
 		# Hessian
 		#############################################
-		print("Hessian(pressure)")
-
-		P = first_piola(self.fun, F)
+		print("Hessian(u,p)")
 
 		contraction = 0
 		for i in range(0, d):
 			for j in range(0, d):
 		 		contraction += P[i,j] * grad_trial[i,j]
 
-		H_10 = simplify(diff(contraction, p) * test) * dx
-		H_11 = simplify(diff(dWdp * trial, p)) * test * dx
+		bilinear_form_00 = 0
+
+		for i in range(0, d):
+			for j in range(0, d):
+				Hij = diff(contraction, F[i, j]);
+				bilinear_form_00 += Hij * grad_test[i,j]
+
+		bilinear_form_00 *= dx
 
 		dWdpdF = first_piola(dWdp * trial, F)
+
+		bilinear_form_10 = simplify(diff(contraction, p) * test) * dx
+		bilinear_form_11 = simplify(diff(dWdp * trial, p)) * test * dx
 
 		contraction = 0
 		for i in range(0, d):
 			for j in range(0, d):
 		 		contraction += dWdpdF[i,j] * grad_test[i,j]
 
+		bilinear_form_01 = simplify(contraction) * dx
 
-		H_01 = simplify(contraction) * dx
+		self.form[2][0,0] = bilinear_form_00
+		self.form[2][0,1] = bilinear_form_01
+		self.form[2][1,0] = bilinear_form_10
+		self.form[2][1,1] = bilinear_form_11
 
-		print('H_11')
-		print(H_11)
+		# print('bilinear_form_00')
+		# print(simplify(bilinear_form_00))
 
-		print('H_01')
-		print(simplify(H_01))
+		# print('bilinear_form_01')
+		# print(simplify(bilinear_form_01))
 
-		print('H_10')
-		print(simplify(H_10))
+		# print('bilinear_form_10')
+		# print(simplify(bilinear_form_10))
 
+		# print('bilinear_form_11')
+		# print(bilinear_form_11)
+
+		# print('linear_form_0')
+		# print(linear_form_0)
+
+		# print('linear_form_1')
+		# print(linear_form_1)
+
+	def generate_files(self, output_dir, simplify_expressions):
+		model = self
+
+		if not os.path.exists(output_dir):
+			print(f"Creating directory {output_dir}")
+			os.mkdir(output_dir)
+
+		#############################################
+		# FE
+		#############################################
+
+		model.compute_forms()
+		tp = TensorProductBasis(model.d)
+
+		hessian_expression_list = []
+		gradient_expression_list = []
+		energy_expression_list = []
+
+
+		lf0 = model.form[1][0]
+		lf1 = model.form[1][1]
+
+		bf00 = model.form[2][0,0]
+		bf01 = model.form[2][0,1]
+		bf10 = model.form[2][1,0]
+		bf11 = model.form[2][1,1]
+
+		# Displacement
+
+		for d1 in range(0, model.d):
+			subsituted_0 = tp.linear_subs_gradients("test", d1, lf0)
+
+			if simplify_expressions:
+				subsituted_0 = simplify(subsituted_0)
+
+			gradient_expression_list.append(AddAugmentedAssignment(symbols(f"lf[{d1}]"), subsituted_0))
+
+			for d2 in range(0, model.d):
+				subsituted = tp.bilinear_subs_gradients("test", d1, "trial", d2, bf00)
+
+				if simplify_expressions:
+					subsituted = simplify(subsituted)
+
+				hessian_expression_list.append(AddAugmentedAssignment(symbols(f"bf[{d1*model.block_size + d2}]"), subsituted))
+
+		# Pressure 
+		subsituted_1 = tp.linear_subs('test', 0, lf1)
+
+		if simplify_expressions:
+			subsituted_1 = simplify(subsituted_1)
+
+		gradient_expression_list.append(AddAugmentedAssignment(symbols(f"lf[{model.d}]"), subsituted_1))
+
+
+		subsituted_11 = tp.bilinear_subs("test", 0, "trial", 0, bf11)
+
+		if simplify_expressions:
+			subsituted_11 = simplify(subsituted_11)
+
+		hessian_expression_list.append(AddAugmentedAssignment(symbols(f"bf[{model.d*model.block_size +model.d}]"), subsituted_11))
+
+		# Mixed
+
+		# bf(p, delta_u)
+		mixed_10 = tp.subs_test('test', 0, bf10)
+
+		for d1 in range(0, model.d):
+			subsituted_01 = tp.subs_gradient_trial("trial", d1, mixed_10)
+
+			if simplify_expressions:
+				subsituted_01 = simplify(subsituted_01)
+
+			hessian_expression_list.append(AddAugmentedAssignment(symbols(f"bf[{d1+ model.d*model.block_size}]"), subsituted_01))
+
+
+		# bf(u,delta_p)
+		mixed_01 = tp.subs_trial('trial', 0, bf01)
+
+		for d1 in range(0, model.d):
+			subsituted_10 = tp.subs_gradient_test("test", d1, mixed_01)
+
+			if simplify_expressions:
+				subsituted_10 = simplify(subsituted_10)
+
+			hessian_expression_list.append(AddAugmentedAssignment(symbols(f"bf[{d1*model.block_size + model.d}]"), subsituted_10))
+
+
+		# Model Energy
+		energy_expression_list.append(AddAugmentedAssignment(symbols("e"), model.form[0]))
+
+		full_expression_list = []
+		full_expression_list.extend(hessian_expression_list)
+		full_expression_list.extend(gradient_expression_list)
+		full_expression_list.extend(energy_expression_list)
+
+		#############################################
+		# Generate code
+		#############################################
+
+		print("Generating code")
+
+		generator = KernelGenerator(model.d)
+		generator.generate_class(
+			Template(
+				"templates/utopia_tpl_incompressible_hyperelasticity.hpp",
+				"templates/utopia_tpl_incompressible_hyperelasticity_impl.hpp",
+				f"{output_dir}/../utopia_hyperelasticity_{model.name}.hpp",
+				f"{output_dir}/utopia_hyperelasticity_{model.name}_{model.d}.hpp"),
+			model,
+	        energy_expression_list,
+	        gradient_expression_list,
+	        hessian_expression_list,
+	        output_dir)
 
 ###############################
 # NeoHookean models
@@ -382,15 +541,15 @@ def generate_materials(d,simplify_expressions):
 	output_dir = f'../../../backend/kokkos/assembly/mech/generated/{d}D'
 	# models = [NeoHookeanOgden(d), NeoHookeanBower(d), NeoHookeanWang(d), NeoHookeanSmith(d), Fung(d), MooneyRivlin(d)]
 	# models = [NeoHookeanOgden(d)]
-	models = [Fung(d)]
-	# models=[IncompressibleMooneyRivlin(d)]
+	# models = [Fung(d)]
+	models=[IncompressibleMooneyRivlin(d)]
 
 	for m in models:
 		m.generate_files(output_dir, simplify_expressions)
 
 def main(args):
 	generate_materials(2,True)
-	generate_materials(3, False)
+	# generate_materials(3, False)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
