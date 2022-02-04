@@ -36,8 +36,8 @@ namespace utopia {{
 				const T p,
 				const T *grad_test,
 				const T *grad_trial,
-				const T *fun_test,
-				const T *fun_trial,
+				const T fun_test,
+				const T fun_trial,
 				const T dx,
 				T *UTOPIA_RESTRICT bf) const
 			{{
@@ -50,7 +50,7 @@ namespace utopia {{
 				const T *UTOPIA_RESTRICT f,
 				const T p,
 				const T *UTOPIA_RESTRICT grad_test,
-				const T *fun_test,
+				const T fun_test,
 				const T dx,
 				T *UTOPIA_RESTRICT lf) const
 			{{
@@ -76,8 +76,8 @@ namespace utopia {{
 				const T p,
 				const T *grad_test,
 				const T *grad_trial,
-				const T *fun_test,
-				const T *fun_trial,
+				const T fun_test,
+				const T fun_trial,
 				const T dx,
 				T &e,
 				T *UTOPIA_RESTRICT lf,

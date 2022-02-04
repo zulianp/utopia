@@ -21,17 +21,17 @@ namespace utopia {
 				void read(Input &in) override
 				{
 					in.get("C1", C1);
-					in.get("C2", C2);
+in.get("C2", C2);
 				}
 
 				T C1{1.0};
-				T C2{1.0};
+T C2{1.0};
 			};
 
 			IncompressibleMooneyRivlin(const Params &params)
 			{
 				C1 = params.C1;
-				C2 = params.C2;
+C2 = params.C2;
 			}
 
 			UTOPIA_FUNCTION void hessian(
@@ -39,79 +39,63 @@ namespace utopia {
 				const T p,
 				const T *grad_test,
 				const T *grad_trial,
-				const T *fun_test,
-				const T *fun_trial,
+				const T fun_test,
+				const T fun_trial,
 				const T dx,
 				T *UTOPIA_RESTRICT bf) const
 			{
 				using namespace utopia::device;
 				// Automatically generated
-				T x0 = 2*C2;
-				T x1 = p + x0;
-				T x2 = f[2]*grad_test[1];
-				T x3 = x1*x2;
-				T x4 = 2*C1;
-				T x5 = pow(f[3], 2);
-				T x6 = f[3]*grad_test[0];
-				T x7 = x1*x6;
-				T x8 = pow(f[2], 2);
-				T x9 = f[1]*x7;
-				T x10 = f[1]*f[2];
-				T x11 = f[0]*f[3];
-				T x12 = x10 - x11 + 1;
-				T x13 = p*x12;
-				T x14 = p*x10 - x0*(-2*x10 + x11) + x13;
-				T x15 = -f[0]*x3;
-				T x16 = p*x11 + x0*(-x10 + 2*x11) - x13;
-				T x17 = f[0]*grad_test[1];
-				T x18 = pow(f[1], 2);
-				T x19 = f[1]*grad_test[0];
-				T x20 = pow(f[0], 2);
-				T x21 = dx*x12;
-				T x22 = fun_test*x21;
-				T x23 = fun_trial*x21;
-				bf[0] += dx*(grad_trial[0]*(-f[3]*x3 + grad_test[0]*(p*x5 + x0*x5 + x4)) - grad_trial[1]*(f[2]*x7 - grad_test[1]*(p*x8 + x0*x8 + x4)));
-				bf[1] += dx*(-grad_trial[0]*(-grad_test[1]*x14 + x9) + grad_trial[1]*(grad_test[0]*x16 + x15));
-				bf[3] += dx*(-grad_trial[0]*(-grad_test[1]*x16 + x9) + grad_trial[1]*(grad_test[0]*x14 + x15));
-				bf[4] += dx*(grad_trial[0]*(-f[1]*x1*x17 + grad_test[0]*(p*x18 + x0*x18 + x4)) - grad_trial[1]*(f[0]*x1*x19 - grad_test[1]*(p*x20 + x0*x20 + x4)));
-				bf[8] += 0;
-				bf[6] += x22*(f[2]*grad_trial[1] - f[3]*grad_trial[0]);
-				bf[7] += -x22*(f[0]*grad_trial[1] - f[1]*grad_trial[0]);
-				bf[2] += x23*(x2 - x6);
-				bf[5] += -x23*(x17 - x19);
+				T x0 = f[2]*grad_test[1];
+T x1 = f[3]*grad_test[0];
+T x2 = 2*dx;
+T x3 = 4*C2;
+T x4 = f[1]*x1*x3;
+T x5 = f[0]*f[3];
+T x6 = f[1]*f[2];
+T x7 = p + x3*(x5 - 2*x6);
+T x8 = f[0]*x0*x3;
+T x9 = p + x3*(2*x5 - x6);
+T x10 = (1.0/2.0)*dx;
+T x11 = f[0]*grad_test[1];
+T x12 = f[1]*grad_test[0];
+T x13 = fun_test*x10;
+T x14 = fun_trial*x10;
+bf[0] += -x2*(grad_trial[0]*(C2*f[3]*x0 - grad_test[0]*(C1 + C2*pow(f[3], 2))) + grad_trial[1]*(C2*f[2]*x1 - grad_test[1]*(C1 + C2*pow(f[2], 2))));
+bf[1] += -x10*(grad_trial[0]*(grad_test[1]*x7 + x4) + grad_trial[1]*(-grad_test[0]*x9 + x8));
+bf[3] += -x10*(grad_trial[0]*(-grad_test[1]*x9 + x4) + grad_trial[1]*(grad_test[0]*x7 + x8));
+bf[4] += -x2*(grad_trial[0]*(C2*f[1]*x11 - grad_test[0]*(C1 + C2*pow(f[1], 2))) + grad_trial[1]*(C2*f[0]*x12 - grad_test[1]*(C1 + C2*pow(f[0], 2))));
+bf[8] += 0;
+bf[6] += x13*(-f[2]*grad_trial[1] + f[3]*grad_trial[0]);
+bf[7] += x13*(f[0]*grad_trial[1] - f[1]*grad_trial[0]);
+bf[2] += x14*(-x0 + x1);
+bf[5] += x14*(x11 - x12);
 			}
 
 			UTOPIA_FUNCTION void gradient(
 				const T *UTOPIA_RESTRICT f,
 				const T p,
 				const T *UTOPIA_RESTRICT grad_test,
-				const T *fun_test,
+				const T fun_test,
 				const T dx,
 				T *UTOPIA_RESTRICT lf) const
 			{
 				using namespace utopia::device;
 			    // Automatically generated
-				T x0 = grad_test[1]*p;
-				T x1 = f[2]*x0;
-				T x2 = 2*C1;
-				T x3 = grad_test[0]*x2;
-				T x4 = grad_test[1]*x2;
-				T x5 = grad_test[0]*p;
-				T x6 = f[3]*x5;
-				T x7 = f[0]*pow(f[3], 2);
-				T x8 = f[1]*pow(f[2], 2);
-				T x9 = f[0]*f[3];
-				T x10 = 2*C2;
-				T x11 = grad_test[1]*x10;
-				T x12 = f[1]*f[2];
-				T x13 = grad_test[0]*x10;
-				T x14 = f[1]*x5;
-				T x15 = f[0]*x0;
-				T x16 = pow(f[0], 2)*f[3];
-				T x17 = pow(f[1], 2)*f[2];
-				lf[0] += dx*(f[0]*x3 + f[1]*x4 - f[2]*x11*x9 - f[3]*x12*x13 + x0*x8 - x1*x9 + x1 + x11*x8 - x12*x6 + x13*x7 + x5*x7 - x6);
-				lf[1] += dx*(-f[0]*x11*x12 - f[1]*x13*x9 + f[2]*x3 + f[3]*x4 + x0*x16 + x11*x16 - x12*x15 + x13*x17 - x14*x9 + x14 - x15 + x17*x5);
-				lf[2] += (1.0/2.0)*dx*fun_test*pow(x12 - x9 + 1, 2);
+				T x0 = grad_test[0]*p;
+T x1 = 4*C1;
+T x2 = grad_test[0]*x1;
+T x3 = grad_test[1]*x1;
+T x4 = grad_test[1]*p;
+T x5 = f[0]*f[3];
+T x6 = 4*C2;
+T x7 = grad_test[1]*x6;
+T x8 = f[1]*f[2];
+T x9 = grad_test[0]*x6;
+T x10 = (1.0/2.0)*dx;
+lf[0] += x10*(f[0]*pow(f[3], 2)*x9 + f[0]*x2 + f[1]*pow(f[2], 2)*x7 + f[1]*x3 - f[2]*x4 - f[2]*x5*x7 + f[3]*x0 - f[3]*x8*x9);
+lf[1] += x10*(pow(f[0], 2)*f[3]*x7 + f[0]*x4 - f[0]*x7*x8 + pow(f[1], 2)*f[2]*x9 - f[1]*x0 - f[1]*x5*x9 + f[2]*x2 + f[3]*x3);
+lf[2] += fun_test*x10*(x5 - x8 - 1);
 			}
 
 			UTOPIA_FUNCTION void value(
@@ -124,9 +108,9 @@ namespace utopia {
 				using namespace utopia::device;
 			    // Automatically generated
 				T x0 = pow(f[0], 2) + pow(f[2], 2);
-				T x1 = pow(f[1], 2) + pow(f[3], 2);
-				T x2 = x0 + x1;
-				e += dx*(C1*(x2 - 2) + C2*(-1.0/2.0*pow(x0, 2) - 1.0/2.0*pow(x1, 2) + (1.0/2.0)*pow(x2, 2) - pow(f[0]*f[1] + f[2]*f[3], 2) - 2) + (1.0/2.0)*p*pow(f[0]*f[3] - f[1]*f[2] - 1, 2));
+T x1 = pow(f[1], 2) + pow(f[3], 2);
+T x2 = x0 + x1;
+e += dx*(C1*(x2 - 2) + C2*(-1.0/2.0*pow(x0, 2) - 1.0/2.0*pow(x1, 2) + (1.0/2.0)*pow(x2, 2) - pow(f[0]*f[1] + f[2]*f[3], 2) - 2) + (1.0/2.0)*p*(f[0]*f[3] - f[1]*f[2] - 1));
 			}
 
 			UTOPIA_FUNCTION void eval(
@@ -134,8 +118,8 @@ namespace utopia {
 				const T p,
 				const T *grad_test,
 				const T *grad_trial,
-				const T *fun_test,
-				const T *fun_trial,
+				const T fun_test,
+				const T fun_trial,
 				const T dx,
 				T &e,
 				T *UTOPIA_RESTRICT lf,
@@ -144,70 +128,62 @@ namespace utopia {
 				using namespace utopia::device;
 			    // Automatically generated
 				T x0 = f[0]*f[3];
-				T x1 = f[1]*f[2];
-				T x2 = -x1;
-				T x3 = pow(f[0], 2);
-				T x4 = pow(f[2], 2);
-				T x5 = x3 + x4;
-				T x6 = pow(f[1], 2);
-				T x7 = pow(f[3], 2);
-				T x8 = x6 + x7;
-				T x9 = x5 + x8;
-				T x10 = f[0]*f[1];
-				T x11 = f[2]*f[3];
-				T x12 = f[2]*grad_test[1];
-				T x13 = p*x12;
-				T x14 = 2*C1;
-				T x15 = f[0]*grad_test[0];
-				T x16 = f[1]*grad_test[1];
-				T x17 = f[3]*grad_test[0];
-				T x18 = p*x17;
-				T x19 = p*x7;
-				T x20 = p*x4;
-				T x21 = f[0]*grad_test[1];
-				T x22 = 2*C2;
-				T x23 = x11*x22;
-				T x24 = f[1]*grad_test[0];
-				T x25 = p*x21;
-				T x26 = p*x24;
-				T x27 = x22*x7;
-				T x28 = x22*x4;
-				T x29 = f[2]*grad_test[0];
-				T x30 = f[3]*grad_test[1];
-				T x31 = p*x3;
-				T x32 = p*x6;
-				T x33 = x10*x22;
-				T x34 = x22*x3;
-				T x35 = x22*x6;
-				T x36 = -x0 + x1 + 1;
-				T x37 = dx*fun_test;
-				T x38 = p + x22;
-				T x39 = x11*x38;
-				T x40 = f[1]*x17*x38;
-				T x41 = p*x36;
-				T x42 = p*x1 - x22*(x0 - 2*x1) + x41;
-				T x43 = -f[0]*x12*x38;
-				T x44 = p*x0 + x22*(2*x0 + x2) - x41;
-				T x45 = x10*x38;
-				T x46 = x36*x37;
-				T x47 = dx*fun_trial*x36;
-				e += dx*(C1*(x9 - 2) + C2*(-1.0/2.0*pow(x5, 2) - 1.0/2.0*pow(x8, 2) + (1.0/2.0)*pow(x9, 2) - pow(x10 + x11, 2) - 2) + (1.0/2.0)*p*pow(x0 + x2 - 1, 2));
-				lf[0] += dx*(-x11*x25 - x11*x26 + x13 + x14*x15 + x14*x16 + x15*x19 + x15*x27 + x16*x20 + x16*x28 - x18 - x21*x23 - x23*x24);
-				lf[1] += dx*(-x10*x13 - x10*x18 - x12*x33 + x14*x29 + x14*x30 - x17*x33 - x25 + x26 + x29*x32 + x29*x35 + x30*x31 + x30*x34);
-				lf[2] += (1.0/2.0)*pow(x36, 2)*x37;
-				bf[0] += dx*(grad_trial[0]*(grad_test[0]*(x14 + x19 + x27) - grad_test[1]*x39) - grad_trial[1]*(grad_test[0]*x39 - grad_test[1]*(x14 + x20 + x28)));
-				bf[1] += dx*(-grad_trial[0]*(-grad_test[1]*x42 + x40) + grad_trial[1]*(grad_test[0]*x44 + x43));
-				bf[3] += dx*(-grad_trial[0]*(-grad_test[1]*x44 + x40) + grad_trial[1]*(grad_test[0]*x42 + x43));
-				bf[4] += dx*(grad_trial[0]*(grad_test[0]*(x14 + x32 + x35) - grad_test[1]*x45) - grad_trial[1]*(grad_test[0]*x45 - grad_test[1]*(x14 + x31 + x34)));
-				bf[8] += 0;
-				bf[6] += x46*(f[2]*grad_trial[1] - f[3]*grad_trial[0]);
-				bf[7] += -x46*(f[0]*grad_trial[1] - f[1]*grad_trial[0]);
-				bf[2] += x47*(x12 - x17);
-				bf[5] += -x47*(x21 - x24);
+T x1 = f[1]*f[2];
+T x2 = -x1;
+T x3 = (1.0/2.0)*x0 + (1.0/2.0)*x2 - 1.0/2.0;
+T x4 = pow(f[0], 2);
+T x5 = pow(f[2], 2);
+T x6 = x4 + x5;
+T x7 = pow(f[1], 2);
+T x8 = pow(f[3], 2);
+T x9 = x7 + x8;
+T x10 = x6 + x9;
+T x11 = f[0]*f[1];
+T x12 = f[2]*f[3];
+T x13 = f[3]*grad_test[0];
+T x14 = 4*C1;
+T x15 = grad_test[0]*x14;
+T x16 = grad_test[1]*x14;
+T x17 = f[2]*grad_test[1];
+T x18 = f[0]*grad_test[1];
+T x19 = 4*C2;
+T x20 = x12*x19;
+T x21 = f[1]*grad_test[0];
+T x22 = C2*x8;
+T x23 = 4*grad_test[0];
+T x24 = C2*x5;
+T x25 = 4*grad_test[1];
+T x26 = (1.0/2.0)*dx;
+T x27 = x17*x19;
+T x28 = x13*x19;
+T x29 = C2*x4;
+T x30 = C2*x7;
+T x31 = C2*x12;
+T x32 = 2*dx;
+T x33 = f[1]*x28;
+T x34 = p + x19*(x0 - 2*x1);
+T x35 = f[0]*x27;
+T x36 = p + x19*(2*x0 + x2);
+T x37 = C2*x11;
+T x38 = fun_test*x26;
+T x39 = fun_trial*x26;
+e += dx*(C1*(x10 - 2) + C2*((1.0/2.0)*pow(x10, 2) - 1.0/2.0*pow(x6, 2) - 1.0/2.0*pow(x9, 2) - pow(x11 + x12, 2) - 2) + p*x3);
+lf[0] += x26*(f[0]*x15 + f[0]*x22*x23 + f[1]*x16 + f[1]*x24*x25 + p*x13 - p*x17 - x18*x20 - x20*x21);
+lf[1] += x26*(f[2]*x15 + f[2]*x23*x30 + f[3]*x16 + f[3]*x25*x29 + p*x18 - p*x21 - x11*x27 - x11*x28);
+lf[2] += dx*fun_test*x3;
+bf[0] += -x32*(grad_trial[0]*(-grad_test[0]*(C1 + x22) + grad_test[1]*x31) + grad_trial[1]*(grad_test[0]*x31 - grad_test[1]*(C1 + x24)));
+bf[1] += -x26*(grad_trial[0]*(grad_test[1]*x34 + x33) + grad_trial[1]*(-grad_test[0]*x36 + x35));
+bf[3] += -x26*(grad_trial[0]*(-grad_test[1]*x36 + x33) + grad_trial[1]*(grad_test[0]*x34 + x35));
+bf[4] += -x32*(grad_trial[0]*(-grad_test[0]*(C1 + x30) + grad_test[1]*x37) + grad_trial[1]*(grad_test[0]*x37 - grad_test[1]*(C1 + x29)));
+bf[8] += 0;
+bf[6] += x38*(-f[2]*grad_trial[1] + f[3]*grad_trial[0]);
+bf[7] += x38*(f[0]*grad_trial[1] - f[1]*grad_trial[0]);
+bf[2] += x39*(x13 - x17);
+bf[5] += x39*(x18 - x21);
 			}
 
 			T C1{1.0};
-			T C2{1.0};
+T C2{1.0};
 
 		};
 	}

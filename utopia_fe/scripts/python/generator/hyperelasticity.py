@@ -519,6 +519,8 @@ class MooneyRivlin(HyperElasticModel):
 		self.fun = C1 * (I1 - d) + C2 * (I2 - d)
 		self.name = 'MooneyRivlin'
 
+# TEST (https://shaddenlab.gitlab.io/fenicsmechanics/chapters/demos-all.html)
+# https://www2.karlin.mff.cuni.cz/~hron/fenics-tutorial/elasticity/doc.html
 
 class IncompressibleMooneyRivlin(IncompressibleHyperElasticModel):
 	def __init__(self, d):
@@ -539,8 +541,8 @@ class IncompressibleMooneyRivlin(IncompressibleHyperElasticModel):
 
 		I_C2 = Rational(1, 2) * (I_C**2 - CikxCki)
 
-		self.fun = C1 * (I_C - d) + C2 * (I_C2 - d) + p/2 * (J - 1)**2
-		# self.fun = C1 * (I_C - d) + C2 * (I_C2 - d) + p/2 * (J - 1)
+		# self.fun = C1 * (I_C - d) + C2 * (I_C2 - d) + p/2 * (J - 1)**2
+		self.fun = C1 * (I_C - d) + C2 * (I_C2 - d) + p/2 * (J - 1)
 		self.name = 'IncompressibleMooneyRivlin'
 
 def generate_materials(d,simplify_expressions):

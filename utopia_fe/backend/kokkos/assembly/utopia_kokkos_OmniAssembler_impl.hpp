@@ -44,9 +44,8 @@
 #include "utopia_hyperelasticity_MooneyRivlin_2.hpp"
 #include "utopia_hyperelasticity_MooneyRivlin_3.hpp"
 
-
-// #include "utopia_hyperelasticity_IncompressibleMooneyRivlin.hpp"
-// #include "utopia_hyperelasticity_IncompressibleMooneyRivlin_2.hpp"
+#include "utopia_hyperelasticity_IncompressibleMooneyRivlin.hpp"
+#include "utopia_hyperelasticity_IncompressibleMooneyRivlin_2.hpp"
 // #include "utopia_hyperelasticity_IncompressibleMooneyRivlin_3.hpp"
 
 // utopia/kokkos includes
@@ -123,7 +122,6 @@ namespace utopia {
                 register_assembler<utopia::kokkos::IncrementalForcingFunction<FE_t>>("IncrementalForcingFunction");
                 register_assembler<utopia::kokkos::NeoHookean<FE_t>>("NeoHookean");
 
-
                 register_assembler_variant<utopia::kokkos::VectorLaplaceOperator<FE_t, 1, Scalar_t>>(
                     "VectorLaplaceOperator", 1);
                 register_assembler_variant<utopia::kokkos::VectorLaplaceOperator<FE_t, 2, Scalar_t>>(
@@ -150,25 +148,27 @@ namespace utopia {
                 register_assembler_variant<utopia::kokkos::IsotropicPhaseFieldForBrittleFractures<FE_t, 3>>(
                     "IsotropicPhaseFieldForBrittleFractures", 3);
 
-
                 // Auto gen materials
-                register_assembler_variant<utopia::kokkos::NeoHookeanOgden<FE_t, 2>>("NeoHookeanOgden",2);
-                register_assembler_variant<utopia::kokkos::NeoHookeanOgden<FE_t, 3>>("NeoHookeanOgden",3);
+                register_assembler_variant<utopia::kokkos::NeoHookeanOgden<FE_t, 2>>("NeoHookeanOgden", 2);
+                register_assembler_variant<utopia::kokkos::NeoHookeanOgden<FE_t, 3>>("NeoHookeanOgden", 3);
 
                 // register_assembler_variant<utopia::kokkos::NeoHookeanSmith<FE_t, 2>>("NeoHookeanSmith",2);
-                register_assembler_variant<utopia::kokkos::NeoHookeanSmith<FE_t, 3>>("NeoHookeanSmith",3);
+                register_assembler_variant<utopia::kokkos::NeoHookeanSmith<FE_t, 3>>("NeoHookeanSmith", 3);
 
-                register_assembler_variant<utopia::kokkos::NeoHookeanBower<FE_t, 2>>("NeoHookeanBower",2);
-                register_assembler_variant<utopia::kokkos::NeoHookeanBower<FE_t, 3>>("NeoHookeanBower",3);
+                register_assembler_variant<utopia::kokkos::NeoHookeanBower<FE_t, 2>>("NeoHookeanBower", 2);
+                register_assembler_variant<utopia::kokkos::NeoHookeanBower<FE_t, 3>>("NeoHookeanBower", 3);
 
-                register_assembler_variant<utopia::kokkos::NeoHookeanWang<FE_t, 2>>("NeoHookeanWang",2);
-                register_assembler_variant<utopia::kokkos::NeoHookeanWang<FE_t, 3>>("NeoHookeanWang",3);
+                register_assembler_variant<utopia::kokkos::NeoHookeanWang<FE_t, 2>>("NeoHookeanWang", 2);
+                register_assembler_variant<utopia::kokkos::NeoHookeanWang<FE_t, 3>>("NeoHookeanWang", 3);
 
-                register_assembler_variant<utopia::kokkos::Fung<FE_t, 2>>("Fung",2);
-                register_assembler_variant<utopia::kokkos::Fung<FE_t, 3>>("Fung",3);
+                register_assembler_variant<utopia::kokkos::Fung<FE_t, 2>>("Fung", 2);
+                register_assembler_variant<utopia::kokkos::Fung<FE_t, 3>>("Fung", 3);
 
-                register_assembler_variant<utopia::kokkos::MooneyRivlin<FE_t, 2>>("MooneyRivlin",2);
-                register_assembler_variant<utopia::kokkos::MooneyRivlin<FE_t, 3>>("MooneyRivlin",3);
+                register_assembler_variant<utopia::kokkos::MooneyRivlin<FE_t, 2>>("MooneyRivlin", 2);
+                register_assembler_variant<utopia::kokkos::MooneyRivlin<FE_t, 3>>("MooneyRivlin", 3);
+
+                register_assembler_variant<utopia::kokkos::IncompressibleMooneyRivlin<FE_t, 2>>("IncompressibleMooneyRivlin", 2);
+                // register_assembler_variant<utopia::kokkos::IncompressibleMooneyRivlin<FE_t, 3>>("IncompressibleMooneyRivlin", 3);
             }
         };
 
