@@ -310,6 +310,11 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
 		bf10 = model.form[2][1,0]
 		bf11 = model.form[2][1,1]
 
+
+		for i in range(0, 2):
+			for j in range(0, 2):
+				print(f'{i},{j}) {model.form[2][i,j]}\n')
+
 		# Displacement
 
 		for d1 in range(0, model.d):
@@ -535,6 +540,7 @@ class IncompressibleMooneyRivlin(IncompressibleHyperElasticModel):
 		I_C2 = Rational(1, 2) * (I_C**2 - CikxCki)
 
 		self.fun = C1 * (I_C - d) + C2 * (I_C2 - d) + p/2 * (J - 1)**2
+		# self.fun = C1 * (I_C - d) + C2 * (I_C2 - d) + p/2 * (J - 1)
 		self.name = 'IncompressibleMooneyRivlin'
 
 def generate_materials(d,simplify_expressions):
