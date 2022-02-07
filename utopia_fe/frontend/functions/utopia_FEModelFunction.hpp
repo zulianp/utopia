@@ -506,6 +506,7 @@ namespace utopia {
         inline const std::shared_ptr<FunctionSpace> &space() const override { return fe_function_->space(); }
 
         inline const std::shared_ptr<FEFunctionInterface_t> function() const { return fe_function_; }
+        inline void set_function(const std::shared_ptr<FEFunctionInterface_t> &function) { fe_function_ = function; }
 
         bool is_linear() const override { return function()->is_linear(); }
 

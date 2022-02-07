@@ -542,7 +542,7 @@ class IncompressibleMooneyRivlin(IncompressibleHyperElasticModel):
 		I_C2 = Rational(1, 2) * (I_C**2 - CikxCki)
 
 		# self.fun = C1 * (I_C - d) + C2 * (I_C2 - d) + p/2 * (J - 1)**2
-		self.fun = C1 * (I_C - d) + C2 * (I_C2 - d) + p/2 * (J - 1)
+		self.fun = C1 * (I_C - d) + C2 * (I_C2 - d) + p * (J - 1)
 		self.name = 'IncompressibleMooneyRivlin'
 
 def generate_materials(d,simplify_expressions):
