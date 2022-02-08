@@ -899,6 +899,16 @@ namespace utopia {
             }
         }
 
+        bool read(const std::string &) {
+            assert(false && "IMPLEMENT ME");
+            return false;
+        }
+
+        bool read(const Path &) {
+            assert(false && "IMPLEMENT ME");
+            return false;
+        }
+
         template <class F>
         void read(const F f) const {
             const SizeType nr = rows();

@@ -9,8 +9,12 @@ from sympy.printing.c import C99CodePrinter
 import os
 import sys
 
+import rich
+from rich.syntax import Syntax
+
 from utopia_mech import *
 
+console = rich.get_console()
 
 
 # class LinearForm:
@@ -68,7 +72,7 @@ class HyperElasticModel:
 		#############################################
 		# Gradient
 		#############################################
-		print("Creating Gradient")
+		console.print("Creating Gradient")
 
 		linear_form = 0
 		for i in range(0, d):
@@ -82,7 +86,7 @@ class HyperElasticModel:
 		#############################################
 		# Hessian
 		#############################################
-		print("Creating Hessian")
+		console.print("Creating Hessian")
 
 		contraction = 0
 		for i in range(0, d):
@@ -107,7 +111,7 @@ class HyperElasticModel:
 		#############################################
 
 		if not os.path.exists(output_dir):
-			print(f"Creating directory {output_dir}")
+			console.print(f"Creating directory {output_dir}")
 			os.mkdir(output_dir)
 
 		#############################################
@@ -149,7 +153,7 @@ class HyperElasticModel:
 		# Generate code
 		#############################################
 
-		print("Generating code")
+		console.print("Generating code")
 
 		generator = KernelGenerator(model.d)
 		generator.generate_class(
@@ -204,14 +208,14 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
 		# Energy
 		#############################################
 		
-		print("Function(u,p)")
+		console.print("Function(u,p)")
 		energy = self.fun * dx
 		self.form[0] = energy
 
 		#############################################
 		# Gradient
 		#############################################
-		print("Gradient(u,p)")
+		console.print("Gradient(u,p)")
 
 		linear_form_0 = 0
 		for i in range(0, d):
@@ -222,7 +226,7 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
 
 		self.form[1][0] = linear_form_0
 
-		# print(linear_form_0)
+		# console.print(linear_form_0)
 
 		dWdp = simplify(diff(self.fun, p))
 		linear_form_1 = dWdp * test * dx
@@ -232,7 +236,7 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
 		#############################################
 		# Hessian
 		#############################################
-		print("Hessian(u,p)")
+		console.print("Hessian(u,p)")
 
 		contraction = 0
 		for i in range(0, d):
@@ -265,29 +269,29 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
 		self.form[2][1,0] = bilinear_form_10
 		self.form[2][1,1] = bilinear_form_11
 
-		# print('bilinear_form_00')
-		# print(simplify(bilinear_form_00))
+		# console.print('bilinear_form_00')
+		# console.print(simplify(bilinear_form_00))
 
-		# print('bilinear_form_01')
-		# print(simplify(bilinear_form_01))
+		# console.print('bilinear_form_01')
+		# console.print(simplify(bilinear_form_01))
 
-		# print('bilinear_form_10')
-		# print(simplify(bilinear_form_10))
+		# console.print('bilinear_form_10')
+		# console.print(simplify(bilinear_form_10))
 
-		# print('bilinear_form_11')
-		# print(bilinear_form_11)
+		# console.print('bilinear_form_11')
+		# console.print(bilinear_form_11)
 
-		# print('linear_form_0')
-		# print(linear_form_0)
+		# console.print('linear_form_0')
+		# console.print(linear_form_0)
 
-		# print('linear_form_1')
-		# print(linear_form_1)
+		# console.print('linear_form_1')
+		# console.print(linear_form_1)
 
 	def generate_files(self, output_dir, simplify_expressions):
 		model = self
 
 		if not os.path.exists(output_dir):
-			print(f"Creating directory {output_dir}")
+			console.print(f"Creating directory {output_dir}")
 			os.mkdir(output_dir)
 
 		#############################################
@@ -313,7 +317,9 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
 
 		for i in range(0, 2):
 			for j in range(0, 2):
-				print(f'{i},{j}) {model.form[2][i,j]}\n')
+				console.print(f'{i},{j})\n', style='bold blue')
+				# console.print( Syntax(f'{model.form[2][i,j]}\n', 'C'))
+				console.print(f'{model.form[2][i,j]}\n')
 
 		# Displacement
 
@@ -387,7 +393,7 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
 		# Generate code
 		#############################################
 
-		print("Generating code")
+		console.print("Generating code")
 
 		generator = KernelGenerator(model.d)
 		generator.generate_class(
