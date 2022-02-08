@@ -556,8 +556,8 @@ def generate_materials(d,simplify_expressions):
 		m.generate_files(output_dir, simplify_expressions)
 
 def main(args):
-	generate_materials(2,True)
-	# generate_materials(3, False)
+	# generate_materials(2,True)
+	generate_materials(3, True)
 
 if __name__ == '__main__':
     main(sys.argv[1:])

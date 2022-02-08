@@ -46,7 +46,7 @@
 
 #include "utopia_hyperelasticity_IncompressibleMooneyRivlin.hpp"
 #include "utopia_hyperelasticity_IncompressibleMooneyRivlin_2.hpp"
-// #include "utopia_hyperelasticity_IncompressibleMooneyRivlin_3.hpp"
+#include "utopia_hyperelasticity_IncompressibleMooneyRivlin_3.hpp"
 
 // utopia/kokkos includes
 #include "utopia_kokkos_FE.hpp"
@@ -167,8 +167,10 @@ namespace utopia {
                 register_assembler_variant<utopia::kokkos::MooneyRivlin<FE_t, 2>>("MooneyRivlin", 2);
                 register_assembler_variant<utopia::kokkos::MooneyRivlin<FE_t, 3>>("MooneyRivlin", 3);
 
-                register_assembler_variant<utopia::kokkos::IncompressibleMooneyRivlin<FE_t, 2>>("IncompressibleMooneyRivlin", 2);
-                // register_assembler_variant<utopia::kokkos::IncompressibleMooneyRivlin<FE_t, 3>>("IncompressibleMooneyRivlin", 3);
+                register_assembler_variant<utopia::kokkos::IncompressibleMooneyRivlin<FE_t, 2>>(
+                    "IncompressibleMooneyRivlin", 2);
+                register_assembler_variant<utopia::kokkos::IncompressibleMooneyRivlin<FE_t, 3>>(
+                    "IncompressibleMooneyRivlin", 3);
             }
         };
 
