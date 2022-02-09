@@ -879,8 +879,8 @@ namespace utopia {
         auto coarse_dofs = 10;
         auto verbose = false;
 
-        HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
-        HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
+        HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, false).run_petsc();
+        HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, false).run_trilinos();
 
 #ifdef UTOPIA_WITH_TRILINOS
         HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
