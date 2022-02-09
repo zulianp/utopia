@@ -11,6 +11,8 @@
 
 #include "utopia_libmesh.hpp"
 #include "utopia_libmesh_OmniAssembler.hpp"
+
+#include "utopia_moonolith_libmesh_Obstacle.hpp"
 #include "utopia_moonolith_libmesh_FETransfer.hpp"
 
 namespace utopia {
