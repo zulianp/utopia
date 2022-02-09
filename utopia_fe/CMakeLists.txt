@@ -259,9 +259,9 @@ endif()
 
 list(APPEND UTOPIA_FE_MODULES base core)
 
-# if(UTOPIA_INSTALL_LIBMESH)
-#     include(InstallLIBMESH)
-# endif()
+if(UTOPIA_ENABLE_LIBMESH)
+    include(InstallLIBMESH)
+endif()
 
 
 add_library(utopia_fe utopia_fe.cpp)
