@@ -10,7 +10,7 @@
 
 namespace utopia {
 
-    static bool is_diag(const libMesh::DenseMatrix<double> &d, const bool verbose = true);
+    bool is_diag(const libMesh::DenseMatrix<double> &d, const bool verbose = true);
 
     //@brief from the paper DUAL QUADRATIC MORTAR FINITE ELEMENT METHODS FOR 3D FINITE DEFORMATION CONTACT∗
     class DualBasis {
