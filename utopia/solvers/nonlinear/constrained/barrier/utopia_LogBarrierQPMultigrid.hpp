@@ -130,12 +130,15 @@ namespace utopia {
             switch (block_size_) {
                 case 2: {
                     solver_->set_agglomerator(std::make_shared<BlockAgglomerate<Matrix, 2>>());
+                    break;
                 }
                 case 3: {
                     solver_->set_agglomerator(std::make_shared<BlockAgglomerate<Matrix, 3>>());
+                    break;
                 }
                 case 4: {
                     solver_->set_agglomerator(std::make_shared<BlockAgglomerate<Matrix, 4>>());
+                    break;
                 }
                 default: {
                     solver_->set_agglomerator(std::make_shared<Agglomerate<Matrix>>());

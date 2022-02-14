@@ -28,6 +28,7 @@ public:
         disp(mat);
 
 #if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 15, 3)
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3, 16, 0)
 
         Vec lvec;
         PetscInt *colmap;
@@ -38,6 +39,7 @@ public:
 
         VecScatterView(scatt, PETSC_VIEWER_STDOUT_WORLD);
 #endif  // UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN
+#endif // UTOPIA_PETSC_VERSION_LESS_THAN
 
         // MatGetGhosts
         PetscInt nghosts;
