@@ -10,7 +10,10 @@
 #include <iostream>
 
 #include <Trilinos_version.h>
+
+#if TRILINOS_MAJOR_VERSION >= 13
 #include <Tpetra_Access.hpp>
+#endif
 
 namespace utopia {
     template <typename Data, typename KokkosOp, typename Scalar>

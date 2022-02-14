@@ -6,7 +6,10 @@
 #include "utopia_kokkos_Operations.hpp"
 
 #include <Trilinos_version.h>
+
+#if TRILINOS_MAJOR_VERSION >= 13
 #include <Tpetra_Access.hpp>
+#endif
 
 namespace utopia {
 

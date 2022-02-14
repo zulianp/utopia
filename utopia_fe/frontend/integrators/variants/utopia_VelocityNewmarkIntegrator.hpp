@@ -22,7 +22,7 @@ namespace utopia {
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
 
         template <class... Args>
-        VelocityNewmarkIntegrator(Args &&... args) : Super(std::forward<Args>(args)...) {}
+        VelocityNewmarkIntegrator(Args &&...args) : Super(std::forward<Args>(args)...) {}
 
         const Vector_t &solution() const override { return this->x_old(); }
 
@@ -87,6 +87,8 @@ namespace utopia {
         bool report_solution(const Vector_t &) override { return Super::report_solution(solution()); }
 
         void initial_guess_for_solver(Vector_t &velocity) override { velocity.set(0.); }
+
+        void displacement(const Vector_t &velocity, Vector_t &result) const { update_x(velocity, result); }
 
     private:
         void update_x(const Vector_t &velocity, Vector_t &x) const {

@@ -10,7 +10,10 @@
 #include <Tpetra_CrsMatrix_decl.hpp>
 
 #include <Trilinos_version.h>
+
+#if TRILINOS_MAJOR_VERSION >= 13
 #include <Tpetra_Access.hpp>
+#endif
 
 #include <Kokkos_Core.hpp>
 
