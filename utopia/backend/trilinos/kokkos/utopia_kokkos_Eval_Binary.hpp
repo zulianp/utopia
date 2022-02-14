@@ -8,7 +8,7 @@
 
 #include <Trilinos_version.h>
 
-#if TRILINOS_MAJOR_VERSION >= 13
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
 #include <Tpetra_Access.hpp>
 #endif
 
@@ -30,7 +30,7 @@ namespace utopia {
                 result.init(rhs.implementation().getMap());
             }
 
-#if TRILINOS_MAJOR_VERSION >= 13
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
             auto k_lhs = lhs.implementation().template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
             auto k_rhs = rhs.implementation().template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
             auto k_res = result.implementation().template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadWrite);
@@ -56,7 +56,7 @@ namespace utopia {
                 result.init(lhs.implementation().getMap());
             }
 
-#if TRILINOS_MAJOR_VERSION >= 13
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
             auto k_lhs = lhs.implementation().template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
             auto k_res = result.implementation().template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadWrite);
 #else

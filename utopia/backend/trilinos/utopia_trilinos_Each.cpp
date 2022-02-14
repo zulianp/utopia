@@ -2,7 +2,7 @@
 
 #include <Trilinos_version.h>
 
-#if TRILINOS_MAJOR_VERSION >= 13
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
 #include <Tpetra_Access.hpp>
 #endif
 
@@ -11,7 +11,7 @@ namespace utopia {
     void TpetraVectorEach::apply_read(const TpetraVector &v, std::function<void(const Scalar &)> &fun) {
         const auto &impl = raw_type(v);
 
-#if TRILINOS_MAJOR_VERSION >= 13
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
         auto view = impl->getLocalViewHost(Tpetra::Access::ReadWrite);
 #else
         auto view = impl->getLocalViewHost();

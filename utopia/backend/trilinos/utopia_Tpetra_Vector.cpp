@@ -11,7 +11,7 @@
 
 #include <Trilinos_version.h>
 
-#if TRILINOS_MAJOR_VERSION >= 13
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
 #include <Tpetra_Access.hpp>
 #endif
 
@@ -475,7 +475,7 @@ namespace utopia {
     }
 
     void TpetraVector::shift(const Scalar &x) {
-#if TRILINOS_MAJOR_VERSION >= 13
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
         auto k_res = this->implementation().template getLocalView<ExecutionSpace>(Tpetra::Access::ReadWrite);
 #else
         auto k_res = this->implementation().template getLocalView<ExecutionSpace>();
@@ -488,7 +488,7 @@ namespace utopia {
     }
 
     void TpetraVector::make_view() {
-#if TRILINOS_MAJOR_VERSION >= 13
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
         if (!view_ptr_) {
             if (has_ghosts()) {
                 view_ptr_ = utopia::make_unique<View>(ghosted_vec_->getLocalViewHost(Tpetra::Access::ReadWrite),
@@ -509,7 +509,7 @@ namespace utopia {
                 view_ptr_ = utopia::make_unique<View>(vec_->getLocalViewHost(), vec_->getMap()->getLocalMap());
             }
         }
-#endif  // TRILINOS_MAJOR_VERSION >= 13
+#endif  // TRILINOS_MAJOR_MINOR_VERSION >= 130100
     }
 
 }  // namespace utopia

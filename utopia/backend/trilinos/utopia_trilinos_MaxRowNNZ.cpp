@@ -8,7 +8,7 @@
 
 #include <Trilinos_version.h>
 
-#if TRILINOS_MAJOR_VERSION >= 13
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
 #include <Tpetra_Access.hpp>
 #endif
 
@@ -24,7 +24,7 @@ namespace utopia {
         }
 
         auto impl = in.raw_type();
-#if TRILINOS_MAJOR_VERSION >= 13
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
         auto local_mat = impl->getLocalMatrixDevice();
 #else
         auto local_mat = impl->getLocalMatrix();

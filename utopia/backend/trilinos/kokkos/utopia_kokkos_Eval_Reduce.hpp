@@ -11,7 +11,7 @@
 
 #include <Trilinos_version.h>
 
-#if TRILINOS_MAJOR_VERSION >= 13
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
 #include <Tpetra_Access.hpp>
 #endif
 
@@ -45,7 +45,7 @@ namespace utopia {
 
             assert(!vec.empty());
 
-#if TRILINOS_MAJOR_VERSION >= 13
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
             using Data = decltype(vec.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly));
             auto data = vec.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
 #else

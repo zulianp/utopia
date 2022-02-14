@@ -7,7 +7,7 @@
 
 #include <Trilinos_version.h>
 
-#if TRILINOS_MAJOR_VERSION >= 13
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
 #include <Tpetra_Access.hpp>
 #endif
 
@@ -116,7 +116,7 @@ namespace utopia {
                                 // const Op &,
                                 const Scalar initial_value,
                                 Tuple<Scalar, 2> &result) {
-#if TRILINOS_MAJOR_VERSION >= 13
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
             using Data = decltype(t1.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly));
 
             Tuple<Data, 2> data{t1.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly),
@@ -166,7 +166,7 @@ namespace utopia {
 
         const auto &comm = v11.comm();
 
-#if TRILINOS_MAJOR_VERSION >= 13
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
         auto d11 = v11.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
         auto d12 = v12.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
 
@@ -224,7 +224,7 @@ namespace utopia {
 
         const auto &comm = v11.comm();
 
-#if TRILINOS_MAJOR_VERSION >= 13
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
         auto d11 = v11.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
         auto d12 = v12.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
 
