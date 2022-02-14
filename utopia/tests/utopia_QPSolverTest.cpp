@@ -514,6 +514,7 @@ namespace utopia {
 
             params.set("use_preconditioner", true);
             params.set("preconditioner_type", "amg");
+            params.set("verbose", verbose);
 
             // params.set("preconditioner_type", "inv");
             // params.set("use_preconditioner", false);
@@ -566,6 +567,8 @@ namespace utopia {
                                                              param("rtol", 1e-10),
                                                              param("stol", 1e-10),
                                                              param("max_it", 2000))));
+
+                qp_params.set("verbose", verbose);
 
                 qp_solver.read(qp_params);
 

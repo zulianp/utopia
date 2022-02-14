@@ -76,8 +76,12 @@ namespace utopia {
 
         int ret = 0;
 
-        for (const auto &l : instance().libraries_) {
-            ret += l->finalize();
+        // for (const auto &l : instance().libraries_) {
+        //     ret += l->finalize();
+        // }
+
+        for (auto it = instance().libraries_.rbegin(); it != instance().libraries_.rend(); ++it) {
+            ret += (*it)->finalize();
         }
 
 #ifdef UTOPIA_WITH_MPI

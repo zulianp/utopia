@@ -77,6 +77,7 @@ namespace utopia {
             }
         };
 
+#ifdef UTOPIA_WITH_TINY_EXPR
         class TimeDependentCondition : public UniformCondition {
         public:
             using Super = UniformCondition;
@@ -111,6 +112,7 @@ namespace utopia {
                 os << "value:\t" << expr_->to_string() << '\n';
             }
         };
+#endif //UTOPIA_WITH_TINY_EXPR
 
         class OverwriteCondition : public Condition {
         public:
@@ -152,9 +154,12 @@ namespace utopia {
                 in.get("type", type);
 
                 std::shared_ptr<Condition> c;
+#ifdef UTOPIA_WITH_TINY_EXPR
                 if (type == TimeDependentCondition::class_name()) {
                     c = std::make_shared<TimeDependentCondition>();
-                } else if (type.empty() || type == UniformCondition::class_name()) {
+                } else 
+#endif //UTOPIA_WITH_TINY_EXPR
+                if (type.empty() || type == UniformCondition::class_name()) {
                     c = std::make_shared<UniformCondition>();
                 } else if (type == OverwriteCondition::class_name()) {
                     c = std::make_shared<OverwriteCondition>(nullptr);
@@ -173,9 +178,12 @@ namespace utopia {
                 in.get("type", type);
 
                 std::shared_ptr<Condition> c;
+#ifdef UTOPIA_WITH_TINY_EXPR
                 if (type == TimeDependentCondition::class_name()) {
                     c = std::make_shared<TimeDependentCondition>();
-                } else if (type.empty() || type == UniformCondition::class_name()) {
+                } else 
+#endif //UTOPIA_WITH_TINY_EXPR
+                if (type.empty() || type == UniformCondition::class_name()) {
                     c = std::make_shared<UniformCondition>();
                 } else if (type == OverwriteCondition::class_name()) {
                     c = std::make_shared<OverwriteCondition>(v);

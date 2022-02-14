@@ -141,6 +141,61 @@ namespace utopia {
             }
         }
 
+        void select_constrained_rows(const Matrix &mat) {
+            const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon();
+
+            Vector mask(row_layout(mat), 0);
+
+            if (selector.empty()) {
+                selector.resize(mask.range().extent(), false);
+            } else if (SizeType(selector.size()) != mask.range().extent()) {
+                selector.resize(mask.range().extent());
+                std::fill(std::begin(selector), std::end(selector), false);
+            }
+
+            {
+                auto mask_view = view_device(mask);
+
+                mat.read(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &value) {
+                    if (i == j) return;
+
+                    if (device::abs(value) > off_diag_tol) {
+                        mask_view.atomic_add(i, 1);
+                    }
+                });
+            }
+
+            {
+                auto mask_view = local_view_device(mask);
+
+                parallel_for(
+                    local_range_device(mask), UTOPIA_LAMBDA(const SizeType i) {
+                        if (mask_view.get(i) == 0) {
+                            selector[i] = true;
+                        }
+                    });
+
+                if (verbose) {
+                    parallel_for(
+                        local_range_device(mask), UTOPIA_LAMBDA(const SizeType i) {
+                            if (mask_view.get(i) == 0) {
+                                mask_view.set(i, 1);
+                            } else {
+                                mask_view.set(i, 0);
+                            }
+                        });
+                }
+            }
+
+            if (verbose) {
+                SizeType n_linear_constraints = sum(mask);
+
+                if (mat.comm().rank() == 0) {
+                    utopia::out() << "n_linear_constraints: " << n_linear_constraints << "\n";
+                }
+            }
+        }
+
         void fix_selected() {
             if (block_size <= 1) return;
 
@@ -178,7 +233,13 @@ namespace utopia {
         }
 
         void init_interface(const Matrix &A) {
+            UTOPIA_TRACE_REGION_BEGIN("BDDOperator::init_interface");
+
             check(A);
+            if (handle_linear_constraints) {
+                select_constrained_rows(A);
+            }
+
             fix_selected();
 
             auto &&comm = A.comm();
@@ -246,6 +307,8 @@ namespace utopia {
 
             interface_offset = temp_buff_2[0];
             selected_offset = temp_buff_2[1];
+
+            UTOPIA_TRACE_REGION_END("BDDOperator::init_interface");
         }
 
         void build_A_II(const Matrix &A, Matrix &A_II) const {
@@ -655,6 +718,7 @@ namespace utopia {
         std::string preconditioner_type{"inv_diag"};
         bool verbose{false};
         bool debug{false};
+        bool handle_linear_constraints{true};
 
         int block_size{1};
     };
@@ -665,6 +729,7 @@ namespace utopia {
         in.get("verbose", impl_->verbose);
         in.get("debug", impl_->debug);
         in.get("block_size", impl_->block_size);
+        in.get("handle_linear_constraints", impl_->handle_linear_constraints);
     }
 
     template <class Matrix, class Vector>
