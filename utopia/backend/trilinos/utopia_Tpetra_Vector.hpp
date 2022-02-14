@@ -466,17 +466,7 @@ namespace utopia {
 
         std::unique_ptr<View> view_ptr_;
 
-        inline void make_view() {
-            if (!view_ptr_) {
-                if (has_ghosts()) {
-                    view_ptr_ = utopia::make_unique<View>(ghosted_vec_->getLocalViewHost(),
-                                                          ghosted_vec_->getMap()->getLocalMap());
-
-                } else {
-                    view_ptr_ = utopia::make_unique<View>(vec_->getLocalViewHost(), vec_->getMap()->getLocalMap());
-                }
-            }
-        }
+        void make_view();
 
         inline void free_view() { view_ptr_ = nullptr; }
 

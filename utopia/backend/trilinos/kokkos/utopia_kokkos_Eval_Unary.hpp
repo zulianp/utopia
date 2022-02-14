@@ -5,6 +5,9 @@
 #include <cassert>
 #include "utopia_kokkos_Operations.hpp"
 
+#include <Trilinos_version.h>
+#include <Tpetra_Access.hpp>
+
 namespace utopia {
 
     template <class Vector, class Op>
@@ -13,8 +16,11 @@ namespace utopia {
         inline static void eval(const Op op, Vector &vec) {
             using ExecutionSpaceT = typename Vector::ExecutionSpace;
             using Scalar = typename Vector::Scalar;
-
+#if TRILINOS_MAJOR_VERSION >= 13
+            auto k_res = vec.implementation().template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadWrite);
+#else
             auto k_res = vec.implementation().template getLocalView<ExecutionSpaceT>();
+#endif
 
             assert(k_res.extent(0) > 0);
 

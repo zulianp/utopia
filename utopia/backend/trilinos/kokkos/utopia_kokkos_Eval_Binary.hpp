@@ -6,6 +6,9 @@
 #include <iostream>
 #include "utopia_kokkos_Operations.hpp"
 
+#include <Trilinos_version.h>
+#include <Tpetra_Access.hpp>
+
 namespace utopia {
     template <class Vector, class Op>
     class KokkosEvalBinary {
@@ -24,9 +27,15 @@ namespace utopia {
                 result.init(rhs.implementation().getMap());
             }
 
+#if TRILINOS_MAJOR_VERSION >= 13
+            auto k_lhs = lhs.implementation().template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
+            auto k_rhs = rhs.implementation().template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
+            auto k_res = result.implementation().template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadWrite);
+#else
             auto k_lhs = lhs.implementation().template getLocalView<ExecutionSpaceT>();
             auto k_rhs = rhs.implementation().template getLocalView<ExecutionSpaceT>();
             auto k_res = result.implementation().template getLocalView<ExecutionSpaceT>();
+#endif
 
             KokkosOp<Scalar, Op> k_op;
             Kokkos::parallel_for(
@@ -44,8 +53,13 @@ namespace utopia {
                 result.init(lhs.implementation().getMap());
             }
 
+#if TRILINOS_MAJOR_VERSION >= 13
+            auto k_lhs = lhs.implementation().template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
+            auto k_res = result.implementation().template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadWrite);
+#else
             auto k_lhs = lhs.implementation().template getLocalView<ExecutionSpaceT>();
             auto k_res = result.implementation().template getLocalView<ExecutionSpaceT>();
+#endif
 
             KokkosOp<Scalar, Op> k_op;
             Kokkos::parallel_for(

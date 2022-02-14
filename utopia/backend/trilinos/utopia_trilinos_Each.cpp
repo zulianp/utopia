@@ -1,10 +1,18 @@
 #include "utopia_trilinos_Each_impl.hpp"
 
+#include <Trilinos_version.h>
+#include <Tpetra_Access.hpp>
+
 namespace utopia {
 
     void TpetraVectorEach::apply_read(const TpetraVector &v, std::function<void(const Scalar &)> &fun) {
         const auto &impl = raw_type(v);
+
+#if TRILINOS_MAJOR_VERSION >= 13
+        auto view = impl->getLocalViewHost(Tpetra::Access::ReadWrite);
+#else
         auto view = impl->getLocalViewHost();
+#endif
 
         const auto r = range(v);
 

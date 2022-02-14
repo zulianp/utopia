@@ -29,7 +29,12 @@ namespace utopia {
     TpetraMatrix::Scalar TpetraMatrix::local_parallel_reduce_values(Op, const Scalar &initial_value) const {
         using LocalMatrix = typename CrsMatrixType::local_matrix_type;
         using Data = typename LocalMatrix::values_type;
+#if TRILINOS_MAJOR_VERSION >= 13
+        const LocalMatrix &local_mat = raw_type()->getLocalMatrixDevice();
+#else
         const LocalMatrix &local_mat = raw_type()->getLocalMatrix();
+#endif
+
         const Data &data = local_mat.values;
 
         Scalar ret = initial_value;
@@ -57,7 +62,12 @@ namespace utopia {
     void TpetraMatrix::transform_values(F op) {
         using LocalMatrix = typename CrsMatrixType::local_matrix_type;
         using Data = typename LocalMatrix::values_type;
+
+#if TRILINOS_MAJOR_VERSION >= 13
+        const LocalMatrix &local_mat = raw_type()->getLocalMatrixDevice();
+#else
         const LocalMatrix &local_mat = raw_type()->getLocalMatrix();
+#endif
         const Data &data = local_mat.values;
 
         Kokkos::parallel_for(
@@ -78,7 +88,12 @@ namespace utopia {
         }
 
         auto impl = this->raw_type();
-        auto local_mat = impl->getLocalMatrix();
+
+#if TRILINOS_MAJOR_VERSION >= 13
+        auto local_mat = raw_type()->getLocalMatrixDevice();
+#else
+        auto local_mat = raw_type()->getLocalMatrix();
+#endif
 
         auto n = local_mat.numRows();
 
@@ -113,7 +128,12 @@ namespace utopia {
         }
 
         auto impl = this->raw_type();
-        auto local_mat = impl->getLocalMatrix();
+
+#if TRILINOS_MAJOR_VERSION >= 13
+        auto local_mat = raw_type()->getLocalMatrixDevice();
+#else
+        auto local_mat = raw_type()->getLocalMatrix();
+#endif
 
         auto n = local_mat.numRows();
 

@@ -162,15 +162,23 @@ namespace utopia {
             UTOPIA_REPORT_ALLOC("TpetraMatrix::multiply");
             result.mat_ = Teuchos::rcp(new CrsMatrixType(implementation().getDomainMap(),
                                                          // col_map,
-                                                         0,
-                                                         Tpetra::StaticProfile));
+                                                         0
+#if TRILINOS_MAJOR_VERSION < 13
+                                                         ,
+                                                         Tpetra::StaticProfile
+#endif
+                                                         ));
 
         } else {
             UTOPIA_REPORT_ALLOC("TpetraMatrix::multiply");
             result.mat_ = Teuchos::rcp(new CrsMatrixType(implementation().getRowMap(),
                                                          // col_map,
-                                                         0,
-                                                         Tpetra::StaticProfile));
+                                                         0
+#if TRILINOS_MAJOR_VERSION < 13
+                                                         ,
+                                                         Tpetra::StaticProfile
+#endif
+                                                         ));
         }
 
         result.owner_ = true;
@@ -269,7 +277,14 @@ namespace utopia {
         // mat_.reset(new CrsMatrixType(row_map, col_map, nnz_x_row, Tpetra::StaticProfile));
 
         UTOPIA_REPORT_ALLOC("TpetraMatrix::crs_init");
-        mat_.reset(new CrsMatrixType(row_map, nnz_x_row, Tpetra::StaticProfile));
+        mat_.reset(new CrsMatrixType(row_map,
+                                     nnz_x_row
+#if TRILINOS_MAJOR_VERSION < 13
+                                     ,
+                                     Tpetra::StaticProfile
+#endif
+
+                                     ));
         owner_ = true;
 
         init_ = std::make_shared<InitStructs>();
@@ -547,7 +562,12 @@ namespace utopia {
 
         auto col_map = impl.getColMap()->getLocalMap();
         auto row_map = impl.getRowMap()->getLocalMap();
-        auto local_mat = impl.getLocalMatrix();
+
+#if TRILINOS_MAJOR_VERSION >= 13
+        auto local_mat = raw_type()->getLocalMatrixDevice();
+#else
+        auto local_mat = raw_type()->getLocalMatrix();
+#endif
 
         for (auto i_global : index) {
             if (!rr.inside(i_global)) {
