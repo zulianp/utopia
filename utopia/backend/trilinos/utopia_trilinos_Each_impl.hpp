@@ -118,7 +118,7 @@ namespace utopia {
 
         auto view = impl->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
 #else
-        auto view = impl->getLocalView();
+        auto view = impl->getLocalView<ExecutionSpaceT>();
 #endif
 
         const auto r = range(v);
@@ -137,7 +137,7 @@ namespace utopia {
 #if TRILINOS_MAJOR_MINOR_VERSION >= 130100
         auto view = impl->template getLocalView<ExecutionSpaceT>(Tpetra::Access::OverwriteAll);
 #else
-        auto view = impl->getLocalView();
+        auto view = impl->getLocalView<ExecutionSpaceT>();
 #endif
 
         const auto r = range(v);
