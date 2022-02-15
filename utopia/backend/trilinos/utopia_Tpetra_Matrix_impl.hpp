@@ -29,7 +29,7 @@ namespace utopia {
     TpetraMatrix::Scalar TpetraMatrix::local_parallel_reduce_values(Op, const Scalar &initial_value) const {
         using LocalMatrix = typename CrsMatrixType::local_matrix_type;
         using Data = typename LocalMatrix::values_type;
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
         const LocalMatrix &local_mat = raw_type()->getLocalMatrixDevice();
 #else
         const LocalMatrix &local_mat = raw_type()->getLocalMatrix();
@@ -63,7 +63,7 @@ namespace utopia {
         using LocalMatrix = typename CrsMatrixType::local_matrix_type;
         using Data = typename LocalMatrix::values_type;
 
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
         const LocalMatrix &local_mat = raw_type()->getLocalMatrixDevice();
 #else
         const LocalMatrix &local_mat = raw_type()->getLocalMatrix();
@@ -89,7 +89,7 @@ namespace utopia {
 
         auto impl = this->raw_type();
 
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
         auto local_mat = raw_type()->getLocalMatrixDevice();
 #else
         auto local_mat = raw_type()->getLocalMatrix();
@@ -129,7 +129,7 @@ namespace utopia {
 
         auto impl = this->raw_type();
 
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
         auto local_mat = raw_type()->getLocalMatrixDevice();
 #else
         auto local_mat = raw_type()->getLocalMatrix();
