@@ -9,7 +9,7 @@
 
 #include <Trilinos_version.h>
 
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
 #include <Tpetra_Access.hpp>
 #endif
 
@@ -25,7 +25,7 @@ namespace utopia {
 
         auto impl = raw_type(mat);
 
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
         auto local_mat = impl->getLocalMatrixDevice();
 #else
         auto local_mat = impl->getLocalMatrix();
@@ -53,7 +53,7 @@ namespace utopia {
         auto col_map = impl->getColMap()->getLocalMap();
         auto row_map = impl->getRowMap()->getLocalMap();
 
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
         auto local_mat = impl->getLocalMatrixDevice();
 #else
         auto local_mat = impl->getLocalMatrix();
@@ -84,7 +84,7 @@ namespace utopia {
         auto col_map = impl->getColMap()->getLocalMap();
         auto row_map = impl->getRowMap()->getLocalMap();
 
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
         auto local_mat = impl->getLocalMatrixDevice();
 #else
         auto local_mat = impl->getLocalMatrix();
@@ -114,7 +114,7 @@ namespace utopia {
 
         auto map = impl->getMap()->getLocalMap();
 
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
 
         auto view = impl->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
 #else
@@ -134,7 +134,7 @@ namespace utopia {
         auto impl = raw_type(v);
         auto map = impl->getMap()->getLocalMap();
 
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
         auto view = impl->template getLocalView<ExecutionSpaceT>(Tpetra::Access::OverwriteAll);
 #else
         auto view = impl->getLocalView<ExecutionSpaceT>();
@@ -159,7 +159,7 @@ namespace utopia {
 
         if (in.is_alias(out)) {
             auto impl = raw_type(out);
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
             auto view = impl->getLocalViewHost(Tpetra::Access::ReadWrite);
 #else
             auto view = impl->getLocalViewHost();
@@ -176,7 +176,7 @@ namespace utopia {
 
             auto map_in = impl_in->getMap()->getLocalMap();
 
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
             auto view_in = impl_in->getLocalViewHost(Tpetra::Access::ReadWrite);
 #else
             auto view_in = impl_in->getLocalViewHost();
@@ -185,7 +185,7 @@ namespace utopia {
             auto impl_out = raw_type(out);
             auto map_out = impl_out->getMap()->getLocalMap();
 
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
             auto view_out = impl_out->getLocalViewHost(Tpetra::Access::ReadWrite);
 #else
             auto view_out = impl_out->getLocalViewHost();

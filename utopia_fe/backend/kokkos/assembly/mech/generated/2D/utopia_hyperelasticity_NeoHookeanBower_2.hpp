@@ -16,6 +16,8 @@ namespace utopia {
         public:
             static constexpr int Dim = 2;
 
+            UTOPIA_FUNCTION static constexpr const char *class_name() { return "NeoHookeanBower_2"; }
+
             class Params : public Configurable {
             public:
                 void read(Input &in) override {

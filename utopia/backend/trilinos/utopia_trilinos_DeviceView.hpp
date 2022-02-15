@@ -11,7 +11,7 @@
 
 #include <Trilinos_version.h>
 
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
 #include <Tpetra_Access.hpp>
 #endif
 
@@ -34,7 +34,7 @@ namespace utopia {
 
         DeviceView(const TpetraVector &tensor)
             :
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
               view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadWrite))
 #else
               view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>())
@@ -89,7 +89,7 @@ namespace utopia {
 
         DeviceView(const TpetraVector &tensor)
             :
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
               view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadWrite))
 #else
               view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>())
@@ -120,7 +120,7 @@ namespace utopia {
 
         LocalViewDevice(const TpetraVector &tensor)
             :
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
               view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadWrite))
 #else
               view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>())
@@ -150,7 +150,7 @@ namespace utopia {
 
         LocalViewDevice(TpetraVector &tensor)
             :
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
               view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadWrite))
 #else
               view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>())
@@ -189,7 +189,7 @@ namespace utopia {
 
         DeviceView(TpetraMatrix &tensor)
             :
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
               view_(tensor.raw_type()->getLocalMatrixDevice()),
 #else
               view_(tensor.raw_type()->getLocalMatrix()),

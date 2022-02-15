@@ -107,6 +107,7 @@ option(
 option(UTOPIA_SPACK_MODE "Spack env hacks" OFF)
 
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
+option(UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE "Removed trilinos deprecated code" ON)
 
 # set(UTOPIA_DEFAULT_TARGETS)
 include(CodeCoverage)

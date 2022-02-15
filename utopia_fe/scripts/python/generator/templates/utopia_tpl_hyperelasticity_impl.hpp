@@ -16,6 +16,8 @@ namespace utopia {{
 		public:
 			static constexpr int Dim = {dim};
 
+			UTOPIA_FUNCTION static constexpr const char* class_name() {{ return "{name}_{dim}"; }}
+
 			class Params : public Configurable {{
 			public:
 				void read(Input &in) override

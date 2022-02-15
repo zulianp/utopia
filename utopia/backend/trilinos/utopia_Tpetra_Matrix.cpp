@@ -163,7 +163,7 @@ namespace utopia {
             result.mat_ = Teuchos::rcp(new CrsMatrixType(implementation().getDomainMap(),
                                                          // col_map,
                                                          0
-#if TRILINOS_MAJOR_MINOR_VERSION < 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION < 130100 || !UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
                                                          ,
                                                          Tpetra::StaticProfile
 #endif
@@ -174,7 +174,7 @@ namespace utopia {
             result.mat_ = Teuchos::rcp(new CrsMatrixType(implementation().getRowMap(),
                                                          // col_map,
                                                          0
-#if TRILINOS_MAJOR_MINOR_VERSION < 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION < 130100 || !UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
                                                          ,
                                                          Tpetra::StaticProfile
 #endif
@@ -279,7 +279,7 @@ namespace utopia {
         UTOPIA_REPORT_ALLOC("TpetraMatrix::crs_init");
         mat_.reset(new CrsMatrixType(row_map,
                                      nnz_x_row
-#if TRILINOS_MAJOR_MINOR_VERSION < 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION < 130100 || !UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
                                      ,
                                      Tpetra::StaticProfile
 #endif
@@ -563,7 +563,7 @@ namespace utopia {
         auto col_map = impl.getColMap()->getLocalMap();
         auto row_map = impl.getRowMap()->getLocalMap();
 
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
         auto local_mat = raw_type()->getLocalMatrixDevice();
 #else
         auto local_mat = raw_type()->getLocalMatrix();

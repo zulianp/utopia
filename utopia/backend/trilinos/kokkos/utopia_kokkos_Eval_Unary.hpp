@@ -7,7 +7,7 @@
 
 #include <Trilinos_version.h>
 
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
 #include <Tpetra_Access.hpp>
 #endif
 
@@ -19,7 +19,7 @@ namespace utopia {
         inline static void eval(const Op op, Vector &vec) {
             using ExecutionSpaceT = typename Vector::ExecutionSpace;
             using Scalar = typename Vector::Scalar;
-#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
             auto k_res = vec.implementation().template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadWrite);
 #else
             auto k_res = vec.implementation().template getLocalView<ExecutionSpaceT>();
