@@ -113,7 +113,6 @@ namespace utopia {
             in.get("debug", debug_);
 
             if (!obstacle_) {
-                std::string type;
                 in.get("obstacle",
                        [&](Input &node) { obstacle_ = ObstacleFactory<FunctionSpace>::new_obstacle(node); });
             }

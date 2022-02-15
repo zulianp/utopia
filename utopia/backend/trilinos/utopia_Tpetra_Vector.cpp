@@ -9,6 +9,12 @@
 #include <MatrixMarket_Tpetra.hpp>
 #include <Tpetra_CrsMatrix_decl.hpp>
 
+#include <Trilinos_version.h>
+
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#include <Tpetra_Access.hpp>
+#endif
+
 #include <Kokkos_Core.hpp>
 
 #include <cmath>
@@ -469,12 +475,41 @@ namespace utopia {
     }
 
     void TpetraVector::shift(const Scalar &x) {
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+        auto k_res = this->implementation().template getLocalView<ExecutionSpace>(Tpetra::Access::ReadWrite);
+#else
         auto k_res = this->implementation().template getLocalView<ExecutionSpace>();
+#endif
         assert(k_res.extent(0) > 0);
         Kokkos::parallel_for(
             k_res.extent(0), KOKKOS_LAMBDA(const int i) { k_res(i, 0) += x; });
 
         Kokkos::fence();
+    }
+
+    void TpetraVector::make_view() {
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+        if (!view_ptr_) {
+            if (has_ghosts()) {
+                view_ptr_ = utopia::make_unique<View>(ghosted_vec_->getLocalViewHost(Tpetra::Access::ReadWrite),
+                                                      ghosted_vec_->getMap()->getLocalMap());
+
+            } else {
+                view_ptr_ = utopia::make_unique<View>(vec_->getLocalViewHost(Tpetra::Access::ReadWrite),
+                                                      vec_->getMap()->getLocalMap());
+            }
+        }
+#else
+        if (!view_ptr_) {
+            if (has_ghosts()) {
+                view_ptr_ =
+                    utopia::make_unique<View>(ghosted_vec_->getLocalViewHost(), ghosted_vec_->getMap()->getLocalMap());
+
+            } else {
+                view_ptr_ = utopia::make_unique<View>(vec_->getLocalViewHost(), vec_->getMap()->getLocalMap());
+            }
+        }
+#endif  // TRILINOS_MAJOR_MINOR_VERSION >= 130100
     }
 
 }  // namespace utopia
