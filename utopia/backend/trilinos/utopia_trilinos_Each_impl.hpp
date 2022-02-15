@@ -7,6 +7,12 @@
 #include "utopia_Wrapper.hpp"
 #include "utopia_trilinos_Each.hpp"
 
+#include <Trilinos_version.h>
+
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#include <Tpetra_Access.hpp>
+#endif
+
 namespace utopia {
 
     template <class Fun>
@@ -18,7 +24,13 @@ namespace utopia {
         }
 
         auto impl = raw_type(mat);
+
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+        auto local_mat = impl->getLocalMatrixDevice();
+#else
         auto local_mat = impl->getLocalMatrix();
+#endif
+
         auto n = local_mat.numRows();
 
         for (decltype(n) i = 0; i < n; ++i) {
@@ -40,7 +52,12 @@ namespace utopia {
         auto impl = raw_type(mat);
         auto col_map = impl->getColMap()->getLocalMap();
         auto row_map = impl->getRowMap()->getLocalMap();
+
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+        auto local_mat = impl->getLocalMatrixDevice();
+#else
         auto local_mat = impl->getLocalMatrix();
+#endif
 
         auto n = local_mat.numRows();
 
@@ -66,7 +83,12 @@ namespace utopia {
         auto impl = raw_type(mat);
         auto col_map = impl->getColMap()->getLocalMap();
         auto row_map = impl->getRowMap()->getLocalMap();
+
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+        auto local_mat = impl->getLocalMatrixDevice();
+#else
         auto local_mat = impl->getLocalMatrix();
+#endif
 
         auto n = local_mat.numRows();
 
@@ -86,9 +108,18 @@ namespace utopia {
 
     template <class Fun>
     void TpetraVectorEach::apply_read(const TpetraVector &v, Fun fun) {
+        using ExecutionSpaceT = TpetraVector::ExecutionSpace;
+
         auto impl = raw_type(v);
-        auto view = impl->getLocalViewHost();
+
         auto map = impl->getMap()->getLocalMap();
+
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+
+        auto view = impl->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
+#else
+        auto view = impl->getLocalView<ExecutionSpaceT>();
+#endif
 
         const auto r = range(v);
 
@@ -98,9 +129,16 @@ namespace utopia {
 
     template <class Fun>
     void TpetraVectorEach::apply_write(TpetraVector &v, Fun fun) {
+        using ExecutionSpaceT = TpetraVector::ExecutionSpace;
+
         auto impl = raw_type(v);
-        auto view = impl->getLocalViewHost();
         auto map = impl->getMap()->getLocalMap();
+
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+        auto view = impl->template getLocalView<ExecutionSpaceT>(Tpetra::Access::OverwriteAll);
+#else
+        auto view = impl->getLocalView<ExecutionSpaceT>();
+#endif
 
         const auto r = range(v);
 
@@ -121,7 +159,11 @@ namespace utopia {
 
         if (in.is_alias(out)) {
             auto impl = raw_type(out);
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+            auto view = impl->getLocalViewHost(Tpetra::Access::ReadWrite);
+#else
             auto view = impl->getLocalViewHost();
+#endif
             auto map = impl->getMap()->getLocalMap();
 
             For<>::apply(0, r.extent(), [&map, &view, &fun](const std::size_t i) {
@@ -131,12 +173,23 @@ namespace utopia {
 
         } else {
             auto impl_in = raw_type(in);
-            auto view_in = impl_in->getLocalViewHost();
+
             auto map_in = impl_in->getMap()->getLocalMap();
 
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+            auto view_in = impl_in->getLocalViewHost(Tpetra::Access::ReadWrite);
+#else
+            auto view_in = impl_in->getLocalViewHost();
+#endif
+
             auto impl_out = raw_type(out);
-            auto view_out = impl_out->getLocalViewHost();
             auto map_out = impl_out->getMap()->getLocalMap();
+
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+            auto view_out = impl_out->getLocalViewHost(Tpetra::Access::ReadWrite);
+#else
+            auto view_out = impl_out->getLocalViewHost();
+#endif
 
             For<>::apply(0, r.extent(), [&view_in, &map_in, &view_out, map_out, &fun](const std::size_t i) {
                 ;

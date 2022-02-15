@@ -5,6 +5,12 @@
 
 #include "KokkosBlas1_dot.hpp"
 
+#include <Trilinos_version.h>
+
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+#include <Tpetra_Access.hpp>
+#endif
+
 namespace utopia {
 
     template <class Scalar, int N>
@@ -110,10 +116,19 @@ namespace utopia {
                                 // const Op &,
                                 const Scalar initial_value,
                                 Tuple<Scalar, 2> &result) {
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+            using Data = decltype(t1.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly));
+
+            Tuple<Data, 2> data{t1.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly),
+                                t2.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly)};
+
+#else
             using Data = decltype(t1.raw_type()->template getLocalView<ExecutionSpaceT>());
 
             Tuple<Data, 2> data{t1.raw_type()->template getLocalView<ExecutionSpaceT>(),
                                 t2.raw_type()->template getLocalView<ExecutionSpaceT>()};
+
+#endif
 
             KokkosOp<Scalar, Op> kop;
             MultiOpReducer<Scalar, Data, ExecutionSpaceT, KokkosOp<Scalar, Op>, 2> reducer(kop, data, initial_value);
@@ -148,15 +163,24 @@ namespace utopia {
                                                  const TpetraVector &v22,
                                                  Scalar &result2) {
         using ExecutionSpaceT = TpetraVector::ExecutionSpace;
-        using Data = decltype(v11.raw_type()->template getLocalView<ExecutionSpaceT>());
 
         const auto &comm = v11.comm();
+
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+        auto d11 = v11.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
+        auto d12 = v12.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
+
+        auto d21 = v21.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
+        auto d22 = v22.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
+#else
+        using Data = decltype(v11.raw_type()->template getLocalView<ExecutionSpaceT>());
 
         Data d11 = v11.raw_type()->template getLocalView<ExecutionSpaceT>();
         Data d12 = v12.raw_type()->template getLocalView<ExecutionSpaceT>();
 
         Data d21 = v21.raw_type()->template getLocalView<ExecutionSpaceT>();
         Data d22 = v22.raw_type()->template getLocalView<ExecutionSpaceT>();
+#endif
 
         std::array<Scalar, 2> result{};
         if (v11.local_size() == v21.local_size()) {
@@ -197,9 +221,21 @@ namespace utopia {
                                                  const TpetraVector &v32,
                                                  Scalar &result3) {
         using ExecutionSpaceT = TpetraVector::ExecutionSpace;
-        using Data = decltype(v11.raw_type()->template getLocalView<ExecutionSpaceT>());
 
         const auto &comm = v11.comm();
+
+#if TRILINOS_MAJOR_MINOR_VERSION >= 130100
+        auto d11 = v11.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
+        auto d12 = v12.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
+
+        auto d21 = v21.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
+        auto d22 = v22.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
+
+        auto d31 = v31.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
+        auto d32 = v32.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
+
+#else
+        using Data = decltype(v11.raw_type()->template getLocalView<ExecutionSpaceT>());
 
         Data d11 = v11.raw_type()->template getLocalView<ExecutionSpaceT>();
         Data d12 = v12.raw_type()->template getLocalView<ExecutionSpaceT>();
@@ -209,6 +245,7 @@ namespace utopia {
 
         Data d31 = v31.raw_type()->template getLocalView<ExecutionSpaceT>();
         Data d32 = v32.raw_type()->template getLocalView<ExecutionSpaceT>();
+#endif
 
         std::array<Scalar, 3> result{};
 
