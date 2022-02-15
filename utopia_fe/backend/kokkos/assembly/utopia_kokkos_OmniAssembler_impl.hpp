@@ -52,6 +52,10 @@
 #include "utopia_hyperelasticity_SaintVenantKirchoff_2.hpp"
 #include "utopia_hyperelasticity_SaintVenantKirchoff_3.hpp"
 
+#include "utopia_hyperelasticity_Yeoh.hpp"
+#include "utopia_hyperelasticity_Yeoh_2.hpp"
+#include "utopia_hyperelasticity_Yeoh_3.hpp"
+
 // utopia/kokkos includes
 #include "utopia_kokkos_FE.hpp"
 
@@ -179,6 +183,9 @@ namespace utopia {
 
                 register_assembler_variant<utopia::kokkos::SaintVenantKirchoff<FE_t, 2>>("SaintVenantKirchoff", 2);
                 register_assembler_variant<utopia::kokkos::SaintVenantKirchoff<FE_t, 3>>("SaintVenantKirchoff", 3);
+
+                register_assembler_variant<utopia::kokkos::Yeoh<FE_t, 2>>("Yeoh", 2);
+                register_assembler_variant<utopia::kokkos::Yeoh<FE_t, 3>>("Yeoh", 3);
 
                 register_assembler_variant<utopia::kokkos::IncompressibleMooneyRivlin<FE_t, 2>>(
                     "IncompressibleMooneyRivlin", 2);

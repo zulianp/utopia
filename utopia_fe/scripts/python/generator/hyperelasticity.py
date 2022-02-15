@@ -26,7 +26,6 @@ class NeoHookeanOgden(HyperElasticModel):
 		self.name = 'NeoHookeanOgden'
 		self.use_default_parameter_reader = True
 
-
 class NeoHookeanBower(HyperElasticModel):
 	def __init__(self, d):
 		super().__init__(d)
@@ -41,7 +40,6 @@ class NeoHookeanBower(HyperElasticModel):
 		self.name = 'NeoHookeanBower'
 		self.use_default_parameter_reader = True
 
-
 class NeoHookeanWang(HyperElasticModel):
 	def __init__(self, d):
 		super().__init__(d)
@@ -55,7 +53,6 @@ class NeoHookeanWang(HyperElasticModel):
 		self.fun = mu/2 *(J**(-Rational(2, 3))*I_C - d) + (lmbda/2) * (J-1) 
 		self.name = 'NeoHookeanWang'
 		self.use_default_parameter_reader = True
-
 
 class NeoHookeanSmith(HyperElasticModel):
 	def __init__(self, d):
@@ -97,7 +94,6 @@ class Fung(HyperElasticModel):
 		self.fun = Rational(1,2) * (q + c * (exp(Q) - 1)) + (k/2)*(J - 1)**2
 		self.name = 'Fung'
 
-
 ###############################
 class SaintVenantKirchoff(HyperElasticModel):
 	def __init__(self, d):
@@ -113,6 +109,32 @@ class SaintVenantKirchoff(HyperElasticModel):
 		self.fun = lmbda/2 * trace(E)**2 + mu * trace(E*E)
 		self.name = 'SaintVenantKirchoff'
 
+class Yeoh(HyperElasticModel):
+	def __init__(self, d, n):
+		super().__init__(d)
+
+		C0 = []
+		C1 = []
+		self.params = []
+
+		for i in range(0, n):
+			C0.append(symbols(f"C0_{i}"))
+			C1.append(symbols(f"C1_{i}"))
+
+			self.params.append((C0[i], 1.))
+			self.params.append((C1[i], 1.))
+
+		C = self.C
+		J = self.J
+
+		I1 = J**Rational(-2,3) * trace(C)
+
+		self.fun = 0
+
+		for i in range(0, n):
+			self.fun += C0[i] * (I1 - d)**(i+1) +  C1[i] * (J - 1)**(2 * (i+1))
+
+		self.name = "Yeoh"
 
 ###############################
 # Mooney-Rivlin (https://en.wikipedia.org/wiki/Mooney%E2%80%93Rivlin_solid)
@@ -175,15 +197,16 @@ def generate_materials(d,simplify_expressions):
 	# models = [ NeoHookeanSmith(d), Fung(d)]
 	# models = [NeoHookeanOgden(d)]
 	# models = [Fung(d)]
-	models = [IncompressibleMooneyRivlin(d)] 
+	# models = [IncompressibleMooneyRivlin(d)] 
+	models = [Yeoh(d, 2)]
 	# models = [SaintVenantKirchoff(d)]
 
 	for m in models:
 		m.generate_files(output_dir, simplify_expressions)
 
 def main(args):
-	generate_materials(2,True)
-	# generate_materials(3, False)
+	generate_materials(2,False)
+	generate_materials(3, False)
 	# generate_materials(3, True)
 
 if __name__ == '__main__':
