@@ -16,20 +16,25 @@ namespace utopia {
         public:
             static constexpr int Dim = 3;
 
+            UTOPIA_FUNCTION static constexpr const char *class_name() { return "IncompressibleMooneyRivlin_3"; }
+
             class Params : public Configurable {
             public:
                 void read(Input &in) override {
                     in.get("C1", C1);
                     in.get("C2", C2);
+                    in.get("a", a);
                 }
 
                 T C1{1.0};
                 T C2{1.0};
+                T a{1.0};
             };
 
             IncompressibleMooneyRivlin(const Params &params) {
                 C1 = params.C1;
                 C2 = params.C2;
+                a = params.a;
             }
 
             UTOPIA_FUNCTION void hessian(const T *UTOPIA_RESTRICT f,
@@ -483,6 +488,7 @@ namespace utopia {
 
             T C1{1.0};
             T C2{1.0};
+            T a{1.0};
         };
     }  // namespace kernels
 }  // namespace utopia

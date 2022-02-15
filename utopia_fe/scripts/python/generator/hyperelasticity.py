@@ -499,6 +499,22 @@ class Fung(HyperElasticModel):
 
 
 ###############################
+class SaintVenantKirchoff(HyperElasticModel):
+	def __init__(self, d):
+		super().__init__(d)
+
+		mu, lmbda = symbols('mu lambda')
+		self.params = [(mu, 1.0), (lmbda, 1.0)]
+
+		C = self.C
+		J = self.J
+		E = (C - eye(d, d))/2
+
+		self.fun = lmbda/2 * trace(E)**2 + mu * trace(E*E)
+		self.name = 'SaintVenantKirchoff'
+
+
+###############################
 # Mooney-Rivlin (https://en.wikipedia.org/wiki/Mooney%E2%80%93Rivlin_solid)
 ###############################
 class MooneyRivlin(HyperElasticModel):
@@ -527,6 +543,7 @@ class MooneyRivlin(HyperElasticModel):
 
 # TEST (https://shaddenlab.gitlab.io/fenicsmechanics/chapters/demos-all.html)
 # https://www2.karlin.mff.cuni.cz/~hron/fenics-tutorial/elasticity/doc.html
+# https://abaqus-docs.mit.edu/2017/English/SIMACAEMATRefMap/simamat-c-hyperelastic.htm
 
 class IncompressibleMooneyRivlin(IncompressibleHyperElasticModel):
 	def __init__(self, d):
@@ -537,8 +554,8 @@ class IncompressibleMooneyRivlin(IncompressibleHyperElasticModel):
 		C = self.C
 		p = self.p
 
-		C1, C2 = symbols('C1 C2')
-		self.params = [(C1, 1.0), (C2, 1.0)]
+		C1, C2, a = symbols('C1 C2 a')
+		self.params = [(C1, 1.0), (C2, 1.0), (a, 1.)]
 
 		CikxCki = 0
 		for i in range(0, d):
@@ -548,22 +565,25 @@ class IncompressibleMooneyRivlin(IncompressibleHyperElasticModel):
 		I_C2 = Rational(1, 2) * (I_C**2 - CikxCki)
 
 		# self.fun = C1 * (I_C - d) + C2 * (I_C2 - d) + p/2 * (J - 1)**2
+		# self.fun = C1 * (I_C - d) + C2 * (I_C2 - d) + p * (J - 1) - 0.5 * a * p * p
 		self.fun = C1 * (I_C - d) + C2 * (I_C2 - d) + p * (J - 1)
 		self.name = 'IncompressibleMooneyRivlin'
 
 def generate_materials(d,simplify_expressions):
 	output_dir = f'../../../backend/kokkos/assembly/mech/generated/{d}D'
-	# models = [NeoHookeanOgden(d), NeoHookeanBower(d), NeoHookeanWang(d), NeoHookeanSmith(d), Fung(d), MooneyRivlin(d)]
-	models = [ NeoHookeanSmith(d), Fung(d)]
+	# models = [NeoHookeanOgden(d), NeoHookeanBower(d), NeoHookeanWang(d), NeoHookeanSmith(d), Fung(d), MooneyRivlin(d), SaintVenantKirchoff(d), IncompressibleMooneyRivlin(d)]
+	# models = [ NeoHookeanSmith(d), Fung(d)]
 	# models = [NeoHookeanOgden(d)]
 	# models = [Fung(d)]
-	# models = [IncompressibleMooneyRivlin(d)] 
+	models = [IncompressibleMooneyRivlin(d)] 
+	# models = [SaintVenantKirchoff(d)]
 
 	for m in models:
 		m.generate_files(output_dir, simplify_expressions)
 
 def main(args):
-	# generate_materials(2,True)
+	generate_materials(2,True)
+	# generate_materials(3, False)
 	generate_materials(3, True)
 
 if __name__ == '__main__':

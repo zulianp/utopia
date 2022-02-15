@@ -26,7 +26,8 @@ namespace utopia {
             static constexpr int Dim = Material::Dim;
             using Params = typename Material::Params;
 
-            AutoHyperElasticity(const std::shared_ptr<FE> &fe, Params op = Params()) : Super(fe), material_(std::move(op)) {
+            AutoHyperElasticity(const std::shared_ptr<FE> &fe, Params op = Params())
+                : Super(fe), material_(std::move(op)) {
                 assert(!fe || fe->spatial_dimension() == Dim);
             }
 
@@ -38,7 +39,9 @@ namespace utopia {
             inline bool is_linear() const override { return false; }
             inline bool is_operator() const override { return false; }
 
-            inline std::string name() const override { return "AutoHyperElasticity"; }
+            inline std::string name() const override {
+                return std::string("AutoHyperElasticity<") + Material::class_name() + ">";
+            }
 
             virtual bool update(const std::shared_ptr<Field<FE>> &displacement) override {
                 if (!Super::update(displacement)) {
@@ -49,7 +52,7 @@ namespace utopia {
                 assert(displacement->is_coefficient());
 
                 if (!displacement->is_coefficient()) {
-                    Utopia::Abort("Assemble<AutoHyperElasticity>::update, displacement must me in coefficient form!");
+                    Utopia::Abort(name() + ":update, displacement must me in coefficient form!");
                 }
 
                 if (!deformation_gradient_) {
@@ -64,7 +67,7 @@ namespace utopia {
             }
 
             bool assemble_matrix() override {
-                UTOPIA_TRACE_REGION_BEGIN("Assemble<AutoHyperElasticity>::assemble_matrix");
+                UTOPIA_TRACE_REGION_BEGIN(name() + "::assemble_matrix");
 
                 this->ensure_matrix_accumulator();
 
@@ -111,10 +114,10 @@ namespace utopia {
                                         stress.set(0.);
 
                                         material.hessian(&F_qp.raw_type()[0],
-                                                          &grad_test[0],
-                                                          &grad_trial[0],
-                                                          dx,
-                                                          &stress.raw_type()[0]);
+                                                         &grad_test[0],
+                                                         &grad_trial[0],
+                                                         dx,
+                                                         &stress.raw_type()[0]);
 
                                         for (int d1 = 0; d1 < Dim; ++d1) {
                                             auto dof_i = i * Dim + d1;
@@ -131,12 +134,12 @@ namespace utopia {
                         });
                 }
 
-                UTOPIA_TRACE_REGION_END("Assemble<AutoHyperElasticity>::assemble_matrix");
+                UTOPIA_TRACE_REGION_END(name() + "::assemble_matrix");
                 return true;
             }
 
             bool assemble_vector() override {
-                UTOPIA_TRACE_REGION_BEGIN("Assemble<AutoHyperElasticity>::assemble_vector");
+                UTOPIA_TRACE_REGION_BEGIN(name() + "::assemble_vector");
 
                 this->ensure_vector_accumulator();
 
@@ -191,7 +194,7 @@ namespace utopia {
                         });
                 }
 
-                UTOPIA_TRACE_REGION_END("Assemble<AutoHyperElasticity>::assemble_vector");
+                UTOPIA_TRACE_REGION_END(name() + "::assemble_vector");
                 return true;
             }
 
