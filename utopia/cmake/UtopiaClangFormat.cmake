@@ -6,7 +6,7 @@ function(format_setup)
     if(NOT EXISTS ${CLANG_FORMAT_EXE})
         find_program(
             format_executable_tmp
-            NAMES ${CLANG_FORMAT_EXE} clang-format-mp-7.0 clang-format-9
+            NAMES ${CLANG_FORMAT_EXE} clang-format-mp-7.0 clang-format-9 clang-format-mp-13
                   clang-format-mp-10
             HINTS /opt/local/bin/ /usr/local/bin/ /usr/bin/)
         if(format_executable_tmp)

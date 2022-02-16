@@ -18,6 +18,7 @@
 // PETSC
 #ifdef UTOPIA_WITH_PETSC
 #include "petsctao.h"
+#include "utopia_LogBarrierQPMultigrid.hpp"
 #include "utopia_petsc_BDDQPSolver.hpp"
 #include "utopia_petsc_Factorizations.hpp"
 #include "utopia_petsc_LinearSolvers.hpp"
@@ -128,10 +129,12 @@ namespace utopia {
                 using PetscSemiSmoothNewton = utopia::SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL>;
                 using PetscTaoQPSolver = utopia::TaoQPSolver<Matrix, Vector>;
                 using PetscBDDQPSolver = utopia::BDDQPSolver<Matrix, Vector>;
+                using PetscLogBarrierQPMultigrid = utopia::LogBarrierQPMultigrid<Matrix, Vector>;
 
                 register_solver<PetscSemiSmoothNewton>("petsc", "ssnewton");
                 register_solver<PetscTaoQPSolver>("petsc", "taoqp");
                 register_solver<PetscBDDQPSolver>("petsc", "bdd");
+                register_solver<PetscLogBarrierQPMultigrid>("petsc", "logbarrier_mg");
 
 #ifdef UTOPIA_WITH_BLAS
                 using PetscRASPatchSmoother = utopia::RASPatchSmoother<Matrix, utopia::BlasMatrix<Scalar>>;

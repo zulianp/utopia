@@ -30,7 +30,7 @@ namespace utopia {
         ProjectedChebyshev3level() {}
 
         ProjectedChebyshev3level(const ProjectedChebyshev3level &other)
-            : Super(other),
+            : VariableBoundSolverInterface<Vector>(other), PreconditionedSolverInterface<Vector>(other),  Super(other),
               scale_max_eig_(other.scale_max_eig_),
               scale_min_eig_(other.scale_min_eig_),
               power_method_(other.power_method_) {}

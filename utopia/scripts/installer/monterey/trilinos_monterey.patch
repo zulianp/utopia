@@ -1,0 +1,21 @@
+diff --git a/packages/seacas/libraries/exodus/src/ex_utils.c b/packages/seacas/libraries/exodus/src/ex_utils.c
+index 4c1cb9969e7..4376c8f9066 100644
+--- a/packages/seacas/libraries/exodus/src/ex_utils.c
++++ b/packages/seacas/libraries/exodus/src/ex_utils.c
+@@ -96,11 +96,11 @@ const char *ex_config(void)
+ #endif
+ #ifndef _MSC_VER
+ #if NC_HAS_HDF5
+-  {
+-    unsigned major, minor, release;
+-    H5get_libversion(&major, &minor, &release);
+-    j += sprintf(buffer + j, "\t\tHDF5 enabled (%u.%u.%u)\n", major, minor, release);
+-  }
++  // {
++  //   unsigned major, minor, release;
++  //   H5get_libversion(&major, &minor, &release);
++  //   j += sprintf(buffer + j, "\t\tHDF5 enabled (%u.%u.%u)\n", major, minor, release);
++  // }
+   j += sprintf(buffer + j, "\t\tZlib Compression (read/write) enabled\n");
+ #if NC_HAS_SZIP_WRITE == 1
+   j += sprintf(buffer + j, "\t\tSZip Compression (read/write) enabled\n");

@@ -30,7 +30,7 @@ namespace utopia {
         Chebyshev3level() {}
 
         Chebyshev3level(const Chebyshev3level &other)
-            : OperatorBasedLinearSolver<Matrix, Vector>(other),
+            : PreconditionedSolverInterface<Vector>(other), OperatorBasedLinearSolver<Matrix, Vector>(other),
               scale_max_eig_(other.scale_max_eig_),
               scale_min_eig_(other.scale_min_eig_),
               power_method_(other.power_method_) {}

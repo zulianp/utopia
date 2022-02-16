@@ -456,6 +456,11 @@ namespace utopia {
             return ok;
         }
 
+        bool read(const Path &) {
+            assert(false && "IMPLEMENT ME");
+            return false;
+        }
+
     private:
         Entries entries_;
 

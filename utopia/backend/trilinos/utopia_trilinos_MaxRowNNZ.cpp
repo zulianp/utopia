@@ -6,6 +6,12 @@
 
 #include <Kokkos_View.hpp>
 
+#include <Trilinos_version.h>
+
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+#include <Tpetra_Access.hpp>
+#endif
+
 namespace utopia {
 
     Traits<TpetraMatrix>::SizeType MaxRowNNZ<TpetraMatrix, TRILINOS>::apply(const TpetraMatrix &in) {
@@ -18,7 +24,11 @@ namespace utopia {
         }
 
         auto impl = in.raw_type();
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+        auto local_mat = impl->getLocalMatrixDevice();
+#else
         auto local_mat = impl->getLocalMatrix();
+#endif
 
         auto n = local_mat.numRows();
 

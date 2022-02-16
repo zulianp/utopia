@@ -1,7 +1,7 @@
 #ifndef UTOPIA_OBSTACLE_NEWMARK_HPP
 #define UTOPIA_OBSTACLE_NEWMARK_HPP
 
-#include "utopia_LogBarrierFunctionFactory.hpp"
+#include "utopia_LogBarrierFactory.hpp"
 
 #include "utopia_BoxConstrainedFEFunction.hpp"
 #include "utopia_BoxConstraints.hpp"
@@ -81,7 +81,7 @@ namespace utopia {
             ////////////////////////////////////////////////////////////////////////////////
             std::string function_type;
             in.get("function_type", function_type);
-            barrier_ = LogBarrierFunctionFactory<Matrix_t, Vector_t>::new_log_barrier(function_type);
+            barrier_ = LogBarrierFactory<Matrix_t, Vector_t>::new_log_barrier(function_type);
             barrier_->read(in);
         }
 
@@ -306,6 +306,7 @@ namespace utopia {
             barrier_->set_box_constraints(box);
 
             barrier_->set_selection(std::make_shared<Vector_t>(obstacle_->is_contact()));
+            barrier_->set_scaling_matrix(obstacle_->mass_matrix());
 
             if (enable_line_search_) {
                 if (!line_search_) {
@@ -315,7 +316,7 @@ namespace utopia {
                     line_search_->set_offset_vector(make_ref(this->x_old()));
                 }
 
-                line_search_->set_dumping(0.6);
+                line_search_->set_dumping(0.98);
 
                 auto trafo = obstacle_->orthogonal_transformation();
                 assert(trafo);

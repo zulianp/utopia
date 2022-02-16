@@ -156,7 +156,8 @@ namespace utopia {
             params.set("barrier_parameter", 1e-5);
             params.set("barrier_parameter_shrinking_factor", 0.7);
 
-            LogBarrierFunction<Matrix, Vector> barrier(make_ref(fun), make_ref(box));
+            LogBarrierFunction<Matrix, Vector> barrier(make_ref(fun),
+                                                       std::make_shared<LogBarrier<Matrix, Vector>>(make_ref(box)));
             barrier.read(params);
 
             ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
@@ -513,6 +514,7 @@ namespace utopia {
 
             params.set("use_preconditioner", true);
             params.set("preconditioner_type", "amg");
+            params.set("verbose", verbose);
 
             // params.set("preconditioner_type", "inv");
             // params.set("use_preconditioner", false);
@@ -565,6 +567,8 @@ namespace utopia {
                                                              param("rtol", 1e-10),
                                                              param("stol", 1e-10),
                                                              param("max_it", 2000))));
+
+                qp_params.set("verbose", verbose);
 
                 qp_solver.read(qp_params);
 

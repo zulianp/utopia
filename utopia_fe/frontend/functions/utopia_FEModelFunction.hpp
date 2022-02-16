@@ -65,6 +65,10 @@ namespace utopia {
         virtual const std::shared_ptr<Matrix_t> &mass_matrix() const = 0;
         virtual bool assemble_mass_matrix() = 0;
         virtual bool assemble_mass_matrix(Matrix_t &mass_matrix) = 0;
+        virtual void set_mass_matrix(const std::shared_ptr<Matrix_t> &) {
+            assert(false);
+            Utopia::Abort("Implement me!");
+        }
 
         virtual const std::shared_ptr<FunctionSpace> &space() const = 0;
 
@@ -182,6 +186,8 @@ namespace utopia {
         inline const std::shared_ptr<Matrix_t> &mass_matrix() const override { return mass_matrix_; }
 
         bool assemble_mass_matrix() override { return assemble_mass_matrix(*mass_matrix()); }
+
+        void set_mass_matrix(const std::shared_ptr<Matrix_t> &mass_matrix) override { mass_matrix_ = mass_matrix; }
 
         virtual bool apply(const Vector_t &x, Vector_t &hessian_times_x) const override {
             if (empty(hessian_times_x)) {
@@ -464,6 +470,10 @@ namespace utopia {
 
         bool assemble_mass_matrix() override { return fe_function_->assemble_mass_matrix(); }
 
+        void set_mass_matrix(const std::shared_ptr<Matrix_t> &mass_matrix) override {
+            fe_function_->set_mass_matrix(mass_matrix);
+        }
+
         bool assemble_mass_matrix(Matrix_t &mass_matrix) override {
             return fe_function_->assemble_mass_matrix(mass_matrix);
         }
@@ -506,6 +516,7 @@ namespace utopia {
         inline const std::shared_ptr<FunctionSpace> &space() const override { return fe_function_->space(); }
 
         inline const std::shared_ptr<FEFunctionInterface_t> function() const { return fe_function_; }
+        inline void set_function(const std::shared_ptr<FEFunctionInterface_t> &function) { fe_function_ = function; }
 
         bool is_linear() const override { return function()->is_linear(); }
 

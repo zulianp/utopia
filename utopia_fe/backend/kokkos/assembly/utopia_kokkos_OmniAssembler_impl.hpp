@@ -5,9 +5,10 @@
 #include "utopia_LocalToGlobal.hpp"
 
 // utopia/kokkos
+#include "utopia_kokkos_AutoHyperElasticity.hpp"
 #include "utopia_kokkos_FEAssembler.hpp"
 #include "utopia_kokkos_ForcingFunction.hpp"
-#include "utopia_kokkos_IncrementalForcingFunction.hpp"
+
 #include "utopia_kokkos_IsotropicPhaseFieldForBrittleFractures.hpp"
 #include "utopia_kokkos_LaplaceOperator.hpp"
 #include "utopia_kokkos_LinearElasticity.hpp"
@@ -18,10 +19,47 @@
 #include "utopia_kokkos_VectorLaplaceOperator.hpp"
 #include "utopia_kokkos_WeakLinearThermoElasticity.hpp"
 
+// Auto-gen kernels
+#include "utopia_hyperelasticity_NeoHookeanOgden.hpp"
+#include "utopia_hyperelasticity_NeoHookeanOgden_2.hpp"
+#include "utopia_hyperelasticity_NeoHookeanOgden_3.hpp"
+
+#include "utopia_hyperelasticity_NeoHookeanSmith.hpp"
+// #include "utopia_hyperelasticity_NeoHookeanSmith_2.hpp"
+#include "utopia_hyperelasticity_NeoHookeanSmith_3.hpp"
+
+#include "utopia_hyperelasticity_NeoHookeanBower.hpp"
+#include "utopia_hyperelasticity_NeoHookeanBower_2.hpp"
+#include "utopia_hyperelasticity_NeoHookeanBower_3.hpp"
+
+#include "utopia_hyperelasticity_NeoHookeanWang.hpp"
+#include "utopia_hyperelasticity_NeoHookeanWang_2.hpp"
+#include "utopia_hyperelasticity_NeoHookeanWang_3.hpp"
+
+#include "utopia_hyperelasticity_Fung.hpp"
+#include "utopia_hyperelasticity_Fung_2.hpp"
+#include "utopia_hyperelasticity_Fung_3.hpp"
+
+#include "utopia_hyperelasticity_MooneyRivlin.hpp"
+#include "utopia_hyperelasticity_MooneyRivlin_2.hpp"
+#include "utopia_hyperelasticity_MooneyRivlin_3.hpp"
+
+#include "utopia_hyperelasticity_IncompressibleMooneyRivlin.hpp"
+#include "utopia_hyperelasticity_IncompressibleMooneyRivlin_2.hpp"
+#include "utopia_hyperelasticity_IncompressibleMooneyRivlin_3.hpp"
+
+#include "utopia_hyperelasticity_SaintVenantKirchoff.hpp"
+#include "utopia_hyperelasticity_SaintVenantKirchoff_2.hpp"
+#include "utopia_hyperelasticity_SaintVenantKirchoff_3.hpp"
+
 // utopia/kokkos includes
 #include "utopia_kokkos_FE.hpp"
 
 #include <functional>
+
+#ifdef UTOPIA_WITH_TINY_EXPR
+#include "utopia_kokkos_IncrementalForcingFunction.hpp"
+#endif  // UTOPIA_WITH_TINY_EXPR
 
 namespace utopia {
     namespace kokkos {
@@ -89,7 +127,9 @@ namespace utopia {
                 register_assembler<utopia::kokkos::Mass<FE_t>>("Mass");
                 register_assembler<utopia::kokkos::LaplaceOperator<FE_t>>("LaplaceOperator");
                 register_assembler<utopia::kokkos::ForcingFunction<FE_t>>("ForcingFunction");
+#ifdef UTOPIA_WITH_TINY_EXPR
                 register_assembler<utopia::kokkos::IncrementalForcingFunction<FE_t>>("IncrementalForcingFunction");
+#endif  // UTOPIA_WITH_TINY_EXPR
                 register_assembler<utopia::kokkos::NeoHookean<FE_t>>("NeoHookean");
 
                 register_assembler_variant<utopia::kokkos::VectorLaplaceOperator<FE_t, 1, Scalar_t>>(
@@ -117,6 +157,33 @@ namespace utopia {
                     "IsotropicPhaseFieldForBrittleFractures", 2);
                 register_assembler_variant<utopia::kokkos::IsotropicPhaseFieldForBrittleFractures<FE_t, 3>>(
                     "IsotropicPhaseFieldForBrittleFractures", 3);
+
+                // Auto gen materials
+                register_assembler_variant<utopia::kokkos::NeoHookeanOgden<FE_t, 2>>("NeoHookeanOgden", 2);
+                register_assembler_variant<utopia::kokkos::NeoHookeanOgden<FE_t, 3>>("NeoHookeanOgden", 3);
+
+                // register_assembler_variant<utopia::kokkos::NeoHookeanSmith<FE_t, 2>>("NeoHookeanSmith",2);
+                register_assembler_variant<utopia::kokkos::NeoHookeanSmith<FE_t, 3>>("NeoHookeanSmith", 3);
+
+                register_assembler_variant<utopia::kokkos::NeoHookeanBower<FE_t, 2>>("NeoHookeanBower", 2);
+                register_assembler_variant<utopia::kokkos::NeoHookeanBower<FE_t, 3>>("NeoHookeanBower", 3);
+
+                register_assembler_variant<utopia::kokkos::NeoHookeanWang<FE_t, 2>>("NeoHookeanWang", 2);
+                register_assembler_variant<utopia::kokkos::NeoHookeanWang<FE_t, 3>>("NeoHookeanWang", 3);
+
+                register_assembler_variant<utopia::kokkos::Fung<FE_t, 2>>("Fung", 2);
+                register_assembler_variant<utopia::kokkos::Fung<FE_t, 3>>("Fung", 3);
+
+                register_assembler_variant<utopia::kokkos::MooneyRivlin<FE_t, 2>>("MooneyRivlin", 2);
+                register_assembler_variant<utopia::kokkos::MooneyRivlin<FE_t, 3>>("MooneyRivlin", 3);
+
+                register_assembler_variant<utopia::kokkos::SaintVenantKirchoff<FE_t, 2>>("SaintVenantKirchoff", 2);
+                register_assembler_variant<utopia::kokkos::SaintVenantKirchoff<FE_t, 3>>("SaintVenantKirchoff", 3);
+
+                register_assembler_variant<utopia::kokkos::IncompressibleMooneyRivlin<FE_t, 2>>(
+                    "IncompressibleMooneyRivlin", 2);
+                register_assembler_variant<utopia::kokkos::IncompressibleMooneyRivlin<FE_t, 3>>(
+                    "IncompressibleMooneyRivlin", 3);
             }
         };
 
@@ -744,7 +811,9 @@ namespace utopia {
         template <class FunctionSpace, class FE>
         void OmniAssembler<FunctionSpace, FE>::read(Input &in) {
             using ForcingFunction_t = utopia::kokkos::ForcingFunction<typename Impl::FE>;
+#ifdef UTOPIA_WITH_TINY_EXPR
             using IncrementalForcingFunction_t = utopia::kokkos::IncrementalForcingFunction<typename Impl::FE>;
+#endif  // UTOPIA_WITH_TINY_EXPR
 
             if (!impl_->domain.fe) {
                 // FIXME order must be guessed by discretization and material
@@ -796,13 +865,16 @@ namespace utopia {
                             ff.n_components = impl_->space->n_var();
                             impl_->template add_forcing_function_on_boundary<ForcingFunction_t>(
                                 name, quadrature_order, ff);
-                        } else if (forcing_function_type == "IncrementalForcingFunction") {
+                        }
+#ifdef UTOPIA_WITH_TINY_EXPR
+                        else if (forcing_function_type == "IncrementalForcingFunction") {
                             typename IncrementalForcingFunction_t::Params ff;
                             ff.read(node);
                             ff.n_components = impl_->space->n_var();
                             impl_->template add_forcing_function_on_boundary<IncrementalForcingFunction_t>(
                                 name, quadrature_order, ff);
                         }
+#endif  // UTOPIA_WITH_TINY_EXPR
 
                     } else {
                         if (forcing_function_type == "value") {
@@ -810,12 +882,15 @@ namespace utopia {
                             ff.read(node);
                             ff.n_components = impl_->space->n_var();
                             impl_->template add_forcing_function<ForcingFunction_t>(ff);
-                        } else if (forcing_function_type == "IncrementalForcingFunction") {
+                        }
+#ifdef UTOPIA_WITH_TINY_EXPR
+                        else if (forcing_function_type == "IncrementalForcingFunction") {
                             typename IncrementalForcingFunction_t::Params ff;
                             ff.read(node);
                             ff.n_components = impl_->space->n_var();
                             impl_->template add_forcing_function<IncrementalForcingFunction_t>(ff);
                         }
+#endif  // UTOPIA_WITH_TINY_EXPR
                     }
                 });
             });
