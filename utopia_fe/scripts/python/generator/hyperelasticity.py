@@ -134,7 +134,10 @@ class Yeoh(HyperElasticModel):
 		for i in range(0, n):
 			self.fun += C0[i] * (I1 - d)**(i+1) +  C1[i] * (J - 1)**(2 * (i+1))
 
-		self.name = "Yeoh"
+		if n == 2:
+			self.name = "Yeoh"
+		else:
+			self.name = f"Yeoh{n}"
 
 ###############################
 # Mooney-Rivlin (https://en.wikipedia.org/wiki/Mooney%E2%80%93Rivlin_solid)
@@ -193,11 +196,12 @@ class IncompressibleMooneyRivlin(IncompressibleHyperElasticModel):
 
 def generate_materials(d,simplify_expressions):
 	output_dir = f'../../../backend/kokkos/assembly/mech/generated/{d}D'
-	# models = [NeoHookeanOgden(d), NeoHookeanBower(d), NeoHookeanWang(d), NeoHookeanSmith(d), Fung(d), MooneyRivlin(d), SaintVenantKirchoff(d), IncompressibleMooneyRivlin(d)]
+	# models = [NeoHookeanOgden(d), NeoHookeanBower(d), NeoHookeanWang(d), NeoHookeanSmith(d), Fung(d), MooneyRivlin(d), SaintVenantKirchoff(d), IncompressibleMooneyRivlin(d), Yeoh(d, 2)]
 	# models = [ NeoHookeanSmith(d), Fung(d)]
 	# models = [NeoHookeanOgden(d)]
 	# models = [Fung(d)]
 	# models = [IncompressibleMooneyRivlin(d)] 
+	# models = [Yeoh(d, 3)]
 	models = [Yeoh(d, 2)]
 	# models = [SaintVenantKirchoff(d)]
 
