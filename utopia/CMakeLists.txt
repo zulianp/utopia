@@ -704,3 +704,13 @@ add_dependencies(complete utopia utopia_test utopia_bench utopia_exec
 # ##############################################################################
 target_format_setup("utopia;utopia_test;utopia_bench;utopia_exec")
 # ##############################################################################
+
+# During the cmake step some test programs can crash and leave a core-dump file behind
+# This file has unfortunately the same name as the module `core`. Therefore at the end
+# when CMake tries to generate the output directories (which happens after the whole CMakeLists.txt
+# has been parsed), we must make sure that there is no such file with the name `core`.
+# One program that is known to crash on Piz Daint is the PETSc test run, because MPI
+# cannot be initialised when it is not running under an srun environment (i.e. you are compiling on a login node).
+if(EXISTS ${CMAKE_BINARY_DIR}/core AND NOT IS_DIRECTORY ${CMAKE_BINARY_DIR}/core)
+    file(REMOVE ${CMAKE_BINARY_DIR}/core)
+endif()
