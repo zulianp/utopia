@@ -14,6 +14,7 @@
 #include <TpetraExt_MatrixMatrix_def.hpp>
 #include <Tpetra_RowMatrixTransposer_decl.hpp>
 
+#include <array>
 #include <iterator>
 
 // FIXME
@@ -74,13 +75,13 @@ namespace utopia {
         auto rr = row_range();
         implementation().getLocalRowView(row - rr.begin(), cols, values);
 
-        auto it = std::lower_bound(cols.data(), cols.data()+cols.size(), local_col);
+        auto it = std::lower_bound(cols.data(), cols.data() + cols.size(), local_col);
 
-        if (it == cols.data()+cols.size()) {
+        if (it == cols.data() + cols.size()) {
             return 0.;
         }
 
-        assert(it != std::end(cols));
+        // assert(it != std::end(cols));
 
         std::size_t index = std::distance(cols.data(), it);
 
