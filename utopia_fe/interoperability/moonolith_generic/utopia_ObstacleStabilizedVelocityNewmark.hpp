@@ -236,7 +236,7 @@ namespace utopia {
         }
 
         template <class... Args>
-        ObstacleStabilizedVelocityNewmark(Args &&... args) : Super(std::forward<Args>(args)...) {}
+        ObstacleStabilizedVelocityNewmark(Args &&...args) : Super(std::forward<Args>(args)...) {}
 
         virtual ~ObstacleStabilizedVelocityNewmark() = default;
 
