@@ -236,7 +236,7 @@ namespace utopia {
         }
 
         template <class... Args>
-        ObstacleStabilizedVelocityNewmark(Args &&... args) : Super(std::forward<Args>(args)...) {}
+        ObstacleStabilizedVelocityNewmark(Args &&...args) : Super(std::forward<Args>(args)...) {}
 
         virtual ~ObstacleStabilizedVelocityNewmark() = default;
 
@@ -376,7 +376,7 @@ namespace utopia {
     protected:
         const Vector_t &velocity_old() const { return velocity_old_; }
 
-    private:
+        UTOPIA_NVCC_PRIVATE
         Vector_t x_old_, velocity_old_;
         Vector_t predictor_;
         Vector_t force_old_;
