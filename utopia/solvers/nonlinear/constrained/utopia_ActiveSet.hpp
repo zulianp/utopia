@@ -45,6 +45,12 @@ namespace utopia {
         }
 
         virtual bool determine(const BoxConstraints<Vector> &c, const Vector &x) {
+            if (!c.has_bound()) return false;
+
+            if (!c.has_lower_bound()) {
+                return determine_upper_bound(*c.upper_bound(), x);
+            }
+
             auto d_lb = const_local_view_device(*c.lower_bound());
             auto d_ub = const_local_view_device(*c.upper_bound());
             auto d_x = const_local_view_device(x);
@@ -112,6 +118,37 @@ namespace utopia {
         Vector indicator_;
         Scalar tol_{0};
         bool verbose_{false};
+
+        bool determine_upper_bound(const Vector &upper_bound, const Vector &x) {
+            auto d_ub = const_local_view_device(upper_bound);
+            auto d_x = const_local_view_device(x);
+
+            auto d_indicator = local_view_device(indicator_);
+
+            int changed = 0;
+            parallel_reduce(
+                local_range_device(indicator_),
+                UTOPIA_LAMBDA(const SizeType i) {
+                    const Scalar ui = d_ub.get(i);
+                    const Scalar xi = d_x.get(i);
+
+                    const int old_ind = d_indicator.get(i);
+                    const int new_ind = xi >= (ui - tol_) ? 1 : 0;
+
+                    d_indicator.set(i, new_ind);
+
+                    return old_ind != new_ind;
+                },
+                changed);
+
+            changed = x.comm().sum(changed);
+
+            if (verbose_ && changed && x.comm().rank() == 0) {
+                utopia::out() << "ActiveSet changed: " << changed << std::endl;
+            }
+
+            return changed > 0;
+        }
     };
 }  // namespace utopia
 

@@ -454,36 +454,45 @@ namespace utopia {
                 }
             }
 
+            if (has_intersection) {
+                // FIXME
+                has_intersection = static_cast<bool>(impl_->data.transfer_matrix);
+            }
+
             if (impl_->opts.verbose) {
-                auto &T = *impl_->data.transfer_matrix;
-                auto &&comm = T.comm();
+                if (has_intersection) {
+                    auto &T = *impl_->data.transfer_matrix;
+                    auto &&comm = T.comm();
 
-                Scalar n_coupled_dofs = sum(T);
-                std::stringstream root_ss;
-                root_ss << "n_coupled_dofs in to_space:\t" << SizeType(n_coupled_dofs) << "\n";
-                root_ss << "global_nnz:\t" << T.global_nnz() << "\n";
+                    Scalar n_coupled_dofs = sum(T);
+                    std::stringstream root_ss;
+                    root_ss << "n_coupled_dofs in to_space:\t" << SizeType(n_coupled_dofs) << "\n";
+                    root_ss << "global_nnz:\t" << T.global_nnz() << "\n";
 
-                if (impl_->opts.print_operator_imbalance) {
-                    Matrix T_transpose = transpose(T);
-                    std::vector<SizeType> balancing(comm.size(), 0);
-                    balancing[comm.rank()] = T_transpose.local_nnz();
+                    if (impl_->opts.print_operator_imbalance) {
+                        Matrix T_transpose = transpose(T);
+                        std::vector<SizeType> balancing(comm.size(), 0);
+                        balancing[comm.rank()] = T_transpose.local_nnz();
 
-                    comm.sum(comm.size(), &balancing[0]);
+                        comm.sum(comm.size(), &balancing[0]);
 
-                    if (comm.is_root()) {
-                        root_ss << "Operator imbalance:\n";
+                        if (comm.is_root()) {
+                            root_ss << "Operator imbalance:\n";
 
-                        for (int i = 0; i < comm.size(); ++i) {
-                            if (balancing[i] > 0) {
-                                root_ss << "[" << i << " " << balancing[i] << "] ";
+                            for (int i = 0; i < comm.size(); ++i) {
+                                if (balancing[i] > 0) {
+                                    root_ss << "[" << i << " " << balancing[i] << "] ";
+                                }
                             }
+
+                            root_ss << "\n";
                         }
-
-                        root_ss << "\n";
                     }
-                }
 
-                comm.root_print(root_ss.str(), utopia::out().stream());
+                    comm.root_print(root_ss.str(), utopia::out().stream());
+                } else {
+                    from->comm().root_print("NO INTERSECTION");
+                }
             }
 
             UTOPIA_TRACE_REGION_END("FETransfer::init");
