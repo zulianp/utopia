@@ -65,8 +65,13 @@ namespace utopia {
 
     // FIXME make faster version by storing view?
     TpetraMatrix::Scalar TpetraMatrix::get(const SizeType &row, const SizeType &col) const {
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
         CrsMatrixType::local_inds_host_view_type cols;
         CrsMatrixType::values_host_view_type values;
+#else
+        Teuchos::ArrayView<const LocalSizeType> cols;
+        Teuchos::ArrayView<const Scalar> values;
+#endif
 
         assert(implementation().isLocallyIndexed());
 
