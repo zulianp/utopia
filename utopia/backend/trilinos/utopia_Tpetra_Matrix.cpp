@@ -64,8 +64,8 @@ namespace utopia {
 
     // FIXME make faster version by storing view?
     TpetraMatrix::Scalar TpetraMatrix::get(const SizeType &row, const SizeType &col) const {
-        Teuchos::ArrayView<const LocalSizeType> cols;
-        Teuchos::ArrayView<const Scalar> values;
+        CrsMatrixType::local_inds_host_view_type cols;
+        CrsMatrixType::values_host_view_type values;
 
         assert(implementation().isLocallyIndexed());
 
@@ -74,15 +74,15 @@ namespace utopia {
         auto rr = row_range();
         implementation().getLocalRowView(row - rr.begin(), cols, values);
 
-        auto it = std::lower_bound(std::begin(cols), std::end(cols), local_col);
+        auto it = std::lower_bound(cols.data(), cols.data()+cols.size(), local_col);
 
-        if (it == std::end(cols)) {
+        if (it == cols.data()+cols.size()) {
             return 0.;
         }
 
         assert(it != std::end(cols));
 
-        std::size_t index = std::distance(std::begin(cols), it);
+        std::size_t index = std::distance(cols.data(), it);
 
         assert(cols[index] == local_col);
 

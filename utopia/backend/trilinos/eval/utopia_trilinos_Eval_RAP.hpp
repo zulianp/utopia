@@ -37,7 +37,7 @@ namespace utopia {
 
                 UTOPIA_REPORT_ALLOC("Eval_RAP");
                 auto raw_result = Teuchos::rcp(
-                    new typename Result::CrsMatrixType(raw_type(R)->getDomainMap(), 0, Tpetra::StaticProfile));
+                    new typename Result::CrsMatrixType(raw_type(R)->getDomainMap(), 0)); //, Tpetra::StaticProfile));
 
                 assert(!empty(R));
                 assert(!empty(A));
