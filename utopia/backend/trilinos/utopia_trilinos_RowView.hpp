@@ -15,8 +15,14 @@ namespace utopia {
         using SizeType = typename Traits<Tensor>::SizeType;
         using Scalar = typename Traits<Tensor>::Scalar;
         using LocalSizeType = typename Traits<Tensor>::LocalSizeType;
+
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
         using LocalIndsViewType = typename Traits<Tensor>::Matrix::CrsMatrixType::local_inds_host_view_type;
         using HostViewType = typename Traits<Tensor>::Matrix::CrsMatrixType::values_host_view_type;
+#else
+        using LocalIndsViewType = Teuchos::ArrayView<const LocalSizeType>;
+        using HostViewType = Teuchos::ArrayView<const Scalar>;
+#endif
 
         using RCPMapType = typename Tensor::RCPMapType;
 
