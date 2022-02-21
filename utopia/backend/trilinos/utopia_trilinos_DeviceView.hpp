@@ -172,7 +172,7 @@ namespace utopia {
         using Scalar = typename Traits<TpetraMatrix>::Scalar;
         using SizeType = typename Traits<TpetraMatrix>::SizeType;
         using CrsMatType = typename TpetraMatrix::CrsMatrixType;
-        using LocalMatrixType = typename CrsMatType::local_matrix_type;
+        using LocalMatrixType = typename CrsMatType::local_matrix_device_type;
         using LocalMapType = typename CrsMatType::map_type::local_map_type;
 
         /**
