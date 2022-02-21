@@ -172,7 +172,11 @@ namespace utopia {
         using Scalar = typename Traits<TpetraMatrix>::Scalar;
         using SizeType = typename Traits<TpetraMatrix>::SizeType;
         using CrsMatType = typename TpetraMatrix::CrsMatrixType;
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+        using LocalMatrixType = typename CrsMatType::local_matrix_device_type;
+#else
         using LocalMatrixType = typename CrsMatType::local_matrix_type;
+#endif
         using LocalMapType = typename CrsMatType::map_type::local_map_type;
 
         /**

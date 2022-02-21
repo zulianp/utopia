@@ -27,13 +27,15 @@ namespace utopia {
 
     template <class Op>
     TpetraMatrix::Scalar TpetraMatrix::local_parallel_reduce_values(Op, const Scalar &initial_value) const {
-        using LocalMatrix = typename CrsMatrixType::local_matrix_type;
-        using Data = typename LocalMatrix::values_type;
 #if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+        using LocalMatrix = typename CrsMatrixType::local_matrix_device_type;
         const LocalMatrix &local_mat = raw_type()->getLocalMatrixDevice();
 #else
+        using LocalMatrix = typename CrsMatrixType::local_matrix_type;
         const LocalMatrix &local_mat = raw_type()->getLocalMatrix();
 #endif
+
+        using Data = typename LocalMatrix::values_type;
 
         const Data &data = local_mat.values;
 
@@ -60,14 +62,14 @@ namespace utopia {
 
     template <class F>
     void TpetraMatrix::transform_values(F op) {
-        using LocalMatrix = typename CrsMatrixType::local_matrix_type;
-        using Data = typename LocalMatrix::values_type;
-
 #if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+        using LocalMatrix = typename CrsMatrixType::local_matrix_device_type;
         const LocalMatrix &local_mat = raw_type()->getLocalMatrixDevice();
 #else
+        using LocalMatrix = typename CrsMatrixType::local_matrix_type;
         const LocalMatrix &local_mat = raw_type()->getLocalMatrix();
 #endif
+        using Data = typename LocalMatrix::values_type;
         const Data &data = local_mat.values;
 
         Kokkos::parallel_for(
