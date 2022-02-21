@@ -1,7 +1,6 @@
-find_package(yaml-cpp REQUIRED)
+find_package(yaml-cpp)
 
 if(yaml-cpp_FOUND)
-
     set(UTOPIA_WITH_YAML_CPP TRUE)
     set(UTOPIA_WITH_YAML_CPP TRUE PARENT_SCOPE)
 
@@ -49,4 +48,6 @@ if(yaml-cpp_FOUND)
         ${UTOPIA_THIRDPARTY_LIBRARIES}
         PARENT_SCOPE)
 
+else()
+    include(../../cmake/InstallYAMLCPP.cmake)
 endif()

@@ -79,7 +79,7 @@ option(UTOPIA_ENABLE_MOOSE_ENV_MODE
 option(UTOPIA_ENABLE_DEPRECATED_API
        "Decprecated functionality that will be removed in the future" ON)
 option(UTOPIA_ENABLE_TINY_EXPR "String expressions support" ON)
-option(UTOPIA_ENABLE_YAML_CPP "Enable YAML support" OFF)
+option(UTOPIA_ENABLE_YAML_CPP "Enable YAML support" ON)
 
 option(UTOPIA_ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
 option(
@@ -107,7 +107,7 @@ option(
 option(UTOPIA_SPACK_MODE "Spack env hacks" OFF)
 
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
-option(UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE "Removed trilinos deprecated code" ON)
+option(UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE "Removed trilinos deprecated code" OFF)
 
 # set(UTOPIA_DEFAULT_TARGETS)
 include(CodeCoverage)
@@ -704,3 +704,13 @@ add_dependencies(complete utopia utopia_test utopia_bench utopia_exec
 # ##############################################################################
 target_format_setup("utopia;utopia_test;utopia_bench;utopia_exec")
 # ##############################################################################
+
+# During the cmake step some test programs can crash and leave a core-dump file behind
+# This file has unfortunately the same name as the module `core`. Therefore at the end
+# when CMake tries to generate the output directories (which happens after the whole CMakeLists.txt
+# has been parsed), we must make sure that there is no such file with the name `core`.
+# One program that is known to crash on Piz Daint is the PETSc test run, because MPI
+# cannot be initialised when it is not running under an srun environment (i.e. you are compiling on a login node).
+if(EXISTS ${CMAKE_BINARY_DIR}/core AND NOT IS_DIRECTORY ${CMAKE_BINARY_DIR}/core)
+    file(REMOVE ${CMAKE_BINARY_DIR}/core)
+endif()

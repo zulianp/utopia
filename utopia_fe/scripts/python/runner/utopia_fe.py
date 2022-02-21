@@ -6,6 +6,14 @@ import sys, getopt
 import glob
 import time
 import copy
+import platform
+
+def check_python_version():
+    v = platform.python_version_tuple()
+    if(int(v[0]) < 3 or int(v[1]) < 7):
+        sys.exit("Python version >= 3.7 is required!")
+
+check_python_version()        
 
 console = rich.get_console()
 
@@ -104,16 +112,19 @@ class BarrierQPSolver(QPSolver):
     def __init__(self, atol=1e-11):
         super().__init__("logbarrier")
         self.backend = 'any'
-        self.function_type = 'LogBarrierFunctionWithSelection'
+        self.function_type = 'BoundedLogBarrier'
         self.atol = atol
         self.infinity = 5.e-3
         self.trivial_obstacle = False
         self.barrier_parameter = 1e-9
         self.barrier_parameter_shrinking_factor = 0.5
         self.min_barrier_parameter = 1e-9
+        self.barrier_parameter_thickness = 1e-4
         self.soft_boundary = 1e-16
         self.zero = 1e-20
         self.allow_projection = True
+        self.enable_line_search = True
+        self.verbose = True
 
 class ObstacleSolver(yaml.YAMLObject):
     yaml_tag = u'!ObstacleSolver'
@@ -361,6 +372,7 @@ class ObstacleSimulation(yaml.YAMLObject):
         self.input_file = os.environ.get('PWD') + '/'  + env.next_step_id_str() + '_' + self.app + '.yaml'
         self.solver = solver
         self.output_path = output_path
+        self.enable_line_search = True
 
         # problem = Problem(assembly, output_path)
         self.assembly = assembly = Assembly(material, forcing_functions)
@@ -392,7 +404,7 @@ class Mass(Material):
         super().__init__("Mass", quadrature_order)
         self.density = density
         self.n_components = n_components
-        self.lumped = True
+        self.lumped = False
         self.verbose = True
 
 
@@ -438,7 +450,7 @@ class LinearElasticity(ElasticMaterial):
 class CompressibleNeoHookean(ElasticMaterial):
     yaml_tag = u'!CompressibleNeoHookean'
     def __init__(self, quadrature_order = 0):
-        super().__init__("NeoHookean", quadrature_order)
+        super().__init__("NeoHookeanOgden", quadrature_order)
         self.verbose = True
 
 class Assembly(yaml.YAMLObject):
@@ -498,17 +510,20 @@ class BarrierProblem(yaml.YAMLObject):
         self.output_path = output_path
         self.time = time
 
-        self.function_type = 'LogBarrierWithSelection'
+        # self.function_type = 'LogBarrier'
+        self.function_type = 'BoundedLogBarrier'
         self.assembly = Assembly(material, forcing_functions)
         self.mass = Assembly(mass, [])
 
         # Barrier numerics
         self.infinity = 5.e-3
-        self.barrier_parameter = 1e-9
+        self.barrier_parameter = 1
         self.barrier_parameter_shrinking_factor = 0.5
-        self.min_barrier_parameter = 1e-9
+        self.barrier_parameter_thickness = 1e-4
+        self.min_barrier_parameter = 1e-6
         self.soft_boundary = 1e-16
         self.zero = 1e-20
+        self.enable_line_search = True
 
         # Algorithmic branches
         self.trivial_obstacle = False
@@ -526,10 +541,10 @@ class BarrierObstacleSimulation(NLSolve):
 
     def __init__(self, env, space,  material, mass, forcing_functions, obstacle, time, solver, output_path):
         # self.integrator = 'ObstacleVelocityNewmark'
-        # self.integrator = 'ObstacleStabilizedVelocityNewmark'
+        self.integrator = 'ObstacleStabilizedVelocityNewmark'
         # self.integrator = 'Newmark'
         # self.integrator = 'VelocityNewmark'
-        self.integrator = 'ObstacleNewmark'
+        # self.integrator = 'ObstacleNewmark'
         # self.integrator = 'ObstacleStabilizedNewmark'
         problem =  BarrierProblem(space, material, mass, forcing_functions, obstacle, time, output_path)
         super().__init__(env, space, problem, solver)
@@ -559,7 +574,7 @@ class ImplicitObstacle(yaml.YAMLObject):
         self.domain = domain
         self.shift_field = True
         self.field_rescale = 1
-        self.field_offset: -2e-5
+        self.field_offset = -2e-5
         self.export_tensor = False
 
 class FSIInit:
@@ -585,11 +600,18 @@ class FSIInit:
             Mesh(env, fluid_mesh),
             [distance_var],
             [
+                # DirichletBC('inlet', 0.),
+                # DirichletBC('outlet', 0.),
+                # DirichletBC('inlettube', 0.),
+                # DirichletBC('walls', 0.),
+                # DirichletBC('symmetry', 0)
                 DirichletBC('inlet', 0.),
                 DirichletBC('outlet', 0.),
                 DirichletBC('inlettube', 0.),
                 DirichletBC('walls', 0.),
-                DirichletBC('symmetry', 0)
+                DirichletBC('symmetry_1', 0),
+                DirichletBC('symmetry_2', 0),
+                DirichletBC('valvecontact', 0)
             ])
 
 
@@ -601,8 +623,12 @@ class FSIInit:
             Mesh(env, solid_mesh),
             [Var("disp", 3)],
             [
-                DirichletBC('valvesym', 0., 0),
-                DirichletBC('valvesym', 0., 2)
+                # DirichletBC('valvesym', 0., 0),
+                # DirichletBC('valvesym', 0., 2)
+                DirichletBC('symmetry_1', 0., 0),
+                DirichletBC('symmetry_1', 0., 2),
+                DirichletBC('symmetry_2', 0., 0),
+                DirichletBC('symmetry_2', 0., 2)
             ]
         )
 
@@ -634,7 +660,7 @@ class FSIInit:
 
         step2_sim = ObstacleSimulation(
             env, solid_fs_2, dummy_material, [], MeshObstacle(fluid_mesh),
-            ObstacleSolver(MPRGP(1e-14), 10, 10), obstacle_at_rest_result_db)
+            ObstacleSolver(MPRGP(1e-14), 15, 15), obstacle_at_rest_result_db)
 
         #########################################################
         ### Step 3
@@ -654,7 +680,7 @@ class FSIInit:
             ObstacleSolver(
                 MPRGP(1e-14),
                 # InteriorPointSolver(1e-14),
-                10, 10), nonlinear_obstacle_at_rest_result_db)
+                15, 15), nonlinear_obstacle_at_rest_result_db)
 
         #########################################################
         ### Step 4
@@ -668,7 +694,7 @@ class FSIInit:
 
         step4_sim = ObstacleSimulation(
             env, solid_fs_4, elastic_material, [], MeshObstacle(fluid_mesh),
-            ObstacleSolver(barrier_solver, 10, 10), fsi_ready_db)
+            ObstacleSolver(barrier_solver, 20, 20), fsi_ready_db)
 
 
         #########################################################
@@ -701,8 +727,8 @@ class FSIInit:
         newton_solver.rtol = 1e-14
 
         mesh_obstacle = MeshObstacle(fluid_mesh)
-        mesh_obstacle.gap_negative_bound = -1e-4
-        mesh_obstacle.gap_positive_bound = 1e-4
+        mesh_obstacle.gap_negative_bound = -2e-4
+        mesh_obstacle.gap_positive_bound = 2e-4
 
         test = BarrierObstacleSimulation(env, solid_fs_test,
          elastic_material, mass, forcing_functions,
@@ -747,6 +773,7 @@ class Launcher:
         self.fsi.test.run()
 
     def __init__(self, argv):
+
         ###############################
         # INPUT
         ###############################
