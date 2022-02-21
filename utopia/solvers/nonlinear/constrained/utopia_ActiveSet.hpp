@@ -119,6 +119,7 @@ namespace utopia {
         Scalar tol_{0};
         bool verbose_{false};
 
+    UTOPIA_NVCC_PRIVATE
         bool determine_upper_bound(const Vector &upper_bound, const Vector &x) {
             auto d_ub = const_local_view_device(upper_bound);
             auto d_x = const_local_view_device(x);
