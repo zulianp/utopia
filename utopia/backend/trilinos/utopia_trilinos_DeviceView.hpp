@@ -9,6 +9,12 @@
 #include "utopia_Tpetra_Matrix.hpp"
 #include "utopia_Tpetra_Vector.hpp"
 
+#include <Trilinos_version.h>
+
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+#include <Tpetra_Access.hpp>
+#endif
+
 namespace utopia {
 
     template <>
@@ -26,7 +32,14 @@ namespace utopia {
             return view_(local_idx, 0);
         }
 
-        DeviceView(const TpetraVector &tensor) : view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>()) {
+        DeviceView(const TpetraVector &tensor)
+            :
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+              view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadWrite))
+#else
+              view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>())
+#endif
+        {
             assert(!tensor.has_ghosts() && "GHOST HANDLING NOT IMPLEMENTED YET");
             map_ = tensor.raw_type()->getMap()->getLocalMap();
         }
@@ -74,7 +87,14 @@ namespace utopia {
         //     device::atomic_set(&view_(local_idx, 0), value);
         // }
 
-        DeviceView(const TpetraVector &tensor) : view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>()) {
+        DeviceView(const TpetraVector &tensor)
+            :
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+              view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadWrite))
+#else
+              view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>())
+#endif
+        {
             assert(!tensor.has_ghosts() && "GHOST HANDLING NOT IMPLEMENTED YET");
             map_ = tensor.raw_type()->getMap()->getLocalMap();
         }
@@ -99,7 +119,16 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION Scalar get(const SizeType &idx) const { return view_(idx, 0); }
 
         LocalViewDevice(const TpetraVector &tensor)
-            : view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>()) {}
+            :
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+              view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadWrite))
+#else
+              view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>())
+#endif
+        {
+        }
+
+        inline const DeviceViewType &raw_type() { return view_; }
 
     private:
         const DeviceViewType view_;
@@ -119,7 +148,17 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION void set(const SizeType &idx, const Scalar &val) const { view_(idx, 0) = val; }
 
-        LocalViewDevice(TpetraVector &tensor) : view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>()) {}
+        LocalViewDevice(TpetraVector &tensor)
+            :
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+              view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadWrite))
+#else
+              view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>())
+#endif
+        {
+        }
+
+        inline DeviceViewType &raw_type() { return view_; }
 
     private:
         DeviceViewType view_;
@@ -133,7 +172,11 @@ namespace utopia {
         using Scalar = typename Traits<TpetraMatrix>::Scalar;
         using SizeType = typename Traits<TpetraMatrix>::SizeType;
         using CrsMatType = typename TpetraMatrix::CrsMatrixType;
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+        using LocalMatrixType = typename CrsMatType::local_matrix_device_type;
+#else
         using LocalMatrixType = typename CrsMatType::local_matrix_type;
+#endif
         using LocalMapType = typename CrsMatType::map_type::local_map_type;
 
         /**
@@ -149,9 +192,15 @@ namespace utopia {
         }
 
         DeviceView(TpetraMatrix &tensor)
-            : view_(tensor.raw_type()->getLocalMatrix()),
+            :
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+              view_(tensor.raw_type()->getLocalMatrixDevice()),
+#else
+              view_(tensor.raw_type()->getLocalMatrix()),
+#endif
               row_map_(tensor.raw_type()->getRowMap()->getLocalMap()),
-              col_map_(tensor.raw_type()->getColMap()->getLocalMap()) {}
+              col_map_(tensor.raw_type()->getColMap()->getLocalMap()) {
+        }
 
     private:
         LocalMatrixType view_;

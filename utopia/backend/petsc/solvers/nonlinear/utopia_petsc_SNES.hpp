@@ -4,9 +4,11 @@
 #include "utopia_Core.hpp"
 #include "utopia_Function.hpp"
 #include "utopia_LinearSolver.hpp"
+#include "utopia_NewtonBase.hpp"
+#include "utopia_NonLinearSmoother.hpp"
 #include "utopia_NonLinearSolver.hpp"
-// #include "utopia_petsc.hpp"
 #include "utopia_VariableBoundSolverInterface.hpp"
+
 #include "utopia_petsc_build_ksp.hpp"
 
 #include <petscksp.h>

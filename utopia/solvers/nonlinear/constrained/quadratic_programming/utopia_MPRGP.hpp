@@ -12,7 +12,7 @@
 namespace utopia {
 
     template <class Matrix, class Vector>
-    class MPGRP final : public OperatorBasedQPSolver<Matrix, Vector> {
+    class MPRGP final : public OperatorBasedQPSolver<Matrix, Vector> {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
@@ -23,12 +23,13 @@ namespace utopia {
         using Super::solve;
         using Super::update;
 
-        MPGRP() : eps_eig_est_(1e-1), power_method_max_it_(10) {}
+        MPRGP() : eps_eig_est_(1e-1), power_method_max_it_(10) {}
 
         void read(Input &in) override {
             OperatorBasedQPSolver<Matrix, Vector>::read(in);
             in.get("eig_comp_tol", eps_eig_est_);
             in.get("power_method_max_it", power_method_max_it_);
+            in.get("hardik_variant", hardik_variant_);
         }
 
         void print_usage(std::ostream &os) const override {
@@ -38,17 +39,17 @@ namespace utopia {
                 os, "power_method_max_it", "int", "Maximum number of iterations used inside of power method.", "10");
         }
 
-        MPGRP *clone() const override { return new MPGRP(*this); }
+        MPRGP *clone() const override { return new MPRGP(*this); }
 
         void update(const Operator<Vector> &A) override {
-            UTOPIA_TRACE_REGION_BEGIN("MPGRP::update");
+            UTOPIA_TRACE_REGION_BEGIN("MPRGP::update");
 
             const auto layout_rhs = row_layout(A);
             if (!initialized_ || !layout_rhs.same(layout_)) {
                 init_memory(layout_rhs);
             }
 
-            UTOPIA_TRACE_REGION_END("MPGRP::update");
+            UTOPIA_TRACE_REGION_END("MPRGP::update");
         }
 
         bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override {
@@ -64,7 +65,8 @@ namespace utopia {
 
             this->update(A);
 
-            // as it is not clear ATM, how to apply preconditioner, we use it at least to obtain initial guess
+            // as it is not clear ATM, how to apply preconditioner, we use it at least
+            // to obtain initial guess
             if (precond_) {
                 // this is unconstrained step
                 precond_->apply(rhs, sol);
@@ -88,18 +90,20 @@ namespace utopia {
             // UTOPIA_NO_ALLOC_BEGIN("MPRGP");
             // //cudaProfilerStart();
 
-            // Scalar r_norm0 = norm2(rhs);
-
             const auto &&ub = constraints.upper_bound();
             const auto &&lb = constraints.lower_bound();
 
             if (this->verbose()) {
-                this->init_solver("MPGRP comm_size: " + std::to_string(rhs.comm().size()), {"it", "|| g ||"});
+                this->init_solver("MPRGP comm_size: " + std::to_string(rhs.comm().size()), {"it", "|| g ||"});
             }
 
             const Scalar gamma = 1.0;
-            const Scalar alpha_bar = 1.95 / this->get_normA(A);
-            Scalar pAp, beta_beta, fi_fi, gp_dot;
+            Scalar alpha_bar = 1;
+            if (!hardik_variant_) {
+                alpha_bar = 1.95 / this->get_normA(A);
+            }
+
+            Scalar pAp, beta_beta, fi_fi, gp_dot, g_betta, beta_Abeta;
 
             SizeType it = 0;
             bool converged = false;
@@ -107,31 +111,15 @@ namespace utopia {
 
             Scalar alpha_cg, alpha_f, beta_sc;
 
-            // this->get_projection(x, *lb, *ub, Ax);
-
             assert(lb);
             assert(ub);
 
-            // utopia::out() <<x.comm().size() << " " << rhs.comm().size() << " " << lb->comm().size() << " "
-            //           << ub->comm().size() << std::endl;
-
             this->project(*lb, *ub, x);
-            // x = Ax;
 
             A.apply(x, Ax);
             g = Ax - rhs;
 
-            // std::cout<<"loc_size-lb: "<< local_size(*lb).get(0) << "  \n";
-            // std::cout<<"loc_size-ub: "<< local_size(*ub).get(0) << "  \n";
-            // std::cout<<"loc_size-g: "<< local_size(g).get(0) << "  \n";
-            // std::cout<<"loc_size-x: "<< local_size(x).get(0) << "  \n";
-            // std::cout<<"loc_size-fi: "<< local_size(fi).get(0) << "  \n";
-
             this->get_fi(x, g, *lb, *ub, fi);
-
-            // std::cout<<"----------------------- \n";
-            // exit(0);
-
             this->get_beta(x, g, *lb, *ub, beta);
 
             gp = fi + beta;
@@ -145,31 +133,63 @@ namespace utopia {
 
                     dots(p, Ap, pAp, g, p, gp_dot);
 
+                    // detecting negative curvature
+                    if (pAp <= 0.0) {
+                        return true;
+                    }
+
                     alpha_cg = gp_dot / pAp;
-                    y = x - alpha_cg * p;
                     alpha_f = get_alpha_f(x, p, *lb, *ub, help_f1, help_f2);
 
-                    if (alpha_cg <= alpha_f) {
-                        x = y;
-                        g = g - alpha_cg * Ap;
-                        this->get_fi(x, g, *lb, *ub, fi);
-                        beta_sc = dot(fi, Ap) / pAp;
-                        p = fi - beta_sc * p;
+                    if (hardik_variant_) {
+                        x -= alpha_cg * p;
+
+                        if (alpha_cg <= alpha_f) {
+                            g -= alpha_cg * Ap;
+
+                            this->get_fi(x, g, *lb, *ub, fi);
+                            beta_sc = dot(fi, Ap) / pAp;
+                            p = fi - beta_sc * p;
+
+                        } else {
+                            this->project(*lb, *ub, x);
+                            A.apply(x, g);
+                            g -= rhs;
+                            this->get_fi(x, g, *lb, *ub, p);
+                        }
+
                     } else {
-                        x = x - alpha_f * p;
-                        g = g - alpha_f * Ap;
-                        this->get_fi(x, g, *lb, *ub, fi);
+                        y = x - alpha_cg * p;
 
-                        help_f1 = x - (alpha_bar * fi);
-                        this->project(help_f1, *lb, *ub, x);
+                        if (alpha_cg <= alpha_f) {
+                            x = y;
+                            g = g - alpha_cg * Ap;
+                            this->get_fi(x, g, *lb, *ub, fi);
+                            beta_sc = dot(fi, Ap) / pAp;
+                            p = fi - beta_sc * p;
+                        } else {
+                            x = x - alpha_f * p;
+                            g = g - alpha_f * Ap;
+                            this->get_fi(x, g, *lb, *ub, fi);
 
-                        A.apply(x, Ax);
-                        g = Ax - rhs;
-                        this->get_fi(x, g, *lb, *ub, p);
+                            help_f1 = x - (alpha_bar * fi);
+                            this->project(help_f1, *lb, *ub, x);
+
+                            A.apply(x, Ax);
+                            g = Ax - rhs;
+                            this->get_fi(x, g, *lb, *ub, p);
+                        }
                     }
                 } else {
                     A.apply(beta, Abeta);
-                    alpha_cg = dot(g, beta) / dot(beta, Abeta);
+
+                    dots(g, beta, g_betta, beta, Abeta, beta_Abeta);
+                    // detecting negative curvature
+                    if (beta_Abeta <= 0.0) {
+                        return true;
+                    }
+
+                    alpha_cg = g_betta / beta_Abeta;
                     x = x - alpha_cg * beta;
                     g = g - alpha_cg * Abeta;
 
@@ -191,8 +211,8 @@ namespace utopia {
                 }
 
                 converged = this->check_convergence(it, gnorm, 1, 1);
-                // converged = (it > this->max_it() || gnorm < std::min(0.1, std::sqrt(r_norm0)) * r_norm0 ) ? true :
-                // false;
+                // converged = (it > this->max_it() || gnorm < std::min(0.1,
+                // std::sqrt(r_norm0)) * r_norm0 ) ? true : false;
             }
 
             // //cudaProfilerStop();
@@ -222,30 +242,6 @@ namespace utopia {
                         d_fi.set(i, (li < xi && xi < ui) ? gi : Scalar(0.0));
                     });
             }
-
-            // {
-
-            //     auto d_lb = const_device_view(lb);
-            //     auto d_ub = const_device_view(ub);
-            //     auto d_x  = const_device_view(x);
-            //     auto d_g  = const_device_view(g);
-
-            //     parallel_each_write(fi, UTOPIA_LAMBDA(const SizeType i) -> Scalar
-            //     {
-            //         Scalar li = d_lb.get(i);
-            //         Scalar ui = d_ub.get(i);
-            //         Scalar xi = d_x.get(i);
-            //         Scalar gi = d_g.get(i);
-
-            //         if(li < xi && xi < ui){
-            //             return gi;
-            //         }
-            //         else{
-            //             return 0.0;
-            //         }
-
-            //     });
-            // }
         }
 
         Scalar get_alpha_f(const Vector &x,
@@ -281,48 +277,6 @@ namespace utopia {
             }
 
             return multi_min(help_f1, help_f2);
-
-            // {
-            //     auto d_lb = const_device_view(lb);
-            //     auto d_ub = const_device_view(ub);
-            //     auto d_x  = const_device_view(x);
-            //     auto d_p  = const_device_view(p);
-
-            //     parallel_each_write(help_f1, UTOPIA_LAMBDA(const SizeType i) -> Scalar
-            //     {
-            //         Scalar li = d_lb.get(i);
-            //         Scalar xi = d_x.get(i);
-            //         Scalar pi = d_p.get(i);
-
-            //         if(pi > 0)
-            //         {
-            //             return (xi-li)/pi;
-            //         }
-            //         else
-            //         {
-            //             return 1e15;
-            //         }
-            //     });
-
-            //     parallel_each_write(help_f2, UTOPIA_LAMBDA(const SizeType i) -> Scalar
-            //     {
-            //         Scalar ui = d_ub.get(i);
-            //         Scalar xi = d_x.get(i);
-            //         Scalar pi = d_p.get(i);
-
-            //         if(pi < 0)
-            //         {
-            //             return (xi-ui)/pi;
-            //         }
-            //         else
-            //         {
-            //             return 1e15;
-            //         }
-
-            //     });
-            // }
-
-            // return multi_min(help_f1, help_f2);
         }
 
         void get_beta(const Vector &x, const Vector &g, const Vector &lb, const Vector &ub, Vector &beta) const {
@@ -349,34 +303,6 @@ namespace utopia {
                         d_beta.set(i, val);
                     });
             }
-
-            // {
-            //     auto d_lb = const_device_view(lb);
-            //     auto d_ub = const_device_view(ub);
-            //     auto d_x  = const_device_view(x);
-            //     auto d_g  = const_device_view(g);
-
-            //     parallel_each_write(beta, UTOPIA_LAMBDA(const SizeType i) -> Scalar
-            //     {
-            //         Scalar li = d_lb.get(i);
-            //         Scalar ui = d_ub.get(i);
-            //         Scalar xi = d_x.get(i);
-            //         Scalar gi = d_g.get(i);
-
-            //         if(device::abs(li -  xi) < 1e-14)
-            //         {
-            //             return device::min(0.0, gi);
-            //         }
-            //         else if(device::abs(ui -  xi) < 1e-14)
-            //         {
-            //             return device::max(0.0, gi);
-            //         }
-            //         else
-            //         {
-            //             return 0.0;
-            //         }
-            //     });
-            // }
         }
 
     private:
@@ -450,6 +376,7 @@ namespace utopia {
         Layout layout_;
 
         std::shared_ptr<Preconditioner<Vector> > precond_;
+        bool hardik_variant_{false};
     };
 }  // namespace utopia
 

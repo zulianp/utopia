@@ -9,12 +9,15 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 
 namespace utopia {
 
     class InputParameters final : public Input {
     public:
-        void init(const int argc, char *argv[]);
+        using Input::get;
+
+        void init(const int argc, char *argv[], const bool verbose = false);
 
         inline bool empty() const { return nodes_.empty() && values_.empty(); }
 
@@ -40,8 +43,12 @@ namespace utopia {
             if (node_ptr) {
                 val.read(*node_ptr);
             } else {
-                if (aux_root_) {
-                    aux_root_->get(key, val);
+                // if (aux_root_) {
+                //     aux_root_->get(key, val);
+                // }
+
+                for (auto ar = aux_roots_.rbegin(); ar != aux_roots_.rend(); ++ar) {
+                    (*ar)->get(key, val);
                 }
             }
         }
@@ -52,8 +59,12 @@ namespace utopia {
             if (node_ptr) {
                 lambda(*node_ptr);
             } else {
-                if (aux_root_) {
-                    aux_root_->get(key, lambda);
+                // if (aux_root_) {
+                //     aux_root_->get(key, lambda);
+                // }
+
+                for (auto ar = aux_roots_.rbegin(); ar != aux_roots_.rend(); ++ar) {
+                    (*ar)->get(key, lambda);
                 }
             }
         }
@@ -63,9 +74,13 @@ namespace utopia {
                 lambda(*n.second);
             }
 
-            if (aux_root_) {
-                aux_root_->get_all(lambda);
+            for (auto ar = aux_roots_.rbegin(); ar != aux_roots_.rend(); ++ar) {
+                (*ar)->get_all(lambda);
             }
+
+            // if (aux_root_) {
+            //     aux_root_->get_all(lambda);
+            // }
         }
 
         void get(std::vector<std::shared_ptr<IConvertible>> &values) override {
@@ -97,18 +112,35 @@ namespace utopia {
 
         inline void set(const std::string &key, const int &val) { aux_set(key, val); }
 
+        inline void set(const std::string &key, const long &val) { aux_set(key, val); }
+
+        inline void set(const std::string &key, const long long &val) { aux_set(key, val); }
+
         inline void set(const std::string &key, const char *val) { aux_set(key, std::string(val)); }
 
         inline void set(const std::string &key, const std::string &val) { aux_set(key, val); }
 
-        inline void set(const std::string &key, std::shared_ptr<Input> &in) { nodes_[key] = in; }
+        inline void set(const std::string &key, const std::shared_ptr<Input> &in) { nodes_[key] = in; }
 
         void describe(std::ostream &os) const { aux_describe(os, 0); }
+
+        inline InputParameters() {}
+        InputParameters(InputParameters &&other)
+            : Input(std::move(other)),
+              values_(std::move(other.values_)),
+              nodes_(std::move(other.nodes_)),
+              aux_roots_(std::move(other.aux_roots_)) {}
+
+        inline void add_root(std::unique_ptr<Input> &&root) { aux_roots_.push_back(std::move(root)); }
+        inline void add_node(const std::string &name, std::shared_ptr<Input> &&node) { nodes_[name] = std::move(node); }
+
+        bool key_exists(const std::string &key) const override;
+        bool is_collection() const override;
 
     private:
         std::map<std::string, std::unique_ptr<IConvertible>> values_;
         std::map<std::string, std::shared_ptr<Input>> nodes_;
-        std::unique_ptr<Input> aux_root_;
+        std::vector<std::unique_ptr<Input>> aux_roots_;
 
         template <typename Out>
         void aux_get(const std::string &key, Out &out) const {
@@ -116,8 +148,12 @@ namespace utopia {
 
             if (it != values_.end()) {
                 it->second->get(out);
-            } else if (aux_root_) {
-                aux_root_->get(key, out);
+            } else
+            // if (aux_root_)
+            {
+                for (auto ar = aux_roots_.rbegin(); ar != aux_roots_.rend(); ++ar) {
+                    (*ar)->get(key, out);
+                }
             }
         }
 
@@ -140,6 +176,50 @@ namespace utopia {
             }
         }
     };
+
+    template <class Arg>
+    inline std::pair<std::string, Arg> param(const std::string &key, Arg &&value) {
+        return {key, std::forward<Arg>(value)};
+    }
+
+    inline std::pair<std::string, std::string> param(const std::string &key, const char *value) { return {key, value}; }
+
+    template <class First>
+    inline void param_set(InputParameters &params, std::pair<std::string, First> &&p) {
+        params.set(std::forward<std::string>(p.first), std::forward<First>(p.second));
+    }
+
+    inline void param_set(InputParameters &params, std::pair<std::string, InputParameters> &&p) {
+        params.set(std::move(p.first), std::make_shared<InputParameters>(std::move(p.second)));
+    }
+
+    template <class First>
+    inline void param_append(InputParameters &params, std::pair<std::string, First> &&first) {
+        param_set(params, std::forward<std::pair<std::string, First>>(first));
+    }
+
+    template <class First, class... Args>
+    inline void param_append(InputParameters &params,
+                             std::pair<std::string, First> &&first,
+                             std::pair<std::string, Args> &&... list) {
+        // param_set(params, std::forward<std::string>(first.first), std::forward<First>(first.second));
+        param_set(params, std::forward<std::pair<std::string, First>>(first));
+        param_append(params, std::forward<std::pair<std::string, Args>>(list)...);
+    }
+
+    template <class... Args>
+    inline InputParameters param_list(std::pair<std::string, Args> &&... list) {
+        InputParameters ret;
+        param_append(ret, std::forward<std::pair<std::string, Args>>(list)...);
+        return ret;
+    }
+
+    template <class Arg>
+    inline InputParameters param_list(std::pair<std::string, Arg> &&p) {
+        InputParameters ret;
+        param_set(ret, std::forward<std::pair<std::string, Arg>>(p));
+        return ret;
+    }
 }  // namespace utopia
 
 #endif  // UTOPIA_INPUT_PARAMETERS_HPP

@@ -19,8 +19,8 @@ namespace utopia {
 
     void AppRunner::verbose(const bool val) { AppRegistry::instance().verbose(val); }
 
-    int AppRunner::run(const std::string &name, Input &in) const {
-        return AppWithInputRegistry::instance().apply(name, in);
+    int AppRunner::run(const std::string &name, const std::string &backend, Input &in) const {
+        return AppWithInputRegistry::instance().apply_with_backend(name, backend, in);
     }
 
     int AppRunner::run(int argc, char **argv) {
@@ -49,13 +49,16 @@ namespace utopia {
         }
 
         InputParameters params;
-        params.init(argc, argv);
+        params.init(argc, argv, AppRegistry::instance().verbose());
 
         std::string app_name = "";
         params.get("app", app_name);
 
+        std::string backend = "";
+        params.get("backend", backend);
+
         // try to run with parameters
-        if ((err = run(app_name, params)) != 0) {
+        if ((err = run(app_name, backend, params)) != 0) {
             // try to run without. parameters
             if ((err = run({app_name})) != 0) {
                 std::cerr << "[Error] no app with name " << app_name << std::endl;
@@ -66,12 +69,12 @@ namespace utopia {
         return err;
     }
 
-    int AppRunner::run(const std::vector<std::string> &apps) const {
+    int AppRunner::run(const std::vector<std::string> &apps, const std::string &backend) const {
         auto &tr = AppRegistry::instance();
         int error_code = 0;
         for (const auto &t : apps) {
             int temp = 0;
-            if ((temp = tr.run(t)) != 0) {
+            if ((temp = tr.run(t, backend)) != 0) {
                 error_code = temp;
             }
         }
@@ -80,7 +83,7 @@ namespace utopia {
         InputParameters empty;
         for (const auto &t : apps) {
             int temp = 0;
-            if ((temp = awi.apply(t, empty)) != 0) {
+            if ((temp = awi.apply_with_backend(t, backend, empty)) != 0) {
                 error_code = temp;
             }
         }

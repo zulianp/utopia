@@ -124,13 +124,15 @@ namespace utopia {
         using Super::Super;
         using MatrixLayout = typename Traits<PetscMatrix>::MatrixLayout;
         using IndexArray = typename Traits<PetscMatrix>::IndexArray;
+        using ScalarArray = typename Traits<PetscMatrix>::ScalarArray;
 
         ////////////////////////////////////////////////////////////////////
         ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
         ////////////////////////////////////////////////////////////////////
         void init_empty(const PetscCommunicator &comm) { wrapper_ = std::make_shared<PetscMatrixMemory>(comm.get()); }
 
-        // nvcc has problems with a default argument for PetscMatrix(const PetscCommunicator &comm), so we trick it by forwarding the default constructor to the constructor with the default argument
+        // nvcc has problems with a default argument for PetscMatrix(const PetscCommunicator &comm), so we trick it by
+        // forwarding the default constructor to the constructor with the default argument
         PetscMatrix() : PetscMatrix(PetscCommunicator::get_default()) {}
         PetscMatrix(const PetscCommunicator &comm /*= PetscCommunicator::get_default() */) : comm_(comm) {
             init_empty(comm);
@@ -225,6 +227,14 @@ namespace utopia {
 
         inline void c_set(const SizeType &i, const SizeType &j, const Scalar &value) override {
             check_error(MatSetValue(implementation(), i, j, value, INSERT_VALUES));
+        }
+
+        inline void c_set_block(const SizeType &i, const SizeType &j, const Scalar *block) {
+            check_error(MatSetValuesBlocked(implementation(), 1, &i, 1, &j, block, INSERT_VALUES));
+        }
+
+        inline void c_add_block(const SizeType &i, const SizeType &j, const Scalar *block) {
+            check_error(MatSetValuesBlocked(implementation(), 1, &i, 1, &j, block, ADD_VALUES));
         }
 
         inline void c_add(const SizeType &i, const SizeType &j, const Scalar &value) override {
@@ -335,6 +345,26 @@ namespace utopia {
                        o_nnz);
         }
 
+        void crs(const MatrixLayout &layout,
+                 const IndexArray &row_ptr,
+                 const IndexArray &col_idx,
+                 const ScalarArray &values);
+
+        inline void block_sparse(const MatrixLayout &layout,
+                                 const IndexArray &d_nnz,
+                                 const IndexArray &o_nnz,
+                                 const SizeType block_size) {
+            comm_ = layout.comm();
+            mat_baij_init(comm().get(),
+                          layout.local_size(0),
+                          layout.local_size(1),
+                          layout.size(0),
+                          layout.size(1),
+                          d_nnz,
+                          o_nnz,
+                          block_size);
+        }
+
         void identity(const Scalar &diag = 1.0);
 
         inline void identity(const MatrixLayout &layout, const Scalar &diag = 1.0) override {
@@ -364,6 +394,9 @@ namespace utopia {
                                 layout.size(1),
                                 diag);
         }
+
+        void convert_to_scalar_matrix();
+        void convert_to_scalar_matrix(PetscMatrix &scalar_matrix);
 
         // void identity(const Scalar &diag = 1.0);
 
@@ -457,6 +490,7 @@ namespace utopia {
         void transform(const Reciprocal<Scalar> &op) override;
 
         void transform(std::function<Scalar(const Scalar &)> op);
+        void transform(std::function<Scalar(const SizeType &, const SizeType &, const Scalar &)> op);
 
         // helper
         template <class F>
@@ -656,6 +690,19 @@ namespace utopia {
                                      ADD_VALUES));
         }
 
+        template <class Index, class Values>
+        void add_matrix_blocked(const Index &rows, const Index &cols, const Values &values) {
+            // assert(rows.size() * cols.size() == values.size());
+
+            check_error(MatSetValuesBlocked(raw_type(),
+                                            static_cast<PetscInt>(rows.size()),
+                                            &rows[0],
+                                            static_cast<PetscInt>(cols.size()),
+                                            &cols[0],
+                                            &values[0],
+                                            ADD_VALUES));
+        }
+
         void add_matrix(const std::vector<SizeType> &rows,
                         const std::vector<SizeType> &cols,
                         const std::vector<Scalar> &values);
@@ -715,6 +762,7 @@ namespace utopia {
 
         void row_sum(PetscVector &col) const;
         void row_max(PetscVector &col) const;
+        void row_abs_max(PetscVector &col) const;
         void row_min(PetscVector &col) const;
 
         void col_sum(PetscVector &col) const;
@@ -741,6 +789,7 @@ namespace utopia {
         void col(const SizeType id, PetscVector &result) const;
 
         inline void shift_diag(const Scalar factor) { check_error(MatShift(implementation(), factor)); }
+        void set_diag(const PetscVector &d);
 
         void shift_diag(const PetscVector &d);
         void dense_init_diag(MatType dense_type, const PetscVector &diag);
@@ -814,6 +863,15 @@ namespace utopia {
                            SizeType o_nnz,
                            SizeType block_size);
 
+        void mat_baij_init(MPI_Comm comm,
+                           SizeType rows_local,
+                           SizeType cols_local,
+                           SizeType rows_global,
+                           SizeType cols_global,
+                           const IndexArray &d_nnz,
+                           const IndexArray &o_nnz,
+                           SizeType block_size);
+
         void nest(MPI_Comm comm,
                   SizeType nr,
                   const IS is_row[],
@@ -836,6 +894,7 @@ namespace utopia {
 
         void inverse(PetscMatrix &result) const;
 
+        void convert_to_mat_baij(const PetscInt block_size, PetscMatrix &output);
         void convert_to_mat_baij(const SizeType block_size);
 
         bool is_initialized_as(MPI_Comm comm,
@@ -848,6 +907,10 @@ namespace utopia {
         bool has_type(MatType type) const;
         bool same_type(const PetscMatrix &other) const;
         bool is_cuda() const;
+        bool is_assembled() const;
+
+        static bool is_block(Mat mat);
+        bool is_block() const;
 
         void convert_from(const Mat &mat);
         void convert_to(Mat &mat) const;

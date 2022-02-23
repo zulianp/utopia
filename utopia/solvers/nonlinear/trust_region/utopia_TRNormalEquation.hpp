@@ -8,8 +8,8 @@ namespace utopia {
     template <class Matrix, class Vector>
     /**
      * @brief      Trust region solver for Normal Equations.
-     *             Solution process is not very different from one in TrustRegionBase class, but it is specialized for
-     * normal eq.
+     *             Solution process is not very different from one in
+     * TrustRegionBase class, but it is specialized for normal eq.
      */
     class LeastSquaresTrustRegion : public NonLinearLeastSquaresSolver<Matrix, Vector>, public TrustRegionBase<Vector> {
         using Scalar = typename utopia::Traits<Vector>::Scalar;
@@ -174,8 +174,8 @@ namespace utopia {
     protected:
         /**
          * @brief      update of tr radius, specialized for solution in L2 norm.
-         *             In case u need to solve eq in || \cdot ||_{L_{\infty}}, there is need to change the 1st if
-         * statement.
+         *             In case u need to solve eq in || \cdot ||_{L_{\infty}}, there
+         * is need to change the 1st if statement.
          *
          * @param[in]  rho    actual/predicted reduction
          * @param      delta  new radius

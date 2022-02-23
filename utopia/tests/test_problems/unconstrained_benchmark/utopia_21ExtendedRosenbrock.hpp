@@ -3,6 +3,7 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Core.hpp"
+#include "utopia_Layout.hpp"
 #include "utopia_TestFunctions.hpp"
 
 namespace utopia {
@@ -26,8 +27,9 @@ namespace utopia {
             {
                 auto x_view = view_device(x_init_);
 
-                parallel_for(range_device(x_init_),
-                             UTOPIA_LAMBDA(const SizeType &i) { x_view.set(i, (i % 2 == 1) ? -1.2 : 1.0); });
+                parallel_for(
+                    range_device(x_init_),
+                    UTOPIA_LAMBDA(const SizeType &i) { x_view.set(i, (i % 2 == 1) ? -1.2 : 1.0); });
             }
 
             x_exact_.values(layout(x_init_), 1.0);
@@ -206,7 +208,14 @@ namespace utopia {
 
         void init_perm(const Vector &x) {
             auto vl = layout(x);
-            auto mat_layout = layout(vl.comm(), 2, vl.local_size(), 2 * vl.comm().size(), vl.size());
+
+            const SizeType rows_local = 2; 
+            const SizeType cols_local =  vl.local_size(); 
+            
+            const SizeType rows_global = 2 * vl.comm().size(); 
+            const SizeType cols_global = vl.size(); 
+
+            auto mat_layout = layout(vl.comm(), rows_local, cols_local, rows_global, cols_global);
 
             auto r = range(x);
             // long n = local_size(x).get(0);

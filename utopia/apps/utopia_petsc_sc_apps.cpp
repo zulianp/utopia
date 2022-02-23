@@ -14,6 +14,7 @@
 #include "utopia_LinearElasticityView.hpp"
 #include "utopia_MPITimeStatistics.hpp"
 #include "utopia_MassMatrixView.hpp"
+#include "utopia_Newton.hpp"
 #include "utopia_PhaseField.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
@@ -33,6 +34,9 @@
 #include "utopia_petsc_FE.hpp"
 
 #endif  // UTOPIA_WITH_PETSC
+
+// FIXME
+#ifndef USE_SIMD_ASSEMBLY
 
 #include <cmath>
 
@@ -471,3 +475,5 @@ namespace utopia {
     UTOPIA_REGISTER_APP(petsc_sample);
 
 }  // namespace utopia
+
+#endif  // USE_SIMD_ASSEMBLY

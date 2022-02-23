@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+# cmake_minimum_required(VERSION 2.8)
 
 if(MOONOLITH_DIR OR DEFINED ENV{MOONOLITH_DIR})
 
@@ -13,6 +13,18 @@ if(MOONOLITH_DIR OR DEFINED ENV{MOONOLITH_DIR})
 
     if(ParMoonolith_FOUND)
         message(STATUS "Found ParMoonolith by config file")
+        get_target_property(MOONOLITH_INCLUDES ParMoonolith::par_moonolith
+                            INTERFACE_INCLUDE_DIRECTORIES)
+        get_target_property(MOONOLITH_LIBRARIES ParMoonolith::par_moonolith
+                            IMPORTED_LOCATION)
+        if(NOT MOONOLITH_LIBRARIES)
+            get_target_property(MOONOLITH_LIBRARIES ParMoonolith::par_moonolith
+                                IMPORTED_LOCATION_RELEASE)
+        endif()
+        if(NOT MOONOLITH_LIBRARIES)
+            get_target_property(MOONOLITH_LIBRARIES ParMoonolith::par_moonolith
+                                IMPORTED_LOCATION_DEBUG)
+        endif()
         return()
     else()
         message(FATAL_ERROR "Could not find ParMoonolith by config file")
@@ -61,4 +73,8 @@ if(NOT MOONOLITH_FOUND OR FORCE_INSTALL_MOONOLITH)
     FetchContent_MakeAvailable(moonolith)
 
     add_library(ParMoonolith::par_moonolith ALIAS par_moonolith)
+
+    list(APPEND UTOPIA_FE_LIBRARIES_TRAILING "par_moonolith")
+    set(UTOPIA_FE_LIBRARIES_TRAILING ${UTOPIA_FE_LIBRARIES_TRAILING} PARENT_SCOPE)
+
 endif()

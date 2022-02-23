@@ -6,6 +6,7 @@
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Input.hpp"
 #include "utopia_Memory.hpp"
+#include "utopia_Monitor.hpp"
 #include "utopia_Operator.hpp"
 #include "utopia_StoreAs.hpp"
 #include "utopia_Traits.hpp"
@@ -15,7 +16,8 @@
 #include <memory>
 #include <utility>
 
-// #define UTOPIA_W_VECTOR(Tensor) utopia::Wrapper<typename utopia::Traits<Tensor>::Vector, 1>
+// #define UTOPIA_W_VECTOR(Tensor) utopia::Wrapper<typename
+// utopia::Traits<Tensor>::Vector, 1>
 
 namespace utopia {
 

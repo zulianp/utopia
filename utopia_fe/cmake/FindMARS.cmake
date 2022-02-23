@@ -35,16 +35,37 @@ find_library(MARS_LIBRARIES
      PATH_SUFFIXES lib
  NO_DEFAULT_PATH)
 
-# find_path(MARS_CONFIG_FILE_PATH
-#   NAMES "mars_config.cmake"
-#   HINTS
-#     $ENV{MARS_DIR}
-#     ${MARS_DIR}
-#     ${MARS_INCLUDES}/..
-#     $ENV{MOONOLITH_ROOT}/utopia/build
-#     PATH_SUFFIXES config
-#   NO_DEFAULT_PATH)
+find_path(MARS_LIB_PATH
+  NAMES "libmars.a"
+  HINTS
+    $ENV{MARS_DIR}
+    ${MARS_DIR}
+    ${MARS_INCLUDES}/..
+    $ENV{MOONOLITH_ROOT}/utopia/build
+    PATH_SUFFIXES lib
+  NO_DEFAULT_PATH)
 
+
+if(MARS_LIBRARIES)
+
+list(APPEND MARS_LIBRARIES
+  ${MARS_LIB_PATH}/libmars_core.a
+  ${MARS_LIB_PATH}/libmars_mpi.a
+)
+
+if(UTOPIA_ENABLE_MARS_VTK)
+  list(APPEND MARS_LIBRARIES
+    ${MARS_LIB_PATH}/libmars_vtk.a
+  )
+endif()
+
+if(UTOPIA_ENABLE_MARS_ADIOS2)
+  list(APPEND MARS_LIBRARIES
+    ${MARS_LIB_PATH}/libmars_adios2.a
+  )
+endif()
+
+endif()
 
 
 # if(MARS_CONFIG_FILE_PATH)
@@ -69,6 +90,8 @@ else()
   MESSAGE(STATUS "mars config:  ${MARS_CONFIG_FILE_PATH}")
   MESSAGE(STATUS "---------------------------------------------")
 endif()
+
+
 
 mark_as_advanced(MARS_INCLUDES MARS_LIBRARIES MARS_CONFIG_FILE_PATH)
 

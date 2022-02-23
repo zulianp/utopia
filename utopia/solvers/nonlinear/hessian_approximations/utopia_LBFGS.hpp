@@ -22,7 +22,7 @@ namespace utopia {
               theta_(1.0),
               gamma_(1.0),
               theta_min_(1.0),
-              skip_update_treshold_(1e-12),
+              skip_update_treshold_(1e-15),
               damping_tech_(NOCEDAL),
               scaling_tech_(ADAPTIVE) {}
 
@@ -37,6 +37,15 @@ namespace utopia {
 
             SY_point_wise_.clear();
             YY_point_wise_.clear();
+        }
+
+        SizeType current_m() { return current_m_; }
+
+        bool is_approx_fully_built() {
+            if (current_m_ < m_)
+                return false;
+            else
+                return true;
         }
 
         void initialize(const Vector &x_k, const Vector &g) override {
@@ -131,11 +140,15 @@ namespace utopia {
 
         inline LBFGS<Vector> *clone() const override { return new LBFGS<Vector>(*this); }
 
+        // TODO:: make faster version for when only inverse is needed
         bool update(const Vector &s, const Vector &y, const Vector & /*x*/, const Vector & /* g */) override {
             if (!this->initialized()) {
                 utopia_error("BFGS::update: Initialization needs to be done before updating. \n");
                 return false;
             }
+
+            // std::cout << "---- bla ---- \n";
+            // std::cout << "m_ " << m_ << "  \n";
 
             if (m_ == 0) {
                 return true;
@@ -147,7 +160,10 @@ namespace utopia {
             bool skip_update = init_damping(y, s, y_hat_);
             // UTOPIA_NO_ALLOC_END();
 
+            // std::cout << "skip_update: " << skip_update << "  \n";
+
             if (skip_update) {
+                // std::cout << "update skipped! \n";
                 // UTOPIA_NO_ALLOC_BEGIN("LBFGS2");
                 this->init_scaling_factors(y_hat_, s);
                 // std::cout<<"updating..... \n";
@@ -229,6 +245,42 @@ namespace utopia {
                 stp_[i] = dot(S_[i], P_[i]);
             }
 
+            // std::cout << "update_ current_m_: " << current_m_ << "  \n";
+
+            return true;
+        }
+
+        bool replace_at_update_inv(const SizeType &index, const Vector &s, const Vector &y) override {
+            if (!this->initialized()) {
+                utopia_error("L-BFGS::update: Initialization needs to be done before updating. \n");
+                return false;
+            }
+
+            if (index > m_ or index > current_m_) {
+                utopia_error("L-BFGS::update: inndex does not exist  \n");
+                return false;
+            }
+
+            y_hat_ = y;
+
+            bool skip_update = init_damping(y, s, y_hat_);
+
+            if (skip_update) {
+                this->init_scaling_factors(y_hat_, s);
+                return true;
+            }
+
+            Scalar denom = dot(y_hat_, s);
+
+            // replacing stuff
+            Y_[index] = y_hat_;
+            S_[index] = s;
+            rho_[index] = 1. / denom;
+            // yts_[index] = denom;
+
+            // updating the factors...
+            this->init_scaling_factors(y_hat_, s);
+
             return true;
         }
 
@@ -236,6 +288,8 @@ namespace utopia {
             if (!this->initialized()) {
                 utopia_error("utopia::LBFGS::apply_Hinv:: missing initialization... \n");
             }
+
+            // std::cout << "current_m_: " << current_m_ << "  \n";
 
             SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_;
             std::vector<Scalar> alpha_inv(current_memory_size);
@@ -318,6 +372,9 @@ namespace utopia {
 
             SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_;
 
+            // std::cout << "current_memory_size: " << current_memory_size << " \n";
+            // std::cout << "m: " << m_ << "  \n";
+
             this->apply_H0(v, result);
 
             for (auto i = 0; i < current_memory_size; i++) {
@@ -332,7 +389,7 @@ namespace utopia {
 
         void memory_size(const SizeType &m) { m_ = m; }
 
-        SizeType memory_size() const { return m_; }
+        SizeType memory_size() const override { return m_; }
 
         Scalar theta_min() const { return theta_min_; }
 
@@ -476,9 +533,13 @@ namespace utopia {
     private:
         bool init_damping_nocedal(const Vector &y, const Vector &s, Vector &y_hat) {
             bool skip_update = false;
+
+            // std::cout << "dot(y, s): " << dot(y, s) << "  \n";
+
             if (dot(y, s) < skip_update_treshold_) {
                 // if(mpi_world_rank()==0){
-                //     utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n");
+                //     utopia_warning("L-BFGS-B: Curvature condition not satified.
+                //     Skipping update. \n");
                 // }
 
                 skip_update = true;

@@ -6,11 +6,17 @@
 
 namespace utopia {
 
-    template <typename EntryType>
-    class BlasArray final : public Array<EntryType, std::size_t> {
+    template <typename EntryType_>
+    class BlasArray final : public Array<EntryType_, std::size_t> {
     public:
-        using EntryType = EntryType;
+        using EntryType = EntryType_;
         using SizeType = std::size_t;
+        using Iterator = typename std::vector<EntryType>::iterator;
+        using ConstIterator = typename std::vector<EntryType>::const_iterator;
+
+        BlasArray(const SizeType n, const EntryType_ val) : entries_(n, val) {}
+
+        BlasArray() {}
 
         ~BlasArray() {}
 
@@ -32,6 +38,16 @@ namespace utopia {
             return entries_[i];
         }
 
+        inline EntryType &operator[](const SizeType &i) {
+            assert(i < size());
+            return entries_[i];
+        }
+
+        inline const EntryType &operator[](const SizeType &i) const {
+            assert(i < size());
+            return entries_[i];
+        }
+
         // print function
         inline void describe() const override {
             for (auto e : entries_) {
@@ -47,6 +63,16 @@ namespace utopia {
         inline void clear() override { entries_.clear(); }
 
         inline SizeType size() const override { return entries_.size(); }
+
+        void resize(const SizeType size) { entries_.resize(size); }
+
+        inline Iterator begin() { return entries_.begin(); }
+
+        inline ConstIterator begin() const { return entries_.begin(); }
+
+        inline Iterator end() { return entries_.end(); }
+
+        inline ConstIterator end() const { return entries_.end(); }
 
     private:
         std::vector<EntryType> entries_;

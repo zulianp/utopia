@@ -218,6 +218,12 @@ namespace utopia {
         }
 
         void sparse(const MatrixLayout &lo, const SizeType &, const SizeType &) override { dense(lo); }
+
+        template <typename... Args>
+        void sparse(const MatrixLayout &lo, Args &&...) {
+            dense(lo);
+        }
+
         void zeros(const MatrixLayout &lo) { dense(lo); }
 
         void dense(const MatrixLayout &lo, const Scalar &val = 0.0) override {
@@ -368,6 +374,8 @@ namespace utopia {
             cols_ = x.cols_;
             BLASAlgorithms<T>::copy(x.n_elements(), x.ptr(), 1, ptr(), 1);
         }
+
+        inline void same_nnz_pattern_copy(const BlasMatrix &x) { copy(x); }
 
         ///< T>AXPY - y = a*x + y
         inline void axpy(const T &a, const BlasMatrix &x) override {
@@ -735,6 +743,30 @@ namespace utopia {
             }
         }
 
+        inline void shift_diag(const BlasVector &v) {
+            auto n = std::min(rows_, cols_);
+
+            for (SizeType i = 0; i < n; ++i) {
+                ref(i, i) += v.get(i);
+            }
+        }
+
+        inline void set_diag(const BlasVector &v) {
+            auto n = std::min(rows_, cols_);
+
+            for (SizeType i = 0; i < n; ++i) {
+                ref(i, i) = v.get(i);
+            }
+        }
+
+        inline void diag_scale_left(const BlasVector &v) {
+            assert(v.size() == rows_);
+
+            for (SizeType i = 0; i < rows_; ++i) {
+                ref(i, i) *= v.get(i);
+            }
+        }
+
         inline void assign(const Range &row_range, const Range &col_range, const BlasMatrix &block) {
             assert(row_range.valid());
             assert(col_range.valid());
@@ -865,6 +897,16 @@ namespace utopia {
 
                 set(i, i, diag);
             }
+        }
+
+        bool read(const std::string &) {
+            assert(false && "IMPLEMENT ME");
+            return false;
+        }
+
+        bool read(const Path &) {
+            assert(false && "IMPLEMENT ME");
+            return false;
         }
 
         template <class F>

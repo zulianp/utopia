@@ -14,6 +14,7 @@
 #include <TpetraExt_MatrixMatrix_def.hpp>
 #include <Tpetra_RowMatrixTransposer_decl.hpp>
 
+#include <array>
 #include <iterator>
 
 // FIXME
@@ -64,8 +65,13 @@ namespace utopia {
 
     // FIXME make faster version by storing view?
     TpetraMatrix::Scalar TpetraMatrix::get(const SizeType &row, const SizeType &col) const {
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+        CrsMatrixType::local_inds_host_view_type cols;
+        CrsMatrixType::values_host_view_type values;
+#else
         Teuchos::ArrayView<const LocalSizeType> cols;
         Teuchos::ArrayView<const Scalar> values;
+#endif
 
         assert(implementation().isLocallyIndexed());
 
@@ -74,15 +80,15 @@ namespace utopia {
         auto rr = row_range();
         implementation().getLocalRowView(row - rr.begin(), cols, values);
 
-        auto it = std::lower_bound(std::begin(cols), std::end(cols), local_col);
+        auto it = std::lower_bound(cols.data(), cols.data() + cols.size(), local_col);
 
-        if (it == std::end(cols)) {
+        if (it == cols.data() + cols.size()) {
             return 0.;
         }
 
-        assert(it != std::end(cols));
+        // assert(it != std::end(cols));
 
-        std::size_t index = std::distance(std::begin(cols), it);
+        std::size_t index = std::distance(cols.data(), it);
 
         assert(cols[index] == local_col);
 
@@ -162,15 +168,23 @@ namespace utopia {
             UTOPIA_REPORT_ALLOC("TpetraMatrix::multiply");
             result.mat_ = Teuchos::rcp(new CrsMatrixType(implementation().getDomainMap(),
                                                          // col_map,
-                                                         0,
-                                                         Tpetra::StaticProfile));
+                                                         0
+#if (TRILINOS_MAJOR_MINOR_VERSION < 130100 || !UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+                                                         ,
+                                                         Tpetra::StaticProfile
+#endif
+                                                         ));
 
         } else {
             UTOPIA_REPORT_ALLOC("TpetraMatrix::multiply");
             result.mat_ = Teuchos::rcp(new CrsMatrixType(implementation().getRowMap(),
                                                          // col_map,
-                                                         0,
-                                                         Tpetra::StaticProfile));
+                                                         0
+#if (TRILINOS_MAJOR_MINOR_VERSION < 130100 || !UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+                                                         ,
+                                                         Tpetra::StaticProfile
+#endif
+                                                         ));
         }
 
         result.owner_ = true;
@@ -193,6 +207,8 @@ namespace utopia {
             assert(false);
         }
     }
+
+    bool TpetraMatrix::is_assembled() const { return raw_type()->isFillComplete(); }
 
     void TpetraMatrix::transpose(TpetraMatrix &mat) const {
         try {
@@ -267,7 +283,14 @@ namespace utopia {
         // mat_.reset(new CrsMatrixType(row_map, col_map, nnz_x_row, Tpetra::StaticProfile));
 
         UTOPIA_REPORT_ALLOC("TpetraMatrix::crs_init");
-        mat_.reset(new CrsMatrixType(row_map, nnz_x_row, Tpetra::StaticProfile));
+        mat_.reset(new CrsMatrixType(row_map,
+                                     nnz_x_row
+#if (TRILINOS_MAJOR_MINOR_VERSION < 130100 || !UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+                                     ,
+                                     Tpetra::StaticProfile
+#endif
+
+                                     ));
         owner_ = true;
 
         init_ = std::make_shared<InitStructs>();
@@ -545,7 +568,12 @@ namespace utopia {
 
         auto col_map = impl.getColMap()->getLocalMap();
         auto row_map = impl.getRowMap()->getLocalMap();
-        auto local_mat = impl.getLocalMatrix();
+
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+        auto local_mat = raw_type()->getLocalMatrixDevice();
+#else
+        auto local_mat = raw_type()->getLocalMatrix();
+#endif
 
         for (auto i_global : index) {
             if (!rr.inside(i_global)) {
@@ -681,8 +709,18 @@ namespace utopia {
     void TpetraMatrix::shift_diag(const TpetraVector &d) {
         auto d_view = const_view_device(d);
 
+        // FIXME?
         this->transform_ijv(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &v)->Scalar {
             return (i == j) ? (v + d_view.get(i)) : v;
+        });
+    }
+
+    void TpetraMatrix::set_diag(const TpetraVector &d) {
+        auto d_view = const_view_device(d);
+
+        // FIXME?
+        this->transform_ijv(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &v)->Scalar {
+            return (i == j) ? (d_view.get(i)) : v;
         });
     }
 

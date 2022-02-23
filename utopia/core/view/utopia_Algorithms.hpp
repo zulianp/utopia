@@ -2,6 +2,7 @@
 #define UTOPIA_ALGORITHMS_HPP
 
 #include "utopia_Base.hpp"
+#include "utopia_Epsilon.hpp"
 #include "utopia_ViewForwardDeclarations.hpp"
 
 #ifdef UTOPIA_WITH_TRILINOS
@@ -12,12 +13,16 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#endif
+#endif  // UTOPIA_WITH_TRILINOS
+
+#ifdef UTOPIA_WITH_VC
+#include "utopia_vc_Base.hpp"
+#endif  // UTOPIA_WITH_VC
 
 namespace utopia {
     namespace device {
 
-#ifdef KOKKOS_INLINE_FUNCTION
+#ifdef UTOPIA_WITH_TRILINOS
 
         template <typename T>
         UTOPIA_INLINE_FUNCTION constexpr T isnan(const T &v) {
@@ -88,8 +93,8 @@ namespace utopia {
         }
 
         template <typename T>
-        UTOPIA_INLINE_FUNCTION constexpr T epsilon() {
-            return Kokkos::Details::ArithTraits<T>::epsilon();
+        KOKKOS_INLINE_FUNCTION T log(const T &value) {
+            return Kokkos::Details::ArithTraits<T>::log(value);
         }
 
         template <typename T>
@@ -173,13 +178,13 @@ namespace utopia {
         }
 
         template <typename T>
-        inline void swap(T &left, T &right) {
-            std::swap(left, right);
+        inline T log(const T &value) {
+            return std::log(value);
         }
 
         template <typename T>
-        inline T epsilon() {
-            return std::numeric_limits<T>::epsilon();
+        inline void swap(T &left, T &right) {
+            std::swap(left, right);
         }
 
         template <typename T>
@@ -256,7 +261,8 @@ namespace utopia {
         class Extent {
         public:
             template <typename S>
-            UTOPIA_INLINE_FUNCTION static auto apply(const NDimArray &in, const S &s) -> decltype(in.extent(s)) {
+            UTOPIA_INLINE_FUNCTION static constexpr auto apply(const NDimArray &in, const S &s)
+                -> decltype(in.extent(s)) {
                 return in.extent(s);
             }
         };

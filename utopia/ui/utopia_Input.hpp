@@ -50,7 +50,9 @@ namespace utopia {
         virtual SizeType size() const = 0;
         virtual void get(std::vector<std::shared_ptr<IConvertible>> &values) = 0;
         virtual void get_all(std::function<void(Input &)> lambda) = 0;
+        virtual bool is_collection() const = 0;
 
+        virtual void get(const std::string &key, Path &val) { get(key, val.raw_type()); }
         virtual void get(const std::string &key, bool &val) = 0;
         virtual void get(const std::string &key, double &val) = 0;
         virtual void get(const std::string &key, int &val) = 0;
@@ -64,7 +66,64 @@ namespace utopia {
         virtual void get(const std::string &key, std::string &val) = 0;
         virtual void get(const std::string &key, Configurable &val) = 0;
         virtual void get(const std::string &key, std::function<void(Input &)> lambda) = 0;
+
+        virtual bool key_exists(const std::string &key) const = 0;
+
+        class Attribute {
+        public:
+            virtual ~Attribute() = default;
+
+            virtual void key_exists() const {}
+            virtual void key_does_not_exist() const {}
+        };
+
+        class KeyDeprecated final : public Attribute {
+        public:
+            KeyDeprecated(std::string deprecated_key, std::string new_key)
+                : deprecated_key_(std::move(deprecated_key)), new_key_(std::move(new_key)) {}
+
+            void key_exists() const override;
+            std::string deprecated_key_;
+            std::string new_key_;
+        };
+
+        class KeyRequired final : public Attribute {
+        public:
+            KeyRequired(std::string key) : key_(std::move(key)) {}
+
+            void key_does_not_exist() const override;
+
+            std::string key_;
+        };
+
+        template <typename T>
+        void get(const std::string &key, T &val, const Attribute &attribute) {
+            if (key_exists(key)) {
+                attribute.key_exists();
+                get(key, val);
+            } else {
+                attribute.key_does_not_exist();
+            }
+        }
+
+        template <typename T>
+        void get_deprecated(const std::string &old_key, const std::string &new_key, T &val) {
+            get(old_key, val, KeyDeprecated(old_key, new_key));
+        }
+
+        template <typename T>
+        void require(const std::string &key, T &val) {
+            get(key, val, KeyRequired(key));
+        }
+
+        void require(const std::string &key, std::function<void(Input &)> lambda) {
+            get(key, lambda, KeyRequired(key));
+        }
+
         virtual bool good() const = 0;
+
+        Input &operator=(Input &&) = default;
+        Input(Input &&) = default;
 
     private:
         Input(const Input &) = default;

@@ -98,7 +98,8 @@ namespace utopia {
 
             if (nom / denom < this->num_tol() || !std::isfinite(denom) || !std::isfinite(nom)) {
                 // if(mpi_world_rank()==0 ){
-                //     utopia_warning("L-SR1: Curvature condition not satified. Skipping update. \n");
+                //     utopia_warning("L-SR1: Curvature condition not satified. Skipping
+                //     update. \n");
                 // }
 
                 return false;
@@ -159,9 +160,9 @@ namespace utopia {
             return true;
         }
 
-        void set_memory_size(const SizeType &m) { m_ = m; }
+        void memory_size(const SizeType &m) { m_ = m; }
 
-        SizeType get_memory_size() const { return m_; }
+        SizeType memory_size() const override { return m_; }
 
         void read(Input &in) override {
             HessianApproximation<Vector>::read(in);

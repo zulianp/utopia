@@ -9,7 +9,8 @@
 namespace utopia {
 
     void PetscVector::shift(const Scalar &x) {
-        transform_values([x](const Scalar &val) -> Scalar { return x + val; });
+        // transform_values([x](const Scalar &val) -> Scalar { return x + val; });
+        check_error(VecShift(implementation(), x));
     }
 
     void PetscVector::transform(const Sqrt &op) { op_transform(op); }
@@ -283,6 +284,41 @@ namespace utopia {
         VecScatterDestroy(&scatter_context);
     }
 
+    PetscInt PetscVector::block_size() const {
+        PetscInt block_size;
+        check_error(VecGetBlockSize(this->raw_type(), &block_size));
+        return block_size;
+    }
+    void PetscVector::set_block_size(const PetscInt block_size) {
+        check_error(VecSetBlockSize(raw_type(), block_size));
+    }
+
+    void PetscVector::blocked_select(const PetscIndexSet &index, PetscVector &result, PetscInt block_size) const {
+        MPI_Comm comm = communicator();
+        IS is_in;
+        VecScatter scatter_context;
+
+        if (block_size == -1) {
+            VecGetBlockSize(this->raw_type(), &block_size);
+        }
+
+        assert(block_size >= 1);
+
+        result.repurpose(comm, this->type(), index.size() * block_size, PETSC_DETERMINE);
+        VecSetBlockSize(result.raw_type(), block_size);
+
+        ISCreateBlock(comm, block_size, index.size(), &index[0], PETSC_USE_POINTER, &is_in);
+        // (comm, index.size(), &index[0], PETSC_USE_POINTER, &is_in);
+
+        UtopiaVecScatterCreate(implementation(), is_in, result.implementation(), nullptr, &scatter_context);
+
+        VecScatterBegin(scatter_context, implementation(), result.implementation(), INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterEnd(scatter_context, implementation(), result.implementation(), INSERT_VALUES, SCATTER_FORWARD);
+
+        ISDestroy(&is_in);
+        VecScatterDestroy(&scatter_context);
+    }
+
     void PetscVector::copy_from(Vec vec) {
         destroy();
 
@@ -529,6 +565,7 @@ namespace utopia {
             // assert(same_type(other) && "TYPE " );
             // assert(this->has_ghosts() && "GHOST" );
 
+            // maybe we should check this only in parallel
             assert((same_type(other) || this->has_ghosts()) &&
                    "Inconsistent vector types. Handle types properly before copying");
             assert(local_size() == other.local_size() &&
@@ -564,6 +601,13 @@ namespace utopia {
 
         check_error(VecAXPY(implementation(), alpha, x.implementation()));
     }
+
+    // void PetscVector::axpy(const Scalar &alpha, const Scalar &x) {
+    //     assert(is_consistent());
+    //     auto val = alpha * x;
+
+    //     check_error(VecShift(implementation(), val));
+    // }
 
     PetscVector::SizeType PetscVector::amax() const {
         SizeType idx = 0;

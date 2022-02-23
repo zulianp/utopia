@@ -152,7 +152,8 @@ namespace utopia {
                        (!this->has_upper_bound() && this->has_lower_bound())) {
                 single_bound_solve(A, b, x);
             } else {
-                std::cerr << "[Error] If you do not have constraints, use something else..... \n";
+                std::cerr << "[Error] If you do not have constraints, use something "
+                             "else..... \n";
             }
 
             return true;
@@ -253,7 +254,8 @@ namespace utopia {
             return ret;
         }
 
-        // We separate cases with 1 and 2 constraints in order to avoid usless computations in single constraint case
+        // We separate cases with 1 and 2 constraints in order to avoid usless
+        // computations in single constraint case
         bool single_bound_solve(const Matrix &A, const Vector &b, Vector &x_new) {
             bool is_upper_bound = this->has_upper_bound();
 

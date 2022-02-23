@@ -24,29 +24,16 @@ namespace utopia {
         using Layout = typename Traits<Vector>::Layout;
 
     public:
-        Backtracking()
-            : LSStrategy<Vector>(),
-              c2_(1e-8)
+        Backtracking() : LSStrategy<Vector>() { this->c2(1e-8); }
 
-        {}
+        void read(Input &in) override { LSStrategy<Vector>::read(in); }
 
-        void read(Input &in) override {
-            LSStrategy<Vector>::read(in);
-            in.get("c2", c2_);
-        }
-
-        void print_usage(std::ostream &os) const override {
-            LSStrategy<Vector>::print_usage(os);
-            this->print_param_usage(os, "c2", "double", "Constant used for Wolfe conditions.", "1e-8");
-        }
-
-        void c2(const Scalar &c) { c2_ = c; }
-
-        Scalar c2() const { return c2_; }
+        void print_usage(std::ostream &os) const override { LSStrategy<Vector>::print_usage(os); }
 
         /**
-         * @brief      Get the alpha_k on given iterate. We are using quadratic and qubic interpolation as part of
-         * backtracking. For checking decrease conditions, we are using Wolfe conditions.
+         * @brief      Get the alpha_k on given iterate. We are using quadratic and
+         * qubic interpolation as part of backtracking. For checking decrease
+         * conditions, we are using Wolfe conditions.
          *
          * @param      fun      The fun with eval.
          * @param[in]  g        The gradient.
@@ -83,7 +70,7 @@ namespace utopia {
             if (dg >= 0.0) {
                 if (mpi_world_rank() == 0) {
                     std::cerr << "utopia::LS::backtracking:: d is not descent direction \n";
-                    assert(false);
+                    return false;
                 }
 
                 alpha = 0.0;
@@ -101,7 +88,7 @@ namespace utopia {
 
             if (this->verbose()) PrintInfo::print_init("BACKTRACKING_LS_INNER_ITERATIONS", {" it. ", "|| alpha ||"});
 
-            while (alpha > c2_ && it < this->max_it()) {
+            while (alpha > this->c2() && it < this->max_it()) {
                 UTOPIA_NO_ALLOC_BEGIN("Backtracking 2");
                 x_k = x + alpha * d;
                 fun.value(x_k, f);
@@ -174,7 +161,6 @@ namespace utopia {
         }
 
     private:
-        Scalar c2_; /*!< Constant for Wolfe conditions \f$ c_1 \in (0,1),   c_1 = 10^{-4} \f$.  */
         Vector x_k;
     };
 }  // namespace utopia

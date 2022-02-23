@@ -11,6 +11,7 @@
 #include "utopia_blas_eigensolvers.hpp"
 #include "utopia_blas_solvers.hpp"
 
+#include "utopia_blas_Array.hpp"
 #include "utopia_blas_Eval.hpp"
 #include "utopia_blas_RowView.hpp"
 

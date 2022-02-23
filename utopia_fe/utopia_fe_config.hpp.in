@@ -6,6 +6,12 @@
 #cmakedefine UTOPIA_WITH_BOOST
 #cmakedefine UTOPIA_WITH_INTREPID2
 #cmakedefine UTOPIA_WITH_NEW_TRANSFER
+#cmakedefine UTOPIA_WITH_LIBMESH
+#cmakedefine UTOPIA_WITH_STK
+#cmakedefine UTOPIA_WITH_MOONOLITH
+#cmakedefine UTOPIA_WITH_MARS
+#cmakedefine UTOPIA_WITH_VTK
+#cmakedefine UTOPIA_WITH_PETSCDM
 
 #ifdef UTOPIA_WITH_TRILINOS
 #cmakedefine UTOPIA_WITH_TRILINOS_ALGEBRA

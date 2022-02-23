@@ -17,6 +17,8 @@ namespace utopia {
 
         void run() {
             UTOPIA_RUN_TEST(petsc_cg);
+            UTOPIA_RUN_TEST(petsc_cg_operator);
+
             UTOPIA_RUN_TEST(petsc_bicgstab);
             UTOPIA_RUN_TEST(petsc_gmres);
 // FIXME make it work also without mumps
@@ -50,11 +52,60 @@ namespace utopia {
             cg.rtol(1e-6);
             cg.atol(1e-6);
             cg.max_it(500);
-            // cg.verbose(true);
+            cg.verbose(false);
 
             x = rhs;
             cg.update(std::make_shared<PetscMatrix>(A));
             cg.apply(rhs, x);
+
+            utopia_test_assert(approxeq(rhs, A * x, 1e-5));
+        }
+
+        void petsc_cg_operator() {
+            Poisson1D<PetscMatrix, PetscVector> fun(100, 2);
+            PetscVector x = fun.initial_guess();
+            PetscVector rhs;
+            fun.get_rhs(rhs);
+            PetscMatrix A;
+            fun.hessian(x, A);
+            rhs *= 0.00001;
+
+            KSP_MF<PetscMatrix, PetscVector> cg;
+
+            // FIXME
+            cg.pc_type("none");
+            cg.rtol(1e-6);
+            cg.atol(1e-6);
+            cg.max_it(500);
+            cg.verbose(false);
+
+            // stupid, as Matrix is already operator, but for sake of testing, lets do it...
+            class CustomOperator final : public Operator<PetscVector> {
+            public:
+                using Communicator = typename utopia::Traits<PetscVector>::Communicator;
+                CustomOperator(const PetscMatrix &A) : A_(A) {}
+
+                bool apply(const PetscVector &v, PetscVector &result) const override {
+                    result = A_ * v;
+                    return true;
+                }
+                Size size() const override { return Size(A_.size()); }
+                Size local_size() const override { return Size(A_.local_size()); }
+
+                Communicator &comm() override { return A_.comm(); }
+                const Communicator &comm() const override { return A_.comm(); }
+
+            private:
+                PetscMatrix A_;
+            };
+
+            auto matrix_operator = CustomOperator(A);
+            x = rhs;
+
+            // test also with our preconditioner
+            // cg.set_preconditioner(std::make_shared<IdentityPreconditioner<PetscVector>>());
+            cg.ksp_type("cg");
+            cg.solve(matrix_operator, rhs, x);
 
             utopia_test_assert(approxeq(rhs, A * x, 1e-5));
         }
@@ -77,8 +128,9 @@ namespace utopia {
 
             Multigrid<PetscMatrix, PetscVector> multigrid(
                 smoother, std::make_shared<Factorization<PetscMatrix, PetscVector>>()
-                // std::make_shared<ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE>>(),
-                // std::make_shared<ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE>>()
+                // std::make_shared<ConjugateGradient<PetscMatrix, PetscVector,
+                // HOMEMADE>>(), std::make_shared<ConjugateGradient<PetscMatrix,
+                // PetscVector, HOMEMADE>>()
             );
 
             multigrid.set_transfer_operators(ml_problem.get_transfer());
@@ -125,8 +177,8 @@ namespace utopia {
 
             auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector>>();
             auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
-            // auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
-            // linear_solver->verbose(true);
+            // auto linear_solver = std::make_shared<Factorization<PetscMatrix,
+            // PetscVector>>(); linear_solver->verbose(true);
             Multigrid<PetscMatrix, PetscVector, PETSC_EXPERIMENTAL> multigrid;  //(smoother, linear_solver);
             // multigrid.set_default_pc_type(PCILU);
             // multigrid.set_default_ksp_type(KSPFGMRES);
@@ -174,7 +226,8 @@ namespace utopia {
 
             auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector>>();
 
-            // auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector, HOMEMADE>>(); smoother->l1(true);
+            // auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector,
+            // HOMEMADE>>(); smoother->l1(true);
 
             Multigrid<PetscMatrix, PetscVector> multigrid(smoother, direct_solver);
             // multigrid.set_use_line_search(true);
@@ -221,7 +274,9 @@ namespace utopia {
             // std::cout<<"gmres.getn_um_it(): "<< gmres->getn_um_it() << "   \n";
 
             if (diff > 1e-6) {
-                utopia_error("petsc_mg: gmres preconditioned with mg does not do what it is supposed to");
+                utopia_error(
+                    "petsc_mg: gmres preconditioned with mg does not do what it is "
+                    "supposed to");
             }
 
             // utopia_test_assert( approxeq(diff, 0., 1e-6) );
@@ -371,7 +426,8 @@ namespace utopia {
 
             // choose smoother
             auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector>>();
-            // auto smoother = std::make_shared<PointJacobi<PetscMatrix, PetscVector>>();
+            // auto smoother = std::make_shared<PointJacobi<PetscMatrix,
+            // PetscVector>>();
             Multigrid<PetscMatrix, PetscVector> multigrid(smoother, direct_solver);
             multigrid.set_transfer_operators(interpolation_operators);
             multigrid.fix_semidefinite_operators(true);
@@ -382,7 +438,8 @@ namespace utopia {
             // multigrid.set_use_line_search(true);
 
             ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> cg;  // with the HOMEMADE works in parallel
-            // ConjugateGradient<PetscMatrix, PetscVector> cg; //FIXME does not work with the KSP implementation
+            // ConjugateGradient<PetscMatrix, PetscVector> cg; //FIXME does not work
+            // with the KSP implementation
             cg.verbose(verbose);
 
             PetscVector x_0(row_layout(A), 0.0);
@@ -482,7 +539,9 @@ namespace utopia {
 
             if (comm_.size() > 1) {
                 if (mpi_world_rank() == 0) {
-                    std::cerr << "[Error] Direct solver does not work in parallel compile with SuperLU" << std::endl;
+                    std::cerr << "[Error] Direct solver does not work in parallel compile "
+                                 "with SuperLU"
+                              << std::endl;
                 }
                 return;
             }
@@ -594,7 +653,8 @@ namespace utopia {
 
             // choose smoother
             auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector>>();
-            // auto smoother = std::make_shared<PointJacobi<PetscMatrix, PetscVector>>();
+            // auto smoother = std::make_shared<PointJacobi<PetscMatrix,
+            // PetscVector>>();
             Multigrid<PetscMatrix, PetscVector> multigrid(smoother, direct_solver);
             multigrid.set_transfer_operators(interpolation_operators);
             multigrid.max_it(1);

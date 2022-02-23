@@ -3,6 +3,8 @@
 
 #include "utopia_Traits.hpp"
 
+#include "utopia_Algorithms.hpp"
+
 namespace utopia {
 
     template <class Left, class Right, int Order = Traits<Left>::Order>
@@ -44,10 +46,10 @@ namespace utopia {
         using SizeType = typename Traits<Left>::SizeType;
 
         UTOPIA_INLINE_FUNCTION static void apply(Left &left, const Right &right) {
-            const SizeType N0 = extent(left, 0);
-            const SizeType N1 = extent(left, 1);
-            const SizeType N2 = extent(left, 2);
-            const SizeType N3 = extent(left, 3);
+            const SizeType N0 = device::extent(left, 0);
+            const SizeType N1 = device::extent(left, 1);
+            const SizeType N2 = device::extent(left, 2);
+            const SizeType N3 = device::extent(left, 3);
 
             for (SizeType i = 0; i < N0; ++i) {
                 for (SizeType j = 0; j < N1; ++j) {

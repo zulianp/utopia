@@ -6,9 +6,10 @@
 namespace utopia {
 
     /**
-     * @brief      This class implements very simple backtracking, without any interpolation with Wolfe SDC.
-     *             It is mainly made for learning and testing purposes. \n
-     *             For more serious implementation check Backtracing class.
+     * @brief      This class implements very simple backtracking, without any
+     * interpolation with Wolfe SDC. It is mainly made for learning and testing
+     * purposes. \n For more serious implementation check Backtracing
+     * class.
      *
      * @tparam     Matrix
      * @tparam     Vector
@@ -49,6 +50,11 @@ namespace utopia {
             fun.value(x, E_k);
             alpha_k = 1.0;
             g_p = dot(g, p_k);
+
+            if (g_p > 0) {
+                utopia::out() << (" p_k is not descent direction   \n");
+                return false;
+            }
 
             E_k1 = E_k;
 

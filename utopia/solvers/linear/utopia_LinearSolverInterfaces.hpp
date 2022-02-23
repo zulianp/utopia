@@ -5,11 +5,10 @@
 #include "utopia_Traits.hpp"
 
 namespace utopia {
-    // template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
-    // class BiCGStab {
-    // public:
-    // 	BiCGStab() {
-    // 		static_assert(Backend < HOMEMADE, "BiCGStab not implemented for this backend");
+    // template<typename Matrix, typename Vector, int Backend =
+    // Traits<Matrix>::Backend> class BiCGStab { public: 	BiCGStab() {
+    // 		static_assert(Backend < HOMEMADE, "BiCGStab not implemented for
+    // this backend");
     // 	}
     // };
 

@@ -16,7 +16,6 @@ namespace utopia {
         }
     };
 
-
     template <class Scalar>
     class DeviceOp<Scalar, AbsMax> {
     public:

@@ -78,7 +78,9 @@ namespace utopia {
 
     template <typename Matrix, typename Vector>
     BelosSolver<Matrix, Vector, TRILINOS>::BelosSolver(const BelosSolver &other)
-        : PreconditionedSolver(other), impl_(utopia::make_unique<Impl>(*other.impl_)) {
+        : PreconditionedSolverInterface<Vector>(other),
+          PreconditionedSolver(other),
+          impl_(utopia::make_unique<Impl>(*other.impl_)) {
         // FIXME
     }
 
@@ -128,6 +130,9 @@ namespace utopia {
         assert(false && "IMPLEMENT ME");
         set_preconditioner();  //(A) //FIXME
     }
+
+    // https://trilinos.github.io/pdfs/mueluguide.pdf
+    // https://trilinos.github.io/pdfs/MueLu_tutorial.pdf
 
     template <typename Matrix, typename Vector>
     void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner(const Matrix &precond) {

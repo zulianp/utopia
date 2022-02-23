@@ -6,8 +6,9 @@
 
 namespace utopia {
     /**
-     * @brief      Base class for Nonlinear Function. All application context needed by solver is usually provided
-     * inside of this functions. In optimization settings, user needs to supply value(energy), gradient/
+     * @brief      Base class for Nonlinear Function. All application context needed
+     * by solver is usually provided inside of this functions. In optimization
+     * settings, user needs to supply value(energy), gradient/
      *
      * @tparam     Matrix
      * @tparam     Vector
@@ -21,9 +22,10 @@ namespace utopia {
 
         void read(Input & /*in*/) override {}
 
-        virtual bool value(const Vector & /*point*/, Scalar & /*value*/) const = 0;
-        virtual bool gradient(const Vector & /*point*/, Vector & /*result*/) const = 0;
-        virtual bool update(const Vector & /*point*/) { return true; }
+        virtual bool value(const Vector & /*x*/, Scalar & /*value*/) const = 0;
+        virtual bool gradient(const Vector & /*x*/, Vector & /*g*/) const = 0;
+        virtual bool update(const Vector & /*x*/) { return true; }
+        virtual bool project_onto_feasibile_region(Vector & /*x*/) const { return true; }
     };
 
     template <class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
@@ -33,9 +35,21 @@ namespace utopia {
 
         ~Function() override = default;
 
+        virtual bool is_hessian_constant() const { return false; }
+
         virtual bool hessian(const Vector &x, Matrix &H) const = 0;
         virtual bool hessian(const Vector & /*point*/, Matrix & /*result*/, Matrix & /*preconditioner*/) const {
             return false;
+        }
+
+        /// If both Hessian and gradient are required at the same time use this method (it can be used to be more
+        /// efficient)
+        virtual bool hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const {
+            return this->gradient(x, g) && this->hessian(x, H);
+        }
+
+        virtual bool hessian_and_gradient(const Vector &x, Matrix &H, Matrix &preconditioner, Vector &g) const {
+            return this->gradient(x, g) && this->hessian(x, H, preconditioner);
         }
 
         virtual bool has_preconditioner() const { return false; }
@@ -43,7 +57,7 @@ namespace utopia {
         virtual bool initialize_hessian(Matrix & /*H*/, Matrix & /*H_pre*/) const { return false; }
 
         /**
-         * @brief Allows to solvers to reuse allocated vectors and matrices
+         * @brief Allows the solvers to reuse allocated vectors and matrices
          */
         class Data {
         public:

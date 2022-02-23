@@ -66,7 +66,8 @@ namespace utopia {
         void save_collected_log();
         inline Interceptor &interceptor() { return interceptor_; }
 
-        void full_trace(const bool val) { full_trace_ = val; }
+        inline void full_trace(const bool val) { full_trace_ = val; }
+        inline void only_root_export(const bool val) { only_root_export_ = val; }
 
     private:
         Tracer();
@@ -77,6 +78,7 @@ namespace utopia {
 
         Interceptor interceptor_;
         bool full_trace_;
+        bool only_root_export_;
     };
 
     class Measurement {
@@ -138,6 +140,8 @@ namespace utopia {
         }
 
         inline TraceSummary() : count_allocs_(0), invokations_(0), seconds_(0) {}
+
+        inline double seconds() const { return seconds_; }
 
     private:
         Allocations::Counter count_allocs_;

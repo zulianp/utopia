@@ -1,5 +1,8 @@
-list(APPEND CORE_MODULES
+list(
+    APPEND
+    CORE_MODULES
     .
+    functions
     eval
     expressions
     expressions_parallel
@@ -7,6 +10,7 @@ list(APPEND CORE_MODULES
     view
     view/expressions
     console
-)
+    misc
+    traits)
 
 utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${CORE_MODULES}")

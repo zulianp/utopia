@@ -32,4 +32,14 @@ namespace utopia {
             "}\n");
     }
 
+    BibTeX Cite<Kopanicakova2020Thesis>::bibtex() {
+        return BibTeX(
+            "@phdthesis{kopanicakova2021Thesis,\n"
+            "\ttitle={Multilevel minimization in trust-region framework - Algorithmic and software developments,\n"
+            "\tauthor={Kopani{\\v{c}}{\\'a}kov{\\'a}, Alena},\n"
+            "\tyear={2021},\n"
+            "\tschool={Universit\\`a della Svizzera italiana},\n"
+            "}\n");
+    }
+
 }  // namespace utopia

@@ -29,7 +29,7 @@ namespace utopia {
         }
 
     private:
-        Quadrature q_;
+        const Quadrature &q_;
         const Elem *elem_;
     };
 
@@ -84,7 +84,7 @@ namespace utopia {
         }
 
     private:
-        Quadrature q_;
+        const Quadrature &q_;
         const Elem *elem_;
     };
 
@@ -140,7 +140,7 @@ namespace utopia {
         }
 
     private:
-        Quadrature q_;
+        const Quadrature &q_;
         const Elem *elem_;
     };
 
@@ -177,12 +177,8 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION Scalar operator()(const int qp_idx) const { return get(qp_idx); }
 
         UTOPIA_INLINE_FUNCTION Scalar get(const int qp_idx) const {
-            if (elem_->is_affine()) {
-                return q_.weight(qp_idx) * elem_->measure();
-            } else {
-                UTOPIA_DEVICE_ASSERT(false);
-                return -1.0;
-            }
+            UTOPIA_DEVICE_ASSERT(elem_->is_affine());
+            return q_.weight(qp_idx) * elem_->measure();
         }
 
         UTOPIA_INLINE_FUNCTION std::size_t size() const { return q_.n_points(); }
@@ -194,7 +190,7 @@ namespace utopia {
         }
 
     private:
-        Quadrature q_;
+        const Quadrature &q_;
         const Elem *elem_;
     };
 

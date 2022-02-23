@@ -5,6 +5,7 @@
 #include "utopia_Function.hpp"
 #include "utopia_LS_Strategy.hpp"
 #include "utopia_LinearSolver.hpp"
+#include "utopia_NewtonBase.hpp"
 #include "utopia_NonLinearSolver.hpp"
 
 #include <iomanip>
@@ -13,13 +14,15 @@
 namespace utopia {
     /**
      * @brief      The Newton solver.
-     *             Solver doesn't contain any globalization strategy, but it is possible to set-up damping parameter.
+     *             Solver doesn't contain any globalization strategy, but it is
+     * possible to set-up damping parameter.
      *
      *             The new iterate is obtained as:
      *              \f$ x_{k+1} = x_{k} - \alpha * H(x_k)^{-1} g(x_k), \f$ \n
      *              where \f$ \alpha  \f$ is duming parameter,
      *                    \f$ g  \f$ is gradient and \f$ H  \f$ is Hessian.
-     *              Default value of \f$ \alpha  \f$ is 1, therefore full Newton step.
+     *              Default value of \f$ \alpha  \f$ is 1, therefore full Newton
+     * step.
      *
      * Example usage:
      * @snippet tests/utopia_SolverTest.cpp Newton CG example
@@ -56,6 +59,8 @@ namespace utopia {
 
             bool converged = false;
 
+            fun.project_onto_feasibile_region(x);
+
             // notify listener
             fun.update(x);
 
@@ -63,26 +68,43 @@ namespace utopia {
             g0_norm = norm2(grad_);
             g_norm = g0_norm;
 
+            Scalar J;
+            fun.value(x, J);
+
             this->init_solver("NEWTON", {" it. ", "|| g ||", "J", "r_norm", "|| p_k || ", "alpha_k"});
 
-            if (this->verbose_) PrintInfo::print_iter_status(it, {g_norm, 1, 0});
+            if (this->verbose_) PrintInfo::print_iter_status(it, {g_norm, J});
             it++;
+
+            // Conditions for preconditioned solve
+            bool precondition = this->has_preconditioned_solver() && fun.has_preconditioner();
+
+            // If hessian is constant we compute it once
+            if (fun.is_hessian_constant()) {
+                fun.hessian(x, hessian);
+                this->linear_solver_update(hessian);
+            }
 
             while (!converged) {
                 // find direction step
                 step_.set(0.0);
 
+                //////////////////////////////////////////////////////////////////////////////////////////
                 // setting up adaptive stopping criterium for linear solver
                 if (this->has_forcing_strategy()) {
                     if (auto *iterative_solver =
                             dynamic_cast<IterativeSolver<Matrix, Vector> *>(this->linear_solver_.get())) {
                         iterative_solver->atol(this->estimate_ls_atol(g_norm, it));
                     } else {
-                        utopia_error("utopia::Newton::you can not use inexact Newton with exact linear solver. ");
+                        utopia_error(
+                            "utopia::Newton::you can not use inexact Newton with exact "
+                            "linear solver. ");
                     }
                 }
 
-                if (this->has_preconditioned_solver() && fun.has_preconditioner()) {
+                //////////////////////////////////////////////////////////////////////////////////////////
+
+                if (precondition) {
                     fun.hessian(x, hessian, preconditioner);
                     grad_neg_ = -1.0 * grad_;
 
@@ -90,13 +112,24 @@ namespace utopia {
 
                     this->linear_solve(hessian, preconditioner, grad_neg_, step_);
                 } else {
-                    fun.hessian(x, hessian);
+                    // If hessian is not constant we re-compute it here
+                    if (!fun.is_hessian_constant()) {
+                        fun.hessian(x, hessian);
+                    }
+
                     grad_neg_ = -1.0 * grad_;
 
                     if (!this->check_values(it, fun, x, grad_, hessian)) return false;
 
-                    this->linear_solve(hessian, grad_neg_, step_);
+                    if (!fun.is_hessian_constant()) {  // FIXME
+                        pre_solve(hessian, grad_neg_);
+                        this->linear_solver_update(hessian);
+                    }
+
+                    this->linear_solver_apply(grad_neg_, step_);
                 }
+
+                //////////////////////////////////////////////////////////////////////////////////////////
 
                 if (ls_strategy_) {
                     ls_strategy_->get_alpha(fun, grad_, x, step_, alpha_);
@@ -110,6 +143,10 @@ namespace utopia {
                     }
                 }
 
+                //////////////////////////////////////////////////////////////////////////////////////////
+
+                fun.project_onto_feasibile_region(x);
+
                 // notify listener
                 fun.update(x);
                 fun.gradient(x, grad_);
@@ -118,7 +155,6 @@ namespace utopia {
                 norms2(grad_, step_, g_norm, s_norm);
                 r_norm = g_norm / g0_norm;
 
-                Scalar J;
                 fun.value(x, J);
 
                 // // print iteration status on every iteration
@@ -137,9 +173,11 @@ namespace utopia {
         void read(Input &in) override {
             NewtonBase<Matrix, Vector>::read(in);
             in.get("dumping", alpha_);
+            in.get("inverse_diagonal_scaling", inverse_diagonal_scaling_);
 
             if (ls_strategy_) {
-                in.get("line-search", *ls_strategy_);
+                in.get("linear_search", *ls_strategy_);
+                in.get_deprecated("line-search", "line_search", *ls_strategy_);
             }
         }
 
@@ -174,8 +212,19 @@ namespace utopia {
 
     private:
         Scalar alpha_;                            /*!< Dumping parameter. */
-        std::shared_ptr<LSStrategy> ls_strategy_; /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */
+        std::shared_ptr<LSStrategy> ls_strategy_; /*!< Strategy used in order to
+                                                     obtain step \f$ \alpha_k \f$ */
         Vector grad_neg_, step_, grad_;
+        bool inverse_diagonal_scaling_{false};
+
+        void pre_solve(Matrix &H, Vector &g) const {
+            if (inverse_diagonal_scaling_) {
+                Vector d = diag(H);
+                d = 1. / d;
+                H.diag_scale_left(d);
+                g = e_mul(g, d);
+            }
+        }
     };
 
 }  // namespace utopia

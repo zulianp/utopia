@@ -13,8 +13,12 @@ namespace utopia {
         FIRST_ORDER = 1,
         FIRST_ORDER_DF = 3,
         FIRST_ORDER_MGOPT = 4,
+        FIRST_ORDER_MULTIPLICATIVE_DF = 6,
+        FIRST_ORDER_ADDITIVE_MULTIPLICATIVE_DF = 7,
 
         SECOND_ORDER = 2,
+        SECOND_ORDER_DF = 5,
+
         GALERKIN = 0
     };
 
@@ -61,6 +65,16 @@ namespace utopia {
         static const bool value = true;
     };
 
+    template <>
+    struct is_first_order<FIRST_ORDER_MULTIPLICATIVE_DF> {
+        static const bool value = true;
+    };
+
+    template <>
+    struct is_first_order<FIRST_ORDER_ADDITIVE_MULTIPLICATIVE_DF> {
+        static const bool value = true;
+    };
+
     template <MultiLevelCoherence T>
     struct is_derivative_free {
         static const bool value = false;
@@ -68,6 +82,21 @@ namespace utopia {
 
     template <>
     struct is_derivative_free<FIRST_ORDER_DF> {
+        static const bool value = true;
+    };
+
+    template <>
+    struct is_derivative_free<FIRST_ORDER_MULTIPLICATIVE_DF> {
+        static const bool value = true;
+    };
+
+    template <>
+    struct is_derivative_free<FIRST_ORDER_ADDITIVE_MULTIPLICATIVE_DF> {
+        static const bool value = true;
+    };
+
+    template <>
+    struct is_derivative_free<SECOND_ORDER_DF> {
         static const bool value = true;
     };
 

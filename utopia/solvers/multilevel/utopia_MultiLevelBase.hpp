@@ -17,8 +17,9 @@ namespace utopia {
     /**
      * @brief      Base class for all multilevel solvers. \n
      *             Takes care of inializing multilevel hierarchy. \n
-     *             Different levels are created by interpolation and restriction operators.\n
-     *             Additionally, it provides stifness matrices on each level, created by using Galerkin assembly. \n
+     *             Different levels are created by interpolation and restriction
+     * operators.\n Additionally, it provides stifness matrices on each level,
+     * created by using Galerkin assembly. \n
      *
      * @tparam     Matrix
      * @tparam     Vector
@@ -111,7 +112,7 @@ namespace utopia {
          *
          * @param[in]  mg_type_in  Choice of MG cycle.
          */
-        inline void mg_type(const bool mg_type_in) { mg_type_ = mg_type_in; }
+        inline void mg_type(const SizeType &mg_type_in) { mg_type_ = mg_type_in; }
 
         /**
          * @return     Number of pre-smoothing steps.
@@ -126,7 +127,7 @@ namespace utopia {
         /**
          * @return     Type of MG cycle.
          */
-        inline bool mg_type() const { return mg_type_; }
+        inline SizeType mg_type() const { return mg_type_; }
 
         /**
          * @return     Type of MG cycle.
@@ -166,7 +167,9 @@ namespace utopia {
             }
 
             if (num_levels_ != static_cast<SizeType>(transfers.size()) + 1) {
-                utopia_error("utopia::MultilevelBase:: number of levels and transfer operators do not match ... \n");
+                utopia_error(
+                    "utopia::MultilevelBase:: number of levels and transfer operators do "
+                    "not match ... \n");
                 utopia::out() << num_levels_ << " != " << (transfers.size() + 1);
             }
 

@@ -9,15 +9,11 @@
 
 namespace utopia {
 
-    template <class From,
-              class To,
-              int Order = Traits<From>::Order,
-              int BackendFrom = Traits<From>::Backend,
-              int BackendTo = Traits<To>::Backend>
+    template <class From, class To, int Order = Traits<From>::Order>
     class ConvertTensor {};
 
-    template <class T, int Order, int BE>
-    class ConvertTensor<T, T, Order, BE, BE> {
+    template <class T, int Order>
+    class ConvertTensor<T, T, Order> {
     public:
         static void apply(const T &in, T &out) { out.copy(in); }
     };

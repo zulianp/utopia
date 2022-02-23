@@ -23,7 +23,8 @@ namespace utopia {
 
     template <class Matrix, class Vector, int Backend>
     ConjugateGradient<Matrix, Vector, Backend>::ConjugateGradient(const ConjugateGradient &other)
-        : Super(other),
+        : PreconditionedSolverInterface<Vector>(other),
+          Super(other),
           reset_initial_guess_(other.reset_initial_guess_),
           apply_gradient_descent_step_(other.apply_gradient_descent_step_) {}
 
@@ -110,6 +111,13 @@ namespace utopia {
         // }
 
         this->init_solver("Utopia Conjugate Gradient", {"it. ", "||r||"});
+        r_norm = norm2(r);
+        if (this->verbose()) {
+            PrintInfo::print_iter_status(it, {r_norm});
+        }
+
+        it++;
+
         bool converged = false;
 
         SizeType check_norm_each = 1;
@@ -122,7 +130,7 @@ namespace utopia {
                 break;
             }
 
-            if (it > 0) {
+            if (it > 1) {
                 beta = rho / rho_1;
                 UTOPIA_NO_ALLOC_BEGIN("CG:region2");
                 p = r + beta * p;

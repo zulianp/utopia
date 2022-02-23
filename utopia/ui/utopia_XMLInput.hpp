@@ -10,6 +10,8 @@ namespace utopia {
 
     class XMLInput final : public Input {
     public:
+        using Input::get;
+
         XMLInput();
         ~XMLInput() override;
 
@@ -23,8 +25,8 @@ namespace utopia {
         void get(unsigned long &val);  // override;
         void get(long long int &val);
         // void get(SizeType &val);// override;
-        void get(std::string &val);                     // override;
-        void get(Configurable &val);                    // override;
+        void get(std::string &val);                            // override;
+        void get(Configurable &val);                           // override;
         void get(const std::function<void(Input &)> &lambda);  // override;
 
         void get(const std::string &key, bool &val) override;
@@ -45,6 +47,10 @@ namespace utopia {
         bool good() const override;
 
         SizeType size() const override;
+
+        bool key_exists(const std::string &key) const override;
+
+        bool is_collection() const override;
 
     private:
         class Impl;

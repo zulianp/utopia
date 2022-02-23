@@ -44,7 +44,7 @@ namespace utopia {
     };
 
     template <class Matrix, class Vector>
-    class ASTRUM : public NewtonBase<Matrix, Vector> {
+    class ASTRUM : public NewtonBase<Matrix, Vector>, public VariableBoundSolverInterface<Vector> {
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
 
@@ -219,6 +219,8 @@ namespace utopia {
                     it_inner++;
                 }
 
+                this->make_iterate_feasible(x);
+
                 // print iteration status on every iteration
                 if (verbosity_level_ >= VERBOSITY_LEVEL_NORMAL) {
                     PrintInfo::print_iter_status(it, {g_norm, s_norm, tau, mu, Scalar(AS_form_used), Scalar(it_inner)});
@@ -271,7 +273,11 @@ namespace utopia {
         void set_mass_matrix(const Matrix &M) {
             I_ = M;
 
-            Matrix Diff = local_identity(local_size(M).get(0), local_size(M).get(1));
+            // Matrix Diff = local_identity(local_size(M).get(0), local_size(M).get(1));
+
+            Vector id = diag(M);
+            id.set(1.0);
+            Matrix Diff = diag(id);
             Diff = Diff - I_;
 
             if (max(Diff) > 0) {

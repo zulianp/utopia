@@ -181,8 +181,9 @@ namespace utopia {
 
     private:
         void randomly_generate(const T &width, const FracNetSamplerParams2D<T> &params) {
-            // unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-            // const unsigned seed = 3;
+            // unsigned seed =
+            // std::chrono::system_clock::now().time_since_epoch().count(); const
+            // unsigned seed = 3;
             static std::default_random_engine generator(params.seed);
 
             // this one needs to be replaced
@@ -200,8 +201,9 @@ namespace utopia {
             // std::uniform_real_distribution<> distr_length(3.0*width, 0.15);
 
             // length should be driven from power distribution
-            // std::uniform_real_distribution<> distr_length(std::max(params.x_min, params.y_min),
-            // std::min(params.x_max, params.y_max)); const T x_min = 3.0*width > 0.04 ? 3.0*width : 0.04;
+            // std::uniform_real_distribution<> distr_length(std::max(params.x_min,
+            // params.y_min), std::min(params.x_max, params.y_max)); const T x_min
+            // = 3.0*width > 0.04 ? 3.0*width : 0.04;
 
             const T x_min = (params.min_length == 0) ? 3.0 * width : params.min_length;
             std::uniform_real_distribution<> distr_length(0, 1);
@@ -232,7 +234,7 @@ namespace utopia {
 
         T vec_dot(const Point2D<T> &A, const Point2D<T> &B) { return (A.x * B.x) + (A.y * B.y); }
 
-    private:
+    public:
         Point2D<T> A_;
         Point2D<T> B_;
         Point2D<T> C_;
@@ -262,8 +264,40 @@ namespace utopia {
         void read(Input &in) override {
             in.get("num_fracs", num_fracs_);
             in.get("pressure0", pressure0_);
+            in.get("coord_csv_file_name", csv_file_name_);
 
             sampler_params_.read(in);
+        }
+
+        void export_coords_csv(const std::vector<Rectangle<Scalar>> &rectangles) {
+            if (!csv_file_name_.empty()) {
+                CSVWriter writer{};
+                if (mpi_world_rank() == 0) {
+                    if (!writer.file_exists(csv_file_name_)) {
+                        writer.open_file(csv_file_name_);
+                        writer.write_table_row<std::string>(
+                            {"frac-id", "C1x", "C1y", "C2x", "C2y", "C3x", "C3y", "C4x", "C4y"});
+                    } else {
+                        writer.open_file(csv_file_name_);
+                    }
+
+                    for (std::size_t id = 0; id < rectangles.size(); id++) {
+                        writer.write_table_row<Scalar>({
+                            Scalar(id),
+                            rectangles[id].A_.x,
+                            rectangles[id].A_.y,
+                            rectangles[id].B_.x,
+                            rectangles[id].B_.y,
+                            rectangles[id].C_.x,
+                            rectangles[id].C_.y,
+                            rectangles[id].D_.x,
+                            rectangles[id].D_.y,
+                        });
+                    }
+
+                    writer.close_file();
+                }
+            }
         }
 
         void init(PetscVector &x) override {
@@ -282,6 +316,8 @@ namespace utopia {
             for (auto r = 0; r < num_fracs_; r++) {
                 rectangles.push_back(Rectangle<Scalar>(width, sampler_params_));
             }
+
+            this->export_coords_csv(rectangles);
 
             auto sampler = utopia::sampler(C, [&rectangles](const Point &x) -> Scalar {
                 for (std::size_t r = 0; r < rectangles.size(); r++) {
@@ -370,8 +406,10 @@ namespace utopia {
         SizeType num_fracs_;
         Scalar pressure0_;
 
+        std::string csv_file_name_;
+
         FracNetSamplerParams2D<Scalar> sampler_params_;
-    };
+    };  // namespace utopia
 
 }  // namespace utopia
 

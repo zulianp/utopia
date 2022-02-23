@@ -112,7 +112,8 @@ namespace utopia {
 
     private:
         Scalar alpha_;                            /*!< Dumping parameter. */
-        std::shared_ptr<LSStrategy> ls_strategy_; /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */
+        std::shared_ptr<LSStrategy> ls_strategy_; /*!< Strategy used in order to
+                                                     obtain step \f$ \alpha_k \f$ */
     };
 
 }  // namespace utopia

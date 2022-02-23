@@ -7,6 +7,7 @@
 #include "utopia_LinearSolver.hpp"
 #include "utopia_LinearSolverInterfaces.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_polymorphic_LinearSolver.hpp"
 
 #include <iostream>
 
@@ -19,7 +20,8 @@ namespace utopia {
         | B 		D 		0   | | lagr  | = | 0     |
     m := master, s := slave
     It uses the schur complement
-    Warning: rows with boundary conditions in B_t and D_t have to be handled outside.
+    Warning: rows with boundary conditions in B_t and D_t have to be handled
+    outside.
 
     */
     template <class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
@@ -28,8 +30,8 @@ namespace utopia {
         using Scalar = UTOPIA_SCALAR(Vector);
 
         SPBlockConjugateGradient()
-            : op_m(std::make_shared<Factorization<Matrix, Vector>>()),
-              op_s(std::make_shared<Factorization<Matrix, Vector>>()),
+            : op_m(std::make_shared<OmniLinearSolver<Matrix, Vector>>()),
+              op_s(std::make_shared<OmniLinearSolver<Matrix, Vector>>()),
               atol_(1e-8),
               rtol_(1e-8) {}
 
@@ -149,7 +151,7 @@ namespace utopia {
                 *P = B * d_m * B_t + D * d_s * D_t;
 
                 if (!op_prec) {
-                    op_prec = std::make_shared<Factorization<Matrix, Vector>>();
+                    op_prec = std::make_shared<OmniLinearSolver<Matrix, Vector>>();
                 }
 
                 op_prec->update(P);

@@ -25,6 +25,7 @@ namespace utopia {
               _grad_smoothess_termination(1. / 8.),
               _hessian_update_delta(0.15),
               _hessian_update_eta(0.5),
+              _use_line_search(false),
 
               red_(FG_LIGHT_MAGENTA),
               def_(FG_DEFAULT),
@@ -47,11 +48,15 @@ namespace utopia {
             in.get("grad_smoothess_termination", _grad_smoothess_termination);
             in.get("check_gradient_smoothness", _check_gradient_smoothness);
 
+            in.get("use_line_search", _use_line_search);
+
             in.get("hessian_update_delta", _hessian_update_delta);
             in.get("hessian_update_eta", _hessian_update_eta);
 
             in.get("deltaH_lagging", _deltaH_lagging);
             in.get("Hpost_lagging", _Hpost_lagging);
+
+            // in.get("deltag_lagging", _deltag_lagging);
         }
 
         void print_usage(std::ostream &os) const override {
@@ -72,14 +77,17 @@ namespace utopia {
                                     "real",
                                     "Constant used for quiting recursion based on size of tr. radius.",
                                     "0.001");
+            this->print_param_usage(os,
+                                    "grad_smoothess_termination",
+                                    "real",
+                                    "Constant used for quiting recursion based on "
+                                    "smoothness of the gradient on given level.",
+                                    "0.5");
             this->print_param_usage(
-                os,
-                "grad_smoothess_termination",
-                "real",
-                "Constant used for quiting recursion based on smoothness of the gradient on given level.",
-                "0.5");
+                os, "check_gradient_smoothness", "bool", "Flag turning on/off check for gradient smoothiness.", "true");
+
             this->print_param_usage(
-                os, "check_gradient_smoothness", "real", "Flag turning on/off check for gradient smoothiness.", "true");
+                os, "use_line_search", "bool", "Use line-search for coarse grid correction..", "true");
 
             this->print_param_usage(os,
                                     "hessian_update_delta",
@@ -97,10 +105,17 @@ namespace utopia {
             this->print_param_usage(os,
                                     "deltaH_lagging",
                                     "deltaH_lagging",
-                                    "Use lagging of delta H term. Applies only for Second order consistent models.",
+                                    "Use lagging of delta H term. Applies only for "
+                                    "Second order consistent models.",
                                     "False");
             this->print_param_usage(
                 os, "Hpost_lagging", "Hpost_lagging", "Use lagging of Hessian for post-smoothing.", "False");
+
+            // this->print_param_usage(os,
+            //                         "deltag_lagging",
+            //                         "deltag_lagging",
+            //                         "Use lagging of gradient for delta g term computation.",
+            //                         "False");
         }
 
         virtual bool deltaH_lagging() const { return _deltaH_lagging; }
@@ -110,6 +125,10 @@ namespace utopia {
         virtual bool Hpost_lagging() const { return _Hpost_lagging; }
 
         virtual void Hpost_lagging(const bool &flg) { _Hpost_lagging = flg; }
+
+        // virtual bool deltag_lagging() const { return _deltag_lagging; }
+
+        // virtual void deltag_lagging(const bool &flg) { _deltag_lagging = flg; }
 
         virtual VerbosityLevel verbosity_level() const { return _verbosity_level; }
 
@@ -133,8 +152,9 @@ namespace utopia {
 
         virtual SizeType max_coarse_it() const { return _max_coarse_it; }
 
-        // this parameter define total number of smoothing its - sucessful and unsuccessful
-        // while pre_smooting and post_smoothing count just sucessful iterations
+        // this parameter define total number of smoothing its - sucessful and
+        // unsuccessful while pre_smooting and post_smoothing count just sucessful
+        // iterations
         virtual void max_sucessful_smoothing_it(const SizeType &max_sucessful_smoothing_it) {
             _max_sucessful_smoothing_it = max_sucessful_smoothing_it;
         }
@@ -171,6 +191,10 @@ namespace utopia {
 
         virtual Scalar hessian_update_eta() const { return _hessian_update_eta; }
 
+        virtual bool use_line_search() const { return _use_line_search; }
+
+        virtual void use_line_search(const bool &flg) { _use_line_search = flg; }
+
     protected:
         SizeType _it_global; /** * global iterate counter  */
 
@@ -183,20 +207,25 @@ namespace utopia {
         SizeType _max_QP_smoothing_it;
         SizeType _max_QP_coarse_it;
 
-        Scalar _eps_delta_termination;      /** * maximum delta allowed on coarse level - makes sure that coarse level
-                                               corection stays inside fine level radius  */
-        Scalar _grad_smoothess_termination; /** * determines when gradient is not smooth enough => does pay off to go to
+        Scalar _eps_delta_termination;      /** * maximum delta allowed on coarse level -
+                                               makes sure that coarse level corection stays
+                                               inside fine level radius  */
+        Scalar _grad_smoothess_termination; /** * determines when gradient is not
+                                               smooth enough => does pay off to go to
                                                coarse level at all  */
         bool _check_gradient_smoothness{true};
 
         Scalar _hessian_update_delta; /** * tolerance used for updating hessians */
         Scalar _hessian_update_eta;   /** * tolerance used for updating hessians */
 
+        bool _use_line_search{false};
+
         VerbosityLevel _verbosity_level{VERBOSITY_LEVEL_NORMAL};
         MultilevelNormSchedule _norm_schedule{ALWAYS};
+        // bool _deltag_lagging{false};
 
-        bool _deltaH_lagging{false};
         bool _Hpost_lagging{false};
+        bool _deltaH_lagging{false};
 
         ColorModifier red_;
         ColorModifier def_;

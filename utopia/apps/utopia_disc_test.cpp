@@ -31,6 +31,9 @@
 // std
 #include <cmath>
 
+// FIXME
+#ifndef USE_SIMD_ASSEMBLY
+
 namespace utopia {
 
     template <class FunctionSpace>
@@ -270,3 +273,5 @@ namespace utopia {
     UTOPIA_REGISTER_APP(plot_fun_2);
 
 }  // namespace utopia
+
+#endif  // USE_SIMD_ASSEMBLY

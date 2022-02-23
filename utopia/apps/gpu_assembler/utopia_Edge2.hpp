@@ -40,7 +40,9 @@ namespace utopia {
                     g[0] = 1;
                     return;
                 }
-                default: { UTOPIA_DEVICE_ASSERT(false); }
+                default: {
+                    UTOPIA_DEVICE_ASSERT(false);
+                }
             }
         }
 

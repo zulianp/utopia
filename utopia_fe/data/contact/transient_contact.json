@@ -17,6 +17,13 @@
             ]
         },
 
+        "qp-solver" : {
+            "backend" : "any",
+            "type" : "pgs",
+            "verbose" : true,
+            "block_size" : 3
+        },
+
         "*qp-solver" : {
             "backend" : "petsc",
             "type" : "tron",
@@ -42,7 +49,7 @@
         "mesh": {
             "type": "file",
             "path"   : "../data/contact/pseudo-signorini.e",
-            "refinements" : 1,
+            "refinements" : 0,
             "order" : 1
         },
 

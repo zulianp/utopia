@@ -425,6 +425,8 @@ namespace utopia {
 
         inline bool is_null() const { return vec_.is_null(); }
 
+        inline bool read(const std::string &path) { return read(comm().get(), path); }
+
         bool read(const Teuchos::RCP<const Teuchos::Comm<int> > &comm, const std::string &path);
         bool write(const std::string &path) const;
 
@@ -464,17 +466,7 @@ namespace utopia {
 
         std::unique_ptr<View> view_ptr_;
 
-        inline void make_view() {
-            if (!view_ptr_) {
-                if (has_ghosts()) {
-                    view_ptr_ = utopia::make_unique<View>(ghosted_vec_->getLocalViewHost(),
-                                                          ghosted_vec_->getMap()->getLocalMap());
-
-                } else {
-                    view_ptr_ = utopia::make_unique<View>(vec_->getLocalViewHost(), vec_->getMap()->getLocalMap());
-                }
-            }
-        }
+        void make_view();
 
         inline void free_view() { view_ptr_ = nullptr; }
 

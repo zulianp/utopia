@@ -3,6 +3,8 @@
 
 #include "utopia_Instance.hpp"
 #include "utopia_Logger.hpp"
+#include "utopia_PreconditionedSolver.hpp"
+#include "utopia_PreconditionedSolverInterface.hpp"
 #include "utopia_Preconditioner.hpp"
 #include "utopia_SolverForwardDeclarations.hpp"
 
@@ -11,11 +13,16 @@ namespace utopia {
     template <class Vector>
     class MatrixFreeLinearSolver : virtual public Configurable,
                                    virtual public Clonable,
-                                   virtual public Preconditioner<Vector> {
+                                   virtual public Preconditioner<Vector>,
+                                   virtual public PreconditionedSolverInterface<Vector> {
     public:
         using Preconditioner<Vector>::init_memory;
+        using Preconditioner<Vector>::update;
+        using PreconditionedSolverInterface<Vector>::update;
+        // using PreconditionedSolverInterface<Vector>::update;
 
         ~MatrixFreeLinearSolver() override = default;
+
         virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) = 0;
 
         /*! @brief if overriden the subclass has to also call this one first
@@ -37,6 +44,11 @@ namespace utopia {
         using MatrixFreeLinearSolver<Vector>::solve;
 
         ~OperatorBasedLinearSolver() override = default;
+
+        OperatorBasedLinearSolver() = default;
+
+        OperatorBasedLinearSolver<Matrix, Vector>(const OperatorBasedLinearSolver<Matrix, Vector> &other)
+            : PreconditionedSolverInterface<Vector>(other), MatrixFreeLinearSolver<Vector>(other), PreconditionedSolver<Matrix, Vector>(other) {}
 
         bool solve(const Matrix &A, const Vector &b, Vector &x) override {
             update(make_ref(A));
@@ -62,13 +74,22 @@ namespace utopia {
          * @param[in]  b     The right hand side.
          * @param      x     The initial guess/solution.
          *
-         * @return true if the linear system has been solved up to required tollerance. False otherwise
+         * @return true if the linear system has been solved up to required
+         * tollerance. False otherwise
          */
         bool apply(const Vector &b, Vector &x) override {
             return solve(operator_cast<Vector>(*this->get_operator()), b, x);
         }
 
         OperatorBasedLinearSolver *clone() const override = 0;
+
+        OperatorBasedLinearSolver &operator=(const OperatorBasedLinearSolver &other)
+        {
+            if(this == &other) return *this;
+            MatrixFreeLinearSolver<Vector>::operator=(other);
+            PreconditionedSolver<Matrix, Vector>::operator=(other);
+            return *this;
+        }
 
         void read(Input &in) override {
             MatrixFreeLinearSolver<Vector>::read(in);
@@ -84,7 +105,12 @@ namespace utopia {
     template <class Vector>
     class EmptyPrecondMatrixFreeLinearSolver final : public MatrixFreeLinearSolver<Vector> {
     public:
-        void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond) { precond_ = precond; }
+        using Scalar = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+
+        void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond) override {
+            precond_ = precond;
+        }
 
         bool solve(const Operator<Vector> & /*A*/, const Vector &rhs, Vector &sol) override { return apply(rhs, sol); }
 
@@ -112,6 +138,18 @@ namespace utopia {
             if (precond_) {
                 precond_->update(A);
             }
+        }
+
+        void init_solver(const std::string & /*method*/, const std::vector<std::string> /*status_variables*/) override {
+        }
+
+        void exit_solver(const SizeType & /*it*/, const Scalar & /*convergence_reason*/) override {}
+
+        bool check_convergence(const SizeType & /*it*/,
+                               const Scalar & /*norm_grad*/,
+                               const Scalar & /*rel_norm_grad*/,
+                               const Scalar & /*norm_step*/) override {
+            return true;
         }
 
         void print_usage(std::ostream &os) const override {

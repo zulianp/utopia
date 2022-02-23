@@ -17,14 +17,14 @@ namespace utopia {
      * @tparam     Vector
      */
     template <class Matrix, class Vector>
-    class IterativeSolver : public LinearSolver<Matrix, Vector>, public Monitor<Vector> {
+    class IterativeSolver : public LinearSolver<Matrix, Vector>, virtual public Monitor<Vector> {
     public:
         using Scalar = typename utopia::Traits<Matrix>::Scalar;
         using SizeType = typename utopia::Traits<Matrix>::SizeType;
 
         IterativeSolver() : atol_(1e-9), rtol_(1e-9), stol_(1e-11), max_it_(1000), norm_freq_(1.0) {}
 
-        IterativeSolver(const IterativeSolver &other) = default;
+        // IterativeSolver(const IterativeSolver &other) = default;
         IterativeSolver(IterativeSolver &&other) = default;
         IterativeSolver &operator=(const IterativeSolver &) = default;
         IterativeSolver &operator=(IterativeSolver &&) = default;
@@ -37,8 +37,10 @@ namespace utopia {
             in.get("atol", atol_);
             in.get("rtol", rtol_);
             in.get("stol", stol_);
-            in.get("max-it", max_it_);
             in.get("verbose", verbose_);
+
+            in.get("max_it", max_it_);
+            in.get_deprecated("max-it", "max_it", max_it_);
         }
 
         void print_usage(std::ostream &os) const override {
@@ -69,10 +71,28 @@ namespace utopia {
 
         IterativeSolver<Matrix, Vector> *clone() const override = 0;
 
+        void copy(const IterativeSolver<Matrix, Vector> &other) {
+            atol_ = other.atol_;
+            rtol_ = other.rtol_;
+            stol_ = other.stol_;
+            max_it_ = other.max_it_;
+            verbose_ = other.verbose_;
+            norm_freq_ = other.norm_freq_;
+        }
+
+        IterativeSolver<Matrix, Vector>(const IterativeSolver<Matrix, Vector> &other)
+            : LinearSolver<Matrix, Vector>(other),
+              atol_(other.atol_),
+              rtol_(other.rtol_),
+              stol_(other.stol_),
+              max_it_(other.max_it_),
+              verbose_(other.verbose_),
+              norm_freq_(other.norm_freq_) {}
+
     protected:
         /**
-         * @brief      Initialization of nonlinear solver. Includes nice printout and starts calculating time of solve
-         * process.
+         * @brief      Initialization of nonlinear solver. Includes nice printout and
+         * starts calculating time of solve process.
          *
          * @param[in]  method            The method.
          * @param[in]  status_variables  The status variables.
@@ -129,8 +149,8 @@ namespace utopia {
         }
 
         /**
-         * @brief      General function to check convergence in nonlinear solvers. It checks absolute, relative norm of
-         * gradient and lenght of the step size.
+         * @brief      General function to check convergence in nonlinear solvers. It
+         * checks absolute, relative norm of gradient and lenght of the step size.
          *
          * @param[in]  g_norm  The norm of the gradient.
          * @param[in]  r_norm  The relative norm of the gradient.
@@ -217,7 +237,8 @@ namespace utopia {
         virtual void norm_frequency(const SizeType &freq) { norm_freq_ = freq; };
 
     private:
-        // FIXME these fields should be removed and set directly in the backend state variables
+        // FIXME these fields should be removed and set directly in the backend state
+        // variables
         // ... GENERAL Iterative SOLVER PARAMETERS ...
         Scalar atol_; /*!< Absolute tolerance. */
         Scalar rtol_; /*!< Relative tolerance. */

@@ -36,7 +36,8 @@ namespace utopia {
         K_inv_t_.zeros(layout);
     }
 
-    // https://en.wikipedia.org/wiki/Biconjugate_gradient_stabilized_method (Preconditioned BiCGSTAB)
+    // https://en.wikipedia.org/wiki/Biconjugate_gradient_stabilized_method
+    // (Preconditioned BiCGSTAB)
     template <typename Matrix, typename Vector, int Backend>
     bool BiCGStab<Matrix, Vector, Backend>::solve_preconditioned(const Operator<Vector> &A,
                                                                  const Vector &b,
@@ -148,7 +149,8 @@ namespace utopia {
         return converged;
     }
 
-    // https://en.wikipedia.org/wiki/Biconjugate_gradient_stabilized_method (BiCGSTAB)
+    // https://en.wikipedia.org/wiki/Biconjugate_gradient_stabilized_method
+    // (BiCGSTAB)
     template <typename Matrix, typename Vector, int Backend>
     bool BiCGStab<Matrix, Vector, Backend>::solve_unpreconditioned(const Operator<Vector> &A,
                                                                    const Vector &b,
@@ -220,7 +222,7 @@ namespace utopia {
                 r_norm = norm2(s_);
 
                 if (this->verbose()) {
-                    PrintInfo::print_iter_status({Scalar(it), r_norm});
+                    PrintInfo::print_iter_status(it, {r_norm});
                 }
 
                 converged = this->check_convergence(it, r_norm, 1, 1);
@@ -236,7 +238,7 @@ namespace utopia {
                 r_norm = norm2(r_);
 
                 if (this->verbose()) {
-                    PrintInfo::print_iter_status({Scalar(it), r_norm});
+                    PrintInfo::print_iter_status(it, {r_norm});
                 }
 
                 converged = this->check_convergence(it, r_norm, 1, 1);

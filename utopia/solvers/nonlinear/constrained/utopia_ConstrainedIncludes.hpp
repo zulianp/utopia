@@ -10,9 +10,10 @@
 #include "utopia_MPRGP.hpp"
 #include "utopia_ProjectedConjugateGradient.hpp"
 #include "utopia_ProjectedGaussSeidel.hpp"
-#include "utopia_ProjectedGaussSeidelQR.hpp"
 #include "utopia_ProjectedGradient.hpp"
 #include "utopia_QPSolver.hpp"
 #include "utopia_SemismoothNewton.hpp"
+
+#include "utopia_ProjectedChebyshev3level.hpp"
 
 #endif  // UTOPIA_CONSTRAINTED_HPP

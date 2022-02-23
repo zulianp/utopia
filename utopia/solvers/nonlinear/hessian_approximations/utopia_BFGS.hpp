@@ -89,7 +89,8 @@ namespace utopia {
                     result = v;
             } else {
                 utopia_error(
-                    "BFGS::apply_H can be used only, if H is computed. \n Please turn on update_hessian option. \n");
+                    "BFGS::apply_H can be used only, if H is computed. \n Please turn on "
+                    "update_hessian option. \n");
             }
 
             return true;
@@ -102,7 +103,9 @@ namespace utopia {
                 else
                     return dot(u, v);
             } else {
-                utopia_error("BFGS::compute_uHinvv_dot: Initialization needs to be done first. \n");
+                utopia_error(
+                    "BFGS::compute_uHinvv_dot: Initialization needs to be done first. "
+                    "\n");
                 return false;
             }
         }
@@ -115,7 +118,8 @@ namespace utopia {
                     return dot(u, v);
             } else {
                 utopia_error(
-                    "BFGS::compute_uHv_dot can be used only, if H is computed. \n Please turn on update_hessian "
+                    "BFGS::compute_uHv_dot can be used only, if H is computed. \n Please "
+                    "turn on update_hessian "
                     "option. \n");
                 return 0;
             }
@@ -129,7 +133,8 @@ namespace utopia {
                     return dot(u, u);
             } else {
                 utopia_error(
-                    "BFGS::compute_uHu_dot can be used only, if H is computed. \n Please turn on update_hessian "
+                    "BFGS::compute_uHu_dot can be used only, if H is computed. \n Please "
+                    "turn on update_hessian "
                     "option. \n");
                 return 0;
             }
@@ -156,7 +161,8 @@ namespace utopia {
 
             // checking for numerical instabilities
             if (s_y < this->num_tol() || yHy < this->num_tol() || !std::isfinite(s_y) || !std::isfinite(yHy)) {
-                // std::cout<<"--- BFGS::update_Hessian_inverse is reaching num. tolerance \n";
+                // std::cout<<"--- BFGS::update_Hessian_inverse is reaching num. tolerance
+                // \n";
                 return;
             }
 

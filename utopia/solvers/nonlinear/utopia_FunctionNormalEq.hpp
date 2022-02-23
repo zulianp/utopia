@@ -19,7 +19,8 @@ namespace utopia {
 
     /**
      * @brief      Nonlinear Function for normal equation problems.
-     *             Additionally routines from Function class, one should supply also residual and jacobian.
+     *             Additionally routines from Function class, one should supply also
+     * residual and jacobian.
      *
      * @todo       Intorduce approximate Hessian updates strategies, e.g. BFGS, ...
      * @tparam     Matrix

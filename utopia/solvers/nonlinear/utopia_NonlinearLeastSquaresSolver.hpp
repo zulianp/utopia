@@ -9,8 +9,8 @@
 
 namespace utopia {
     /**
-     * @brief      The base class for all nonlinear solvers. Class provides basic functions used in all nonlinear
-     * solvers.
+     * @brief      The base class for all nonlinear solvers. Class provides basic
+     * functions used in all nonlinear solvers.
      *
      * @tparam     Matrix
      * @tparam     Vector

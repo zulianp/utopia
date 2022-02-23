@@ -1,8 +1,24 @@
-#include "utopia.hpp"
-#include "utopia_FactoryMethod.hpp"
 #include "utopia_Testing.hpp"
 
+#include "utopia.hpp"
+#include "utopia_CRSToBlockCRS.hpp"
+#include "utopia_FactoryMethod.hpp"
+#include "utopia_ILUDecompose.hpp"
+
 namespace utopia {
+
+    void crs_matrix() {
+        std::vector<int> row_ptr = {0, 1, 3};
+        std::vector<int> colidx = {0, 0, 1};
+        std::vector<double> values = {1, -1, 1};
+
+        CRSMatrix<std::vector<double>, std::vector<int>> mat(row_ptr, colidx, values, 2);
+        CRSMatrix<std::vector<double>, std::vector<int>, 2> block_mat;
+        convert(mat, block_mat);
+
+        utopia_test_assert(3 == mat.nnz());
+        utopia_test_assert(4 == block_mat.nnz());
+    }
 
 #ifdef UTOPIA_WITH_CUDA
     void cuda_hello_world() {
@@ -186,6 +202,8 @@ namespace utopia {
 #endif  // UTOPIA_WITH_LAPACK
 
     static void misc() {
+        UTOPIA_RUN_TEST(crs_matrix);
+
 #ifdef UTOPIA_WITH_CUDA
         UTOPIA_RUN_TEST(cuda_hello_world);
 #endif

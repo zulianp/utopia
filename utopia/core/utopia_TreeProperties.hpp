@@ -31,12 +31,14 @@ namespace utopia {
     // class TreeProperties< Diag<InnerExpr> > {
     // public:
     // 	enum { greatest_tensor_order = InnerExpr::Order == 2?
-    // 									static_max(InnerExpr::Order - 1, TreeProperties<InnerExpr>::greatest_tensor_order)
-    // : 									static_max(InnerExpr::Order + 1, TreeProperties<InnerExpr>::greatest_tensor_order) };
+    // 									static_max(InnerExpr::Order - 1,
+    // TreeProperties<InnerExpr>::greatest_tensor_order) :
+    // static_max(InnerExpr::Order + 1, TreeProperties<InnerExpr>::greatest_tensor_order) };
 
     // 	enum { smallest_tensor_order = InnerExpr::Order == 2?
-    // 									static_min(InnerExpr::Order - 1, TreeProperties<InnerExpr>::smallest_tensor_order)
-    // : 									static_min(InnerExpr::Order + 1, TreeProperties<InnerExpr>::smallest_tensor_order) };
+    // 									static_min(InnerExpr::Order - 1,
+    // TreeProperties<InnerExpr>::smallest_tensor_order) :
+    // static_min(InnerExpr::Order + 1, TreeProperties<InnerExpr>::smallest_tensor_order) };
 
     // 	enum { has_mat_mat_mul 		 = TreeProperties<InnerExpr>::has_mat_mat_mul 		};
     // 	enum { has_differentiable_sub_tree = TreeProperties<InnerExpr>::has_differentiable_sub_tree };

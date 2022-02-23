@@ -62,6 +62,10 @@ namespace utopia {
 
     void PetscMatrix::transform(std::function<Scalar(const Scalar &)> op) { transform_values(std::move(op)); }
 
+    void PetscMatrix::transform(std::function<Scalar(const SizeType &, const SizeType &, const Scalar &)> op) {
+        transform_ijv(op);
+    }
+
     MatType PetscMatrix::type_override() const {
         return MATAIJ;
         // return MATDENSE;
@@ -417,7 +421,7 @@ namespace utopia {
         int size = 0;
         MPI_Comm_size(comm, &size);
 
-        if (size == 1 || !is_mpi()) {
+        if (!is_block() && (size == 1 || !is_mpi())) {
             Vec v;
             MatCreateVecs(raw_type(), nullptr, &v);
             MatGetRowMax(raw_type(), v, nullptr);
@@ -439,7 +443,7 @@ namespace utopia {
         int size = 0;
         MPI_Comm_size(comm, &size);
 
-        if (size == 1 || !is_mpi()) {
+        if (!is_block() && (size == 1 || !is_mpi())) {
             Vec v;
             MatCreateVecs(raw_type(), nullptr, &v);
             MatGetRowMin(raw_type(), v, nullptr);
@@ -727,6 +731,45 @@ namespace utopia {
     //     matij_init(comm, MATAIJ, rows_local, cols_local, rows_global, cols_global, d_nnz, o_nnz);
     // }
 
+    void PetscMatrix::crs(const MatrixLayout &layout,
+                          const IndexArray &row_ptr,
+                          const IndexArray &col_idx,
+                          const ScalarArray &values) {
+        // TODO
+        // MatCreateSeqAIJWithArrays
+        // MatCreateMPIAIJWithArrays
+        // MatUpdateMPIAIJWithArrays
+
+        // Se also
+        // MatCreateMPIAIJWithSplitArrays
+        // MatMPIAIJSetPreallocationCSR
+
+        SizeType n_local_rows = row_ptr.size() - 1;
+        assert(n_local_rows == layout.local_size(0));
+
+        assert(layout.comm().size() == 1);  // IMPLEMENT ME for parallel
+
+        IndexArray d_nnz(n_local_rows, 0), o_nnz(n_local_rows, 0);
+
+        for (SizeType r = 0; r < n_local_rows; ++r) {
+            d_nnz[r] = row_ptr[r + 1] - row_ptr[r];
+        }
+
+        sparse(layout, d_nnz, o_nnz);
+
+        SizeType r_begin = row_range().begin();
+
+        write_lock(utopia::LOCAL);
+
+        for (SizeType r = 0; r < n_local_rows; ++r) {
+            for (SizeType idx = row_ptr[r]; idx < row_ptr[r + 1]; ++idx) {
+                this->set(r + r_begin, col_idx[idx], values[idx]);
+            }
+        }
+
+        write_unlock(utopia::LOCAL);
+    }
+
     void PetscMatrix::matij_init(MPI_Comm comm,
                                  MatType type,
                                  PetscInt rows_local,
@@ -831,6 +874,32 @@ namespace utopia {
         UTOPIA_REPORT_ALLOC("PetscMatrix::mat_baij_init");
     }
 
+    void PetscMatrix::mat_baij_init(MPI_Comm comm,
+                                    SizeType rows_local,
+                                    SizeType cols_local,
+                                    SizeType rows_global,
+                                    SizeType cols_global,
+                                    const IndexArray &d_nnz,
+                                    const IndexArray &o_nnz,
+                                    SizeType block_size) {
+        destroy();
+        check_error(MatCreateBAIJ(comm,
+                                  block_size,
+                                  rows_local,
+                                  cols_local,
+                                  rows_global,
+                                  cols_global,
+                                  -1,
+                                  &d_nnz[0],
+                                  -1,
+                                  &o_nnz[0],
+                                  &raw_type()));
+
+        check_error(MatZeroEntries(raw_type()));
+
+        update_mirror();
+    }
+
     bool PetscMatrix::has_nan_or_inf() const {
         int has_nan = 0;
         const Scalar *values;
@@ -933,6 +1002,24 @@ namespace utopia {
             MatGetRowMax(raw_type(), col.raw_type(), nullptr);
         } else {
             reduce_rows(col, *this, -std::numeric_limits<Scalar>::max(), utopia::Max());
+        }
+    }
+
+    void PetscMatrix::row_abs_max(PetscVector &col) const {
+        MPI_Comm comm = communicator();
+
+        if (col.is_null() || col.size() != size().get(0)) {
+            col.destroy();
+            MatCreateVecs(raw_type(), nullptr, &col.raw_type());
+        }
+
+        int size = 0;
+        MPI_Comm_size(comm, &size);
+
+        if (size == 1 || !is_mpi()) {
+            MatGetRowMaxAbs(raw_type(), col.raw_type(), nullptr);
+        } else {
+            reduce_rows(col, *this, 0.0, utopia::AbsMax());
         }
     }
 
@@ -1214,22 +1301,36 @@ namespace utopia {
         check_error(MatAXPY(raw_type(), alpha, x.raw_type(), DIFFERENT_NONZERO_PATTERN));
     }
 
+    void PetscMatrix::convert_to_mat_baij(const PetscInt block_size, PetscMatrix &output) {
+        auto ls = local_size();
+        auto gs = size();
+
+        output.mat_baij_init(
+            communicator(), ls.get(0), ls.get(1), gs.get(0), gs.get(1), PETSC_DEFAULT, PETSC_DEFAULT, block_size);
+
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
+        output.write_lock(utopia::AUTO);
+        output.write_unlock(utopia::AUTO);
+#endif  // UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
+
+        check_error(MatCopy(raw_type(), output.raw_type(), DIFFERENT_NONZERO_PATTERN));
+    }
+
     void PetscMatrix::convert_to_mat_baij(const PetscInt block_size) {
         auto ls = local_size();
         auto gs = size();
 
         PetscMatrix temp;
-        temp.mat_baij_init(
-            communicator(), ls.get(0), ls.get(1), gs.get(0), gs.get(1), PETSC_DEFAULT, PETSC_DEFAULT, block_size);
-
-#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
-        temp.write_lock(utopia::AUTO);
-        temp.write_unlock(utopia::AUTO);
-#endif  // UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
-
-        check_error(MatCopy(raw_type(), temp.raw_type(), DIFFERENT_NONZERO_PATTERN));
-
+        convert_to_mat_baij(block_size, temp);
         *this = std::move(temp);
+    }
+
+    bool PetscMatrix::is_assembled() const {
+        if (empty()) return false;
+
+        PetscBool assembled = PETSC_FALSE;
+        check_error(MatAssembled(raw_type(), &assembled));
+        return assembled == PETSC_TRUE;
     }
 
     // testing MATAIJCUSPARSE,MATSEQAIJCUSPARSE
@@ -1243,6 +1344,24 @@ namespace utopia {
         PetscObjectTypeCompare(reinterpret_cast<PetscObject>(raw_type()), MATSEQAIJCUSPARSE, &match);
         return match == PETSC_TRUE;
     }
+
+    bool PetscMatrix::is_block(Mat mat) {
+        PetscBool match = PETSC_FALSE;
+        PetscObjectTypeCompare(reinterpret_cast<PetscObject>(mat), MATBAIJ, &match);
+        if (match == PETSC_TRUE) {
+            return true;
+        }
+
+        PetscObjectTypeCompare(reinterpret_cast<PetscObject>(mat), MATSEQBAIJ, &match);
+        if (match == PETSC_TRUE) {
+            return true;
+        }
+
+        PetscObjectTypeCompare(reinterpret_cast<PetscObject>(mat), MATMPIBAIJ, &match);
+        return match == PETSC_TRUE;
+    }
+
+    bool PetscMatrix::is_block() const { return is_block(raw_type()); }
 
     VecType PetscMatrix::compatible_cuda_vec_type() const {
         PetscBool match = PETSC_FALSE;
@@ -1383,6 +1502,10 @@ namespace utopia {
         check_error(MatDiagonalSet(raw_type(), d.raw_type(), ADD_VALUES));
     }
 
+    void PetscMatrix::set_diag(const PetscVector &d) {
+        check_error(MatDiagonalSet(raw_type(), d.raw_type(), INSERT_VALUES));
+    }
+
     void PetscMatrix::set(const Scalar &val) {
         if (val == 0.0) {
             scale(0.0);
@@ -1399,6 +1522,24 @@ namespace utopia {
     }
 
     void PetscMatrix::update_mirror() { comm_.set(communicator()); }
+
+    void PetscMatrix::convert_to_scalar_matrix() {
+        if (this->is_block()) {
+            PetscMatrix temp;
+            temp.destroy();
+            MatConvert(this->raw_type(), MATAIJ, MAT_INITIAL_MATRIX, &temp.raw_type());
+            *this = std::move(temp);
+        }
+    }
+
+    void PetscMatrix::convert_to_scalar_matrix(PetscMatrix &scalar_matrix) {
+        if (this->is_block()) {
+            scalar_matrix.destroy();
+            MatConvert(this->raw_type(), MATAIJ, MAT_INITIAL_MATRIX, &scalar_matrix.raw_type());
+        } else {
+            scalar_matrix = *this;
+        }
+    }
 
 }  // namespace utopia
 

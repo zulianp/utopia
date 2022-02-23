@@ -1,6 +1,0 @@
-#ifndef UTOPIA_LIBMESH_POISSON_HPP
-#define UTOPIA_LIBMESH_POISSON_HPP
-
-namespace utopia {}
-
-#endif  // UTOPIA_LIBMESH_POISSON_HPP

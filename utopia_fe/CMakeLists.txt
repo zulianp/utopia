@@ -1,5 +1,14 @@
 cmake_minimum_required(VERSION 3.13)
-project(utopia_fe)
+# project(utopia_fe)
+
+project(
+    utopia_fe
+    VERSION 0.1.0
+    LANGUAGES "CXX"
+    HOMEPAGE_URL "https://bitbucket.org/zulianp/utopia"
+    DESCRIPTION
+        "Library for portable finite element discretizations."
+)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE
@@ -23,22 +32,37 @@ option(UTOPIA_ENABLE_MOOSE_ENV_MODE
 option(UTOPIA_ENABLE_TRILINOS_ALGEBRA
        "Allows to use the moose installation compilers" OFF)
 option(UTOPIA_ENABLE_MARS "Tries to use mars backend" OFF)
+option(UTOPIA_ENABLE_MARS_VTK "Enable vtk output for mars" OFF)
+option(UTOPIA_ENABLE_MARS_ADIOS2,  "Enable adios2 output for mars" ON)
 option(UTOPIA_ENABLE_INTREPID2 "Tries to use the intrepid2 related features"
        OFF)
 option(UTOPIA_ENABLE_NEW_TRANSFER "Use new transfer features" ON)
-option(UTOPIA_INSTALL_LIBMESH "install libmesh" OFF)
+# option(UTOPIA_INSTALL_LIBMESH "install libmesh" OFF)
 option(UTOPIA_ENABLE_WARNINGS "Compiler warnings" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
+option(UTOPIA_ENABLE_LIBMESH "Enable the libmesh functionalities" ON)
+option(UTOPIA_ENABLE_STK "Enable the stk functionalities" OFF)
+option(UTOPIA_ENABLE_MOONOLITH "Enable the moonolith functionalities" ON)
+option(UTOPIA_ENABLE_ARBORX "Enable the ArborX backend" OFF)
+
+
 # ##############################################################################
 # ##############################################################################
 # ##############################################################################
 
-if(UTOPIA_ENABLE_WARNINGS)
-    set(UTOPIA_FE_DEV_FLAGS
-        "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder"
-    )
-else()
-    set(UTOPIA_FE_DEV_FLAGS "-w -Wno-deprecated-declarations")
+if(NOT UTOPIA_ENABLE_MARS)
+    if(UTOPIA_ENABLE_WARNINGS)
+
+        set(UTOPIA_FE_DEV_FLAGS
+            "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=return-type" # -Werror=uninitialized
+)
+
+        set(UTOPIA_FE_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
+
+    else()
+        set(UTOPIA_FE_DEV_FLAGS "-w -Wno-deprecated-declarations")
+    endif()
+
 endif()
 
 # More annoying set(UTOPIA_FE_DEV_FLAGS "${UTOPIA_FE_DEV_FLAGS} -Wextra
@@ -76,6 +100,8 @@ if(UTOPIA_ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         )
     endif()
 endif()
+
+
 
 # ################################# Include cmake functions and find modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_FE_ROOT_PATH}/cmake")
@@ -133,6 +159,42 @@ function(utopiafe_add_library libraryRootDir subDirs)
     endforeach(MODULE)
 endfunction()
 
+function(utopiafe_add_module module_name libraryRootDir subDirs)
+    set(LOCAL_HEADERS "")
+    set(LOCAL_SOURCES "")
+
+    add_library(${module_name})
+    find_project_files(${libraryRootDir} "${subDirs}" LOCAL_HEADERS
+                       LOCAL_SOURCES)
+    target_sources(${module_name} PRIVATE ${LOCAL_SOURCES})
+    install(FILES ${LOCAL_HEADERS} DESTINATION include)
+    foreach(MODULE ${subDirs})
+        target_include_directories(
+            ${module_name} BEFORE
+            PUBLIC $<BUILD_INTERFACE:${libraryRootDir}/${MODULE}>)
+    endforeach(MODULE)
+
+    target_include_directories(
+        ${module_name} BEFORE
+        PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/base>)
+    target_include_directories(
+        ${module_name} BEFORE
+        PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+    target_include_directories(${module_name} BEFORE
+                               PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>)
+
+    install(
+        TARGETS ${module_name}
+        EXPORT UtopiaFETargets
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
+
+    target_link_libraries(utopia_fe PUBLIC ${module_name})
+    list(APPEND UTOPIA_FE_LIBRARIES "${module_name}")
+    set(UTOPIA_FE_LIBRARIES ${UTOPIA_FE_LIBRARIES} PARENT_SCOPE)
+endfunction()
+
 macro(add_utopiafe_app app_name)
     add_library(${app_name} EXCLUDE_FROM_ALL STATIC ${LOCAL_SOURCES})
     target_include_directories(
@@ -155,37 +217,60 @@ macro(add_utopiafe_app app_name)
     # include)
 endmacro(add_utopiafe_app)
 
-list(
-    APPEND
-    UTOPIA_FE_MODULES
-    multiphysics
-    fractures
-    wear
-    ui
-    multigrid
-    transfer
-    visualization
-    backend/libmesh
-    intersection
-    # backend/homemade
-    backend/mars
-    contact
-    materials
-    functions
-    core
-    base
-    tests
-    apps)
+list(APPEND UTOPIA_FE_MODULES frontend interoperability)
 
-if(UTOPIA_INSTALL_LIBMESH)
-    include(InstallLIBMESH)
+if(UTOPIA_ENABLE_LIBMESH)
+    list(APPEND UTOPIA_FE_MODULES backend/libmesh edsl)
+endif()
+
+if(UTOPIA_ENABLE_MOONOLITH)
+    list(APPEND UTOPIA_FE_MODULES backend/moonolith)
+endif()
+
+if(UTOPIA_ENABLE_STK)
+    list(APPEND UTOPIA_FE_MODULES backend/stk)
+endif()
+
+if(UTOPIA_ENABLE_PETSC)
+    list(APPEND UTOPIA_FE_MODULES backend/petsc)
+endif()
+
+
+##################################################
+
+if(UTOPIA_ENABLE_INTREPID2 OR UTOPIA_ENABLE_MARS)
+    list(APPEND UTOPIA_FE_MODULES backend/kokkos)
 endif()
 
 if(UTOPIA_ENABLE_INTREPID2)
     list(APPEND UTOPIA_FE_MODULES backend/intrepid2)
 endif()
 
+if(UTOPIA_ENABLE_MARS)
+    list(APPEND UTOPIA_FE_MODULES backend/mars)
+endif()
+
+if(UTOPIA_ENABLE_ARBORX)
+    list(APPEND UTOPIA_FE_MODULES backend/arborx)
+endif()
+
+##################################################
+
+
+list(APPEND UTOPIA_FE_MODULES base core)
+
+if(UTOPIA_ENABLE_LIBMESH)
+    include(InstallLIBMESH)
+endif()
+
+
 add_library(utopia_fe utopia_fe.cpp)
+
+# if(UTOPIA_ENABLE_MARS_ADIOS2)
+#     find_package(adios2 REQUIRED)
+#     target_link_libraries(utopia_fe PUBLIC adios2::adios2)
+# endif()
+
 set_utopia_compiler_features(utopia_fe)
 target_include_directories(
     utopia_fe BEFORE PUBLIC $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
@@ -212,7 +297,7 @@ install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp DESTINATION include)
 
 set(TOP_LEVEL 1)
 add_executable(utopia_fe_exec EXCLUDE_FROM_ALL main.cpp ${LOCAL_HEADERS})
-target_link_libraries(utopia_fe_exec PRIVATE utopia_fe ${UTOPIA_FE_APPS})
+# target_link_libraries(utopia_fe_exec PRIVATE utopia_fe ${UTOPIA_FE_APPS})
 
 # --------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------
@@ -304,6 +389,10 @@ function(append_list_to_string_for_cmake OUTPUT_STRING PRE_LIST POST_LIST
         PARENT_SCOPE)
 endfunction()
 
+if(UTOPIA_FE_LIBRARIES_TRAILING)
+    list(APPEND UTOPIA_FE_LIBRARIES ${UTOPIA_FE_LIBRARIES_TRAILING})
+endif()
+
 # Generate files useful for dependent build systems
 set(CONFIG_CONTENT
     "#Automatically generated by utopia CMakeLists.txt\n#Includes the content of utopia-config.makefile generated by utopia\n\n"
@@ -318,6 +407,8 @@ append_list_to_string_for_makefile(
     "${UTOPIA_FE_INCLUDES}")
 append_list_to_string_for_makefile(CONFIG_CONTENT "" "\n" "-I"
                                    "${MOONOLITH_INCLUDES}")
+
+message("MOONOLITH_INCLUDES=${MOONOLITH_INCLUDES}")
 
 append_list_to_string_for_makefile(
     CONFIG_CONTENT
@@ -352,6 +443,8 @@ append_list_to_string_for_cmake(CONFIG_CONTENT "" "" "${LIBMESH_INCLUDE_DIR}")
 if(MOONOLITH_INCLUDES)
     append_list_to_string_for_cmake(CONFIG_CONTENT "" ")\n\n"
                                     ${MOONOLITH_INCLUDES})
+else()
+    set(CONFIG_CONTENT "${CONFIG_CONTENT})")
 endif()
 
 append_list_to_string_for_makefile_with_postfix(
@@ -410,6 +503,19 @@ write_basic_package_version_file(
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/UtopiaFEConfig.cmake
         DESTINATION lib/cmake/)
 
+add_executable(utopia_fe_test test.cpp)
+
+target_link_libraries(utopia_fe_test utopia_fe)
+target_link_libraries(utopia_fe_exec utopia_fe)
+
+include(tests/tests.cmake)
+
+include(apps/apps.cmake)
+
+if(UTOPIA_ENABLE_LIBMESH)
+    include(old/apps/apps.cmake)
+endif()
+
 # ##############################################################################
 
 add_custom_target(apps)
@@ -418,6 +524,10 @@ add_dependencies(apps utopia_fe utopia_fe_exec)
 # ##############################################################################
 
 add_custom_target(complete)
-add_dependencies(complete apps)
+add_dependencies(complete apps utopia_fe_test)
 
 # ##############################################################################
+
+# include(cmake/PostInstall.cmake)
+
+message(STATUS "UTOPIA_FE_LIBRARIES=${UTOPIA_FE_LIBRARIES}")

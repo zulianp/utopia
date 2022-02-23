@@ -1,7 +1,8 @@
 #include "test_problems/utopia_QPSolverTestProblem.hpp"
 #include "utopia.hpp"
+#include "utopia_AlgebraUnitTest.hpp"
 #include "utopia_BlockQPSolver.hpp"
-#include "utopia_ParallelTestRunner.hpp"
+
 #include "utopia_RedundantQPSolver.hpp"
 #include "utopia_SemismoothNewton_old.hpp"
 #include "utopia_Testing.hpp"
@@ -89,7 +90,7 @@ namespace utopia {
 
         void solve_problem() {
             {
-                MPGRP<Matrix, Vector> solver;
+                MPRGP<Matrix, Vector> solver;
                 QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, solver, true);
             }
 
@@ -109,20 +110,20 @@ namespace utopia {
             }
 
             {
-                SemismoothNewton<Matrix, Vector> solver(std::make_shared<MPGRP<Matrix, Vector>>());
+                SemismoothNewton<Matrix, Vector> solver(std::make_shared<MPRGP<Matrix, Vector>>());
                 QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, solver, true);
             }
 
             // {
-            //     SemismoothNewton<Matrix, Vector, INVALID_BACKEND> solver(std::make_shared<MPGRP<Matrix, Vector>>());
+            //     SemismoothNewton<Matrix, Vector, INVALID_BACKEND> solver(std::make_shared<MPRGP<Matrix, Vector>>());
             //     QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, true, solver, true);
             // }
         }
 
         void qp_solver_with_clone() {
             {
-                MPGRP<Matrix, Vector> temp_qp;
-                auto bqp_ptr = std::shared_ptr<MPGRP<Matrix, Vector>>(temp_qp.clone());
+                MPRGP<Matrix, Vector> temp_qp;
+                auto bqp_ptr = std::shared_ptr<MPRGP<Matrix, Vector>>(temp_qp.clone());
                 QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, *bqp_ptr, true);
                 QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, *bqp_ptr, false);
             }
@@ -136,7 +137,7 @@ namespace utopia {
             }
 
             {
-                auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<MPGRP<Matrix, Vector>>());
+                auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<MPRGP<Matrix, Vector>>());
                 auto bqp_ptr = std::shared_ptr<SemismoothNewton<Matrix, Vector>>(qp->clone());
                 QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, *bqp_ptr, true);
             }
@@ -151,21 +152,24 @@ namespace utopia {
 
         void block_qp_solver() {
             {
-                auto qp = std::make_shared<MPGRP<Matrix, Vector>>();
+                auto qp = std::make_shared<MPRGP<Matrix, Vector>>();
 
                 BlockQPSolver<Matrix, Vector> bqp(qp);
                 QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, bqp, true);
             }
 
-            // {
-            //     auto qp = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+            {
+                auto qp = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+                qp->use_sweeper(false);
 
-            //     BlockQPSolver<Matrix, Vector> bqp(qp);
-            //     QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, bqp, true);
-            // }
+                QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, *qp, true);
+
+                // BlockQPSolver<Matrix, Vector> bqp(qp);
+                // QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, bqp, true);
+            }
 
             {
-                auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<MPGRP<Matrix, Vector>>());
+                auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<MPRGP<Matrix, Vector>>());
                 // qp->verbose(true);
                 BlockQPSolver<Matrix, Vector> bqp(qp);
                 QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, bqp, true);
@@ -182,7 +186,7 @@ namespace utopia {
 
         void block_qp_solver_with_clone() {
             {
-                auto qp = std::make_shared<MPGRP<Matrix, Vector>>();
+                auto qp = std::make_shared<MPRGP<Matrix, Vector>>();
                 BlockQPSolver<Matrix, Vector> temp_qp(qp);
                 auto bqp_ptr = std::shared_ptr<BlockQPSolver<Matrix, Vector>>(temp_qp.clone());
                 QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, *bqp_ptr, true);
@@ -201,7 +205,7 @@ namespace utopia {
             //     // auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(
             //     //     std::make_shared<Factorization<Matrix, Vector>>());
 
-            //     auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<MPGRP<Matrix,
+            //     auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<MPRGP<Matrix,
             //     Vector>>());
 
             //     BlockQPSolver<Matrix, Vector> temp_qp(qp);
@@ -210,7 +214,7 @@ namespace utopia {
             // }
 
             {
-                auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<MPGRP<Matrix, Vector>>());
+                auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<MPRGP<Matrix, Vector>>());
 
                 BlockQPSolver<Matrix, Vector> temp_qp(qp);
                 auto bqp_ptr = std::shared_ptr<BlockQPSolver<Matrix, Vector>>(temp_qp.clone());
@@ -228,7 +232,7 @@ namespace utopia {
         }
 
         void redundant_qp_solver() {
-            auto qp = std::make_shared<MPGRP<Matrix, Vector>>();
+            auto qp = std::make_shared<MPRGP<Matrix, Vector>>();
             // qp->verbose(true);
             RedundantQPSolver<Matrix, Vector> redqp(qp, 2);
 

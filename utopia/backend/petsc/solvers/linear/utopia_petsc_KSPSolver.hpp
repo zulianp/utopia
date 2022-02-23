@@ -39,6 +39,9 @@ namespace utopia {
     template <typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
     class KSPSolver {};
 
+    template <typename Matrix, typename Vector, int Backend>
+    class Traits<KSPSolver<Matrix, Vector, Backend>> : public Traits<Matrix> {};
+
     template <typename Matrix, typename Vector>
     class KSPSolver<Matrix, Vector, PETSC> : public PreconditionedSolver<Matrix, Vector> {
     public:
@@ -155,7 +158,7 @@ namespace utopia {
 
         virtual void set_monitor_options(KSP &ksp) const;
 
-        void handle_reset(const Matrix &op);
+        void handle_reset(const PetscCommunicator &op);
 
         void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec) override;
 
@@ -181,6 +184,8 @@ namespace utopia {
 
         void read(Input &is) override;
         void print_usage(std::ostream &os = std::cout) const override;
+
+        void factor_set_pivot_in_blocks(const bool val);
 
     protected:
         std::unique_ptr<Impl> ksp_;

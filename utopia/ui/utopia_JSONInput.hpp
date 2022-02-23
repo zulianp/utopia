@@ -13,6 +13,8 @@ namespace utopia {
 
     class JSONInput final : public Input {
     public:
+        using Input::get;
+
         JSONInput();
         ~JSONInput() override;
 
@@ -35,6 +37,10 @@ namespace utopia {
         void get(const std::string &key, Configurable &val) override;
         void get(const std::string &key, std::function<void(Input &)> lambda) override;
         bool good() const override;
+
+        bool key_exists(const std::string &key) const override;
+
+        bool is_collection() const override;
 
     private:
         class Impl;

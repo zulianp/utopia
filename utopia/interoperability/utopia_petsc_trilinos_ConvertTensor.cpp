@@ -15,7 +15,7 @@
 
 namespace utopia {
 
-    void ConvertTensor<TpetraVector, PetscVector, 1, TRILINOS, PETSC>::apply(const TpetraVector &in, PetscVector &out) {
+    void ConvertTensor<TpetraVector, PetscVector, 1>::apply(const TpetraVector &in, PetscVector &out) {
         PetscCommunicator comm(in.comm().raw_comm());
         out.zeros(layout(comm, in.local_size(), in.size()));
 
@@ -31,7 +31,7 @@ namespace utopia {
         }
     }
 
-    void ConvertTensor<PetscVector, TpetraVector, 1, PETSC, TRILINOS>::apply(const PetscVector &in, TpetraVector &out) {
+    void ConvertTensor<PetscVector, TpetraVector, 1>::apply(const PetscVector &in, TpetraVector &out) {
         TrilinosCommunicator comm(in.comm().raw_comm());
         out.zeros(layout(comm, in.local_size(), in.size()));
 
@@ -47,8 +47,7 @@ namespace utopia {
         }
     }
 
-    void ConvertTensor<TpetraMatrix, PetscMatrix, 2, TRILINOS, PETSC>::apply(const TpetraMatrix &from,
-                                                                             PetscMatrix &to) {
+    void ConvertTensor<TpetraMatrix, PetscMatrix, 2>::apply(const TpetraMatrix &from, PetscMatrix &to) {
         using Scalar = typename Traits<TpetraMatrix>::Scalar;
         using SizeType = typename Traits<TpetraMatrix>::SizeType;
 
@@ -77,8 +76,7 @@ namespace utopia {
         assert(local_size(from) == local_size(to));
     }
 
-    void ConvertTensor<PetscMatrix, TpetraMatrix, 2, PETSC, TRILINOS>::apply(const PetscMatrix &from,
-                                                                             TpetraMatrix &to) {
+    void ConvertTensor<PetscMatrix, TpetraMatrix, 2>::apply(const PetscMatrix &from, TpetraMatrix &to) {
         using Scalar = typename Traits<PetscMatrix>::Scalar;
         using SizeType = typename Traits<PetscMatrix>::SizeType;
 

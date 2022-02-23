@@ -1,5 +1,7 @@
 #ifndef UTOPIA_LS_STRATEGY_HPP
 #define UTOPIA_LS_STRATEGY_HPP
+
+#include "utopia_Function.hpp"
 #include "utopia_FunctionNormalEq.hpp"
 #include "utopia_Input.hpp"
 
@@ -24,14 +26,16 @@ namespace utopia {
 
         LSStrategy()
             : c1_(1e-4),
+              c2_(0.9),
               max_it_(50),
-              rho_(0.75),
-              alpha_min_(1e-9){
+              rho_(0.5),
+              alpha_min_(1e-7){
 
               };
 
         /**
-         * @brief      Gets the alpha = step-size. Function needs to be provided by actual LS strategies.
+         * @brief      Gets the alpha = step-size. Function needs to be provided by
+         * actual LS strategies.
          *
          * @param
          * @param[in]
@@ -53,6 +57,10 @@ namespace utopia {
 
         virtual Scalar c1() const { return c1_; }
 
+        virtual void c2(const Scalar &c2_in) { c2_ = c2_in; }
+
+        virtual Scalar c2() const { return c2_; }
+
         virtual void rho(const Scalar &rho_in) { rho_ = rho_in; }
 
         virtual Scalar rho() const { return rho_; }
@@ -68,6 +76,7 @@ namespace utopia {
         void read(Input &in) override {
             in.get("verbose", verbose_);
             in.get("c1", c1_);
+            in.get("c2", c2_);
             in.get("max_it", max_it_);
             in.get("rho", rho_);
             in.get("alpha_min", alpha_min_);
@@ -76,6 +85,7 @@ namespace utopia {
         void print_usage(std::ostream &os) const override {
             this->print_param_usage(os, "verbose", "bool", "Verbose.", "false");
             this->print_param_usage(os, "c1", "double", "Constant used for Wolfe conditions.", "1e-4");
+            this->print_param_usage(os, "c2", "double", "Constant used for Wolfe conditions.", "0.9");
             this->print_param_usage(os, "max_it", "int", "Maximum number of iterations.", "50");
             this->print_param_usage(os, "rho", "double", "Contraction factor.", "0.75");
             this->print_param_usage(os, "alpha_min", "double", "Minimum allowed step-size.", "1e-9");
@@ -85,10 +95,12 @@ namespace utopia {
 
     private:
         bool verbose_{false}; /*!< Verbose inside of LS strategy.  */
-        Scalar c1_;           /*!< Constant for Wolfe conditions \f$ c_1 \in (0,1),   c_1 = 10^{-4} \f$.  */
-        SizeType max_it_;     /*!< Maximum of the iterations inside of LS strategy.  */
-        Scalar rho_;          /*!< Contraction factor.   */
-        Scalar alpha_min_;    /*!< Minimum allowed step-size.   */
+        Scalar c1_;           /*!< Constant for Wolfe conditions \f$ c_1 \in (0,1),   c_1 =
+                                 10^{-4} \f$.  */
+        Scalar c2_;
+        SizeType max_it_;  /*!< Maximum of the iterations inside of LS strategy.  */
+        Scalar rho_;       /*!< Contraction factor.   */
+        Scalar alpha_min_; /*!< Minimum allowed step-size.   */
     };
 }  // namespace utopia
 

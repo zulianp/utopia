@@ -36,6 +36,8 @@ namespace utopia {
             return true;
         }
 
+        virtual void set_selection(const std::shared_ptr<Vector> &) {}
+
         const BoxConstraints &get_box_constraints() const { return constraints_; }
         BoxConstraints &get_box_constraints() { return constraints_; }
 
@@ -117,12 +119,13 @@ namespace utopia {
                 auto d_x = const_local_view_device(x);
                 auto Pc_view = local_view_device(Pc);
 
-                parallel_for(local_range_device(Pc), UTOPIA_LAMBDA(const SizeType i) {
-                    const Scalar li = d_lb.get(i);
-                    const Scalar ui = d_ub.get(i);
-                    const Scalar xi = d_x.get(i);
-                    Pc_view.set(i, (li >= xi) ? li : ((ui <= xi) ? ui : xi));
-                });
+                parallel_for(
+                    local_range_device(Pc), UTOPIA_LAMBDA(const SizeType i) {
+                        const Scalar li = d_lb.get(i);
+                        const Scalar ui = d_ub.get(i);
+                        const Scalar xi = d_x.get(i);
+                        Pc_view.set(i, (li >= xi) ? li : ((ui <= xi) ? ui : xi));
+                    });
             }
 
             return true;
@@ -141,12 +144,13 @@ namespace utopia {
                 auto d_ub = const_local_view_device(ub);
                 auto d_x = local_view_device(x);
 
-                parallel_for(local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                    const Scalar li = d_lb.get(i);
-                    const Scalar ui = d_ub.get(i);
-                    const Scalar xi = d_x.get(i);
-                    d_x.set(i, (li >= xi) ? li : ((ui <= xi) ? ui : xi));
-                });
+                parallel_for(
+                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                        const Scalar li = d_lb.get(i);
+                        const Scalar ui = d_ub.get(i);
+                        const Scalar xi = d_x.get(i);
+                        d_x.set(i, (li >= xi) ? li : ((ui <= xi) ? ui : xi));
+                    });
             }
         }
 
@@ -162,12 +166,13 @@ namespace utopia {
                     auto d_ub = const_local_view_device(ub);
                     auto x_view = local_view_device(x);
 
-                    parallel_for(local_range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
-                        const Scalar li = d_lb.get(i);
-                        const Scalar ui = d_ub.get(i);
-                        const Scalar xi = x_view.get(i);
-                        x_view.set(i, (li >= xi) ? li : ((ui <= xi) ? ui : xi));
-                    });
+                    parallel_for(
+                        local_range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
+                            const Scalar li = d_lb.get(i);
+                            const Scalar ui = d_ub.get(i);
+                            const Scalar xi = x_view.get(i);
+                            x_view.set(i, (li >= xi) ? li : ((ui <= xi) ? ui : xi));
+                        });
                 }
 
             } else if (constraints_.has_upper_bound() && !constraints_.has_lower_bound()) {
@@ -177,11 +182,12 @@ namespace utopia {
                     auto d_ub = const_local_view_device(ub);
                     auto x_view = local_view_device(x);
 
-                    parallel_for(local_range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
-                        const Scalar ui = d_ub.get(i);
-                        const Scalar xi = x_view.get(i);
-                        x_view.set(i, (ui <= xi) ? ui : xi);
-                    });
+                    parallel_for(
+                        local_range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
+                            const Scalar ui = d_ub.get(i);
+                            const Scalar xi = x_view.get(i);
+                            x_view.set(i, (ui <= xi) ? ui : xi);
+                        });
                 }
             } else {
                 const auto &lb = *constraints_.lower_bound();
@@ -190,11 +196,12 @@ namespace utopia {
                     auto d_lb = const_local_view_device(lb);
                     auto x_view = local_view_device(x);
 
-                    parallel_for(local_range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
-                        const Scalar li = d_lb.get(i);
-                        const Scalar xi = x_view.get(i);
-                        x_view.set(i, (li >= xi) ? li : xi);
-                    });
+                    parallel_for(
+                        local_range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
+                            const Scalar li = d_lb.get(i);
+                            const Scalar xi = x_view.get(i);
+                            x_view.set(i, (li >= xi) ? li : xi);
+                        });
                 }
             }
         }

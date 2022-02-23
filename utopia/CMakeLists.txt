@@ -6,6 +6,17 @@ cmake_policy(SET "CMP0079" NEW)
 set(UTOPIA_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_ROOT_PATH}/cmake")
 
+set(CMAKE_C_FLAGS_ASAN
+    "-fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -g -O1"
+    CACHE STRING "Flags used by the C compiler during AddressSanitizer builds."
+          FORCE)
+
+set(CMAKE_CXX_FLAGS_ASAN
+    "-fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -g -O1"
+    CACHE STRING
+          "Flags used by the C++ compiler during AddressSanitizer builds."
+          FORCE)
+
 # ##############################################################################
 # ######################## UTOPIA VERSION INFORMATION
 # ##############################################################################
@@ -48,7 +59,7 @@ option(UTOPIA_ENABLE_MPI "Enable the cuda backend" ON)
 option(UTOPIA_ENABLE_PETSC "Enable the petsc backend" ON)
 option(UTOPIA_ENABLE_SLEPC "Enable the slepc backend" ON)
 option(UTOPIA_ENABLE_TRILINOS "Enable the Trilinos backend" ON)
-option(UTOPIA_ENABLE_KOKKOS_SIMD "Enable kokkos intriniscs wrapper" OFF)
+# option(UTOPIA_ENABLE_KOKKOS_SIMD "Enable kokkos intriniscs wrapper" OFF)
 option(UTOPIA_ENABLE_BLAS "Enable the blas backend" ON)
 option(UTOPIA_ENABLE_M3ELINSOL
        "Enable the m3elinsol algebraic multigrid backend" OFF)
@@ -67,11 +78,14 @@ option(UTOPIA_ENABLE_MOOSE_ENV_MODE
        "Allows to use the moose installation compilers" OFF)
 option(UTOPIA_ENABLE_DEPRECATED_API
        "Decprecated functionality that will be removed in the future" ON)
+option(UTOPIA_ENABLE_TINY_EXPR "String expressions support" ON)
+option(UTOPIA_ENABLE_YAML_CPP "Enable YAML support" ON)
+
 option(UTOPIA_ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
 option(
     UTOPIA_ENABLE_PETSC_DM_PLEX
     "For the moment is to allow the \"make petsc\" command to install DMPlex dependencies"
-    ON)
+    OFF)
 option(UTOPIA_PULL_REQUEST_MODE
        "Mode for ensuring that pull request standards are respected" OFF)
 
@@ -79,7 +93,7 @@ option(UTOPIA_ENABLE_EIGEN_3 "Look for eigen for comparing performance" OFF)
 option(UTOPIA_BUILD_DOCUMENTATION
        "Use Doxygen to create the HTML based API documentation" ON)
 
-option(UTOPIA_SCRIPTING
+option(UTOPIA_ENABLE_SCRIPTING
        "Enable exports for other languages (C, Python, etc...)" OFF)
 
 option(UTOPIA_INSTALL_TRILINOS "Install trilinos directly" ON)
@@ -93,6 +107,7 @@ option(
 option(UTOPIA_SPACK_MODE "Spack env hacks" OFF)
 
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
+option(UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE "Removed trilinos deprecated code" OFF)
 
 # set(UTOPIA_DEFAULT_TARGETS)
 include(CodeCoverage)
@@ -104,7 +119,7 @@ set(UTOPIA_DEV_FLAGS
     "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=return-type" # -Werror=uninitialized
 )
 
-if(APPLE)
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
     set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=nonportable-include-path")
 endif()
 
@@ -195,14 +210,14 @@ endif()
 message(
     STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 
-if(UTOPIA_ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
+if(UTOPIA_ENABLE_SANITIZER)
+    # if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
 
-        set(UTOPIA_DEV_FLAGS
-            "${UTOPIA_DEV_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls "
-        )
+    set(UTOPIA_DEV_FLAGS
+        "${UTOPIA_DEV_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls "
+    )
 
-    endif()
+    # endif()
 endif()
 
 if(UTOPIA_ENABLE_LOCK_CHECKING)
@@ -219,6 +234,10 @@ endif()
 
 if(UTOPIA_ENABLE_CXX14_FEATURES)
     set(UTOPIA_WITH_CPP14 TRUE)
+endif()
+
+if(CYGWIN)
+    include(InstallPetscCygwin)
 endif()
 
 message(STATUS "[Status] UTOPIA_ROOT_PATH: ${UTOPIA_ROOT_PATH}")
@@ -283,7 +302,11 @@ function(utopia_add_library libraryRootDir subDirs)
     set(THIS_MODULE_HEADERS "")
     find_project_files(${libraryRootDir} "${subDirs}" THIS_MODULE_HEADERS
                        THIS_MODULE_SOURCES)
-    target_sources(utopia PRIVATE ${THIS_MODULE_SOURCES})
+    target_sources(
+        utopia
+        PRIVATE ${THIS_MODULE_SOURCES}
+        PRIVATE ${THIS_MODULE_HEADERS})
+
     install(FILES ${THIS_MODULE_HEADERS} DESTINATION include)
     foreach(MODULE ${subDirs})
         target_include_directories(
@@ -411,7 +434,10 @@ if(UTOPIA_INSTALL_TRILINOS)
     include(InstallTrilinos)
 endif()
 
-if(UTOPIA_INSTALL_PETSC)
+if(UTOPIA_INSTALL_PETSC AND UTOPIA_ENABLE_CYGWIN)
+    include(InstallPetsc)
+
+else()
     include(InstallPetsc)
 endif()
 
@@ -439,12 +465,10 @@ list(APPEND UTOPIA_HEADERS utopia.hpp utopia_Base.hpp utopia_Instance.hpp
 list(APPEND UTOPIA_SOURCES utopia.cpp utopia_Instance.cpp utopia_Base.cpp)
 add_library(utopia ${UTOPIA_SOURCES})
 
-if(UTOPIA_ENABLE_KOKKOS_SIMD)
-    set(UTOPIA_WITH_KOKKOS_SIMD TRUE)
+# if(UTOPIA_ENABLE_KOKKOS_SIMD) set(UTOPIA_WITH_KOKKOS_SIMD TRUE)
 
-    target_include_directories(
-        utopia PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/external/simd-math>)
-endif()
+# target_include_directories( utopia PUBLIC
+# $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/external/simd-math>) endif()
 
 # We use this to force c++14
 set_utopia_compiler_features(utopia)
@@ -490,8 +514,12 @@ if(UTOPIA_ENABLE_M3ELINSOL)
     add_subdirectory(backend/m3elinsol)
 endif()
 
-if(UTOPIA_SCRIPTING)
+if(UTOPIA_ENABLE_SCRIPTING)
     add_subdirectory(scripting)
+endif()
+
+if(UTOPIA_ENABLE_YAML_CPP)
+    add_subdirectory(backend/yamlcpp)
 endif()
 
 # weird stuff goes here
@@ -674,5 +702,15 @@ add_dependencies(complete utopia utopia_test utopia_bench utopia_exec
                  utopia_examples)
 
 # ##############################################################################
-target_format_setup(utopia_test)
+target_format_setup("utopia;utopia_test;utopia_bench;utopia_exec")
 # ##############################################################################
+
+# During the cmake step some test programs can crash and leave a core-dump file behind
+# This file has unfortunately the same name as the module `core`. Therefore at the end
+# when CMake tries to generate the output directories (which happens after the whole CMakeLists.txt
+# has been parsed), we must make sure that there is no such file with the name `core`.
+# One program that is known to crash on Piz Daint is the PETSc test run, because MPI
+# cannot be initialised when it is not running under an srun environment (i.e. you are compiling on a login node).
+if(EXISTS ${CMAKE_BINARY_DIR}/core AND NOT IS_DIRECTORY ${CMAKE_BINARY_DIR}/core)
+    file(REMOVE ${CMAKE_BINARY_DIR}/core)
+endif()
