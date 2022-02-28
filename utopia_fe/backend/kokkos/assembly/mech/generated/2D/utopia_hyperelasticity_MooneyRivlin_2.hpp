@@ -364,6 +364,158 @@ namespace utopia {
                                 x69 * x80 - x73 * x96 + x75 * x99 + x84);
             }
 
+            UTOPIA_FUNCTION void apply(const T *UTOPIA_RESTRICT f,
+                                       const T *grad_test,
+                                       const T *disp_grad,
+                                       const T dx,
+                                       T *UTOPIA_RESTRICT res) const {
+                using namespace utopia::device;
+                // Automatically generated
+                T x0 = 3 * C1;
+                T x1 = disp_grad[0] * grad_test[0];
+                T x2 = x0 * x1;
+                T x3 = disp_grad[1] * grad_test[1];
+                T x4 = x0 * x3;
+                T x5 = pow(f[2], 3);
+                T x6 = f[1] * x5;
+                T x7 = C2 * x3;
+                T x8 = disp_grad[0] * grad_test[1];
+                T x9 = x0 * x8;
+                T x10 = pow(f[3], 3);
+                T x11 = f[2] * x10;
+                T x12 = f[3] * x5;
+                T x13 = grad_test[0] * x0;
+                T x14 = disp_grad[1] * x13;
+                T x15 = f[0] * x10;
+                T x16 = disp_grad[2] * grad_test[1];
+                T x17 = 2 * x16;
+                T x18 = C1 * x17;
+                T x19 = pow(f[0], 3);
+                T x20 = f[3] * x19;
+                T x21 = x0 * x16;
+                T x22 = disp_grad[2] * x13;
+                T x23 = f[1] * x10;
+                T x24 = pow(f[1], 3);
+                T x25 = f[2] * x24;
+                T x26 = f[3] * x24;
+                T x27 = disp_grad[3] * grad_test[1];
+                T x28 = x0 * x27;
+                T x29 = f[0] * x5;
+                T x30 = disp_grad[3] * grad_test[0];
+                T x31 = x0 * x30;
+                T x32 = f[2] * x19;
+                T x33 = 2 * x30;
+                T x34 = C1 * x33;
+                T x35 = C2 * x1;
+                T x36 = f[2] * x8;
+                T x37 = pow(f[0], 2);
+                T x38 = C1 * x37;
+                T x39 = f[3] * x38;
+                T x40 = pow(f[1], 2);
+                T x41 = C1 * f[3];
+                T x42 = x40 * x41;
+                T x43 = disp_grad[1] * grad_test[0];
+                T x44 = f[2] * x43;
+                T x45 = f[1] * f[2];
+                T x46 = x16 * x45;
+                T x47 = disp_grad[2] * grad_test[0];
+                T x48 = f[1] * x39;
+                T x49 = pow(f[3], 2);
+                T x50 = C1 * x49;
+                T x51 = pow(f[2], 2);
+                T x52 = f[1] * x51;
+                T x53 = x41 * x52;
+                T x54 = C1 * x40;
+                T x55 = f[0] * f[2];
+                T x56 = x27 * x55;
+                T x57 = f[0] * f[3];
+                T x58 = x30 * x57;
+                T x59 = C1 * x51;
+                T x60 = f[0] * x49;
+                T x61 = C2 * x60;
+                T x62 = C2 * disp_grad[2];
+                T x63 = grad_test[0] * x62;
+                T x64 = f[1] * x60;
+                T x65 = f[2] * f[3];
+                T x66 = C2 * x27;
+                T x67 = x37 * x66;
+                T x68 = x45 * x57;
+                T x69 = 8 * C1;
+                T x70 = x1 * x69;
+                T x71 = x68 * x69;
+                T x72 = grad_test[1] * x62;
+                T x73 = 3 * x68;
+                T x74 = C2 * x30;
+                T x75 = x37 * x49;
+                T x76 = C2 * x75;
+                T x77 = x52 * x8;
+                T x78 = 4 * C1 * f[0];
+                T x79 = f[0] * f[1] * x50;
+                T x80 = 4 * x79;
+                T x81 = x43 * x52;
+                T x82 = 4 * x55;
+                T x83 = x47 * x82;
+                T x84 = 6 * x57;
+                T x85 = x16 * x84;
+                T x86 = 6 * x45;
+                T x87 = x30 * x86;
+                T x88 = 4 * x27;
+                T x89 = C2 * f[3];
+                T x90 = x40 * x65;
+                T x91 = f[0] * x52;
+                T x92 = x40 * x51;
+                T x93 = x2 * x49;
+                T x94 = x4 * x51;
+                T x95 = x69 * x75;
+                T x96 = grad_test[1] * x92;
+                T x97 = C2 * x92;
+                T x98 = (1.0 / 4.0) * dx / (sqrt(-x45 + x57) * (-2 * x68 + x75 + x92));
+                T x99 = 2 * C1 * x8;
+                T x100 = 2 * x43;
+                T x101 = C1 * x100;
+                T x102 = f[0] * x24;
+                T x103 = f[1] * x19;
+                T x104 = x57 * x8;
+                T x105 = x3 * x55;
+                T x106 = x43 * x45;
+                T x107 = C1 * x91;
+                T x108 = f[1] * x37;
+                T x109 = C2 * x73;
+                T x110 = x1 * x82;
+                T x111 = x8 * x86;
+                T x112 = x43 * x84;
+                T x113 = 4 * x3;
+                T x114 = 4 * f[2];
+                T x115 = x114 * x16;
+                T x116 = x114 * x30;
+                T x117 = x40 * x55;
+                T x118 = x22 * x40;
+                T x119 = x28 * x37;
+                res[0] +=
+                    x98 * (pow(f[2], 4) * x4 + pow(f[3], 4) * x2 - x11 * x14 - x11 * x9 - x12 * x14 - x12 * x9 +
+                           x15 * x18 - x15 * x31 - x15 * x35 - x17 * x76 + x18 * x20 + x2 * x75 - x20 * x31 -
+                           x21 * x25 - x21 * x6 - x22 * x23 - x22 * x26 + x25 * x34 - x28 * x29 - x28 * x32 - x3 * x71 +
+                           x3 * x95 + x30 * x76 + x33 * x97 + x34 * x6 + x35 * x45 * x49 + x36 * x39 + x36 * x42 +
+                           x36 * x61 + x37 * x94 + x38 * x46 + x38 * x87 + x39 * x44 + x4 * x92 + x40 * x93 +
+                           x42 * x44 - x43 * x80 + x44 * x61 + x46 * x50 + x47 * x48 + x47 * x53 - x48 * x88 +
+                           x49 * x94 + x50 * x56 - x50 * x83 + x50 * x87 - x51 * x57 * x7 + x51 * x93 - x53 * x88 +
+                           x54 * x56 + x54 * x58 - x54 * x83 + x54 * x85 + x58 * x59 + x59 * x85 + x6 * x7 - x62 * x96 +
+                           x63 * x64 - x63 * x90 + x65 * x67 - x66 * x91 - x68 * x70 + x70 * x92 + x72 * x73 -
+                           x73 * x74 - x77 * x78 - x77 * x89 - x78 * x81 - x8 * x80 - x81 * x89);
+                res[1] +=
+                    x98 *
+                    (2 * C2 * disp_grad[0] * x96 + disp_grad[3] * x69 * x96 + pow(f[0], 4) * x28 + pow(f[1], 4) * x22 +
+                     f[3] * x108 * x72 + x1 * x48 + x1 * x53 - x100 * x76 + x101 * x15 + x101 * x20 - x102 * x21 -
+                     x102 * x31 - x103 * x21 - x103 * x31 + x104 * x54 + x104 * x59 + x105 * x50 + x105 * x54 +
+                     x106 * x38 + x106 * x50 + x107 * x16 + x107 * x30 + x108 * x30 * x89 + x109 * x43 - x109 * x8 -
+                     x110 * x50 - x110 * x54 + x111 * x38 + x111 * x50 + x112 * x54 + x112 * x59 - x113 * x48 -
+                     x113 * x53 - x115 * x39 - x115 * x42 - x116 * x39 - x116 * x42 - x117 * x72 - x117 * x74 +
+                     x118 * x37 + x118 * x49 + x119 * x40 + x119 * x51 - x14 * x25 - x14 * x6 - x15 * x9 + x16 * x79 -
+                     x2 * x23 - x2 * x26 - x20 * x66 - x20 * x9 + x22 * x92 + x25 * x63 + x25 * x99 - x27 * x71 +
+                     x28 * x75 - x29 * x4 + x30 * x79 - x32 * x4 + x35 * x64 - x35 * x90 + x37 * x65 * x7 -
+                     x40 * x57 * x63 - x43 * x97 + x45 * x67 - x47 * x71 + x47 * x95 + x6 * x99 - x7 * x91 + x76 * x8);
+            }
+
             T C1{1.0};
             T C2{1.0};
         };

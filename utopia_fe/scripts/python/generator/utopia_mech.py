@@ -35,6 +35,18 @@ console = rich.get_console()
 #         F = Matrix(3,3,[f00, f01, f02, f10, f11, f12, f20, f21, f22])
 #     return F
 
+def displacement_gradient(d):
+    if d == 1:
+        u00 = symbols('disp_grad[0]')
+        F = Matrix(1,1,[u00])
+    elif d == 2:
+        u00, u01, u10, u11 = symbols('disp_grad[0] disp_grad[1] disp_grad[2] disp_grad[3]')
+        F = Matrix(2,2,[u00,u01,u10,u11])
+    else:
+        u00, u01, u02, u10, u11, u12, u20, u21, u22  = symbols('disp_grad[0] disp_grad[1] disp_grad[2] disp_grad[3] disp_grad[4] disp_grad[5] disp_grad[6] disp_grad[7] disp_grad[8]')
+        F = Matrix(3,3,[u00, u01, u02, u10, u11, u12, u20, u21, u22])
+    return F
+
 def deformation_gradient(d):
     if d == 1:
         f00 = symbols('f[0]')
@@ -131,6 +143,15 @@ class TensorProductBasis:
                 ret = ret.subs(f'trial_{i}', 0)
         return ret
 
+    def bilinear_apply_subs_gradients(self, trial_grad, i_test, d_test, expr):
+        ret = self.subs_gradient_test(i_test, d_test, expr)
+        dim = self.dim
+
+        for k1 in range(0, dim):
+            for k2 in range(0, dim):
+                ret = ret.subs(f'trial_grad_{k1}{k2}', trial_grad[k1, k2])
+
+        return ret
 
     def bilinear_subs_gradients(self, i_trial, d_trial, i_test, d_test, expr):
         return self.subs_gradient_test(i_test, d_test, self.subs_gradient_trial(i_trial, d_trial, expr))
@@ -230,6 +251,7 @@ class KernelGenerator:
         value_expression,
         gradient_expression,
         hessian_expression,
+        apply_expression,
         output_dir):
 
         combined_expression = []
@@ -241,6 +263,7 @@ class KernelGenerator:
         gradient_string = self.generate_string(gradient_expression)
         hessian_string = self.generate_string(hessian_expression)
         combined_string = self.generate_string(combined_expression)
+        apply_string = self.generate_string(apply_expression)
 
         header = tpl.header_tpl.format(
             name=model.name,
@@ -264,6 +287,7 @@ class KernelGenerator:
             gradient=gradient_string,
             hessian=hessian_string,
             combined=combined_string,
+            apply_hessian=apply_string,
             dim=self.dim,
             fields=fields,
             get_params=get_params,
@@ -422,6 +446,9 @@ class HyperElasticModel:
         hessian_expression_list = []
         gradient_expression_list = []
         energy_expression_list = []
+        apply_expression_list = []
+
+        disp_grad = displacement_gradient(self.d)
 
         for d1 in range(0, model.d):
             subsituted = tp.linear_subs_gradients("test", d1, model.form[1])
@@ -430,6 +457,13 @@ class HyperElasticModel:
                 subsituted = simplify(subsituted)
 
             gradient_expression_list.append(AddAugmentedAssignment(symbols(f"lf[{d1}]"), subsituted))
+
+            substited_apply = tp.bilinear_apply_subs_gradients(disp_grad, "test", d1, model.form[2])
+
+            if simplify_expressions:
+                substited_apply = simplify(substited_apply)
+
+            apply_expression_list.append(AddAugmentedAssignment(symbols(f"res[{d1}]"), substited_apply))
 
             for d2 in range(0, model.d):
                 subsituted = tp.bilinear_subs_gradients("test", d1, "trial", d2, model.form[2])
@@ -446,6 +480,8 @@ class HyperElasticModel:
         full_expression_list.extend(hessian_expression_list)
         full_expression_list.extend(gradient_expression_list)
         full_expression_list.extend(energy_expression_list)
+
+        # console.print(apply_expression_list)
 
         #############################################
         # Generate code
@@ -464,6 +500,7 @@ class HyperElasticModel:
             energy_expression_list,
             gradient_expression_list,
             hessian_expression_list,
+            apply_expression_list,
             output_dir)
 
 class IncompressibleHyperElasticModel(HyperElasticModel):

@@ -197,20 +197,23 @@ class IncompressibleMooneyRivlin(IncompressibleHyperElasticModel):
 def generate_materials(d,simplify_expressions):
 	output_dir = f'../../../backend/kokkos/assembly/mech/generated/{d}D'
 	# models = [NeoHookeanOgden(d), NeoHookeanBower(d), NeoHookeanWang(d), NeoHookeanSmith(d), Fung(d), MooneyRivlin(d), SaintVenantKirchoff(d), IncompressibleMooneyRivlin(d), Yeoh(d, 2)]
+	# models.append(Yeoh(d, 3))
 	# models = [ NeoHookeanSmith(d), Fung(d)]
 	# models = [NeoHookeanOgden(d)]
 	# models = [Fung(d)]
 	# models = [IncompressibleMooneyRivlin(d)] 
-	# models = [Yeoh(d, 3)]
-	models = [Yeoh(d, 2)]
+	models = [Yeoh(d, 3)]
+
+	# models = [Yeoh(d, 1)]
 	# models = [SaintVenantKirchoff(d)]
 
 	for m in models:
 		m.generate_files(output_dir, simplify_expressions)
 
 def main(args):
+	# generate_materials(2,True)
 	generate_materials(2,False)
-	generate_materials(3, False)
+	# generate_materials(3, False)
 	# generate_materials(3, True)
 
 if __name__ == '__main__':

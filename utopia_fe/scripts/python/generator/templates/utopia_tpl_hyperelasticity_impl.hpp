@@ -81,6 +81,18 @@ namespace utopia {{
 				{combined}
 			}}
 
+			UTOPIA_FUNCTION void apply(
+				const T *UTOPIA_RESTRICT f,
+				const T *grad_test,
+				const T *disp_grad,
+				const T dx,
+				T *UTOPIA_RESTRICT res) const
+			{{
+				using namespace utopia::device;
+				// Automatically generated
+				{apply_hessian}
+			}}
+
 			{fields}
 
 		}};
