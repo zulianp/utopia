@@ -38,6 +38,8 @@ namespace utopia {
 
             in.get("picard_iterations", picard_iterations);
             in.get("first_order", first_order);
+            in.get("dumping", dumping);
+            in.get("write_matlab", write_matlab);
 
             in.require("from", [&](Input &node) {
                 node.require("space", *space_from);
@@ -76,10 +78,19 @@ namespace utopia {
                 f->space()->apply_zero_constraints(s.g);
 
                 rename("h_" + std::to_string(i), s.hessian);
-                // write("H_" + std::to_string(i) + ".m", s.hessian);
-
                 rename("g_" + std::to_string(i), s.g);
-                // write("G_" + std::to_string(i) + ".m", s.g);
+
+                if (write_matlab) {
+                    if (i == 1) f->space()->apply_constraints(s.hessian, 0.);
+                    write("H_" + std::to_string(i) + ".m", s.hessian);
+                    write("G_" + std::to_string(i) + ".m", s.g);
+                }
+            }
+
+            rename("t", *transfer_.transfer_matrix());
+
+            if (write_matlab) {
+                write("T.m", *transfer_.transfer_matrix());
             }
 
             Vector_t g_coupled, diff_solution;
@@ -102,6 +113,7 @@ namespace utopia {
                 transfer_.apply_transpose(lagrange_multiplier, g_coupled);
 
                 if (functions_[0]->is_hessian_constant()) {
+                    systems[0].g.set(0.);
                     functions_[0]->gradient(systems[0].solution, systems[0].g);
                 } else {
                     functions_[0]->hessian_and_gradient(systems[0].solution, systems[0].hessian, systems[0].g);
@@ -145,7 +157,7 @@ namespace utopia {
                     Utopia::Abort("delta_from has NaN");
                 }
 
-                systems[0].solution += delta_from;
+                systems[0].solution += dumping * delta_from;
 
                 //////////////////////////////////////////////////////////
 
@@ -159,6 +171,7 @@ namespace utopia {
 
                     ////////////////////////////////////
 
+                    systems[1].g.set(0.);
                     functions_[1]->gradient(systems[1].solution, systems[1].g);
                 } else {
                     transfer_.apply(systems[0].solution, diff_solution);
@@ -212,6 +225,8 @@ namespace utopia {
 
         int picard_iterations{2};
         bool first_order{false};
+        Scalar_t dumping{1};
+        bool write_matlab{false};
     };
 }  // namespace utopia
 
