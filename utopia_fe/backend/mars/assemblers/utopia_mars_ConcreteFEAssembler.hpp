@@ -95,16 +95,17 @@ namespace utopia {
 
                 UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::scalar_op_apply");
 
-                /* bool ok = add_offsetted_scalar_op_to_vector(0, 0, op, x_current_local_view, y_view); */
-                bool ok = add_offsetted_scalar_op_to_vector_owned(0, 0, op, x_current_local_view, y_view);
-                /* bool ok = add_offsetted_scalar_op_to_vector_qp(0, 0, op, x_current_local_view, y_view); */
+                bool ok = add_offsetted_scalar_op_to_vector(0, 0, op, x_current_local_view, y_view);
+                /* bool ok = add_offsetted_scalar_op_to_vector_node_wise(0, 0, op, x_current_local_view, y_view); */
 
                 UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::scalar_op_apply");
                 return ok;
             }
 
+            //TODO: Fix the bug for multiple processes.
+            //Node wise approach for the scalar op vector in contrast with the classical element_wise
             template <class Op, class TpetraVectorView>
-            bool add_offsetted_scalar_op_to_vector_owned(const int s_offset_i,
+            bool add_offsetted_scalar_op_to_vector_node_wise(const int s_offset_i,
                                                          const int s_offset_j,
                                                          Op op,
                                                          const ::mars::ViewVectorType<Scalar> &x,
@@ -118,11 +119,13 @@ namespace utopia {
                 auto dof_handler = handler->get_dof_handler();
 
                 auto node_to_element = fe_dof_map.get_node_to_elem();
+                auto node_to_element_index = fe_dof_map.get_node_index_in_elem();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
 
                 const auto block = dof_handler.get_block();
+                std::cout << "BLOCK: " << block<<std::endl;
 
                 auto owned_size = dof_handler.get_owned_dof_size();
                 assert(owned_size == node_to_element.extent(0));
@@ -136,18 +139,26 @@ namespace utopia {
                         Scalar val = 0;
                         for (int k = 0; k < el_max_size; k++) {
                             auto elem_index = node_to_element(i, k);
-
-                            auto ll = 0;
-                            for (int l = 0; l < n_fun; l++) {
-                                auto offset_i = dof_handler.compute_block_index(l, s_offset_i);
-                                auto local_dof_i = fe_dof_map.get_elem_local_dof(elem_index, offset_i);
-                                const auto owned_dof_i = dof_handler.local_to_owned_index(local_dof_i);
-                                if (i == owned_dof_i) {
-                                    ll = l;
-                                }
-                            }
-
                             if (fe_dof_map.is_valid(elem_index)) {
+                                auto node_index1 = node_to_element_index(i, k);
+/*
+                                auto node_index = 0;
+                                auto offs= 0;
+                                for (int l = 0; l < n_fun; l++) {
+                                    auto offset_i = dof_handler.compute_block_index(l, s_offset_i);
+                                    auto local_dof_i = fe_dof_map.get_elem_local_dof(elem_index, offset_i);
+                                    const auto owned_dof_i = dof_handler.local_to_owned_index(local_dof_i);
+                                    if (i == owned_dof_i) {
+                                        node_index = l;
+                                        offs= offset_i;
+                                    }
+                                }
+
+                                if (node_index == node_index1)
+                                    printf("node_index: %li, %li, %li\n", node_index, node_index1, offs);
+                                else
+                                    printf("NOT  : %li, %li, %li\n", node_index, node_index1, offs);
+ */
                                 for (int j = 0; j < n_fun; j++) {
                                     auto offset_j = dof_handler.compute_block_index(j, s_offset_j);
                                     auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, offset_j);
@@ -156,61 +167,13 @@ namespace utopia {
                                         // uncoalesced access
                                         auto x_j = x(local_dof_j);
                                         // quadratures?
-                                        val += op(elem_index, ll, j) * x_j;
+                                        val += op(elem_index, node_index1, j) * x_j;
                                     }
                                 }
                             }
                         }
                         y(i, 0) = val;
                     });
-                return true;
-            }
-
-            template <class Op, class TpetraVectorView>
-            bool add_offsetted_scalar_op_to_vector_qp(const int s_offset_i,
-                                                   const int s_offset_j,
-                                                   Op op,
-                                                   const ::mars::ViewVectorType<Scalar> &x,
-                                                   TpetraVectorView &y) {
-                ensure_fe();
-
-                auto handler = this->handler();
-                auto fe_dof_map = handler->get_fe_dof_map();
-                auto fe_dof_map_size = fe_dof_map.get_fe_dof_map_size();
-                auto dof_handler = handler->get_dof_handler();
-
-                const int n_fun = fe_->n_shape_functions();
-                const int n_qp = fe_->n_quad_points();
-
-                Kokkos::parallel_for(
-                    "scalar_op_apply_qp",
-                    Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {fe_dof_map_size, n_fun}),
-                    MARS_LAMBDA(const ::mars::Integer elem_index, const ::mars::Integer i) {
-                            auto offset_i = dof_handler.compute_block_index(i, s_offset_i);
-                            // coalesced
-                            const auto local_dof_i = fe_dof_map.get_elem_local_dof(elem_index, offset_i);
-                            // uncoalesced access
-                            if (local_dof_i >= 0 && dof_handler.is_owned(local_dof_i)) {
-                                Scalar val = 0;
-                                for (int j = 0; j < n_fun; j++) {
-                                    auto offset_j = dof_handler.compute_block_index(j, s_offset_j);
-                                    // coalesced
-                                    const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, offset_j);
-                                    if (local_dof_j > -1) {
-                                        assert(local_dof_j < x.extent(0));
-                                        // uncoalesced access
-                                        auto x_j = x(local_dof_j);
-                                        // quadratures?
-                                        val += op(elem_index, i, j) * x_j;
-                                    }
-                                }
-
-                                // uncoalesced access
-                                const auto owned_dof_i = dof_handler.local_to_owned_index(local_dof_i);
-                                Kokkos::atomic_fetch_add(&y(owned_dof_i, 0), val);
-                            }
-                    });
-
                 return true;
             }
 
