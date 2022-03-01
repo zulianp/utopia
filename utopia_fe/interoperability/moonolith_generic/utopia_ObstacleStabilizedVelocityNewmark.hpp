@@ -424,6 +424,9 @@ namespace utopia {
                 g += barrier_temp;
 
                 if (g.has_nan_or_inf()) {
+                    this->space()->write("NaN_barrier_g.e", barrier_temp);
+                    this->space()->write("NaN_barrier_x.e", x);
+
                     this->~ObstacleStabilizedVelocityNewmark();
                     g.comm().barrier();
                     assert(false);

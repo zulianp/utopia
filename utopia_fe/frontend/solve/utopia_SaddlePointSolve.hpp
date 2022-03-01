@@ -40,6 +40,7 @@ namespace utopia {
             in.get("first_order", first_order);
             in.get("dumping", dumping);
             in.get("write_matlab", write_matlab);
+            in.get("augment_diagonal", augment_diagonal);
 
             in.require("from", [&](Input &node) {
                 node.require("space", *space_from);
@@ -70,9 +71,13 @@ namespace utopia {
             std::size_t n = functions_.size();
             std::vector<SubSystem> systems(n);
 
+            SubSystem condensed_system;
+
+            bool hessians_constant = true;
             for (std::size_t i = 0; i < n; ++i) {
                 auto &s = systems[i];
                 auto &f = functions_[i];
+
                 f->create_solution_vector(s.solution);
                 f->hessian_and_gradient(s.solution, s.hessian, s.g);
                 f->space()->apply_zero_constraints(s.g);
@@ -80,10 +85,18 @@ namespace utopia {
                 rename("h_" + std::to_string(i), s.hessian);
                 rename("g_" + std::to_string(i), s.g);
 
+                if (i == 1) {
+                    // Remove Dirichlet contributions from matrix
+                    f->space()->apply_constraints(s.hessian, 0.);
+                }
+
                 if (write_matlab) {
-                    if (i == 1) f->space()->apply_constraints(s.hessian, 0.);
                     write("H_" + std::to_string(i) + ".m", s.hessian);
                     write("G_" + std::to_string(i) + ".m", s.g);
+                }
+
+                if (!f->is_hessian_constant()) {
+                    hessians_constant = false;
                 }
             }
 
@@ -91,6 +104,24 @@ namespace utopia {
 
             if (write_matlab) {
                 write("T.m", *transfer_.transfer_matrix());
+            }
+
+            if (augment_diagonal && hessians_constant) {
+                Matrix_t hessian_ptap;
+                transfer_.apply(systems[1].hessian, hessian_ptap);
+
+                //////////////////////////////////////////////////////////////////////
+                condensed_system.hessian = systems[0].hessian + hessian_ptap;
+
+                Vector_t gradient_p;
+                transfer_.apply(systems[1].g, gradient_p);
+                condensed_system.g = systems[0].g + gradient_p;
+                functions_[0]->space()->apply_zero_constraints(condensed_system.g);
+                //////////////////////////////////////////////////////////////////////
+
+                Vector_t d = diag(hessian_ptap);
+                systems[0].hessian += diag(d);
+                functions_[0]->space()->comm().root_print("Diagonal 1 added to system 0!");
             }
 
             Vector_t g_coupled, diff_solution;
@@ -109,7 +140,7 @@ namespace utopia {
             for (int k = 0; k < picard_iterations; ++k) {
                 io.write(systems[0].solution, k, k);
 
-                // Response
+                // Transfer response
                 transfer_.apply_transpose(lagrange_multiplier, g_coupled);
 
                 if (functions_[0]->is_hessian_constant()) {
@@ -121,7 +152,10 @@ namespace utopia {
 
                 Scalar_t norm_lagrange_multiplier = norm2(g_coupled);
 
+                // Add gradient contribution
                 g_coupled += systems[0].g;
+
+                // Negative gradient direction
                 g_coupled = -g_coupled;
 
                 if (g_coupled.has_nan_or_inf()) {
@@ -148,6 +182,7 @@ namespace utopia {
                 delta_from.set(0.);
 
                 if (functions_[0]->is_hessian_constant() && k != 0) {
+                    // Save cost of initialization of operator
                     solver_[0]->apply(g_coupled, delta_from);
                 } else {
                     solver_[0]->solve(systems[0].hessian, g_coupled, delta_from);
@@ -163,7 +198,7 @@ namespace utopia {
 
                 if (first_order) {
                     transfer_.apply(systems[0].solution, systems[1].solution);
-                    functions_[1]->space()->apply_constraints(systems[1].solution);
+                    // functions_[1]->space()->apply_constraints(systems[1].solution);
 
                     if (systems[1].solution.has_nan_or_inf()) {
                         Utopia::Abort("solution 1 has NaN");
@@ -202,17 +237,19 @@ namespace utopia {
                     }
                 }
 
-                // clean boundary conditions
-                functions_[1]->space()->apply_zero_constraints(systems[1].g);
+                ////////////////////////////////////////////////////////
 
-                // lagrange_multiplier = -systems[1].g;
-                // lagrange_multiplier = systems[1].g;
+                // Clean boundary conditions
+                // functions_[1]->space()->apply_zero_constraints(systems[1].g);
+
+                // Copy g to lagrange multiplier
                 lagrange_multiplier = systems[1].g;
             }
 
+            ////////////////////////////////////////////////////////
+
             functions_[0]->report_solution(systems[0].solution);
             functions_[1]->report_solution(systems[1].solution);
-
             return true;
         }
 
@@ -227,6 +264,7 @@ namespace utopia {
         bool first_order{false};
         Scalar_t dumping{1};
         bool write_matlab{false};
+        bool augment_diagonal{true};
     };
 }  // namespace utopia
 

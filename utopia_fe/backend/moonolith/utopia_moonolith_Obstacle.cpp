@@ -31,6 +31,7 @@ namespace utopia {
             in.get("gap_positive_bound", gap_positive_bound);
             in.get("invert_face_orientation", invert_face_orientation);
             in.get("debug", debug);
+            in.get("snap_to_canonical_vectors", snap_to_canonical_vectors);
 
             in.get("surfaces", [this](Input &in) {
                 in.get_all([this](Input &in) {
@@ -273,6 +274,7 @@ namespace utopia {
                     return false;
                 }
 
+                obstacle->snap_to_canonical_vectors(params.snap_to_canonical_vectors);
                 obstacle->set_gap_bounds(params.gap_negative_bound, params.gap_positive_bound);
                 obstacle->assemble(params.tags, *space_d);
 

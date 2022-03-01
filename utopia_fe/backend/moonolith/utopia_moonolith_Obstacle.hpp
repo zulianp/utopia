@@ -59,6 +59,7 @@ namespace utopia {
                 std::unordered_set<int> tags;
                 bool invert_face_orientation{false};
                 bool debug{false};
+                bool snap_to_canonical_vectors{false};
 
                 void read(Input &in) override;
             };
