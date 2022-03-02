@@ -51,7 +51,7 @@ namespace utopia {
             //     int id{-1};
             // };
 
-            class Params : public Configurable {
+            class Params : public Configurable, public Describable {
             public:
                 int variable_number{0};
                 Scalar gap_negative_bound{-0.0001};
@@ -60,8 +60,11 @@ namespace utopia {
                 bool invert_face_orientation{false};
                 bool debug{false};
                 bool snap_to_canonical_vectors{false};
+                int skip_dir{-1};
+                Scalar skip_dir_tol{0.2};
 
                 void read(Input &in) override;
+                void describe(std::ostream &os) const override;
             };
 
             void set_params(const Params &params);
