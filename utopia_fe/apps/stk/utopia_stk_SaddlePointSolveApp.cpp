@@ -6,6 +6,7 @@
 
 #include "utopia_ImplicitEulerIntegrator.hpp"
 #include "utopia_NewmarkIntegrator.hpp"
+#include "utopia_SaddlePointQPSolve.hpp"
 #include "utopia_SaddlePointSolve.hpp"
 #include "utopia_SemiGeometricMultigridNew.hpp"
 
@@ -34,3 +35,16 @@ void stk_saddle_point_solve(utopia::Input &in) {
 }
 
 UTOPIA_REGISTER_APP(stk_saddle_point_solve);
+
+void stk_saddle_point_qp_solve(utopia::Input &in) {
+    utopia::SaddlePointQPSolve<utopia::stk::FunctionSpace> app;
+    app.read(in);
+
+    if (app.valid()) {
+        app.run();
+    } else {
+        utopia::err() << "stk_saddle_point_qp_solve: invalid app setup\n";
+    }
+}
+
+UTOPIA_REGISTER_APP(stk_saddle_point_qp_solve);
