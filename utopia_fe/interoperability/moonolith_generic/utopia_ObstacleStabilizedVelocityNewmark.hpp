@@ -396,6 +396,19 @@ namespace utopia {
 
         Scalar_t dumping_{0.98};
 
+        // class Debug {
+        // public:
+        //     using IO_t = utopia::IO<FunctionSpace>;
+        //     Debug(FunctionSpace &space) : io(std::make_shared<IO_t>(space)) {
+        //         io->set_output_path("barrier_gradient.e");
+        //     }
+
+        //     void report_barrier_gradient(const Vector_t &barrier_g) { io->write(barrier_g, counter, counter++); }
+
+        //     std::shared_ptr<IO_t> io;
+        //     int counter{0};
+        // };
+
         void update_x(const Vector_t &velocity, Vector_t &x) const {
             x = predictor_;
             x += (0.5 * this->delta_time()) * (velocity - this->velocity_old());
