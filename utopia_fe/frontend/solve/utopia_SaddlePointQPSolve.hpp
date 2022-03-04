@@ -45,10 +45,14 @@ namespace utopia {
             in.get("augment_diagonal", augment_diagonal);
             in.get("static_condenstation", static_condenstation);
             in.get("stol", stol_);
+            in.get("inverse_diagonal_scaling", inverse_diagonal_scaling);
 
             // SQP
             Scalar_t upper_bound_value = 1;
             in.get("upper_bound", upper_bound_value);
+
+            Scalar_t lower_bound_value = 1;
+            in.get("lower_bound", lower_bound_value);
 
             in.require("from", [&](Input &node) {
                 node.require("space", *space_from);
@@ -79,6 +83,12 @@ namespace utopia {
             functions_[1]->space()->create_vector(*upper_bound);
             upper_bound->set(upper_bound_value);
             box_.upper_bound() = upper_bound;
+
+            auto lower_bound = std::make_shared<Vector_t>();
+            functions_[1]->space()->create_vector(*lower_bound);
+            lower_bound->set(lower_bound_value);
+            box_.lower_bound() = lower_bound;
+
             qp_solver_->set_box_constraints(box_);
 
             active_set_.init(layout(*upper_bound));
@@ -122,6 +132,7 @@ namespace utopia {
             //////////////////////////////////////////////////
             // Jacobian/Hessian of coupled problem
             Matrix_t jacobian;
+            Vector_t d;
 
             // remove identity from rows
             functions_[1]->space()->apply_constraints(to_system.hessian, 0);
@@ -130,7 +141,20 @@ namespace utopia {
 
             jacobian += from_system.hessian;
 
+            functions_[0]->space()->apply_constraints(jacobian, 1);
+
+            if (inverse_diagonal_scaling) {
+                d = 1. / diag(jacobian);
+                jacobian.diag_scale_left(d);
+            }
+
+            transfer_.apply_transpose(to_system.g, residual);
+            residual += from_system.g;
+            residual = -residual;
+
+            functions_[0]->space()->apply_constraints(residual);
             linear_solver_->update(make_ref(jacobian));
+            linear_solver_->apply(residual, from_system.solution);
 
             // reset identity to rows
             functions_[1]->space()->apply_constraints(to_system.hessian, 1);
@@ -159,6 +183,13 @@ namespace utopia {
                     comm.root_print(std::to_string(k) + ") norm_residual =" + std::to_string(norm_residual));
                 }
 
+                functions_[1]->space()->apply_zero_constraints(residual);
+
+                if (inverse_diagonal_scaling) {
+                    residual = e_mul(d, residual);
+                }
+
+                correction.set(0.);
                 linear_solver_->apply(residual, correction);
 
                 // Update solution with correction
@@ -167,7 +198,7 @@ namespace utopia {
                 Scalar_t norm_correction = norm2(correction);
                 comm.root_print(std::to_string(k) + ") norm_correction =" + std::to_string(norm_correction));
 
-                if (norm_correction < stol_) {
+                if (norm_correction < stol_ && k != 0) {
                     comm.root_print("Converged!");
                     break;
                 }
@@ -190,7 +221,7 @@ namespace utopia {
                 functions_[1]->space()->apply_constraints(to_residual);
                 qp_solver_->apply(to_residual, to_system.solution);
 
-                solution_diff = transferred - to_system.solution;
+                solution_diff = to_system.solution - transferred;
 
                 {
                     Scalar_t norm_solution_diff = norm2(solution_diff);
@@ -205,8 +236,7 @@ namespace utopia {
                 functions_[1]->gradient(to_system.solution, to_system.g);
                 // functions_[1]->gradient(transferred, to_residual);
 
-                // to_system.g = to_system.hessian * solution_diff;
-                // to_system.g = to_residual - to_system.g;
+                to_system.g -= to_system.hessian * solution_diff;
 
                 {
                     Scalar_t norm_g_1 = norm2(to_system.g);
@@ -240,6 +270,7 @@ namespace utopia {
         bool augment_diagonal{true};
         bool static_condenstation{false};
         Scalar_t stol_{1e-6};
+        bool inverse_diagonal_scaling{false};
     };
 }  // namespace utopia
 
