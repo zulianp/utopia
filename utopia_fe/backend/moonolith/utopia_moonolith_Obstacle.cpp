@@ -34,6 +34,7 @@ namespace utopia {
             in.get("snap_to_canonical_vectors", snap_to_canonical_vectors);
             in.get("skip_dir", skip_dir);
             in.get("skip_dir_tol", skip_dir_tol);
+            in.get("verbose", verbose);
 
             in.get("surfaces", [this](Input &in) {
                 in.get_all([this](Input &in) {
@@ -45,10 +46,10 @@ namespace utopia {
                 });
             });
 
-            bool verbose = false;
-            in.get("print_params", verbose);
+            bool print_params = false;
+            in.get("print_params", print_params);
 
-            if (verbose) {
+            if (print_params || verbose) {
                 int rank;
                 MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 

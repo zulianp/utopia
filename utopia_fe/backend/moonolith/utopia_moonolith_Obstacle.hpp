@@ -62,6 +62,7 @@ namespace utopia {
                 bool snap_to_canonical_vectors{false};
                 int skip_dir{-1};
                 Scalar skip_dir_tol{0.2};
+                bool verbose{false};
 
                 void read(Input &in) override;
                 void describe(std::ostream &os) const override;
