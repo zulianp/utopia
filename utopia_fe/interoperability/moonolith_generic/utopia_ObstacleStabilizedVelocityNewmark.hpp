@@ -31,12 +31,20 @@ namespace utopia {
         void read(Input &in) override {
             Super::read(in);
 
+            in.get("verbose", verbose_);
             in.get("debug", debug_);
             in.get("debug_from_iteration", debug_from_iteration_);
             in.get("stabilized_formulation", stabilized_formulation_);
             in.get("trivial_obstacle", trivial_obstacle_);
             in.get("zero_initial_guess", zero_initial_guess_);
             in.get("enable_line_search", enable_line_search_);
+            in.get("enable_NaN_safe_line_search", enable_NaN_safe_line_search_);
+            in.get("max_bisections", max_bisections_);
+
+            if (enable_NaN_safe_line_search_) {
+                enable_line_search_ = true;
+            }
+
             in.get("dumping", dumping_);
 
             if (!obstacle_) {
@@ -127,18 +135,7 @@ namespace utopia {
                        const Vector_t &velocity,
                        const Vector_t &correction,
                        Scalar_t &alpha) override {
-            if (line_search_) {
-                Vector_t work;
-                Vector_t x = velocity + correction;
-                update_x(x, work);
-                update_x(velocity, x);
-                work -= x;
-                return line_search_->get_alpha(fun, g, x, work, alpha);
-
-            } else {
-                alpha = 1.;
-                return false;
-            }
+            return get_alpha_aux(fun, g, velocity, correction, alpha);
         }
 
         bool get_alpha(LeastSquaresFunctionBase<Vector_t> &fun,
@@ -146,13 +143,57 @@ namespace utopia {
                        const Vector_t &velocity,
                        const Vector_t &correction,
                        Scalar_t &alpha) override {
+            return get_alpha_aux(fun, g, velocity, correction, alpha);
+        }
+
+        template <class Fun>
+        bool get_alpha_aux(Fun &fun,
+                           const Vector_t &g,
+                           const Vector_t &velocity,
+                           const Vector_t &correction,
+                           Scalar_t &alpha) {
             if (line_search_) {
                 Vector_t work;
                 Vector_t x = velocity + correction;
                 update_x(x, work);
                 update_x(velocity, x);
                 work -= x;
-                return line_search_->get_alpha(fun, g, x, work, alpha);
+                bool ok = line_search_->get_alpha(fun, g, x, work, alpha);
+
+                if (enable_NaN_safe_line_search_) {
+                    ok = false;
+                    int t = 0;
+
+                    Vector_t new_grad;
+                    for (; t < max_bisections_; ++t) {
+                        // Compute correction on velocty
+                        work = velocity + alpha * correction;
+
+                        // Convert to displacement
+                        update_x(work, x);
+
+                        // Check for failures in gradient!
+                        if (this->function()->gradient(x, new_grad)) {
+                            ok = true;
+                            break;
+                        }
+
+                        alpha /= 2;
+                    }
+
+                    if (verbose_ && t > 1) {
+                        utopia::out() << "reduced alpha to " << alpha << ", with " << t << " bisection(s)!\n";
+                    }
+
+                    if (t == max_bisections_ && !ok) {
+                        this->space()->write("NaN.e", x);
+                        this->~ObstacleStabilizedVelocityNewmark();
+                        assert(false);
+                        Utopia::Abort("Solution reached an unrecoverable state!");
+                    }
+                }
+
+                return ok;
 
             } else {
                 alpha = 1.;
@@ -393,6 +434,9 @@ namespace utopia {
 
         std::shared_ptr<LineSearchBoxProjection<Vector_t>> line_search_;
         bool enable_line_search_{false};
+        bool enable_NaN_safe_line_search_{false};
+        int max_bisections_{6};
+        bool verbose_{false};
 
         Scalar_t dumping_{0.98};
 

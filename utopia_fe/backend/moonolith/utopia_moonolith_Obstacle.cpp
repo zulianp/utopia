@@ -35,6 +35,7 @@ namespace utopia {
             in.get("skip_dir", skip_dir);
             in.get("skip_dir_tol", skip_dir_tol);
             in.get("verbose", verbose);
+            in.get("margin", margin);
 
             in.get("surfaces", [this](Input &in) {
                 in.get_all([this](Input &in) {
@@ -68,6 +69,7 @@ namespace utopia {
             os << "snap_to_canonical_vectors: \t" << snap_to_canonical_vectors << "\n";
             os << "skip_dir: \t" << skip_dir << "\n";
             os << "skip_dir_tol: \t" << skip_dir_tol << "\n";
+            os << "margin: \t" << margin << "\n";
         }
 
         class Obstacle::Output {
@@ -176,6 +178,9 @@ namespace utopia {
                     if (is_contact.get(i) == 0.0) {
                         gap.set(i, 1e8);
                     }
+                    // else {
+                    //     gap.add(i, -margin);
+                    // }
                 }
             }
 
@@ -307,6 +312,11 @@ namespace utopia {
                 obstacle->assemble(params.tags, *space_d);
 
                 this->finalize_tensors(Dim, obstacle->buffers(), output);
+
+                if (params.margin != 0.) {
+                    output.gap.shift(-params.margin);
+                }
+
                 return true;
             }
 

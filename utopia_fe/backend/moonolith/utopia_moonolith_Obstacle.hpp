@@ -56,6 +56,7 @@ namespace utopia {
                 int variable_number{0};
                 Scalar gap_negative_bound{-0.0001};
                 Scalar gap_positive_bound{0.1};
+                Scalar margin{0.};
                 std::unordered_set<int> tags;
                 bool invert_face_orientation{false};
                 bool debug{false};
