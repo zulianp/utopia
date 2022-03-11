@@ -1,5 +1,8 @@
-import sympy as sympy
-from sympy import *
+from symengine import *
+# import sympy as sympy
+import sympy
+
+# from sympy import *
 from time import perf_counter
 from sympy.codegen.ast import AddAugmentedAssignment
 from sympy.codegen.ast import Assignment
@@ -23,8 +26,8 @@ class SymPyEngine:
     def symbols(self, args):
         return sympy.symbols(args)
 
-    def symplify(self, expr):
-        return sympy.symplify(expr)
+    def simplify(self, expr):
+        return sympy.simplify(expr)
 
     def diff(self, f, x):
         return sympy.diff(f, x)
@@ -55,8 +58,12 @@ class SymPyEngine:
     def zeros(self, rows, cols):
         return sympy.zeros(rows, cols)
 
-    def matrix(rows, cols, data):
+    def matrix(self, rows, cols, data):
         return sympy.Matrix(rows, cols, data)
+
+    def inverse(self, mat):
+        # return sympy.Inverse(mat)
+        return mat.inv()
 
     def c_gen(self, expr):
         console.print("--------------------------")
@@ -93,7 +100,7 @@ class FE:
         self.symplify_expr = symplify_expr
 
     def transform(self, x_ref):
-        console.print("FE.transform")
+        start = perf_counter()
 
         f = self.fun(x_ref)
         n = self.nodes
@@ -103,10 +110,13 @@ class FE:
 
         for i in range(0, n_fun):
             x += f[i] * n[i]
+
+        stop = perf_counter()
+        console.print(f'\t- FE.transform: {stop - start} seconds')
         return x
 
     def jacobian(self, x_ref):
-        console.print("FE.jacobian")
+        start = perf_counter()
 
         x = self.transform(x_ref)
         rows = self.dim
@@ -116,15 +126,19 @@ class FE:
 
         for i in range(0, rows):
             for j in range(0, cols):
-                G[i, j] = diff(x[i], x_ref[j])
+                G[i, j] = se.diff(x[i], x_ref[j])
 
         if self.symplify_expr:
-            return se.simplify(G)
+            ret = se.simplify(G)
         else:
-            return G
+            ret = G
+
+        stop = perf_counter()
+        console.print(f'\t- FE.jacobian: {stop - start} seconds')
+        return ret
 
     def grad(self, x_ref):
-        console.print("FE.grad")
+        start = perf_counter()
 
         f = self.fun(x_ref)
         G_inv = self.jacobian_inverse(x_ref)
@@ -133,6 +147,7 @@ class FE:
         grads = []
 
         for i in range(0, n_fun):
+            
             gs = []
 
             for d in range(0, self.dim):
@@ -143,26 +158,39 @@ class FE:
 
                 gs.append(gd)
 
-            g_ref = se.array(gs)      
-            g = G_inv.T * g_ref
             
+
+
+            g_ref = se.array(gs)   
+            # console.print(g_ref)
+            # console.print(G_inv)
+
+            # g = G_inv.T * g_ref
+            g = G_inv * g_ref
+
             if self.symplify_expr:
                 g = se.simplify(g)
 
             grads.append(g)
         
+        stop = perf_counter()
+        console.print(f'\t- FE.grad: {stop - start} seconds')
         return grads
 
     def jacobian_inverse(self, x_ref):
-        console.print("FE.jacobian_inverse")
+        start = perf_counter()
 
         G = self.jacobian(x_ref)
-        G_inv = Inverse(G)
+        G_inv = se.inverse(G)
        
         if self.symplify_expr:
-            return simplify(G_inv)
+            ret = se.simplify(G_inv)
         else:
-            return G_inv
+            ret = G_inv
+
+        stop = perf_counter()
+        console.print(f'\t- FE.jacobian_inverse {stop - start} seconds')
+        return ret
 
     def generate_code(self, x):
         console.print("--------------------------")
@@ -184,7 +212,7 @@ class FE:
 
         for i in range(0, n_fun):
             for d in range(0, self.dim):
-                expr.append(Assignment(symbols(f"g{d}[{i}]"), grads[i][d]))
+                expr.append(Assignment(sympy.symbols(f"g{d}[{i}]"), grads[i][d]))
 
         stop = perf_counter()
         console.print(f'Elapsed {stop - start} seconds')
@@ -196,7 +224,7 @@ class Simplex(FE):
         super().__init__(name, dim, symplify_expr)
 
     def jacobian(self, x_ref):        
-        console.print("Simplex.jacobian")
+        start = perf_counter()
 
         n = self.nodes
         n_fun = len(n)
@@ -207,9 +235,13 @@ class Simplex(FE):
                 G[i-1, j] = n[i][j] - n[0][j]
 
         if self.symplify_expr:
-            return se.simplify(G)
+            ret = se.simplify(G)
         else:
-            return G
+            ret = G
+
+        stop = perf_counter()
+        console.print(f'\t- Simplex.jacobian: {stop - start} seconds')
+        return ret
 
 class Tri3(Simplex):
     def __init__(self, symplify_expr = False):
@@ -286,15 +318,17 @@ def main(args):
     p3 = se.point3(x, y, z);
     p4 = se.point4(x, y, z, t);
 
-    tri3 = Tri3()
-    # quad4 = Quad4()
-    # tet4 = Tet4()
-    # hex8 = Hex8()
-    # pentatope5 = Pentatope5()
+    use_simplify = False
 
-    tri3.generate_code(p2)
+    tri3 = Tri3(use_simplify)
+    quad4 = Quad4(use_simplify)
+    tet4 = Tet4(use_simplify)
+    hex8 = Hex8(use_simplify)
+    pentatope5 = Pentatope5(use_simplify)
+
+    # tri3.generate_code(p2)
     # quad4.generate_code(p2)
-    # tet4.generate_code(p3)
+    tet4.generate_code(p3)
     # hex8.generate_code(p3)
     # pentatope5.generate_code(p4)
 
