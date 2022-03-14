@@ -160,11 +160,33 @@ class SymPyEngine:
 
 se = SymPyEngine()
 
+output_dir = './workspace'
+
+class Template:
+    def __init__(self, header_tpl_path, impl_tpl_path, header_output_path, impl_output_path):
+    
+        self.header_tpl_path = header_tpl_path
+        self.impl_tpl_path = impl_tpl_path
+        self.header_output_path = header_output_path
+        self.impl_output_path = impl_output_path
+
+        with open(header_tpl_path, 'r') as f:
+            self.header_tpl = f.read()
+
+        with open(impl_tpl_path, 'r') as f:
+            self.impl_tpl = f.read()
+
 class FE:
     def __init__(self, name, dim, symplify_expr = False):
         self.name = name
         self.dim = dim
         self.symplify_expr = symplify_expr
+        
+        self.tpl = Template(
+            "templates/fe/utopia_tpl_fe.hpp",
+            f"templates/fe/utopia_tpl_fe_{dim}_impl.hpp",
+            f"{output_dir}/../utopia_fe_{name}.hpp",
+            f"{output_dir}/utopia_fe_{name}_{dim}.hpp")
 
     def transform(self, x_ref):
         start = perf_counter()
@@ -275,7 +297,22 @@ class FE:
         stop = perf_counter()
         console.print(f'Elapsed {stop - start} seconds')
         
-        return se.c_gen(expr)
+        grad_code = se.c_gen(expr)
+
+        kernel = self.tpl.impl_tpl.format(
+            name=self.name,
+            measure='',
+            value='',
+            gradient=grad_code,
+            hessian='',
+            dim=self.dim)
+
+        with open(self.tpl.impl_output_path, 'w') as f:
+            f.write(kernel)
+
+        # with open(self.tpl.header_output_path, 'w') as f:
+        #     f.write(header)      
+
 
 class Simplex(FE):
     def __init__(self, name, dim, symplify_expr = False):
@@ -384,9 +421,9 @@ def main(args):
     hex8 = Hex8(use_simplify)
     pentatope5 = Pentatope5(use_simplify)
 
-    # tri3.generate_code(p2)
-    # quad4.generate_code(p2)
-    # tet4.generate_code(p3)
+    tri3.generate_code(p2)
+    quad4.generate_code(p2)
+    tet4.generate_code(p3)
     hex8.generate_code(p3)
     pentatope5.generate_code(p4)
 

@@ -24,9 +24,11 @@ namespace utopia {{
 				// Element coordinates
 				const GeoT UTOPIA_RESTRICT*px,
 				const GeoT UTOPIA_RESTRICT*py,
+				const GeoT UTOPIA_RESTRICT*pz,
 				// Input quadrature point
 				const T x,
-				const T y)
+				const T y,
+				const T z)
 			{{
 				{measure}
 			}}
@@ -35,12 +37,15 @@ namespace utopia {{
 				// Element coordinates
 				const GeoT UTOPIA_RESTRICT*px,
 				const GeoT UTOPIA_RESTRICT*py,
+				const GeoT UTOPIA_RESTRICT*pz,
 				// Input quadrature point
 				const T x,
 				const T y,
+				const T z,
 				// Output
 				Result UTOPIA_RESTRICT*gx,
-				Result UTOPIA_RESTRICT*gy)
+				Result UTOPIA_RESTRICT*gy,
+				Result UTOPIA_RESTRICT*gz)
 			{{
 				using namespace utopia::device;
 				// Automatically generated
@@ -50,6 +55,7 @@ namespace utopia {{
 			UTOPIA_FUNCTION static void value(
 				const T x,
 				const T y,
+				const T z,
 				Result UTOPIA_RESTRICT*f,
 				)
 			{{
