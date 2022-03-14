@@ -558,6 +558,7 @@ class MeshObstacle(yaml.YAMLObject):
         self.gap_negative_bound = -1.0e-04
         self.gap_positive_bound = 1.e-4
         self.invert_face_orientation = True
+        self.margin = 1e-6
 
 class DistanceField(yaml.YAMLObject):
     yaml_tag = u'!DistanceField'
@@ -600,18 +601,10 @@ class FSIInit:
             Mesh(env, fluid_mesh),
             [distance_var],
             [
-                # DirichletBC('inlet', 0.),
-                # DirichletBC('outlet', 0.),
-                # DirichletBC('inlettube', 0.),
-                # DirichletBC('walls', 0.),
-                # DirichletBC('symmetry', 0)
-                DirichletBC('inlet', 0.),
-                DirichletBC('outlet', 0.),
-                DirichletBC('inlettube', 0.),
-                DirichletBC('walls', 0.),
-                DirichletBC('symmetry_1', 0),
-                DirichletBC('symmetry_2', 0),
-                DirichletBC('valvecontact', 0)
+                DirichletBC('INLET', 0.),
+                DirichletBC('OUTLET', 0.),
+                DirichletBC('WALLS', 0.),
+                DirichletBC('SYMMETRY', 0)
             ])
 
 
@@ -623,12 +616,8 @@ class FSIInit:
             Mesh(env, solid_mesh),
             [Var("disp", 3)],
             [
-                # DirichletBC('valvesym', 0., 0),
-                # DirichletBC('valvesym', 0., 2)
-                DirichletBC('symmetry_1', 0., 0),
-                DirichletBC('symmetry_1', 0., 2),
-                DirichletBC('symmetry_2', 0., 0),
-                DirichletBC('symmetry_2', 0., 2)
+                DirichletBC('SYMMETRY', 0., 0),
+                DirichletBC('SYMMETRY', 0., 2),
             ]
         )
 
@@ -727,8 +716,8 @@ class FSIInit:
         newton_solver.rtol = 1e-14
 
         mesh_obstacle = MeshObstacle(fluid_mesh)
-        mesh_obstacle.gap_negative_bound = -2e-4
-        mesh_obstacle.gap_positive_bound = 2e-4
+        mesh_obstacle.gap_negative_bound = -1e-4
+        mesh_obstacle.gap_positive_bound = 1e-4
 
         test = BarrierObstacleSimulation(env, solid_fs_test,
          elastic_material, mass, forcing_functions,
@@ -773,16 +762,15 @@ class Launcher:
         self.fsi.test.run()
 
     def __init__(self, argv):
-
         ###############################
         # INPUT
         ###############################
 
         # Solid mesh db
-        solid_mesh = "/Users/zulianp/Desktop/in_the_cloud/owncloud_HSLU/Patrick/discharge_2_dirichlet/workspace/solid.e"
+        solid_mesh = "solid.e"
 
         # Fluid mesh db
-        fluid_mesh = "/Users/zulianp/Desktop/in_the_cloud/owncloud_HSLU/Patrick/discharge_2_dirichlet/fluid_halfDomain_155K.exo"
+        fluid_mesh = "fluid.e"
 
         # Young's modulus for the solid material
         young_modulus = 9.174e6
