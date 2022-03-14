@@ -28,7 +28,10 @@ namespace utopia {{
 				const T x,
 				const T y)
 			{{
+
+				T measure_value;
 				{measure}
+				return measure_value;
 			}}
 
 			UTOPIA_FUNCTION static void gradient(
@@ -50,7 +53,7 @@ namespace utopia {{
 			UTOPIA_FUNCTION static void value(
 				const T x,
 				const T y,
-				Result UTOPIA_RESTRICT*f,
+				Result UTOPIA_RESTRICT*f
 				)
 			{{
 				using namespace utopia::device;
