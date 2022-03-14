@@ -32,6 +32,9 @@ class SymPyEngine:
     def diff(self, f, x):
         return sympy.diff(f, x)
 
+    def rational(self, num, denum):
+        return sympy.Rational(num, denum)
+
     def point_symbols(self, num_points, dim):
         prefix = [ 'x', 'y', 'z', 't', 'a', 'b', 'c', 'd']
         ret = []
@@ -122,7 +125,7 @@ class SymPyEngine:
         else:
             return mat.inv()
 
-    def c_gen(self, expr):
+    def c_gen(self, expr, dump=False):
         console.print("--------------------------")
         console.print(f'Running cse')
         start = perf_counter()
@@ -145,7 +148,9 @@ class SymPyEngine:
         console.print("--------------------------")
         console.print(f'generated code')
 
-        console.print(code_string)
+        if dump:
+            console.print(code_string)
+
         return code_string
 
 se = SymPyEngine()
@@ -177,6 +182,9 @@ class FE:
             f"templates/fe/utopia_tpl_fe_{dim}_impl.hpp",
             f"{output_dir}/../utopia_fe_{name}.hpp",
             f"{output_dir}/utopia_fe_{name}_{dim}.hpp")
+
+    def reference_measure(self):
+        return 1
 
     def transform(self, x_ref):
         start = perf_counter()
@@ -294,16 +302,25 @@ class FE:
 
         stop = perf_counter()
         console.print(f'Elapsed {stop - start} seconds')
+
+        measure_expr = [Assignment(sympy.symbols(f"measure_value"), self.measure(x))]
+
+        combined_expression = []
+        combined_expression.extend(value_expr)
+        combined_expression.extend(measure_expr)
+        combined_expression.extend(grad_expr)
         
         grad_code = se.c_gen(grad_expr)
         value_code = se.c_gen(value_expr)
-        measure_code = se.c_gen(Assignment(sympy.symbols(f"measure_value"), self.measure(x)))
+        measure_code = se.c_gen(measure_expr)
+        combined_code = se.c_gen(combined_expression, True)
 
         kernel = self.tpl.impl_tpl.format(
             name=self.name,
             measure=measure_code,
             value=value_code,
             gradient=grad_code,
+            combined=combined_code,
             hessian='',
             dim=self.dim)
 
@@ -343,6 +360,9 @@ class Tri3(Simplex):
         super().__init__('Tri3', 2, symplify_expr)
         self.nodes = se.point_symbols(3, 2)
 
+    def reference_measure(self):
+        return 0.5
+
     def n_shape_functions(self):
         return len(self.nodes)
 
@@ -351,6 +371,9 @@ class Tri3(Simplex):
         return ret
 
 class Tet4(Simplex):
+    def reference_measure(self):
+        return se.rational(1, 6)
+
     def __init__(self, symplify_expr = False):
         super().__init__('Tet4', 3, symplify_expr)
         self.nodes = se.point_symbols(4, 3)
@@ -414,9 +437,10 @@ def main(args):
     p4 = se.point4(x, y, z, t);
 
     use_simplify = False
+    # use_simplify = True
 
-    tri3 = Tri3(use_simplify)
-    quad4 = Quad4(use_simplify)
+    tri3 = Tri3(True)
+    quad4 = Quad4(True)
     tet4 = Tet4(use_simplify)
     hex8 = Hex8(use_simplify)
     pentatope5 = Pentatope5(use_simplify)

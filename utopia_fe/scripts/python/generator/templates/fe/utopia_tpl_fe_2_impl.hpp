@@ -61,6 +61,25 @@ namespace utopia {{
 				{value}
 			}}
 
+
+		UTOPIA_FUNCTION static void eval(
+			// Element coordinates
+			const GeoT UTOPIA_RESTRICT*px,
+			const GeoT UTOPIA_RESTRICT*py,
+			// Input quadrature point
+			const T x,
+			const T y,
+			// Output
+			Result UTOPIA_RESTRICT*f,
+			Result UTOPIA_RESTRICT*gx,
+			Result UTOPIA_RESTRICT*gy,
+			T &measure_value)
+		{{
+			using namespace utopia::device;
+			// Automatically generated
+			{combined}
+		}}
+
 		}};
 	}}
 }}
