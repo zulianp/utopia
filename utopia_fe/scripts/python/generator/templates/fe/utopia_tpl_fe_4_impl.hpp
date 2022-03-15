@@ -6,6 +6,8 @@
 
 #include "utopia_fe_{name}.hpp"
 
+#include <cassert>
+
 namespace utopia {{
 	namespace kernels {{
 
@@ -35,6 +37,83 @@ namespace utopia {{
 				T measure_value;
 				{measure}
 				return measure_value;
+			}}
+
+			UTOPIA_FUNCTION static void jacobian(
+				// Element coordinates
+				const GeoT UTOPIA_RESTRICT*px,
+				const GeoT UTOPIA_RESTRICT*py,
+				const GeoT UTOPIA_RESTRICT*pz,
+				const GeoT UTOPIA_RESTRICT*pt,
+				// Input quadrature point
+				const T x,
+				const T y,
+				const T z,
+				const T t,
+				const GeoT UTOPIA_RESTRICT*J)
+			{{
+				using namespace utopia::device;
+				// Automatically generated
+				{jacobian}
+			}}
+
+			UTOPIA_FUNCTION static void jacobian_inverse(
+				// Element coordinates
+				const GeoT UTOPIA_RESTRICT*px,
+				const GeoT UTOPIA_RESTRICT*py,
+				const GeoT UTOPIA_RESTRICT*pz,
+				const GeoT UTOPIA_RESTRICT*pt,
+				// Input quadrature point
+				const T x,
+				const T y,
+				const T z,
+				const T t,
+				const GeoT UTOPIA_RESTRICT*J_inv)
+			{{
+				using namespace utopia::device;
+				// Automatically generated
+				{jacobian_inverse}
+			}}
+
+			UTOPIA_FUNCTION static void transform(
+				// Element coordinates
+				const GeoT UTOPIA_RESTRICT*px,
+				const GeoT UTOPIA_RESTRICT*py,
+				const GeoT UTOPIA_RESTRICT*pz,
+				const GeoT UTOPIA_RESTRICT*pt,
+				// Input quadrature point
+				const T x,
+				const T y,
+				const T z,
+				const T t,
+				const GeoT UTOPIA_RESTRICT*tx,
+				const GeoT UTOPIA_RESTRICT*ty,
+				const GeoT UTOPIA_RESTRICT*tz,
+				const GeoT UTOPIA_RESTRICT*tt)
+			{{
+				using namespace utopia::device;
+				// Automatically generated
+				{transform}
+			}}
+
+			UTOPIA_FUNCTION static void inverse_transform(
+				// Element coordinates
+				const GeoT UTOPIA_RESTRICT*px,
+				const GeoT UTOPIA_RESTRICT*py,
+				const GeoT UTOPIA_RESTRICT*pz,
+				const GeoT UTOPIA_RESTRICT*pt,
+				// Input quadrature point
+				const T x,
+				const T y,
+				const T z,
+				const GeoT UTOPIA_RESTRICT*tx,
+				const GeoT UTOPIA_RESTRICT*ty,
+				const GeoT UTOPIA_RESTRICT*tz,
+				const GeoT UTOPIA_RESTRICT*tt)
+			{{
+				using namespace utopia::device;
+				// Automatically generated
+				{inverse_transform}
 			}}
 
 			UTOPIA_FUNCTION static void gradient(
