@@ -3,10 +3,15 @@
 
 #include "utopia_Input.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_Algorithms.hpp"
 
-#include "utopia_fe_{name}.hpp"
+// #include "utopia_fe_{name}.hpp"
 
 #include <cassert>
+
+#ifndef UTOPIA_RESTRICT
+#define UTOPIA_RESTRICT __restrict__
+#endif
 
 namespace utopia {{
 	namespace kernels {{
@@ -18,20 +23,38 @@ namespace utopia {{
 		class {name} {{
 		public:
 			static constexpr int Dim = {dim};
+			static constexpr int NNodes = {nnodes};
+			static constexpr int Order = {order};
+
 			using Result = typename utopia::MostDescriptive<T, GeoT>::Type;
 
 			UTOPIA_FUNCTION static constexpr const char* class_name() {{ return "{name}"; }}
 
+			UTOPIA_INLINE_FUNCTION static constexpr int dim() 
+			{{
+				return Dim;
+			}}
+
+			UTOPIA_INLINE_FUNCTION static constexpr int n_nodes() 
+			{{
+				return NNodes;
+			}}
+
+			UTOPIA_INLINE_FUNCTION static constexpr int order() 
+			{{
+				return Order;
+			}}
+
 			UTOPIA_FUNCTION static constexpr Result measure(
 				// Element coordinates
-				const GeoT UTOPIA_RESTRICT*px,
-				const GeoT UTOPIA_RESTRICT*py,
-				const GeoT UTOPIA_RESTRICT*pz,
-				const GeoT UTOPIA_RESTRICT*pt,
+				const GeoT *UTOPIA_RESTRICT px,
+				const GeoT *UTOPIA_RESTRICT py,
+				const GeoT *UTOPIA_RESTRICT pz,
+				const GeoT *UTOPIA_RESTRICT pt,
 				// Input quadrature point
 				const T x,
 				const T y,
-				const T z
+				const T z,
 				const T t)
 			{{
 				T measure_value;
@@ -41,16 +64,16 @@ namespace utopia {{
 
 			UTOPIA_FUNCTION static void jacobian(
 				// Element coordinates
-				const GeoT UTOPIA_RESTRICT*px,
-				const GeoT UTOPIA_RESTRICT*py,
-				const GeoT UTOPIA_RESTRICT*pz,
-				const GeoT UTOPIA_RESTRICT*pt,
+				const GeoT *UTOPIA_RESTRICT px,
+				const GeoT *UTOPIA_RESTRICT py,
+				const GeoT *UTOPIA_RESTRICT pz,
+				const GeoT *UTOPIA_RESTRICT pt,
 				// Input quadrature point
 				const T x,
 				const T y,
 				const T z,
 				const T t,
-				const GeoT UTOPIA_RESTRICT*J)
+				GeoT *UTOPIA_RESTRICT J)
 			{{
 				using namespace utopia::device;
 				// Automatically generated
@@ -59,16 +82,16 @@ namespace utopia {{
 
 			UTOPIA_FUNCTION static void jacobian_inverse(
 				// Element coordinates
-				const GeoT UTOPIA_RESTRICT*px,
-				const GeoT UTOPIA_RESTRICT*py,
-				const GeoT UTOPIA_RESTRICT*pz,
-				const GeoT UTOPIA_RESTRICT*pt,
+				const GeoT *UTOPIA_RESTRICT px,
+				const GeoT *UTOPIA_RESTRICT py,
+				const GeoT *UTOPIA_RESTRICT pz,
+				const GeoT *UTOPIA_RESTRICT pt,
 				// Input quadrature point
 				const T x,
 				const T y,
 				const T z,
 				const T t,
-				const GeoT UTOPIA_RESTRICT*J_inv)
+				GeoT *UTOPIA_RESTRICT J_inv)
 			{{
 				using namespace utopia::device;
 				// Automatically generated
@@ -77,19 +100,19 @@ namespace utopia {{
 
 			UTOPIA_FUNCTION static void transform(
 				// Element coordinates
-				const GeoT UTOPIA_RESTRICT*px,
-				const GeoT UTOPIA_RESTRICT*py,
-				const GeoT UTOPIA_RESTRICT*pz,
-				const GeoT UTOPIA_RESTRICT*pt,
+				const GeoT *UTOPIA_RESTRICT px,
+				const GeoT *UTOPIA_RESTRICT py,
+				const GeoT *UTOPIA_RESTRICT pz,
+				const GeoT *UTOPIA_RESTRICT pt,
 				// Input quadrature point
 				const T x,
 				const T y,
 				const T z,
 				const T t,
-				const GeoT UTOPIA_RESTRICT*tx,
-				const GeoT UTOPIA_RESTRICT*ty,
-				const GeoT UTOPIA_RESTRICT*tz,
-				const GeoT UTOPIA_RESTRICT*tt)
+				GeoT &tx,
+				GeoT &ty,
+				GeoT &tz,
+				GeoT &tt)
 			{{
 				using namespace utopia::device;
 				// Automatically generated
@@ -98,18 +121,19 @@ namespace utopia {{
 
 			UTOPIA_FUNCTION static void inverse_transform(
 				// Element coordinates
-				const GeoT UTOPIA_RESTRICT*px,
-				const GeoT UTOPIA_RESTRICT*py,
-				const GeoT UTOPIA_RESTRICT*pz,
-				const GeoT UTOPIA_RESTRICT*pt,
+				const GeoT *UTOPIA_RESTRICT px,
+				const GeoT *UTOPIA_RESTRICT py,
+				const GeoT *UTOPIA_RESTRICT pz,
+				const GeoT *UTOPIA_RESTRICT pt,
 				// Input quadrature point
-				const T x,
-				const T y,
-				const T z,
-				const GeoT UTOPIA_RESTRICT*tx,
-				const GeoT UTOPIA_RESTRICT*ty,
-				const GeoT UTOPIA_RESTRICT*tz,
-				const GeoT UTOPIA_RESTRICT*tt)
+				const T tx,
+				const T ty,
+				const T tz,
+				const T tt,
+				GeoT &x,
+				GeoT &y,
+				GeoT &z,
+				GeoT &t)
 			{{
 				using namespace utopia::device;
 				// Automatically generated
@@ -118,20 +142,20 @@ namespace utopia {{
 
 			UTOPIA_FUNCTION static void gradient(
 				// Element coordinates
-				const GeoT UTOPIA_RESTRICT*px,
-				const GeoT UTOPIA_RESTRICT*py,
-				const GeoT UTOPIA_RESTRICT*pz,
-				const GeoT UTOPIA_RESTRICT*pt,
+				const GeoT *UTOPIA_RESTRICT px,
+				const GeoT *UTOPIA_RESTRICT py,
+				const GeoT *UTOPIA_RESTRICT pz,
+				const GeoT *UTOPIA_RESTRICT pt,
 				// Input quadrature point
 				const T x,
 				const T y,
 				const T z,
 				const T t,
 				// Output
-				Result UTOPIA_RESTRICT*gx,
-				Result UTOPIA_RESTRICT*gy,
-				Result UTOPIA_RESTRICT*gz,
-				Result UTOPIA_RESTRICT*gt)
+				Result *UTOPIA_RESTRICT gx,
+				Result *UTOPIA_RESTRICT gy,
+				Result *UTOPIA_RESTRICT gz,
+				Result *UTOPIA_RESTRICT gt)
 			{{
 				using namespace utopia::device;
 				// Automatically generated
@@ -143,7 +167,7 @@ namespace utopia {{
 				const T y,
 				const T z,
 				const T t,
-				Result UTOPIA_RESTRICT*f
+				Result *UTOPIA_RESTRICT f
 				)
 			{{
 				using namespace utopia::device;
@@ -153,21 +177,21 @@ namespace utopia {{
 
 			UTOPIA_FUNCTION static void eval(
 				// Element coordinates
-				const GeoT UTOPIA_RESTRICT*px,
-				const GeoT UTOPIA_RESTRICT*py,
-				const GeoT UTOPIA_RESTRICT*pz,
-				const GeoT UTOPIA_RESTRICT*pt,
+				const GeoT *UTOPIA_RESTRICT px,
+				const GeoT *UTOPIA_RESTRICT py,
+				const GeoT *UTOPIA_RESTRICT pz,
+				const GeoT *UTOPIA_RESTRICT pt,
 				// Input quadrature point
 				const T x,
 				const T y,
 				const T z,
 				const T t,
 				// Output
-				Result UTOPIA_RESTRICT*f,
-				Result UTOPIA_RESTRICT*gx,
-				Result UTOPIA_RESTRICT*gy,
-				Result UTOPIA_RESTRICT*gz,
-				Result UTOPIA_RESTRICT*gt,
+				Result *UTOPIA_RESTRICT f,
+				Result *UTOPIA_RESTRICT gx,
+				Result *UTOPIA_RESTRICT gy,
+				Result *UTOPIA_RESTRICT gz,
+				Result *UTOPIA_RESTRICT gt,
 				T &measure_value)
 			{{
 				using namespace utopia::device;

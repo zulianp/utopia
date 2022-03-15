@@ -1,5 +1,6 @@
 {{
 	static constexpr int max_iter = 100;
+	GeoT tol = 1e-16;
 	bool converged = false;
 	GeoT residual_norm;
 	for(int i = 0; i < max_iter; ++i) {{

@@ -21,6 +21,12 @@ import pdb
 from rich.syntax import Syntax
 console = rich.get_console()
 
+#  Work in progress output
+output_dir = './workspace'
+
+# Where we save the final result
+output_dir = '../../../backend/kokkos/fe/generated'
+
 # class SymbolicEngine:
 
 class SymPyEngine:
@@ -180,7 +186,7 @@ class SymPyEngine:
 
 se = SymPyEngine()
 
-output_dir = './workspace'
+
 
 class Template:
     def __init__(self, header_tpl_path, impl_tpl_path, header_output_path, impl_output_path):
@@ -202,6 +208,7 @@ class FE:
         self.dim = dim
         self.symplify_expr = symplify_expr
         self.symbolic_map_inversion = symbolic_map_inversion
+        self.order = 1  # FIXME
         
         self.tpl = Template(
             "templates/fe/utopia_tpl_fe.hpp",
@@ -323,7 +330,7 @@ class FE:
         grad_expr = []
         for i in range(0, n_fun):
             for d in range(0, self.dim):
-                grad_expr.append(Assignment(sympy.symbols(f"g{d}[{i}]"), grads[i][d]))
+                grad_expr.append(Assignment(sympy.symbols(f"g{se.prefix[d]}[{i}]"), grads[i][d]))
 
         value_expr = []
         for i in range(0, n_fun):
@@ -388,8 +395,8 @@ class FE:
             
             inv_trafo = sympy.solve(self.transform(x_ref) - x, x_ref, positive=True, simplify=self.symplify_expr, dict=True)
 
-            console.print(trafo, style='cyan')
-            console.print(inv_trafo, style='cyan')
+            # console.print(trafo, style='cyan')
+            # console.print(inv_trafo, style='cyan')
 
             for d in range(0, self.dim):
                 inverse_transform_expr.append(Assignment(sympy.symbols(f"{se.prefix[d]}"), inv_trafo[0][x_ref[d]]))
@@ -429,7 +436,9 @@ class FE:
             jacobian=jacobian_code,
             jacobian_inverse=jacobian_inverse_code,
             hessian='',
-            dim=self.dim)
+            dim=self.dim,
+            nnodes=self.n_shape_functions(),
+            order=self.order)
 
         with open(self.tpl.impl_output_path, 'w') as f:
             f.write(kernel)
@@ -592,8 +601,7 @@ def main(args):
     p3 = se.point3(x, y, z);
     p4 = se.point4(x, y, z, t);
 
-
-    console.print(x.assumptions0)
+    # console.print(x.assumptions0)
 
     use_simplify = False
     symbolic_map_inversion = False
@@ -607,13 +615,13 @@ def main(args):
     aahex8 = AxisAlignedHex8()
     pentatope5 = Pentatope5()
 
-    # tri3.generate_code(p2)
-    # quad4.generate_code(p2)
-    # aaquad4.generate_code(p2)
-    # tet4.generate_code(p3)
+    tri3.generate_code(p2)
+    quad4.generate_code(p2)
+    aaquad4.generate_code(p2)
+    tet4.generate_code(p3)
     hex8.generate_code(p3)
-    # aahex8.generate_code(p3)
-    # pentatope5.generate_code(p4)
+    aahex8.generate_code(p3)
+    pentatope5.generate_code(p4)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
