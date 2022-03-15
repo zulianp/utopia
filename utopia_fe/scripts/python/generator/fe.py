@@ -25,9 +25,8 @@ console = rich.get_console()
 output_dir = './workspace'
 
 # Where we save the final result
-output_dir = '../../../backend/kokkos/fe/generated'
+# output_dir = '../../../backend/kokkos/fe/generated'
 
-# class SymbolicEngine:
 
 class SymPyEngine:
 
@@ -162,6 +161,8 @@ class SymPyEngine:
         start = perf_counter()
 
         sub_expr, simpl_expr = sympy.cse(expr)
+
+        cost = f'FLOATING POINT OPS!\n//\t- Result: {sympy.count_ops(simpl_expr, visual=True)}\n//\t- Subexpressions: {sympy.count_ops(sub_expr, visual=True)}'
         
         printer = sympy.printing.c.C99CodePrinter()
         lines = []
@@ -172,12 +173,14 @@ class SymPyEngine:
         for v in simpl_expr:
                 lines.append(printer.doprint(v))
 
-        code_string='\n'.join(lines)
+        code_string=f'\n'.join(lines)
 
         stop = perf_counter()
         console.print(f'Elapsed  {stop - start} seconds')
         console.print("--------------------------")
         console.print(f'generated code')
+
+        code_string = f'//{cost}\n' + code_string
 
         if dump:
             console.print(code_string)
@@ -218,7 +221,41 @@ class FE:
 
         with open("templates/fe/utopia_tpl_fe_map_inversion_snippet.hpp", 'r') as f:
             self.map_inversion_tpl = f.read()
-            
+
+    def coeff(self, name):
+        coeffs = []
+
+        n_fun = self.n_shape_functions()
+        
+        for i in range(0, n_fun):
+            coeffs.append(se.symbols(f'{name}[{i}]'))
+
+        return se.array(coeffs)
+    
+    def interpolate(self, coeff, x_ref):
+        f = self.fun(x_ref)
+
+        ret = 0
+        n_fun = self.n_shape_functions()
+
+        for i in range(0, n_fun):
+            ret += coeff[i] * f[i]
+
+        return ret
+
+    def grad_interpolate(self, coeff, x_ref):
+        g = self.grad(x_ref)
+
+        ret = se.zeros(self.dim, 1)
+
+        n_fun = self.n_shape_functions()
+
+        for i in range(0, n_fun):
+            for d in range(0, self.dim):
+                ret[d] += coeff[i] * g[i][d]
+
+        return ret
+
 
     def reference_measure(self):
         return 1
@@ -589,10 +626,193 @@ class AxisAlignedHex8(FE):
         ret = se.point3(0, 0, 0) + self.nodes[0]
         for d in range(0, self.dim):
             ret[d] += x_ref[d] * scaling[d]
+
         return se.simplify(ret)
 
     def fun(self, x):
         return self.hex8.fun(x)
+
+
+class Material:
+    def __init__(self, name):
+        self.name = name
+        self.tpl = ''
+
+    def is_linear(self):
+        return False
+
+    def load_tpl(self):
+        with open(f"templates/material/utopia_tpl_material_{self.test.dim}_impl.hpp", 'r') as f:
+            self.tpl = f.read()
+
+    def generate_code(self, x_ref, w):
+        H = self.hessian(x_ref, w)
+
+        H_expr = []
+        for i in range(0, H.shape[0]):
+            for j in range(0, H.shape[1]):
+                H_expr.append(AddAugmentedAssignment(se.symbols(f"H[{i*H.shape[1] + j}]"), H[i, j]))
+
+        # console.print(f'{self.name}.hessian', style='magenta')    
+        H_code = se.c_gen(H_expr)
+
+        trial = self.trial
+        u = trial.coeff("u")
+        Hx = self.apply(u, x_ref, w)
+
+        Hx_expr = []
+
+        for i in range(0, Hx.shape[0]):
+                Hx_expr.append(AddAugmentedAssignment(se.symbols(f"Hx[{i}]"), Hx[i]))
+
+        # console.print(f'{self.name}.apply', style='magenta')    
+        Hx_code = se.c_gen(Hx_expr)
+
+        combined_expr = []
+        combined_expr.extend(H_expr)
+        combined_expr.extend(Hx_expr)
+
+        combined_code = se.c_gen(combined_expr)
+
+        self.load_tpl()
+
+        code = self.tpl.format(
+            name=self.name,
+            dim=self.test.dim,
+            trial=self.trial.name,
+            test=self.test.name,
+            hessian = H_code,
+            apply_hessian = Hx_code,
+            gradient = '//TODO',
+            value = '//TODO',
+            combined = combined_code,
+            get_params = '//TODO',
+            set_params = '//TODO',
+            fields = '//TODO'
+        )
+
+        # console.print(f'{self.name} assembler', style='magenta')    
+        # console.print(code, style='yellow')    
+
+        with open('./workspace/kernel.hpp', 'w') as f:
+            f.write(code)
+
+        return code
+
+
+
+class LaplaceOperator(Material):
+    def __init__(self, trial, test):
+        super().__init__('LaplaceOperator')
+
+        self.trial = trial
+        self.test = test
+
+    def is_linear(self):
+        return True
+
+    def hessian(self, x_ref, w):
+        trial = self.trial
+        test = self.test
+
+        g_trial = trial.grad(x_ref)
+        g_test = test.grad(x_ref)
+        dx = test.measure(x_ref) * w
+
+        rows = test.n_shape_functions()
+        cols = trial.n_shape_functions()
+        
+        M = se.zeros(rows, cols)
+        dim = test.dim
+
+        for i in range(0, rows):
+            for j in range(0, cols):
+                scalar_prod = 0
+
+                for d in range(0, dim):
+                    scalar_prod += g_test[i][d] * g_trial[j][d]
+
+                scalar_prod *=  dx
+                M[i, j] = scalar_prod
+
+        # return se.simplify(M)
+        return M
+
+    def apply(self, coeff, x_ref, w):
+        trial = self.trial
+        test = self.test
+
+        g_trial = trial.grad_interpolate(coeff, x_ref)
+        g_test = test.grad(x_ref)
+        dx = test.measure(x_ref) * w
+
+        rows = test.n_shape_functions()
+        cols = trial.n_shape_functions()
+        
+        Mx = se.zeros(rows, cols)
+        dim = test.dim
+
+        for i in range(0, rows):
+            for j in range(0, cols):
+                scalar_prod = 0
+
+                for d in range(0, dim):
+                    scalar_prod += g_test[i][d] * g_trial[d]
+
+                scalar_prod *=  dx
+                Mx[i] += scalar_prod
+
+        # return se.simplify(Mx)
+        return Mx
+
+
+class Mass(Material):
+    def __init__(self, trial, test):
+        super().__init__('Mass')
+
+        self.trial = trial
+        self.test = test
+
+    def is_linear(self):
+        return True
+
+    def hessian(self, x_ref, w):
+        trial = self.trial
+        test = self.test
+
+        f_trial = trial.fun(x_ref)
+        f_test = test.fun(x_ref)
+        dx = test.measure(x_ref) * w
+
+        rows = test.n_shape_functions()
+        cols = trial.n_shape_functions()
+        
+        M = se.zeros(rows, cols)
+
+        for i in range(0, rows):
+            for j in range(0, cols):
+                M[i, j] = f_test[i] * f_trial[j] * dx
+
+        return M
+
+    def apply(self, coeff, x_ref, w):
+        trial = self.trial
+        test = self.test
+
+        f_trial = trial.interpolate(coeff, x_ref)
+        f_test = test.fun(x_ref)
+        dx = test.measure(x_ref) * w
+
+        rows = test.n_shape_functions()
+        cols = trial.n_shape_functions()
+        
+        Mx = se.zeros(rows, cols)
+        dim = test.dim
+
+        for i in range(0, rows):
+            Mx[i] += f_test[i] * f_trial * dx
+
+        return Mx
 
 
 def main(args):
@@ -605,6 +825,7 @@ def main(args):
 
     use_simplify = False
     symbolic_map_inversion = False
+    generate_fe = False
 
     tri3 = Tri3()
     quad4 = Quad4()
@@ -615,13 +836,36 @@ def main(args):
     aahex8 = AxisAlignedHex8()
     pentatope5 = Pentatope5()
 
-    tri3.generate_code(p2)
-    quad4.generate_code(p2)
-    aaquad4.generate_code(p2)
-    tet4.generate_code(p3)
-    hex8.generate_code(p3)
-    aahex8.generate_code(p3)
-    pentatope5.generate_code(p4)
+    if generate_fe:
+        tri3.generate_code(p2)
+        quad4.generate_code(p2)
+        aaquad4.generate_code(p2)
+        tet4.generate_code(p3)
+        hex8.generate_code(p3)
+        aahex8.generate_code(p3)
+        pentatope5.generate_code(p4)
+
+    w = se.symbols('weight')
+
+    lapl2 = LaplaceOperator(tri3, tri3)
+    # lapl2 = LaplaceOperator(quad4, quad4)
+    lapl2.generate_code(p2, w)
+
+    # mass2 = Mass(quad4, quad4)
+    # mass2.generate_code(p2, w)
+
+    # lapl3 = LaplaceOperator(hex8, hex8)
+    # lapl3 = LaplaceOperator(tet4, tet4)
+    # lapl3 = LaplaceOperator(hex8, hex8)
+    # lapl3.generate_code(p3, w)
+
+    # lapl4 = LaplaceOperator(pentatope5, pentatope5)
+    # lapl4.generate_code(p4, w)
+
+    # mass4 = Mass(pentatope5, pentatope5)
+    # mass4.generate_code(p4, w)
+
+
 
 if __name__ == '__main__':
     main(sys.argv[1:])
