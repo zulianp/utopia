@@ -847,12 +847,12 @@ def main(args):
 
     w = se.symbols('weight')
 
-    lapl2 = LaplaceOperator(tri3, tri3)
+    # lapl2 = LaplaceOperator(tri3, tri3)
     # lapl2 = LaplaceOperator(quad4, quad4)
-    lapl2.generate_code(p2, w)
+    # lapl2.generate_code(p2, w)
 
-    # mass2 = Mass(quad4, quad4)
-    # mass2.generate_code(p2, w)
+    mass2 = Mass(quad4, quad4)
+    mass2.generate_code(p2, w)
 
     # lapl3 = LaplaceOperator(hex8, hex8)
     # lapl3 = LaplaceOperator(tet4, tet4)
