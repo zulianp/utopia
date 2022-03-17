@@ -682,7 +682,7 @@ class Material:
         with open(material_output_dir + f'/utopia_material_{self.name}.hpp', 'w') as f:
             f.write(header_code)
 
-        with open(material_output_dir + f'/utopia_material_{self.name}_{self.test.dim}_impl.hpp', 'w') as f:
+        with open(material_output_dir + f'/utopia_material_{self.name}_{self.test.name}_{self.test.dim}_impl.hpp', 'w') as f:
             f.write(code)
 
         return code
@@ -817,35 +817,39 @@ def main(args):
     aahex8 = AxisAlignedHex8()
     pentatope5 = Pentatope5()
 
+    elements_2D = [tri3, quad4, aaquad4]
+    elements_3D = [tet4, hex8, aahex8]
+    elements_4D = [pentatope5]
+
+    elements = []
+    elements.extend(elements_2D)
+    elements.extend(elements_3D)
+    elements.extend(elements_4D)
+
     if generate_fe:
-        tri3.generate_code(p2)
-        quad4.generate_code(p2)
-        aaquad4.generate_code(p2)
-        tet4.generate_code(p3)
-        hex8.generate_code(p3)
-        aahex8.generate_code(p3)
-        pentatope5.generate_code(p4)
+        for e in elements_2D:
+            e.generate_code(p2)
+
+        for e in elements_3D:
+            e.generate_code(p3)
+
+        for e in elements_4D:
+            e.generate_code(p4)
+
 
     w = se.symbols('weight')
 
-    mass2 = Mass(quad4, quad4)
-    mass2.generate_code(p2, w)
+    for e in elements_2D:
+        mass = Mass(e, e)
+        mass.generate_code(p2, w)
 
-    mass3 = Mass(hex8, hex8)
-    mass3.generate_code(p3, w)
+    for e in elements_3D:
+        mass = Mass(e, e)
+        mass.generate_code(p3, w)
 
-    #######################################
-    # lapl2 = LaplaceOperator(tri3, tri3)
-    # lapl2 = LaplaceOperator(quad4, quad4)
-    # lapl2.generate_code(p2, w)
-    # lapl3 = LaplaceOperator(hex8, hex8)
-    # lapl3 = LaplaceOperator(tet4, tet4)
-    # lapl3 = LaplaceOperator(hex8, hex8)
-    # lapl3.generate_code(p3, w)
-    # lapl4 = LaplaceOperator(pentatope5, pentatope5)
-    # lapl4.generate_code(p4, w)
-    # mass4 = Mass(pentatope5, pentatope5)
-    # mass4.generate_code(p4, w)
+    for e in elements_4D:
+        mass = Mass(e, e)
+        mass.generate_code(p4, w)
 
 if __name__ == '__main__':
     main(sys.argv[1:])

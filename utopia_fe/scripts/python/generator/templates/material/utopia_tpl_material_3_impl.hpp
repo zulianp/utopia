@@ -1,5 +1,5 @@
-#ifndef UTOPIA_TPL_MATERIAL_{name}_{dim}_IMPL_hpp
-#define UTOPIA_TPL_MATERIAL_{name}_{dim}_IMPL_hpp
+#ifndef UTOPIA_TPL_MATERIAL_{name}_{trial}_{dim}_IMPL_hpp
+#define UTOPIA_TPL_MATERIAL_{name}_{trial}_{dim}_IMPL_hpp
 
 #include "utopia_Input.hpp"
 #include "utopia_Algorithms.hpp"
@@ -152,4 +152,4 @@ namespace utopia {{
 	}}
 }}
 
-#endif // UTOPIA_TPL_MATERIAL_{name}_{dim}_IMPL_hpp
+#endif // UTOPIA_TPL_MATERIAL_{name}_{trial}_{dim}_IMPL_hpp

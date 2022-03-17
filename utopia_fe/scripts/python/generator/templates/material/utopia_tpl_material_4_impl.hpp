@@ -1,5 +1,5 @@
-#ifndef UTOPIA_TPL_MATERIAL_{name}_{dim}_IMPL_hpp
-#define UTOPIA_TPL_MATERIAL_{name}_{dim}_IMPL_hpp
+#ifndef UTOPIA_TPL_MATERIAL_{name}_{trial}_{dim}_IMPL_hpp
+#define UTOPIA_TPL_MATERIAL_{name}_{trial}_{dim}_IMPL_hpp
 
 #include "utopia_Input.hpp"
 #include "utopia_Algorithms.hpp"
@@ -143,8 +143,8 @@ namespace utopia {{
 				const T t,
 				const T weight,
 				T &e,
-				T *UTOPIA_RESTRICT lf,
-				T *UTOPIA_RESTRICT bf) const
+				T *UTOPIA_RESTRICT H,
+				T *UTOPIA_RESTRICT g) const
 			{{
 				using namespace utopia::device;
 			    // Automatically generated
@@ -162,4 +162,4 @@ namespace utopia {{
 	}}
 }}
 
-#endif // UTOPIA_TPL_MATERIAL_{name}_{dim}_IMPL_hpp
+#endif // UTOPIA_TPL_MATERIAL_{name}_{trial}_{dim}_IMPL_hpp
