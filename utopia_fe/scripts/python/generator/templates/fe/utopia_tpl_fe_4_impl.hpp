@@ -19,7 +19,7 @@ namespace utopia {{
 		/**
 		 * Specialization of {name} for dimension {dim}
 		 */
-		template<typename T, typename GeoT = T>
+		template<typename T, typename GeoT>
 		class {name} {{
 		public:
 			static constexpr int Dim = {dim};

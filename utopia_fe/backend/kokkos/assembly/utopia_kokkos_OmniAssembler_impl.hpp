@@ -56,6 +56,10 @@
 #include "utopia_hyperelasticity_Yeoh_2.hpp"
 #include "utopia_hyperelasticity_Yeoh_3.hpp"
 
+
+#include "utopia_material_Mass_2_impl.hpp"
+#include "utopia_material_Mass_3_impl.hpp"
+
 // utopia/kokkos includes
 #include "utopia_kokkos_FE.hpp"
 
@@ -191,6 +195,12 @@ namespace utopia {
                     "IncompressibleMooneyRivlin", 2);
                 register_assembler_variant<utopia::kokkos::IncompressibleMooneyRivlin<FE_t, 3>>(
                     "IncompressibleMooneyRivlin", 3);
+
+                register_assembler_variant<utopia::kokkos::MassQuad4<FE_t>>(
+                    "MassQuad4", 2);
+
+                register_assembler_variant<utopia::kokkos::MassHex8<FE_t>>(
+                    "MassHex8", 3);
             }
         };
 

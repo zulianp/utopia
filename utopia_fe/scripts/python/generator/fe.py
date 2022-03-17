@@ -10,9 +10,6 @@ from sympy.printing.c import C99CodePrinter
 from sympy.utilities.codegen import CCodeGen
 from sympy.utilities.codegen import codegen
 
-# import sys
-# from sage.all import *
-
 import os
 import rich
 import sys
@@ -23,13 +20,13 @@ console = rich.get_console()
 
 #  Work in progress output
 output_dir = './workspace'
+material_output_dir = './workspace'
 
 # Where we save the final result
 # output_dir = '../../../backend/kokkos/fe/generated'
-
+material_output_dir = '../../../backend/kokkos/assembly/generated'
 
 class SymPyEngine:
-
     def __init__(self):
         self.prefix = [ 'x', 'y', 'z', 't', 'a', 'b', 'c', 'd']
 
@@ -43,7 +40,6 @@ class SymPyEngine:
             vars.append(f'{prefix}{self.prefix[k]}{postfix}')
 
         return sympy.Matrix(d, 1, vars)
-
 
     def simplify(self, expr):
         return sympy.simplify(expr)
@@ -98,7 +94,6 @@ class SymPyEngine:
         mat_inv = self.zeros(3, 3)
 
         det = self.det3(mat)
-        # det = self.simplify(det)
         mat_inv[0, 0] = (mat[1, 1] * mat[2, 2] - mat[1, 2] * mat[2, 1]) / det
         mat_inv[0, 1] = (mat[0, 2] * mat[2, 1] - mat[0, 1] * mat[2, 2]) / det
         mat_inv[0, 2] = (mat[0, 1] * mat[1, 2] - mat[0, 2] * mat[1, 1]) / det
@@ -110,8 +105,7 @@ class SymPyEngine:
         mat_inv[2, 2] = (mat[0, 0] * mat[1, 1] - mat[0, 1] * mat[1, 0]) / det
 
         return mat_inv
-        # return self.simplify(mat_inv)
-
+        
     def det4(self, m):
         mat_inv00 = m[1, 1] * m[2, 2] * m[3, 3] - m[1, 1] * m[2, 3] * m[3, 2] - m[2, 1] * m[1, 2] * m[3, 3] + m[2, 1] * m[1, 3] * m[3, 2] + m[3, 1] * m[1, 2] * m[2, 3] - m[3, 1] * m[1, 3] * m[2, 2]
         mat_inv10 = -m[1, 0] * m[2, 2] * m[3, 3] + m[1, 0] * m[2, 3] * m[3, 2] + m[2, 0] * m[1, 2] * m[3, 3] - m[2, 0] * m[1, 3] * m[3, 2] - m[3, 0] * m[1, 2] * m[2, 3] + m[3, 0] * m[1, 3] * m[2, 2]
@@ -143,7 +137,6 @@ class SymPyEngine:
         det = m[0, 0] * mat_inv[0, 0] + m[0, 1] * mat_inv[1, 0] + m[0, 2] * mat_inv[2, 0] + m[0, 3] * mat_inv[3, 0]
 
         return mat_inv / det
-
 
     def inverse(self, mat):
         # return sympy.Inverse(mat)
@@ -188,8 +181,6 @@ class SymPyEngine:
         return code_string
 
 se = SymPyEngine()
-
-
 
 class Template:
     def __init__(self, header_tpl_path, impl_tpl_path, header_output_path, impl_output_path):
@@ -255,7 +246,6 @@ class FE:
                 ret[d] += coeff[i] * g[i][d]
 
         return ret
-
 
     def reference_measure(self):
         return 1
@@ -367,16 +357,16 @@ class FE:
         grad_expr = []
         for i in range(0, n_fun):
             for d in range(0, self.dim):
-                grad_expr.append(Assignment(sympy.symbols(f"g{se.prefix[d]}[{i}]"), grads[i][d]))
+                grad_expr.append(Assignment(se.symbols(f"g{se.prefix[d]}[{i}]"), grads[i][d]))
 
         value_expr = []
         for i in range(0, n_fun):
-            value_expr.append(Assignment(sympy.symbols(f"f[{i}]"), f[i]))
+            value_expr.append(Assignment(se.symbols(f"f[{i}]"), f[i]))
 
         stop = perf_counter()
         console.print(f'Elapsed {stop - start} seconds')
 
-        measure_expr = [Assignment(sympy.symbols(f"measure_value"), self.measure(x_ref))]
+        measure_expr = [Assignment(se.symbols(f"measure_value"), self.measure(x_ref))]
 
         combined_expression = []
         combined_expression.extend(value_expr)
@@ -404,12 +394,11 @@ class FE:
 
         for d1 in range(0, self.dim):
             for d2 in range(0, self.dim):
-                jacobian_expr.append(Assignment(sympy.symbols(f"J[{d1*self.dim + d2}]"), J[d1, d2]))
-                jacobian_inverse_expr.append(Assignment(sympy.symbols(f"J_inv[{d1*self.dim + d2}]"), J_inv[d1, d2]))
+                jacobian_expr.append(Assignment(se.symbols(f"J[{d1*self.dim + d2}]"), J[d1, d2]))
+                jacobian_inverse_expr.append(Assignment(se.symbols(f"J_inv[{d1*self.dim + d2}]"), J_inv[d1, d2]))
 
         jacobian_code = se.c_gen(jacobian_expr)
         jacobian_inverse_code = se.c_gen(jacobian_inverse_expr)
-
 
         #############################################################
         # Geometric transformation
@@ -419,10 +408,9 @@ class FE:
         trafo = self.transform(x_ref)
 
         for d in range(0, self.dim):
-            transform_expr.append(Assignment(sympy.symbols(f"t{se.prefix[d]}"), trafo[d]))
+            transform_expr.append(Assignment(se.symbols(f"t{se.prefix[d]}"), trafo[d]))
 
         inverse_transform_expr = []
-        
         transform_code = se.c_gen(transform_expr)
 
         # Point in physical space
@@ -432,16 +420,10 @@ class FE:
             
             inv_trafo = sympy.solve(self.transform(x_ref) - x, x_ref, positive=True, simplify=self.symplify_expr, dict=True)
 
-            # console.print(trafo, style='cyan')
-            # console.print(inv_trafo, style='cyan')
-
             for d in range(0, self.dim):
-                inverse_transform_expr.append(Assignment(sympy.symbols(f"{se.prefix[d]}"), inv_trafo[0][x_ref[d]]))
+                inverse_transform_expr.append(Assignment(se.symbols(f"{se.prefix[d]}"), inv_trafo[0][x_ref[d]]))
                 inverse_transform_code = se.c_gen(inverse_transform_expr)
         else:
-            update = 'assert(false); //TODO'
-            residual_norm = 'assert(false); //TODO'
-
             g = x - self.transform(x_ref)
             c = J_inv * g
             x = x + c 
@@ -452,9 +434,9 @@ class FE:
                 norm_g += g[d] * g[d]
 
             for d in range(0, self.dim):
-                inverse_transform_expr.append(Assignment(sympy.symbols(f"{se.prefix[d]}"), x[d]))
+                inverse_transform_expr.append(Assignment(se.symbols(f"{se.prefix[d]}"), x[d]))
 
-            inverse_transform_expr.append(Assignment(sympy.symbols("residual_norm"), norm_g))
+            inverse_transform_expr.append(Assignment(se.symbols("residual_norm"), norm_g))
             update = se.c_gen(inverse_transform_expr)
 
 
@@ -479,9 +461,6 @@ class FE:
 
         with open(self.tpl.impl_output_path, 'w') as f:
             f.write(kernel)
-
-        # with open(self.tpl.header_output_path, 'w') as f:
-        #     f.write(header)      
 
 class Simplex(FE):
     def __init__(self, name, dim, symplify_expr = False, symbolic_map_inversion = True):
@@ -572,7 +551,6 @@ class AxisAlignedQuad4(FE):
 
     def transform(self, x_ref):
         # pdb.set_trace()
-
         start = perf_counter()
 
         scaling = self.nodes[2] - self.nodes[0]
@@ -584,7 +562,6 @@ class AxisAlignedQuad4(FE):
         ret = se.simplify(ret)
 
         stop = perf_counter()
-        # console.print(f'{self.name}: {ret}, {stop - start} seconds', style="magenta")
         return ret
 
     def fun(self, x):
@@ -632,7 +609,6 @@ class AxisAlignedHex8(FE):
     def fun(self, x):
         return self.hex8.fun(x)
 
-
 class Material:
     def __init__(self, name):
         self.name = name
@@ -645,6 +621,9 @@ class Material:
         with open(f"templates/material/utopia_tpl_material_{self.test.dim}_impl.hpp", 'r') as f:
             self.tpl = f.read()
 
+        with open(f"templates/material/utopia_tpl_material.hpp", 'r') as f:
+            self.header_tpl = f.read()
+
     def generate_code(self, x_ref, w):
         H = self.hessian(x_ref, w)
 
@@ -653,7 +632,6 @@ class Material:
             for j in range(0, H.shape[1]):
                 H_expr.append(AddAugmentedAssignment(se.symbols(f"H[{i*H.shape[1] + j}]"), H[i, j]))
 
-        # console.print(f'{self.name}.hessian', style='magenta')    
         H_code = se.c_gen(H_expr)
 
         trial = self.trial
@@ -665,16 +643,26 @@ class Material:
         for i in range(0, Hx.shape[0]):
                 Hx_expr.append(AddAugmentedAssignment(se.symbols(f"Hx[{i}]"), Hx[i]))
 
-        # console.print(f'{self.name}.apply', style='magenta')    
         Hx_code = se.c_gen(Hx_expr)
+
+
+        # FIXME
+        g_expr = []
+        for i in range(0, Hx.shape[0]):
+                g_expr.append(AddAugmentedAssignment(se.symbols(f"g[{i}]"), Hx[i]))
+
+
+        g_code = se.c_gen(g_expr)
 
         combined_expr = []
         combined_expr.extend(H_expr)
-        combined_expr.extend(Hx_expr)
+        combined_expr.extend(g_expr)
 
         combined_code = se.c_gen(combined_expr)
 
         self.load_tpl()
+
+        header_code = self.header_tpl.format(name=self.name)
 
         code = self.tpl.format(
             name=self.name,
@@ -683,7 +671,7 @@ class Material:
             test=self.test.name,
             hessian = H_code,
             apply_hessian = Hx_code,
-            gradient = '//TODO',
+            gradient = g_code,
             value = '//TODO',
             combined = combined_code,
             get_params = '//TODO',
@@ -691,15 +679,13 @@ class Material:
             fields = '//TODO'
         )
 
-        # console.print(f'{self.name} assembler', style='magenta')    
-        # console.print(code, style='yellow')    
+        with open(material_output_dir + f'/utopia_material_{self.name}.hpp', 'w') as f:
+            f.write(header_code)
 
-        with open('./workspace/kernel.hpp', 'w') as f:
+        with open(material_output_dir + f'/utopia_material_{self.name}_{self.test.dim}_impl.hpp', 'w') as f:
             f.write(code)
 
         return code
-
-
 
 class LaplaceOperator(Material):
     def __init__(self, trial, test):
@@ -735,7 +721,6 @@ class LaplaceOperator(Material):
                 scalar_prod *=  dx
                 M[i, j] = scalar_prod
 
-        # return se.simplify(M)
         return M
 
     def apply(self, coeff, x_ref, w):
@@ -762,9 +747,7 @@ class LaplaceOperator(Material):
                 scalar_prod *=  dx
                 Mx[i] += scalar_prod
 
-        # return se.simplify(Mx)
         return Mx
-
 
 class Mass(Material):
     def __init__(self, trial, test):
@@ -814,15 +797,13 @@ class Mass(Material):
 
         return Mx
 
-
 def main(args):
     x, y, z, t = se.symbols('x y z t')
-    p2 = se.point2(x, y);
-    p3 = se.point3(x, y, z);
-    p4 = se.point4(x, y, z, t);
+    p2 = se.point2(x, y)
+    p3 = se.point3(x, y, z)
+    p4 = se.point4(x, y, z, t)
 
     # console.print(x.assumptions0)
-
     use_simplify = False
     symbolic_map_inversion = False
     generate_fe = False
@@ -847,25 +828,24 @@ def main(args):
 
     w = se.symbols('weight')
 
-    # lapl2 = LaplaceOperator(tri3, tri3)
-    # lapl2 = LaplaceOperator(quad4, quad4)
-    # lapl2.generate_code(p2, w)
-
     mass2 = Mass(quad4, quad4)
     mass2.generate_code(p2, w)
 
+    mass3 = Mass(hex8, hex8)
+    mass3.generate_code(p3, w)
+
+    #######################################
+    # lapl2 = LaplaceOperator(tri3, tri3)
+    # lapl2 = LaplaceOperator(quad4, quad4)
+    # lapl2.generate_code(p2, w)
     # lapl3 = LaplaceOperator(hex8, hex8)
     # lapl3 = LaplaceOperator(tet4, tet4)
     # lapl3 = LaplaceOperator(hex8, hex8)
     # lapl3.generate_code(p3, w)
-
     # lapl4 = LaplaceOperator(pentatope5, pentatope5)
     # lapl4.generate_code(p4, w)
-
     # mass4 = Mass(pentatope5, pentatope5)
     # mass4.generate_code(p4, w)
-
-
 
 if __name__ == '__main__':
     main(sys.argv[1:])

@@ -4,6 +4,11 @@
 #include "utopia_Input.hpp"
 #include "utopia_Algorithms.hpp"
 
+#include "utopia_kokkos_AutoKernel.hpp"
+
+#include "utopia_fe_{trial}_{dim}.hpp"
+#include "utopia_material_{name}.hpp"
+
 #ifndef UTOPIA_RESTRICT
 #define UTOPIA_RESTRICT __restrict__
 #endif
@@ -15,10 +20,11 @@ namespace utopia {{
 		/**
 		 * Specialization of {name} for symmetric element pair trial=test={trial}
 		 */
-		template<typename T, typename GeoT = T>
+		template<typename T, typename GeoT>
 		class {name}<{trial}<T, GeoT>> {{
 		public:
-			static constexpr int Dim = {test}::Dim;
+			using ElemT = {trial}<T, GeoT>;
+			static constexpr int Dim = ElemT::Dim;
 
 			UTOPIA_FUNCTION static constexpr const char* class_name() {{ return "{name}<{trial}>"; }}
 
@@ -32,7 +38,7 @@ namespace utopia {{
 				{fields}
 			}};
 
-			{name}(const Params &params)
+			{name}(const Params &params = Params())
 			{{
 				{set_params}
 			}}
@@ -148,6 +154,11 @@ namespace utopia {{
 			{fields}
 
 		}};
+	}}
+
+	namespace kokkos {{
+		template<class FE>
+		using {name}{trial} = utopia::kokkos::AutoKernel<FE, utopia::kernels::{name}<utopia::kernels::{trial}<typename FE::Scalar, typename FE::Scalar>>, {dim}>;
 	}}
 }}
 
