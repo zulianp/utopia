@@ -528,6 +528,25 @@ class Pentatope5(Simplex):
         ret = se.array([ 1 - x[0] - x[1] - x[2] - x[3], x[0], x[1], x[2], x[3]])
         return ret
 
+class Line2(FE):
+    def __init__(self, symplify_expr = False, symbolic_map_inversion = False):
+        super().__init__('Line2', 1, symplify_expr, symbolic_map_inversion)
+        self.nodes = se.point_symbols(2, 1)
+
+    # Centered at 0.5
+    # def f0(self, x):
+    #     return 1 - x
+
+    # def f1(self, x):
+    #     return x
+
+    # Centered at 0
+    def f0(self, x):
+        return 1 - (x + 1.0)/2
+
+    def f1(self, x):
+        return (x + 1.0)/2
+
 class Quad4(FE):
     def __init__(self, symplify_expr = True):
         super().__init__('Quad4', 2, symplify_expr)
@@ -537,7 +556,14 @@ class Quad4(FE):
         return len(self.nodes)
 
     def fun(self, x):
-        ret = se.array([ (1 - x[0]) * (1 - x[1]), x[0] * (1 - x[1]), x[0] * x[1], (1 - x[0] * x[1]) ])
+        line2 = Line2()
+        ret = se.array([ 
+            line2.f0(x[0])  * line2.f0(x[1]), 
+            line2.f1(x[0])  * line2.f0(x[1]), 
+            line2.f1(x[0])  * line2.f1(x[1]), 
+            line2.f0(x[0])   * line2.f1(x[1]) 
+        ])
+
         return ret
 
 class AxisAlignedQuad4(FE):
@@ -576,16 +602,18 @@ class Hex8(FE):
         return len(self.nodes)
 
     def fun(self, x):
+        line2 = Line2();
         ret = se.array([
-            (1.0 - x[0]) * (1.0 - x[1]) * (1.0 - x[2]), 
-            x[0] * (1.0 - x[1]) * (1.0 - x[2]), 
-            x[0] * x[1] * (1.0 - x[2]), 
-            (1.0 - x[0]) * x[1] * (1.0 - x[2]), 
-            (1.0 - x[0]) * (1.0 - x[1]) * x[2], 
-            x[0] * (1.0 - x[1]) * x[2], 
-            x[0] * x[1] * x[2], 
-            (1.0 - x[0]) * x[1] * x[2]
+            line2.f0(x[0]) * line2.f0(x[1]) * line2.f0(x[2]), 
+            line2.f1(x[0]) * line2.f0(x[1]) * line2.f0(x[2]), 
+            line2.f1(x[0]) * line2.f1(x[1]) * line2.f0(x[2]), 
+            line2.f0(x[0]) * line2.f1(x[1]) * line2.f0(x[2]), 
+            line2.f0(x[0]) * line2.f0(x[1]) * line2.f1(x[2]), 
+            line2.f1(x[0]) * line2.f0(x[1]) * line2.f1(x[2]), 
+            line2.f1(x[0]) * line2.f1(x[1]) * line2.f1(x[2]), 
+            line2.f0(x[0]) * line2.f1(x[1]) * line2.f1(x[2])
             ])
+
         return ret
 
 class AxisAlignedHex8(FE):
@@ -835,7 +863,6 @@ def main(args):
 
         for e in elements_4D:
             e.generate_code(p4)
-
 
     w = se.symbols('weight')
 
