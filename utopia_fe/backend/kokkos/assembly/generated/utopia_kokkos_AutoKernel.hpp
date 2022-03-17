@@ -33,7 +33,7 @@ namespace utopia {
 
                 UTOPIA_FUNCTION void operator()(const int cell) const {
                     Scalar x[NNodes], y[NNodes];  //, z[NNodes];
-                    Scalar H[NNodes * NNodes];
+                    Scalar H[NNodes * NNodes]; //This is BAD!
 
                     // Initialize values to zero
                     for (int i = 0; i < NNodes * NNodes; ++i) {
