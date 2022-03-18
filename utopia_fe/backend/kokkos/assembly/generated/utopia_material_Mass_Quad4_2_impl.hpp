@@ -55,55 +55,50 @@ namespace utopia {
                 // Automatically generated
                 // FLOATING POINT OPS!
                 //	- Result: 16*ADDAUGMENTEDASSIGNMENT + 4*MUL
-                //	- Subexpressions: 15*ADD + 4*DIV + 66*MUL + 4*POW + 16*SUB
+                //	- Subexpressions: 10*ADD + 8*DIV + 31*MUL + 4*POW + 15*SUB
                 T x0 = pow(1 - x, 2);
                 T x1 = pow(1 - y, 2);
-                T x2 = 0.125 * px[0];
-                T x3 = 0.125 * px[1];
-                T x4 = 0.125 * px[2];
-                T x5 = py[1] * x4;
-                T x6 = 0.125 * px[3];
-                T x7 = py[2] * x6;
-                T x8 = py[3] * x3;
-                T x9 = weight * (0.125 * px[0] * py[1] + 0.125 * px[0] * py[2] * y + 0.125 * px[0] * py[3] * x +
-                                 0.125 * px[1] * py[0] * y + 0.125 * px[1] * py[2] * x + 0.125 * px[1] * py[2] +
-                                 0.125 * px[2] * py[0] * x + 0.125 * px[2] * py[3] * y + 0.125 * px[2] * py[3] +
-                                 0.125 * px[3] * py[0] + 0.125 * px[3] * py[1] * x + 0.125 * px[3] * py[1] * y -
-                                 py[0] * x * x6 - py[0] * x3 - py[0] * x4 * y - py[1] * x2 * y - py[2] * x * x2 -
-                                 py[3] * x2 - x * x5 - x * x8 - x5 - x7 * y - x7 - x8 * y);
-                T x10 = (1.0 / 16.0) * x9;
-                T x11 = x1 * x10;
-                T x12 = (1.0 / 4.0) * x9;
-                T x13 = (1.0 / 2.0) * x;
-                T x14 = (0.5 - x13) * (x13 + 0.5);
-                T x15 = x12 * x14;
-                T x16 = x1 * x15;
-                T x17 = (1.0 / 2.0) * y;
-                T x18 = (0.5 - x17) * (x17 + 0.5);
-                T x19 = x14 * x18 * x9;
-                T x20 = x12 * x18;
-                T x21 = x0 * x20;
-                T x22 = pow(x + 1, 2);
-                T x23 = x20 * x22;
-                T x24 = pow(y + 1, 2);
-                T x25 = x10 * x24;
-                T x26 = x15 * x24;
-                H[0] += x0 * x11;
-                H[1] += x16;
-                H[2] += x19;
-                H[3] += x21;
-                H[4] += x16;
-                H[5] += x11 * x22;
-                H[6] += x23;
-                H[7] += x19;
-                H[8] += x19;
-                H[9] += x23;
-                H[10] += x22 * x25;
-                H[11] += x26;
-                H[12] += x21;
-                H[13] += x19;
-                H[14] += x26;
-                H[15] += x0 * x25;
+                T x2 = (1.0 / 4.0) * x - 0.25;
+                T x3 = (1.0 / 4.0) * x + 0.25;
+                T x4 = (1.0 / 4.0) * y - 0.25;
+                T x5 = (1.0 / 4.0) * y + 0.25;
+                T x6 = weight * (-(px[0] * x2 - px[1] * x3 + px[2] * x3 - px[3] * x2) *
+                                     (py[0] * x4 - py[1] * x4 + py[2] * x5 - py[3] * x5) +
+                                 (px[0] * x4 - px[1] * x4 + px[2] * x5 - px[3] * x5) *
+                                     (py[0] * x2 - py[1] * x3 + py[2] * x3 - py[3] * x2));
+                T x7 = (1.0 / 16.0) * x6;
+                T x8 = x1 * x7;
+                T x9 = (1.0 / 4.0) * x6;
+                T x10 = (1.0 / 2.0) * x;
+                T x11 = (0.5 - x10) * (x10 + 0.5);
+                T x12 = x11 * x9;
+                T x13 = x1 * x12;
+                T x14 = (1.0 / 2.0) * y;
+                T x15 = (0.5 - x14) * (x14 + 0.5);
+                T x16 = x11 * x15 * x6;
+                T x17 = x15 * x9;
+                T x18 = x0 * x17;
+                T x19 = pow(x + 1, 2);
+                T x20 = x17 * x19;
+                T x21 = pow(y + 1, 2);
+                T x22 = x21 * x7;
+                T x23 = x12 * x21;
+                H[0] += x0 * x8;
+                H[1] += x13;
+                H[2] += x16;
+                H[3] += x18;
+                H[4] += x13;
+                H[5] += x19 * x8;
+                H[6] += x20;
+                H[7] += x16;
+                H[8] += x16;
+                H[9] += x20;
+                H[10] += x19 * x22;
+                H[11] += x23;
+                H[12] += x18;
+                H[13] += x16;
+                H[14] += x23;
+                H[15] += x0 * x22;
             }
 
             UTOPIA_FUNCTION void apply(
@@ -121,35 +116,31 @@ namespace utopia {
                 // Automatically generated
                 // FLOATING POINT OPS!
                 //	- Result: 4*ADDAUGMENTEDASSIGNMENT + 4*MUL
-                //	- Subexpressions: 16*ADD + 2*DIV + 63*MUL + 14*SUB
+                //	- Subexpressions: 11*ADD + 6*DIV + 28*MUL + 13*SUB
                 T x0 = (1.0 / 2.0) * x;
                 T x1 = 0.5 - x0;
                 T x2 = (1.0 / 2.0) * y;
                 T x3 = 0.5 - x2;
                 T x4 = x1 * x3;
-                T x5 = x0 + 0.5;
-                T x6 = x3 * x5;
-                T x7 = x2 + 0.5;
-                T x8 = x5 * x7;
-                T x9 = x1 * x7;
-                T x10 = 0.125 * px[0];
-                T x11 = 0.125 * px[1];
-                T x12 = 0.125 * px[2];
-                T x13 = py[1] * x12;
-                T x14 = 0.125 * px[3];
-                T x15 = py[2] * x14;
-                T x16 = py[3] * x11;
-                T x17 = weight * (u[0] * x4 + u[1] * x6 + u[2] * x8 + u[3] * x9) *
-                        (0.125 * px[0] * py[1] + 0.125 * px[0] * py[2] * y + 0.125 * px[0] * py[3] * x +
-                         0.125 * px[1] * py[0] * y + 0.125 * px[1] * py[2] * x + 0.125 * px[1] * py[2] +
-                         0.125 * px[2] * py[0] * x + 0.125 * px[2] * py[3] * y + 0.125 * px[2] * py[3] +
-                         0.125 * px[3] * py[0] + 0.125 * px[3] * py[1] * x + 0.125 * px[3] * py[1] * y -
-                         py[0] * x * x14 - py[0] * x11 - py[0] * x12 * y - py[1] * x10 * y - py[2] * x * x10 -
-                         py[3] * x10 - x * x13 - x * x16 - x13 - x15 * y - x15 - x16 * y);
-                Hx[0] += x17 * x4;
-                Hx[1] += x17 * x6;
-                Hx[2] += x17 * x8;
-                Hx[3] += x17 * x9;
+                T x5 = (1.0 / 4.0) * x - 0.25;
+                T x6 = (1.0 / 4.0) * x + 0.25;
+                T x7 = (1.0 / 4.0) * y - 0.25;
+                T x8 = (1.0 / 4.0) * y + 0.25;
+                T x9 = x0 + 0.5;
+                T x10 = x3 * x9;
+                T x11 = x2 + 0.5;
+                T x12 = x11 * x9;
+                T x13 = x1 * x11;
+                T x14 = weight *
+                        (-(px[0] * x5 - px[1] * x6 + px[2] * x6 - px[3] * x5) *
+                             (py[0] * x7 - py[1] * x7 + py[2] * x8 - py[3] * x8) +
+                         (px[0] * x7 - px[1] * x7 + px[2] * x8 - px[3] * x8) *
+                             (py[0] * x5 - py[1] * x6 + py[2] * x6 - py[3] * x5)) *
+                        (u[0] * x4 + u[1] * x10 + u[2] * x12 + u[3] * x13);
+                Hx[0] += x14 * x4;
+                Hx[1] += x10 * x14;
+                Hx[2] += x12 * x14;
+                Hx[3] += x13 * x14;
             }
 
             UTOPIA_FUNCTION void gradient(
@@ -167,35 +158,31 @@ namespace utopia {
                 // Automatically generated
                 // FLOATING POINT OPS!
                 //	- Result: 4*ADDAUGMENTEDASSIGNMENT + 4*MUL
-                //	- Subexpressions: 16*ADD + 2*DIV + 63*MUL + 14*SUB
+                //	- Subexpressions: 11*ADD + 6*DIV + 28*MUL + 13*SUB
                 T x0 = (1.0 / 2.0) * x;
                 T x1 = 0.5 - x0;
                 T x2 = (1.0 / 2.0) * y;
                 T x3 = 0.5 - x2;
                 T x4 = x1 * x3;
-                T x5 = x0 + 0.5;
-                T x6 = x3 * x5;
-                T x7 = x2 + 0.5;
-                T x8 = x5 * x7;
-                T x9 = x1 * x7;
-                T x10 = 0.125 * px[0];
-                T x11 = 0.125 * px[1];
-                T x12 = 0.125 * px[2];
-                T x13 = py[1] * x12;
-                T x14 = 0.125 * px[3];
-                T x15 = py[2] * x14;
-                T x16 = py[3] * x11;
-                T x17 = weight * (u[0] * x4 + u[1] * x6 + u[2] * x8 + u[3] * x9) *
-                        (0.125 * px[0] * py[1] + 0.125 * px[0] * py[2] * y + 0.125 * px[0] * py[3] * x +
-                         0.125 * px[1] * py[0] * y + 0.125 * px[1] * py[2] * x + 0.125 * px[1] * py[2] +
-                         0.125 * px[2] * py[0] * x + 0.125 * px[2] * py[3] * y + 0.125 * px[2] * py[3] +
-                         0.125 * px[3] * py[0] + 0.125 * px[3] * py[1] * x + 0.125 * px[3] * py[1] * y -
-                         py[0] * x * x14 - py[0] * x11 - py[0] * x12 * y - py[1] * x10 * y - py[2] * x * x10 -
-                         py[3] * x10 - x * x13 - x * x16 - x13 - x15 * y - x15 - x16 * y);
-                g[0] += x17 * x4;
-                g[1] += x17 * x6;
-                g[2] += x17 * x8;
-                g[3] += x17 * x9;
+                T x5 = (1.0 / 4.0) * x - 0.25;
+                T x6 = (1.0 / 4.0) * x + 0.25;
+                T x7 = (1.0 / 4.0) * y - 0.25;
+                T x8 = (1.0 / 4.0) * y + 0.25;
+                T x9 = x0 + 0.5;
+                T x10 = x3 * x9;
+                T x11 = x2 + 0.5;
+                T x12 = x11 * x9;
+                T x13 = x1 * x11;
+                T x14 = weight *
+                        (-(px[0] * x5 - px[1] * x6 + px[2] * x6 - px[3] * x5) *
+                             (py[0] * x7 - py[1] * x7 + py[2] * x8 - py[3] * x8) +
+                         (px[0] * x7 - px[1] * x7 + px[2] * x8 - px[3] * x8) *
+                             (py[0] * x5 - py[1] * x6 + py[2] * x6 - py[3] * x5)) *
+                        (u[0] * x4 + u[1] * x10 + u[2] * x12 + u[3] * x13);
+                g[0] += x14 * x4;
+                g[1] += x10 * x14;
+                g[2] += x12 * x14;
+                g[3] += x13 * x14;
             }
 
             UTOPIA_FUNCTION void value(
@@ -211,7 +198,25 @@ namespace utopia {
                 T &e) const {
                 using namespace utopia::device;
                 // Automatically generated
-                // TODO
+                // FLOATING POINT OPS!
+                //	- Result: 6*ADD + ADDAUGMENTEDASSIGNMENT + 23*MUL + POW
+                //	- Subexpressions: 4*ADD + 6*DIV + 4*SUB
+                T x0 = (1.0 / 2.0) * x;
+                T x1 = 0.5 - x0;
+                T x2 = (1.0 / 2.0) * y;
+                T x3 = 0.5 - x2;
+                T x4 = x0 + 0.5;
+                T x5 = x2 + 0.5;
+                T x6 = (1.0 / 4.0) * x - 0.25;
+                T x7 = (1.0 / 4.0) * x + 0.25;
+                T x8 = (1.0 / 4.0) * y - 0.25;
+                T x9 = (1.0 / 4.0) * y + 0.25;
+                e += weight *
+                     (-(px[0] * x6 - px[1] * x7 + px[2] * x7 - px[3] * x6) *
+                          (py[0] * x8 - py[1] * x8 + py[2] * x9 - py[3] * x9) +
+                      (px[0] * x8 - px[1] * x8 + px[2] * x9 - px[3] * x9) *
+                          (py[0] * x6 - py[1] * x7 + py[2] * x7 - py[3] * x6)) *
+                     pow(u[0] * x1 * x3 + u[1] * x3 * x4 + u[2] * x4 * x5 + u[3] * x1 * x5, 2);
             }
 
             UTOPIA_FUNCTION void eval(
@@ -230,67 +235,64 @@ namespace utopia {
                 using namespace utopia::device;
                 // Automatically generated
                 // FLOATING POINT OPS!
-                //	- Result: 20*ADDAUGMENTEDASSIGNMENT + 8*MUL
-                //	- Subexpressions: 18*ADD + 4*DIV + 75*MUL + 4*POW + 16*SUB
+                //	- Result: 21*ADDAUGMENTEDASSIGNMENT + 9*MUL + POW
+                //	- Subexpressions: 13*ADD + 8*DIV + 40*MUL + 4*POW + 15*SUB
                 T x0 = pow(1 - x, 2);
                 T x1 = pow(1 - y, 2);
-                T x2 = 0.125 * px[0];
-                T x3 = 0.125 * px[1];
-                T x4 = 0.125 * px[2];
-                T x5 = py[1] * x4;
-                T x6 = 0.125 * px[3];
-                T x7 = py[2] * x6;
-                T x8 = py[3] * x3;
-                T x9 = weight * (0.125 * px[0] * py[1] + 0.125 * px[0] * py[2] * y + 0.125 * px[0] * py[3] * x +
-                                 0.125 * px[1] * py[0] * y + 0.125 * px[1] * py[2] * x + 0.125 * px[1] * py[2] +
-                                 0.125 * px[2] * py[0] * x + 0.125 * px[2] * py[3] * y + 0.125 * px[2] * py[3] +
-                                 0.125 * px[3] * py[0] + 0.125 * px[3] * py[1] * x + 0.125 * px[3] * py[1] * y -
-                                 py[0] * x * x6 - py[0] * x3 - py[0] * x4 * y - py[1] * x2 * y - py[2] * x * x2 -
-                                 py[3] * x2 - x * x5 - x * x8 - x5 - x7 * y - x7 - x8 * y);
-                T x10 = (1.0 / 16.0) * x9;
-                T x11 = x1 * x10;
-                T x12 = (1.0 / 2.0) * x;
-                T x13 = 0.5 - x12;
-                T x14 = x12 + 0.5;
-                T x15 = (1.0 / 4.0) * x9;
-                T x16 = x13 * x14 * x15;
-                T x17 = x1 * x16;
-                T x18 = (1.0 / 2.0) * y;
-                T x19 = 0.5 - x18;
-                T x20 = x13 * x19;
-                T x21 = x18 + 0.5;
-                T x22 = x14 * x21;
-                T x23 = x20 * x22 * x9;
-                T x24 = x15 * x19 * x21;
-                T x25 = x0 * x24;
-                T x26 = pow(x + 1, 2);
-                T x27 = x24 * x26;
-                T x28 = pow(y + 1, 2);
-                T x29 = x10 * x28;
-                T x30 = x16 * x28;
-                T x31 = x14 * x19;
-                T x32 = x13 * x21;
-                T x33 = x9 * (u[0] * x20 + u[1] * x31 + u[2] * x22 + u[3] * x32);
-                H[0] += x0 * x11;
-                H[1] += x17;
-                H[2] += x23;
-                H[3] += x25;
-                H[4] += x17;
-                H[5] += x11 * x26;
-                H[6] += x27;
-                H[7] += x23;
-                H[8] += x23;
-                H[9] += x27;
-                H[10] += x26 * x29;
-                H[11] += x30;
-                H[12] += x25;
-                H[13] += x23;
-                H[14] += x30;
-                H[15] += x0 * x29;
-                g[0] += x20 * x33;
-                g[1] += x31 * x33;
-                g[2] += x22 * x33;
-                g[3] += x32 * x33;
+                T x2 = (1.0 / 4.0) * x - 0.25;
+                T x3 = (1.0 / 4.0) * x + 0.25;
+                T x4 = (1.0 / 4.0) * y - 0.25;
+                T x5 = (1.0 / 4.0) * y + 0.25;
+                T x6 = weight * (-(px[0] * x2 - px[1] * x3 + px[2] * x3 - px[3] * x2) *
+                                     (py[0] * x4 - py[1] * x4 + py[2] * x5 - py[3] * x5) +
+                                 (px[0] * x4 - px[1] * x4 + px[2] * x5 - px[3] * x5) *
+                                     (py[0] * x2 - py[1] * x3 + py[2] * x3 - py[3] * x2));
+                T x7 = (1.0 / 16.0) * x6;
+                T x8 = x1 * x7;
+                T x9 = (1.0 / 2.0) * x;
+                T x10 = 0.5 - x9;
+                T x11 = x9 + 0.5;
+                T x12 = (1.0 / 4.0) * x6;
+                T x13 = x10 * x11 * x12;
+                T x14 = x1 * x13;
+                T x15 = (1.0 / 2.0) * y;
+                T x16 = 0.5 - x15;
+                T x17 = x10 * x16;
+                T x18 = x15 + 0.5;
+                T x19 = x11 * x18;
+                T x20 = x17 * x19 * x6;
+                T x21 = x12 * x16 * x18;
+                T x22 = x0 * x21;
+                T x23 = pow(x + 1, 2);
+                T x24 = x21 * x23;
+                T x25 = pow(y + 1, 2);
+                T x26 = x25 * x7;
+                T x27 = x13 * x25;
+                T x28 = x11 * x16;
+                T x29 = x10 * x18;
+                T x30 = u[0] * x17 + u[1] * x28 + u[2] * x19 + u[3] * x29;
+                T x31 = x30 * x6;
+                H[0] += x0 * x8;
+                H[1] += x14;
+                H[2] += x20;
+                H[3] += x22;
+                H[4] += x14;
+                H[5] += x23 * x8;
+                H[6] += x24;
+                H[7] += x20;
+                H[8] += x20;
+                H[9] += x24;
+                H[10] += x23 * x26;
+                H[11] += x27;
+                H[12] += x22;
+                H[13] += x20;
+                H[14] += x27;
+                H[15] += x0 * x26;
+                g[0] += x17 * x31;
+                g[1] += x28 * x31;
+                g[2] += x19 * x31;
+                g[3] += x29 * x31;
+                e += pow(x30, 2) * x6;
             }
 
             // TODO

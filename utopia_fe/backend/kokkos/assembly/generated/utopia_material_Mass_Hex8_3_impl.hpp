@@ -415,7 +415,62 @@ namespace utopia {
                 T &e) const {
                 using namespace utopia::device;
                 // Automatically generated
-                // TODO
+                // FLOATING POINT OPS!
+                //	- Result: 2*ADD + ADDAUGMENTEDASSIGNMENT + 15*MUL + POW
+                //	- Subexpressions: 30*ADD + 47*DIV + 120*MUL + 39*SUB
+                T x0 = (1.0 / 2.0) * x;
+                T x1 = 0.5 - x0;
+                T x2 = (1.0 / 2.0) * y;
+                T x3 = 0.5 - x2;
+                T x4 = (1.0 / 2.0) * z;
+                T x5 = 0.5 - x4;
+                T x6 = x3 * x5;
+                T x7 = x0 + 0.5;
+                T x8 = x2 + 0.5;
+                T x9 = x5 * x8;
+                T x10 = x4 + 0.5;
+                T x11 = x10 * x3;
+                T x12 = x10 * x8;
+                T x13 = (1.0 / 2.0) * x3;
+                T x14 = x1 * x13;
+                T x15 = x13 * x7;
+                T x16 = (1.0 / 2.0) * x8;
+                T x17 = x16 * x7;
+                T x18 = x1 * x16;
+                T x19 = -px[0] * x14 - px[1] * x15 - px[2] * x17 - px[3] * x18 + (1.0 / 2.0) * px[4] * x1 * x3 +
+                        (1.0 / 2.0) * px[5] * x3 * x7 + (1.0 / 2.0) * px[6] * x7 * x8 + (1.0 / 2.0) * px[7] * x1 * x8;
+                T x20 = (1.0 / 2.0) * x5;
+                T x21 = x1 * x20;
+                T x22 = x20 * x7;
+                T x23 = (1.0 / 2.0) * x10;
+                T x24 = x1 * x23;
+                T x25 = x23 * x7;
+                T x26 = -py[0] * x21 - py[1] * x22 + (1.0 / 2.0) * py[2] * x5 * x7 + (1.0 / 2.0) * py[3] * x1 * x5 -
+                        py[4] * x24 - py[5] * x25 + (1.0 / 2.0) * py[6] * x10 * x7 + (1.0 / 2.0) * py[7] * x1 * x10;
+                T x27 = (1.0 / 2.0) * x6;
+                T x28 = (1.0 / 2.0) * x9;
+                T x29 = (1.0 / 2.0) * x11;
+                T x30 = (1.0 / 2.0) * x12;
+                T x31 = -pz[0] * x27 + (1.0 / 2.0) * pz[1] * x3 * x5 + (1.0 / 2.0) * pz[2] * x5 * x8 - pz[3] * x28 -
+                        pz[4] * x29 + (1.0 / 2.0) * pz[5] * x10 * x3 + (1.0 / 2.0) * pz[6] * x10 * x8 - pz[7] * x30;
+                T x32 = -px[0] * x21 - px[1] * x22 + (1.0 / 2.0) * px[2] * x5 * x7 + (1.0 / 2.0) * px[3] * x1 * x5 -
+                        px[4] * x24 - px[5] * x25 + (1.0 / 2.0) * px[6] * x10 * x7 + (1.0 / 2.0) * px[7] * x1 * x10;
+                T x33 = -py[0] * x27 + (1.0 / 2.0) * py[1] * x3 * x5 + (1.0 / 2.0) * py[2] * x5 * x8 - py[3] * x28 -
+                        py[4] * x29 + (1.0 / 2.0) * py[5] * x10 * x3 + (1.0 / 2.0) * py[6] * x10 * x8 - py[7] * x30;
+                T x34 = -pz[0] * x14 - pz[1] * x15 - pz[2] * x17 - pz[3] * x18 + (1.0 / 2.0) * pz[4] * x1 * x3 +
+                        (1.0 / 2.0) * pz[5] * x3 * x7 + (1.0 / 2.0) * pz[6] * x7 * x8 + (1.0 / 2.0) * pz[7] * x1 * x8;
+                T x35 = -px[0] * x27 + (1.0 / 2.0) * px[1] * x3 * x5 + (1.0 / 2.0) * px[2] * x5 * x8 - px[3] * x28 -
+                        px[4] * x29 + (1.0 / 2.0) * px[5] * x10 * x3 + (1.0 / 2.0) * px[6] * x10 * x8 - px[7] * x30;
+                T x36 = -py[0] * x14 - py[1] * x15 - py[2] * x17 - py[3] * x18 + (1.0 / 2.0) * py[4] * x1 * x3 +
+                        (1.0 / 2.0) * py[5] * x3 * x7 + (1.0 / 2.0) * py[6] * x7 * x8 + (1.0 / 2.0) * py[7] * x1 * x8;
+                T x37 = -pz[0] * x21 - pz[1] * x22 + (1.0 / 2.0) * pz[2] * x5 * x7 + (1.0 / 2.0) * pz[3] * x1 * x5 -
+                        pz[4] * x24 - pz[5] * x25 + (1.0 / 2.0) * pz[6] * x10 * x7 + (1.0 / 2.0) * pz[7] * x1 * x10;
+                e += weight *
+                     (-x19 * x26 * x31 + x19 * x33 * x37 + x26 * x34 * x35 + x31 * x32 * x36 - x32 * x33 * x34 -
+                      x35 * x36 * x37) *
+                     pow(u[0] * x1 * x6 + u[1] * x6 * x7 + u[2] * x7 * x9 + u[3] * x1 * x9 + u[4] * x1 * x11 +
+                             u[5] * x11 * x7 + u[6] * x12 * x7 + u[7] * x1 * x12,
+                         2);
             }
 
             UTOPIA_FUNCTION void eval(
@@ -436,7 +491,7 @@ namespace utopia {
                 using namespace utopia::device;
                 // Automatically generated
                 // FLOATING POINT OPS!
-                //	- Result: 72*ADDAUGMENTEDASSIGNMENT + 16*MUL
+                //	- Result: 73*ADDAUGMENTEDASSIGNMENT + 17*MUL + POW
                 //	- Subexpressions: 42*ADD + 46*DIV + 196*MUL + 6*POW + 45*SUB
                 T x0 = pow(1 - z, 2);
                 T x1 = (1.0 / 2.0) * x;
@@ -543,8 +598,9 @@ namespace utopia {
                 T x92 = x2 * x91;
                 T x93 = x7 * x91;
                 T x94 = x2 * x59;
-                T x95 = x35 * (u[0] * x58 + u[1] * x87 + u[2] * x89 + u[3] * x90 + u[4] * x92 + u[5] * x93 +
-                               u[6] * x60 + u[7] * x94);
+                T x95 = u[0] * x58 + u[1] * x87 + u[2] * x89 + u[3] * x90 + u[4] * x92 + u[5] * x93 + u[6] * x60 +
+                        u[7] * x94;
+                T x96 = x35 * x95;
                 H[0] += x37 * x40;
                 H[1] += x45;
                 H[2] += x49;
@@ -609,14 +665,15 @@ namespace utopia {
                 H[61] += x81;
                 H[62] += x86;
                 H[63] += x75 * x78;
-                g[0] += x58 * x95;
-                g[1] += x87 * x95;
-                g[2] += x89 * x95;
-                g[3] += x90 * x95;
-                g[4] += x92 * x95;
-                g[5] += x93 * x95;
-                g[6] += x60 * x95;
-                g[7] += x94 * x95;
+                g[0] += x58 * x96;
+                g[1] += x87 * x96;
+                g[2] += x89 * x96;
+                g[3] += x90 * x96;
+                g[4] += x92 * x96;
+                g[5] += x93 * x96;
+                g[6] += x60 * x96;
+                g[7] += x94 * x96;
+                e += x35 * pow(x95, 2);
             }
 
             // TODO

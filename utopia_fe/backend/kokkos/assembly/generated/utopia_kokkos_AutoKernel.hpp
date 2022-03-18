@@ -32,8 +32,8 @@ namespace utopia {
                     : points(fe.points()), result(result), q_points(fe.q_points), q_weights(fe.q_weights) {}
 
                 UTOPIA_FUNCTION void operator()(const int cell) const {
-                    Scalar x[NNodes], y[NNodes];  //, z[NNodes];
-                    Scalar H[NNodes * NNodes]; //This is BAD!
+                    Scalar x[NNodes], y[NNodes];
+                    Scalar H[NNodes * NNodes];
 
                     // Initialize values to zero
                     for (int i = 0; i < NNodes * NNodes; ++i) {
@@ -71,16 +71,21 @@ namespace utopia {
             public:
                 static constexpr int NNodes = Kernel::ElemT::NNodes;
 
-                ApplyKernel(const FE &fe, DynRankView &result)
-                    : points(fe.points()), result(result), q_points(fe.q_points), q_weights(fe.q_weights) {}
+                ApplyKernel(const FE &fe, const DynRankView &in, DynRankView &result)
+                    : points(fe.points()), in(in), result(result), q_points(fe.q_points), q_weights(fe.q_weights) {}
 
                 UTOPIA_FUNCTION void operator()(const int cell) const {
                     Scalar x[NNodes], y[NNodes];
                     Scalar Hx[NNodes];
+                    Scalar u[NNodes];
 
                     // Initialize values to zero
                     for (int i = 0; i < NNodes; ++i) {
                         Hx[i] = 0;
+                    }
+
+                    for (int i = 0; i < NNodes; ++i) {
+                        u[i] = in(cell, i);
                     }
 
                     for (int i = 0; i < NNodes; ++i) {
@@ -91,7 +96,7 @@ namespace utopia {
                     const int n_quad_points = q_weights.extent(0);
 
                     for (int q = 0; q < n_quad_points; ++q) {
-                        kernel.apply(x, y, nullptr /*FIXME*/, q_points(q, 0), q_points(q, 1), q_weights(q), Hx);
+                        kernel.apply(x, y, u, q_points(q, 0), q_points(q, 1), q_weights(q), Hx);
                     }
 
                     for (int i = 0; i < NNodes; ++i) {
@@ -100,6 +105,7 @@ namespace utopia {
                 }
 
                 DynRankView points;
+                DynRankView in;
                 DynRankView result;
 
                 DynRankView q_points;
@@ -121,11 +127,8 @@ namespace utopia {
             bool apply(const DynRankView &x, DynRankView &y) override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<AutoKernel>::apply");
 
-                this->ensure_matrix_accumulator();
-
                 {
-                    auto data = this->matrix_data();
-                    ApplyKernel kernel(this->fe(), data);
+                    ApplyKernel kernel(this->fe(), x, y);
                     this->loop_cell("ApplyHessian", kernel);
                 }
 
@@ -188,13 +191,27 @@ namespace utopia {
 
                     const int n_quad_points = q_weights.extent(0);
 
+                    Scalar sum_w = 0;
+
                     for (int q = 0; q < n_quad_points; ++q) {
-                        kernel.hessian(x, y, z, nullptr /*FIXME*/, q_points(q, 0), q_points(q, 1), q_points(q, 2), q_weights(q), H);
+                        Scalar qx = q_points(q, 0);
+                        Scalar qy = q_points(q, 1);
+                        Scalar qz = q_points(q, 2);
+                        Scalar qw = q_weights(q);
+
+                        sum_w += qw;
+
+                        assert(qx >= 0);
+                        assert(qx < 1);
+
+                        kernel.hessian(x, y, z, nullptr /*FIXME*/, qx, qy, qz, qw, H);
                     }
 
+                    Scalar vol = 0;
                     for (int i = 0; i < NNodes; ++i) {
-                        for (int j = 0; j < NNodes * NNodes; ++j) {
+                        for (int j = 0; j < NNodes; ++j) {
                             result(cell, i, j) += H[i * NNodes + j];
+                            vol += H[i * NNodes + j];
                         }
                     }
                 }
@@ -228,7 +245,6 @@ namespace utopia {
                     for (int i = 0; i < NNodes; ++i) {
                         u[i] = in(cell, i);
                     }
-
 
                     for (int i = 0; i < NNodes; ++i) {
                         x[i] = points(cell, i, 0);

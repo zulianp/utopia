@@ -20,7 +20,6 @@ namespace utopia {{
 		}};
 	}}
 
-
 	namespace kokkos {{
 		template<class FE, int Dim>
 		using {name} = utopia::kokkos::AutoHyperElasticity<FE, utopia::kernels::{name}<typename FE::Scalar, Dim>>;

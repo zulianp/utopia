@@ -183,7 +183,20 @@ namespace utopia {
                 T &e) const {
                 using namespace utopia::device;
                 // Automatically generated
-                // TODO
+                // FLOATING POINT OPS!
+                //	- Result: 3*ADD + ADDAUGMENTEDASSIGNMENT + 14*MUL + POW
+                //	- Subexpressions: 9*SUB
+                T x0 = -px[0] + px[1];
+                T x1 = -py[0] + py[2];
+                T x2 = -pz[0] + pz[3];
+                T x3 = -px[0] + px[2];
+                T x4 = -py[0] + py[3];
+                T x5 = -pz[0] + pz[1];
+                T x6 = -px[0] + px[3];
+                T x7 = -py[0] + py[1];
+                T x8 = -pz[0] + pz[2];
+                e += weight * pow(u[0] * (-x - y - z + 1) + u[1] * x + u[2] * y + u[3] * z, 2) *
+                     (x0 * x1 * x2 - x0 * x4 * x8 - x1 * x5 * x6 - x2 * x3 * x7 + x3 * x4 * x5 + x6 * x7 * x8);
             }
 
             UTOPIA_FUNCTION void eval(
@@ -204,7 +217,7 @@ namespace utopia {
                 using namespace utopia::device;
                 // Automatically generated
                 // FLOATING POINT OPS!
-                //	- Result: 20*ADDAUGMENTEDASSIGNMENT + 8*MUL + 4*POW
+                //	- Result: 21*ADDAUGMENTEDASSIGNMENT + 9*MUL + 5*POW
                 //	- Subexpressions: 5*ADD + 26*MUL + 15*SUB
                 T x0 = -x - y - z + 1;
                 T x1 = -px[0] + px[1];
@@ -248,6 +261,7 @@ namespace utopia {
                 g[1] += x15 * x20;
                 g[2] += x18 * x20;
                 g[3] += x10 * x20 * z;
+                e += x10 * pow(x20, 2);
             }
 
             // TODO

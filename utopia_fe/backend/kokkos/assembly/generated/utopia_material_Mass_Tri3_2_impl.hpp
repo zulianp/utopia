@@ -55,10 +55,9 @@ namespace utopia {
                 // Automatically generated
                 // FLOATING POINT OPS!
                 //	- Result: 9*ADDAUGMENTEDASSIGNMENT + 3*MUL + 3*POW
-                //	- Subexpressions: 2*ADD + 12*MUL + 5*SUB
+                //	- Subexpressions: 8*MUL + 7*SUB
                 T x0 = -x - y + 1;
-                T x1 = weight *
-                       (px[0] * py[1] - px[0] * py[2] - px[1] * py[0] + px[1] * py[2] + px[2] * py[0] - px[2] * py[1]);
+                T x1 = weight * ((-px[0] + px[1]) * (-py[0] + py[2]) - (-px[0] + px[2]) * (-py[0] + py[1]));
                 T x2 = x0 * x1;
                 T x3 = x * x2;
                 T x4 = x2 * y;
@@ -89,10 +88,10 @@ namespace utopia {
                 // Automatically generated
                 // FLOATING POINT OPS!
                 //	- Result: 3*ADDAUGMENTEDASSIGNMENT + 3*MUL
-                //	- Subexpressions: 4*ADD + 11*MUL + 5*SUB
+                //	- Subexpressions: 2*ADD + 7*MUL + 7*SUB
                 T x0 = -x - y + 1;
-                T x1 = weight * (u[0] * x0 + u[1] * x + u[2] * y) *
-                       (px[0] * py[1] - px[0] * py[2] - px[1] * py[0] + px[1] * py[2] + px[2] * py[0] - px[2] * py[1]);
+                T x1 = weight * ((-px[0] + px[1]) * (-py[0] + py[2]) - (-px[0] + px[2]) * (-py[0] + py[1])) *
+                       (u[0] * x0 + u[1] * x + u[2] * y);
                 Hx[0] += x0 * x1;
                 Hx[1] += x * x1;
                 Hx[2] += x1 * y;
@@ -113,10 +112,10 @@ namespace utopia {
                 // Automatically generated
                 // FLOATING POINT OPS!
                 //	- Result: 3*ADDAUGMENTEDASSIGNMENT + 3*MUL
-                //	- Subexpressions: 4*ADD + 11*MUL + 5*SUB
+                //	- Subexpressions: 2*ADD + 7*MUL + 7*SUB
                 T x0 = -x - y + 1;
-                T x1 = weight * (u[0] * x0 + u[1] * x + u[2] * y) *
-                       (px[0] * py[1] - px[0] * py[2] - px[1] * py[0] + px[1] * py[2] + px[2] * py[0] - px[2] * py[1]);
+                T x1 = weight * ((-px[0] + px[1]) * (-py[0] + py[2]) - (-px[0] + px[2]) * (-py[0] + py[1])) *
+                       (u[0] * x0 + u[1] * x + u[2] * y);
                 g[0] += x0 * x1;
                 g[1] += x * x1;
                 g[2] += x1 * y;
@@ -135,7 +134,11 @@ namespace utopia {
                 T &e) const {
                 using namespace utopia::device;
                 // Automatically generated
-                // TODO
+                // FLOATING POINT OPS!
+                //	- Result: 7*ADD + ADDAUGMENTEDASSIGNMENT + 12*MUL + POW
+                //	- Subexpressions: 0
+                e += weight * ((-px[0] + px[1]) * (-py[0] + py[2]) - (-px[0] + px[2]) * (-py[0] + py[1])) *
+                     pow(u[0] * (-x - y + 1) + u[1] * x + u[2] * y, 2);
             }
 
             UTOPIA_FUNCTION void eval(
@@ -154,11 +157,10 @@ namespace utopia {
                 using namespace utopia::device;
                 // Automatically generated
                 // FLOATING POINT OPS!
-                //	- Result: 12*ADDAUGMENTEDASSIGNMENT + 6*MUL + 3*POW
-                //	- Subexpressions: 4*ADD + 15*MUL + 5*SUB
+                //	- Result: 13*ADDAUGMENTEDASSIGNMENT + 7*MUL + 4*POW
+                //	- Subexpressions: 2*ADD + 11*MUL + 7*SUB
                 T x0 = -x - y + 1;
-                T x1 = weight *
-                       (px[0] * py[1] - px[0] * py[2] - px[1] * py[0] + px[1] * py[2] + px[2] * py[0] - px[2] * py[1]);
+                T x1 = weight * ((-px[0] + px[1]) * (-py[0] + py[2]) - (-px[0] + px[2]) * (-py[0] + py[1]));
                 T x2 = x0 * x1;
                 T x3 = x * x2;
                 T x4 = x2 * y;
@@ -177,6 +179,7 @@ namespace utopia {
                 g[0] += x2 * x7;
                 g[1] += x5 * x7;
                 g[2] += x1 * x7 * y;
+                e += x1 * pow(x7, 2);
             }
 
             // TODO
