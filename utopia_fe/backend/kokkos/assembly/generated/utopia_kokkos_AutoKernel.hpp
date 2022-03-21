@@ -122,7 +122,7 @@ namespace utopia {
             inline bool is_matrix() const override { return true; }
             inline bool is_vector() const override { return true; }
             inline bool is_scalar() const override { return false; }
-            bool is_operator() const override { return true; }
+            inline bool is_operator() const override { return true; }
 
             bool apply(const DynRankView &x, DynRankView &y) override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<AutoKernel>::apply");
@@ -201,8 +201,8 @@ namespace utopia {
 
                         sum_w += qw;
 
-                        assert(qx >= 0);
-                        assert(qx < 1);
+                        assert(qx >= -1.0000001);
+                        assert(qx <= 1.0000001);
 
                         kernel.hessian(x, y, z, nullptr /*FIXME*/, qx, qy, qz, qw, H);
                     }
@@ -281,7 +281,7 @@ namespace utopia {
             inline bool is_matrix() const override { return true; }
             inline bool is_vector() const override { return true; }
             inline bool is_scalar() const override { return false; }
-            bool is_operator() const override { return true; }
+            inline bool is_operator() const override { return true; }
 
             bool apply(const DynRankView &x, DynRankView &y) override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<AutoKernel>::apply");

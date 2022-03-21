@@ -51,6 +51,7 @@ namespace utopia {
         std::shared_ptr<FunctionSpace> space() const override;
 
         bool is_linear() const override;
+        bool is_operator() const override;
 
         void set_time(const std::shared_ptr<SimulationTime> &time) override;
 

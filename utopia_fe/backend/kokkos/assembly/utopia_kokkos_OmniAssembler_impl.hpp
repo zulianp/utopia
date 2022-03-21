@@ -498,6 +498,26 @@ namespace utopia {
                 return true;
             }
 
+            bool is_operator() const {
+                for (auto &a_ptr : domain.assemblers) {
+                    if (!a_ptr->is_operator()) {
+                        return false;
+                    }
+                }
+
+                for (auto &p : boundary) {
+                    auto &b = p.second;
+
+                    for (auto &a_ptr : b.assemblers) {
+                        if (!a_ptr->is_operator()) {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
+
             bool apply(Vector &vec) {
                 ensure_output(vec);
                 ensure_vector_accumulators();
@@ -939,6 +959,11 @@ namespace utopia {
         template <class FunctionSpace, class FE>
         bool OmniAssembler<FunctionSpace, FE>::is_linear() const {
             return impl_->is_linear_;
+        }
+
+        template <class FunctionSpace, class FE>
+        bool OmniAssembler<FunctionSpace, FE>::is_operator() const {
+            return impl_->is_operator();
         }
 
         template <class FunctionSpace, class FE>

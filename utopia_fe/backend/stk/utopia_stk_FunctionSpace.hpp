@@ -63,6 +63,7 @@ namespace utopia {
             void apply_constraints(Vector &v) const override;
             void apply_constraints(Matrix &m, Vector &v) const override;
             void apply_zero_constraints(Vector &vec) const override;
+            void copy_at_constrained_nodes(const Vector &, Vector &) const override;
 
             void overwrite_parts(const std::vector<std::string> &parts,
                                  const std::vector<int> &components,
