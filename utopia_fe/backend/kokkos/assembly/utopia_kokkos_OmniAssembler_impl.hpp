@@ -56,6 +56,10 @@
 #include "utopia_hyperelasticity_Yeoh_2.hpp"
 #include "utopia_hyperelasticity_Yeoh_3.hpp"
 
+#include "utopia_assembly_kokkos_generated_impl.hpp"
+
+// #include "utopia_material_Mass_Pentatope5_4_impl.hpp"
+
 // utopia/kokkos includes
 #include "utopia_kokkos_FE.hpp"
 
@@ -191,6 +195,11 @@ namespace utopia {
                     "IncompressibleMooneyRivlin", 2);
                 register_assembler_variant<utopia::kokkos::IncompressibleMooneyRivlin<FE_t, 3>>(
                     "IncompressibleMooneyRivlin", 3);
+
+                register_generated_assemblers(*this);
+
+                // register_assembler_variant<utopia::kokkos::MassPentatope5<FE_t>>(
+                //     "MassPentatope5", 3);
             }
         };
 
@@ -486,6 +495,26 @@ namespace utopia {
                 }
 
                 local_to_global_matrix_domain(mat);
+                return true;
+            }
+
+            bool is_operator() const {
+                for (auto &a_ptr : domain.assemblers) {
+                    if (!a_ptr->is_operator()) {
+                        return false;
+                    }
+                }
+
+                for (auto &p : boundary) {
+                    auto &b = p.second;
+
+                    for (auto &a_ptr : b.assemblers) {
+                        if (!a_ptr->is_operator()) {
+                            return false;
+                        }
+                    }
+                }
+
                 return true;
             }
 
@@ -930,6 +959,11 @@ namespace utopia {
         template <class FunctionSpace, class FE>
         bool OmniAssembler<FunctionSpace, FE>::is_linear() const {
             return impl_->is_linear_;
+        }
+
+        template <class FunctionSpace, class FE>
+        bool OmniAssembler<FunctionSpace, FE>::is_operator() const {
+            return impl_->is_operator();
         }
 
         template <class FunctionSpace, class FE>

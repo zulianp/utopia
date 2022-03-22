@@ -126,6 +126,7 @@ namespace utopia {
             DynRankView cell_nodes;
             CubaturePtr cubature;
             DynRankView q_points;
+            DynRankView q_weights;
             DynRankView jacobian_det;
 
             // NVCC_PRIVATE :
@@ -154,7 +155,7 @@ namespace utopia {
                 assert(spatial_dimension > 0);
                 assert(manifold_dimension > 0);
 
-                DynRankView q_weights("q_weights", n_quad_points);
+                q_weights = DynRankView("q_weights", n_quad_points);
                 q_points = DynRankView("q_points", n_quad_points, manifold_dimension);
                 jacobian = DynRankView("jacobian", n_cells, n_quad_points, spatial_dimension, spatial_dimension);
                 jacobian_inv =

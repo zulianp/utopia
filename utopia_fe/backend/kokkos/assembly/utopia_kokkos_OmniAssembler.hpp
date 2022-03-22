@@ -54,6 +54,7 @@ namespace utopia {
             void set_space(const std::shared_ptr<FunctionSpace> &space) override;
             std::shared_ptr<FunctionSpace> space() const override;
             bool is_linear() const override;
+            bool is_operator() const override;
 
             void add_domain_assembler(const Intrepid2FEAssemblerPtr &assembler);
             void fail_if_unregistered(const bool val);

@@ -118,13 +118,13 @@ class BarrierQPSolver(QPSolver):
         self.trivial_obstacle = False
         self.barrier_parameter = 1e-9
         self.barrier_parameter_shrinking_factor = 0.5
+        self.barier_thickness = 1e-5
         self.min_barrier_parameter = 1e-9
-        self.barrier_parameter_thickness = 1e-4
         self.soft_boundary = 1e-16
         self.zero = 1e-20
         self.allow_projection = True
         self.enable_line_search = True
-        self.verbose = True
+        self.enable_NaN_safe_line_search = True
 
 class ObstacleSolver(yaml.YAMLObject):
     yaml_tag = u'!ObstacleSolver'
@@ -475,6 +475,20 @@ class DomainForcingFunction(yaml.YAMLObject):
         self.verbose = True
 
 
+class BoundaryForcingFunction(yaml.YAMLObject):
+    yaml_tag = u'!BoundaryForcingFunction'
+
+    def __init__(self, side_set_name, value, n_components, component: 0):
+        self.value = value
+        self.n_components = n_components
+        self.component = component
+        self.type = 'value'
+        self.density = 1
+        self.verbose = True
+        self.where = "surface"
+        self.name = side_set_name
+        self.debug = True
+
 class Problem(yaml.YAMLObject):
     yaml_tag = u'!Problem'
 
@@ -510,27 +524,28 @@ class BarrierProblem(yaml.YAMLObject):
         self.output_path = output_path
         self.time = time
 
-        # self.function_type = 'LogBarrier'
         self.function_type = 'BoundedLogBarrier'
         self.assembly = Assembly(material, forcing_functions)
         self.mass = Assembly(mass, [])
 
         # Barrier numerics
         self.infinity = 5.e-3
-        self.barrier_parameter = 1
+        self.barrier_parameter = 1e-9
         self.barrier_parameter_shrinking_factor = 0.5
-        self.barrier_parameter_thickness = 1e-4
-        self.min_barrier_parameter = 1e-6
+        self.barier_thickness = 1e-5
+        self.min_barrier_parameter = 1e-9
         self.soft_boundary = 1e-16
         self.zero = 1e-20
-        self.enable_line_search = True
 
         # Algorithmic branches
         self.trivial_obstacle = False
 
         self.allow_projection = True
+        self.enable_line_search = True
+        self.enable_NaN_safe_line_search = True
         self.use_barrier_mass_scaling = True
         self.zero_initial_guess = False
+        self.dumping = 0.98
 
         # self.allow_projection = False
         # self.use_barrier_mass_scaling = False
@@ -558,6 +573,8 @@ class MeshObstacle(yaml.YAMLObject):
         self.gap_negative_bound = -1.0e-04
         self.gap_positive_bound = 1.e-4
         self.invert_face_orientation = True
+        self.margin = 1e-5
+        self.snap_to_canonical_vectors = True
 
 class DistanceField(yaml.YAMLObject):
     yaml_tag = u'!DistanceField'
@@ -600,18 +617,10 @@ class FSIInit:
             Mesh(env, fluid_mesh),
             [distance_var],
             [
-                # DirichletBC('inlet', 0.),
-                # DirichletBC('outlet', 0.),
-                # DirichletBC('inlettube', 0.),
-                # DirichletBC('walls', 0.),
-                # DirichletBC('symmetry', 0)
-                DirichletBC('inlet', 0.),
-                DirichletBC('outlet', 0.),
-                DirichletBC('inlettube', 0.),
-                DirichletBC('walls', 0.),
-                DirichletBC('symmetry_1', 0),
-                DirichletBC('symmetry_2', 0),
-                DirichletBC('valvecontact', 0)
+                DirichletBC('INLET', 0.),
+                DirichletBC('OUTLET', 0.),
+                DirichletBC('WALLS', 0.),
+                DirichletBC('SYMMETRY', 0)
             ])
 
 
@@ -623,12 +632,8 @@ class FSIInit:
             Mesh(env, solid_mesh),
             [Var("disp", 3)],
             [
-                # DirichletBC('valvesym', 0., 0),
-                # DirichletBC('valvesym', 0., 2)
-                DirichletBC('symmetry_1', 0., 0),
-                DirichletBC('symmetry_1', 0., 2),
-                DirichletBC('symmetry_2', 0., 0),
-                DirichletBC('symmetry_2', 0., 2)
+                DirichletBC('SYMMETRY', 0., 0),
+                DirichletBC('SYMMETRY', 0., 2)
             ]
         )
 
@@ -692,9 +697,12 @@ class FSIInit:
 
         barrier_solver = BarrierQPSolver(1e-14)
 
+        bff = BoundaryForcingFunction("valveanchor", 10., 3, 1)
+        bff.density = 998
+
         step4_sim = ObstacleSimulation(
-            env, solid_fs_4, elastic_material, [], MeshObstacle(fluid_mesh),
-            ObstacleSolver(barrier_solver, 20, 20), fsi_ready_db)
+            env, solid_fs_4, elastic_material, [bff], MeshObstacle(fluid_mesh),
+            ObstacleSolver(barrier_solver, 30, 30), fsi_ready_db)
 
 
         #########################################################
@@ -727,8 +735,8 @@ class FSIInit:
         newton_solver.rtol = 1e-14
 
         mesh_obstacle = MeshObstacle(fluid_mesh)
-        mesh_obstacle.gap_negative_bound = -2e-4
-        mesh_obstacle.gap_positive_bound = 2e-4
+        mesh_obstacle.gap_negative_bound = -1e-4
+        mesh_obstacle.gap_positive_bound = 1e-4
 
         test = BarrierObstacleSimulation(env, solid_fs_test,
          elastic_material, mass, forcing_functions,
@@ -773,16 +781,15 @@ class Launcher:
         self.fsi.test.run()
 
     def __init__(self, argv):
-
         ###############################
         # INPUT
         ###############################
 
         # Solid mesh db
-        solid_mesh = "/Users/zulianp/Desktop/in_the_cloud/owncloud_HSLU/Patrick/discharge_2_dirichlet/workspace/solid.e"
+        solid_mesh = "solid.e"
 
         # Fluid mesh db
-        fluid_mesh = "/Users/zulianp/Desktop/in_the_cloud/owncloud_HSLU/Patrick/discharge_2_dirichlet/fluid_halfDomain_155K.exo"
+        fluid_mesh = "fluid.e"
 
         # Young's modulus for the solid material
         young_modulus = 9.174e6
@@ -791,7 +798,7 @@ class Launcher:
         poisson_ratio = 0.4
 
         # Initial barrier parameter
-        barrier_parameter = 3e-9
+        barrier_parameter = 5e-10
 
         # Final barrier parameter, if 0 is set to barrier_parameter
         min_barrier_parameter = 0
