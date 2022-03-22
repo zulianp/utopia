@@ -137,35 +137,8 @@ namespace utopia {
         void init_memory(const Layout_t & /*layout*/) override {}
 
         void initial_guess_for_solver(Vector_t &velocity) override {
-            // if (zero_initial_guess_) {
             velocity.set(0.);
-            //     return;
-            // }
-
-            // Vector_t x = this->x_old();
-            // update_x(velocity, x);
-            // x -= this->x_old();
-
-            // Scalar_t alpha = 1;
-            // if (line_search_) {
-            //     alpha = line_search_->compute(this->x_old(), x);
-            // } else {
-            //     // Create temporary for initial guess only
-            //     auto box =
-            //         std::make_shared<BoxConstraints<Vector_t>>(nullptr,
-            //         std::make_shared<Vector_t>(obstacle_->gap()));
-
-            //     auto ls = std::make_shared<LineSearchBoxProjection<Vector_t>>(box, make_ref(this->x_old()));
-            //     alpha = ls->compute(this->x_old(), x);
-            // }
-
-            // x = this->x_old() + alpha * x;
-
-            // if (alpha != 1.) {
-            //     utopia::out() << "initial_guess_for_solver, alpha: " << alpha << "\n";
-            // }
-
-            // time_derivative(x, velocity);
+            project_onto_feasibile_region(velocity);
         }
 
         inline std::shared_ptr<LSStrategy<Vector_t>> line_search() override {
@@ -284,6 +257,9 @@ namespace utopia {
                 g += barrier_temp;
 
                 if (g.has_nan_or_inf()) {
+                    this->space()->write("NaN_barrier_g.e", barrier_temp);
+                    this->space()->write("NaN_barrier_x.e", x);
+
                     this->~ObstacleVelocityNewmark();
                     g.comm().barrier();
                     assert(false);
@@ -368,6 +344,8 @@ namespace utopia {
                 project_x_onto_feasibile_region(x);
 
                 Super::time_derivative(x, velocity);
+
+                velocity.comm().root_print("project_onto_feasibile_region");
             }
 
             return ok;
