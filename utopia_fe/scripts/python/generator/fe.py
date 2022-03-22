@@ -23,8 +23,8 @@ output_dir = './workspace'
 material_output_dir = './workspace'
 
 # Where we save the final result
-output_dir = '../../../backend/kokkos/fe/generated'
-material_output_dir = '../../../backend/kokkos/assembly/generated'
+# output_dir = '../../../backend/kokkos/fe/generated'
+# material_output_dir = '../../../backend/kokkos/assembly/generated'
 
 class SymPyEngine:
     def __init__(self):
@@ -248,11 +248,10 @@ class FE:
     
     def interpolate(self, coeff, x_ref):
         f = self.fun(x_ref)
-
-        ret = 0
         n_fun = self.n_shape_functions()
 
-        for i in range(0, n_fun):
+        ret = coeff[0] * f[0]
+        for i in range(1, n_fun):
             ret += coeff[i] * f[i]
 
         return ret
@@ -269,6 +268,9 @@ class FE:
                 ret[d] += coeff[i] * g[i][d]
 
         return ret
+
+    def is_vector_fe(self):
+        return False
 
     def reference_measure(self):
         return 1
@@ -697,6 +699,105 @@ class AxisAlignedHex8(FE):
     def fun(self, x):
         return self.hex8.fun(x)
 
+class GenericElement(FE):
+    def __init__(self, name, role, dim, symplify_expr = True, symbolic_map_inversion = True):
+        super().__init__(name, dim, symplify_expr, symbolic_map_inversion)
+        self.nodes = se.point_symbols(1, dim)
+        self.role = role
+
+    def fun(self, x_ref):
+        return se.array([se.symbols(f'{self.role}_fun_')])
+
+    def grad(self, x_ref):
+        grads = []
+
+        for d in range(0, self.dim):
+            grads.append(se.symbols(f'{self.role}_fe_grad_{d}'))
+
+        return [se.array(grads)]
+
+    def measure(self, x_ref):
+        return se.symbols(f'{self.role}_fe_measure_')
+
+
+class TensorProductBasis(FE):
+    def __init__(self, fe, power):
+        super().__init__(f"TensorProduct{fe.name}{fe.dim}", fe.dim)
+
+        temp = []
+
+        for p in range(0, power):
+            temp.append(fe)
+
+        self.geo = fe
+        self.fe = temp
+        self.nodes = fe.nodes
+        self.dim 
+
+    def fun(self, x_ref):
+        ret = []
+
+        d = 0
+        tp_dim = len(self.fe)
+       
+        for sub_fe in self.fe:
+            f = sub_fe.fun(x_ref)
+
+            for i in range(0, len(f)):
+                tp_f = se.zeros(tp_dim, 1)
+                tp_f[d] = f[i]
+                ret.append(
+                    tp_f
+                )
+            d += 1
+
+        return se.array(ret)
+
+    def transform(self, x_ref):
+        return self.geo.transform(x_ref)
+
+    # def grad_interpolate(self, coeff, x_ref):
+    #     g = self.grad(x_ref)
+
+    #     ret = se.zeros(len(self.fe), self.dim)
+
+    #     n_fun = self.n_shape_functions()
+
+    #     for i in range(0, n_fun):
+    #         for d in range(0, self.dim):
+    #             cxfun = coeff[i] * g[i][d]
+
+    #             ret[d,:] += coeff[i] * g[i][d]
+
+    #     return ret
+
+    def n_shape_functions(self):
+        n_fun = 0
+        for f in self.fe:
+            n_fun += f.n_shape_functions()
+
+        return n_fun
+
+    def coeff(self, name):
+        coeffs = []
+        n_fun = self.n_shape_functions()
+
+        for i in range(0, n_fun):
+            coeffs.append(se.symbols(f'{name}[{i}]'))
+
+        return se.array(coeffs)
+
+    def is_vector_fe(self):
+        return True
+
+class TrialElement(GenericElement):
+    def __init__(self, name, dim, symplify_expr = True, symbolic_map_inversion = True):
+        super().__init__(name, "trial", dim, symplify_expr, symbolic_map_inversion)
+
+class TestElement(GenericElement):
+    def __init__(self, name, dim, symplify_expr = True, symbolic_map_inversion = True):
+        super().__init__(name, "test", dim, symplify_expr, symbolic_map_inversion)
+
 class LinearMaterial:
     def __init__(self, name):
         self.name = name
@@ -705,6 +806,16 @@ class LinearMaterial:
     def init(self, trial, test):
         self.trial = trial
         self.test = test
+
+    def inner(self, left, right):
+        # l = len(left)
+        # if(l > 1):
+        #     ret = 0
+        #     for d in range(0, l):
+        #         ret += left[d] * right[d]
+        #     return ret
+        # else:
+        return left * right
 
     def is_linear(self):
         return True
@@ -821,7 +932,7 @@ class LaplaceOperator(LinearMaterial):
        val = 0
        scalar_prod = 0
        for d in range(0, dim):
-           scalar_prod += g_test[d] * g_trial[d]
+           scalar_prod += self.inner(g_test[d], g_trial[d])
 
        scalar_prod *=  dx
        val  += scalar_prod
@@ -846,7 +957,7 @@ class LaplaceOperator(LinearMaterial):
                 scalar_prod = 0
 
                 for d in range(0, dim):
-                    scalar_prod += g_test[i][d] * g_trial[j][d]
+                    scalar_prod +=self.inner( g_test[i][d], g_trial[j][d])
 
                 scalar_prod *=  dx
                 M[i, j] = scalar_prod
@@ -872,7 +983,7 @@ class LaplaceOperator(LinearMaterial):
                 scalar_prod = 0
 
                 for d in range(0, dim):
-                    scalar_prod += g_test[i][d] * g_trial[d]
+                    scalar_prod += self.inner(g_test[i][d], g_trial[d])
 
                 scalar_prod *=  dx
                 Mx[i] += scalar_prod
@@ -890,7 +1001,7 @@ class Mass(LinearMaterial):
        g_trial = self.trial.interpolate(coeff, x_ref)
        g_test  = self.test.interpolate(coeff, x_ref)
        dx = self.test.measure(x_ref) * w
-       return g_trial * g_test * dx
+       return self.inner(g_trial, g_test) * dx
 
     def hessian(self, x_ref, w):
         trial = self.trial
@@ -905,9 +1016,11 @@ class Mass(LinearMaterial):
         
         M = se.zeros(rows, cols)
 
+        # pdb.set_trace()
+
         for i in range(0, rows):
             for j in range(0, cols):
-                M[i, j] = f_test[i] * f_trial[j] * dx
+                M[i, j] = self.inner(f_test[i], f_trial[j]) * dx
 
         return M
 
@@ -926,7 +1039,7 @@ class Mass(LinearMaterial):
         dim = test.dim
 
         for i in range(0, rows):
-            Mx[i] += f_test[i] * f_trial * dx
+            Mx[i] += self.inner(f_test[i], f_trial) * dx
 
         return Mx
 
@@ -941,7 +1054,7 @@ def main(args):
     # console.print(x.assumptions0)
     use_simplify = False
     symbolic_map_inversion = False
-    generate_fe = True
+    generate_fe = False
     generate_materials = True
 
     line2 = Line2()
@@ -996,6 +1109,11 @@ def main(args):
 
         for m in materials:
             console.print(f"Material={m.name}")
+
+            # tp = TensorProductBasis(line2, 2)
+            # console.print(tp.fun(p2))
+            # m.init(tp, tp)
+            # m.generate_code(p1, w)
 
             for e in elements_1D:
                 console.print(f" - Elem={e.name}")
