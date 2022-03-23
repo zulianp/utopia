@@ -61,6 +61,23 @@ namespace utopia {
             Scalar d_hat{0.1};
         };
 
+        class PolynomialBarrier {
+        public:
+            UTOPIA_INLINE_FUNCTION Scalar value(const Scalar d) const {
+                auto param = (d - d_hat) / d_hat;
+                return (d < d_hat) * 0.5 * (param * param);
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar gradient(const Scalar d) const {
+                auto param = (d - d_hat) / d_hat;
+                return (d < d_hat) * (param);
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar hessian(const Scalar d) const { return (d < d_hat); }
+
+            Scalar d_hat{0.1};
+        };
+
         // using DefaultBarrier = BarrierIPC;
         using DefaultBarrier = BarrierMine;
 
@@ -76,6 +93,7 @@ namespace utopia {
                                  barrier_thickness_,
                                  "see: Technical Supplement to Incremental Potential Contact: Intersection- and "
                                  "Inversion-free, Large-Deformation Dynamics.")
+                     .add_option("barrier_subtype", barrier_subtype, "{default|polynomial}")
                      .parse(in)) {
                 return;
             }
@@ -84,90 +102,38 @@ namespace utopia {
         inline std::string function_type() const override { return "BoundedLogBarrier"; }
 
         bool barrier_hessian(const Vector &x, Vector &h) const override {
-            Vector work;
-
-            auto d_hat = barrier_thickness_;
-            DefaultBarrier b{d_hat};
-
-            if (this->box_->has_upper_bound()) {
-                this->compute_diff_upper_bound(x, work);
-
-                in_place_barrier_hessian(work, b);
-
-                if (h.empty()) {
-                    h.zeros(layout(work));
-                }
-
-                h += work;
+            if (barrier_subtype == "polynomial") {
+                PolynomialBarrier b{barrier_thickness_};
+                return barrier_hessian_aux(b, x, h);
+            } else {
+                DefaultBarrier b{barrier_thickness_};
+                return barrier_hessian_aux(b, x, h);
             }
-
-            if (this->box_->has_lower_bound()) {
-                this->compute_diff_lower_bound(x, work);
-
-                in_place_barrier_hessian(work, b);
-
-                if (h.empty()) {
-                    h.zeros(layout(work));
-                }
-
-                h += work;
-            }
-
-            return true;
         }
 
         bool barrier_gradient(const Vector &x, Vector &g) const override {
-            Vector work;
-
-            auto d_hat = barrier_thickness_;
-            DefaultBarrier b{d_hat};
-
-            if (this->box_->has_upper_bound()) {
-                this->compute_diff_upper_bound(x, work);
-
-                in_place_barrier_gradient(work, b);
-
-                g += work;
+            if (barrier_subtype == "polynomial") {
+                PolynomialBarrier b{barrier_thickness_};
+                return barrier_gradient_aux(b, x, g);
+            } else {
+                DefaultBarrier b{barrier_thickness_};
+                return barrier_gradient_aux(b, x, g);
             }
-
-            if (this->box_->has_lower_bound()) {
-                this->compute_diff_lower_bound(x, work);
-
-                in_place_barrier_gradient(work, b);
-
-                g -= work;
-            }
-
-            return true;
         }
 
         bool barrier_value(const Vector &x, Vector &value) const override {
-            Vector work;
-
-            auto d_hat = barrier_thickness_;
-            DefaultBarrier b{d_hat};
-
-            if (this->box_->has_upper_bound()) {
-                work = *this->box_->upper_bound() - x;
-
-                in_place_barrier_value(work, b);
-
-                value += work;
+            if (barrier_subtype == "polynomial") {
+                PolynomialBarrier b{barrier_thickness_};
+                return barrier_value_aux(b, x, value);
+            } else {
+                DefaultBarrier b{barrier_thickness_};
+                return barrier_value_aux(b, x, value);
             }
-
-            if (this->box_->has_lower_bound()) {
-                work = x - *this->box_->lower_bound();
-
-                in_place_barrier_value(work, b);
-
-                value += work;
-            }
-
-            return true;
         }
 
         UTOPIA_NVCC_PRIVATE
         Scalar barrier_thickness_{0.01};
+        std::string barrier_subtype{"default"};
 
         //////////////////////// Helper methods ////////////////////////
 
@@ -214,6 +180,85 @@ namespace utopia {
 
                     view.set(i, b_H);
                 });
+        }
+
+        /////////////////////////////////////////
+
+        template <class Barrier>
+        bool barrier_hessian_aux(Barrier b, const Vector &x, Vector &h) const {
+            Vector work;
+
+            if (this->box_->has_upper_bound()) {
+                this->compute_diff_upper_bound(x, work);
+
+                in_place_barrier_hessian(work, b);
+
+                if (h.empty()) {
+                    h.zeros(layout(work));
+                }
+
+                h += work;
+            }
+
+            if (this->box_->has_lower_bound()) {
+                this->compute_diff_lower_bound(x, work);
+
+                in_place_barrier_hessian(work, b);
+
+                if (h.empty()) {
+                    h.zeros(layout(work));
+                }
+
+                h += work;
+            }
+
+            return true;
+        }
+
+        template <class Barrier>
+        bool barrier_gradient_aux(Barrier b, const Vector &x, Vector &g) const {
+            Vector work;
+
+            if (this->box_->has_upper_bound()) {
+                this->compute_diff_upper_bound(x, work);
+
+                in_place_barrier_gradient(work, b);
+
+                g += work;
+            }
+
+            if (this->box_->has_lower_bound()) {
+                this->compute_diff_lower_bound(x, work);
+
+                in_place_barrier_gradient(work, b);
+
+                g -= work;
+            }
+
+            return true;
+        }
+
+        template <class Barrier>
+        bool barrier_value_aux(Barrier b, const Vector &x, Vector &value) const {
+            Vector work;
+
+            if (this->box_->has_upper_bound()) {
+                work = *this->box_->upper_bound() - x;
+
+                in_place_barrier_value(work, b);
+
+                value += work;
+            }
+
+            if (this->box_->has_lower_bound()) {
+                work = x - *this->box_->lower_bound();
+
+                in_place_barrier_value(work, b);
+
+                value += work;
+            }
+
+            return true;
         }
     };
 

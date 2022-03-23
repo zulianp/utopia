@@ -138,6 +138,7 @@ namespace utopia {
 
         void initial_guess_for_solver(Vector_t &velocity) override {
             velocity.set(0.);
+
             project_onto_feasibile_region(velocity);
         }
 
@@ -161,6 +162,7 @@ namespace utopia {
             in.get("max_bisections", max_bisections_);
             in.get("zero_initial_guess", zero_initial_guess_);
             in.get("dumping", dumping_);
+            in.get("allow_projection", allow_projection_);
 
             if (!obstacle_) {
                 std::string type;
@@ -337,7 +339,7 @@ namespace utopia {
 
         bool project_onto_feasibile_region(Vector_t &velocity) const final {
             bool ok = true;
-            if (barrier_) {
+            if (barrier_ && allow_projection_) {
                 Vector_t x;
                 update_x(velocity, x);
 
@@ -386,6 +388,7 @@ namespace utopia {
         bool trivial_obstacle_{false};
         bool enable_line_search_{false};
         bool enable_NaN_safe_line_search_{false};
+        bool allow_projection_{false};
         int max_bisections_{6};
         bool verbose_{false};
         bool zero_initial_guess_{true};
