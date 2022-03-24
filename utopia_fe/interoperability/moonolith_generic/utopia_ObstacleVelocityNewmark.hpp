@@ -85,53 +85,52 @@ namespace utopia {
                            const Vector_t &velocity,
                            const Vector_t &correction,
                            Scalar_t &alpha) {
+            bool ok = true;
+            alpha = dumping_;
+            Vector_t work, x;
+
             if (line_search_) {
-                Vector_t work;
-                Vector_t x = velocity + correction;
+                x = velocity + correction;
                 update_x(x, work);
                 update_x(velocity, x);
                 work -= x;
-                bool ok = line_search_->get_alpha(fun, g, x, work, alpha);
+                ok = line_search_->get_alpha(fun, g, x, work, alpha);
+            }
 
-                if (enable_NaN_safe_line_search_) {
-                    ok = false;
-                    int t = 0;
+            if (enable_NaN_safe_line_search_) {
+                ok = false;
+                int t = 0;
 
-                    Vector_t new_grad;
-                    for (; t < max_bisections_; ++t) {
-                        // Compute correction on velocty
-                        work = velocity + alpha * correction;
+                Vector_t new_grad;
+                for (; t < max_bisections_; ++t) {
+                    // Compute correction on velocty
+                    work = velocity + alpha * correction;
 
-                        // Convert to displacement
-                        update_x(work, x);
+                    // Convert to displacement
+                    update_x(work, x);
 
-                        // Check for failures in gradient!
-                        if (this->function()->gradient(x, new_grad)) {
-                            ok = true;
-                            break;
-                        }
-
-                        alpha /= 2;
+                    // Check for failures in gradient!
+                    if (this->function()->gradient(x, new_grad)) {
+                        ok = true;
+                        break;
                     }
 
-                    if (verbose_ && t > 1) {
-                        utopia::out() << "reduced alpha to " << alpha << ", with " << t << " bisection(s)!\n";
-                    }
-
-                    if (t == max_bisections_ && !ok) {
-                        this->space()->write("NaN.e", x);
-                        this->~ObstacleVelocityNewmark();
-                        assert(false);
-                        Utopia::Abort("Solution reached an unrecoverable state!");
-                    }
+                    alpha /= 2;
                 }
 
-                return ok;
+                if (verbose_ && t > 1) {
+                    utopia::out() << "reduced alpha to " << alpha << ", with " << t << " bisection(s)!\n";
+                }
 
-            } else {
-                alpha = 1.;
-                return false;
+                if (t == max_bisections_ && !ok) {
+                    this->space()->write("NaN.e", x);
+                    this->~ObstacleVelocityNewmark();
+                    assert(false);
+                    Utopia::Abort("Solution reached an unrecoverable state!");
+                }
             }
+
+            return ok;
         }
 
         void init_memory(const Layout_t & /*layout*/) override {}
@@ -143,7 +142,7 @@ namespace utopia {
         }
 
         inline std::shared_ptr<LSStrategy<Vector_t>> line_search() override {
-            if (line_search_) {
+            if (line_search_ || enable_NaN_safe_line_search_) {
                 return make_ref(*this);
             } else {
                 return nullptr;
