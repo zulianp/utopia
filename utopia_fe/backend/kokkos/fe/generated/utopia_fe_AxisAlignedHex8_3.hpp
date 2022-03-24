@@ -36,7 +36,7 @@ namespace utopia {
 
             UTOPIA_INLINE_FUNCTION static constexpr int order() { return Order; }
 
-            UTOPIA_FUNCTION static constexpr Result measure(
+            UTOPIA_FUNCTION static Result measure(
                 // Element coordinates
                 const GeoT *UTOPIA_RESTRICT px,
                 const GeoT *UTOPIA_RESTRICT py,
@@ -45,7 +45,7 @@ namespace utopia {
                 const T x,
                 const T y,
                 const T z) {
-                T measure_value;
+                T measure_value = 0;
 
                 // Unused variables
                 UTOPIA_UNUSED(x);

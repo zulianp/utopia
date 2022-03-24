@@ -61,6 +61,23 @@ namespace utopia {
             Scalar d_hat{0.1};
         };
 
+        // class PolynomialBarrier {
+        // public:
+        //     UTOPIA_INLINE_FUNCTION Scalar value(const Scalar d) const {
+        //         auto param = (d - d_hat) / d_hat;
+        //         return (d < d_hat) * 0.5 * (param * param);
+        //     }
+
+        //     UTOPIA_INLINE_FUNCTION Scalar gradient(const Scalar d) const {
+        //         auto param = (d - d_hat) / d_hat;
+        //         return (d < d_hat) * (param);
+        //     }
+
+        //     UTOPIA_INLINE_FUNCTION Scalar hessian(const Scalar d) const { return (d < d_hat); }
+
+        //     Scalar d_hat{0.1};
+        // };
+
         class PolynomialBarrier {
         public:
             UTOPIA_INLINE_FUNCTION Scalar value(const Scalar d) const {
@@ -69,11 +86,31 @@ namespace utopia {
             }
 
             UTOPIA_INLINE_FUNCTION Scalar gradient(const Scalar d) const {
-                auto param = (d - d_hat) / d_hat;
-                return (d < d_hat) * (param);
+                return (d < d_hat) * (d - d_hat) / (d_hat * d_hat);
             }
 
-            UTOPIA_INLINE_FUNCTION Scalar hessian(const Scalar d) const { return (d < d_hat); }
+            UTOPIA_INLINE_FUNCTION Scalar hessian(const Scalar d) const { return (d < d_hat) / (d_hat * d_hat); }
+
+            Scalar d_hat{0.1};
+        };
+
+        class HighOrderPolynomialBarrier {
+        public:
+            UTOPIA_INLINE_FUNCTION Scalar value(const Scalar d) const {
+                auto param = (d - d_hat) / d_hat;
+                return (d < d_hat) * (1.0 / 4.0) * param * param * param * param;
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar gradient(const Scalar d) const {
+                auto dmdhat = d - d_hat;
+                return (d < d_hat) * dmdhat * dmdhat * dmdhat / (d_hat * d_hat * d_hat * d_hat);
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar hessian(const Scalar d) const {
+                auto dmdhat = d - d_hat;
+
+                return (d < d_hat) * 3 * dmdhat * dmdhat / (d_hat * d_hat * d_hat * d_hat);
+            }
 
             Scalar d_hat{0.1};
         };
@@ -105,6 +142,9 @@ namespace utopia {
             if (barrier_subtype == "polynomial") {
                 PolynomialBarrier b{barrier_thickness_};
                 return barrier_hessian_aux(b, x, h);
+            } else if (barrier_subtype == "polynomial4") {
+                HighOrderPolynomialBarrier b{barrier_thickness_};
+                return barrier_hessian_aux(b, x, h);
             } else {
                 DefaultBarrier b{barrier_thickness_};
                 return barrier_hessian_aux(b, x, h);
@@ -115,6 +155,9 @@ namespace utopia {
             if (barrier_subtype == "polynomial") {
                 PolynomialBarrier b{barrier_thickness_};
                 return barrier_gradient_aux(b, x, g);
+            } else if (barrier_subtype == "polynomial4") {
+                HighOrderPolynomialBarrier b{barrier_thickness_};
+                return barrier_gradient_aux(b, x, g);
             } else {
                 DefaultBarrier b{barrier_thickness_};
                 return barrier_gradient_aux(b, x, g);
@@ -124,6 +167,9 @@ namespace utopia {
         bool barrier_value(const Vector &x, Vector &value) const override {
             if (barrier_subtype == "polynomial") {
                 PolynomialBarrier b{barrier_thickness_};
+                return barrier_value_aux(b, x, value);
+            } else if (barrier_subtype == "polynomial4") {
+                HighOrderPolynomialBarrier b{barrier_thickness_};
                 return barrier_value_aux(b, x, value);
             } else {
                 DefaultBarrier b{barrier_thickness_};

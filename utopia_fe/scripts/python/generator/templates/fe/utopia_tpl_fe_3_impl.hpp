@@ -45,7 +45,7 @@ namespace utopia {{
 				return Order;
 			}}
 
-			UTOPIA_FUNCTION static constexpr Result measure(
+			UTOPIA_FUNCTION static Result measure(
 				// Element coordinates
 				const GeoT *UTOPIA_RESTRICT px,
 				const GeoT *UTOPIA_RESTRICT py,
@@ -55,7 +55,7 @@ namespace utopia {{
 				const T y,
 				const T z)
 			{{
-				T measure_value;
+				T measure_value = 0;
 				{measure}
 				return measure_value;
 			}}

@@ -23,8 +23,8 @@ output_dir = './workspace'
 material_output_dir = './workspace'
 
 # Where we save the final result
-# output_dir = '../../../backend/kokkos/fe/generated'
-# material_output_dir = '../../../backend/kokkos/assembly/generated'
+output_dir = '../../../backend/kokkos/fe/generated'
+material_output_dir = '../../../backend/kokkos/assembly/generated'
 
 class SymPyEngine:
     def __init__(self):
@@ -1054,7 +1054,7 @@ def main(args):
     # console.print(x.assumptions0)
     use_simplify = False
     symbolic_map_inversion = False
-    generate_fe = False
+    generate_fe = True
     generate_materials = True
 
     line2 = Line2()
