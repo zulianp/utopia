@@ -441,7 +441,6 @@ class HyperElasticModel:
 
                 hessian_expression_list.append(se.add_augmented_assignment(se.symbols(f"bf[{d1*model.block_size + d2}]"), subsituted))
 
-
         energy_expression_list.append(se.add_augmented_assignment(se.symbols("e"), model.form[0]))
 
         full_expression_list = []
