@@ -1,19 +1,14 @@
+# Sympy
 from symengine import *
-# import sympy as sympy
 import sympy
-
-# from sympy import *
-from time import perf_counter
-from sympy.codegen.ast import AddAugmentedAssignment
-from sympy.codegen.ast import Assignment
-from sympy.printing.c import C99CodePrinter
-from sympy.utilities.codegen import CCodeGen
 from sympy.utilities.codegen import codegen
 
+# Utilities
 import os
 import rich
 import sys
 import pdb
+from time import perf_counter
 
 from rich.syntax import Syntax
 console = rich.get_console()
@@ -162,6 +157,9 @@ class SymPyEngine:
 
         return mat_inv / det
 
+    def trace(self, m):
+        return sympy.trace(m)
+
     def inverse(self, mat):
         # return sympy.Inverse(mat)
 
@@ -209,7 +207,17 @@ class SymPyEngine:
 
         return code_string
 
+    def add_augmented_assignment(self, left, right):
+        return sympy.codegen.ast.AddAugmentedAssignment(left, right)
+
+    def assignment(self, left, right):
+        return sympy.codegen.ast.Assignment(left, right)
+
+
 se = SymPyEngine()
+
+def get_symbolic_engine():
+    return se
 
 class Template:
     def __init__(self, header_tpl_path, impl_tpl_path, header_output_path, impl_output_path):
@@ -423,16 +431,16 @@ class FE:
         grad_expr = []
         for i in range(0, n_fun):
             for d in range(0, self.dim):
-                grad_expr.append(Assignment(se.symbols(f"g{se.prefix[d]}[{i}]"), grads[i][d]))
+                grad_expr.append(se.assignment(se.symbols(f"g{se.prefix[d]}[{i}]"), grads[i][d]))
 
         value_expr = []
         for i in range(0, n_fun):
-            value_expr.append(Assignment(se.symbols(f"f[{i}]"), f[i]))
+            value_expr.append(se.assignment(se.symbols(f"f[{i}]"), f[i]))
 
         stop = perf_counter()
         console.print(f'Elapsed {stop - start} seconds')
 
-        measure_expr = [Assignment(se.symbols(f"measure_value"), self.measure(x_ref))]
+        measure_expr = [se.assignment(se.symbols(f"measure_value"), self.measure(x_ref))]
 
         combined_expression = []
         combined_expression.extend(value_expr)
@@ -470,8 +478,8 @@ class FE:
 
         for d1 in range(0, self.dim):
             for d2 in range(0, self.dim):
-                jacobian_expr.append(Assignment(se.symbols(f"J[{d1*self.dim + d2}]"), J[d1, d2]))
-                jacobian_inverse_expr.append(Assignment(se.symbols(f"J_inv[{d1*self.dim + d2}]"), J_inv[d1, d2]))
+                jacobian_expr.append(se.assignment(se.symbols(f"J[{d1*self.dim + d2}]"), J[d1, d2]))
+                jacobian_inverse_expr.append(se.assignment(se.symbols(f"J_inv[{d1*self.dim + d2}]"), J_inv[d1, d2]))
 
         unused_code = self.generate_unused_code(jacobian_expr, x_ref)
         jacobian_code = unused_code + se.c_gen(jacobian_expr)
@@ -487,7 +495,7 @@ class FE:
         trafo = self.transform(x_ref)
 
         for d in range(0, self.dim):
-            transform_expr.append(Assignment(se.symbols(f"t{se.prefix[d]}"), trafo[d]))
+            transform_expr.append(se.assignment(se.symbols(f"t{se.prefix[d]}"), trafo[d]))
 
         inverse_transform_expr = []
         transform_code = se.c_gen(transform_expr)
@@ -500,7 +508,7 @@ class FE:
             inv_trafo = sympy.solve(self.transform(x_ref) - x, x_ref, simplify=self.symplify_expr, dict=True) # positive=True,
 
             for d in range(0, self.dim):
-                inverse_transform_expr.append(Assignment(se.symbols(f"{se.prefix[d]}"), inv_trafo[0][x_ref[d]]))
+                inverse_transform_expr.append(se.assignment(se.symbols(f"{se.prefix[d]}"), inv_trafo[0][x_ref[d]]))
                 inverse_transform_code = se.c_gen(inverse_transform_expr)
         else:
             g = x - self.transform(x_ref)
@@ -513,9 +521,9 @@ class FE:
                 norm_g += g[d] * g[d]
 
             for d in range(0, self.dim):
-                inverse_transform_expr.append(Assignment(se.symbols(f"{se.prefix[d]}"), x[d]))
+                inverse_transform_expr.append(se.assignment(se.symbols(f"{se.prefix[d]}"), x[d]))
 
-            inverse_transform_expr.append(Assignment(se.symbols("residual_norm"), norm_g))
+            inverse_transform_expr.append(se.assignment(se.symbols("residual_norm"), norm_g))
             update = se.c_gen(inverse_transform_expr)
 
 
@@ -718,7 +726,7 @@ class AxisAlignedHex8(FE):
     def fun(self, x):
         return self.hex8.fun(x)
 
-class GenericElement(FE):
+class SymbolicElement(FE):
     def __init__(self, name, role, dim, symplify_expr = True, symbolic_map_inversion = True):
         super().__init__(name, dim, symplify_expr, symbolic_map_inversion)
         self.nodes = se.point_symbols(1, dim)
@@ -815,11 +823,11 @@ class TensorProductBasis(FE):
     def is_vector_fe(self):
         return True
 
-class TrialElement(GenericElement):
+class TrialElement(SymbolicElement):
     def __init__(self, name, dim, symplify_expr = True, symbolic_map_inversion = True):
         super().__init__(name, "trial", dim, symplify_expr, symbolic_map_inversion)
 
-class TestElement(GenericElement):
+class TestElement(SymbolicElement):
     def __init__(self, name, dim, symplify_expr = True, symbolic_map_inversion = True):
         super().__init__(name, "test", dim, symplify_expr, symbolic_map_inversion)
 
@@ -888,7 +896,7 @@ class LinearMaterial:
         for i in range(0, H.shape[0]):
             for j in range(0, H.shape[1]):
                 if not H[i, j].is_zero:
-                    H_expr.append(AddAugmentedAssignment(se.symbols(f"H[{i*H.shape[1] + j}]"), H[i, j]))
+                    H_expr.append(se.add_augmented_assignment(se.symbols(f"H[{i*H.shape[1] + j}]"), H[i, j]))
 
         H_code = se.c_gen(H_expr)
 
@@ -900,7 +908,7 @@ class LinearMaterial:
 
         for i in range(0, Hx.shape[0]):
             if not Hx[i].is_zero:
-                Hx_expr.append(AddAugmentedAssignment(se.symbols(f"Hx[{i}]"), Hx[i]))
+                Hx_expr.append(se.add_augmented_assignment(se.symbols(f"Hx[{i}]"), Hx[i]))
 
         unused_code = self.generate_unused_code(Hx_expr, x_ref)
         Hx_code = unused_code + se.c_gen(Hx_expr)
@@ -909,10 +917,10 @@ class LinearMaterial:
         g_expr = []
         for i in range(0, Hx.shape[0]):
             if not Hx[i].is_zero:
-                g_expr.append(AddAugmentedAssignment(se.symbols(f"g[{i}]"), Hx[i]))
+                g_expr.append(se.add_augmented_assignment(se.symbols(f"g[{i}]"), Hx[i]))
 
 
-        value_expr = [AddAugmentedAssignment(se.symbols("e"), self.value(u, x_ref, w))]
+        value_expr = [se.add_augmented_assignment(se.symbols("e"), self.value(u, x_ref, w))]
         unused_code = self.generate_unused_code(value_expr, x_ref)
         value_code = se.c_gen(value_expr)
 
@@ -965,15 +973,7 @@ class LaplaceOperator(LinearMaterial):
        g_trial = self.trial.grad_interpolate(coeff, x_ref)
        g_test  = self.test.grad_interpolate(coeff, x_ref)
        dx = self.test.measure(x_ref) * w
-
-       dim = self.test.dim
-
-       val = 0
-       scalar_prod = self.inner(g_test, g_trial)
-
-       scalar_prod *=  dx
-       val  += scalar_prod
-       return val
+       return se.rational(1, 2) * self.inner(g_test, g_trial) * dx
 
     def hessian(self, x_ref, w):
         trial = self.trial
@@ -1038,7 +1038,7 @@ class Mass(LinearMaterial):
        g_trial = self.trial.interpolate(coeff, x_ref)
        g_test  = self.test.interpolate(coeff, x_ref)
        dx = self.test.measure(x_ref) * w
-       return self.inner(g_trial, g_test) * dx
+       return se.rational(1, 2) * self.inner(g_trial, g_test) * dx
 
     def hessian(self, x_ref, w):
         trial = self.trial
@@ -1140,21 +1140,24 @@ def main(args):
 
     #########################################################
 
-    
-
     if generate_materials:
         w = se.symbols('weight')
 
         materials = [Mass(), LaplaceOperator()]
-        # materials = [Mass()]
+
+        # for m in materials:
+        #     trial = TrialElement("u", 2)
+        #     test = TestElement("v", 2)
+        #     m.init(trial, test)
+        #     m.generate_code(p2, w)
 
         for m in materials:
             console.print(f"Material={m.name}")
 
-            # for e in elements_1D:
-            #     console.print(f" - Elem={e.name}")
-            #     m.init(e, e)
-            #     m.generate_code(p1, w)
+            for e in elements_1D:
+                console.print(f" - Elem={e.name}")
+                m.init(e, e)
+                m.generate_code(p1, w)
 
             for e in elements_2D:
                 console.print(f" - Elem={e.name}")
@@ -1183,9 +1186,6 @@ def main(args):
                 tp = TensorProductBasis(e, 4)
                 m.init(tp, tp)
                 m.generate_code(p4, w)
-
-
-           
 
     #########################################################
 
