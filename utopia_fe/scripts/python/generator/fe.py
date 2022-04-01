@@ -23,8 +23,8 @@ output_dir = './workspace'
 material_output_dir = './workspace'
 
 # Where we save the final result
-output_dir = '../../../backend/kokkos/fe/generated'
-material_output_dir = '../../../backend/kokkos/assembly/generated'
+# output_dir = '../../../backend/kokkos/fe/generated'
+# material_output_dir = '../../../backend/kokkos/assembly/generated'
 
 class SymPyEngine:
     def __init__(self):
@@ -40,6 +40,12 @@ class SymPyEngine:
             vars.append(f'{prefix}{self.prefix[k]}{postfix}')
 
         return sympy.Matrix(d, 1, vars)
+
+    def is_matrix(self, expr):
+        return sympy.matrices.immutable.ImmutableDenseMatrix == type(expr) or sympy.matrices.dense.MutableDenseMatrix == type(expr)
+
+    # def is_vector(self, expr):
+    #     return sympy.matrices.immutable.ImmutableDenseMatrix == type(expr)
 
     def simplify(self, expr):
         return sympy.simplify(expr)
@@ -259,13 +265,26 @@ class FE:
     def grad_interpolate(self, coeff, x_ref):
         g = self.grad(x_ref)
 
-        ret = se.zeros(self.dim, 1)
-
         n_fun = self.n_shape_functions()
 
-        for i in range(0, n_fun):
-            for d in range(0, self.dim):
-                ret[d] += coeff[i] * g[i][d]
+        if se.is_matrix(g[0]):
+            rows = g[0].shape[0]
+            cols = g[0].shape[1]
+
+            # console.print(type(g[0]))
+            # 
+
+            ret = se.zeros(rows, cols)
+
+            for i in range(0, n_fun):
+                for d1 in range(0, rows):
+                    for d2 in range(0, cols):
+                        ret[d1, d2] += coeff[i] * g[i][d1, d2]
+        else:
+            ret = se.zeros(self.dim, 1)
+            for i in range(0, n_fun):
+                for d in range(0, self.dim):
+                    ret[d] += coeff[i] * g[i][d]
 
         return ret
 
@@ -722,7 +741,7 @@ class GenericElement(FE):
 
 class TensorProductBasis(FE):
     def __init__(self, fe, power):
-        super().__init__(f"TensorProduct{fe.name}{fe.dim}", fe.dim)
+        super().__init__(f"TensorProduct{fe.name}_{power}", fe.dim)
 
         temp = []
 
@@ -753,23 +772,29 @@ class TensorProductBasis(FE):
 
         return se.array(ret)
 
+    def grad(self, x_ref):
+
+        ret = []
+        
+        tp_dim = len(self.fe)
+        
+        for k in range(0, tp_dim):
+            scalar_grad = self.fe[k].grad(x_ref)
+
+            n_grads = len(scalar_grad)
+            for i in range(0, n_grads):
+                dim = len(scalar_grad[i])
+                tp_f = se.zeros(tp_dim, dim)
+
+                for d1 in range(0, dim):
+                    tp_f[k, d1] = scalar_grad[i][d1]
+
+                ret.append(tp_f)
+
+        return ret
+
     def transform(self, x_ref):
         return self.geo.transform(x_ref)
-
-    # def grad_interpolate(self, coeff, x_ref):
-    #     g = self.grad(x_ref)
-
-    #     ret = se.zeros(len(self.fe), self.dim)
-
-    #     n_fun = self.n_shape_functions()
-
-    #     for i in range(0, n_fun):
-    #         for d in range(0, self.dim):
-    #             cxfun = coeff[i] * g[i][d]
-
-    #             ret[d,:] += coeff[i] * g[i][d]
-
-    #     return ret
 
     def n_shape_functions(self):
         n_fun = 0
@@ -808,14 +833,25 @@ class LinearMaterial:
         self.test = test
 
     def inner(self, left, right):
-        # l = len(left)
-        # if(l > 1):
-        #     ret = 0
-        #     for d in range(0, l):
-        #         ret += left[d] * right[d]
-        #     return ret
-        # else:
-        return left * right
+        # console.print(type(left))
+        # console.print(type(right))
+
+        iml = se.is_matrix(left)
+        imr = se.is_matrix(right)
+
+        if imr and iml:
+            ret = 0
+            rows = left.shape[0]
+            cols = left.shape[1]
+
+            for d1 in range(0, rows):
+                for d2 in range(0, cols):
+                    ret += left[d1, d2] * right[d1, d2]
+
+            return ret
+
+        else:
+            return left * right
 
     def is_linear(self):
         return True
@@ -851,7 +887,8 @@ class LinearMaterial:
         H_expr = []
         for i in range(0, H.shape[0]):
             for j in range(0, H.shape[1]):
-                H_expr.append(AddAugmentedAssignment(se.symbols(f"H[{i*H.shape[1] + j}]"), H[i, j]))
+                if not H[i, j].is_zero:
+                    H_expr.append(AddAugmentedAssignment(se.symbols(f"H[{i*H.shape[1] + j}]"), H[i, j]))
 
         H_code = se.c_gen(H_expr)
 
@@ -862,6 +899,7 @@ class LinearMaterial:
         Hx_expr = []
 
         for i in range(0, Hx.shape[0]):
+            if not Hx[i].is_zero:
                 Hx_expr.append(AddAugmentedAssignment(se.symbols(f"Hx[{i}]"), Hx[i]))
 
         unused_code = self.generate_unused_code(Hx_expr, x_ref)
@@ -870,6 +908,7 @@ class LinearMaterial:
         # FIXME
         g_expr = []
         for i in range(0, Hx.shape[0]):
+            if not Hx[i].is_zero:
                 g_expr.append(AddAugmentedAssignment(se.symbols(f"g[{i}]"), Hx[i]))
 
 
@@ -930,9 +969,7 @@ class LaplaceOperator(LinearMaterial):
        dim = self.test.dim
 
        val = 0
-       scalar_prod = 0
-       for d in range(0, dim):
-           scalar_prod += self.inner(g_test[d], g_trial[d])
+       scalar_prod = self.inner(g_test, g_trial)
 
        scalar_prod *=  dx
        val  += scalar_prod
@@ -957,7 +994,7 @@ class LaplaceOperator(LinearMaterial):
                 scalar_prod = 0
 
                 for d in range(0, dim):
-                    scalar_prod +=self.inner( g_test[i][d], g_trial[j][d])
+                    scalar_prod +=self.inner(g_test[i], g_trial[j])
 
                 scalar_prod *=  dx
                 M[i, j] = scalar_prod
@@ -983,7 +1020,7 @@ class LaplaceOperator(LinearMaterial):
                 scalar_prod = 0
 
                 for d in range(0, dim):
-                    scalar_prod += self.inner(g_test[i][d], g_trial[d])
+                    scalar_prod += self.inner(g_test[i], g_trial)
 
                 scalar_prod *=  dx
                 Mx[i] += scalar_prod
@@ -1054,7 +1091,7 @@ def main(args):
     # console.print(x.assumptions0)
     use_simplify = False
     symbolic_map_inversion = False
-    generate_fe = True
+    generate_fe = False
     generate_materials = True
 
     line2 = Line2()
@@ -1081,6 +1118,7 @@ def main(args):
     # elements_4D = [pentatope5]
 
     elements = []
+    elements.extend(elements_1D)
     elements.extend(elements_2D)
     elements.extend(elements_3D)
     elements.extend(elements_4D)
@@ -1102,38 +1140,52 @@ def main(args):
 
     #########################################################
 
+    
+
     if generate_materials:
         w = se.symbols('weight')
 
         materials = [Mass(), LaplaceOperator()]
+        # materials = [Mass()]
 
         for m in materials:
             console.print(f"Material={m.name}")
 
-            # tp = TensorProductBasis(line2, 2)
-            # console.print(tp.fun(p2))
-            # m.init(tp, tp)
-            # m.generate_code(p1, w)
-
-            for e in elements_1D:
-                console.print(f" - Elem={e.name}")
-                m.init(e, e)
-                m.generate_code(p1, w)
+            # for e in elements_1D:
+            #     console.print(f" - Elem={e.name}")
+            #     m.init(e, e)
+            #     m.generate_code(p1, w)
 
             for e in elements_2D:
                 console.print(f" - Elem={e.name}")
                 m.init(e, e)
                 m.generate_code(p2, w)
 
+                tp = TensorProductBasis(e, 2)
+                m.init(tp, tp)
+                m.generate_code(p2, w)
+
+
             for e in elements_3D:
                 console.print(f" - Elem={e.name}")
                 m.init(e, e)
+                m.generate_code(p3, w)
+
+                tp = TensorProductBasis(e, 3)
+                m.init(tp, tp)
                 m.generate_code(p3, w)
 
             for e in elements_4D:
                 console.print(f" - Elem={e.name}")
                 m.init(e, e)
                 m.generate_code(p4, w)
+
+                tp = TensorProductBasis(e, 4)
+                m.init(tp, tp)
+                m.generate_code(p4, w)
+
+
+           
 
     #########################################################
 
