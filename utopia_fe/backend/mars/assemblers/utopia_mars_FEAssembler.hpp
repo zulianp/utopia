@@ -28,6 +28,9 @@ namespace utopia {
             virtual void set_environment(const std::shared_ptr<Environment> &env) = 0;
             virtual bool is_linear() const = 0;
 
+            // TODO
+            bool is_operator() const override { return false; }
+
             inline void set_mode(AssemblyMode mode) { mode_ = mode; }
             inline AssemblyMode mode() const { return mode_; }
 

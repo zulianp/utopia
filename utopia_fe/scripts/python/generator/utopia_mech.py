@@ -1,16 +1,10 @@
-from sympy import *
-
-# from sympy import Matrix
-# from sympy import cse
-# from sympy import diff
-# from sympy import shape
-# from sympy import symbols
-
-from sympy.codegen.ast import AddAugmentedAssignment
-from sympy.codegen.ast import Assignment
+from sympy import cse
 from sympy.printing.c import C99CodePrinter
 from sympy.utilities.codegen import CCodeGen
 from sympy.utilities.codegen import codegen
+
+import fe
+se = fe.get_symbolic_engine()
 
 
 import os
@@ -21,52 +15,50 @@ from rich.syntax import Syntax
 
 console = rich.get_console()
 
-
-
-# def deformation_gradient(d):
-#     if d == 1:
-#         f00 = symbols('f_00')
-#         F = Matrix(1,1,[f00])
-#     elif d == 2:
-#         f00, f01, f10, f11 = symbols('f_00 f_01 f_10 f_11')
-#         F = Matrix(2,2,[f00,f01,f10,f11])
-#     else:
-#         f00, f01, f02, f10, f11, f12, f20, f21, f22  = symbols('f_00 f_01 f_02 f_10 f_11 f_12 f_20 f_21 f_22')
-#         F = Matrix(3,3,[f00, f01, f02, f10, f11, f12, f20, f21, f22])
-#     return F
+def displacement_gradient(d):
+    if d == 1:
+        u00 = symbols('disp_grad[0]')
+        F = se.matrix(1,1,[u00])
+    elif d == 2:
+        u00, u01, u10, u11 = se.symbols('disp_grad[0] disp_grad[1] disp_grad[2] disp_grad[3]')
+        F = se.matrix(2,2,[u00,u01,u10,u11])
+    else:
+        u00, u01, u02, u10, u11, u12, u20, u21, u22  = se.symbols('disp_grad[0] disp_grad[1] disp_grad[2] disp_grad[3] disp_grad[4] disp_grad[5] disp_grad[6] disp_grad[7] disp_grad[8]')
+        F = se.matrix(3,3,[u00, u01, u02, u10, u11, u12, u20, u21, u22])
+    return F
 
 def deformation_gradient(d):
     if d == 1:
         f00 = symbols('f[0]')
-        F = Matrix(1,1,[f00])
+        F = se.matrix(1,1,[f00])
     elif d == 2:
-        f00, f01, f10, f11 = symbols('f[0] f[1] f[2] f[3]')
-        F = Matrix(2,2,[f00,f01,f10,f11])
+        f00, f01, f10, f11 = se.symbols('f[0] f[1] f[2] f[3]')
+        F = se.matrix(2,2,[f00,f01,f10,f11])
     else:
-        f00, f01, f02, f10, f11, f12, f20, f21, f22  = symbols('f[0] f[1] f[2] f[3] f[4] f[5] f[6] f[7] f[8]')
-        F = Matrix(3,3,[f00, f01, f02, f10, f11, f12, f20, f21, f22])
+        f00, f01, f02, f10, f11, f12, f20, f21, f22  = se.symbols('f[0] f[1] f[2] f[3] f[4] f[5] f[6] f[7] f[8]')
+        F = se.matrix(3,3,[f00, f01, f02, f10, f11, f12, f20, f21, f22])
     return F
 
 def trial_function(d):
     if d == 1:
-        return symbols('trial_0')
+        return se.symbols('trial_0')
     elif d == 2:
        trial_00, trial_01 = symbols('trial_00 trial_01')
-       trial = Matrix(2,1,[trial_00, trial_01])
+       trial = se.matrix(2,1,[trial_00, trial_01])
     elif d == 3:
-       trial_00, trial_01, trial_02 = symbols('trial_00 trial_01 trial_02')
-       trial = Matrix(3,1,[trial_00, trial_01, trial_02])
+       trial_00, trial_01, trial_02 = se.symbols('trial_00 trial_01 trial_02')
+       trial = se.matrix(3,1,[trial_00, trial_01, trial_02])
     return trial
 
 def trial_gradient(d):
     if d == 1:
-        return symbols('trial_grad_0')
+        return se.symbols('trial_grad_0')
     elif d == 2:
-       trial_grad_00, trial_grad_01, trial_grad_10, trial_grad_11 = symbols('trial_grad_00 trial_grad_01 trial_grad_10 trial_grad_11')
-       trial = Matrix(2,2,[trial_grad_00, trial_grad_01, trial_grad_10, trial_grad_11])
+       trial_grad_00, trial_grad_01, trial_grad_10, trial_grad_11 = se.symbols('trial_grad_00 trial_grad_01 trial_grad_10 trial_grad_11')
+       trial = se.matrix(2,2,[trial_grad_00, trial_grad_01, trial_grad_10, trial_grad_11])
     elif d == 3:
-       trial_grad_00, trial_grad_01, trial_grad_02, trial_grad_10, trial_grad_11, trial_grad_12, trial_grad_20, trial_grad_21, trial_grad_22 = symbols('trial_grad_00 trial_grad_01 trial_grad_02 trial_grad_10 trial_grad_11 trial_grad_12 trial_grad_20 trial_grad_21 trial_grad_22')
-       trial = Matrix(3,3,[
+       trial_grad_00, trial_grad_01, trial_grad_02, trial_grad_10, trial_grad_11, trial_grad_12, trial_grad_20, trial_grad_21, trial_grad_22 = se.symbols('trial_grad_00 trial_grad_01 trial_grad_02 trial_grad_10 trial_grad_11 trial_grad_12 trial_grad_20 trial_grad_21 trial_grad_22')
+       trial = se.matrix(3,3,[
         trial_grad_00, trial_grad_01, trial_grad_02,
         trial_grad_10, trial_grad_11, trial_grad_12,
         trial_grad_20, trial_grad_21, trial_grad_22])
@@ -74,29 +66,28 @@ def trial_gradient(d):
 
 def test_function(d):
     if d == 1:
-        return symbols('test_0')
+        return se.symbols('test_0')
     elif d == 2:
-       test_00, test_01 = symbols('test_00 test_01')
-       test = Matrix(2,1,[test_00, test_01])
+       test_00, test_01 = se.symbols('test_00 test_01')
+       test = se.matrix(2,1,[test_00, test_01])
     elif d == 3:
-       test_00, test_01, test_02 = symbols('test_00 test_01 test_02')
-       test = Matrix(3,1,[test_00, test_01, test_02])
+       test_00, test_01, test_02 = se.symbols('test_00 test_01 test_02')
+       test = se.matrix(3,1,[test_00, test_01, test_02])
     return trial
 
 def test_gradient(d):
     if d == 1:
-        return symbols('test_grad_0')
+        return se.symbols('test_grad_0')
     elif d == 2:
-       test_grad_00, test_grad_01, test_grad_10, test_grad_11 = symbols('test_grad_00 test_grad_01 test_grad_10 test_grad_11')
-       test = Matrix(2,2,[test_grad_00, test_grad_01, test_grad_10, test_grad_11])
+       test_grad_00, test_grad_01, test_grad_10, test_grad_11 = se.symbols('test_grad_00 test_grad_01 test_grad_10 test_grad_11')
+       test = se.matrix(2,2,[test_grad_00, test_grad_01, test_grad_10, test_grad_11])
     elif d == 3:
-       test_grad_00, test_grad_01, test_grad_02,test_grad_10, test_grad_11, test_grad_12, test_grad_20, test_grad_21, test_grad_22 = symbols('test_grad_00 test_grad_01 test_grad_02 test_grad_10 test_grad_11 test_grad_12 test_grad_20 test_grad_21 test_grad_22')
-       test = Matrix(3,3,[
+       test_grad_00, test_grad_01, test_grad_02,test_grad_10, test_grad_11, test_grad_12, test_grad_20, test_grad_21, test_grad_22 = se.symbols('test_grad_00 test_grad_01 test_grad_02 test_grad_10 test_grad_11 test_grad_12 test_grad_20 test_grad_21 test_grad_22')
+       test = se.matrix(3,3,[
         test_grad_00, test_grad_01, test_grad_02,
         test_grad_10, test_grad_11, test_grad_12,
         test_grad_20, test_grad_21, test_grad_22])
     return test
-
 
 class TensorProductBasis:
     def __init__(self, dim):
@@ -120,7 +111,6 @@ class TensorProductBasis:
 
         return ret
         
-
     def subs_trial(self, i_trial, d_trial, expr):
         ret = expr
 
@@ -131,6 +121,15 @@ class TensorProductBasis:
                 ret = ret.subs(f'trial_{i}', 0)
         return ret
 
+    def bilinear_apply_subs_gradients(self, trial_grad, i_test, d_test, expr):
+        ret = self.subs_gradient_test(i_test, d_test, expr)
+        dim = self.dim
+
+        for k1 in range(0, dim):
+            for k2 in range(0, dim):
+                ret = ret.subs(f'trial_grad_{k1}{k2}', trial_grad[k1, k2])
+
+        return ret
 
     def bilinear_subs_gradients(self, i_trial, d_trial, i_test, d_test, expr):
         return self.subs_gradient_test(i_test, d_test, self.subs_gradient_trial(i_trial, d_trial, expr))
@@ -145,7 +144,7 @@ class TensorProductBasis:
         
         ret = f;
         for k in range(0, dim):
-            ret = ret.subs(f'trial_grad_{d}{k}', symbols(f'{trial}[{k}]'))
+            ret = ret.subs(f'trial_grad_{d}{k}', se.symbols(f'{trial}[{k}]'))
 
         for k in range(0, dim):
             if k != d:
@@ -161,7 +160,7 @@ class TensorProductBasis:
 
         ret = f;
         for k in range(0, dim):
-            ret = ret.subs(f'test_grad_{d}{k}', symbols(f'{test}[{k}]'))
+            ret = ret.subs(f'test_grad_{d}{k}', se.symbols(f'{test}[{k}]'))
 
         for k in range(0, dim):
             if k != d:
@@ -170,19 +169,17 @@ class TensorProductBasis:
 
         return ret
 
-
 def first_piola(strain_energy, F):
     shape = F.shape
     # print(shape)
 
-    P = Matrix.zeros(shape[0], shape[1])
+    P = se.zeros(shape[0], shape[1])
 
     for i in range(0, shape[0]):
         for j in range(0, shape[1]):
-            P[i, j] = diff(strain_energy, F[i, j])
+            P[i, j] = se.diff(strain_energy, F[i, j])
 
     return P
-
 
 class Template:
     def __init__(self, header_tpl_path, impl_tpl_path, header_output_path, impl_output_path):
@@ -197,7 +194,6 @@ class Template:
 
         with open(impl_tpl_path, 'r') as f:
             self.impl_tpl = f.read()
-
 
 class KernelGenerator:
     def __init__(self, dim):
@@ -224,12 +220,12 @@ class KernelGenerator:
 
         return "\n".join(class_fields)
 
-
     def generate_class(
         self, tpl, model,
         value_expression,
         gradient_expression,
         hessian_expression,
+        apply_expression,
         output_dir):
 
         combined_expression = []
@@ -241,6 +237,7 @@ class KernelGenerator:
         gradient_string = self.generate_string(gradient_expression)
         hessian_string = self.generate_string(hessian_expression)
         combined_string = self.generate_string(combined_expression)
+        apply_string = self.generate_string(apply_expression)
 
         header = tpl.header_tpl.format(
             name=model.name,
@@ -264,6 +261,7 @@ class KernelGenerator:
             gradient=gradient_string,
             hessian=hessian_string,
             combined=combined_string,
+            apply_hessian=apply_string,
             dim=self.dim,
             fields=fields,
             get_params=get_params,
@@ -290,8 +288,6 @@ class KernelGenerator:
         code_string='\n'.join(lines)
         return code_string
 
-
-
     def generate_files(self, expression_list, tpl_path, output_path):
         print("Generating code")
 
@@ -315,23 +311,19 @@ class KernelGenerator:
             with open(output_path, 'w') as f:
                 f.write(kernel)
 
-
-
-
-
 class HyperElasticModel:
     def __init__(self, d):
         self.d = d
         self.block_size = d
         self.F = deformation_gradient(d)
-        self.J = det(self.F)
-        self.F_inv = Inverse(self.F)
+        self.J = se.det(self.F)
+        self.F_inv = se.inverse(self.F)
         self.F_inv_t = self.F_inv.T
         self.C = self.F.T*self.F
-        self.I_C = trace(self.C)
+        self.I_C = se.trace(self.C)
         self.fun = 0
 
-        self.form = zeros(3)
+        self.form = se.zeros(3, 1)
         self.use_default_parameter_reader = False
         self.is_block_system = False
 
@@ -350,7 +342,7 @@ class HyperElasticModel:
         grad_trial = trial_gradient(d)
         grad_test = test_gradient(d)
 
-        dx = symbols('dx')
+        dx = se.symbols('dx')
         self.dx = dx
 
         #############################################
@@ -395,7 +387,7 @@ class HyperElasticModel:
 
         for i in range(0, d):
             for j in range(0, d):
-                Hij = diff(contraction, F[i, j]);
+                Hij = se.diff(contraction, F[i, j]);
                 bilinear_form += Hij * grad_test[i,j]
 
         bilinear_form *= dx
@@ -422,25 +414,34 @@ class HyperElasticModel:
         hessian_expression_list = []
         gradient_expression_list = []
         energy_expression_list = []
+        apply_expression_list = []
+
+        disp_grad = displacement_gradient(self.d)
 
         for d1 in range(0, model.d):
             subsituted = tp.linear_subs_gradients("test", d1, model.form[1])
 
             if simplify_expressions:
-                subsituted = simplify(subsituted)
+                subsituted = se.simplify(subsituted)
 
-            gradient_expression_list.append(AddAugmentedAssignment(symbols(f"lf[{d1}]"), subsituted))
+            gradient_expression_list.append(se.add_augmented_assignment(se.symbols(f"lf[{d1}]"), subsituted))
+
+            substited_apply = tp.bilinear_apply_subs_gradients(disp_grad, "test", d1, model.form[2])
+
+            if simplify_expressions:
+                substited_apply = se.simplify(substited_apply)
+
+            apply_expression_list.append(se.add_augmented_assignment(se.symbols(f"res[{d1}]"), substited_apply))
 
             for d2 in range(0, model.d):
                 subsituted = tp.bilinear_subs_gradients("test", d1, "trial", d2, model.form[2])
 
                 if simplify_expressions:
-                    subsituted = simplify(subsituted)
+                    subsituted = se.simplify(subsituted)
 
-                hessian_expression_list.append(AddAugmentedAssignment(symbols(f"bf[{d1*model.block_size + d2}]"), subsituted))
+                hessian_expression_list.append(se.add_augmented_assignment(se.symbols(f"bf[{d1*model.block_size + d2}]"), subsituted))
 
-
-        energy_expression_list.append(AddAugmentedAssignment(symbols("e"), model.form[0]))
+        energy_expression_list.append(se.add_augmented_assignment(se.symbols("e"), model.form[0]))
 
         full_expression_list = []
         full_expression_list.extend(hessian_expression_list)
@@ -464,18 +465,19 @@ class HyperElasticModel:
             energy_expression_list,
             gradient_expression_list,
             hessian_expression_list,
+            apply_expression_list,
             output_dir)
 
 class IncompressibleHyperElasticModel(HyperElasticModel):
     def __init__(self, d):
         super().__init__(d)
         self.block_size = d + 1 # Add one element for the pressure
-        self.p = symbols('p')
+        self.p = se.symbols('p')
         # self.J = symbols('J')
 
         self.form = [0,0,0]
-        self.form[1] = zeros(2) # Two blocks
-        self.form[2] = zeros(2, 2) # Four blocks
+        self.form[1] = se.zeros(2, 1) # Two blocks
+        self.form[2] = se.zeros(2, 2) # Four blocks
 
         self.is_block_system = True
         self.independent_variables = [self.F, self.p]
@@ -489,7 +491,7 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
         d = self.d
         p = self.p
         
-        dx = symbols('dx')
+        dx = se.symbols('dx')
 
         trial = trial_function(1)
         test = test_function(1)
@@ -526,7 +528,7 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
 
         # console.print(linear_form_0)
 
-        dWdp = simplify(diff(self.fun, p))
+        dWdp = se.simplify(se.diff(self.fun, p))
         linear_form_1 = dWdp * test * dx
 
         self.form[1][1] = linear_form_1
@@ -545,45 +547,27 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
 
         for i in range(0, d):
             for j in range(0, d):
-                Hij = diff(contraction, F[i, j]);
+                Hij = se.diff(contraction, F[i, j]);
                 bilinear_form_00 += Hij * grad_test[i,j]
 
         bilinear_form_00 *= dx
 
         dWdpdF = first_piola(dWdp * trial, F)
 
-        bilinear_form_10 = simplify(diff(contraction, p) * test) * dx
-        bilinear_form_11 = simplify(diff(dWdp * trial, p)) * test * dx
+        bilinear_form_10 = se.simplify(se.diff(contraction, p) * test) * dx
+        bilinear_form_11 = se.simplify(se.diff(dWdp * trial, p)) * test * dx
 
         contraction = 0
         for i in range(0, d):
             for j in range(0, d):
                 contraction += dWdpdF[i,j] * grad_test[i,j]
 
-        bilinear_form_01 = simplify(contraction) * dx
+        bilinear_form_01 = se.simplify(contraction) * dx
 
         self.form[2][0,0] = bilinear_form_00
         self.form[2][0,1] = bilinear_form_01
         self.form[2][1,0] = bilinear_form_10
         self.form[2][1,1] = bilinear_form_11
-
-        # console.print('bilinear_form_00')
-        # console.print(simplify(bilinear_form_00))
-
-        # console.print('bilinear_form_01')
-        # console.print(simplify(bilinear_form_01))
-
-        # console.print('bilinear_form_10')
-        # console.print(simplify(bilinear_form_10))
-
-        # console.print('bilinear_form_11')
-        # console.print(bilinear_form_11)
-
-        # console.print('linear_form_0')
-        # console.print(linear_form_0)
-
-        # console.print('linear_form_1')
-        # console.print(linear_form_1)
 
     def generate_files(self, output_dir, simplify_expressions):
         model = self
@@ -603,7 +587,6 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
         gradient_expression_list = []
         energy_expression_list = []
 
-
         lf0 = model.form[1][0]
         lf1 = model.form[1][1]
 
@@ -612,7 +595,6 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
         bf10 = model.form[2][1,0]
         bf11 = model.form[2][1,1]
 
-
         for i in range(0, 2):
             for j in range(0, 2):
                 console.print(f'{i},{j})\n', style='bold blue')
@@ -620,38 +602,37 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
                 console.print(f'{model.form[2][i,j]}\n')
 
         # Displacement
-
         for d1 in range(0, model.d):
             subsituted_0 = tp.linear_subs_gradients("test", d1, lf0)
 
             if simplify_expressions:
-                subsituted_0 = simplify(subsituted_0)
+                subsituted_0 = se.simplify(subsituted_0)
 
-            gradient_expression_list.append(AddAugmentedAssignment(symbols(f"lf[{d1}]"), subsituted_0))
+            gradient_expression_list.append(se.add_augmented_assignment(se.symbols(f"lf[{d1}]"), subsituted_0))
 
             for d2 in range(0, model.d):
                 subsituted = tp.bilinear_subs_gradients("test", d1, "trial", d2, bf00)
 
                 if simplify_expressions:
-                    subsituted = simplify(subsituted)
+                    subsituted = se.simplify(subsituted)
 
-                hessian_expression_list.append(AddAugmentedAssignment(symbols(f"bf[{d1*model.block_size + d2}]"), subsituted))
+                hessian_expression_list.append(se.add_augmented_assignment(se.symbols(f"bf[{d1*model.block_size + d2}]"), subsituted))
 
         # Pressure 
         subsituted_1 = tp.linear_subs('test', 0, lf1)
 
         if simplify_expressions:
-            subsituted_1 = simplify(subsituted_1)
+            subsituted_1 = se.simplify(subsituted_1)
 
-        gradient_expression_list.append(AddAugmentedAssignment(symbols(f"lf[{model.d}]"), subsituted_1))
+        gradient_expression_list.append(se.add_augmented_assignment(se.symbols(f"lf[{model.d}]"), subsituted_1))
 
 
         subsituted_11 = tp.bilinear_subs("test", 0, "trial", 0, bf11)
 
         if simplify_expressions:
-            subsituted_11 = simplify(subsituted_11)
+            subsituted_11 = se.simplify(subsituted_11)
 
-        hessian_expression_list.append(AddAugmentedAssignment(symbols(f"bf[{model.d*model.block_size +model.d}]"), subsituted_11))
+        hessian_expression_list.append(se.add_augmented_assignment(se.symbols(f"bf[{model.d*model.block_size +model.d}]"), subsituted_11))
 
         # Mixed
 
@@ -662,10 +643,9 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
             subsituted_01 = tp.subs_gradient_trial("trial", d1, mixed_10)
 
             if simplify_expressions:
-                subsituted_01 = simplify(subsituted_01)
+                subsituted_01 = se.simplify(subsituted_01)
 
-            hessian_expression_list.append(AddAugmentedAssignment(symbols(f"bf[{d1+ model.d*model.block_size}]"), subsituted_01))
-
+            hessian_expression_list.append(se.add_augmented_assignment(se.symbols(f"bf[{d1+ model.d*model.block_size}]"), subsituted_01))
 
         # bf(u,delta_p)
         mixed_01 = tp.subs_trial('trial', 0, bf01)
@@ -674,13 +654,12 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
             subsituted_10 = tp.subs_gradient_test("test", d1, mixed_01)
 
             if simplify_expressions:
-                subsituted_10 = simplify(subsituted_10)
+                subsituted_10 = se.simplify(subsituted_10)
 
-            hessian_expression_list.append(AddAugmentedAssignment(symbols(f"bf[{d1*model.block_size + model.d}]"), subsituted_10))
-
+            hessian_expression_list.append(se.add_augmented_assignment(se.symbols(f"bf[{d1*model.block_size + model.d}]"), subsituted_10))
 
         # Model Energy
-        energy_expression_list.append(AddAugmentedAssignment(symbols("e"), model.form[0]))
+        energy_expression_list.append(se.add_augmented_assignment(se.symbols("e"), model.form[0]))
 
         full_expression_list = []
         full_expression_list.extend(hessian_expression_list)
@@ -704,4 +683,5 @@ class IncompressibleHyperElasticModel(HyperElasticModel):
             energy_expression_list,
             gradient_expression_list,
             hessian_expression_list,
+            [], # FIXME
             output_dir)

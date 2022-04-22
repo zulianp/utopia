@@ -56,6 +56,10 @@
 #include "utopia_hyperelasticity_Yeoh_2.hpp"
 #include "utopia_hyperelasticity_Yeoh_3.hpp"
 
+#include "utopia_assembly_kokkos_generated_impl.hpp"
+
+// #include "utopia_material_Mass_Pentatope5_4_impl.hpp"
+
 // utopia/kokkos includes
 #include "utopia_kokkos_FE.hpp"
 
@@ -191,6 +195,11 @@ namespace utopia {
                     "IncompressibleMooneyRivlin", 2);
                 register_assembler_variant<utopia::kokkos::IncompressibleMooneyRivlin<FE_t, 3>>(
                     "IncompressibleMooneyRivlin", 3);
+
+                register_generated_assemblers(*this);
+
+                // register_assembler_variant<utopia::kokkos::MassPentatope5<FE_t>>(
+                //     "MassPentatope5", 3);
             }
         };
 
@@ -198,6 +207,8 @@ namespace utopia {
         class OmniAssembler<FunctionSpace, FE_>::Impl {
         public:
             using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+            using Vector_t = typename Traits<FunctionSpace>::Vector;
+
             using FE = FE_;
             using Field = utopia::kokkos::Field<FE>;
             using AssemblerRegistry = utopia::kokkos::AssemblerRegistry<FunctionSpace, FE>;
@@ -487,6 +498,26 @@ namespace utopia {
                 return true;
             }
 
+            bool is_operator() const {
+                for (auto &a_ptr : domain.assemblers) {
+                    if (!a_ptr->is_operator()) {
+                        return false;
+                    }
+                }
+
+                for (auto &p : boundary) {
+                    auto &b = p.second;
+
+                    for (auto &a_ptr : b.assemblers) {
+                        if (!a_ptr->is_operator()) {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
+
             bool apply(Vector &vec) {
                 ensure_output(vec);
                 ensure_vector_accumulators();
@@ -651,6 +682,26 @@ namespace utopia {
                 }
             }
 
+            bool gradient_is_valid(const Vector_t &x, const Vector_t &g) {
+                bool ok = true;
+
+                if (g.has_nan_or_inf()) {
+                    ok = false;
+
+                    if (crash_on_NaN) {
+                        if (debug) {
+                            space->write("NaN.e", x);
+                        }
+
+                        this->~Impl();
+                        assert(false);
+                        utopia::Utopia::Abort("Detected NaN in material gradient!");
+                    }
+                }
+
+                return ok;
+            }
+
             std::shared_ptr<FunctionSpace> space;
 
             // Volume (only one for now)
@@ -670,6 +721,7 @@ namespace utopia {
             bool ensure_scalar_matrix{true};
             bool fail_if_unregistered{true};
             bool debug{false};
+            bool crash_on_NaN{false};
         };
 
         template <class FunctionSpace, class FE>
@@ -706,14 +758,7 @@ namespace utopia {
                 return false;
             }
 
-            if (impl_->debug && fun.has_nan_or_inf()) {
-                impl_->space->write("NaN.e", x);
-                this->~OmniAssembler();
-                assert(false);
-                utopia::Utopia::Abort("Detected NaN in material gradient!");
-            }
-
-            return true;
+            return impl_->gradient_is_valid(x, fun);
         }
 
         template <class FunctionSpace, class FE>
@@ -741,14 +786,7 @@ namespace utopia {
                 return false;
             }
 
-            if (impl_->debug && vec.has_nan_or_inf()) {
-                impl_->space->write("NaN.e", x);
-                this->~OmniAssembler();
-                assert(false);
-                utopia::Utopia::Abort("Detected NaN in material gradient!");
-            }
-
-            return true;
+            return impl_->gradient_is_valid(x, vec);
         }
 
         template <class FunctionSpace, class FE>
@@ -762,13 +800,7 @@ namespace utopia {
                 return false;
             }
 
-            if (impl_->debug && hessian_times_x.has_nan_or_inf()) {
-                impl_->space->write("NaN.e", x);
-                this->~OmniAssembler();
-                utopia::Utopia::Abort("Detected NaN in application of operator!");
-            }
-
-            return true;
+            return impl_->gradient_is_valid(x, hessian_times_x);
         }
 
         template <class FunctionSpace, class FE>
@@ -834,6 +866,7 @@ namespace utopia {
 
             in.get("ensure_scalar_matrix", impl_->ensure_scalar_matrix);
             in.get("debug", impl_->debug);
+            in.get("crash_on_NaN", impl_->crash_on_NaN);
 
             in.get("material", [this](Input &node) {
                 auto assembler = impl_->registry.make_assembler(impl_->domain.fe, node);
@@ -926,6 +959,11 @@ namespace utopia {
         template <class FunctionSpace, class FE>
         bool OmniAssembler<FunctionSpace, FE>::is_linear() const {
             return impl_->is_linear_;
+        }
+
+        template <class FunctionSpace, class FE>
+        bool OmniAssembler<FunctionSpace, FE>::is_operator() const {
+            return impl_->is_operator();
         }
 
         template <class FunctionSpace, class FE>

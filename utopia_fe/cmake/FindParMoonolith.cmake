@@ -69,7 +69,11 @@ if(NOT MOONOLITH_FOUND OR FORCE_INSTALL_MOONOLITH)
 
     FetchContent_Declare(
         moonolith
-        GIT_REPOSITORY https://bitbucket.org/zulianp/par_moonolith.git)
+        GIT_REPOSITORY https://bitbucket.org/zulianp/par_moonolith.git
+        # GIT_TAG origin/sampler
+        GIT_TAG origin/development
+    )
+    
     FetchContent_MakeAvailable(moonolith)
 
     add_library(ParMoonolith::par_moonolith ALIAS par_moonolith)
