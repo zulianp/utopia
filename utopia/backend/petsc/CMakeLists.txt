@@ -106,7 +106,6 @@ if(PETSC_FOUND)
     if(SLEPC_FOUND)
         target_include_directories(utopia SYSTEM PUBLIC ${SLEPC_INCLUDES})
         target_link_libraries(utopia PUBLIC ${SLEPC_LIBRARIES})
-        target_compile_definitions(utopia PUBLIC ${SLEPC_LIB_SLEPC})
     endif()
 
     set(UTOPIA_THIRDPARTY_INCLUDES
