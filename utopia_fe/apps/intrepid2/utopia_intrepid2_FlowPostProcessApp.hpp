@@ -33,6 +33,17 @@ namespace utopia {
             using Flow_t = utopia::kokkos::LaplaceOperator<Intrepid2FE_t>;
             using ForcingFunction_t = utopia::kokkos::ForcingFunction<Intrepid2FE_t>;
 
+            struct Subdomain : public Configurable {
+                int id{-1};
+                std::string name;
+                Scalar_t integrated_value = 0.;
+
+                void read(Input &in) override {
+                    in.get("name", name);
+                    in.get("id", id);
+                }
+            };
+
             void read(Input &in) override {
                 valid_ = true;
 
@@ -65,6 +76,22 @@ namespace utopia {
 
                 material = std::make_shared<Flow_t>(fe);
                 in.get("material", *material);
+
+                in.get("subdomains", [this](Input &array_node) {
+                    array_node.get_all([this](Input &node) {
+                        Subdomain d;
+                        d.read(node);
+                        subdomains.push_back(d);
+                    });
+                });
+
+                // in.get("forcing_functions", [this](Input &array_node) {
+                //     array_node.get_all([this](Input &node) {
+                //         std::string forcing_function_type = "value";
+                //         std::string where = "domain";
+                //         std::string name;
+                //     });
+                // });
             }
 
             bool valid() const { return valid_; }
@@ -78,6 +105,27 @@ namespace utopia {
                 }
 
                 ////////////////////////////////////////////////////
+
+                Intrepid2Field_t i2_field(fe);
+                convert_field(field, i2_field);
+
+                material->update(make_ref(i2_field));
+                material->assemble_vector();
+
+                auto lapl_of_field = material->vector_accumulator()->data();
+
+                int n_test = fe->n_shape_functions();
+
+                Scalar_t integral = 0;
+                Kokkos::parallel_reduce(
+                    "Compute aggregate",
+                    fe->cell_range(),
+                    UTOPIA_LAMBDA(const int &cell, Scalar_t &acc) {
+                        for (int i = 0; i < n_test; ++i) {
+                            acc += lapl_of_field(cell, i);
+                        }
+                    },
+                    integral);
 
                 // if (export_strains) {
                 //     Field_t avg_principal_strains("principal_strains", make_ref(space),
@@ -153,6 +201,7 @@ namespace utopia {
             std::shared_ptr<Intrepid2FE_t> fe;
             std::shared_ptr<Flow_t> material;
             std::vector<std::shared_ptr<ForcingFunction_t>> forcing_functions;
+            std::vector<Subdomain> subdomains;
         };
 
     }  // namespace intrepid2
