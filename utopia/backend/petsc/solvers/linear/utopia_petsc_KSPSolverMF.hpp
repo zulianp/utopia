@@ -27,8 +27,9 @@ namespace utopia {
 
     public:
         KSP_MF() : OperatorBasedLinearSolver() {
-            ksp_.pc_type("bjacobi");
+            ksp_.pc_type("none");
             ksp_.verbose(true);
+            KSPSetComputeSingularValues(ksp_.implementation(), PETSC_TRUE);
         }
         ~KSP_MF() override = default;
 
@@ -40,6 +41,12 @@ namespace utopia {
         bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) {
             update(A);
             return apply(b, x);
+        }
+
+        Scalar get_condition_number() {
+            PetscReal emax, emin;
+            KSPComputeExtremeSingularValues(ksp_.implementation(), &emax, &emin);
+            return emax / emin;
         }
 
         void update(const Operator<Vector> &A) {
