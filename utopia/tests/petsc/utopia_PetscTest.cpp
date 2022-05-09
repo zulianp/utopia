@@ -1536,7 +1536,7 @@ namespace utopia {
         PetscMatrix A;
         A.crs(serial_layout(n_rows, n_cols), row_ptr, columns, values);
 
-        disp(A);
+        // disp(A);
     }
 
     void petsc_block_matrix() {

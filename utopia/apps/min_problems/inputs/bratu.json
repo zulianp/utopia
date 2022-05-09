@@ -13,7 +13,7 @@
     "lambda": 5.0,
     "solver" : {
         "verbose" : true,
-        "max-it" : 30,
+        "max_it" : 30,
         "atol": 1e-6, 
         "max_coarse_it": 1,
         "max_sucessful_coarse_it": 1,
@@ -28,7 +28,7 @@
         "linear-solver" : {
             "verbose" : false,
             "atol": 1e-9,
-            "max-it": 1000
+            "max_it": 1000
         }
     }
 }

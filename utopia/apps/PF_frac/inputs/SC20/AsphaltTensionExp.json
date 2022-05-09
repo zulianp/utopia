@@ -34,7 +34,7 @@
     },
     "solver" : {
         "verbose" : true,
-        "max-it" : 500,
+        "max_it" : 500,
         "atol": 1e-5,
         "max_coarse_it": 2,
         "max_sucessful_coarse_it": 1,
@@ -49,7 +49,7 @@
         "linear-solver" : {
             "verbose" : false,
             "atol": 1e-9,
-            "max-it": 1000
+            "max_it": 1000
         }
     }
 }

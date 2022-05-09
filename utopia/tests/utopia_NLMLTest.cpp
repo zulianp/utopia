@@ -199,7 +199,7 @@ namespace utopia {
             in.set("stol", 1e-14);
             in.set("stol", 1e-14);
             in.set("delta_min", 1e-13);
-            in.set("max-it", 20);
+            in.set("max_it", 20);
             in.set("verbose", false);
 
             // RMTR specific parameters
@@ -388,7 +388,7 @@ namespace utopia {
             in.set("stol", 1e-14);
             in.set("stol", 1e-14);
             in.set("delta_min", 1e-13);
-            in.set("max-it", 50);
+            in.set("max_it", 50);
             in.set("verbose", false);
 
             // RMTR specific parameters
