@@ -33,13 +33,13 @@ namespace utopia {
             in.get("debug", debug_);
             in.get("stabilized_formulation", stabilized_formulation_);
 
-            if (stabilized_formulation_) {
-                utopia::out() << "Using stabilized formulation!\n";
-            }
+            // if (stabilized_formulation_) {
+            //     utopia::out() << "Using stabilized formulation!\n";
+            // }
         }
 
         bool update_constraints(const Vector_t &x) {
-            utopia::out() << "ObstacleStabilizedNewmark::update_constraints\n";
+            // utopia::out() << "ObstacleStabilizedNewmark::update_constraints\n";
 
             this->space()->displace(x);
             bool ok = obstacle_->assemble(*this->space());
@@ -114,7 +114,7 @@ namespace utopia {
         }
 
         template <class... Args>
-        ObstacleStabilizedNewmark(Args &&... args) : Super(std::forward<Args>(args)...) {}
+        ObstacleStabilizedNewmark(Args &&...args) : Super(std::forward<Args>(args)...) {}
 
         virtual ~ObstacleStabilizedNewmark() = default;
 

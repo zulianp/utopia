@@ -272,7 +272,7 @@ namespace utopia {
                 converged = this->check_convergence(total_iter, 1, 1, x_diff_norm);
 
                 if (converged) {
-                    utopia::out() << "Converged!\n";
+                    x.comm().root_print("Converged!");
                     break;
                 }
 
