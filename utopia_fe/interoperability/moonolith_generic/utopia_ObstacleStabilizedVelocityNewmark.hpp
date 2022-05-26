@@ -49,9 +49,9 @@ namespace utopia {
                        [&](Input &node) { obstacle_ = ObstacleFactory<FunctionSpace>::new_obstacle(node); });
             }
 
-            if (stabilized_formulation_) {
-                utopia::out() << "Using stabilized formulation!\n";
-            }
+            // if (stabilized_formulation_) {
+            //     utopia::out() << "Using stabilized formulation!\n";
+            // }
 
             ////////////////////////////////////////////////////////////////////////////////
             std::string function_type;

@@ -9,6 +9,24 @@ from utopia_mech import *
 
 console = rich.get_console()
 
+# 1D equation (39)
+# 3D eqaution (50, 51)
+# History variable h is just evaluated for the update (explicit integrtaion)
+# 
+# class MaxwellElement(HyperElasticModel):
+# 	def __init__(self, d):
+# 		super().__init__(d)
+
+# 		I_C = self.I_C
+# 		J = self.J
+
+# 		mu, lmbda = se.symbols('mu lambda')
+# 		self.params = [(mu, 1.0), (lmbda,1.0)]
+
+# 		self.fun = mu/2 *(I_C - d) - mu * log(J) + (lmbda/2) * (log(J))**2
+# 		self.name = 'MaxwellElement'
+# 		self.use_default_parameter_reader = True
+
 ###############################
 # NeoHookean models
 ###############################
@@ -171,34 +189,34 @@ class MooneyRivlin(HyperElasticModel):
 # https://www2.karlin.mff.cuni.cz/~hron/fenics-tutorial/elasticity/doc.html
 # https://abaqus-docs.mit.edu/2017/English/SIMACAEMATRefMap/simamat-c-hyperelastic.htm
 
-class IncompressibleMooneyRivlin(IncompressibleHyperElasticModel):
-	def __init__(self, d):
-		super().__init__(d)
+# class IncompressibleMooneyRivlin(IncompressibleHyperElasticModel):
+# 	def __init__(self, d):
+# 		super().__init__(d)
 
-		I_C = self.I_C
-		J = self.J
-		C = self.C
-		p = self.p
+# 		I_C = self.I_C
+# 		J = self.J
+# 		C = self.C
+# 		p = self.p
 
-		C1, C2, a = se.symbols('C1 C2 a')
-		self.params = [(C1, 1.0), (C2, 1.0), (a, 1.)]
+# 		C1, C2, a = se.symbols('C1 C2 a')
+# 		self.params = [(C1, 1.0), (C2, 1.0), (a, 1.)]
 
-		CikxCki = 0
-		for i in range(0, d):
-			for k in range(0, d):
-				CikxCki += C[i,k] * C[k,i]
+# 		CikxCki = 0
+# 		for i in range(0, d):
+# 			for k in range(0, d):
+# 				CikxCki += C[i,k] * C[k,i]
 
-		I_C2 = se.rational(1, 2) * (I_C**2 - CikxCki)
+# 		I_C2 = se.rational(1, 2) * (I_C**2 - CikxCki)
 
-		# self.fun = C1 * (I_C - d) + C2 * (I_C2 - d) + p/2 * (J - 1)**2
-		# self.fun = C1 * (I_C - d) + C2 * (I_C2 - d) + p * (J - 1) - 0.5 * a * p * p
-		self.fun = C1 * (I_C - d) + C2 * (I_C2 - d) + p * (J - 1)
-		self.name = 'IncompressibleMooneyRivlin'
+# 		# self.fun = C1 * (I_C - d) + C2 * (I_C2 - d) + p/2 * (J - 1)**2
+# 		# self.fun = C1 * (I_C - d) + C2 * (I_C2 - d) + p * (J - 1) - 0.5 * a * p * p
+# 		self.fun = C1 * (I_C - d) + C2 * (I_C2 - d) + p * (J - 1)
+# 		self.name = 'IncompressibleMooneyRivlin'
 
 def generate_materials(d,simplify_expressions):
 	# output_dir = f'../../../backend/kokkos/assembly/mech/generated/{d}D'
 	output_dir = f'./workspace/{d}D'
-	models = [NeoHookeanOgden(d), NeoHookeanBower(d), NeoHookeanWang(d), NeoHookeanSmith(d), Fung(d), MooneyRivlin(d), SaintVenantKirchoff(d), IncompressibleMooneyRivlin(d), Yeoh(d, 2)]
+	models = [NeoHookeanOgden(d), NeoHookeanBower(d), NeoHookeanWang(d), NeoHookeanSmith(d), Fung(d), MooneyRivlin(d), SaintVenantKirchoff(d), Yeoh(d, 2)]
 	# models.append(Yeoh(d, 3))
 	# models = [ NeoHookeanSmith(d), Fung(d)]
 	# models = [NeoHookeanOgden(d)]

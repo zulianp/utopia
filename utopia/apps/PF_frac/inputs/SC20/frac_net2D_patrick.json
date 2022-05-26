@@ -35,7 +35,7 @@
     "hjsmn_smoother" : true,
     "solver" : {
         "verbose" : true,
-        "max-it" : 100,
+        "max_it" : 100,
         "atol": 1e-5,
         "max_coarse_it": 1,
         "max_sucessful_coarse_it": 1,
@@ -54,7 +54,7 @@
             "stol" : 1e-14,
             "block_solver" : {
                 "verbose" : false,
-                "max-it" : 2,
+                "max_it" : 2,
 		"linear_solver" : {
 			"verbose" : false
 		}

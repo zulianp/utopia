@@ -50,7 +50,8 @@ namespace utopia {
 
             InputParameters params;
             params.set("use_coarse_space", true);
-            params.set("debug", true);
+            // params.set("debug", true);
+            params.set("verbose", verbose);
             params.set("barrier_parameter", 1);
             params.set("barrier_parameter_shrinking_factor", 0.1);
             params.set("min_barrier_parameter", 1e-10);
@@ -83,7 +84,7 @@ namespace utopia {
                 agg_params.set("bmax", 4);
                 agg->read(agg_params);
 
-                agg->verbose(true);
+                agg->verbose(false);
                 mg->set_agglomerator(agg);
             }
 #endif
@@ -92,9 +93,9 @@ namespace utopia {
         }
 
         void test_ml_problem() {
-            const static bool verbose = true;
+            const static bool verbose = false;
             const static bool use_masks = false;
-            int n_levels = 7;
+            int n_levels = 5;
             int n_coarse = 501;
 
             using ProblemType = utopia::Poisson1D<Matrix, Vector>;
@@ -123,18 +124,18 @@ namespace utopia {
 
             mg->solve(*fun, x);
 
-            if (Traits::Backend == PETSC) {
-                rename("x", x);
-                write("X.m", x);
-            }
+            // if (Traits::Backend == PETSC) {
+            //     rename("x", x);
+            //     write("X.m", x);
+            // }
         }
 
         void test_qp_problem() {
             //////////////////////////////////////////////////////////////////////////////////////////
             // Problem set-up
-            const static bool verbose = true;
+            const static bool verbose = false;
             const static bool use_masks = false;
-            int n_levels = 7;
+            int n_levels = 5;
             int n_coarse = 501;
 
             using ProblemType = utopia::Poisson1D<Matrix, Vector>;

@@ -71,10 +71,14 @@ namespace utopia {
 
         void set_line_search_type(const SNESLineSearchType ls_type);
 
+        inline void ltol(const Scalar ltol) { ltol_ = ltol; }
+        inline Scalar ltol() const { return ltol_; }
+
     protected:
         std::string SNES_type_;                    /*!< Choice of snes types. */
         const std::vector<std::string> SNES_types; /*!< Valid options for SNES solver types. */
         SNESLineSearchType line_search_type_{SNESLINESEARCHBT};
+        Scalar ltol_{1e-8};
 
         virtual void set_snes_options(SNES &snes,
                                       const Scalar &atol,

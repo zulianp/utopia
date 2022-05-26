@@ -705,6 +705,32 @@ class Hex8(FE):
 
         return ret
 
+# class Prism6(FE):
+#     def __init__(self, symplify_expr = False, symbolic_map_inversion = False):
+#         super().__init__('Prism6', 3, symplify_expr, symbolic_map_inversion)
+#         self.nodes = se.point_symbols(6, 3)
+
+#     def reference_measure(self):
+#         line2 = Line2()
+#         return line2.reference_measure() * line2.reference_measure() * line2.reference_measure()
+
+#     def fun(self, x):
+#         line2 = Line2();
+#         tri3 = Tri3()
+        
+#         ret = se.array([
+#             line2.f0(x[0]) * line2.f0(x[1]) * line2.f0(x[2]), 
+#             line2.f1(x[0]) * line2.f0(x[1]) * line2.f0(x[2]), 
+#             line2.f1(x[0]) * line2.f1(x[1]) * line2.f0(x[2]), 
+#             line2.f0(x[0]) * line2.f1(x[1]) * line2.f0(x[2]), 
+#             line2.f0(x[0]) * line2.f0(x[1]) * line2.f1(x[2]), 
+#             line2.f1(x[0]) * line2.f0(x[1]) * line2.f1(x[2]), 
+#             line2.f1(x[0]) * line2.f1(x[1]) * line2.f1(x[2]), 
+#             line2.f0(x[0]) * line2.f1(x[1]) * line2.f1(x[2])
+#             ])
+
+#         return ret
+
 class AxisAlignedHex8(FE):
     def __init__(self, symplify_expr = True, symbolic_map_inversion = True):
         super().__init__('AxisAlignedHex8', 3, symplify_expr, symbolic_map_inversion)

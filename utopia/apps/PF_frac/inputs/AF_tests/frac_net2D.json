@@ -27,7 +27,7 @@
     "n_levels": 2,
     "solver" : {
         "verbose" : true,
-        "max-it" : 100,
+        "max_it" : 100,
         "atol": 1e-5,
         "max_coarse_it": 2,
         "max_sucessful_coarse_it": 1,

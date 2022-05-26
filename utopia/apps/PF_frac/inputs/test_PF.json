@@ -14,7 +14,7 @@
     },
     "solver" : {
         "verbose" : true,
-        "max-it" : 8,
+        "max_it" : 8,
         "linear-solver" : {
             "verbose" : true
         }
