@@ -27,17 +27,33 @@ def displacement_gradient(d):
         F = se.matrix(3,3,[u00, u01, u02, u10, u11, u12, u20, u21, u22])
     return F
 
-def deformation_gradient(d):
+def symbolic_matrix(d, var):
     if d == 1:
-        f00 = symbols('f[0]')
+        f00 = symbols(f'{var}[0]')
         F = se.matrix(1,1,[f00])
     elif d == 2:
-        f00, f01, f10, f11 = se.symbols('f[0] f[1] f[2] f[3]')
+        f00, f01, f10, f11 = se.symbols(f'{var}[0] {var}[1] {var}[2] {var}[3]')
         F = se.matrix(2,2,[f00,f01,f10,f11])
     else:
-        f00, f01, f02, f10, f11, f12, f20, f21, f22  = se.symbols('f[0] f[1] f[2] f[3] f[4] f[5] f[6] f[7] f[8]')
+        f00, f01, f02, f10, f11, f12, f20, f21, f22  = se.symbols(f'{var}[0] {var}[1] {var}[2] {var}[3] {var}[4] {var}[5] {var}[6] {var}[7] {var}[8]')
         F = se.matrix(3,3,[f00, f01, f02, f10, f11, f12, f20, f21, f22])
     return F
+
+def deformation_gradient(d):
+    return symbolic_matrix(d, 'f')
+    # if d == 1:
+    #     f00 = symbols('f[0]')
+    #     F = se.matrix(1,1,[f00])
+    # elif d == 2:
+    #     f00, f01, f10, f11 = se.symbols('f[0] f[1] f[2] f[3]')
+    #     F = se.matrix(2,2,[f00,f01,f10,f11])
+    # else:
+    #     f00, f01, f02, f10, f11, f12, f20, f21, f22  = se.symbols('f[0] f[1] f[2] f[3] f[4] f[5] f[6] f[7] f[8]')
+    #     F = se.matrix(3,3,[f00, f01, f02, f10, f11, f12, f20, f21, f22])
+    # return F
+
+def velocity_gradient(d):
+   return symbolic_matrix(d, 'v')
 
 def trial_function(d):
     if d == 1:

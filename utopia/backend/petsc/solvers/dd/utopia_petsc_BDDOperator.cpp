@@ -312,6 +312,8 @@ namespace utopia {
         }
 
         void build_A_II(const Matrix &A, Matrix &A_II) const {
+            UTOPIA_TRACE_REGION_BEGIN("BDDOperator::build_A_II");
+
             Matrix A_II_view;
             local_block_view(A, A_II_view);
 
@@ -326,9 +328,13 @@ namespace utopia {
                     return value;
                 }
             });
+
+            UTOPIA_TRACE_REGION_END("BDDOperator::build_A_II");
         }
 
         void build_matrices(const Matrix &A, Matrix &A_GG, Matrix &A_IG, Matrix &A_GI) const {
+            UTOPIA_TRACE_REGION_BEGIN("BDDOperator::build_matrices");
+
             auto &&comm = A.comm();
 
             auto r = row_range(A);
@@ -681,6 +687,8 @@ namespace utopia {
                     }
                 }
             }
+
+            UTOPIA_TRACE_REGION_END("BDDOperator::build_matrices");
         }
 
         inline bool owned_is_in_G(const SizeType i_owned) const {
