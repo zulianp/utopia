@@ -13,11 +13,6 @@
 #include "utopia_stk.hpp"
 #include "utopia_stk_intrepid2_OmniAssembler.hpp"
 
-namespace utopia {
-    template class NewmarkIntegrator<utopia::stk::FunctionSpace>;
-    template class ImplicitEulerIntegrator<utopia::stk::FunctionSpace>;
-}  // namespace utopia
-
 void stk_mortar(utopia::Input &in) {
     utopia::MortarApp<utopia::stk::FunctionSpace> app;
     app.run(in);

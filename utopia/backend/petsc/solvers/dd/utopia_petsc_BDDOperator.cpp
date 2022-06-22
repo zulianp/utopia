@@ -61,7 +61,12 @@ namespace utopia {
             sol_I_ = std::make_shared<Vector>(row_layout(*A_II_));
 
             Vector inv_A_II_rhs_I(layout(rhs_I), 0);
+
+            UTOPIA_TRACE_REGION_BEGIN("BDDOperator::init_rhs::apply");
+
             A_II_inv_->apply(rhs_I, inv_A_II_rhs_I);
+
+            UTOPIA_TRACE_REGION_END("BDDOperator::init_rhs::apply");
 
             (*secant_G_) = rhs_G;
 

@@ -18,11 +18,6 @@
 
 #include "utopia_moonolith_stk_Obstacle.hpp"
 
-namespace utopia {
-    template class NewmarkIntegrator<utopia::stk::FunctionSpace>;
-    template class ImplicitEulerIntegrator<utopia::stk::FunctionSpace>;
-}  // namespace utopia
-
 void stk_saddle_point_solve(utopia::Input &in) {
     utopia::SaddlePointSolve<utopia::stk::FunctionSpace> app;
     app.read(in);
