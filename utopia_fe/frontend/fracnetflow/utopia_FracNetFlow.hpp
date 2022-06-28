@@ -57,7 +57,8 @@ namespace utopia {
                     flow->set_environment(this->environment());
                     node.require(problem_type, *flow);
                     problem->add_function(space->name(), flow);
-                    problem->add_coupling(porous_matrix->name(), space->name());
+                    auto &c = problem->add_coupling(porous_matrix->name(), space->name());
+                    node.get("coupling", c);
                 });
             });
 

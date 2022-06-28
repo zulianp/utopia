@@ -589,6 +589,15 @@ namespace utopia {
             auto vl = layout(comm(), n_local_dofs(), n_dofs());
             auto ml = square_matrix_layout(vl);
 
+            // https://petsc.org/release/src/mat/impls/is/matis.c.html#MatSetValues_IS
+            // For NON overlapping DD (with petsc)
+            // SETUP: set local 2 global after MatSetType(MATIS)
+            // 1) ISCreateGeneral ...
+            // 2) ISLocalToGlobalMappingCreateIS
+            // 3) MatSetLocalToGlobalMapping
+
+            // MatSetValues does to job even for this matrix type
+
             if (this->n_var() == 1) {
                 m.sparse(ml, impl_->dof_map->d_nnz(), impl_->dof_map->o_nnz());
             } else {

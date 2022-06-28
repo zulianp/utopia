@@ -5,6 +5,8 @@
 #include "utopia_FEModelFunction.hpp"
 #include "utopia_MatrixTransformer.hpp"
 
+#include <memory>
+
 namespace utopia {
 
     template <class FunctionSpace>
@@ -571,9 +573,6 @@ namespace utopia {
             if (couplings_.empty()) {
                 in.get("couplings", [this](Input &array_node) {
                     array_node.get_all([this](Input &node) {
-                        auto c = utopia::make_unique<Coupling>();
-                        c->read(node);
-
                         std::string from, to;
 
                         node.get("from", from);
@@ -582,7 +581,8 @@ namespace utopia {
                         assert(!from.empty());
                         assert(!to.empty());
 
-                        this->add_coupling(from, to);
+                        auto &&c = this->add_coupling(from, to);
+                        c.read(node);
                     });
                 });
             }
@@ -651,7 +651,7 @@ namespace utopia {
             master_fe_problem_ = it->second;
         }
 
-        void add_coupling(const std::string &from, const std::string &to) {
+        Coupling &add_coupling(const std::string &from, const std::string &to) {
             auto c = utopia::make_unique<Coupling>();
 
             auto it_from = fe_problems_.find(from);
@@ -668,6 +668,7 @@ namespace utopia {
 
             c->set(it_from->second, it_to->second);
             couplings_.push_back(std::move(c));
+            return *couplings_.back();
         }
 
         bool report_solution(const Vector_t &x) override {

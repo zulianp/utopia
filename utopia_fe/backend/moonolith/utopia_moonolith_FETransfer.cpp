@@ -176,11 +176,6 @@ namespace utopia {
                 }
 
                 rename("transfer_matrix", *data.transfer_matrix);
-
-                if (opts.export_tensors_) {
-                    write("load_transfer_matrix.m", *data.transfer_matrix);
-                }
-
                 UTOPIA_TRACE_REGION_END("FETransferPrepareData::apply");
                 return ok;
             }
@@ -496,6 +491,11 @@ namespace utopia {
             }
 
             UTOPIA_TRACE_REGION_END("FETransfer::init");
+
+            if (impl_->opts.export_tensors) {
+                ::utopia::write("load_transfer_matrix.m", *transfer_matrix());
+            }
+
             return has_intersection;
         }
 
