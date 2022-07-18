@@ -74,7 +74,8 @@ namespace utopia {
 
         bool apply(const Vector &b, Vector &x) override {
             auto flg = ksp_.apply(b, x);
-            ksp_.solution_status(this->solution_status_);
+            // ksp_.solution_status(this->solution_status_);
+            this->solution_status_ = ksp_.solution_status();
             return flg;
         }
 
