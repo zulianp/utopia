@@ -28,54 +28,110 @@ namespace utopia {
     namespace moonolith {
 
         void Contact::Params::read(Input &in) {
-            // in.get("variable_number", variable_number);
-            // in.get("gap_negative_bound", gap_negative_bound);
-            // in.get("gap_positive_bound", gap_positive_bound);
-            // in.get("invert_face_orientation", invert_face_orientation);
-            // in.get("debug", debug);
-            // in.get("snap_to_canonical_vectors", snap_to_canonical_vectors);
-            // in.get("skip_dir", skip_dir);
-            // in.get("skip_dir_tol", skip_dir_tol);
-            // in.get("verbose", verbose);
-            // in.get("margin", margin);
+            std::set<int> temp;
 
-            // in.get("surfaces", [this](Input &in) {
-            //     in.get_all([this](Input &in) {
-            //         int tag = -1;
-            //         in.get("tag", tag);
-            //         if (tag >= 0) {
-            //             this->tags.insert(tag);
-            //         }
-            //     });
-            // });
+            in.get("radius", this->search_radius);
 
-            // bool print_params = false;
-            // in.get("print_params", print_params);
+            this->is_glue = std::make_shared<::moonolith::IsGlue>();
 
-            // if (print_params || verbose) {
-            //     int rank;
-            //     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+            in.get("pairs", [this, &temp](Input &array_node) {
+                array_node.get_all([this, &temp](Input &node) {
+                    int master = -1, slave = -1;
+                    node.get("master", master);
+                    node.get("slave", slave);
 
-            //     if (rank == 0) {
-            //         describe(utopia::out().stream());
-            //     }
-            // }
+                    bool is_glued = false;
+                    node.get("glue", is_glued);
+
+                    assert(master != -1);
+                    assert(slave != -1);
+                    temp.insert(master);
+                    temp.insert(slave);
+
+                    this->contact_pair_tags.push_back({master, slave});
+                    this->glued.push_back(is_glued);
+
+                    if (is_glued) {
+                        this->is_glue->insert(master, slave);
+                    }
+                });
+            });
+
+            in.get("search_radius", [this](Input &in) {
+                in.get("default", this->search_radius);
+
+                this->side_set_search_radius = std::make_shared<::moonolith::SearchRadius<double>>(this->search_radius);
+
+                in.get("sides", [this](Input &array_node) {
+                    array_node.get_all([this](Input &node) {
+                        int id = -1;
+                        double value = this->search_radius;
+
+                        node.get("id", id);
+                        node.get("value", value);
+
+                        this->side_set_search_radius->insert(id, value);
+                    });
+                });
+            });
+
+            if (!this->side_set_search_radius) {
+                this->side_set_search_radius = std::make_shared<::moonolith::SearchRadius<double>>(this->search_radius);
+            }
         }
 
         void Contact::Params::describe(std::ostream &os) const {
-            // os << "variable_number: \t" << variable_number << "\n";
-            // os << "gap_negative_bound: \t" << gap_negative_bound << "\n";
-            // os << "gap_positive_bound: \t" << gap_positive_bound << "\n";
-            // os << "invert_face_orientation: \t" << invert_face_orientation << "\n";
-            // os << "debug: \t" << debug << "\n";
-            // os << "snap_to_canonical_vectors: \t" << snap_to_canonical_vectors << "\n";
-            // os << "skip_dir: \t" << skip_dir << "\n";
-            // os << "skip_dir_tol: \t" << skip_dir_tol << "\n";
-            // os << "margin: \t" << margin << "\n";
+            os << "search_radius: " << search_radius << "\n";
+            os << "variable_number: " << variable_number << "\n";
+            os << "use_biorthogonal_basis: " << use_biorthogonal_basis << "\n";
+            os << "master, slave:\n";
+            for (const auto &p : contact_pair_tags) {
+                os << p.first << ", " << p.second << "\n";
+            }
+
+            if (side_set_search_radius) {
+                os << "search-radius: " << std::endl;
+                side_set_search_radius->describe(os);
+            }
+
+            os << std::endl;
         }
 
         class Contact::Impl {
         public:
+            virtual ~Impl() = default;
+            static constexpr Scalar LARGE_VALUE = 100000;
+
+            virtual bool init(const FunctionSpace &, const Params &) = 0;
+
+            bool init_no_contact(const FunctionSpace &space) {
+                space.create_vector(gap);
+                gap.set(LARGE_VALUE);
+
+                space.create_vector(weighted_gap);
+                weighted_gap.set(LARGE_VALUE);
+
+                space.create_vector(normals);
+                normals.set(0.);
+
+                space.create_vector(inv_mass_vector);
+                inv_mass_vector.set(1.);
+
+                space.create_vector(is_contact);
+                is_contact.set(0);
+
+                complete_transformation = std::make_shared<Matrix>();
+                orthogonal_transformation = std::make_shared<Matrix>();
+
+                auto ml = square_matrix_layout(layout(gap));
+                complete_transformation->identity(ml, 1);
+                orthogonal_transformation->identity(ml, 1);
+
+                has_contact = false;
+                // has_glue_ = false;
+                return true;
+            }
+
             bool write() {
                 if (coupling_matrix && !empty(*coupling_matrix)) {
                     rename("b", *coupling_matrix);
@@ -150,11 +206,60 @@ namespace utopia {
             Vector weighted_normals, normals;
             Vector is_contact;
             Vector is_glue;
+
+            bool has_contact{false};
         };
 
         template <int Dim>
         class Contact::ImplD : public Contact::Impl {
         public:
+            using MoonolithMesh_t = ::moonolith::Mesh<Scalar, Dim>;
+            using MoonolithSpace_t = ::moonolith::FunctionSpace<MoonolithMesh_t>;
+
+            bool init(const FunctionSpace &space, const Params &params) override {
+                std::shared_ptr<MoonolithSpace_t> space_d;
+                if (space.mesh().manifold_dimension() == Dim - 1) {
+                    space_d = space.raw_type<Dim>();
+                } else {
+                    assert(false && "IMPLEMENT ME");
+                    return false;
+                }
+
+                MoonolithSpace_t elem_wise_space;
+                space_d->separate_dofs(elem_wise_space);
+
+                ::moonolith::ParContact<double, Dim> par_contact(space_d->mesh().comm(), Dim == 2);
+
+                if (par_contact.assemble(
+                        params.contact_pair_tags, elem_wise_space, params.side_set_search_radius, params.is_glue)) {
+                    assert(false);  // TODO
+                    // contact_data.finalize(par_contact.buffers, elem_wise_space, space);
+                    return true;
+                } else {
+                    return false;
+                }
+
+                // if (impl_->has_contact) {
+                //     // contact_tensors_ = contact_data.node_wise;
+                //     assert(false);
+                // } else {
+                //     // init default
+                //     init_no_contact(mesh, dof_map);
+                // }
+
+                // has_glue_ = impl_->has_contact && !params.is_glue->empty();
+
+                // if (has_glue_) {
+                //     double n_glued = sum(contact_tensors_->is_glue);
+
+                //     if (n_glued == 0.) {
+                //         has_glue_ = false;
+                //     }
+                // }
+
+                assert(false);
+                return false;
+            }
             // void finalize(const moonolith::ContactBuffers<double> &buffers,
             //               const SpaceT<Dim> &element_wise_space,
             //               const SpaceT<Dim> &node_wise_space) {
@@ -171,7 +276,7 @@ namespace utopia {
             //     convert_to_node_wise(element_wise_space, element_wise, node_wise_space, *node_wise);
             // }
 
-            //         static void normalsize_and_build_orthgonal_trafo(const SpaceT<Dim> &node_wise_space,
+            //         static void normalize_and_build_orthgonal_trafo(const SpaceT<Dim> &node_wise_space,
             //                                                         ConvertContactTensors &node_wise) {
             //             node_wise.orthogonal_transformation =
             //                 local_sparse(node_wise_space.dof_map().n_local_dofs(),
@@ -253,8 +358,8 @@ namespace utopia {
 
             //             Matrix basis_transform_inv_x = perm * elem_wise.basis_transform_inv * transpose(perm);
 
-            //             normalsize_rows(Q_x, 1e-15);
-            //             normalsize_rows(basis_transform_inv_x, 1e-15);
+            //             normalize_rows(Q_x, 1e-15);
+            //             normalize_rows(basis_transform_inv_x, 1e-15);
 
             //             {
             //                 each_transform(node_wise.is_contact,
@@ -296,7 +401,7 @@ namespace utopia {
             //             tensorize(Dim, node_wise.inv_mass_vector);
             //             tensorize(Dim, node_wise.is_glue);
 
-            //             normalsize_rows(node_wise.T, 1e-15);
+            //             normalize_rows(node_wise.T, 1e-15);
 
             //             assert(check_op(node_wise.T));
 
@@ -306,7 +411,7 @@ namespace utopia {
             //             node_wise.normals = node_wise.Q * e_mul(node_wise.inv_mass_vector,
             //             node_wise.weighted_normals);
 
-            //             normalsize_and_build_orthgonal_trafo(node_wise_space, node_wise);
+            //             normalize_and_build_orthgonal_trafo(node_wise_space, node_wise);
             //             node_wise.complete_transformation = node_wise.T * node_wise.orthogonal_transformation;
 
             //             {
@@ -366,49 +471,24 @@ namespace utopia {
         };
 
         bool Contact::assemble(const FunctionSpace &space) {
-            assert(false);  // TODO
-            return false;
+            Chrono overall_time;
+            overall_time.start();
+
+            auto &&mesh = space.mesh();
+            const int spatial_dim = mesh.spatial_dimension();
+
+            if (spatial_dim == 2) {
+                impl_ = utopia::make_unique<ImplD<2>>();
+                impl_->init(space, *params_);
+            } else if (spatial_dim == 3) {
+                impl_ = utopia::make_unique<ImplD<3>>();
+                impl_->init(space, *params_);
+            }
+
+            overall_time.stop();
+            std::cout << "Contact::assemble: " << overall_time << std::endl;
+            return impl_->has_contact;
         }
-        //     bool Contact::assemble(libMesh::MeshBase &mesh,
-        //                                            libMesh::DofMap &dof_map,
-        //                                            const ContactParams &params) {
-        //         Chrono overall_time;
-        //         overall_time.start();
-
-        //         ConvertContactBuffers contact_data(mesh.comm().get());
-
-        //         const int spatial_dim = mesh.spatial_dimension();
-
-        //         has_contact_ = false;
-        //         if (spatial_dim == 2) {
-        //             has_contact_ = ConvertContactAlgorithm<2>::apply(params, black_list_, mesh, dof_map,
-        //             contact_data);
-        //         } else if (spatial_dim == 3) {
-        //             has_contact_ = ConvertContactAlgorithm<3>::apply(params, black_list_, mesh, dof_map,
-        //             contact_data);
-        //         }
-
-        //         if (has_contact_) {
-        //             contact_tensors_ = contact_data.node_wise;
-        //         } else {
-        //             // init default
-        //             init_no_contact(mesh, dof_map);
-        //         }
-
-        //         has_glue_ = has_contact_ && !params.is_glue->empty();
-
-        //         if (has_glue_) {
-        //             double n_glued = sum(contact_tensors_->is_glue);
-
-        //             if (n_glued == 0.) {
-        //                 has_glue_ = false;
-        //             }
-        //         }
-
-        //         overall_time.stop();
-        //         std::cout << "Contact::assemble: " << overall_time << std::endl;
-        //         return has_contact_;
-        //     }
 
         void Contact::transform(const Vector &in, Vector &out) {
             assert(impl_);
@@ -466,38 +546,6 @@ namespace utopia {
         void Contact::set_banned_nodes(const std::shared_ptr<IndexArray> &banned_nodes) {
             assert(false);  // TODO
         }
-
-        //     bool Contact::init_no_contact(const libMesh::MeshBase &mesh, const libMesh::DofMap
-        //     &dof_map) {
-        //         if (!contact_tensors_) {
-        //             contact_tensors_ = std::make_shared<ConvertContactTensors>();
-        //         }
-
-        //         auto n_local_dofs = dof_map.n_local_dofs();
-
-        //         contact_tensors_->gap = local_values(n_local_dofs, 100000000);
-        //         contact_tensors_->weighted_gap = local_values(n_local_dofs, 100000000);
-        //         contact_tensors_->normals = local_zeros(n_local_dofs);
-
-        //         contact_tensors_->inv_mass_vector = local_values(n_local_dofs, 1.);
-        //         contact_tensors_->is_contact = local_zeros(n_local_dofs);
-
-        //         contact_tensors_->T = local_identity(n_local_dofs, n_local_dofs);
-        //         contact_tensors_->orthogonal_transformation = local_identity(n_local_dofs, n_local_dofs);
-        //         contact_tensors_->complete_transformation = local_identity(n_local_dofs, n_local_dofs);
-        //         has_contact_ = false;
-        //         has_glue_ = false;
-        //         return true;
-        //     }
-
-        //     void Contact::remove_mass(const Vector &in, Vector &out) const {
-        //         if (!empty(contact_tensors_->Q)) {
-        //             out = contact_tensors_->Q * e_mul(contact_tensors_->inv_mass_vector, in);
-        //             return;
-        //         }
-
-        //         out = e_mul(contact_tensors_->inv_mass_vector, in);
-        //     }
 
         void Contact::read(Input &in) {
             params_->read(in);

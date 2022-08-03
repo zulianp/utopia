@@ -8,6 +8,9 @@
 #include "utopia_moonolith_ForwardDeclarations.hpp"
 #include "utopia_moonolith_FunctionSpace.hpp"
 
+#include "moonolith_is_glue.hpp"
+#include "moonolith_search_radius.hpp"
+
 #include <memory>
 #include <unordered_set>
 
@@ -48,17 +51,19 @@ namespace utopia {
 
             class Params : public Configurable, public Describable {
             public:
-                //     int variable_number{0};
-                //     Scalar gap_negative_bound{-0.0001};
-                //     Scalar gap_positive_bound{0.1};
-                //     Scalar margin{0.};
-                //     std::unordered_set<int> tags;
-                //     bool invert_face_orientation{false};
-                //     bool debug{false};
-                //     bool snap_to_canonical_vectors{false};
-                //     int skip_dir{-1};
-                //     Scalar skip_dir_tol{0.2};
-                //     bool verbose{false};
+                Params()
+                    : search_radius(0.1),
+                      is_glue(std::make_shared<::moonolith::IsGlue>()),
+                      variable_number(0),
+                      use_biorthogonal_basis(true) {}
+
+                double search_radius;
+                std::shared_ptr<::moonolith::SearchRadius<double>> side_set_search_radius;
+                std::shared_ptr<::moonolith::IsGlue> is_glue;
+                std::vector<std::pair<int, int>> contact_pair_tags;
+                std::vector<bool> glued;
+                unsigned int variable_number;
+                bool use_biorthogonal_basis;
 
                 void read(Input &in) override;
                 void describe(std::ostream &os) const override;
