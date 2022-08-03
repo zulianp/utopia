@@ -27,6 +27,53 @@
 namespace utopia {
     namespace moonolith {
 
+        void Contact::Params::read(Input &in) {
+            // in.get("variable_number", variable_number);
+            // in.get("gap_negative_bound", gap_negative_bound);
+            // in.get("gap_positive_bound", gap_positive_bound);
+            // in.get("invert_face_orientation", invert_face_orientation);
+            // in.get("debug", debug);
+            // in.get("snap_to_canonical_vectors", snap_to_canonical_vectors);
+            // in.get("skip_dir", skip_dir);
+            // in.get("skip_dir_tol", skip_dir_tol);
+            // in.get("verbose", verbose);
+            // in.get("margin", margin);
+
+            // in.get("surfaces", [this](Input &in) {
+            //     in.get_all([this](Input &in) {
+            //         int tag = -1;
+            //         in.get("tag", tag);
+            //         if (tag >= 0) {
+            //             this->tags.insert(tag);
+            //         }
+            //     });
+            // });
+
+            // bool print_params = false;
+            // in.get("print_params", print_params);
+
+            // if (print_params || verbose) {
+            //     int rank;
+            //     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+            //     if (rank == 0) {
+            //         describe(utopia::out().stream());
+            //     }
+            // }
+        }
+
+        void Contact::Params::describe(std::ostream &os) const {
+            // os << "variable_number: \t" << variable_number << "\n";
+            // os << "gap_negative_bound: \t" << gap_negative_bound << "\n";
+            // os << "gap_positive_bound: \t" << gap_positive_bound << "\n";
+            // os << "invert_face_orientation: \t" << invert_face_orientation << "\n";
+            // os << "debug: \t" << debug << "\n";
+            // os << "snap_to_canonical_vectors: \t" << snap_to_canonical_vectors << "\n";
+            // os << "skip_dir: \t" << skip_dir << "\n";
+            // os << "skip_dir_tol: \t" << skip_dir_tol << "\n";
+            // os << "margin: \t" << margin << "\n";
+        }
+
         class Contact::Impl {
         public:
             bool write() {
@@ -71,14 +118,14 @@ namespace utopia {
                     utopia::write("gap.m", gap);
                 }
 
-                if (!empty(weighted_normal)) {
-                    rename("wn", weighted_normal);
-                    utopia::write("weighted_normal.m", weighted_normal);
+                if (!empty(weighted_normals)) {
+                    rename("wn", weighted_normals);
+                    utopia::write("weighted_normals.m", weighted_normals);
                 }
 
-                if (!empty(normal)) {
-                    rename("n", normal);
-                    utopia::write("normal.m", normal);
+                if (!empty(normals)) {
+                    rename("n", normals);
+                    utopia::write("normals.m", normals);
                 }
 
                 if (!empty(is_contact)) {
@@ -96,11 +143,11 @@ namespace utopia {
 
             std::shared_ptr<Matrix> coupling_matrix, mass_matrix;
             std::shared_ptr<Matrix> basis_transform, basis_transform_inv;
-            std::shared_ptr<Matrix> orthogonal_trafo, complete_transformation;
+            std::shared_ptr<Matrix> orthogonal_transformation, complete_transformation;
 
             Vector inv_mass_vector;
             Vector weighted_gap, gap;
-            Vector weighted_normal, normal;
+            Vector weighted_normals, normals;
             Vector is_contact;
             Vector is_glue;
         };
@@ -117,27 +164,27 @@ namespace utopia {
             //     utopia::convert(buffers.basis_transform_inv, element_wise.basis_transform_inv);
 
             //     convert_tensor(buffers.gap, element_wise.weighted_gap);
-            //     convert_tensor(buffers.normal, element_wise.weighted_normal);
+            //     convert_tensor(buffers.normals, element_wise.weighted_normals);
             //     convert_tensor(buffers.is_glue, element_wise.is_glue);
             //     convert_tensor(buffers.is_contact, element_wise.is_contact);
 
             //     convert_to_node_wise(element_wise_space, element_wise, node_wise_space, *node_wise);
             // }
 
-            //         static void normalize_and_build_orthgonal_trafo(const SpaceT<Dim> &node_wise_space,
+            //         static void normalsize_and_build_orthgonal_trafo(const SpaceT<Dim> &node_wise_space,
             //                                                         ConvertContactTensors &node_wise) {
-            //             node_wise.orthogonal_trafo =
+            //             node_wise.orthogonal_transformation =
             //                 local_sparse(node_wise_space.dof_map().n_local_dofs(),
             //                 node_wise_space.dof_map().n_local_dofs(), Dim);
 
             //             moonolith::HouseholderTransformation<double, Dim> H;
-            //             auto &normal = node_wise.normal;
+            //             auto &normals = node_wise.normals;
 
-            //             auto r = range(normal);
+            //             auto r = range(normals);
 
-            //             ReadAndWrite<Vector> rw_normal(normal);
+            //             ReadAndWrite<Vector> rw_normals(normals);
             //             Read<Vector> r_is_c(node_wise.is_contact);
-            //             Write<Matrix> w_ot(node_wise.orthogonal_trafo, utopia::LOCAL);
+            //             Write<Matrix> w_ot(node_wise.orthogonal_transformation, utopia::LOCAL);
 
             //             moonolith::Vector<double, Dim> n;
             //             for (auto i = r.begin(); i < r.end(); i += Dim) {
@@ -145,7 +192,7 @@ namespace utopia {
 
             //                 if (is_contact) {
             //                     for (int d = 0; d < Dim; ++d) {
-            //                         n[d] = normal.get(i + d);
+            //                         n[d] = normals.get(i + d);
             //                     }
 
             //                     auto len = length(n);
@@ -154,7 +201,7 @@ namespace utopia {
             //                     n /= len;
 
             //                     for (int d = 0; d < Dim; ++d) {
-            //                         normal.set(i + d, n[d]);
+            //                         normals.set(i + d, n[d]);
             //                     }
 
             //                     n.x -= 1.0;
@@ -172,13 +219,13 @@ namespace utopia {
 
             //                     for (int d1 = 0; d1 < Dim; ++d1) {
             //                         for (int d2 = 0; d2 < Dim; ++d2) {
-            //                             node_wise.orthogonal_trafo.set(i + d1, i + d2, H(d1, d2));
+            //                             node_wise.orthogonal_transformation.set(i + d1, i + d2, H(d1, d2));
             //                         }
             //                     }
 
             //                 } else {
             //                     for (int d1 = 0; d1 < Dim; ++d1) {
-            //                         node_wise.orthogonal_trafo.set(i + d1, i + d1, 1.0);
+            //                         node_wise.orthogonal_transformation.set(i + d1, i + d1, 1.0);
             //                     }
             //                 }
             //             }
@@ -198,7 +245,7 @@ namespace utopia {
             //             node_wise.is_glue = perm * elem_wise.is_glue;
             //             node_wise.is_contact = perm * elem_wise.is_contact;
 
-            //             node_wise.weighted_normal = vector_perm * elem_wise.weighted_normal;
+            //             node_wise.weighted_normals = vector_perm * elem_wise.weighted_normals;
 
             //             Matrix B_x = perm * elem_wise.B * transpose(perm);
             //             Matrix D_x = perm * elem_wise.D * transpose(perm);
@@ -206,8 +253,8 @@ namespace utopia {
 
             //             Matrix basis_transform_inv_x = perm * elem_wise.basis_transform_inv * transpose(perm);
 
-            //             normalize_rows(Q_x, 1e-15);
-            //             normalize_rows(basis_transform_inv_x, 1e-15);
+            //             normalsize_rows(Q_x, 1e-15);
+            //             normalsize_rows(basis_transform_inv_x, 1e-15);
 
             //             {
             //                 each_transform(node_wise.is_contact,
@@ -249,17 +296,18 @@ namespace utopia {
             //             tensorize(Dim, node_wise.inv_mass_vector);
             //             tensorize(Dim, node_wise.is_glue);
 
-            //             normalize_rows(node_wise.T, 1e-15);
+            //             normalsize_rows(node_wise.T, 1e-15);
 
             //             assert(check_op(node_wise.T));
 
             //             node_wise.T += local_identity(local_size(node_wise.T));
 
             //             node_wise.gap = node_wise.Q * e_mul(node_wise.inv_mass_vector, node_wise.weighted_gap);
-            //             node_wise.normal = node_wise.Q * e_mul(node_wise.inv_mass_vector, node_wise.weighted_normal);
+            //             node_wise.normals = node_wise.Q * e_mul(node_wise.inv_mass_vector,
+            //             node_wise.weighted_normals);
 
-            //             normalize_and_build_orthgonal_trafo(node_wise_space, node_wise);
-            //             node_wise.complete_transformation = node_wise.T * node_wise.orthogonal_trafo;
+            //             normalsize_and_build_orthgonal_trafo(node_wise_space, node_wise);
+            //             node_wise.complete_transformation = node_wise.T * node_wise.orthogonal_transformation;
 
             //             {
             //                 static const double LARGE_VALUE = 1e6;
@@ -317,6 +365,10 @@ namespace utopia {
             //     };
         };
 
+        bool Contact::assemble(const FunctionSpace &space) {
+            assert(false);  // TODO
+            return false;
+        }
         //     bool Contact::assemble(libMesh::MeshBase &mesh,
         //                                            libMesh::DofMap &dof_map,
         //                                            const ContactParams &params) {
@@ -385,7 +437,35 @@ namespace utopia {
             return impl_->gap;
         }
 
+        Contact::Vector &Contact::normals() {
+            assert(impl_);
+            return impl_->normals;
+        }
+
+        Contact::Vector &Contact::is_contact() {
+            assert(impl_);
+            return impl_->is_contact;
+        }
+
+        std::shared_ptr<Contact::Matrix> Contact::mass_matrix() { return impl_->mass_matrix; }
+
+        std::shared_ptr<Contact::Matrix> Contact::orthogonal_transformation() {
+            return impl_->orthogonal_transformation;
+        }
+
+        std::shared_ptr<Contact::Matrix> Contact::complete_transformation() { return impl_->complete_transformation; }
+
         Contact::Contact() : params_(utopia::make_unique<Params>()) {}
+
+        Contact::~Contact() {}
+
+        void Contact::set_params(const Params &params) {
+            assert(false);  // TODO
+        }
+
+        void Contact::set_banned_nodes(const std::shared_ptr<IndexArray> &banned_nodes) {
+            assert(false);  // TODO
+        }
 
         //     bool Contact::init_no_contact(const libMesh::MeshBase &mesh, const libMesh::DofMap
         //     &dof_map) {
@@ -397,13 +477,13 @@ namespace utopia {
 
         //         contact_tensors_->gap = local_values(n_local_dofs, 100000000);
         //         contact_tensors_->weighted_gap = local_values(n_local_dofs, 100000000);
-        //         contact_tensors_->normal = local_zeros(n_local_dofs);
+        //         contact_tensors_->normals = local_zeros(n_local_dofs);
 
         //         contact_tensors_->inv_mass_vector = local_values(n_local_dofs, 1.);
         //         contact_tensors_->is_contact = local_zeros(n_local_dofs);
 
         //         contact_tensors_->T = local_identity(n_local_dofs, n_local_dofs);
-        //         contact_tensors_->orthogonal_trafo = local_identity(n_local_dofs, n_local_dofs);
+        //         contact_tensors_->orthogonal_transformation = local_identity(n_local_dofs, n_local_dofs);
         //         contact_tensors_->complete_transformation = local_identity(n_local_dofs, n_local_dofs);
         //         has_contact_ = false;
         //         has_glue_ = false;
@@ -426,6 +506,8 @@ namespace utopia {
             //     black_list_->read(in);
             // });
         }
+
+        void Contact::describe(std::ostream &os) const {}
 
     }  // namespace moonolith
 }  // namespace utopia
