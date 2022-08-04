@@ -157,7 +157,7 @@ namespace utopia {
             in.set("stol", 1e-14);
             in.set("stol", 1e-14);
             in.set("delta_min", 1e-13);
-            in.set("max-it", 200);
+            in.set("max_it", 200);
             in.set("verbose", false);
             solver.read(in);
 
@@ -213,7 +213,7 @@ namespace utopia {
             in.set("stol", 1e-14);
             in.set("stol", 1e-14);
             in.set("delta_min", 1e-13);
-            in.set("max-it", 100);
+            in.set("max_it", 100);
             in.set("verbose", false);
             solver.read(in);
 

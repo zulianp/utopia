@@ -87,6 +87,14 @@ namespace utopia {
             set_zero_rows(A, indicator_, value);
         }
 
+        void zero_out_active_rows_and_cols(typename Traits<Vector>::Matrix &A) const {
+            set_zero_rows(A, indicator_, 0.);
+
+            Vector diag_mat(layout(indicator_), 1.0);
+            diag_mat -= indicator_;
+            A.diag_scale_right(diag_mat);
+        }
+
         void zero_out_active(Vector &x) const {
             auto d_i = const_local_view_device(indicator_);
             auto d_x = local_view_device(x);
@@ -119,7 +127,7 @@ namespace utopia {
         Scalar tol_{0};
         bool verbose_{false};
 
-    UTOPIA_NVCC_PRIVATE
+        UTOPIA_NVCC_PRIVATE
         bool determine_upper_bound(const Vector &upper_bound, const Vector &x) {
             auto d_ub = const_local_view_device(upper_bound);
             auto d_x = const_local_view_device(x);

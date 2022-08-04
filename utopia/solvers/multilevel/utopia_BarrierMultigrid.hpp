@@ -208,7 +208,10 @@ namespace utopia {
             mem.barrier_diag.zeros(layout(x));
 
             Scalar g_norm_0 = compute_norm_gradient_objective(fun, x, state, mem);
-            PrintInfo::print_iter_status(0, {g_norm_0, 1});
+
+            if (this->verbose()) {
+                PrintInfo::print_iter_status(0, {g_norm_0, 1});
+            }
 
             if (fun.is_hessian_constant()) {
                 update_hessian(fun, x, state, mem);
@@ -252,7 +255,10 @@ namespace utopia {
                 // Convergence check
 
                 Scalar g_norm = compute_norm_gradient_objective(fun, x, state, mem);
-                PrintInfo::print_iter_status(it, {g_norm, g_norm / g_norm_0});
+                if (this->verbose()) {
+                    PrintInfo::print_iter_status(it, {g_norm, g_norm / g_norm_0});
+                }
+
                 converged = this->check_convergence(it, g_norm, (g_norm / g_norm_0), 1);
 
                 /////////////////////////////////////////////

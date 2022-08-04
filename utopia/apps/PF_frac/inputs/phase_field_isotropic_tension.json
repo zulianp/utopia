@@ -20,12 +20,12 @@
     },
     "solver" : {
         "verbose" : true,
-        "max-it" : 300,
+        "max_it" : 300,
         "atol": 1e-6, 
         "linear-solver" : {
             "verbose" : false, 
             "atol": 1e-9, 
-            "max-it": 1000
+            "max_it": 1000
         }
     }
 }

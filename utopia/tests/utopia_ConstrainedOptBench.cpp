@@ -157,7 +157,7 @@ namespace utopia {
             in.set("rtol", rtol);
             in.set("stol", stol);
             in.set("delta_min", 1e-13);
-            in.set("max-it", 5000);
+            in.set("max_it", 5000);
             in.set("verbose", false);
 
             // auto params_qp = std::make_shared<InputParameters>();

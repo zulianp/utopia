@@ -48,6 +48,7 @@ namespace utopia {
     }
 
     bool OmniAssembler<utopia::stk::FunctionSpace>::is_linear() const { return impl_->get_assembler().is_linear(); }
+    bool OmniAssembler<utopia::stk::FunctionSpace>::is_operator() const { return impl_->get_assembler().is_operator(); }
 
     void OmniAssembler<utopia::stk::FunctionSpace>::clear() { return impl_->get_assembler().clear(); }
 

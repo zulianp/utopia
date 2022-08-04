@@ -126,6 +126,7 @@ namespace utopia {
         virtual ~FEModelFunction() = default;
 
         bool is_linear() const override { return assembler()->is_linear(); }
+        bool is_hessian_constant() const override { return is_linear(); }
 
         inline Communicator_t &comm() override { return space_->mesh().comm(); }
         inline const Communicator_t &comm() const override { return space_->mesh().comm(); }

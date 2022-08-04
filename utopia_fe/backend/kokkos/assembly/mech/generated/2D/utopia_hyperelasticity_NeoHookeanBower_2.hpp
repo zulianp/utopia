@@ -221,6 +221,69 @@ namespace utopia {
                                (-grad_test[1] * (x33 * x4 + x38 * (x34 * x4 + x37)) + x40 * (-mu * (x29 - x55) + x54)));
             }
 
+            UTOPIA_FUNCTION void apply(const T *UTOPIA_RESTRICT f,
+                                       const T *grad_test,
+                                       const T *disp_grad,
+                                       const T dx,
+                                       T *UTOPIA_RESTRICT res) const {
+                using namespace utopia::device;
+                // Automatically generated
+                T x0 = pow(f[3], 2);
+                T x1 = f[0] * f[3];
+                T x2 = f[1] * f[2];
+                T x3 = x1 - x2;
+                T x4 = pow(x3, 5);
+                T x5 = 9 * lambda;
+                T x6 = x4 * x5;
+                T x7 = pow(f[1], 2);
+                T x8 = pow(f[2], 2);
+                T x9 = x7 + x8;
+                T x10 = pow(f[0], 2);
+                T x11 = x0 + x10;
+                T x12 = 5 * x11 + 5 * x9;
+                T x13 = 9 * pow(x3, 2);
+                T x14 = 12 * x3;
+                T x15 = -x1 * x14 + x13;
+                T x16 = pow(x3, 7.0 / 3.0);
+                T x17 = mu * x16;
+                T x18 = f[2] * f[3];
+                T x19 = pow(x3, 8.0 / 3.0) * x5;
+                T x20 = x18 * x19;
+                T x21 = x12 * x18;
+                T x22 = f[1] * f[3];
+                T x23 = f[0] * f[2];
+                T x24 = 6 * x3;
+                T x25 = x24 * (x22 - x23);
+                T x26 = x19 * x22;
+                T x27 = x12 * x22;
+                T x28 = f[0] * f[1];
+                T x29 = x24 * (x18 - x28);
+                T x30 = 3 * x3;
+                T x31 = mu * (-x1 * x12 + x30 * (3 * x0 + 3 * x10 + x9)) + x19 * (-2 * x1 + x2 + 1);
+                T x32 = x13 + x14 * x2;
+                T x33 = x24 * (-x22 + x23);
+                T x34 = x19 * x23;
+                T x35 = x12 * x23;
+                T x36 = mu * (x12 * x2 + x30 * (x11 + 3 * x7 + 3 * x8)) + x19 * (-x1 + 2 * x2 + 1);
+                T x37 = (1.0 / 9.0) * dx / x4;
+                T x38 = x24 * (-x18 + x28);
+                T x39 = x19 * x28;
+                T x40 = x12 * x28;
+                res[0] += x37 * (grad_test[0] * (disp_grad[0] * (x0 * x6 + x17 * (x0 * x12 + x15)) -
+                                                 x16 * (disp_grad[1] * (mu * (x21 + x25) + x20) +
+                                                        disp_grad[2] * (mu * (x27 + x29) + x26) + disp_grad[3] * x31)) -
+                                 grad_test[1] * (-disp_grad[1] * (x17 * (x12 * x8 + x32) + x6 * x8) +
+                                                 x16 * (disp_grad[0] * (-mu * (-x21 + x33) + x20) - disp_grad[2] * x36 +
+                                                        disp_grad[3] * (-mu * (x29 - x35) + x34))));
+                res[1] +=
+                    x37 * (-grad_test[0] * (-disp_grad[2] * (x17 * (x12 * x7 + x32) + x6 * x7) +
+                                            x16 * (disp_grad[0] * (-mu * (-x27 + x38) + x26) - disp_grad[1] * x36 +
+                                                   disp_grad[3] * (-mu * (x25 - x40) + x39))) +
+                           grad_test[1] * (disp_grad[3] * (x10 * x6 + x17 * (x10 * x12 + x15)) -
+                                           x16 * (disp_grad[0] * x31 + disp_grad[1] * (mu * (x35 + x38) + x34) +
+                                                  disp_grad[2] * (mu * (x33 + x40) + x39))));
+            }
+
             T mu{1.0};
             T lambda{1.0};
         };

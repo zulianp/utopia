@@ -24,7 +24,7 @@
 </Amesos2>
 
 <Newton>   
-   <max-it>1000</max-it>
+   <max_it>1000</max_it>
    <dumping>1.0</dumping>
    <atol>1e-16</atol>
    <rtol>1e-8</rtol>
@@ -35,5 +35,5 @@
    <atol>1e-16</atol>
    <rtol>1e-8</rtol>
    <stol>1e-16</stol>
-   <max-it>100</max-it>
+   <max_it>100</max_it>
 </Newton>

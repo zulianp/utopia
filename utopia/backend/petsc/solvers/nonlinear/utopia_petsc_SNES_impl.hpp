@@ -46,6 +46,7 @@ namespace utopia {
 
         std::string SNES_type_aux_;
         in.get("SNES_type", SNES_type_aux_);
+        in.get("ltol", ltol_);
 
         // checks if type is valid
         this->set_snes_type(SNES_type_aux_);
@@ -174,9 +175,15 @@ namespace utopia {
 
         PetscReal damping = 1.;
         SNESLineSearchGetDamping(linesearch, &damping);
+
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 17, 0)
+        // SNESLineSearchSetTolerances(
+        //     linesearch, PETSC_DEFAULT, PETSC_DEFAULT, this->rtol(), this->atol(), this->ltol(), 20);
+        m_utopia_warning("SNESLineSearchSetTolerances disabled because of bug in petsc 3.17.0");
+#else
         SNESLineSearchSetTolerances(
             linesearch, PETSC_DEFAULT, PETSC_DEFAULT, this->rtol(), this->atol(), PETSC_DEFAULT, 20);
-
+#endif
         // if(std::string(SNESLINESEARCHBASIC) == line_search_type_ && std::abs(damping - 1.) < 1e-16) {
         //       SNESLineSearchSetComputeNorms(linesearch, PETSC_FALSE);
         // }

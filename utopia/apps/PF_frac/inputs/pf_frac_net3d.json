@@ -37,7 +37,7 @@
     },
     "solver" : {
         "verbose" : true,
-        "max-it" : 20,
+        "max_it" : 20,
         "atol": 1e-5,
         "max_coarse_it": 1,
         "max_sucessful_coarse_it": 1,
@@ -52,7 +52,7 @@
         "linear-solver" : {
             "verbose" : false,
             "atol": 1e-9,
-            "max-it": 1000
+            "max_it": 1000
         },
         "fine-QPSolver" : {
             "verbose" : false,
