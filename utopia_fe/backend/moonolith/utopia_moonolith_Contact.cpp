@@ -13,10 +13,13 @@
 #include "moonolith_elem_segment.hpp"
 #include "moonolith_elem_shape.hpp"
 #include "moonolith_elem_triangle.hpp"
+#include "moonolith_function_space.hpp"
 #include "moonolith_matlab_scripter.hpp"
 #include "moonolith_par_contact.hpp"
 #include "moonolith_redistribute.hpp"
 #include "moonolith_sparse_matrix.hpp"
+
+#include "utopia_moonolith_ConvertTensor.hpp"
 
 // Integrate
 // #include "utopia_moonolith_permutations.hpp"
@@ -26,6 +29,46 @@
 
 namespace utopia {
     namespace moonolith {
+
+        // template <int Dim>
+        // void make_tensorize_permutation(const int dim,
+        //                                 const MoonolithFunctionSpace<Dim> &from,
+        //                                 const MoonolithFunctionSpace<Dim> &to,
+        //                                 Matrix &mat) {
+        //     using Scalar = Traits<Matrix>::Scalar;
+        //     using SizeType = Traits<Matrix>::SizeType;
+
+        //     std::vector<SizeType> irows(1), icols(1);
+        //     std::vector<Scalar> vals(1, 1.0);
+
+        //     auto max_nnz = from.dof_map().max_nnz();
+        //     assert(max_nnz > 0);
+        //     mat = local_sparse(to.dof_map().n_local_dofs() * dim, from.dof_map().n_local_dofs(), max_nnz);
+
+        //     std::size_t n_elems = from.dof_map().n_elements();
+
+        //     assert(n_elems == to.dof_map().n_elements());
+
+        //     Write<Matrix> w(mat, utopia::GLOBAL_INSERT);
+
+        //     for (std::size_t e = 0; e < n_elems; ++e) {
+        //         const auto &from_dofs = from.dof_map().dofs(e);
+        //         const auto &to_dofs = to.dof_map().dofs(e);
+
+        //         const auto n_from = from_dofs.size();
+        //         const auto n_to = to_dofs.size();
+
+        //         assert(n_from == n_to);
+
+        //         for (std::size_t i = 0; i < n_to; ++i) {
+        //             for (int d = 0; d < dim; ++d) {
+        //                 irows[0] = to_dofs[i] + d;
+        //                 icols[0] = from_dofs[i];
+        //                 mat.set_matrix(irows, icols, vals);
+        //             }
+        //         }
+        //     }
+        // }
 
         void Contact::Params::read(Input &in) {
             std::set<int> temp;
@@ -103,6 +146,37 @@ namespace utopia {
             static constexpr Scalar LARGE_VALUE = 100000;
 
             virtual bool init(const FunctionSpace &, const Params &) = 0;
+
+            static void tensorize(const Matrix &T_x, const SizeType n_var, Matrix &T) {
+                auto max_nnz = utopia::max_row_nnz(T_x);
+                T.sparse(layout(T_x), max_nnz, max_nnz);
+
+                assert(!empty(T));
+                assert(T.row_range().extent() % n_var == 0);
+
+                Write<Matrix> w(T);
+                each_read(T_x, [&](const SizeType i, const SizeType j, const Scalar value) {
+                    for (SizeType k = 0; k < n_var; ++k) {
+                        T.set(i + k, j + k, value);
+                    }
+                });
+            }
+
+            static void tensorize(const SizeType n_var, Vector &t) {
+                ReadAndWrite<Vector> w(t);
+                auto r = range(t);
+
+                assert(!empty(t));
+                assert(r.extent() % n_var == 0);
+
+                for (auto i = r.begin(); i < r.end(); i += n_var) {
+                    const auto value = t.get(i);
+
+                    for (SizeType k = 1; k < n_var; ++k) {
+                        t.set(i + k, value);
+                    }
+                }
+            }
 
             bool init_no_contact(const FunctionSpace &space) {
                 space.create_vector(gap);
@@ -208,6 +282,7 @@ namespace utopia {
             Vector is_glue;
 
             bool has_contact{false};
+            bool has_glue{false};
         };
 
         template <int Dim>
@@ -215,6 +290,87 @@ namespace utopia {
         public:
             using MoonolithMesh_t = ::moonolith::Mesh<Scalar, Dim>;
             using MoonolithSpace_t = ::moonolith::FunctionSpace<MoonolithMesh_t>;
+
+            void make_permutation(const MoonolithSpace_t &from, const MoonolithSpace_t &to, Matrix &mat) {
+                // using Scalar = Traits<Matrix>::Scalar;
+                // using SizeType = Traits<Matrix>::SizeType;
+
+                std::vector<SizeType> irows(1), icols(1);
+                std::vector<Scalar> vals(1, 1.0);
+
+                // auto max_nnz = from.dof_map().max_nnz(); assert(max_nnz > 0);
+                auto max_nnz = to.dof_map().max_nnz();
+                assert(max_nnz > 0);
+
+                Comm comm(from.mesh().comm().get());
+                auto vl = layout(comm, to.dof_map().n_local_dofs(), from.dof_map().n_local_dofs());
+                mat.sparse(square_matrix_layout(vl), max_nnz, max_nnz);
+
+                std::size_t n_elems = from.dof_map().n_elements();
+
+                assert(n_elems == to.dof_map().n_elements());
+
+                Write<Matrix> w(mat, utopia::GLOBAL_INSERT);
+
+                for (std::size_t e = 0; e < n_elems; ++e) {
+                    const auto &from_dofs = from.dof_map().dofs(e);
+                    const auto &to_dofs = to.dof_map().dofs(e);
+
+                    const auto n_from = from_dofs.size();
+                    const auto n_to = to_dofs.size();
+
+                    assert(n_from == n_to);
+
+                    for (std::size_t i = 0; i < n_to; ++i) {
+                        irows[0] = to_dofs[i];
+                        icols[0] = from_dofs[i];
+                        mat.set_matrix(irows, icols, vals);
+                    }
+                }
+            }
+
+            void make_vector_permutation(const int dim,
+                                         const MoonolithSpace_t &from,
+                                         const MoonolithSpace_t &to,
+                                         Matrix &mat) {
+                // using Scalar = Traits<Matrix>::Scalar;
+                // using SizeType = Traits<Matrix>::SizeType;
+
+                std::vector<SizeType> irows(1), icols(1);
+                std::vector<Scalar> vals(1, 1.0);
+
+                // auto max_nnz =  from.dof_map().max_nnz(); assert(max_nnz > 0);
+                auto max_nnz = to.dof_map().max_nnz();
+                assert(max_nnz > 0);
+
+                Comm comm(from.mesh().comm().get());
+                auto vl = layout(comm, to.dof_map().n_local_dofs(), from.dof_map().n_local_dofs() * dim);
+                mat.sparse(square_matrix_layout(vl), max_nnz, max_nnz);
+
+                std::size_t n_elems = from.dof_map().n_elements();
+
+                assert(n_elems == to.dof_map().n_elements());
+
+                Write<Matrix> w(mat, utopia::GLOBAL_INSERT);
+
+                for (std::size_t e = 0; e < n_elems; ++e) {
+                    const auto &from_dofs = from.dof_map().dofs(e);
+                    const auto &to_dofs = to.dof_map().dofs(e);
+
+                    const auto n_from = from_dofs.size();
+                    const auto n_to = to_dofs.size();
+
+                    assert(n_from == n_to);
+
+                    for (std::size_t i = 0; i < n_to; ++i) {
+                        for (int d = 0; d < dim; ++d) {
+                            irows[0] = to_dofs[i] + d;
+                            icols[0] = from_dofs[i] * dim + d;
+                            mat.set_matrix(irows, icols, vals);
+                        }
+                    }
+                }
+            }
 
             bool init(const FunctionSpace &space, const Params &params) override {
                 std::shared_ptr<MoonolithSpace_t> space_d;
@@ -225,212 +381,207 @@ namespace utopia {
                     return false;
                 }
 
-                MoonolithSpace_t elem_wise_space;
-                space_d->separate_dofs(elem_wise_space);
+                MoonolithSpace_t element_wise_space;
+                space_d->separate_dofs(element_wise_space);
 
                 ::moonolith::ParContact<double, Dim> par_contact(space_d->mesh().comm(), Dim == 2);
 
                 if (par_contact.assemble(
-                        params.contact_pair_tags, elem_wise_space, params.side_set_search_radius, params.is_glue)) {
-                    assert(false);  // TODO
-                    // contact_data.finalize(par_contact.buffers, elem_wise_space, space);
-                    return true;
+                        params.contact_pair_tags, element_wise_space, params.side_set_search_radius, params.is_glue)) {
+                    this->has_contact = true;
+                    finalize(par_contact.buffers, element_wise_space, *space_d);
                 } else {
-                    return false;
+                    this->has_contact = false;
+                    this->has_glue = false;
                 }
 
-                // if (impl_->has_contact) {
-                //     // contact_tensors_ = contact_data.node_wise;
-                //     assert(false);
-                // } else {
-                //     // init default
-                //     init_no_contact(mesh, dof_map);
-                // }
+                if (this->has_contact) {
+                    has_glue = has_contact && !params.is_glue->empty();
 
-                // has_glue_ = impl_->has_contact && !params.is_glue->empty();
+                    if (has_glue) {
+                        double n_glued = sum(is_glue);
 
-                // if (has_glue_) {
-                //     double n_glued = sum(contact_tensors_->is_glue);
+                        if (n_glued == 0.) {
+                            has_glue = false;
+                        }
+                    }
 
-                //     if (n_glued == 0.) {
-                //         has_glue_ = false;
-                //     }
-                // }
+                } else {
+                    // init default
+                    this->init_no_contact(space);
+                }
 
-                assert(false);
-                return false;
+                return true;
             }
-            // void finalize(const moonolith::ContactBuffers<double> &buffers,
-            //               const SpaceT<Dim> &element_wise_space,
-            //               const SpaceT<Dim> &node_wise_space) {
-            //     utopia::convert(buffers.B, element_wise.B);
-            //     utopia::convert(buffers.D, element_wise.D);
-            //     utopia::convert(buffers.Q, element_wise.Q);
-            //     utopia::convert(buffers.basis_transform_inv, element_wise.basis_transform_inv);
 
-            //     convert_tensor(buffers.gap, element_wise.weighted_gap);
-            //     convert_tensor(buffers.normals, element_wise.weighted_normals);
-            //     convert_tensor(buffers.is_glue, element_wise.is_glue);
-            //     convert_tensor(buffers.is_contact, element_wise.is_contact);
+            void normalize_and_build_orthgonal_trafo(const MoonolithSpace_t &node_wise_space) {
+                Comm comm(node_wise_space.mesh().comm().get());
 
-            //     convert_to_node_wise(element_wise_space, element_wise, node_wise_space, *node_wise);
-            // }
+                auto vl = layout(comm, node_wise_space.dof_map().n_local_dofs(), node_wise_space.dof_map().n_dofs());
 
-            //         static void normalize_and_build_orthgonal_trafo(const SpaceT<Dim> &node_wise_space,
-            //                                                         ConvertContactTensors &node_wise) {
-            //             node_wise.orthogonal_transformation =
-            //                 local_sparse(node_wise_space.dof_map().n_local_dofs(),
-            //                 node_wise_space.dof_map().n_local_dofs(), Dim);
+                this->orthogonal_transformation->sparse(square_matrix_layout(vl), Dim, 0);
 
-            //             moonolith::HouseholderTransformation<double, Dim> H;
-            //             auto &normals = node_wise.normals;
+                ::moonolith::HouseholderTransformation<double, Dim> H;
+                auto &normals = this->normals;
 
-            //             auto r = range(normals);
+                auto r = range(normals);
 
-            //             ReadAndWrite<Vector> rw_normals(normals);
-            //             Read<Vector> r_is_c(node_wise.is_contact);
-            //             Write<Matrix> w_ot(node_wise.orthogonal_transformation, utopia::LOCAL);
+                ReadAndWrite<Vector> rw_normals(normals);
+                Read<Vector> r_is_c(this->is_contact);
+                Write<Matrix> w_ot(*this->orthogonal_transformation, utopia::LOCAL);
 
-            //             moonolith::Vector<double, Dim> n;
-            //             for (auto i = r.begin(); i < r.end(); i += Dim) {
-            //                 const bool is_contact = node_wise.is_contact.get(i);
+                ::moonolith::Vector<double, Dim> n;
+                for (auto i = r.begin(); i < r.end(); i += Dim) {
+                    const bool is_contact = this->is_contact.get(i);
 
-            //                 if (is_contact) {
-            //                     for (int d = 0; d < Dim; ++d) {
-            //                         n[d] = normals.get(i + d);
-            //                     }
+                    if (is_contact) {
+                        for (int d = 0; d < Dim; ++d) {
+                            n[d] = normals.get(i + d);
+                        }
 
-            //                     auto len = length(n);
-            //                     assert(len > 0.0);
+                        auto len = length(n);
+                        assert(len > 0.0);
 
-            //                     n /= len;
+                        n /= len;
 
-            //                     for (int d = 0; d < Dim; ++d) {
-            //                         normals.set(i + d, n[d]);
-            //                     }
+                        for (int d = 0; d < Dim; ++d) {
+                            normals.set(i + d, n[d]);
+                        }
 
-            //                     n.x -= 1.0;
+                        n.x -= 1.0;
 
-            //                     len = length(n);
+                        len = length(n);
 
-            //                     if (approxeq(len, 0.0, 1e-15)) {
-            //                         H.identity();
-            //                     } else {
-            //                         n /= len;
-            //                         H.init(n);
-            //                     }
+                        if (approxeq(len, 0.0, 1e-15)) {
+                            H.identity();
+                        } else {
+                            n /= len;
+                            H.init(n);
+                        }
 
-            //                     assert(approxeq(std::abs(measure(H)), 1.0, 1e-8));
+                        assert(approxeq(std::abs(measure(H)), 1.0, 1e-8));
 
-            //                     for (int d1 = 0; d1 < Dim; ++d1) {
-            //                         for (int d2 = 0; d2 < Dim; ++d2) {
-            //                             node_wise.orthogonal_transformation.set(i + d1, i + d2, H(d1, d2));
-            //                         }
-            //                     }
+                        for (int d1 = 0; d1 < Dim; ++d1) {
+                            for (int d2 = 0; d2 < Dim; ++d2) {
+                                this->orthogonal_transformation->set(i + d1, i + d2, H(d1, d2));
+                            }
+                        }
 
-            //                 } else {
-            //                     for (int d1 = 0; d1 < Dim; ++d1) {
-            //                         node_wise.orthogonal_transformation.set(i + d1, i + d1, 1.0);
-            //                     }
-            //                 }
-            //             }
+                    } else {
+                        for (int d1 = 0; d1 < Dim; ++d1) {
+                            this->orthogonal_transformation->set(i + d1, i + d1, 1.0);
+                        }
+                    }
+                }
+            }
+
+            void finalize(::moonolith::ContactBuffers<double> &buffers,
+                          const MoonolithSpace_t &element_wise_space,
+                          const MoonolithSpace_t &node_wise_space) {
+                Matrix B, D, Q, Q_inv;
+                Vector wg, g, wn, ig, ic;
+
+                utopia::convert(buffers.B.get(), B);
+                utopia::convert(buffers.D.get(), D);
+                utopia::convert(buffers.Q.get(), Q);
+                utopia::convert(buffers.Q_inv.get(), Q_inv);
+
+                utopia::convert(buffers.gap.get(), wg);
+                utopia::convert(buffers.normal.get(), wn);
+                utopia::convert(buffers.is_glue.get(), ig);
+                utopia::convert(buffers.is_contact.get(), ic);
+
+                Matrix perm, vector_perm;
+                make_permutation(element_wise_space, node_wise_space, perm);
+                make_vector_permutation(Dim, element_wise_space, node_wise_space, vector_perm);
+
+                this->weighted_gap = perm * wg;
+                this->is_glue = perm * ig;
+                this->is_contact = perm * ic;
+
+                this->weighted_normals = vector_perm * wn;
+
+                Matrix B_x = perm * B * transpose(perm);
+                Matrix D_x = perm * D * transpose(perm);
+                Matrix Q_x = perm * Q * transpose(perm);
+
+                Matrix basis_transform_inv_x = perm * Q_inv * transpose(perm);
+
+                normalize_rows(Q_x, 1e-15);
+                normalize_rows(basis_transform_inv_x, 1e-15);
+
+                // zeros and ones
+                {
+                    auto ic_view = local_view_device(this->is_contact);
+
+                    parallel_for(
+                        local_range_device(this->is_contact), UTOPIA_LAMBDA(const SizeType i) {
+                            if (ic_view.get(i) > 0.0) {
+                                ic_view.set(i, 1);
+                            }
+                        })
+                }
+
+                // zeros and ones
+                {
+                    auto ig_view = local_view_device(this->is_glue);
+
+                    parallel_for(
+                        local_range_device(this->is_glue), UTOPIA_LAMBDA(const SizeType i) {
+                            if (ig_view.get(i) > 0.0) {
+                                ig_view.set(i, 1);
+                            }
+                        })
+                }
+
+                this->inv_mass_vector = sum(D_x, 1);
+
+                e_pseudo_inv(this->inv_mass_vector, this->inv_mass_vector, 1e-15);
+                Matrix D_inv_x = diag(this->inv_mass_vector);
+
+                Matrix T_temp_x = D_inv_x * B_x;
+                Matrix T_x = Q_x * T_temp_x;
+
+                this->tensorize(B_x, Dim, *this->coupling_matrix);
+                this->tensorize(D_x, Dim, *this->mass_matrix);
+                this->tensorize(T_x, Dim, *this->complete_transformation);
+                this->tensorize(Q_x, Dim, *this->basis_transform);
+                this->tensorize(Q_inv, Dim, *this->basis_transform_inv);
+
+                this->tensorize(Dim, this->inv_mass_vector);
+                this->tensorize(Dim, this->is_glue);
+
+                normalize_rows(*this->complete_transformation, 1e-15);
+
+                assert(check_op(*this->complete_transformation));
+
+                this->complete_transformation->shift_diag(1);
+
+                this->gap = (*this->basis_transform) * e_mul(this->inv_mass_vector, this->weighted_gap);
+                this->normals = (*this->basis_transform) * e_mul(this->inv_mass_vector, this->weighted_normals);
+
+                normalize_and_build_orthgonal_trafo(node_wise_space);
+                (*this->complete_transformation) *= *this->orthogonal_transformation;
+
+                {
+                    auto g_view = local_view_device(this->gap);
+                    auto ic_view = local_view_device(this->is_contact);
+                    parallel_for(
+                        local_range_device(this->gap), UTOPIA_LAMBDA(const SizeType i) {
+                            if (ic_view.get(i) == 0.0) {
+                                g_view.set(i, LARGE_VALUE);
+                            }
+                        });
+                }
+            }
+
+            // static void convert_to_node_wise(const MoonolithSpace_t &element_wise_space,
+            //                                  ConvertContactTensors &elem_wise,
+            //                                  const MoonolithSpace_t &node_wise_space,
+            //                                  ConvertContactTensors &node_wise)
+
+            //         ConvertContactBuffers(MPI_Comm comm) { node_wise = std::make_shared<ConvertContactTensors>();
             //         }
-
-            //         static void convert_to_node_wise(const SpaceT<Dim> &elem_wise_space,
-            //                                          ConvertContactTensors &elem_wise,
-            //                                          const SpaceT<Dim> &node_wise_space,
-            //                                          ConvertContactTensors &node_wise) {
-            //             Matrix perm, vector_perm;
-
-            //             make_permutation(elem_wise_space, node_wise_space, perm);
-
-            //             make_vector_permutation(Dim, elem_wise_space, node_wise_space, vector_perm);
-
-            //             node_wise.weighted_gap = perm * elem_wise.weighted_gap;
-            //             node_wise.is_glue = perm * elem_wise.is_glue;
-            //             node_wise.is_contact = perm * elem_wise.is_contact;
-
-            //             node_wise.weighted_normals = vector_perm * elem_wise.weighted_normals;
-
-            //             Matrix B_x = perm * elem_wise.B * transpose(perm);
-            //             Matrix D_x = perm * elem_wise.D * transpose(perm);
-            //             Matrix Q_x = perm * elem_wise.Q * transpose(perm);
-
-            //             Matrix basis_transform_inv_x = perm * elem_wise.basis_transform_inv * transpose(perm);
-
-            //             normalize_rows(Q_x, 1e-15);
-            //             normalize_rows(basis_transform_inv_x, 1e-15);
-
-            //             {
-            //                 each_transform(node_wise.is_contact,
-            //                                node_wise.is_contact,
-            //                                [&node_wise](const SizeType i, const double value) -> double {
-            //                                    if (value > 0.0) {
-            //                                        return 1.0;
-            //                                    } else {
-            //                                        return 0.0;
-            //                                    }
-            //                                });
-
-            //                 each_transform(
-            //                     node_wise.is_glue, node_wise.is_glue, [&node_wise](const SizeType i, const double
-            //                     value)
-            //                     -> double {
-            //                         if (value > 0.0) {
-            //                             return 1.0;
-            //                         } else {
-            //                             return 0.0;
-            //                         }
-            //                     });
-            //             }
-
-            //             node_wise.inv_mass_vector = sum(D_x, 1);
-
-            //             e_pseudo_inv(node_wise.inv_mass_vector, node_wise.inv_mass_vector, 1e-15);
-            //             Matrix D_inv_x = diag(node_wise.inv_mass_vector);
-
-            //             Matrix T_temp_x = D_inv_x * B_x;
-            //             Matrix T_x = Q_x * T_temp_x;
-
-            //             tensorize(B_x, Dim, node_wise.B);
-            //             tensorize(D_x, Dim, node_wise.D);
-            //             tensorize(T_x, Dim, node_wise.T);
-            //             tensorize(Q_x, Dim, node_wise.Q);
-            //             tensorize(basis_transform_inv_x, Dim, node_wise.basis_transform_inv);
-
-            //             tensorize(Dim, node_wise.inv_mass_vector);
-            //             tensorize(Dim, node_wise.is_glue);
-
-            //             normalize_rows(node_wise.T, 1e-15);
-
-            //             assert(check_op(node_wise.T));
-
-            //             node_wise.T += local_identity(local_size(node_wise.T));
-
-            //             node_wise.gap = node_wise.Q * e_mul(node_wise.inv_mass_vector, node_wise.weighted_gap);
-            //             node_wise.normals = node_wise.Q * e_mul(node_wise.inv_mass_vector,
-            //             node_wise.weighted_normals);
-
-            //             normalize_and_build_orthgonal_trafo(node_wise_space, node_wise);
-            //             node_wise.complete_transformation = node_wise.T * node_wise.orthogonal_transformation;
-
-            //             {
-            //                 static const double LARGE_VALUE = 1e6;
-            //                 Write<Vector> w(node_wise.gap);
-            //                 each_read(node_wise.is_contact, [&node_wise](const SizeType i, const double value) {
-            //                     if (value == 0.0) {
-            //                         node_wise.gap.set(i, LARGE_VALUE);
-            //                     }
-            //                 });
-            //             }
-
-            //             // node_wise.write();
-            //         }
-
-            //         ConvertContactTensors element_wise;
-            //         std::shared_ptr<ConvertContactTensors> node_wise;
-
-            //         ConvertContactBuffers(MPI_Comm comm) { node_wise = std::make_shared<ConvertContactTensors>(); }
 
             //         using MeshT = moonolith::Mesh<double, Dim>;
             //         using SpaceT = moonolith::FunctionSpace<MeshT>;
@@ -453,15 +604,15 @@ namespace utopia {
             //             // mesh_ptr->draw(script);
             //             // script.save("contact.m");
 
-            //             SpaceT elem_wise_space;
-            //             space.separate_dofs(elem_wise_space);
+            //             SpaceT element_wise_space;
+            //             space.separate_dofs(element_wise_space);
 
             //             moonolith::ParContact<double, Dim> par_contact(comm, Dim == 2);
 
             //             if (par_contact.assemble(
-            //                     params.contact_pair_tags, elem_wise_space, params.side_set_search_radius,
+            //                     params.contact_pair_tags, element_wise_space, params.side_set_search_radius,
             //                     params.is_glue)) {
-            //                 contact_data.finalize(par_contact.buffers, elem_wise_space, space);
+            //                 contact_data.finalize(par_contact.buffers, element_wise_space, space);
             //                 return true;
             //             } else {
             //                 return false;
@@ -539,11 +690,9 @@ namespace utopia {
 
         Contact::~Contact() {}
 
-        void Contact::set_params(const Params &params) {
-            assert(false);  // TODO
-        }
+        void Contact::set_params(const Params &params) { *params_ = params; }
 
-        void Contact::set_banned_nodes(const std::shared_ptr<IndexArray> &banned_nodes) {
+        void Contact::set_banned_nodes(const std::shared_ptr<IndexArray> & /*banned_nodes*/) {
             assert(false);  // TODO
         }
 
@@ -555,7 +704,7 @@ namespace utopia {
             // });
         }
 
-        void Contact::describe(std::ostream &os) const {}
+        void Contact::describe(std::ostream &os) const { params_->describe(os); }
 
     }  // namespace moonolith
 }  // namespace utopia
