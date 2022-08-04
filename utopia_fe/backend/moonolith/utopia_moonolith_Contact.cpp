@@ -99,10 +99,11 @@ namespace utopia {
             os << std::endl;
         }
 
+        static constexpr double LARGE_VALUE = 100000;
+
         class Contact::Impl {
         public:
             virtual ~Impl() = default;
-            static constexpr Scalar LARGE_VALUE = 100000;
 
             virtual bool init(const FunctionSpace &, const Params &) = 0;
 
@@ -263,7 +264,7 @@ namespace utopia {
 
                 std::size_t n_elems = from.dof_map().n_elements();
 
-                assert(n_elems == to.dof_map().n_elements());
+                assert(n_elems == std::size_t(to.dof_map().n_elements()));
 
                 Write<Matrix> w(mat, utopia::GLOBAL_INSERT);
 
@@ -300,7 +301,7 @@ namespace utopia {
 
                 std::size_t n_elems = from.dof_map().n_elements();
 
-                assert(n_elems == to.dof_map().n_elements());
+                assert(n_elems == std::size_t(to.dof_map().n_elements()));
 
                 Write<Matrix> w(mat, utopia::GLOBAL_INSERT);
 
@@ -470,7 +471,7 @@ namespace utopia {
                             if (ic_view.get(i) > 0.0) {
                                 ic_view.set(i, 1);
                             }
-                        })
+                        });
                 }
 
                 // zeros and ones
@@ -482,7 +483,7 @@ namespace utopia {
                             if (ig_view.get(i) > 0.0) {
                                 ig_view.set(i, 1);
                             }
-                        })
+                        });
                 }
 
                 this->inv_mass_vector = sum(D_x, 1);
@@ -504,7 +505,7 @@ namespace utopia {
 
                 normalize_rows(*this->complete_transformation, 1e-15);
 
-                assert(check_op(*this->complete_transformation));
+                // assert(check_op(*this->complete_transformation));
 
                 this->complete_transformation->shift_diag(1);
 
@@ -599,7 +600,8 @@ namespace utopia {
         void Contact::set_params(const Params &params) { *params_ = params; }
 
         void Contact::set_banned_nodes(const std::shared_ptr<IndexArray> & /*banned_nodes*/) {
-            assert(false);  // TODO
+            // assert(false);  // TODO
+            m_utopia_warning("Contact::set_banned_nodes ignored!");
         }
 
         void Contact::read(Input &in) {
