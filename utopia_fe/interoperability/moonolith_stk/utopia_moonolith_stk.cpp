@@ -344,6 +344,7 @@ namespace utopia {
 
             m_mesh->set_manifold_dim(in.spatial_dimension() - 1);
             m_mesh->finalize();
+
             out.wrap(m_mesh);
         }
 
@@ -429,6 +430,20 @@ namespace utopia {
                     }
                 }
             }
+
+            ////////////////////////////////////////////////////////////////
+
+            long idx = 0;
+            long n_local_elems = m_mesh->n_elements();
+
+            ::moonolith::Communicator comm(in.comm().get());
+            comm.exscan(&n_local_elems, &idx, 1, ::moonolith::MPISum());
+
+            for (long i = 0; i < n_local_elems; ++i) {
+                out_dof_map.dof_object(i).element_dof = idx++;
+            }
+
+            out_space.dof_map().set_max_nnz(in.dof_map().max_nnz_x_row());
 
             assert(out_space.dof_map().is_valid());
         }

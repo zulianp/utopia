@@ -107,6 +107,15 @@ namespace utopia {
 
             virtual bool init(const FunctionSpace &, const Params &) = 0;
 
+            void allocate_matrices() {
+                coupling_matrix = std::make_shared<Matrix>();
+                mass_matrix = std::make_shared<Matrix>();
+                basis_transform = std::make_shared<Matrix>();
+                basis_transform_inv = std::make_shared<Matrix>();
+                orthogonal_transformation = std::make_shared<Matrix>();
+                complete_transformation = std::make_shared<Matrix>();
+            }
+
             static void tensorize(const Matrix &T_x, const SizeType n_var, Matrix &T) {
                 auto max_nnz = utopia::max_row_nnz(T_x);
                 T.sparse(layout(T_x), max_nnz, max_nnz);
@@ -139,6 +148,8 @@ namespace utopia {
             }
 
             bool init_no_contact(const FunctionSpace &space) {
+                this->allocate_matrices();
+
                 space.create_vector(gap);
                 gap.set(LARGE_VALUE);
 
@@ -154,15 +165,15 @@ namespace utopia {
                 space.create_vector(is_contact);
                 is_contact.set(0);
 
-                complete_transformation = std::make_shared<Matrix>();
-                orthogonal_transformation = std::make_shared<Matrix>();
+                space.create_vector(is_glue);
+                is_glue.set(0);
 
                 auto ml = square_matrix_layout(layout(gap));
                 complete_transformation->identity(ml, 1);
                 orthogonal_transformation->identity(ml, 1);
 
                 has_contact = false;
-                // has_glue_ = false;
+                has_glue = false;
                 return true;
             }
 
@@ -259,8 +270,12 @@ namespace utopia {
                 assert(max_nnz > 0);
 
                 Comm comm(from.mesh().comm().get());
-                auto vl = layout(comm, to.dof_map().n_local_dofs(), from.dof_map().n_local_dofs());
-                mat.sparse(square_matrix_layout(vl), max_nnz, max_nnz);
+                auto ml = layout(comm,
+                                 to.dof_map().n_local_dofs(),
+                                 from.dof_map().n_local_dofs(),
+                                 to.dof_map().n_dofs(),
+                                 from.dof_map().n_dofs());
+                mat.sparse(ml, max_nnz, max_nnz);
 
                 std::size_t n_elems = from.dof_map().n_elements();
 
@@ -296,8 +311,13 @@ namespace utopia {
                 assert(max_nnz > 0);
 
                 Comm comm(from.mesh().comm().get());
-                auto vl = layout(comm, to.dof_map().n_local_dofs(), from.dof_map().n_local_dofs() * dim);
-                mat.sparse(square_matrix_layout(vl), max_nnz, max_nnz);
+                auto ml = layout(comm,
+                                 to.dof_map().n_local_dofs(),
+                                 from.dof_map().n_local_dofs() * dim,
+                                 to.dof_map().n_dofs(),
+                                 from.dof_map().n_dofs() * dim);
+
+                mat.sparse(ml, max_nnz, max_nnz);
 
                 std::size_t n_elems = from.dof_map().n_elements();
 
@@ -430,6 +450,8 @@ namespace utopia {
             void finalize(::moonolith::ContactBuffers<double> &buffers,
                           const MoonolithSpace_t &element_wise_space,
                           const MoonolithSpace_t &node_wise_space) {
+                allocate_matrices();
+
                 Matrix B, D, Q, Q_inv;
                 Vector wg, g, wn, ig, ic;
 
@@ -457,10 +479,10 @@ namespace utopia {
                 Matrix D_x = perm * D * transpose(perm);
                 Matrix Q_x = perm * Q * transpose(perm);
 
-                Matrix basis_transform_inv_x = perm * Q_inv * transpose(perm);
+                Matrix Q_inv_x = perm * Q_inv * transpose(perm);
 
                 normalize_rows(Q_x, 1e-15);
-                normalize_rows(basis_transform_inv_x, 1e-15);
+                normalize_rows(Q_inv_x, 1e-15);
 
                 // zeros and ones
                 {
@@ -498,7 +520,7 @@ namespace utopia {
                 this->tensorize(D_x, Dim, *this->mass_matrix);
                 this->tensorize(T_x, Dim, *this->complete_transformation);
                 this->tensorize(Q_x, Dim, *this->basis_transform);
-                this->tensorize(Q_inv, Dim, *this->basis_transform_inv);
+                this->tensorize(Q_inv_x, Dim, *this->basis_transform_inv);
 
                 this->tensorize(Dim, this->inv_mass_vector);
                 this->tensorize(Dim, this->is_glue);
