@@ -1,6 +1,6 @@
 #include "utopia_moonolith_stk_Contact.hpp"
 
-#include "moonolith_obstacle.hpp"
+#include "moonolith_contact.hpp"
 
 #include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_make_unique.hpp"
@@ -40,43 +40,55 @@ namespace utopia {
                 using IndexArray = typename Traits<FunctionSpace>::IndexArray;
                 auto banned_nodes = std::make_shared<IndexArray>();
                 in_space.create_boundary_node_list(*banned_nodes);
-                obstacle.set_banned_nodes(banned_nodes);
+                contact.set_banned_nodes(banned_nodes);
 
-                return obstacle.assemble(space);
+                return contact.assemble(space);
             }
 
-            void read(Input &in) override { obstacle.read(in); }
+            void read(Input &in) override {
+                contact.read(in);
+                in.get("remove_constrained_dofs", remove_constrained_dofs);
+            }
 
             FunctionSpace_t space;
-            Mesh_t obstacle_mesh;
-            Contact_t obstacle;
+            Contact_t contact;
+            bool remove_constrained_dofs{false};
         };
 
         Contact::Contact() : impl_(utopia::make_unique<Impl>()) {}
         Contact::~Contact() {}
 
-        void Contact::read(Input &in) { impl_->obstacle.read(in); }
-        void Contact::describe(std::ostream &os) const { impl_->obstacle.describe(os); }
+        void Contact::read(Input &in) { impl_->contact.read(in); }
+        void Contact::describe(std::ostream &os) const { impl_->contact.describe(os); }
 
-        bool Contact::assemble(FunctionSpace &space) { return impl_->assemble(space); }
+        bool Contact::assemble(FunctionSpace &space) {
+            bool ok = impl_->assemble(space);
 
-        const Contact::Vector &Contact::gap() const { return impl_->obstacle.gap(); }
-        const Contact::Vector &Contact::is_contact() const { return impl_->obstacle.is_contact(); }
-        const Contact::Vector &Contact::normals() const { return impl_->obstacle.normals(); }
-
-        void Contact::set_params(const Params &params) { impl_->obstacle.set_params(params); }
-
-        void Contact::transform(const Matrix &in, Matrix &out) { impl_->obstacle.transform(in, out); }
-
-        void Contact::transform(const Vector &in, Vector &out) { impl_->obstacle.transform(in, out); }
-
-        void Contact::inverse_transform(const Vector &in, Vector &out) { impl_->obstacle.inverse_transform(in, out); }
-
-        std::shared_ptr<Contact::Matrix> Contact::orthogonal_transformation() {
-            return impl_->obstacle.orthogonal_transformation();
+            if (ok) {
+                if (impl_->remove_constrained_dofs) {
+                    space.apply_constraints(*impl_->contact.complete_transformation(), 0);
+                }
+            }
+            return ok;
         }
 
-        std::shared_ptr<Contact::Matrix> Contact::mass_matrix() { return impl_->obstacle.mass_matrix(); }
+        const Contact::Vector &Contact::gap() const { return impl_->contact.gap(); }
+        const Contact::Vector &Contact::is_contact() const { return impl_->contact.is_contact(); }
+        const Contact::Vector &Contact::normals() const { return impl_->contact.normals(); }
+
+        void Contact::set_params(const Params &params) { impl_->contact.set_params(params); }
+
+        void Contact::transform(const Matrix &in, Matrix &out) { impl_->contact.transform(in, out); }
+
+        void Contact::transform(const Vector &in, Vector &out) { impl_->contact.transform(in, out); }
+
+        void Contact::inverse_transform(const Vector &in, Vector &out) { impl_->contact.inverse_transform(in, out); }
+
+        std::shared_ptr<Contact::Matrix> Contact::orthogonal_transformation() {
+            return impl_->contact.orthogonal_transformation();
+        }
+
+        std::shared_ptr<Contact::Matrix> Contact::mass_matrix() { return impl_->contact.mass_matrix(); }
 
     }  // namespace stk
 }  // namespace utopia

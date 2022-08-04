@@ -529,7 +529,9 @@ namespace utopia {
 
                 // assert(check_op(*this->complete_transformation));
 
-                this->complete_transformation->shift_diag(1);
+                Matrix id;
+                id.identity(layout(*this->complete_transformation), 1);
+                *this->complete_transformation += id;
 
                 this->gap = (*this->basis_transform) * e_mul(this->inv_mass_vector, this->weighted_gap);
                 this->normals = (*this->basis_transform) * e_mul(this->inv_mass_vector, this->weighted_normals);
