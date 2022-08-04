@@ -19,56 +19,15 @@
 #include "moonolith_redistribute.hpp"
 #include "moonolith_sparse_matrix.hpp"
 
+// Cross-lib utils
 #include "utopia_moonolith_ConvertTensor.hpp"
 
-// Integrate
-// #include "utopia_moonolith_permutations.hpp"
-
-// #include <memory>
-// #include <vector>
+// STL
+#include <memory>
+#include <vector>
 
 namespace utopia {
     namespace moonolith {
-
-        // template <int Dim>
-        // void make_tensorize_permutation(const int dim,
-        //                                 const MoonolithFunctionSpace<Dim> &from,
-        //                                 const MoonolithFunctionSpace<Dim> &to,
-        //                                 Matrix &mat) {
-        //     using Scalar = Traits<Matrix>::Scalar;
-        //     using SizeType = Traits<Matrix>::SizeType;
-
-        //     std::vector<SizeType> irows(1), icols(1);
-        //     std::vector<Scalar> vals(1, 1.0);
-
-        //     auto max_nnz = from.dof_map().max_nnz();
-        //     assert(max_nnz > 0);
-        //     mat = local_sparse(to.dof_map().n_local_dofs() * dim, from.dof_map().n_local_dofs(), max_nnz);
-
-        //     std::size_t n_elems = from.dof_map().n_elements();
-
-        //     assert(n_elems == to.dof_map().n_elements());
-
-        //     Write<Matrix> w(mat, utopia::GLOBAL_INSERT);
-
-        //     for (std::size_t e = 0; e < n_elems; ++e) {
-        //         const auto &from_dofs = from.dof_map().dofs(e);
-        //         const auto &to_dofs = to.dof_map().dofs(e);
-
-        //         const auto n_from = from_dofs.size();
-        //         const auto n_to = to_dofs.size();
-
-        //         assert(n_from == n_to);
-
-        //         for (std::size_t i = 0; i < n_to; ++i) {
-        //             for (int d = 0; d < dim; ++d) {
-        //                 irows[0] = to_dofs[i] + d;
-        //                 icols[0] = from_dofs[i];
-        //                 mat.set_matrix(irows, icols, vals);
-        //             }
-        //         }
-        //     }
-        // }
 
         void Contact::Params::read(Input &in) {
             std::set<int> temp;
@@ -292,13 +251,9 @@ namespace utopia {
             using MoonolithSpace_t = ::moonolith::FunctionSpace<MoonolithMesh_t>;
 
             void make_permutation(const MoonolithSpace_t &from, const MoonolithSpace_t &to, Matrix &mat) {
-                // using Scalar = Traits<Matrix>::Scalar;
-                // using SizeType = Traits<Matrix>::SizeType;
-
                 std::vector<SizeType> irows(1), icols(1);
                 std::vector<Scalar> vals(1, 1.0);
 
-                // auto max_nnz = from.dof_map().max_nnz(); assert(max_nnz > 0);
                 auto max_nnz = to.dof_map().max_nnz();
                 assert(max_nnz > 0);
 
@@ -333,13 +288,9 @@ namespace utopia {
                                          const MoonolithSpace_t &from,
                                          const MoonolithSpace_t &to,
                                          Matrix &mat) {
-                // using Scalar = Traits<Matrix>::Scalar;
-                // using SizeType = Traits<Matrix>::SizeType;
-
                 std::vector<SizeType> irows(1), icols(1);
                 std::vector<Scalar> vals(1, 1.0);
 
-                // auto max_nnz =  from.dof_map().max_nnz(); assert(max_nnz > 0);
                 auto max_nnz = to.dof_map().max_nnz();
                 assert(max_nnz > 0);
 
@@ -574,51 +525,6 @@ namespace utopia {
                         });
                 }
             }
-
-            // static void convert_to_node_wise(const MoonolithSpace_t &element_wise_space,
-            //                                  ConvertContactTensors &elem_wise,
-            //                                  const MoonolithSpace_t &node_wise_space,
-            //                                  ConvertContactTensors &node_wise)
-
-            //         ConvertContactBuffers(MPI_Comm comm) { node_wise = std::make_shared<ConvertContactTensors>();
-            //         }
-
-            //         using MeshT = moonolith::Mesh<double, Dim>;
-            //         using SpaceT = moonolith::FunctionSpace<MeshT>;
-
-            //         static bool apply(const ContactParams &params,
-            //                           const std::shared_ptr<ElementBlackList> &black_list,
-            //                           libMesh::MeshBase &mesh,
-            //                           libMesh::DofMap &dof_map,
-            //                           ConvertContactBuffers &contact_data) {
-            //             using AlogrithmT = moonolith::SingleCollectionOneMasterOneSlaveAlgorithm<Dim,
-            //             LibMeshFunctionSpaceAdapter>; using Adapter = typename AlogrithmT::Adapter;
-
-            //             moonolith::Communicator comm = mesh.comm().get();
-
-            //             auto mesh_ptr = std::make_shared<MeshT>(comm);
-            //             SpaceT space(mesh_ptr);
-
-            //             extract_trace_space(mesh, dof_map, params.variable_number, space);
-            //             // moonolith::MatlabScripter script;
-            //             // mesh_ptr->draw(script);
-            //             // script.save("contact.m");
-
-            //             SpaceT element_wise_space;
-            //             space.separate_dofs(element_wise_space);
-
-            //             moonolith::ParContact<double, Dim> par_contact(comm, Dim == 2);
-
-            //             if (par_contact.assemble(
-            //                     params.contact_pair_tags, element_wise_space, params.side_set_search_radius,
-            //                     params.is_glue)) {
-            //                 contact_data.finalize(par_contact.buffers, element_wise_space, space);
-            //                 return true;
-            //             } else {
-            //                 return false;
-            //             }
-            //         }
-            //     };
         };
 
         bool Contact::assemble(const FunctionSpace &space) {
