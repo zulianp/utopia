@@ -106,6 +106,7 @@ namespace utopia {
             virtual ~Impl() = default;
 
             virtual bool init(const FunctionSpace &, const Params &) = 0;
+            virtual void process_banned_nodes(Vector &is_contact, Vector &normals) const = 0;
 
             void allocate_matrices() {
                 coupling_matrix = std::make_shared<Matrix>();
@@ -254,6 +255,8 @@ namespace utopia {
 
             bool has_contact{false};
             bool has_glue{false};
+
+            std::shared_ptr<IndexArray> banned_nodes;
         };
 
         template <int Dim>
@@ -496,6 +499,8 @@ namespace utopia {
                         });
                 }
 
+                process_banned_nodes(this->is_contact, this->weighted_normals);
+
                 // zeros and ones
                 {
                     auto ig_view = local_view_device(this->is_glue);
@@ -550,6 +555,32 @@ namespace utopia {
                         });
                 }
             }
+
+
+            void process_banned_nodes(Vector &is_contact, Vector &normals) const override {
+                if (!banned_nodes) return;
+
+                auto ic_view = local_view_device(is_contact);
+                auto n_view = local_view_device(normals);
+
+                // FIXME
+                auto &&bn_view = *banned_nodes;
+
+                auto r = range(is_contact);
+
+                RangeDevice<Vector> rd(0, bn_view.size());
+
+                parallel_for(
+                    rd, UTOPIA_LAMBDA(const SizeType i) {
+                        auto local_node_i = bn_view[i] * Dim - r.begin();
+                        ic_view.set(local_node_i, 0);
+
+                        for (int d = 0; d < Dim; ++d) {
+                            n_view.set(local_node_i + d, 0);
+                        }
+                    });
+            }
+
         };
 
         bool Contact::assemble(const FunctionSpace &space) {
@@ -561,9 +592,11 @@ namespace utopia {
 
             if (spatial_dim == 2) {
                 impl_ = utopia::make_unique<ImplD<2>>();
+                impl_->banned_nodes = this->banned_nodes_;
                 impl_->init(space, *params_);
             } else if (spatial_dim == 3) {
                 impl_ = utopia::make_unique<ImplD<3>>();
+                impl_->banned_nodes = this->banned_nodes_;
                 impl_->init(space, *params_);
             }
 
@@ -623,9 +656,8 @@ namespace utopia {
 
         void Contact::set_params(const Params &params) { *params_ = params; }
 
-        void Contact::set_banned_nodes(const std::shared_ptr<IndexArray> & /*banned_nodes*/) {
-            // assert(false);  // TODO
-            m_utopia_warning("Contact::set_banned_nodes ignored!");
+        void Contact::set_banned_nodes(const std::shared_ptr<IndexArray> &banned_nodes) {
+            this->banned_nodes_ = banned_nodes;
         }
 
         void Contact::read(Input &in) {

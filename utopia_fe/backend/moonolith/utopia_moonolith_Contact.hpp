@@ -83,6 +83,7 @@ namespace utopia {
 
             std::unique_ptr<Params> params_;
             std::unique_ptr<Impl> impl_;
+            std::shared_ptr<IndexArray> banned_nodes_;
         };
     }  // namespace moonolith
 }  // namespace utopia
