@@ -467,13 +467,13 @@ namespace utopia {
                 c.stop();
                 c_ss << "Problem initialization\n" << c << "\n";
 
-                if (n <= 1e5) {
-                    c.start();
-                    Factorization<Matrix, Vector> solver;
-                    solver.solve(A, b, oracle);
-                    c.stop();
-                    c_ss << "Direct solver\n" << c << "\n";
-                }
+                // if (n <= 1e5) {
+                //     c.start();
+                //     Factorization<Matrix, Vector> solver;
+                //     solver.solve(A, b, oracle);
+                //     c.stop();
+                //     c_ss << "Direct solver\n" << c << "\n";
+                // }
 
             } else {
                 c.start();
@@ -512,9 +512,10 @@ namespace utopia {
                 // params.set("type", "bcgs");
             }
 
-            params.set("use_preconditioner", true);
-            params.set("preconditioner_type", "amg");
+            // params.set("use_preconditioner", true);
+            // params.set("preconditioner_type", "amg");
             params.set("verbose", verbose);
+            // params.set("analize_block_structure", true);
 
             // params.set("preconditioner_type", "inv");
             // params.set("use_preconditioner", false);
