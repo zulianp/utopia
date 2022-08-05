@@ -62,6 +62,8 @@ namespace utopia {
         void Contact::describe(std::ostream &os) const { impl_->contact.describe(os); }
 
         bool Contact::assemble(FunctionSpace &space) {
+            UTOPIA_TRACE_REGION_BEGIN("Contact::assemble");
+
             bool ok = impl_->assemble(space);
 
             if (ok) {
@@ -69,6 +71,8 @@ namespace utopia {
                     space.apply_constraints(*impl_->contact.complete_transformation(), 0);
                 }
             }
+
+            UTOPIA_TRACE_REGION_END("Contact::assemble");
             return ok;
         }
 

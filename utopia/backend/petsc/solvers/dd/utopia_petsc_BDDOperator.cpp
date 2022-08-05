@@ -146,6 +146,40 @@ namespace utopia {
             }
         }
 
+        void split_into_blocks(const Matrix &mat, const int min_rows_per_block, const int max_rows_per_block) {
+            PetscCrsView mat_view = crs_view(mat);
+            SizeType n_rows = mat_view.rows();
+            std::vector<SizeType> block(n_rows, -1);
+            std::vector<SizeType> count(n_rows, 0);
+
+            int next_block_id = 0;
+
+            for(SizeType r = 0; r < n_rows; ++r) {
+                auto row = mat_view.row(r);
+
+                if(block[r] < 0) {
+                    block[r] = next_block_id;
+                    count[next_block_id]++;
+                    next_block_id++;
+                }
+
+                SizeType block_id = block[r];
+
+                for(SizeType k = 0; k < row.length; ++k) {
+                    auto c = row.colidx(k);
+
+                    if(block[c] < 0) {
+                        block[c] = block_id;
+                        count[block_id]++;
+                    }
+
+                    if(count[block_id] >= max_rows_per_block) {
+                        break;
+                    }
+                }
+            }
+        }
+
         void select_constrained_rows(const Matrix &mat) {
             const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon();
 

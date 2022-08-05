@@ -4,6 +4,8 @@
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_petsc_ForwardDeclarations.hpp"
 
+#include "petscmat.h"
+
 namespace utopia {
 
     class PetscEvalTripleMatrixProduct {
@@ -11,9 +13,19 @@ namespace utopia {
         // static void mat_mult_add(PetscVector &result, const PetscMatrix &m, const PetscVector &right, const
         // PetscVector &left); static void mat_mult_t_add(PetscVector &result, const PetscMatrix &m, const PetscVector
         // &right, const PetscVector &left);
-        static void ptap(PetscMatrix &result, const PetscMatrix &, const PetscMatrix &);
-        static void rart(PetscMatrix &result, const PetscMatrix &, const PetscMatrix &);
-        static void abc(PetscMatrix &result, const PetscMatrix &, const PetscMatrix &, const PetscMatrix &);
+        static void ptap(PetscMatrix &result,
+                         const PetscMatrix &,
+                         const PetscMatrix &,
+                         MatReuse reuse = MAT_INITIAL_MATRIX);
+        static void rart(PetscMatrix &result,
+                         const PetscMatrix &,
+                         const PetscMatrix &,
+                         MatReuse reuse = MAT_INITIAL_MATRIX);
+        static void abc(PetscMatrix &result,
+                        const PetscMatrix &,
+                        const PetscMatrix &,
+                        const PetscMatrix &,
+                        MatReuse reuse = MAT_INITIAL_MATRIX);
     };
 
     // mat-mat-mat multiplication
@@ -130,6 +142,10 @@ namespace utopia {
     };
 
     //! [pattern matching and optimizations]
+
+    inline void ptap_reuse_matrix(const PetscMatrix &A, const PetscMatrix &P, PetscMatrix &result) {
+        PetscEvalTripleMatrixProduct::ptap(result, A, P, MAT_REUSE_MATRIX);
+    }
 
 }  // namespace utopia
 
