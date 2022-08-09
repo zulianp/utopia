@@ -15,6 +15,7 @@
 #include "utopia_stk_intrepid2.hpp"
 #include "utopia_stk_intrepid2_OmniAssembler.hpp"
 
+#include "utopia_moonolith_stk_Contact.hpp"
 #include "utopia_moonolith_stk_Obstacle.hpp"
 
 void stk_nlsolve(utopia::Input &in) {

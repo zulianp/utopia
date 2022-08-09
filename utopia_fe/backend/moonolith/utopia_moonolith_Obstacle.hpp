@@ -5,6 +5,8 @@
 #include "utopia_Input.hpp"
 #include "utopia_Traits.hpp"
 
+#include "utopia_ContactInterface.hpp"
+
 #include "utopia_moonolith_ForwardDeclarations.hpp"
 #include "utopia_moonolith_FunctionSpace.hpp"
 
@@ -14,7 +16,7 @@
 namespace utopia {
     namespace moonolith {
 
-        class Obstacle final : public Configurable, public Describable {
+        class Obstacle final : public ContactInterface<moonolith::FunctionSpace> {
         public:
             using Vector = Traits<FunctionSpace>::Vector;
             using Matrix = Traits<FunctionSpace>::Matrix;
@@ -26,24 +28,24 @@ namespace utopia {
             void describe(std::ostream &os) const override;
 
             bool init_obstacle(const Mesh &obstacle_mesh);
-            bool assemble(const FunctionSpace &space);
-            void transform(const Matrix &in, Matrix &out);
-            void transform(const Vector &in, Vector &out);
-            void inverse_transform(const Vector &in, Vector &out);
+            bool assemble(FunctionSpace &space) override;
+            void transform(const Matrix &in, Matrix &out) override;
+            void transform(const Vector &in, Vector &out) override;
+            void inverse_transform(const Vector &in, Vector &out) override;
 
-            const Vector &gap() const;
-            const Vector &is_contact() const;
-            const Vector &normals() const;
+            const Vector &gap() const override;
+            const Vector &is_contact() const override;
+            const Vector &normals() const override;
 
             Vector &gap();
             Vector &is_contact();
             Vector &normals();
-            std::shared_ptr<Matrix> mass_matrix();
+            std::shared_ptr<Matrix> mass_matrix() override;
 
             Obstacle();
             ~Obstacle();
 
-            std::shared_ptr<Matrix> orthogonal_transformation();
+            std::shared_ptr<Matrix> orthogonal_transformation() override;
 
             // class SurfaceDescriptor {
             // public:

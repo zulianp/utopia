@@ -15,6 +15,9 @@
 
 #include "utopia_fe_Core.hpp"
 
+#include "utopia_moonolith.hpp"
+#include "utopia_moonolith_stk_Obstacle.hpp"
+
 #include "utopia_ContactFEFunction.hpp"
 #include "utopia_FEFunctionFactory.hpp"
 #include "utopia_NewmarkIntegrator.hpp"
