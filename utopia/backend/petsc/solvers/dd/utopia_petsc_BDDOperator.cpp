@@ -173,15 +173,17 @@ namespace utopia {
         }
 
         // https://ui.adsabs.harvard.edu/abs/2022arXiv220205868S/abstract
-        void split_into_blocks(const Matrix &mat, const int max_blocks) {
+        void split_local_blocks(const Matrix &mat) {
+            UTOPIA_TRACE_REGION_BEGIN("BDDOperator::split_local_blocks");
+
             Matrix local_block;
             local_block_view(mat, local_block);
 
             PetscCrsView mat_view = crs_view(local_block);
             int n_rows = mat_view.rows();
-            double tol = 0.5;
+            double tol = 0.55;
 
-            int pattern_length = sizeof(unsigned int);
+            int pattern_length = sizeof(unsigned int) * 8;
 
             std::vector<unsigned int> row_pattern(n_rows, 0);
 
@@ -192,7 +194,7 @@ namespace utopia {
                     auto c = row.colidx(k);
 
                     unsigned int membership = (c * pattern_length - 1) / n_rows;
-                    assert(membership < sizeof(unsigned int));
+                    assert(membership < pattern_length);
                     row_pattern[r] |= 1 << membership;
                 }
             }
@@ -207,45 +209,37 @@ namespace utopia {
 
                 if (block[r] < 0) {
                     bool has_neighs_in_block = false;
+
                     for (int k = 0; k < int(row.length); ++k) {
                         auto c = row.colidx(k);
+                        assert(c < block.size());
+                        int block_c = block[c];
 
-                        if (block[c] > 0) {
-                            has_neighs_in_block = true;
+                        if (block_c > 0) {
+                            assert(block_c < block_pattern.size());
+                            assert(r < row_pattern.size());
+
+                            if (cosine_similarity(block_pattern[block_c], row_pattern[r]) >= tol) {
+                                assert(r < block.size());
+
+                                block[r] = block_c;
+                                block_pattern[block_c] |= row_pattern[r];
+                                has_neighs_in_block = true;
+                                assert(block[r] > 0);
+                                break;
+                            }
                         }
                     }
 
-                    if (has_neighs_in_block) continue;
-
-                    block_pattern[next_block_id] = row_pattern[r];
-                    block[r] = next_block_id++;
-                }
-
-                int block_id = block[r];
-
-                for (int k = 0; k < int(row.length); ++k) {
-                    auto c = row.colidx(k);
-
-                    if (block_pattern[c]) continue;
-
-                    unsigned int pattern_c = row_pattern[c];
-
-                    if (cosine_similarity(block_pattern[block_id], pattern_c) > tol) {
-                        block[c] = block_id;
-                        block_pattern[block_id] |= pattern_c;
+                    if (!has_neighs_in_block) {
+                        block_pattern[next_block_id] = row_pattern[r];
+                        block[r] = next_block_id++;
+                        assert(block[r] >= 0);
                     }
                 }
-            }
 
-            for (int r = 0; r < n_rows; ++r) {
-                auto row = mat_view.row(r);
-
-                if (block[r] < 0) {
-                    block_pattern[next_block_id] = row_pattern[r];
-                    block[r] = next_block_id++;
-                }
-
-                int block_id = block[r];
+                int block_r = block[r];
+                assert(block_r >= 0);
 
                 for (int k = 0; k < int(row.length); ++k) {
                     auto c = row.colidx(k);
@@ -254,23 +248,83 @@ namespace utopia {
 
                     unsigned int pattern_c = row_pattern[c];
 
-                    if (cosine_similarity(block_pattern[block_id], pattern_c) > tol) {
-                        block[c] = block_id;
-                        block_pattern[block_id] |= pattern_c;
+                    if (cosine_similarity(block_pattern[block_r], pattern_c) > tol) {
+                        block[c] = block_r;
+                        block_pattern[block_r] |= pattern_c;
                     }
                 }
             }
 
             int n_blocks = next_block_id;
-            if (n_blocks > max_blocks) {
-                utopia::out() << "BDDOperator: " << n_blocks << " > " << max_blocks << "\n";
-            } else {
-                utopia::out() << "BDDOperator: " << n_blocks << " < " << max_blocks << " n_rows " << n_rows << "\n";
+
+            int loops = 0;
+            for (int iter = 0; iter < n_blocks; ++iter) {
+                bool merged = false;
+                // Merge similar blocks
+                for (int r = 0; r < n_rows; ++r) {
+                    auto row = mat_view.row(r);
+                    for (int k = 0; k < int(row.length); ++k) {
+                        auto c = row.colidx(k);
+
+                        if (block[c] != block[r] &&
+                            cosine_similarity(block_pattern[block[r]], block_pattern[block[c]]) >= 0.95 * tol) {
+                            int block_id = std::min(block[r], block[c]);
+                            block[c] = block_id;
+                            block[r] = block_id;
+                            merged = true;
+                        }
+                    }
+                }
+
+                loops++;
+                if (!merged) break;
             }
 
-            for (int i = 0; i < n_blocks; ++i) {
-                showbits(block_pattern[i]);
+            // Compaction of block numbering
+            std::vector<int> map(n_blocks, -1);
+
+            int next_map_id = 0;
+
+            for (int r = 0; r < n_rows; ++r) {
+                int block_id = block[r];
+                if (map[block_id] < 0) {
+                    map[block_id] = next_map_id++;
+                }
             }
+
+            std::vector<unsigned int> clusters(next_map_id, 0);
+
+            for (int r = 0; r < n_rows; ++r) {
+                int block_id = block[r];
+                int mapped_id = map[block_id];
+
+                clusters[mapped_id] |= block_pattern[block_id];
+                block[r] = mapped_id;
+            }
+
+            int n_interface = 0;
+
+            for (int r = 0; r < n_rows; ++r) {
+                auto row = mat_view.row(r);
+
+                for (int k = 0; k < int(row.length); ++k) {
+                    auto c = row.colidx(k);
+
+                    if (block[r] != block[c]) {
+                        ++n_interface;
+                        selector[r] = true;
+                        break;
+                    }
+                }
+            }
+
+            if (verbose) {
+                std::stringstream ss;
+                ss << next_map_id << " blocks (" << n_interface << "/" << n_rows << ") algo loops " << loops << "\n";
+                mat.comm().synched_print(ss.str(), utopia::out().stream());
+            }
+
+            UTOPIA_TRACE_REGION_END("BDDOperator::split_local_blocks");
         }
 
         // MOVE TO AMG
@@ -414,12 +468,12 @@ namespace utopia {
             {
                 auto mask_view = local_view_device(mask);
 
-                parallel_for(
-                    local_range_device(mask), UTOPIA_LAMBDA(const SizeType i) {
-                        if (mask_view.get(i) == 0) {
-                            selector[i] = true;
-                        }
-                    });
+                // FIXME ref capture
+                parallel_for(local_range_device(mask), [&](const SizeType i) {
+                    if (mask_view.get(i) == 0) {
+                        selector[i] = true;
+                    }
+                });
 
                 if (verbose) {
                     parallel_for(
@@ -442,7 +496,7 @@ namespace utopia {
             }
         }
 
-        void fix_selected() {
+        void fix_selected(const Matrix &mat) {
             if (block_size <= 1) return;
 
             const SizeType n = selector.size();
@@ -472,8 +526,11 @@ namespace utopia {
             if (verbose) {
                 std::stringstream ss;
 
-                ss << "n_selected_before:\t" << n_selected_before << "\n";
-                ss << "n_selected_after:\t" << n_selected_after << "\n";
+                n_selected_before = mat.comm().sum(n_selected_before);
+                n_selected_after = mat.comm().sum(n_selected_after);
+
+                ss << "n_selected_before:\t" << n_selected_before << "/" << mat.rows() << "\n";
+                ss << "n_selected_after:\t" << n_selected_after << "/" << mat.rows() << "\n";
                 Communicator().root_print(ss.str());
             }
         }
@@ -486,7 +543,11 @@ namespace utopia {
                 select_constrained_rows(A);
             }
 
-            fix_selected();
+            if (local_block_splitting) {
+                split_local_blocks(A);
+            }
+
+            fix_selected(A);
 
             auto &&comm = A.comm();
 
@@ -574,6 +635,10 @@ namespace utopia {
                     return value;
                 }
             });
+
+            if (local_block_splitting || compress_rows) {
+                optimize_nnz(A_II);
+            }
 
             UTOPIA_TRACE_REGION_END("BDDOperator::build_A_II");
         }
@@ -975,7 +1040,8 @@ namespace utopia {
         bool handle_linear_constraints{true};
 
         int block_size{1};
-        bool analize_block_structure{false};
+        bool local_block_splitting{false};
+        bool compress_rows{false};
     };
 
     template <class Matrix, class Vector>
@@ -985,7 +1051,8 @@ namespace utopia {
         in.get("debug", impl_->debug);
         in.get("block_size", impl_->block_size);
         in.get("handle_linear_constraints", impl_->handle_linear_constraints);
-        in.get("analize_block_structure", impl_->analize_block_structure);
+        in.get("local_block_splitting", impl_->local_block_splitting);
+        in.get("compress_rows", impl_->compress_rows);
     }
 
     template <class Matrix, class Vector>
@@ -1044,10 +1111,6 @@ namespace utopia {
     template <class Matrix, class Vector>
     bool BDDOperator<Matrix, Vector>::initialize(const std::shared_ptr<const Matrix> &matrix) {
         UTOPIA_TRACE_REGION_BEGIN("BDDOperator::initialize(matrix)");
-
-        if (impl_->analize_block_structure) {
-            impl_->split_into_blocks(*matrix, 3);
-        }
 
         auto A_GG_ptr = std::make_shared<Matrix>();
         auto A_GI_ptr = std::make_shared<Matrix>();

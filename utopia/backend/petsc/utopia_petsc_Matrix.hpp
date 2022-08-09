@@ -3,6 +3,7 @@
 
 // Core includes
 #include "utopia_Allocations.hpp"
+#include "utopia_ArrayView.hpp"
 #include "utopia_BLAS_Operands.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_Comparable.hpp"
@@ -253,6 +254,12 @@ namespace utopia {
             MatGetOwnershipRangeColumn(implementation(), &r_begin, &r_end);
             assert(Range(r_begin, r_end).valid());
             return {r_begin, r_end};
+        }
+
+        inline ArrayView<const PetscInt> col_ranges() const {
+            const PetscInt *ranges;
+            MatGetOwnershipRangesColumn(this->raw_type(), &ranges);
+            return ArrayView<const PetscInt>(ranges, comm().size());
         }
 
         inline SizeType rows() const override {
