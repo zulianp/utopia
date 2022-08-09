@@ -13,6 +13,8 @@
 
 #include "utopia_petsc_Utils.hpp"
 
+#include "utopia_petsc_Decompose.hpp"
+
 #include <sstream>
 
 namespace utopia {
@@ -171,6 +173,47 @@ namespace utopia {
             }
             printf("\n");
         }
+
+#ifdef UTOPIA_WITH_METIS
+        void split_local_blocks_with_metis(const Matrix &mat, const int num_blocks) {
+            UTOPIA_TRACE_REGION_BEGIN("BDDOperator::split_local_blocks_with_metis");
+
+            Matrix local_block;
+            local_block_view(mat, local_block);
+
+            std::vector<SizeType> partitions(local_block.rows(), -1);
+            if (!decompose(local_block, num_blocks, &partitions[0])) {
+                Utopia::Abort("Failed to decompose into blocks");
+            }
+
+            auto mat_view = crs_view(local_block);
+
+            int n_rows = mat_view.rows();
+            int n_interface = 0;
+
+            for (int r = 0; r < n_rows; ++r) {
+                auto row = mat_view.row(r);
+
+                for (int k = 0; k < int(row.length); ++k) {
+                    auto c = row.colidx(k);
+
+                    if (partitions[r] != partitions[c]) {
+                        ++n_interface;
+                        selector[r] = true;
+                        break;
+                    }
+                }
+            }
+
+            if (verbose) {
+                std::stringstream ss;
+                ss << num_blocks << " blocks (" << n_interface << "/" << n_rows << ")\n";
+                mat.comm().synched_print(ss.str(), utopia::out().stream());
+            }
+
+            UTOPIA_TRACE_REGION_END("BDDOperator::split_local_blocks_with_metis");
+        }
+#endif
 
         // https://ui.adsabs.harvard.edu/abs/2022arXiv220205868S/abstract
         void split_local_blocks(const Matrix &mat) {
@@ -544,7 +587,11 @@ namespace utopia {
             }
 
             if (local_block_splitting) {
+#ifdef UTOPIA_WITH_METIS
+                split_local_blocks_with_metis(A, local_block_splitting);
+#else
                 split_local_blocks(A);
+#endif
             }
 
             fix_selected(A);
@@ -1040,7 +1087,7 @@ namespace utopia {
         bool handle_linear_constraints{true};
 
         int block_size{1};
-        bool local_block_splitting{false};
+        int local_block_splitting{0};
         bool compress_rows{false};
     };
 
