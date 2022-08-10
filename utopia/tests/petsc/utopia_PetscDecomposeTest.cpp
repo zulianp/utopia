@@ -39,9 +39,9 @@ public:
         std::vector<SizeType> decomposition(mat.rows(), -1);
         utopia_test_assert(decompose(mat, 3, &decomposition[0]));
 
-        for (auto tag : decomposition) {
-            std::cout << tag << "\n";
-        }
+	//  for (auto tag : decomposition) {
+	  //            std::cout << tag << "\n";
+        //}
     }
 #endif 
 
@@ -49,17 +49,22 @@ public:
     void parmetis_decompose() {
 
         auto &&comm = Comm::get_default();
-
+	int mult = comm.rank() + 1;
+	
         Matrix mat;
-        mat.sparse(layout(comm, 3, 3, Traits::determine(), Traits::determine()), 3, 3);
+        mat.sparse(layout(comm, mult*3, mult*3, Traits::determine(), Traits::determine()), 3, 3);
         assemble_laplacian_1D(mat);
 
-        std::vector<SizeType> decomposition(mat.rows(), -1);
+        std::vector<SizeType> decomposition(mat.local_rows(), -1);
         utopia_test_assert(parallel_decompose(mat, comm.size(), &decomposition[0]));
 
+
+	std::stringstream ss;
         for (auto tag : decomposition) {
-            std::cout << tag << "\n";
+            ss << tag << "\n";
         }
+
+	comm.synched_print(ss.str(), utopia::out().stream());
     }
 #endif 
 };

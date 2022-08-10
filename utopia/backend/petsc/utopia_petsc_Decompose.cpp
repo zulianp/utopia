@@ -92,7 +92,7 @@ bool parallel_decompose(const PetscMatrix&, const int, int*)
 bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int* partitions)
 {
     idx_t* vtxdist = (idx_t*)&matrix.row_ranges()[0];
-    static const idx_t ncon = 1;
+    idx_t ncon = 1;
     idx_t* vwgt = nullptr;
     idx_t* vsize = nullptr;
     idx_t* adjwgt = nullptr;
@@ -100,7 +100,7 @@ bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int
     idx_t numflag = 0;
     idx_t nparts = num_partitions;
     
-    real_t ubvec[ncon] = 1.05;
+    real_t ubvec[1] = {1.05};
     idx_t options[3] = { 0 };
     idx_t objval = -1;
     idx_t edgecut;
@@ -168,7 +168,7 @@ bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int
         &numflag,       //6
         &ncon,          //7
         &nparts,        //8
-        tpwgts,         //9
+        &tpwgts[0],         //9
         ubvec,          //10
         options,        //11
         &edgecut,       //12
