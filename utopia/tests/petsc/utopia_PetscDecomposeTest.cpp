@@ -28,6 +28,7 @@ public:
 #ifdef UTOPIA_WITH_PARMETIS
         UTOPIA_RUN_TEST(parmetis_decompose);
         UTOPIA_RUN_TEST(parmetis_partitions_to_permutations);
+        UTOPIA_RUN_TEST(parmetis_rebalance);
 #endif
     }
 
