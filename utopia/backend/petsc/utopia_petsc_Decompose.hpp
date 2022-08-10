@@ -2,10 +2,16 @@
 #define UTOPIA_PETSC_DECOMPOSE_HPP
 
 #include "utopia_petsc_ForwardDeclarations.hpp"
+#include "utopia_petsc_Traits.hpp"
 
 namespace utopia {
     bool decompose(const PetscMatrix &matrix, const int num_partitions, int *partitions);
-    bool parallel_decompose(const PetscMatrix &matrix, const int numparitions, int *paritions);
-}
+    bool parallel_decompose(const PetscMatrix &matrix, const int num_partitions, int *partitions);
+
+    bool partitions_to_permutations(const PetscMatrix &matrix,
+                                    const int *partitions,
+                                    Traits<PetscMatrix>::SizeType *index);
+
+}  // namespace utopia
 
 #endif  // UTOPIA_PETSC_DECOMPOSE_HPP
