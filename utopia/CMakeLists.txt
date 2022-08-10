@@ -59,6 +59,7 @@ option(UTOPIA_ENABLE_MPI "Enable the cuda backend" ON)
 option(UTOPIA_ENABLE_PETSC "Enable the petsc backend" ON)
 option(UTOPIA_ENABLE_SLEPC "Enable the slepc backend" OFF)
 option(UTOPIA_ENABLE_METIS "Enable the Metis backend" OFF)
+option(UTOPIA_ENABLE_PARMETIS, "Enable the ParMetis backend" OFF)
 option(UTOPIA_ENABLE_TRILINOS "Enable the Trilinos backend" ON)
 # option(UTOPIA_ENABLE_KOKKOS_SIMD "Enable kokkos intriniscs wrapper" OFF)
 option(UTOPIA_ENABLE_BLAS "Enable the blas backend" ON)
@@ -525,6 +526,10 @@ endif()
 
 if(UTOPIA_ENABLE_METIS)
     add_subdirectory(backend/metis)
+endif()
+
+if(UTOPIA_ENABLE_PARMETIS)
+    add_subdirectory(backend/parmetis)
 endif()
 
 # weird stuff goes here
