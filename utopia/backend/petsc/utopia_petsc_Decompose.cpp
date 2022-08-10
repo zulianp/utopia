@@ -142,13 +142,13 @@ bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int
 
         auto begin = rowptr[i];
         for (PetscInt k = 0; k < d_row.length; ++k) {
-            colidx[begin + k] = d_row.colidx(k);
+            colidx[begin + k] = col_offset + d_row.colidx(k);
         }
 
         // append offsets
         begin += d_row.length;
         for (PetscInt k = 0; k < o_row.length; ++k) {
-            colidx[begin + k] = o_row.colidx(k);
+            colidx[begin + k] = colmap[o_row.colidx(k)];
         }
     }
 
