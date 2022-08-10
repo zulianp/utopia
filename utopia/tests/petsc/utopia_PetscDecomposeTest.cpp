@@ -57,8 +57,7 @@ public:
 
         std::vector<SizeType> decomposition(mat.local_rows(), -1);
         utopia_test_assert(parallel_decompose(mat, comm.size(), &decomposition[0]));
-
-
+	
 	std::stringstream ss;
         for (auto tag : decomposition) {
             ss << tag << "\n";

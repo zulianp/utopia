@@ -106,8 +106,6 @@ bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int
     idx_t edgecut;
     idx_t* parts = partitions;
     MPI_Comm comm = matrix.comm().raw_comm();
-
-
     int comm_size = matrix.comm().size();
 
     Mat d, o;
@@ -120,8 +118,9 @@ bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int
 
     std::vector<idx_t> rowptr(d_view.rows() + 1, 0);
     std::vector<idx_t> colidx(d_view.colidx().size() + o_view.colidx().size(), -1);
-    std::vector<real_t> tpwgts(d_view.rows(), 1./num_partitions);
-
+    std::vector<real_t> tpwgts(num_partitions, 1./num_partitions);
+    std::vector<idx_t> actual_vwgts(d_view.rows(), 0);
+    
     auto cr = matrix.col_range();
 
     PetscInt local_rows = d_view.rows();
@@ -137,6 +136,13 @@ bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int
     for (PetscInt i = 0; i < local_rows; ++i) {
         rowptr[i + 1] += o_rowptr[i + 1] - o_rowptr[i];
     }
+
+    // Copy weights
+    for (PetscInt i = 0; i < local_rows; ++i) {
+        actual_vwgts[i] = rowptr[i+1];
+    }
+        vwgt = &actual_vwgts[0];                                                                                                                                                                                                  
+        wgtflag = 2; 
 
     for (PetscInt i = 0; i < local_rows; ++i) {
         rowptr[i + 1] += rowptr[i];
@@ -158,6 +164,33 @@ bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int
         }
     }
 
+    if(false){
+      std::stringstream ss;
+
+      for(auto r : rowptr) {
+	ss << r << " "; 
+      }
+
+      ss << "\n";
+
+      for(auto c : colidx) {
+	ss << c << " ";
+      }
+
+      ss << "\n";
+
+
+      real_t sumw = 0;
+
+      for(auto w : tpwgts) {
+	sumw += w;
+      }
+
+      ss << "sumw = " << sumw << "\n";
+      
+      matrix.comm().synched_print(ss.str());
+    }
+
     int ret = ParMETIS_V3_PartKway(
         vtxdist,        //0
         &rowptr[0],     //1
@@ -168,7 +201,7 @@ bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int
         &numflag,       //6
         &ncon,          //7
         &nparts,        //8
-        &tpwgts[0],         //9
+        &tpwgts[0],     //9
         ubvec,          //10
         options,        //11
         &edgecut,       //12
