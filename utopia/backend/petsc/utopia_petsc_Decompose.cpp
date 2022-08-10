@@ -268,4 +268,42 @@ namespace utopia {
         return true;
     }
 
+    bool rebalance(const PetscMatrix &in,
+                   PetscMatrix &out,
+                   Traits<PetscMatrix>::IndexArray &partitioning,
+                   Traits<PetscMatrix>::IndexArray &permutation) {
+        if (in.comm().size() == 1) {
+            return false;
+        }
+
+        assert(in.rows() == in.cols());
+
+        partitioning.resize(in.local_rows(), 0);
+
+        if (!decompose(in, in.comm().size(), &partitioning[0])) {
+            return false;
+        }
+
+        permutation.resize(in.local_rows(), 0);
+
+        if (!partitions_to_permutations(in, &partitioning[0], &permutation[0])) {
+            return false;
+        }
+
+        IS is = nullptr;
+        PetscErrorCode err =
+            ISCreateGeneral(in.comm().raw_comm(), in.local_rows(), &permutation[0], PETSC_USE_POINTER, &is);
+
+        if (err != 0) {
+            return false;
+        }
+
+        // Destroy because a new matrix is created below!
+        out.destroy();
+        err = MatPermute(in.raw_type(), is, is, &out.raw_type());
+
+        ISDestroy(&is);
+        return err == 0;
+    }
+
 }  // namespace utopia

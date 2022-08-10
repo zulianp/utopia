@@ -88,6 +88,22 @@ public:
 
         comm.synched_print(ss.str(), utopia::out().stream());
     }
+
+    void parmetis_rebalance() {
+        auto &&comm = Comm::get_default();
+        int mult = comm.rank() + 1;
+        int n_local = mult * 3;
+
+        Matrix mat;
+        mat.sparse(layout(comm, n_local, n_local, Traits::determine(), Traits::determine()), 3, 3);
+        assemble_laplacian_1D(mat);
+
+        Matrix rebalanced;
+        IndexArray partitioning, permutation;
+
+        utopia_test_assert(rebalance(mat, rebalanced, partitioning, permutation));
+        disp(rebalanced);
+    }
 #endif
 };
 

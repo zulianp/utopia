@@ -12,6 +12,11 @@ namespace utopia {
                                     const int *partitions,
                                     Traits<PetscMatrix>::SizeType *index);
 
+    bool rebalance(const PetscMatrix &in,
+                   PetscMatrix &out,
+                   Traits<PetscMatrix>::IndexArray &partitioning,
+                   Traits<PetscMatrix>::IndexArray &permutation);
+
 }  // namespace utopia
 
 #endif  // UTOPIA_PETSC_DECOMPOSE_HPP
