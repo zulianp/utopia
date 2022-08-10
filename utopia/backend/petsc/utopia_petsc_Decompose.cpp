@@ -99,7 +99,6 @@ namespace utopia {
         idx_t edgecut;
         idx_t* parts = partitions;
         MPI_Comm comm = matrix.comm().raw_comm();
-        int comm_size = matrix.comm().size();
 
         Mat d, o;
 

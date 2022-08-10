@@ -59,12 +59,12 @@ public:
         std::vector<SizeType> decomposition(mat.local_rows(), -1);
         utopia_test_assert(parallel_decompose(mat, comm.size(), &decomposition[0]));
 
-        std::stringstream ss;
-        for (auto tag : decomposition) {
-            ss << tag << "\n";
-        }
+        // std::stringstream ss;
+        // for (auto tag : decomposition) {
+        //     ss << tag << "\n";
+        // }
 
-        comm.synched_print(ss.str(), utopia::out().stream());
+        // comm.synched_print(ss.str(), utopia::out().stream());
     }
 
     void parmetis_partitions_to_permutations() {
@@ -82,12 +82,12 @@ public:
         IndexArray idx(n_local, -1);
         partitions_to_permutations(mat, &decomposition[0], &idx[0]);
 
-        std::stringstream ss;
-        for (auto i : idx) {
-            ss << i << "\n";
-        }
+        // std::stringstream ss;
+        // for (auto i : idx) {
+        //     ss << i << "\n";
+        // }
 
-        comm.synched_print(ss.str(), utopia::out().stream());
+        // comm.synched_print(ss.str(), utopia::out().stream());
     }
 
     void parmetis_rebalance() {
@@ -103,7 +103,17 @@ public:
         IndexArray partitioning, permutation;
 
         utopia_test_assert(rebalance(mat, rebalanced, partitioning, permutation));
-        disp(rebalanced);
+        // disp(rebalanced);
+
+        auto rr = rebalanced.row_ranges();
+
+        if (comm.rank() == 0) {
+            for (auto r : rr) {
+                std::cout << r << " ";
+            }
+
+            std::cout << "\n";
+        }
     }
 #endif
 };
