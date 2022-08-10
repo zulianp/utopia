@@ -5,6 +5,7 @@
 
 namespace utopia {
     bool decompose(const PetscMatrix &matrix, const int num_partitions, int *partitions);
+    bool parallel_decompose(const PetscMatrix &matrix, const int numparitions, int *paritions);
 }
 
 #endif  // UTOPIA_PETSC_DECOMPOSE_HPP

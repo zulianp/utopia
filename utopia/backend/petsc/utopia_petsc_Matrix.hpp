@@ -262,6 +262,12 @@ namespace utopia {
             return ArrayView<const PetscInt>(ranges, comm().size());
         }
 
+        inline ArrayView<const PetscInt> row_ranges() const {
+            const PetscInt *ranges;
+            MatGetOwnershipRanges(this->raw_type(), &ranges);
+            return ArrayView<const PetscInt>(ranges, comm().size());
+        }
+
         inline SizeType rows() const override {
             SizeType ret;
             check_error(MatGetSize(implementation(), &ret, nullptr));
