@@ -280,7 +280,7 @@ namespace utopia {
 
         partitioning.resize(in.local_rows(), 0);
 
-        if (!decompose(in, in.comm().size(), &partitioning[0])) {
+        if (!parallel_decompose(in, in.comm().size(), &partitioning[0])) {
             return false;
         }
 
