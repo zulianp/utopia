@@ -105,14 +105,28 @@ public:
         utopia_test_assert(rebalance(mat, rebalanced, partitioning, permutation));
         // disp(rebalanced);
 
-        auto rr = rebalanced.row_ranges();
+        {
+            auto rr = mat.row_ranges();
 
-        if (comm.rank() == 0) {
-            for (auto r : rr) {
-                std::cout << r << " ";
+            if (comm.rank() == 0) {
+                for (auto r : rr) {
+                    std::cout << r << " ";
+                }
+
+                std::cout << "\n";
             }
+        }
 
-            std::cout << "\n";
+        {
+            auto rr = rebalanced.row_ranges();
+
+            if (comm.rank() == 0) {
+                for (auto r : rr) {
+                    std::cout << r << " ";
+                }
+
+                std::cout << "\n";
+            }
         }
     }
 #endif
