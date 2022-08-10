@@ -92,15 +92,15 @@ bool parallel_decompose(const PetscMatrix&, const int, int*)
 bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int* partitions)
 {
     idx_t* vtxdist = (idx_t*)&matrix.row_ranges()[0];
-    idx_t ncon = 1;
+    static const idx_t ncon = 1;
     idx_t* vwgt = nullptr;
     idx_t* vsize = nullptr;
     idx_t* adjwgt = nullptr;
     idx_t wgtflag = 0;
     idx_t numflag = 0;
     idx_t nparts = num_partitions;
-    real_t* tpwgts = nullptr;
-    real_t* ubvec = nullptr;
+    
+    real_t ubvec[ncon] = 1.05;
     idx_t options[3] = { 0 };
     idx_t objval = -1;
     idx_t edgecut;
@@ -120,6 +120,7 @@ bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int
 
     std::vector<idx_t> rowptr(d_view.rows() + 1, 0);
     std::vector<idx_t> colidx(d_view.colidx().size() + o_view.colidx().size(), -1);
+    std::vector<real_t> tpwgts(d_view.rows(), 1./num_partitions);
 
     auto cr = matrix.col_range();
 
@@ -158,7 +159,21 @@ bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int
     }
 
     int ret = ParMETIS_V3_PartKway(
-        vtxdist, &rowptr[0], &colidx[0], vwgt, adjwgt, &wgtflag, &numflag, &ncon, &nparts, tpwgts, ubvec, options, &edgecut, parts, &comm);
+        vtxdist,        //0
+        &rowptr[0],     //1
+        &colidx[0],     //2
+        vwgt,           //3
+        adjwgt,         //4
+        &wgtflag,       //5
+        &numflag,       //6
+        &ncon,          //7
+        &nparts,        //8
+        tpwgts,         //9
+        ubvec,          //10
+        options,        //11
+        &edgecut,       //12
+        parts,          //13
+        &comm);         //14
 
     if (ret == METIS_OK) {
         return true;

@@ -55,7 +55,7 @@ public:
         assemble_laplacian_1D(mat);
 
         std::vector<SizeType> decomposition(mat.rows(), -1);
-        utopia_test_assert(parallel_decompose(mat, 3, &decomposition[0]));
+        utopia_test_assert(parallel_decompose(mat, comm.size(), &decomposition[0]));
 
         for (auto tag : decomposition) {
             std::cout << tag << "\n";
