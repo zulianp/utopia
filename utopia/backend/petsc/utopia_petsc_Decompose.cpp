@@ -96,6 +96,8 @@ bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int
     idx_t* vwgt = nullptr;
     idx_t* vsize = nullptr;
     idx_t* adjwgt = nullptr;
+    idx_t wgtflag = 0;
+    idx_t numflag = 0;
     idx_t nparts = num_partitions;
     real_t* tpwgts = nullptr;
     real_t* ubvec = nullptr;
@@ -104,6 +106,9 @@ bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int
     idx_t edgecut;
     idx_t* parts = partitions;
     MPI_Comm comm = matrix.comm().raw_comm();
+
+
+    int comm_size = matrix.comm().size();
 
     Mat d, o;
 
@@ -153,7 +158,7 @@ bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int
     }
 
     int ret = ParMETIS_V3_PartKway(
-        vtxdist, &rowptr[0], &colidx[0], vwgt, adjwgt, 0, 0, &ncon, &nparts, tpwgts, ubvec, options, &edgecut, parts, &comm);
+        vtxdist, &rowptr[0], &colidx[0], vwgt, adjwgt, &wgtflag, &numflag, &ncon, &nparts, tpwgts, ubvec, options, &edgecut, parts, &comm);
 
     if (ret == METIS_OK) {
         return true;
