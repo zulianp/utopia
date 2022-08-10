@@ -122,7 +122,7 @@ bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int
     PetscInt col_offset = cr.begin();
 
     auto d_rowptr = d_view.row_ptr();
-    rowptr[0] = d_rowptr[0];
+    rowptr[0] = 0;
     for (PetscInt i = 0; i < local_rows; ++i) {
         rowptr[i + 1] = d_rowptr[i + 1] - d_rowptr[i];
     }

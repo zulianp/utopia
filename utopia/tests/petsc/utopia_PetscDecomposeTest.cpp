@@ -23,10 +23,15 @@ public:
 #ifdef UTOPIA_WITH_METIS
         UTOPIA_RUN_TEST(metis_decompose);
 #endif
+
+#ifdef UTOPIA_WITH_PARMETIS
+        UTOPIA_RUN_TEST(parmetis_decompose);
+#endif
     }
 
-    void metis_decompose() {
 #ifdef UTOPIA_WITH_METIS
+    void metis_decompose() {
+
         Matrix mat;
         mat.sparse(serial_layout(20, 20), 3, 3);
         assemble_laplacian_1D(mat);
@@ -37,9 +42,26 @@ public:
         for (auto tag : decomposition) {
             std::cout << tag << "\n";
         }
-
-#endif
     }
+#endif 
+
+#ifdef UTOPIA_WITH_PARMETIS
+    void parmetis_decompose() {
+
+        auto &&comm = Comm::get_default();
+
+        Matrix mat;
+        mat.sparse(layout(comm, 3, 3, Traits::determine(), Traits::determine()), 3, 3);
+        assemble_laplacian_1D(mat);
+
+        std::vector<SizeType> decomposition(mat.rows(), -1);
+        utopia_test_assert(parallel_decompose(mat, 3, &decomposition[0]));
+
+        for (auto tag : decomposition) {
+            std::cout << tag << "\n";
+        }
+    }
+#endif 
 };
 
 void petsc_decompose_test() {
