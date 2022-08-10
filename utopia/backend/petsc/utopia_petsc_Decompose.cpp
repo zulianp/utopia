@@ -153,7 +153,7 @@ bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int
     }
 
     int ret = ParMETIS_V3_PartKway(
-        vtxdist, &rowptr[0], &colidx[0], vwgt, adjwgt, 0, 0, &ncon, &nparts, tpwgts, ubvec, options, &edgecut, parts, comm);
+        vtxdist, &rowptr[0], &colidx[0], vwgt, adjwgt, 0, 0, &ncon, &nparts, tpwgts, ubvec, options, &edgecut, parts, &comm);
 
     if (ret == METIS_OK) {
         return true;
