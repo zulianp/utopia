@@ -88,6 +88,7 @@ bool parallel_decompose(const PetscMatrix&, const int, int*)
 }
 
 #else
+
 bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int* partitions)
 {
     idx_t* vtxdist = (idx_t*)&matrix.row_ranges()[0];
@@ -98,7 +99,7 @@ bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int
     idx_t nparts = num_partitions;
     real_t* tpwgts = nullptr;
     real_t* ubvec = nullptr;
-    idx_t options[3] = {0};
+    idx_t options[3] = { 0 };
     idx_t objval = -1;
     idx_t edgecut;
     idx_t* parts = partitions;
@@ -115,52 +116,50 @@ bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int
     std::vector<idx_t> rowptr(d_view.rows() + 1, 0);
     std::vector<idx_t> colidx(d_view.colidx().size() + o_view.colidx().size(), -1);
 
-    auto cr = mat.col_range();
+    auto cr = matrix.col_range();
 
-    PescInt local_rows = d_view.rows();
+    PetscInt local_rows = d_view.rows();
     PetscInt col_offset = cr.begin();
 
-    auto d_row_ptr = d_view.row_ptr();
-    rowptr[0] = d_row_ptr[0];
-    for(PetscInt i = 0; i < local_rows; ++i) {
-        rowptr[i+1] = d_row_ptr[i+1] - d_row_ptr[i];
+    auto d_rowptr = d_view.row_ptr();
+    rowptr[0] = d_rowptr[0];
+    for (PetscInt i = 0; i < local_rows; ++i) {
+        rowptr[i + 1] = d_rowptr[i + 1] - d_rowptr[i];
     }
 
-    auto o_row_ptr = o_view.row_ptr();
-    for(PetscInt i = 0; i < local_rows; ++i) {
-        rowptr[i+1] += o_row_ptr[i+1] - o_row_ptr[i];
+    auto o_rowptr = o_view.row_ptr();
+    for (PetscInt i = 0; i < local_rows; ++i) {
+        rowptr[i + 1] += o_rowptr[i + 1] - o_rowptr[i];
     }
 
-    for(PetscInt i = 0; i < local_rows; ++i) {
-        rowptr[i+1] += rowptr[i];
+    for (PetscInt i = 0; i < local_rows; ++i) {
+        rowptr[i + 1] += rowptr[i];
     }
 
-    for(PetscInt i = 0; i < local_rows; ++i) {
+    for (PetscInt i = 0; i < local_rows; ++i) {
         auto d_row = d_view.row(i);
         auto o_row = o_view.row(i);
 
-        auto begin = row_ptr[i];
-        for(PetscInt k = 0; k < d_row.length; ++k) {
-            colidx[begin + k] = d_row.col(k);
+        auto begin = rowptr[i];
+        for (PetscInt k = 0; k < d_row.length; ++k) {
+            colidx[begin + k] = d_row.colidx(k);
         }
 
         // append offsets
-        begin +=  d_row.length;
-        for(PetscInt k = 0; k < o_row.length; ++k) {
-            colidx[begin + k] = o_row.col(k);
+        begin += d_row.length;
+        for (PetscInt k = 0; k < o_row.length; ++k) {
+            colidx[begin + k] = o_row.colidx(k);
         }
     }
 
     int ret = ParMETIS_V3_PartKway(
-        vtxdist, &row_ptr[0], &colidx[0], vwgt, adjwgt, 0, 0, &ncon, &nparts, tpwgts, ubvec, options, &edgecut, part, comm
-        );
+        vtxdist, &rowptr[0], &colidx[0], vwgt, adjwgt, 0, 0, &ncon, &nparts, tpwgts, ubvec, options, &edgecut, parts, comm);
 
-    if(ret == METIS_OK) {
+    if (ret == METIS_OK) {
         return true;
     } else {
         return false;
     }
-
 }
 #endif
 
