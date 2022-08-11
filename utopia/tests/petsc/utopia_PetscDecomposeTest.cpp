@@ -27,9 +27,10 @@ public:
 
 #ifdef UTOPIA_WITH_PARMETIS
         UTOPIA_RUN_TEST(parmetis_decompose);
-        UTOPIA_RUN_TEST(parmetis_partitions_to_permutations);
         UTOPIA_RUN_TEST(parmetis_rebalance);
 #endif
+
+        UTOPIA_RUN_TEST(handcoded_partitions_to_permutations);
     }
 
 #ifdef UTOPIA_WITH_METIS
@@ -62,29 +63,6 @@ public:
         // std::stringstream ss;
         // for (auto tag : decomposition) {
         //     ss << tag << "\n";
-        // }
-
-        // comm.synched_print(ss.str(), utopia::out().stream());
-    }
-
-    void parmetis_partitions_to_permutations() {
-        auto &&comm = Comm::get_default();
-        int mult = comm.rank() + 1;
-        int n_local = mult * 3;
-
-        Matrix mat;
-        mat.sparse(layout(comm, n_local, n_local, Traits::determine(), Traits::determine()), 3, 3);
-        assemble_laplacian_1D(mat);
-
-        std::vector<SizeType> decomposition(n_local, -1);
-        utopia_test_assert(parallel_decompose(mat, comm.size(), &decomposition[0]));
-
-        IndexArray idx;
-        utopia_test_assert(partitions_to_permutations(mat, &decomposition[0], idx));
-
-        // std::stringstream ss;
-        // for (auto i : idx) {
-        //     ss << i << "\n";
         // }
 
         // comm.synched_print(ss.str(), utopia::out().stream());
@@ -130,6 +108,27 @@ public:
         }
     }
 #endif
+
+    void handcoded_partitions_to_permutations() {
+        auto &&comm = Comm::get_default();
+        int mult = comm.rank() + 1;
+        int n_local = mult * 3;
+
+        Matrix mat;
+        mat.sparse(layout(comm, n_local, n_local, Traits::determine(), Traits::determine()), 3, 3);
+        assemble_laplacian_1D(mat);
+
+        std::vector<SizeType> decomposition(n_local, 0);
+
+        auto rr = mat.row_range();
+        SizeType n_rows = mat.rows();
+        for (int i = 0; i < n_local; ++i) {
+            decomposition[i] = (rr.begin() + i + 10) % comm.size();
+        }
+
+        IndexArray idx;
+        utopia_test_assert(partitions_to_permutations(mat, &decomposition[0], idx));
+    }
 };
 
 void petsc_decompose_test() {

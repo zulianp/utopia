@@ -211,7 +211,6 @@ namespace utopia {
                                     Traits<PetscMatrix>::IndexArray &index) {
         auto &&comm = matrix.comm();
         const int comm_size = comm.size();
-        // const int comm_rank = comm.rank();
 
         auto rrs = matrix.row_ranges();
         auto rr = matrix.row_range();
@@ -260,6 +259,7 @@ namespace utopia {
             for (int r = 0; r < comm_size; ++r) {
                 // Rows that are kept local are also counted!
                 incoming += recvcounts[r];
+                rdispls[r + 1] = rdispls[r] + recvcounts[r];
             }
         }
 
@@ -274,6 +274,64 @@ namespace utopia {
                       rdispls.data(),
                       MPIType<PetscInt>::value(),
                       comm.raw_comm());
+
+#if 0
+        {
+            std::stringstream ss;
+
+            ss << "partitions: ";
+
+            for (int i = 0; i < local_rows; ++i) {
+                ss << partitions[i] << " ";
+            }
+
+            ss << "\n";
+
+            ss << "sdispls: ";
+            for (auto sd : sdispls) {
+                ss << sd << " ";
+            }
+
+            ss << "\n";
+
+            ss << "sendcounts: ";
+            for (auto sc : sendcounts) {
+                ss << sc << " ";
+            }
+
+            ss << "\n";
+
+            ss << "recvcounts: ";
+            for (auto rc : recvcounts) {
+                ss << rc << " ";
+            }
+
+            ss << "\n";
+
+            ss << "rdispls: ";
+            for (auto rd : rdispls) {
+                ss << rd << " ";
+            }
+
+            ss << "\n";
+
+            ss << "sendbuf: ";
+            for (auto idx : sendbuf) {
+                ss << idx << " ";
+            }
+
+            ss << "\n";
+
+            ss << "index: ";
+            for (auto idx : index) {
+                ss << idx << " ";
+            }
+
+            ss << "\n";
+
+            comm.synched_print(ss.str(), utopia::out().stream());
+        }
+#endif
 
         return true;
     }
