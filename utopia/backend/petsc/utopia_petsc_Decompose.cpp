@@ -206,12 +206,75 @@ namespace utopia {
     }
 #endif
 
+    // // Remote data is arranged locally following rank ordering
+    // bool partitions_to_permutations(const PetscMatrix &matrix,
+    //                                 const int *partitions,
+    //                                 Traits<PetscMatrix>::SizeType *index) {
+    //     auto &&comm = matrix.comm();
+    //     const int comm_size = comm.size();
+
+    //     auto rrs = matrix.row_ranges();
+
+    //     std::vector<PetscInt> send_row_count(comm_size, 0);
+    //     std::vector<PetscInt> recv_row_count(comm_size, 0);
+
+    //     const int local_rows = matrix.local_rows();
+
+    //     int incoming = 0;
+
+    //     for (int i = 0; i < local_rows; ++i) {
+    //         send_row_count[partitions[i]]++;
+    //     }
+
+    //     // exchange send/receive information
+    //     MPI_Alltoall(send_row_count.data(),
+    //                  1,
+    //                  utopia::MPIType<PetscInt>::value(),
+    //                  recv_row_count.data(),
+    //                  1,
+    //                  utopia::MPIType<PetscInt>::value(),
+    //                  comm.raw_comm());
+
+    //     for (int r = 0; r < comm_size; ++r) {
+    //         // Rows that are kept local are also counted!
+    //         incoming += recv_row_count[r];
+    //     }
+
+    //     int proc_offset = 0;
+    //     comm.exscan(&incoming, &proc_offset, 1, MPI_SUM);
+
+    //     std::vector<PetscInt> index_buff(comm_size, 0);
+    //     std::vector<PetscInt> index_offset(comm_size, 0);
+
+    //     index_buff[0] = proc_offset;
+
+    //     for (int r = 0; r < comm_size - 1; ++r) {
+    //         index_buff[r + 1] = recv_row_count[r] + index_buff[r];
+    //     }
+
+    //     MPI_Alltoall(index_buff.data(),
+    //                  1,
+    //                  utopia::MPIType<PetscInt>::value(),
+    //                  index_offset.data(),
+    //                  1,
+    //                  utopia::MPIType<PetscInt>::value(),
+    //                  comm.raw_comm());
+
+    //     for (int i = 0; i < local_rows; ++i) {
+    //         index[i] = index_offset[partitions[i]]++;
+    //     }
+
+    //     return true;
+    // }
+
     // Remote data is arranged locally following rank ordering
-    bool partitions_to_permutations(const PetscMatrix &matrix,
+
+          bool partitions_to_permutations(const PetscMatrix &matrix,
                                     const int *partitions,
-                                    Traits<PetscMatrix>::SizeType *index) {
+					  Traits<PetscMatrix>::IndexArray &index){
         auto &&comm = matrix.comm();
         const int comm_size = comm.size();
+        const int comm_rank = comm.rank();
 
         auto rrs = matrix.row_ranges();
 
@@ -221,9 +284,11 @@ namespace utopia {
         const int local_rows = matrix.local_rows();
 
         int incoming = 0;
+        int outgoing = 0;
 
         for (int i = 0; i < local_rows; ++i) {
             send_row_count[partitions[i]]++;
+            outgoing += partitions[i] != comm_rank;
         }
 
         // exchange send/receive information
@@ -242,26 +307,14 @@ namespace utopia {
 
         int proc_offset = 0;
         comm.exscan(&incoming, &proc_offset, 1, MPI_SUM);
-
-        std::vector<PetscInt> index_buff(comm_size, 0);
-        std::vector<PetscInt> index_offset(comm_size, 0);
-
-        index_buff[0] = proc_offset;
-
-        for (int r = 0; r < comm_size - 1; ++r) {
-            index_buff[r + 1] = recv_row_count[r] + index_buff[r];
-        }
-
-        MPI_Alltoall(index_buff.data(),
-                     1,
-                     utopia::MPIType<PetscInt>::value(),
-                     index_offset.data(),
-                     1,
-                     utopia::MPIType<PetscInt>::value(),
-                     comm.raw_comm());
+        std::vector<PetscInt> index_buff(outgoing, 0);
+        std::vector<PetscInt> offsets(comm_rank + 1, 0);
 
         for (int i = 0; i < local_rows; ++i) {
-            index[i] = index_offset[partitions[i]]++;
+            int part = partitions[i];
+            if (part != comm_rank) {
+                ++offsets[part + 1];
+            }
         }
 
         return true;
@@ -283,9 +336,8 @@ namespace utopia {
             return false;
         }
 
-        permutation.resize(in.local_rows(), 0);
 
-        if (!partitions_to_permutations(in, &partitioning[0], &permutation[0])) {
+        if (!partitions_to_permutations(in, &partitioning[0], permutation)) {
             return false;
         }
 

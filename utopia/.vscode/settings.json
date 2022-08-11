@@ -1,5 +1,6 @@
 {
     "git.ignoreLimitWarning": true,
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "cmake.configureOnOpen": false
 }
