@@ -602,8 +602,13 @@ namespace utopia {
 
             overall_time.stop();
 
-            if (params_->verbose && space.comm().rank() == 0) {
-                std::cout << "Contact::assemble: " << overall_time << std::endl;
+            if (params_->verbose) {
+                std::stringstream ss;
+
+                ss << "Contact::assemble(space) -> has_contact = " << impl_->has_contact << ":\n"
+                   << overall_time << "\n";
+
+                space.comm().root_print(ss.str(), utopia::out().stream());
             }
 
             return impl_->has_contact;

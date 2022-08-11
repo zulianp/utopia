@@ -8,9 +8,13 @@ namespace utopia {
     bool decompose(const PetscMatrix &matrix, const int num_partitions, int *partitions);
     bool parallel_decompose(const PetscMatrix &matrix, const int num_partitions, int *partitions);
 
+    // bool partitions_to_permutations(const PetscMatrix &matrix,
+    //                                 const int *partitions,
+    //                                 Traits<PetscMatrix>::SizeType *index);
+
     bool partitions_to_permutations(const PetscMatrix &matrix,
                                     const int *partitions,
-                                    Traits<PetscMatrix>::SizeType *index);
+                                    Traits<PetscMatrix>::IndexArray &index);
 
     bool rebalance(const PetscMatrix &in,
                    PetscMatrix &out,

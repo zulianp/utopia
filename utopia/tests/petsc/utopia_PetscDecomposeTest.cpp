@@ -79,8 +79,8 @@ public:
         std::vector<SizeType> decomposition(n_local, -1);
         utopia_test_assert(parallel_decompose(mat, comm.size(), &decomposition[0]));
 
-        IndexArray idx(n_local, -1);
-        partitions_to_permutations(mat, &decomposition[0], &idx[0]);
+        IndexArray idx;
+        utopia_test_assert(partitions_to_permutations(mat, &decomposition[0], idx));
 
         // std::stringstream ss;
         // for (auto i : idx) {
