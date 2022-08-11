@@ -207,62 +207,134 @@ namespace utopia {
 #endif
 
     // Remote data is arranged locally following rank ordering
+    // bool partitions_to_permutations(const PetscMatrix &matrix,
+    //                                 const int *partitions,
+    //                                 Traits<PetscMatrix>::SizeType *index) {
+    //     auto &&comm = matrix.comm();
+    //     const int comm_size = comm.size();
+
+    //     auto rrs = matrix.row_ranges();
+
+    //     std::vector<PetscInt> send_row_count(comm_size, 0);
+    //     std::vector<PetscInt> recv_row_count(comm_size, 0);
+
+    //     const int local_rows = matrix.local_rows();
+
+    //     int incoming = 0;
+
+    //     for (int i = 0; i < local_rows; ++i) {
+    //         send_row_count[partitions[i]]++;
+    //     }
+
+    //     // exchange send/receive information
+    //     MPI_Alltoall(send_row_count.data(),
+    //                  1,
+    //                  utopia::MPIType<PetscInt>::value(),
+    //                  recv_row_count.data(),
+    //                  1,
+    //                  utopia::MPIType<PetscInt>::value(),
+    //                  comm.raw_comm());
+
+    //     for (int r = 0; r < comm_size; ++r) {
+    //         // Rows that are kept local are also counted!
+    //         incoming += recv_row_count[r];
+    //     }
+
+    //     int proc_offset = 0;
+    //     comm.exscan(&incoming, &proc_offset, 1, MPI_SUM);
+
+    //     std::vector<PetscInt> index_buff(comm_size, 0);
+    //     std::vector<PetscInt> index_offset(comm_size, 0);
+
+    //     index_buff[0] = proc_offset;
+
+    //     for (int r = 0; r < comm_size - 1; ++r) {
+    //         index_buff[r + 1] = recv_row_count[r] + index_buff[r];
+    //     }
+
+    //     MPI_Alltoall(index_buff.data(),
+    //                  1,
+    //                  utopia::MPIType<PetscInt>::value(),
+    //                  index_offset.data(),
+    //                  1,
+    //                  utopia::MPIType<PetscInt>::value(),
+    //                  comm.raw_comm());
+
+    //     for (int i = 0; i < local_rows; ++i) {
+    //         index[i] = index_offset[partitions[i]]++;
+    //     }
+
+    //     return true;
+    // }
+
     bool partitions_to_permutations(const PetscMatrix &matrix,
                                     const int *partitions,
-                                    Traits<PetscMatrix>::SizeType *index) {
+                                    Traits<PetscMatrix>::IndexArray &index) {
         auto &&comm = matrix.comm();
         const int comm_size = comm.size();
+        const int comm_rank = comm.rank();
 
         auto rrs = matrix.row_ranges();
+        auto rr = matrix.row_range();
 
         std::vector<PetscInt> send_row_count(comm_size, 0);
         std::vector<PetscInt> recv_row_count(comm_size, 0);
 
         const int local_rows = matrix.local_rows();
 
-        int incoming = 0;
+        std::vector<PetscInt> sendbuf(local_rows, 0);
+        std::vector<int> sdispls(comm_size + 1, 0);
+        std::vector<PetscInt> sendcounts(comm_size, 0);
 
-        for (int i = 0; i < local_rows; ++i) {
-            send_row_count[partitions[i]]++;
+        {  // Fill send buffers!
+
+            for (int i = 0; i < local_rows; ++i) {
+                int part = partitions[i];
+                ++sdispls[part + 1];
+            }
+
+            for (int i = 0; i < comm_size; ++i) {
+                sdispls[i + 1] += sdispls[i];
+            }
+
+            for (int i = 0; i < local_rows; ++i) {
+                int part = partitions[i];
+                int idx = sdispls[part] + sendcounts[part]++;
+                sendbuf[idx] = rr.begin() + i;
+            }
         }
 
-        // exchange send/receive information
-        MPI_Alltoall(send_row_count.data(),
-                     1,
-                     utopia::MPIType<PetscInt>::value(),
-                     recv_row_count.data(),
-                     1,
-                     utopia::MPIType<PetscInt>::value(),
-                     comm.raw_comm());
+        std::vector<int> rdispls(comm_size + 1, 0);
+        std::vector<PetscInt> recvcounts(comm_size, 0);
+        PetscInt incoming = 0;
 
-        for (int r = 0; r < comm_size; ++r) {
-            // Rows that are kept local are also counted!
-            incoming += recv_row_count[r];
+        {  // Fill recv buffers
+            // exchange send/receive permuatation info
+            MPI_Alltoall(sendcounts.data(),
+                         1,
+                         utopia::MPIType<PetscInt>::value(),
+                         recvcounts.data(),
+                         1,
+                         utopia::MPIType<PetscInt>::value(),
+                         comm.raw_comm());
+
+            for (int r = 0; r < comm_size; ++r) {
+                // Rows that are kept local are also counted!
+                incoming += recvcounts[r];
+            }
         }
 
-        int proc_offset = 0;
-        comm.exscan(&incoming, &proc_offset, 1, MPI_SUM);
+        index.resize(incoming, 0);
 
-        std::vector<PetscInt> index_buff(comm_size, 0);
-        std::vector<PetscInt> index_offset(comm_size, 0);
-
-        index_buff[0] = proc_offset;
-
-        for (int r = 0; r < comm_size - 1; ++r) {
-            index_buff[r + 1] = recv_row_count[r] + index_buff[r];
-        }
-
-        MPI_Alltoall(index_buff.data(),
-                     1,
-                     utopia::MPIType<PetscInt>::value(),
-                     index_offset.data(),
-                     1,
-                     utopia::MPIType<PetscInt>::value(),
-                     comm.raw_comm());
-
-        for (int i = 0; i < local_rows; ++i) {
-            index[i] = index_offset[partitions[i]]++;
-        }
+        MPI_Alltoallv(sendbuf.data(),
+                      sendcounts.data(),
+                      sdispls.data(),
+                      MPIType<PetscInt>::value(),
+                      index.data(),
+                      recvcounts.data(),
+                      rdispls.data(),
+                      MPIType<PetscInt>::value(),
+                      comm.raw_comm());
 
         return true;
     }
@@ -283,15 +355,13 @@ namespace utopia {
             return false;
         }
 
-        permutation.resize(in.local_rows(), 0);
-
-        if (!partitions_to_permutations(in, &partitioning[0], &permutation[0])) {
+        if (!partitions_to_permutations(in, &partitioning[0], permutation)) {
             return false;
         }
 
         IS is = nullptr;
         PetscErrorCode err =
-            ISCreateGeneral(in.comm().raw_comm(), in.local_rows(), &permutation[0], PETSC_USE_POINTER, &is);
+            ISCreateGeneral(in.comm().raw_comm(), permutation.size(), &permutation[0], PETSC_USE_POINTER, &is);
 
         if (err != 0) {
             return false;
@@ -299,7 +369,7 @@ namespace utopia {
 
         // Destroy because a new matrix is created below!
         out.destroy();
-        err = MatPermute(in.raw_type(), is, is, &out.raw_type());
+        err = MatCreateSubMatrix(in.raw_type(), is, is, MAT_INITIAL_MATRIX, &out.raw_type());
 
         ISDestroy(&is);
         return err == 0;
