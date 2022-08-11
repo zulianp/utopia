@@ -66,6 +66,7 @@ namespace utopia {
                 std::vector<bool> glued;
                 unsigned int variable_number;
                 bool use_biorthogonal_basis;
+                bool verbose{false};
 
                 void read(Input &in) override;
                 void describe(std::ostream &os) const override;

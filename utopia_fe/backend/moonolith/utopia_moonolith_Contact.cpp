@@ -30,6 +30,8 @@ namespace utopia {
     namespace moonolith {
 
         void Contact::Params::read(Input &in) {
+            in.get("verbose", verbose);
+
             std::set<int> temp;
 
             in.get("radius", this->search_radius);
@@ -599,7 +601,11 @@ namespace utopia {
             }
 
             overall_time.stop();
-            std::cout << "Contact::assemble: " << overall_time << std::endl;
+
+            if (params_->verbose && space.comm().rank() == 0) {
+                std::cout << "Contact::assemble: " << overall_time << std::endl;
+            }
+
             return impl_->has_contact;
         }
 
