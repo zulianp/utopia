@@ -318,7 +318,7 @@ namespace utopia {
                 it = it + 1;
             }
 
-            if (this->verbose())
+            if (this->verbose() && mpi_world_rank() == 0)
                 utopia::out() << "Power method converged in " << it << " iterations. Largest eig: " << lambda << "  \n";
 
             return lambda;
