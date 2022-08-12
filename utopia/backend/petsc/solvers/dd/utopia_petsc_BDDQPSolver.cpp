@@ -123,7 +123,7 @@ namespace utopia {
 
                 impl_->solver->lower_bound() = l_G;
             }
-
+#if 0
             if (impl_->use_preconditioner) {
                 std::cout << "BDDQPSolver: Using preconditoner!!!\n";
                 auto &&interface_dofs = impl_->op.interface_dofs();
@@ -146,11 +146,6 @@ namespace utopia {
                 A_GG_copy.set_zero_rows(idx, 1);
 
                 auto prec = std::make_shared<Factorization<Matrix, Vector>>();
-                // auto prec = std::make_shared<KSPSolver<Matrix, Vector>>();
-                // prec->ksp_type("richardson");
-                // prec->pc_type("jacobi");
-                // prec->max_it(1);
-
                 prec->update(std::make_shared<Matrix>(std::move(A_GG_copy)));
 
                 Vector prec_residual(layout(impl_->op.righthand_side()), 0);
@@ -159,9 +154,9 @@ namespace utopia {
                 auto composite_op = utopia::mult<Vector>(prec, make_ref(impl_->op));
                 ok = impl_->solver->solve(*composite_op, prec_residual, x_G);
 
-            } else {
-                ok = impl_->solver->solve(impl_->op, impl_->op.righthand_side(), x_G);
-            }
+            } else
+#endif
+            { ok = impl_->solver->solve(impl_->op, impl_->op.righthand_side(), x_G); }
 
             impl_->op.finalize(x_G, x);
         }
