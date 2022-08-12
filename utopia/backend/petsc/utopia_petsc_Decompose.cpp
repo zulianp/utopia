@@ -383,6 +383,27 @@ namespace utopia {
         return true;
     }
 
+    // bool redistribute_columns_from_permutation(const PetscMatrix &in,
+    //                                            const Traits<PetscMatrix>::IndexArray &permutation,
+    //                                            PetscMatrix &out,
+    //                                            MatReuse reuse) {
+    //     IS is_col = nullptr;
+    //     PetscErrorCode err =
+    //         ISCreateGeneral(in.comm().raw_comm(), permutation.size(), &permutation[0], PETSC_USE_POINTER, &is_col);
+
+    //     if (err != 0) {
+    //         return false;
+    //     }
+
+    //     IS is_row = nullptr;
+
+    //     out.destroy();  // Destroy because a new matrix is created below!
+    //     err = MatCreateSubMatrix(in.raw_type(), is_col, is_col, reuse, &out.raw_type());
+
+    //     ISDestroy(&is_col);
+    //     return true;
+    // }
+
     bool redistribute_from_permutation(const PetscVector &in,
                                        const Traits<PetscMatrix>::IndexArray &permutation,
                                        PetscVector &out) {

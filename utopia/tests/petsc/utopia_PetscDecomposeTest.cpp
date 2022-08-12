@@ -123,8 +123,6 @@ public:
 
         std::vector<SizeType> decomposition(n_local, 0);
 
-        auto rr = mat.row_range();
-        SizeType n_rows = mat.rows();
         for (int i = 0; i < n_local; ++i) {
             // shift entries to 3 ranks above in a circular way
             decomposition[i] = (comm.rank() + 2) % comm.size();
