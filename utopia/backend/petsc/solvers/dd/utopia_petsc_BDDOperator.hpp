@@ -38,6 +38,7 @@ namespace utopia {
 
         std::shared_ptr<Preconditioner<Vector>> create_preconditioner() const;
         std::shared_ptr<Matrix> reduced_matrix() const;
+        const IndexSet &interface_dofs() const;
 
         void select(const Vector &x, Vector &x_G) const;
         bool apply(const Vector &x_G, Vector &rhs_G) const override;

@@ -620,8 +620,8 @@ namespace utopia {
                 }
             }
 
-            local_interface_idx.resize(n_interface + n_selected);
-            std::fill(std::begin(local_interface_idx), std::end(local_interface_idx), 0);
+            interface_dofs_.resize(n_interface + n_selected);
+            std::fill(std::begin(interface_dofs_), std::end(interface_dofs_), 0);
 
             local_to_global.resize(n_interface + n_selected);
             std::fill(std::begin(local_to_global), std::end(local_to_global), 0);
@@ -634,7 +634,7 @@ namespace utopia {
                 if (!original_range.inside(min_idx[i]) || !original_range.inside(max_idx[i])) {
                     local_to_global[n_interface] = (i + original_range.begin());
                     global_to_local[i] = n_interface;
-                    local_interface_idx[n_interface++] = i;
+                    interface_dofs_[n_interface++] = i;
                 }
             }
 
@@ -644,7 +644,7 @@ namespace utopia {
                     if (global_to_local[i] == -1 && owned_is_selected(i)) {
                         local_to_global[n_interface + n_selected] = (i + original_range.begin());
                         global_to_local[i] = n_interface + n_selected;
-                        local_interface_idx[n_interface + n_selected] = i;
+                        interface_dofs_[n_interface + n_selected] = i;
                         ++n_selected;
                     }
                 }
@@ -672,7 +672,7 @@ namespace utopia {
             local_block_view(A, A_II_view);
 
             A_II = A_II_view;
-            set_zero_rows(A_II, local_interface_idx, 1);
+            set_zero_rows(A_II, interface_dofs_, 1);
 
             A_II.transform_ijv([&](const SizeType i, const SizeType j, const Scalar value) -> Scalar {
                 bool is_removed = this->owned_is_in_G(j);
@@ -775,7 +775,7 @@ namespace utopia {
                 std::vector<bool> is_rank_counted(comm.size(), false);
 
                 for (SizeType i = 0; i < n_interface; ++i) {
-                    SizeType original_local_idx = local_interface_idx[i];
+                    SizeType original_local_idx = interface_dofs_[i];
                     auto row_begin = o_row_ptr[original_local_idx];
                     auto row_end = o_row_ptr[original_local_idx + 1];
 
@@ -816,7 +816,7 @@ namespace utopia {
 
                 // Fill send_list with global indices
                 for (SizeType i = 0; i < n_interface; ++i) {
-                    SizeType original_local_idx = local_interface_idx[i];
+                    SizeType original_local_idx = interface_dofs_[i];
                     SizeType new_global_idx = global_offset_G() + i;
 
                     auto row_begin = o_row_ptr[original_local_idx];
@@ -896,7 +896,7 @@ namespace utopia {
 
                 {
                     for (SizeType i = 0; i < local_size_G(); ++i) {
-                        SizeType original_local_idx = local_interface_idx[i];
+                        SizeType original_local_idx = interface_dofs_[i];
                         auto row_begin = d_row_ptr[original_local_idx];
                         auto row_end = d_row_ptr[original_local_idx + 1];
 
@@ -910,7 +910,7 @@ namespace utopia {
 
                     // count off proc nnz
                     for (SizeType i = 0; i < local_size_G(); ++i) {
-                        SizeType original_local_idx = local_interface_idx[i];
+                        SizeType original_local_idx = interface_dofs_[i];
                         auto row_begin = o_row_ptr[original_local_idx];
                         auto row_end = o_row_ptr[original_local_idx + 1];
                         auto n_cols = row_end - row_begin;
@@ -925,7 +925,7 @@ namespace utopia {
                 {
                     Write<Matrix> w_A(A_GG);
                     for (SizeType i = 0; i < local_size_G(); ++i) {
-                        SizeType original_local_idx = local_interface_idx[i];
+                        SizeType original_local_idx = interface_dofs_[i];
                         auto row_begin = d_row_ptr[original_local_idx];
                         auto row_end = d_row_ptr[original_local_idx + 1];
                         SizeType new_row = global_offset_G() + i;
@@ -944,7 +944,7 @@ namespace utopia {
 
                     // count off proc nnz
                     for (SizeType i = 0; i < local_size_G(); ++i) {
-                        SizeType original_local_idx = local_interface_idx[i];
+                        SizeType original_local_idx = interface_dofs_[i];
                         auto row_begin = o_row_ptr[original_local_idx];
                         auto row_end = o_row_ptr[original_local_idx + 1];
                         SizeType new_row = global_offset_G() + i;
@@ -969,7 +969,7 @@ namespace utopia {
 
                 {
                     for (SizeType i = 0; i < local_size_G(); ++i) {
-                        SizeType original_local_idx = local_interface_idx[i];
+                        SizeType original_local_idx = interface_dofs_[i];
                         auto row_begin = d_row_ptr[original_local_idx];
                         auto row_end = d_row_ptr[original_local_idx + 1];
                         // auto n_cols = row_end - row_begin;
@@ -987,7 +987,7 @@ namespace utopia {
                     Write<Matrix> w(A_GI);
 
                     for (SizeType i = 0; i < local_size_G(); ++i) {
-                        SizeType original_local_idx = local_interface_idx[i];
+                        SizeType original_local_idx = interface_dofs_[i];
                         auto row_begin = d_row_ptr[original_local_idx];
                         auto row_end = d_row_ptr[original_local_idx + 1];
 
@@ -1069,7 +1069,7 @@ namespace utopia {
         Vector b_I;
 
         // Interface support
-        IndexSet local_interface_idx;
+        IndexSet interface_dofs_;
         IndexSet global_to_local;
         IndexSet local_to_global;
         SizeType interface_offset{0};
@@ -1130,7 +1130,7 @@ namespace utopia {
             auto b_view = local_view_device(b);
 
             for (SizeType i = 0; i < impl_->local_size_G(); ++i) {
-                SizeType original_local_idx = impl_->local_interface_idx[i];
+                SizeType original_local_idx = impl_->interface_dofs_[i];
                 b_G_view.set(i, b_view.get(original_local_idx));
             }
 
@@ -1188,6 +1188,11 @@ namespace utopia {
     template <class Matrix, class Vector>
     std::shared_ptr<Matrix> BDDOperator<Matrix, Vector>::reduced_matrix() const {
         return impl_->A_GG_;
+    }
+
+    template <class Matrix, class Vector>
+    const typename BDDOperator<Matrix, Vector>::IndexSet &BDDOperator<Matrix, Vector>::interface_dofs() const {
+        return impl_->interface_dofs_;
     }
 
     template <class Matrix, class Vector>
@@ -1277,7 +1282,7 @@ namespace utopia {
             auto x_view = local_view_device(x);
 
             for (SizeType i = 0; i < impl_->local_size_G(); ++i) {
-                SizeType original_local_idx = impl_->local_interface_idx[i];
+                SizeType original_local_idx = impl_->interface_dofs_[i];
                 x_G_view.set(i, x_view.get(original_local_idx));
             }
         }
