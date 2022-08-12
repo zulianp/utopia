@@ -81,7 +81,6 @@ public:
         IndexArray partitioning, permutation;
 
         utopia_test_assert(rebalance(mat, rebalanced, partitioning, permutation));
-        // disp(rebalanced);
 
         {
             auto rr = mat.row_ranges();
@@ -106,6 +105,8 @@ public:
                 std::cout << "\n";
             }
         }
+
+        disp(rebalanced);
     }
 #endif
 

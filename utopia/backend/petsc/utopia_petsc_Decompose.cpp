@@ -14,6 +14,7 @@
 
 #include "utopia_petsc_CrsView.hpp"
 #include "utopia_petsc_Matrix.hpp"
+#include "utopia_petsc_Vector.hpp"
 
 namespace utopia {
 
@@ -336,6 +337,31 @@ namespace utopia {
         return true;
     }
 
+    bool rebalance_from_permutation(const PetscMatrix &in,
+                                    const Traits<PetscMatrix>::IndexArray &permutation,
+                                    PetscMatrix &out) {
+        IS is = nullptr;
+        PetscErrorCode err =
+            ISCreateGeneral(in.comm().raw_comm(), permutation.size(), &permutation[0], PETSC_USE_POINTER, &is);
+
+        if (err != 0) {
+            return false;
+        }
+
+        out.destroy();  // Destroy because a new matrix is created below!
+        err = MatCreateSubMatrix(in.raw_type(), is, is, MAT_INITIAL_MATRIX, &out.raw_type());
+
+        ISDestroy(&is);
+        return true;
+    }
+
+    bool redistribute_from_permutation(const PetscVector &in,
+                                       const Traits<PetscMatrix>::IndexArray &permutation,
+                                       PetscVector &out) {
+        in.select(permutation, out);
+        return true;
+    }
+
     bool rebalance(const PetscMatrix &in,
                    PetscMatrix &out,
                    Traits<PetscMatrix>::IndexArray &partitioning,
@@ -356,20 +382,7 @@ namespace utopia {
             return false;
         }
 
-        IS is = nullptr;
-        PetscErrorCode err =
-            ISCreateGeneral(in.comm().raw_comm(), permutation.size(), &permutation[0], PETSC_USE_POINTER, &is);
-
-        if (err != 0) {
-            return false;
-        }
-
-        // Destroy because a new matrix is created below!
-        out.destroy();
-        err = MatCreateSubMatrix(in.raw_type(), is, is, MAT_INITIAL_MATRIX, &out.raw_type());
-
-        ISDestroy(&is);
-        return err == 0;
+        return rebalance_from_permutation(in, permutation, out);
     }
 
 }  // namespace utopia
