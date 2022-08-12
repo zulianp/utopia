@@ -230,6 +230,8 @@ namespace utopia {
 
             for (int i = 0; i < local_rows; ++i) {
                 int part = partitions[i];
+                assert(part < comm.size());
+                assert(part >= 0);
                 ++sdispls[part + 1];
             }
 
@@ -355,6 +357,8 @@ namespace utopia {
         PetscInt n_indices = permutation.size();
         for (PetscInt i = 0; i < n_indices; ++i) {
             partitioning[i] = find_rank(comm_size, n_local, &original_row_ranges[0], permutation[i]);
+            assert(partitioning[i] < comm_size);
+            assert(partitioning[i] >= 0);
         }
 
         return true;

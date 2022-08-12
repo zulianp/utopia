@@ -113,7 +113,7 @@ public:
     void handcoded_partitions_to_permutations() {
         auto &&comm = Comm::get_default();
         int mult = comm.rank() + 1;
-        int n_local = mult * 3;
+        int n_local = mult * 2;
 
         Matrix mat;
         mat.sparse(layout(comm, n_local, n_local, Traits::determine(), Traits::determine()), 3, 3);
@@ -124,11 +124,57 @@ public:
         auto rr = mat.row_range();
         SizeType n_rows = mat.rows();
         for (int i = 0; i < n_local; ++i) {
-            decomposition[i] = (rr.begin() + i + 10) % comm.size();
+            decomposition[i] = (comm.rank() + 1) % comm.size();
         }
 
-        IndexArray idx;
-        utopia_test_assert(partitions_to_permutations(mat, &decomposition[0], idx));
+        IndexArray partitioning;
+        utopia_test_assert(partitions_to_permutations(mat, &decomposition[0], partitioning));
+
+        Matrix redistributed;
+        redistribute_from_permutation(mat, partitioning, redistributed);
+
+        IndexArray inverse_decomposition;
+        inverse_partition_mapping(comm.size(), mat.row_ranges(), partitioning, inverse_decomposition);
+
+        IndexArray inverse_partitioning;
+        utopia_test_assert(partitions_to_permutations(redistributed, &inverse_decomposition[0], inverse_partitioning));
+
+#if 0
+        std::stringstream ss;
+        ss << "inverse_decomposition: ";
+        for (auto sd : inverse_decomposition) {
+            ss << sd << " ";
+        }
+
+        ss << "\n";
+
+        ss << "partitioning: ";
+        for (auto sd : partitioning) {
+            ss << sd << " ";
+        }
+
+        ss << "\n";
+
+        ss << "inverse_partitioning: ";
+        for (auto sd : inverse_partitioning) {
+            ss << sd << " ";
+        }
+
+        ss << "\n";
+
+        comm.synched_print(ss.str(), utopia::out().stream());
+#endif
+
+        Matrix inverse_redistributed;
+        redistribute_from_permutation(redistributed, inverse_partitioning, inverse_redistributed);
+
+        // disp(mat);
+
+        // disp(redistributed);
+
+        // disp(inverse_redistributed);
+
+        utopia_test_assert(approxeq(inverse_redistributed, mat));
     }
 };
 

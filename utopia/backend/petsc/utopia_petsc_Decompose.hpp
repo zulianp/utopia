@@ -26,6 +26,15 @@ namespace utopia {
                    Traits<PetscMatrix>::IndexArray &partitioning,
                    Traits<PetscMatrix>::IndexArray &permutation);
 
+    bool partitions_to_permutations(const PetscMatrix &matrix,
+                                    const int *partitions,
+                                    Traits<PetscMatrix>::IndexArray &index);
+
+    bool inverse_partition_mapping(const int comm_size,
+                                   const ArrayView<const PetscInt> &original_row_ranges,
+                                   const Traits<PetscMatrix>::IndexArray &permutation,
+                                   Traits<PetscMatrix>::IndexArray &partitioning);
+
 }  // namespace utopia
 
 #endif  // UTOPIA_PETSC_DECOMPOSE_HPP
