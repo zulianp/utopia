@@ -259,13 +259,13 @@ namespace utopia {
         inline ArrayView<const PetscInt> col_ranges() const {
             const PetscInt *ranges;
             MatGetOwnershipRangesColumn(this->raw_type(), &ranges);
-            return ArrayView<const PetscInt>(ranges, comm().size());
+            return ArrayView<const PetscInt>(ranges, comm().size() + 1);
         }
 
         inline ArrayView<const PetscInt> row_ranges() const {
             const PetscInt *ranges;
             MatGetOwnershipRanges(this->raw_type(), &ranges);
-            return ArrayView<const PetscInt>(ranges, comm().size());
+            return ArrayView<const PetscInt>(ranges, comm().size() + 1);
         }
 
         inline SizeType rows() const override {
