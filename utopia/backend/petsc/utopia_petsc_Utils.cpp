@@ -78,7 +78,7 @@ namespace utopia {
         block.update_mirror();
     }
 
-    UTOPIA_FUNCTION int find_rank(int comm_size, PetscInt n_local, const PetscInt *ranges, const PetscInt global_id) {
+    int find_rank(int comm_size, PetscInt n_local, const PetscInt *ranges, const PetscInt global_id) {
         int rank = device::min(int(global_id * (float(comm_size) / n_local)), comm_size - 1);
 
         bool found = (global_id >= ranges[rank]) && (global_id < ranges[rank + 1]);

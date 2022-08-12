@@ -16,6 +16,8 @@
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Vector.hpp"
 
+#include "utopia_petsc_Utils.hpp"
+
 namespace utopia {
 
 #ifndef UTOPIA_WITH_METIS
@@ -24,7 +26,7 @@ namespace utopia {
 
 #else
 
-    bool decompose(const PetscMatrix& matrix, const int num_partitions, int* partitions) {
+    bool decompose(const PetscMatrix &matrix, const int num_partitions, int *partitions) {
         if (matrix.comm().size() != 1) {
             assert(false);
             Utopia::Abort("decompose only works with serial MATIJ!");
@@ -34,17 +36,17 @@ namespace utopia {
 
         idx_t nvtxs = mat_view.rows();
         idx_t ncon = 1;
-        idx_t* rowptr = (idx_t*)&mat_view.row_ptr()[0];
-        idx_t* colidx = (idx_t*)&mat_view.colidx()[0];
-        idx_t* vwgt = nullptr;
-        idx_t* vsize = nullptr;
-        idx_t* adjwgt = nullptr;
+        idx_t *rowptr = (idx_t *)&mat_view.row_ptr()[0];
+        idx_t *colidx = (idx_t *)&mat_view.colidx()[0];
+        idx_t *vwgt = nullptr;
+        idx_t *vsize = nullptr;
+        idx_t *adjwgt = nullptr;
         idx_t nparts = num_partitions;
-        real_t* tpwgts = nullptr;
-        real_t* ubvec = nullptr;
-        idx_t* options = nullptr;
+        real_t *tpwgts = nullptr;
+        real_t *ubvec = nullptr;
+        idx_t *options = nullptr;
         idx_t objval = -1;
-        idx_t* parts = partitions;
+        idx_t *parts = partitions;
 
         int ret = METIS_PartGraphKway(
             &nvtxs, &ncon, rowptr, colidx, vwgt, vsize, adjwgt, &nparts, tpwgts, ubvec, options, &objval, parts);
@@ -84,26 +86,26 @@ namespace utopia {
 
 #else
 
-    bool parallel_decompose(const PetscMatrix& matrix, const int num_partitions, int* partitions) {
-        idx_t* vtxdist = (idx_t*)&matrix.row_ranges()[0];
+    bool parallel_decompose(const PetscMatrix &matrix, const int num_partitions, int *partitions) {
+        idx_t *vtxdist = (idx_t *)&matrix.row_ranges()[0];
         idx_t ncon = 1;
-        idx_t* vwgt = nullptr;
-        idx_t* vsize = nullptr;
-        idx_t* adjwgt = nullptr;
+        idx_t *vwgt = nullptr;
+        // idx_t* vsize = nullptr;
+        idx_t *adjwgt = nullptr;
         idx_t wgtflag = 0;
         idx_t numflag = 0;
         idx_t nparts = num_partitions;
 
         real_t ubvec[1] = {1.05};
         idx_t options[3] = {0};
-        idx_t objval = -1;
+        // idx_t objval = -1;
         idx_t edgecut;
-        idx_t* parts = partitions;
+        idx_t *parts = partitions;
         MPI_Comm comm = matrix.comm().raw_comm();
 
         Mat d, o;
 
-        const PetscInt* colmap;
+        const PetscInt *colmap;
         MatMPIAIJGetSeqAIJ(matrix.raw_type(), &d, &o, &colmap);
 
         PetscCrsView d_view(d);
@@ -207,19 +209,18 @@ namespace utopia {
     }
 #endif
 
-    bool partitions_to_permutations(const PetscMatrix &matrix,
+    bool partitions_to_permutations(const Communicator &comm,
+                                    const ArrayView<const PetscInt> &rrs,
                                     const int *partitions,
                                     Traits<PetscMatrix>::IndexArray &index) {
-        auto &&comm = matrix.comm();
         const int comm_size = comm.size();
 
-        auto rrs = matrix.row_ranges();
-        auto rr = matrix.row_range();
+        PetscInt r_begin = rrs[comm.rank()];
 
         std::vector<PetscInt> send_row_count(comm_size, 0);
         std::vector<PetscInt> recv_row_count(comm_size, 0);
 
-        const int local_rows = matrix.local_rows();
+        const int local_rows = rrs[comm.rank() + 1] - r_begin;
 
         std::vector<PetscInt> sendbuf(local_rows, 0);
         std::vector<int> sdispls(comm_size + 1, 0);
@@ -239,7 +240,7 @@ namespace utopia {
             for (int i = 0; i < local_rows; ++i) {
                 int part = partitions[i];
                 int idx = sdispls[part] + sendcounts[part]++;
-                sendbuf[idx] = rr.begin() + i;
+                sendbuf[idx] = r_begin + i;
             }
         }
 
@@ -277,69 +278,92 @@ namespace utopia {
                       comm.raw_comm());
 
 #if 0
-        {
-            std::stringstream ss;
+            {
+                std::stringstream ss;
 
-            ss << "partitions: ";
+                ss << "partitions: ";
 
-            for (int i = 0; i < local_rows; ++i) {
-                ss << partitions[i] << " ";
+                for (int i = 0; i < local_rows; ++i) {
+                    ss << partitions[i] << " ";
+                }
+
+                ss << "\n";
+
+                ss << "sdispls: ";
+                for (auto sd : sdispls) {
+                    ss << sd << " ";
+                }
+
+                ss << "\n";
+
+                ss << "sendcounts: ";
+                for (auto sc : sendcounts) {
+                    ss << sc << " ";
+                }
+
+                ss << "\n";
+
+                ss << "recvcounts: ";
+                for (auto rc : recvcounts) {
+                    ss << rc << " ";
+                }
+
+                ss << "\n";
+
+                ss << "rdispls: ";
+                for (auto rd : rdispls) {
+                    ss << rd << " ";
+                }
+
+                ss << "\n";
+
+                ss << "sendbuf: ";
+                for (auto idx : sendbuf) {
+                    ss << idx << " ";
+                }
+
+                ss << "\n";
+
+                ss << "index: ";
+                for (auto idx : index) {
+                    ss << idx << " ";
+                }
+
+                ss << "\n";
+
+                comm.synched_print(ss.str(), utopia::out().stream());
             }
-
-            ss << "\n";
-
-            ss << "sdispls: ";
-            for (auto sd : sdispls) {
-                ss << sd << " ";
-            }
-
-            ss << "\n";
-
-            ss << "sendcounts: ";
-            for (auto sc : sendcounts) {
-                ss << sc << " ";
-            }
-
-            ss << "\n";
-
-            ss << "recvcounts: ";
-            for (auto rc : recvcounts) {
-                ss << rc << " ";
-            }
-
-            ss << "\n";
-
-            ss << "rdispls: ";
-            for (auto rd : rdispls) {
-                ss << rd << " ";
-            }
-
-            ss << "\n";
-
-            ss << "sendbuf: ";
-            for (auto idx : sendbuf) {
-                ss << idx << " ";
-            }
-
-            ss << "\n";
-
-            ss << "index: ";
-            for (auto idx : index) {
-                ss << idx << " ";
-            }
-
-            ss << "\n";
-
-            comm.synched_print(ss.str(), utopia::out().stream());
-        }
 #endif
 
         return true;
     }
 
-    bool rebalance_from_permutation(const PetscMatrix &in,
-                                    const Traits<PetscMatrix>::IndexArray &permutation,
-                                    PetscMatrix &out) {
+    bool partitions_to_permutations(const PetscMatrix &matrix,
+                                    const int *partitions,
+                                    Traits<PetscMatrix>::IndexArray &index) {
+        partitions_to_permutations(matrix.comm(), matrix.row_ranges(), partitions, index);
+        return true;
+    }
+
+    bool inverse_partition_mapping(const int comm_size,
+                                   const ArrayView<const PetscInt> &original_row_ranges,
+                                   const Traits<PetscMatrix>::IndexArray &permutation,
+                                   Traits<PetscMatrix>::IndexArray &partitioning) {
+        partitioning.resize(permutation.size());
+        int n_local = original_row_ranges[1] - original_row_ranges[0];
+
+        PetscInt n_indices = permutation.size();
+        for (PetscInt i = 0; i < n_indices; ++i) {
+            partitioning[i] = find_rank(comm_size, n_local, &original_row_ranges[0], permutation[i]);
+        }
+
+        return true;
+    }
+
+    bool redistribute_from_permutation(const PetscMatrix &in,
+                                       const Traits<PetscMatrix>::IndexArray &permutation,
+                                       PetscMatrix &out,
+                                       MatReuse reuse) {
         IS is = nullptr;
         PetscErrorCode err =
             ISCreateGeneral(in.comm().raw_comm(), permutation.size(), &permutation[0], PETSC_USE_POINTER, &is);
@@ -349,7 +373,7 @@ namespace utopia {
         }
 
         out.destroy();  // Destroy because a new matrix is created below!
-        err = MatCreateSubMatrix(in.raw_type(), is, is, MAT_INITIAL_MATRIX, &out.raw_type());
+        err = MatCreateSubMatrix(in.raw_type(), is, is, reuse, &out.raw_type());
 
         ISDestroy(&is);
         return true;
@@ -382,7 +406,7 @@ namespace utopia {
             return false;
         }
 
-        return rebalance_from_permutation(in, permutation, out);
+        return redistribute_from_permutation(in, permutation, out);
     }
 
 }  // namespace utopia

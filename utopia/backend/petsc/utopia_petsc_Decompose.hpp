@@ -14,7 +14,8 @@ namespace utopia {
 
     bool redistribute_from_permutation(const PetscMatrix &in,
                                        const Traits<PetscMatrix>::IndexArray &permutation,
-                                       PetscMatrix &out);
+                                       PetscMatrix &out,
+                                       MatReuse reuse = MAT_INITIAL_MATRIX);
 
     bool redistribute_from_permutation(const PetscVector &in,
                                        const Traits<PetscMatrix>::IndexArray &permutation,
