@@ -82,6 +82,7 @@ public:
 
         utopia_test_assert(rebalance(mat, rebalanced, partitioning, permutation));
 
+#if 0
         {
             auto rr = mat.row_ranges();
 
@@ -107,6 +108,7 @@ public:
         }
 
         disp(rebalanced);
+#endif
     }
 #endif
 
@@ -124,7 +126,8 @@ public:
         auto rr = mat.row_range();
         SizeType n_rows = mat.rows();
         for (int i = 0; i < n_local; ++i) {
-            decomposition[i] = (comm.rank() + 1) % comm.size();
+            // shift entries to 3 ranks above in a circular way
+            decomposition[i] = (comm.rank() + 2) % comm.size();
         }
 
         IndexArray partitioning;
