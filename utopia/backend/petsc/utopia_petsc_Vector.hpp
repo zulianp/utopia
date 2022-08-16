@@ -876,6 +876,8 @@ namespace utopia {
 
     public:
         // REVIST below
+        void create_local_vector(PetscVector &out);
+        void restore_local_vector(PetscVector &out);
 
         // builders
         void repurpose(MPI_Comm comm, VecType type, SizeType n_local, SizeType n_global);

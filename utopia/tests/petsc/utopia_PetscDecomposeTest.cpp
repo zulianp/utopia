@@ -7,6 +7,8 @@
 
 #include "utopia_petsc_Decompose.hpp"
 
+#include "utopia_petsc_SchurComplement.hpp"
+
 #include "petscmat.h"
 
 using namespace utopia;
@@ -31,6 +33,7 @@ public:
 #endif
 
         UTOPIA_RUN_TEST(handcoded_partitions_to_permutations);
+        UTOPIA_RUN_TEST(schur_complement);
     }
 
 #ifdef UTOPIA_WITH_METIS
@@ -176,6 +179,89 @@ public:
         // disp(inverse_redistributed);
 
         utopia_test_assert(approxeq(inverse_redistributed, mat));
+    }
+
+    void schur_complement() {
+        auto &&comm = Comm::get_default();
+        int n_local = 1000;
+        int n_eliminated = n_local - 1;
+
+        Matrix mat;
+        mat.sparse(layout(comm, n_local, n_local, Traits::determine(), Traits::determine()), 3, 3);
+        assemble_laplacian_1D(mat, true);
+
+        auto rr = mat.row_range();
+        Vector rhs(row_layout(mat), 1);
+
+        int eliminate_offset = 1;
+        if (rr.inside(0)) {
+            Write<Vector> w(rhs);
+            rhs.set(0, 0);
+        }
+
+        if (rr.inside(mat.rows() - 1)) {
+            Write<Vector> w(rhs);
+            rhs.set(mat.rows() - 1, 0);
+        }
+
+        IndexArray idx(n_eliminated);
+        for (int i = 0; i < n_eliminated; ++i) {
+            idx[i] = rr.begin() + eliminate_offset + i;
+        }
+
+        Chrono sc_time;
+        sc_time.start();
+
+        SchurComplement<Matrix> sc;
+        sc.initialize_from_selection(mat, idx);
+
+        Vector x(layout(rhs), 0);
+        Vector rhs_sc;
+        sc.apply_righthand_side(rhs, rhs_sc);
+        {
+            ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+            cg.verbose(true);
+            cg.apply_gradient_descent_step(true);
+            cg.max_it(40000);
+            cg.atol(1e-10);
+            Vector x_sc(layout(rhs_sc), 0);
+            cg.solve(sc, rhs_sc, x_sc);
+            sc.finalize(rhs, x_sc, x);
+        }
+
+        sc_time.stop();
+
+        Scalar norm_sc = norm2(rhs - mat * x);
+
+        Chrono og_time;
+        og_time.start();
+
+        // Oracle
+        Vector og_x(row_layout(mat), 0);
+        {
+            ConjugateGradient<Matrix, Vector, HOMEMADE> og_cg;
+            // og_cg.verbose(true);
+            og_cg.apply_gradient_descent_step(true);
+            og_cg.atol(1e-10);
+            og_cg.max_it(80000);
+            og_cg.solve(mat, rhs, og_x);
+        }
+
+        og_time.stop();
+
+        Scalar norm_og = norm2(rhs - mat * og_x);
+
+        std::stringstream ss;
+        ss << "\nSchur " << norm_sc << "\n" << sc_time;
+        ss << "OG " << norm_og << "\n" << og_time;
+
+        mat.comm().root_print(ss.str());
+
+        // Vector diff = og_x - x;
+        // Scalar diff_norm = norm2(diff);
+
+        // disp(diff_norm);
+        // utopia_test_assert(diff_norm < 1e-6);
     }
 };
 
