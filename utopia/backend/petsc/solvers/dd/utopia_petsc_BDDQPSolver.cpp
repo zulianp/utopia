@@ -91,7 +91,8 @@ namespace utopia {
         }
 
         bool ok = true;
-        if (b.comm().size() == 1) {
+        // if (b.comm().size() == 1) {
+        if (false) {
             impl_->solver->set_box_constraints(this->get_box_constraints());
             ok = impl_->solver->solve(*this->get_operator(), b, x);
         } else {
@@ -126,18 +127,18 @@ namespace utopia {
 #if 0
             if (impl_->use_preconditioner) {
                 std::cout << "BDDQPSolver: Using preconditoner!!!\n";
-                auto &&interface_dofs = impl_->op.interface_dofs();
+                auto &&skeleton_dofs = impl_->op.skeleton_dofs();
                 Matrix A_GG_copy = *impl_->op.reduced_matrix();
 
                 auto s = const_local_view_device(*impl_->boolean_selector);
 
                 IndexSet idx;
-                idx.reserve(interface_dofs.size());
+                idx.reserve(skeleton_dofs.size());
 
-                std::size_t n = interface_dofs.size();
+                std::size_t n = skeleton_dofs.size();
 
                 for (std::size_t i = 0; i < n; ++i) {
-                    auto dof = interface_dofs[i];
+                    auto dof = skeleton_dofs[i];
                     if (s.get(dof) > 0) {
                         idx.push_back(i);
                     }
@@ -176,7 +177,8 @@ namespace utopia {
 
         assert(impl_->solver);
 
-        if (layout.comm().size() == 1) {
+        // if (layout.comm().size() == 1) {
+        if (false) {
             impl_->solver->init_memory(layout);
         } else {
             impl_->solver->init_memory(impl_->op.vector_layout());
@@ -189,7 +191,8 @@ namespace utopia {
 
         Super::update(op);
 
-        if (op->comm().size() == 1) {
+        // if (op->comm().size() == 1) {
+        if (false) {
         } else {
             if (impl_->op.selector().empty() || impl_->determine_boolean_selector) {
                 determine_boolean_selector();

@@ -27,9 +27,15 @@ namespace utopia {
 
         bool apply(const PetscVector &x, PetscVector &y) const override;
 
-        bool apply_righthand_side(const PetscVector &rhs, PetscVector &out);
+        bool apply_righthand_side(const PetscVector &rhs, PetscVector &out_eliminated, PetscVector &out_restricted);
         bool initialize_from_selection(const PetscMatrix &matrix, const IndexArray &eliminated_dofs);
         bool finalize(const PetscVector &rhs, const PetscVector &x_restricted, PetscVector &x);
+
+        // Vector eliminated_rhs is changed inside!
+        bool finalize_from_eliminated_rhs(PetscVector &eliminated_rhs, const PetscVector &x_restricted, PetscVector &x);
+
+        void select(const PetscVector &x, PetscVector &x_free) const;
+        std::shared_ptr<PetscMatrix> reduced_matrix() const;
 
         void set_solver(const std::shared_ptr<LinearSolver<PetscMatrix, PetscVector>> &solver);
 

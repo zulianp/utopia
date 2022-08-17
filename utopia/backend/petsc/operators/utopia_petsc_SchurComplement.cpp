@@ -66,6 +66,7 @@ namespace utopia {
                 A_II_inv = std::make_shared<Factorization<PetscMatrix, PetscVector>>("mumps", "cholesky");
             }
 
+            assert(A_II.comm().size() == 1);
             A_II_inv->update(make_ref(A_II));
             UTOPIA_TRACE_REGION_END("SchurComplement::initialize::decomposition");
             return true;
@@ -225,31 +226,42 @@ namespace utopia {
     SchurComplement<PetscMatrix>::SchurComplement() : impl_(utopia::make_unique<Impl>()) {}
     SchurComplement<PetscMatrix>::~SchurComplement() = default;
 
-    bool SchurComplement<PetscMatrix>::apply_righthand_side(const PetscVector &rhs, PetscVector &out) {
+    bool SchurComplement<PetscMatrix>::apply_righthand_side(const PetscVector &rhs,
+                                                            PetscVector &out_eliminated,
+                                                            PetscVector &out_restricted) {
+
+        UTOPIA_TRACE_REGION_BEGIN("SchurComplement::apply_righthand_side");
+
+
         if (empty(impl_->temp_I) || impl_->temp_I.local_size() != impl_->A_II.local_rows()) {
             impl_->temp_I.zeros(row_layout(impl_->A_IG));
         } else {
             impl_->temp_I.set(0.0);
         }
 
-        impl_->create_vector_blocks(rhs, impl_->x_I, impl_->x_G);
+        impl_->create_vector_blocks(rhs, out_eliminated, impl_->x_G);
 
         impl_->temp_I.create_local_vector(impl_->temp_I_local);
-        impl_->x_I.create_local_vector(impl_->x_I_local);
+        out_eliminated.create_local_vector(impl_->x_I_local);
+
+        assert(impl_->x_I_local.comm().size() == 1);
+        assert(impl_->temp_I_local.comm().size() == 1);
 
         if (!impl_->A_II_inv->apply(impl_->x_I_local, impl_->temp_I_local)) {
             // return false;
         }
 
         impl_->temp_I.restore_local_vector(impl_->temp_I_local);
-        impl_->x_I.restore_local_vector(impl_->x_I_local);
+        out_eliminated.restore_local_vector(impl_->x_I_local);
 
-        if (out.is_alias(rhs)) {
+        if (out_restricted.is_alias(rhs)) {
             rhs.comm().root_print("Alias!", utopia::out().stream());
         }
 
-        out = impl_->A_GI * impl_->temp_I;
-        out = impl_->x_G - out;
+        out_restricted = impl_->A_GI * impl_->temp_I;
+        out_restricted = impl_->x_G - out_restricted;
+
+        UTOPIA_TRACE_REGION_END("SchurComplement::apply_righthand_side");
         return true;
     }
 
@@ -293,19 +305,18 @@ namespace utopia {
         return true;
     }
 
-    bool SchurComplement<PetscMatrix>::finalize(const PetscVector &rhs,
-                                                const PetscVector &x_restricted,
-                                                PetscVector &x) {
+    bool SchurComplement<PetscMatrix>::finalize_from_eliminated_rhs(PetscVector &eliminated_rhs,
+                                                                    const PetscVector &x_restricted,
+                                                                    PetscVector &x) {
         UTOPIA_TRACE_REGION_BEGIN("SchurComplement::finalize");
 
         if (empty(x)) {
+            UTOPIA_TRACE_REGION_END("SchurComplement::finalize");
             Utopia::Abort("SchurComplement<PetscMatrix>::finalize: x has to be initialized outside!");
         }
 
-        impl_->create_parallel_vector_block(rhs, impl_->is_eliminated, impl_->temp_I);
-
         impl_->x_I = impl_->A_IG * x_restricted;
-        impl_->temp_I -= impl_->x_I;
+        eliminated_rhs -= impl_->x_I;
 
         if (empty(impl_->x_I)) {
             impl_->x_I.zeros(layout(impl_->temp_I));
@@ -313,18 +324,36 @@ namespace utopia {
             impl_->x_I.set(0);
         }
 
-        impl_->temp_I.create_local_vector(impl_->temp_I_local);
+        eliminated_rhs.create_local_vector(impl_->temp_I_local);
         impl_->x_I.create_local_vector(impl_->x_I_local);
 
         impl_->A_II_inv->apply(impl_->temp_I_local, impl_->x_I_local);
 
-        impl_->temp_I.restore_local_vector(impl_->temp_I_local);
+        eliminated_rhs.restore_local_vector(impl_->temp_I_local);
         impl_->x_I.restore_local_vector(impl_->x_I_local);
 
         impl_->restore_vector_blocks(x, impl_->x_I, x_restricted);
 
         UTOPIA_TRACE_REGION_END("SchurComplement::finalize");
         return true;
+    }
+
+    bool SchurComplement<PetscMatrix>::finalize(const PetscVector &rhs,
+                                                const PetscVector &x_restricted,
+                                                PetscVector &x) {
+        UTOPIA_TRACE_REGION_BEGIN("SchurComplement::finalize");
+
+        if (empty(x)) {
+            UTOPIA_TRACE_REGION_END("SchurComplement::finalize");
+            Utopia::Abort("SchurComplement<PetscMatrix>::finalize: x has to be initialized outside!");
+        }
+
+        bool ok = impl_->create_parallel_vector_block(rhs, impl_->is_eliminated, impl_->temp_I);
+
+        finalize_from_eliminated_rhs(impl_->temp_I, x_restricted, x);
+
+        UTOPIA_TRACE_REGION_END("SchurComplement::finalize");
+        return ok;
     }
 
     Size SchurComplement<PetscMatrix>::size() const { return impl_->A_GG.size(); }
@@ -335,6 +364,12 @@ namespace utopia {
 
     const SchurComplement<PetscMatrix>::Communicator &SchurComplement<PetscMatrix>::comm() const {
         return impl_->A_GG.comm();
+    }
+
+    std::shared_ptr<PetscMatrix> SchurComplement<PetscMatrix>::reduced_matrix() const { return make_ref(impl_->A_GG); }
+
+    void SchurComplement<PetscMatrix>::select(const PetscVector &x, PetscVector &x_free) const {
+        impl_->create_parallel_vector_block(x, impl_->is_dof, x_free);
     }
 
 }  // namespace utopia

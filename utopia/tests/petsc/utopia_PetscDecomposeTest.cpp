@@ -216,8 +216,8 @@ public:
         sc.initialize_from_selection(mat, idx);
 
         Vector x(layout(rhs), 0);
-        Vector rhs_sc;
-        sc.apply_righthand_side(rhs, rhs_sc);
+        Vector rhs_eliminated, rhs_sc;
+        sc.apply_righthand_side(rhs, rhs_eliminated, rhs_sc);
         {
             ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
             cg.verbose(true);
@@ -226,7 +226,7 @@ public:
             cg.atol(1e-10);
             Vector x_sc(layout(rhs_sc), 0);
             cg.solve(sc, rhs_sc, x_sc);
-            sc.finalize(rhs, x_sc, x);
+            sc.finalize_from_eliminated_rhs(rhs_eliminated, x_sc, x);
         }
 
         sc_time.stop();

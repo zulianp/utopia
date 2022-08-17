@@ -641,8 +641,15 @@ namespace utopia {
 
         inline void rename(const std::string &name) { PetscObjectSetName((PetscObject)implementation(), name.c_str()); }
 
-        void wrap(Mat &mat) { wrapper_ = std::make_shared<PetscMatrixMemory>(mat, false); }
-        void own(Mat &mat) { wrapper_ = std::make_shared<PetscMatrixMemory>(mat, true); }
+        void wrap(Mat &mat) {
+            wrapper_ = std::make_shared<PetscMatrixMemory>(mat, false);
+            update_mirror();
+        }
+
+        void own(Mat &mat) {
+            wrapper_ = std::make_shared<PetscMatrixMemory>(mat, true);
+            update_mirror();
+        }
 
         const Mat &implementation() const { return wrapper_->implementation(); }
 

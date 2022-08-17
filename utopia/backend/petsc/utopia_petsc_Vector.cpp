@@ -656,6 +656,7 @@ namespace utopia {
         }
 
         VecGetLocalVector(this->raw_type(), out.raw_type());
+        out.update_mirror();
     }
 
     void PetscVector::restore_local_vector(PetscVector &out) {
