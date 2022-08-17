@@ -13,6 +13,7 @@
 #include "utopia_Base.hpp"
 #include "utopia_Expression.hpp"
 #include "utopia_ForwardDeclarations.hpp"
+#include "utopia_MPI.hpp"
 
 #ifdef UTOPIA_TRACE_ENABLED
 
@@ -68,6 +69,7 @@ namespace utopia {
 
         inline void full_trace(const bool val) { full_trace_ = val; }
         inline void only_root_export(const bool val) { only_root_export_ = val; }
+        inline void log_regions(const bool val) { log_regions_ = val; }
 
     private:
         Tracer();
@@ -79,6 +81,7 @@ namespace utopia {
         Interceptor interceptor_;
         bool full_trace_;
         bool only_root_export_;
+        bool log_regions_{false};
     };
 
     class Measurement {
@@ -110,6 +113,8 @@ namespace utopia {
             end_time_ = std::chrono::high_resolution_clock::now();
             count_allocs_ = Allocations::instance().count() - count_allocs_;
         }
+
+        inline double seconds() const { return std::chrono::duration<double>(end_time_ - start_time_).count(); }
 
         friend void Tracer::save_collected_log();
         friend class TraceSummary;
@@ -155,6 +160,10 @@ namespace utopia {
 
         Measurement m(expr);
 
+        if (log_regions_) {
+            utopia::out() << "BEGIN[" << mpi_world_rank() << "]: " << m.get_class() << "\n";
+        }
+
         running_events_.push(m.get_id());
         auto it = event_map_.insert(std::make_pair(m.get_id(), m));
         it.first->second.begin();
@@ -166,6 +175,10 @@ namespace utopia {
         interceptor().intercept(expr);
 
         Measurement m(expr, "specialized_");
+
+        if (log_regions_) {
+            utopia::out() << "BEGIN[" << mpi_world_rank() << "]: " << m.get_class() << "\n";
+        }
 
         running_events_.push(m.get_id());
         auto it = event_map_.insert(std::make_pair(m.get_id(), m));
@@ -179,6 +192,10 @@ namespace utopia {
 
         Measurement m(region_name);  // + "  [" + file + ":" + std::to_string(line) + "]");
 
+        if (log_regions_) {
+            utopia::out() << "BEGIN[" << mpi_world_rank() << "]: " << m.get_class() << "\n";
+        }
+
         running_events_.push(m.get_id());
         auto it = event_map_.insert(std::make_pair(m.get_id(), m));
         it.first->second.begin();
@@ -191,6 +208,11 @@ namespace utopia {
 
         it->second.end();
         running_events_.pop();
+
+        if (log_regions_) {
+            utopia::out() << "END[" << mpi_world_rank() << "]: " << it->second.get_class() << " ("
+                          << it->second.seconds() << " seconds)\n";
+        }
 
         if (!full_trace_) {
             summary_[it->second.get_class()] += it->second;

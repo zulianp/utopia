@@ -197,6 +197,10 @@ namespace utopia {
             if (str == "--full_trace") {
                 Tracer::instance().full_trace(true);
             }
+
+            if (str == "--trace_log_regions") {
+                Tracer::instance().log_regions(true);
+            }
 #endif  // UTOPIA_TRACE_ENABLED
         }
     }
