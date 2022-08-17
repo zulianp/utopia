@@ -635,7 +635,6 @@ namespace utopia {
                         UElem u_e;
                         U_view.elem(i, u_e);
                         auto el_strain = strain_view.make(u_e);
-                        // auto u_grad_shape_el = v_grad_shape_view.make(u_e);
                         auto &&u_strain_shape_el = ref_strain_u_view.make(u_e);
 
                         ////////////////////////////////////////////

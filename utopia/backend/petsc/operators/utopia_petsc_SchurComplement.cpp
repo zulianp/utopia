@@ -160,31 +160,6 @@ namespace utopia {
             return err == 0;
         }
 
-        // bool create_serial_vector_block(const PetscVector &vector, IS is, PetscVector &subv) {
-        //     assert(empty(subv) || subv.comm().size() == 1);
-
-        //     PetscInt size_is;
-        //     ISGetLocalSize(is, &size_is);
-
-        //     if (empty(subv) || subv.local_size() != size_is) {
-        //         subv.zeros(serial_layout(size_is));
-        //     }
-
-        //     auto v_view = const_local_view_device(vector);
-        //     auto subv_view = local_view_device(subv);
-
-        //     const PetscInt *idx = nullptr;
-        //     ISGetIndices(is, &idx);
-
-        //     PetscInt offset = range(vector).begin();
-        //     parallel_for(
-        //         local_range_device(subv),
-        //         UTOPIA_LAMBDA(const SizeType i) { subv_view.set(i, v_view.get(idx[i] - offset)); });
-
-        //     ISRestoreIndices(is, &idx);
-        //     return true;
-        // }
-
         bool create_parallel_vector_block(const PetscVector &vector, IS is, PetscVector &subv) {
             PetscInt size_is;
             ISGetLocalSize(is, &size_is);
