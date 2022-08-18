@@ -249,9 +249,8 @@ namespace utopia {
         Selector is_skeleton;
 
         bool verbose{false};
-        bool debug{false};
-        bool handle_linear_constraints{true};
-        bool compress_rows{false};
+        // bool debug{false};
+        // bool handle_linear_constraints{true};
 
         int block_size{1};
         int num_blocks{0};
@@ -265,11 +264,10 @@ namespace utopia {
     void BDDOperator<Matrix, Vector>::read(Input &in) {
         in.get("preconditioner_type", impl_->preconditioner_type);
         in.get("verbose", impl_->verbose);
-        in.get("debug", impl_->debug);
+        // in.get("debug", impl_->debug);
         in.get("block_size", impl_->block_size);
-        in.get("handle_linear_constraints", impl_->handle_linear_constraints);
+        // in.get("handle_linear_constraints", impl_->handle_linear_constraints);
         in.get("num_blocks", impl_->num_blocks);
-        in.get("compress_rows", impl_->compress_rows);
     }
 
     template <class Matrix, class Vector>

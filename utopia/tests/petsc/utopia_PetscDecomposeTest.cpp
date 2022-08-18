@@ -219,11 +219,16 @@ public:
         Vector rhs_eliminated, rhs_sc;
         sc.apply_righthand_side(rhs, rhs_eliminated, rhs_sc);
         {
-            ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+            // ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+            MPRGP<Matrix, Vector> cg;
             cg.verbose(true);
-            cg.apply_gradient_descent_step(true);
+            // cg.apply_gradient_descent_step(true);
+
             cg.max_it(40000);
-            cg.atol(1e-10);
+            cg.atol(1e-50);
+            cg.stol(1e-18);
+            cg.rtol(1e-18);
+
             Vector x_sc(layout(rhs_sc), 0);
             cg.solve(sc, rhs_sc, x_sc);
             sc.finalize_from_eliminated_rhs(rhs_eliminated, x_sc, x);
@@ -239,11 +244,16 @@ public:
         // Oracle
         Vector og_x(row_layout(mat), 0);
         {
-            ConjugateGradient<Matrix, Vector, HOMEMADE> og_cg;
-            // og_cg.verbose(true);
-            og_cg.apply_gradient_descent_step(true);
-            og_cg.atol(1e-10);
-            og_cg.max_it(80000);
+            // ConjugateGradient<Matrix, Vector, HOMEMADE> og_cg;
+            MPRGP<Matrix, Vector> og_cg;
+            og_cg.verbose(true);
+            // og_cg.apply_gradient_descent_step(true);
+
+            og_cg.max_it(40000);
+            og_cg.atol(1e-8);
+            og_cg.stol(1e-18);
+            og_cg.rtol(1e-18);
+
             og_cg.solve(mat, rhs, og_x);
         }
 

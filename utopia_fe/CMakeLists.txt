@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.13)
 project(
     utopia_fe
     VERSION 0.1.0
-    LANGUAGES "CXX"
+    LANGUAGES "CXX" "C"
     HOMEPAGE_URL "https://bitbucket.org/zulianp/utopia"
     DESCRIPTION
         "Library for portable finite element discretizations."
