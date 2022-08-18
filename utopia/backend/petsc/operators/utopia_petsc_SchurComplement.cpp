@@ -107,7 +107,7 @@ namespace utopia {
                 }
             }
 
-            assert(offset == n_free);
+            assert(size_t(offset) == n_free);
 
             err = ISCreateGeneral(matrix.comm().raw_comm(), n_free, free_dofs, PETSC_OWN_POINTER, &this->is_dof);
 
@@ -165,7 +165,7 @@ namespace utopia {
             PetscInt size_is;
             ISGetLocalSize(is, &size_is);
 
-            if (empty(subv) || subv.local_size() != size_is) {
+            if (empty(subv) || vector.comm().disjunction(subv.local_size() != size_is)) {
                 subv.zeros(layout(vector.comm(), size_is, Traits<PetscMatrix>::determine()));
             }
 
@@ -231,7 +231,7 @@ namespace utopia {
                                                             PetscVector &out_restricted) {
         UTOPIA_TRACE_REGION_BEGIN("SchurComplement::apply_righthand_side");
 
-        if (empty(impl_->temp_I) || impl_->temp_I.local_size() != impl_->A_II.local_rows()) {
+        if (empty(impl_->temp_I) || !layout(impl_->temp_I).same(row_layout(impl_->A_II))) {
             impl_->temp_I.zeros(row_layout(impl_->A_IG));
         } else {
             impl_->temp_I.set(0.0);
@@ -281,7 +281,7 @@ namespace utopia {
         impl_->x_G = x;
         impl_->temp_I = impl_->A_IG * impl_->x_G;
 
-        if (empty(impl_->x_I) || impl_->x_I.local_size() != impl_->temp_I.local_size()) {
+        if (empty(impl_->x_I) || !layout(impl_->x_I).same(layout(impl_->temp_I))) {
             impl_->x_I.zeros(layout(impl_->temp_I));
         } else {
             impl_->x_I.set(0.0);

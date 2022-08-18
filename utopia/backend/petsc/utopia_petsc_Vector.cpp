@@ -642,7 +642,7 @@ namespace utopia {
     void PetscVector::create_local_vector(PetscVector &out) {
         const std::string str = type();
 
-        if (out.empty()) {
+        if (out.empty() || out.size() != this->local_size()) {
             out.destroy();
             PetscInt n_local = this->local_size();
 
@@ -651,8 +651,6 @@ namespace utopia {
             check_error(VecSetSizes(out.raw_type(), n_local, n_local));
 
             out.set_initialized(true);
-        } else {
-            assert(out.size() == this->local_size());
         }
 
         VecGetLocalVector(this->raw_type(), out.raw_type());
