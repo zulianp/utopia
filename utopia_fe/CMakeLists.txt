@@ -45,6 +45,8 @@ option(UTOPIA_ENABLE_STK "Enable the stk functionalities" OFF)
 option(UTOPIA_ENABLE_MOONOLITH "Enable the moonolith functionalities" ON)
 option(UTOPIA_ENABLE_ARBORX "Enable the ArborX backend" OFF)
 
+option(UTOPIA_ENABLE_FLUYA_MODE "Create utopia_fe configuration required by Fluya (overrides everything else)" OFF)
+
 
 # ##############################################################################
 # ##############################################################################
@@ -106,6 +108,11 @@ endif()
 # ################################# Include cmake functions and find modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_FE_ROOT_PATH}/cmake")
 include(${UTOPIA_FE_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
+
+if(UTOPIA_ENABLE_FLUYA_MODE)
+include(EnableFluyaMode)
+endif()
+
 
 file(GLOB_RECURSE FUNC_LIB "{UTOPIA_FE_ROOT_PATH}/cmake/utils")
 foreach(funcLib ${FUNC_LIB})

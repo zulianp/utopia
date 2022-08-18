@@ -11,6 +11,13 @@
 #include <petsc/private/taoimpl.h>
 #include "petsctao.h"
 
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3, 17, 0)
+#define TaoSetHessian TaoSetHessianRoutine
+#define TaoSetGradient(a, skip_input, c, d) TaoSetGradientRoutine(a, c, d)
+#define TaoSetObjective TaoSetObjectiveRoutine
+#define TaoSetInitialVector TaoSetSolution
+#endif
+
 #define U_CHECKERR(ierr)               \
     {                                  \
         if ((ierr) != 0) return false; \
@@ -174,26 +181,26 @@ namespace utopia {
 
         PetscErrorCode ierr = 0;
         if (fun.has_preconditioner()) {
-            ierr = TaoSetHessianRoutine(tao,
-                                        raw_type(*fun.data()->H),
-                                        raw_type(*fun.data()->H_pre),
-                                        UtopiaTaoFormHessian<Matrix, Vector>,
-                                        static_cast<void *>(&fun));
+            ierr = TaoSetHessian(tao,
+                                 raw_type(*fun.data()->H),
+                                 raw_type(*fun.data()->H_pre),
+                                 UtopiaTaoFormHessian<Matrix, Vector>,
+                                 static_cast<void *>(&fun));
             U_CHECKERR(ierr);
 
         } else {
-            ierr = TaoSetHessianRoutine(tao,
-                                        raw_type(*fun.data()->H),
-                                        raw_type(*fun.data()->H),
-                                        UtopiaTaoFormHessian<Matrix, Vector>,
-                                        static_cast<void *>(&fun));
+            ierr = TaoSetHessian(tao,
+                                 raw_type(*fun.data()->H),
+                                 raw_type(*fun.data()->H),
+                                 UtopiaTaoFormHessian<Matrix, Vector>,
+                                 static_cast<void *>(&fun));
             U_CHECKERR(ierr);
         }
 
-        ierr = TaoSetObjectiveRoutine(tao, UtopiaTaoEvaluateObjective<Matrix, Vector>, static_cast<void *>(&fun));
+        ierr = TaoSetObjective(tao, UtopiaTaoEvaluateObjective<Matrix, Vector>, static_cast<void *>(&fun));
         U_CHECKERR(ierr);
 
-        ierr = TaoSetGradientRoutine(tao, UtopiaTaoEvaluateGradient<Matrix, Vector>, static_cast<void *>(&fun));
+        ierr = TaoSetGradient(tao, nullptr, UtopiaTaoEvaluateGradient<Matrix, Vector>, static_cast<void *>(&fun));
         U_CHECKERR(ierr);
 
         return false;
@@ -352,7 +359,7 @@ namespace utopia {
 
         inline bool solve(Vector &x) {
             PetscErrorCode ierr = 0;
-            TaoSetInitialVector(tao, raw_type(x));
+            TaoSetSolution(tao, raw_type(x));
             ierr = TaoSolve(tao);
             U_CHECKERR(ierr);
 
@@ -394,7 +401,7 @@ namespace utopia {
 
         inline bool smooth(Vector &x) {
             PetscErrorCode ierr = 0;
-            TaoSetInitialVector(tao, raw_type(x));
+            TaoSetSolution(tao, raw_type(x));
             ierr = TaoSolve(tao);
             U_CHECKERR(ierr);
             return true;

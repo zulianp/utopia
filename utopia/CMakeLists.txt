@@ -111,6 +111,13 @@ option(UTOPIA_SPACK_MODE "Spack env hacks" OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
 option(UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE "Removed trilinos deprecated code" OFF)
 
+option(UTOPIA_ENABLE_FLUYA_MODE "Create utopia configuration required by Fluya" OFF)
+
+
+if(UTOPIA_ENABLE_FLUYA_MODE)
+include(EnableFluyaMode)
+endif()
+
 # set(UTOPIA_DEFAULT_TARGETS)
 include(CodeCoverage)
 

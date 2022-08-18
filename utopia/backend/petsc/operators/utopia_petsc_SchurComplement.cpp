@@ -229,9 +229,7 @@ namespace utopia {
     bool SchurComplement<PetscMatrix>::apply_righthand_side(const PetscVector &rhs,
                                                             PetscVector &out_eliminated,
                                                             PetscVector &out_restricted) {
-
         UTOPIA_TRACE_REGION_BEGIN("SchurComplement::apply_righthand_side");
-
 
         if (empty(impl_->temp_I) || impl_->temp_I.local_size() != impl_->A_II.local_rows()) {
             impl_->temp_I.zeros(row_layout(impl_->A_IG));
@@ -292,6 +290,9 @@ namespace utopia {
         impl_->temp_I.create_local_vector(impl_->temp_I_local);
         impl_->x_I.create_local_vector(impl_->x_I_local);
 
+        assert(impl_->temp_I_local.comm().size() == 1);
+        assert(impl_->x_I_local.comm().size() == 1);
+
         if (impl_->A_II_inv->apply(impl_->temp_I_local, impl_->x_I_local)) {
             // return false;
         }
@@ -326,6 +327,9 @@ namespace utopia {
 
         eliminated_rhs.create_local_vector(impl_->temp_I_local);
         impl_->x_I.create_local_vector(impl_->x_I_local);
+
+        assert(impl_->temp_I_local.comm().size() == 1);
+        assert(impl_->x_I_local.comm().size() == 1);
 
         impl_->A_II_inv->apply(impl_->temp_I_local, impl_->x_I_local);
 

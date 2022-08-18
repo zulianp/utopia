@@ -515,7 +515,7 @@ namespace utopia {
             // params.set("use_preconditioner", true);
             // params.set("preconditioner_type", "amg");
             params.set("verbose", verbose);
-            // params.set("analize_block_structure", true);
+            params.set("num_blocks", 3);
 
             // params.set("preconditioner_type", "inv");
             // params.set("use_preconditioner", false);
