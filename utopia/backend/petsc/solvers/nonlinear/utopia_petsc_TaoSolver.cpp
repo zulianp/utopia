@@ -11,6 +11,7 @@
 #include <petsc/private/taoimpl.h>
 #include "petsctao.h"
 
+// Deprecated API is handled here
 #if UTOPIA_PETSC_VERSION_LESS_THAN(3, 17, 0)
 #define Quircks_TaoSetHessian TaoSetHessianRoutine
 #define Quircks_TaoSetGradient(input, b, c, d) TaoSetGradientRoutine(input, c, d)

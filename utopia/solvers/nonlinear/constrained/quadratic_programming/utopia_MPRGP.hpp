@@ -91,7 +91,7 @@ namespace utopia {
 
             SizeType it = 0;
             bool converged = false;
-            Scalar gnorm;
+            Scalar gnorm = -1;
 
             Scalar alpha_cg, alpha_f, beta_sc;
 
