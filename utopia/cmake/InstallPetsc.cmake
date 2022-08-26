@@ -17,8 +17,8 @@ if(NOT CYGWIN)
 
         set(PETSC_MPI_BASE_DIR $ENV{MPI_DIR})
         set(MAKE_COMMAND "make")
-
-        set(PETSC_CONFIG_ARGS "${PETSC_CONFIG_ARGS} $ENV{PETSC_CONFIG_ARGS}")
+        
+        set(PETSC_CONFIG_ARGS $ENV{PETSC_CONFIG_ARGS})
         set(PETSC_CONFIG_ARGS
             ${PETSC_CONFIG_ARGS}
             --with-mpi=1
