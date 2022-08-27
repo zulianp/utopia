@@ -5,6 +5,8 @@
 #include "utopia_LinearSolver.hpp"
 #include "utopia_PreconditionedSolverInterface.hpp"
 
+#include <memory>
+
 namespace utopia {
 
     template <class Matrix, class Vector>
@@ -26,7 +28,7 @@ namespace utopia {
         // PreconditionedSolverInterface::update(op); }
 
         // For avoiding ambigous overrides with update(Operator)
-        void update(const std::shared_ptr<Matrix> &op) { update(std::shared_ptr<const Matrix>(op)); }
+        void update(const std::shared_ptr<Matrix> &op) { update(std::static_pointer_cast<const Matrix>(op)); }
 
         void update(const std::shared_ptr<const Operator<Vector>> &op) override {
             PreconditionedSolverInterface::update(op);
@@ -35,7 +37,7 @@ namespace utopia {
         void update(const std::shared_ptr<const Matrix> &op) override {
             IterativeSolver::update(op);
             if (this->precond_) {
-                PreconditionedSolverInterface::update(op);
+                PreconditionedSolverInterface::update(std::static_pointer_cast<const Operator<Vector>>(op));
                 auto ls_ptr = dynamic_cast<LinearSolver *>(this->precond_.get());
                 if (ls_ptr) {
                     ls_ptr->update(op);
