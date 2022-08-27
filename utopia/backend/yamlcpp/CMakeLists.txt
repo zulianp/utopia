@@ -1,4 +1,4 @@
-find_package(yaml-cpp HINTS ${CMAKE_SOURCE_DIR}/../../dependencies/)
+find_package(yaml-cpp HINTS ${CMAKE_SOURCE_DIR}/../../dependencies/ ${CMAKE_SOURCE_DIR}/../../dependencies/yaml-cpp/share/cmake/yaml-cpp)
 
 if(yaml-cpp_FOUND)
     set(UTOPIA_WITH_YAML_CPP TRUE)
