@@ -1,29 +1,10 @@
-include(FeatureSummary)
-include(CheckSymbolExists)
-find_package(PkgConfig REQUIRED) # https://cmake.org/cmake/help/latest/module/FindPkgConfig.html
-
-# Check for PETSc
-set(ENV{PKG_CONFIG_PATH} "$ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib/pkgconfig:$ENV{PETSC_DIR}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
-pkg_search_module(PETSC REQUIRED IMPORTED_TARGET PETSc>=3.11 petsc>=3.11)
-
-set(CMAKE_REQUIRED_INCLUDES ${PETSC_INCLUDE_DIRS})
-check_symbol_exists(PETSC_USE_COMPLEX petscsystypes.h HAVE_PETSC_SCALAR_COMPLEX)
-
-# Setting for FeatureSummary
-if(PETSC_FOUND)
-  set_property(GLOBAL APPEND PROPERTY PACKAGES_FOUND PETSc)
-else()
-  set_property(GLOBAL APPEND PROPERTY PACKAGES_NOT_FOUND PETSc)
-endif()
-
-set_package_properties(PETSc PROPERTIES TYPE REQUIRED
-  DESCRIPTION "Portable, Extensible Toolkit for Scientific Computation (PETSc)"
-  URL "https://www.mcs.anl.gov/petsc/"
-  PURPOSE "PETSc linear algebra backend")
+# find dependencies
+set(PETSC_TEST_RUNS TRUE)
+find_package(Petsc)
 
 if(PETSC_FOUND)
     list(APPEND UTOPIA_THIRDPARTY_INCLUDES ${PETSC_INCLUDES})
-    list(APPEND UTOPIA_THIRDPARTY_LIBRARIES ${PETSC_LINK_LIBRARIES})
+    list(APPEND UTOPIA_THIRDPARTY_LIBRARIES ${PETSC_LIBRARIES})
 
     set(CMAKE_C_COMPILER ${PETSC_COMPILER})
 

@@ -96,6 +96,8 @@ namespace utopia {
             }
 
             UTOPIA_TRACE_REGION_END("BDDOperator::extend_skeleton_with_local_blocks");
+#else
+            UTOPIA_UNUSED(mat);
 #endif  // UTOPIA_WITH_METIS
         }
 
