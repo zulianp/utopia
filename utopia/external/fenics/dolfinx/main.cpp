@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
         // Create mesh and define function space
         auto mesh = std::make_shared<mesh::Mesh>(mesh::create_box(MPI_COMM_WORLD,
                                                                   {{{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}}},
-                                                                  {10, 10, 10},
+                                                                  {20, 20, 20},
                                                                   mesh::CellType::tetrahedron,
                                                                   mesh::GhostMode::none));
 
@@ -184,7 +184,7 @@ int main(int argc, char *argv[]) {
 
         auto u_rotation = std::make_shared<fem::Function<T>>(V);
         u_rotation->interpolate([](auto &&x) {
-            constexpr double scale = 0.005;
+            constexpr double scale = 0.1;
 
             // Center of rotation
             constexpr double x1_c = 0.5;
@@ -226,11 +226,12 @@ int main(int argc, char *argv[]) {
         } else {
             utopia::Newton<utopia::PetscMatrix, utopia::PetscVector> newton;
             newton.verbose(true);
+            // auto params = utopia::param_list(utopia::param("damping", 0.5));
+            // newton.read(params);
 
             utopia::PetscVector uvec;
             {
                 auto u_ = _u.vec();
-                problem.form()(u_);
                 uvec.wrap(u_);
             }
 
