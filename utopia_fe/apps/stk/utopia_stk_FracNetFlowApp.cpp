@@ -17,12 +17,6 @@
 // REMOVE ME
 #include "par_moonolith_instance.hpp"
 
-namespace utopia {
-
-    template class NewmarkIntegrator<utopia::stk::FunctionSpace>;
-    template class ImplicitEulerIntegrator<utopia::stk::FunctionSpace>;
-}  // namespace utopia
-
 void stk_fracflow(utopia::Input &in) {
     // REMOVE ME
     moonolith::Moonolith::instance().verbose(true);

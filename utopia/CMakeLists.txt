@@ -57,7 +57,9 @@ option(UTOPIA_STATIC_DEPENDENCIES_ONLY
 option(UTOPIA_ENABLE_MPI "Enable the cuda backend" ON)
 # option(UTOPIA_ENABLE_OPENCL "Enable the opencl backend" OFF)
 option(UTOPIA_ENABLE_PETSC "Enable the petsc backend" ON)
-option(UTOPIA_ENABLE_SLEPC "Enable the slepc backend" ON)
+option(UTOPIA_ENABLE_SLEPC "Enable the slepc backend" OFF)
+option(UTOPIA_ENABLE_METIS "Enable the Metis backend" OFF)
+option(UTOPIA_ENABLE_PARMETIS "Enable the ParMetis backend" OFF)
 option(UTOPIA_ENABLE_TRILINOS "Enable the Trilinos backend" ON)
 # option(UTOPIA_ENABLE_KOKKOS_SIMD "Enable kokkos intriniscs wrapper" OFF)
 option(UTOPIA_ENABLE_BLAS "Enable the blas backend" ON)
@@ -108,6 +110,13 @@ option(UTOPIA_SPACK_MODE "Spack env hacks" OFF)
 
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
 option(UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE "Removed trilinos deprecated code" OFF)
+
+option(UTOPIA_ENABLE_FLUYA_MODE "Create utopia configuration required by Fluya" OFF)
+
+
+if(UTOPIA_ENABLE_FLUYA_MODE)
+include(EnableFluyaMode)
+endif()
 
 # set(UTOPIA_DEFAULT_TARGETS)
 include(CodeCoverage)
@@ -520,6 +529,14 @@ endif()
 
 if(UTOPIA_ENABLE_YAML_CPP)
     add_subdirectory(backend/yamlcpp)
+endif()
+
+if(UTOPIA_ENABLE_METIS)
+    add_subdirectory(backend/metis)
+endif()
+
+if(UTOPIA_ENABLE_PARMETIS)
+    add_subdirectory(backend/parmetis)
 endif()
 
 # weird stuff goes here

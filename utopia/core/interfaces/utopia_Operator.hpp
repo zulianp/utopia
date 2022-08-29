@@ -3,6 +3,7 @@
 
 #include "utopia_DistributedObject.hpp"
 #include "utopia_Size.hpp"
+#include "utopia_Traits.hpp"
 
 namespace utopia {
 

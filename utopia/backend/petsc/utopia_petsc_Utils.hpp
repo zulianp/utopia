@@ -7,6 +7,9 @@ namespace utopia {
     void optimize_nnz(PetscMatrix &A);
     bool is_diagonally_dominant(const PetscMatrix &A);
     void local_block_view(const PetscMatrix &mat, PetscMatrix &block);
+    void compute_column_nnz_weight(const PetscMatrix &mat, PetscVector &weights);
+    bool transpose_distro_is_strongly_imbalanced(const PetscMatrix &mat, double tol = 10);
+    int find_rank(int comm_size, PetscInt n_local, const PetscInt *ranges, const PetscInt global_id);
     // void local_view(const PetscVector &vec, PetscVector &lv);
 }  // namespace utopia
 

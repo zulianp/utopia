@@ -1,6 +1,4 @@
-# TODO see if we can use Trilinos' target to retrieve Intrepid2
-
-find_package(Intrepid2 REQUIRED)
+find_package(Intrepid2 HINTS $ENV{TRILINOS_DIR}/lib/cmake/Intrepid2 ${Trilinos_DIR}/../Intrepid2 REQUIRED)
 
 utopiafe_add_module(utopia_intrepid2 ${CMAKE_CURRENT_SOURCE_DIR} ".")
 

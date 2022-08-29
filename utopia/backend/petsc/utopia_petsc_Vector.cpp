@@ -639,4 +639,26 @@ namespace utopia {
         copy_data_to(v);
     }
 
+    void PetscVector::create_local_vector(PetscVector &out) {
+        const std::string str = type();
+
+        if (out.empty() || out.size() != this->local_size()) {
+            out.destroy();
+            PetscInt n_local = this->local_size();
+
+            check_error(VecCreate(PETSC_COMM_SELF, &out.raw_type()));
+            check_error(VecSetType(out.raw_type(), str.c_str()));
+            check_error(VecSetSizes(out.raw_type(), n_local, n_local));
+
+            out.set_initialized(true);
+        }
+
+        VecGetLocalVector(this->raw_type(), out.raw_type());
+        out.update_mirror();
+    }
+
+    void PetscVector::restore_local_vector(PetscVector &out) {
+        VecRestoreLocalVector(this->raw_type(), out.raw_type());
+    }
+
 }  // namespace utopia

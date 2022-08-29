@@ -784,15 +784,21 @@ namespace utopia {
         check_error(MatSetSizes(raw_type(), rows_local, cols_local, rows_global, cols_global));
 
         check_error(MatSetType(raw_type(), type));
+
+        // MatSetLocalToGlobalMapping HERE (row map and col map)
+
         check_error(MatSeqAIJSetPreallocation(raw_type(), PetscMax(d_nnz, 1), PETSC_NULL));
         check_error(
             MatMPIAIJSetPreallocation(raw_type(), PetscMax(d_nnz, 1), PETSC_NULL, PetscMax(o_nnz, 1), PETSC_NULL));
+
+        // check_error(
+        //     MatISSetPreallocation(raw_type(), PetscMax(d_nnz, 1), PETSC_NULL, PetscMax(o_nnz, 1), PETSC_NULL));
 
         check_error(MatSetOption(raw_type(), MAT_NEW_NONZERO_LOCATIONS, PETSC_TRUE));
         check_error(MatSetOption(raw_type(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE));
         check_error(MatSetOption(raw_type(), MAT_NO_OFF_PROC_ENTRIES, PETSC_FALSE));
 
-        check_error(MatZeroEntries(raw_type()));
+        check_error(MatZeroEntries(raw_type()));  // TODO not necessary!
 
         UTOPIA_REPORT_ALLOC("PetscMatrix::matij_init");
     }

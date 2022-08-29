@@ -380,7 +380,7 @@ namespace utopia {
 
         void Obstacle::set_params(const Params &params) { *this->params_ = params; }
 
-        bool Obstacle::assemble(const FunctionSpace &space) {
+        bool Obstacle::assemble(FunctionSpace &space) {
             UTOPIA_TRACE_REGION_BEGIN("moonolith::Obstacle::assemble");
 
             assert(impl_);

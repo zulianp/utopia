@@ -17,6 +17,9 @@ namespace utopia {
     template <class FunctionSpace>
     class FEFunctionFactory;
 
+    template <class FunctionSpace>
+    class ContactFactory;
+
 }  // namespace utopia
 
 #endif  // UTOPIA_FE_CORE_FORWARD_DECLARATIONS_HPP

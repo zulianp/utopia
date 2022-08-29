@@ -171,6 +171,11 @@ namespace utopia {
                 return;
             }
 
+            if (tr.is_alias(tl)) {
+                assert(false);
+                Utopia::Abort("x - x not supported!");
+            }
+
             res = tl;
             res.axpy(-1.0, tr);
         }

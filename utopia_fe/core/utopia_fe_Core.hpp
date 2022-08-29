@@ -10,6 +10,9 @@ namespace utopia {
     class Obstacle {};
 
     template <class FunctionSpace>
+    class Contact {};
+
+    template <class FunctionSpace>
     class FETransfer {};
 
     template <class FunctionSpace>

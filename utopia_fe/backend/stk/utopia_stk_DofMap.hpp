@@ -70,6 +70,7 @@ namespace utopia {
             GlobalIndex local_to_global() const;
             const IndexArray &d_nnz() const;
             const IndexArray &o_nnz() const;
+            SizeType max_nnz_x_row() const;
 
             int n_var() const;
             void set_n_var(const int n_var);

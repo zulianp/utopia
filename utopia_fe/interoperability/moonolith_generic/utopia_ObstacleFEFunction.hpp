@@ -2,14 +2,14 @@
 #define UTOPIA_OBSTACLEF_EF_UNCTION_HPP
 
 #include "utopia_BoxConstrainedFEFunction.hpp"
-#include "utopia_IObstacle.hpp"
+#include "utopia_ContactInterface.hpp"
 #include "utopia_fe_Core.hpp"
 
 #include "utopia_AnalyticObstacle_impl.hpp"
 #include "utopia_ImplicitObstacle_impl.hpp"
 #include "utopia_ObstacleStabilizedNewmark.hpp"
 
-#include "utopia_ObstacleFactory.hpp"
+#include "utopia_ContactFactory.hpp"
 
 #include "utopia_IsNotSupported.hpp"
 
@@ -113,13 +113,12 @@ namespace utopia {
             in.get("debug", debug_);
 
             if (!obstacle_) {
-                in.get("obstacle",
-                       [&](Input &node) { obstacle_ = ObstacleFactory<FunctionSpace>::new_obstacle(node); });
+                in.get("obstacle", [&](Input &node) { obstacle_ = ContactFactory<FunctionSpace>::new_obstacle(node); });
             }
 
-            auto ptr = std::dynamic_pointer_cast<ObstacleDependentFunction<FunctionSpace>>(this->unconstrained());
+            auto ptr = std::dynamic_pointer_cast<ContactDependentFunction<FunctionSpace>>(this->unconstrained());
             if (ptr) {
-                ptr->set_obstacle(obstacle_);
+                ptr->set_contact(obstacle_);
             }
         }
 
@@ -137,7 +136,7 @@ namespace utopia {
         // }
 
     private:
-        std::shared_ptr<IObstacle<FunctionSpace>> obstacle_;
+        std::shared_ptr<ContactInterface<FunctionSpace>> obstacle_;
         bool linear_obstacle_{false};
         bool debug_{false};
     };

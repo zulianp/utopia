@@ -9,6 +9,47 @@ from utopia_mech import *
 
 console = rich.get_console()
 
+
+# class Kulkarni(HyperElasticModel):
+# 	def __init__(self, d):
+# 		super().__init__(d)
+
+# 		C = self.C
+# 		I1 = self.I_C
+# 		I2 = se.rational(1, 2) * (trace(C)**2 - trace(C*C))
+# 		I3 = det(C)
+# 		I4 = 1
+
+# 		F = self.F
+
+# 		self.L = velocity_gradient(d)
+# 		D = se.rational(1, 2) * (L + L.T)
+
+# 		C_dot = 2 * F.T * D * F
+# 		C_dot_symb = symbolic_matrix(d, 'C_dot')
+
+# 		J2 = se.rational(1, 2) * trace(C_dot_symb**2)
+# 		J5 = J2 # Isotropic
+
+# 		Wv = se.rational(1, 2) * mu2 * J2 * (I1 - 3)**n1 + mu3*J5 * (K4 - 7) ** n2
+
+
+		# J = self.J
+
+
+
+		# mu, mu1, lmbda = se.symbols('mu mu1 lambda')
+		# self.params = [(mu, 1.0), (lmbda,1.0)]
+
+
+		# K4 = I2 + 2 * I1*I4 - 2*I5
+		# self.fun =  se.rational(mu, 2) * (I1 - 3) + mu1 * (K4 - 7)**q
+
+
+		# self.fun = mu/2 *(I_C - d) - mu * log(J) + (lmbda/2) * (log(J))**2
+		# self.name = 'Kulkarni'
+		# self.use_default_parameter_reader = True
+
 # 1D equation (39)
 # 3D eqaution (50, 51)
 # History variable h is just evaluated for the update (explicit integrtaion)

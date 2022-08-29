@@ -74,10 +74,18 @@ namespace utopia {
         bool setup_IVP(Vector_t &x) override { return unconstrained_->setup_IVP(x); }
         bool is_IVP_solved() override { return unconstrained_->is_IVP_solved(); }
 
-        BoxConstrainedFEFunction(const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &unconstrained)
-            : unconstrained_(unconstrained) {
+        BoxConstrainedFEFunction(const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &unconstrained) {
+            initialize(unconstrained);
+        }
+
+        BoxConstrainedFEFunction() {}
+
+        virtual void initialize(const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &unconstrained) {
+            unconstrained_ = unconstrained;
             assert(unconstrained_);
         }
+
+        virtual bool is_initialized() const { return static_cast<bool>(unconstrained_); }
 
         void set_time(const std::shared_ptr<SimulationTime> &time) override {
             assert(unconstrained_);

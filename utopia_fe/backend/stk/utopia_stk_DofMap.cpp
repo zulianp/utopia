@@ -1304,5 +1304,16 @@ namespace utopia {
 
         DofMap::SizeType DofMap::shift_aura_idx(const SizeType idx) const { return idx - impl_->aura_nodes_offset; }
 
+        DofMap::SizeType DofMap::max_nnz_x_row() const {
+            SizeType n = impl_->d_nnz.size();
+
+            SizeType nnz = 0;
+            for (SizeType i = 0; i < n; ++i) {
+                nnz = std::max(nnz, impl_->d_nnz[i] + impl_->o_nnz[i]);
+            }
+
+            return nnz;
+        }
+
     }  // namespace stk
 }  // namespace utopia

@@ -3,6 +3,7 @@
 
 // Core includes
 #include "utopia_Allocations.hpp"
+#include "utopia_ArrayView.hpp"
 #include "utopia_BLAS_Operands.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_Comparable.hpp"
@@ -255,6 +256,18 @@ namespace utopia {
             return {r_begin, r_end};
         }
 
+        inline ArrayView<const PetscInt> col_ranges() const {
+            const PetscInt *ranges;
+            MatGetOwnershipRangesColumn(this->raw_type(), &ranges);
+            return ArrayView<const PetscInt>(ranges, comm().size() + 1);
+        }
+
+        inline ArrayView<const PetscInt> row_ranges() const {
+            const PetscInt *ranges;
+            MatGetOwnershipRanges(this->raw_type(), &ranges);
+            return ArrayView<const PetscInt>(ranges, comm().size() + 1);
+        }
+
         inline SizeType rows() const override {
             SizeType ret;
             check_error(MatGetSize(implementation(), &ret, nullptr));
@@ -397,41 +410,6 @@ namespace utopia {
 
         void convert_to_scalar_matrix();
         void convert_to_scalar_matrix(PetscMatrix &scalar_matrix);
-
-        // void identity(const Scalar &diag = 1.0);
-
-        // inline void identity(const Size &s, const Scalar &diag = 1.0) override {
-        //     matij_init_identity(comm().get(), MATAIJ, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), diag);
-        // }
-
-        // inline void dense_identity(const Size &s, const Scalar &diag = 1.0) override {
-        //     dense_init_identity(comm().get(), MATDENSE, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), diag);
-        // }
-
-        // inline void local_dense_identity(const Size &s, const Scalar &diag = 1.0) override {
-        //     dense_init_identity(comm().get(), MATDENSE, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, diag);
-        // }
-
-        // inline void values(const Size &s, const Scalar &val) override {
-        //     dense_init_values(comm().get(), MATDENSE, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), val);
-        // }
-
-        // inline void sparse(const Size &s, const SizeType &nnz) override {
-        //     matij_init(comm().get(), MATAIJ, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), nnz, nnz);
-        // }
-
-        // inline void local_identity(const Size &s, const Scalar &diag = 1.0) override {
-        //     matij_init_identity(comm().get(), MATAIJ, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, diag);
-        // }
-
-        // inline void local_values(const Size &s, const Scalar &val) override {
-        //     dense_init_values(comm().get(), MATDENSE, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, val);
-        // }
-
-        // /// Specialize for sparse matrices
-        // inline void local_sparse(const Size &s, const SizeType &nnz) override {
-        //     matij_init(comm().get(), MATAIJ, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, nnz, nnz);
-        // }
 
         ///////////////////////////////////////////////////////////////////////////
         ////////////// OVERRIDES FOR Normed ////////////////////////////////
@@ -663,7 +641,15 @@ namespace utopia {
 
         inline void rename(const std::string &name) { PetscObjectSetName((PetscObject)implementation(), name.c_str()); }
 
-        void wrap(Mat &mat) { wrapper_ = std::make_shared<PetscMatrixMemory>(mat, false); }
+        void wrap(Mat &mat) {
+            wrapper_ = std::make_shared<PetscMatrixMemory>(mat, false);
+            update_mirror();
+        }
+
+        void own(Mat &mat) {
+            wrapper_ = std::make_shared<PetscMatrixMemory>(mat, true);
+            update_mirror();
+        }
 
         const Mat &implementation() const { return wrapper_->implementation(); }
 

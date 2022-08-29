@@ -12,9 +12,6 @@
 
 namespace utopia {
 
-    template class NewmarkIntegrator<utopia::stk::FunctionSpace>;
-    template class ImplicitEulerIntegrator<utopia::stk::FunctionSpace>;
-
     template <class FunctionSpace>
     class ResampleTimeSeriesApp : public Configurable {
     public:

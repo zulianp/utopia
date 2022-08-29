@@ -52,8 +52,12 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("MPRGP::update");
         }
 
-        bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override {
+        bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &x) override {
             UTOPIA_TRACE_REGION_BEGIN("MPRGP::solve(...)");
+
+            if (this->verbose()) {
+                this->init_solver("MPRGP comm_size: " + std::to_string(rhs.comm().size()), {"it", "|| g ||"});
+            }
 
             if (this->has_empty_bounds()) {
                 this->fill_empty_bounds(layout(rhs));
@@ -61,7 +65,7 @@ namespace utopia {
                 assert(this->get_box_constraints().valid(layout(rhs)));
             }
 
-            auto &box = this->get_box_constraints();
+            auto &&box = this->get_box_constraints();
 
             this->update(A);
 
@@ -69,45 +73,25 @@ namespace utopia {
             // to obtain initial guess
             if (precond_) {
                 // this is unconstrained step
-                precond_->apply(rhs, sol);
+                precond_->apply(rhs, x);
                 // projection to feasible set
-                this->make_iterate_feasible(sol);
+                this->make_iterate_feasible(x);
             }
 
-            bool ok = aux_solve(A, rhs, sol, box);
-
-            UTOPIA_TRACE_REGION_END("MPRGP::solve(...)");
-            return ok;
-        }
-
-        void set_eig_comp_tol(const Scalar &eps_eig_est) { eps_eig_est_ = eps_eig_est; }
-
-    private:
-        bool aux_solve(const Operator<Vector> &A,
-                       const Vector &rhs,
-                       Vector &x,
-                       const BoxConstraints<Vector> &constraints) {
-            // UTOPIA_NO_ALLOC_BEGIN("MPRGP");
-            // //cudaProfilerStart();
-
-            const auto &&ub = constraints.upper_bound();
-            const auto &&lb = constraints.lower_bound();
-
-            if (this->verbose()) {
-                this->init_solver("MPRGP comm_size: " + std::to_string(rhs.comm().size()), {"it", "|| g ||"});
-            }
+            auto ub = box.upper_bound();
+            auto lb = box.lower_bound();
 
             const Scalar gamma = 1.0;
             Scalar alpha_bar = 1;
             if (!hardik_variant_) {
-                alpha_bar = 1.95 / this->get_normA(A);
+                alpha_bar = 1.95 / this->power_method(A);
             }
 
             Scalar pAp, beta_beta, fi_fi, gp_dot, g_betta, beta_Abeta;
 
             SizeType it = 0;
             bool converged = false;
-            Scalar gnorm;
+            Scalar gnorm = -1;
 
             Scalar alpha_cg, alpha_f, beta_sc;
 
@@ -186,6 +170,10 @@ namespace utopia {
                     dots(g, beta, g_betta, beta, Abeta, beta_Abeta);
                     // detecting negative curvature
                     if (beta_Abeta <= 0.0) {
+                        if (this->verbose()) {
+                            PrintInfo::print_iter_status(it, {gnorm});
+                        }
+
                         return true;
                     }
 
@@ -211,16 +199,14 @@ namespace utopia {
                 }
 
                 converged = this->check_convergence(it, gnorm, 1, 1);
-                // converged = (it > this->max_it() || gnorm < std::min(0.1,
-                // std::sqrt(r_norm0)) * r_norm0 ) ? true : false;
             }
 
-            // //cudaProfilerStop();
-            // UTOPIA_NO_ALLOC_END();
-            return true;
+            UTOPIA_TRACE_REGION_END("MPRGP::solve(...)");
+            return converged;
         }
 
-    public:
+        void set_eig_comp_tol(const Scalar &eps_eig_est) { eps_eig_est_ = eps_eig_est; }
+
         void get_fi(const Vector &x, const Vector &g, const Vector &lb, const Vector &ub, Vector &fi) const {
             assert(!empty(fi));
 
@@ -306,7 +292,7 @@ namespace utopia {
         }
 
     private:
-        Scalar get_normA(const Operator<Vector> &A) {
+        Scalar power_method(const Operator<Vector> &A) {
             // Super simple power method to estimate the biggest eigenvalue
             assert(!empty(help_f2));
             help_f2.set(1.0);
@@ -336,7 +322,7 @@ namespace utopia {
                 it = it + 1;
             }
 
-            if (this->verbose())
+            if (this->verbose() && mpi_world_rank() == 0)
                 utopia::out() << "Power method converged in " << it << " iterations. Largest eig: " << lambda << "  \n";
 
             return lambda;

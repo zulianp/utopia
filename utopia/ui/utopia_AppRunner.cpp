@@ -31,7 +31,8 @@ namespace utopia {
 
         int err = 0;
 
-        if (argc == 2 && (argv[1] == std::string("-list") || argv[1] == std::string("-help"))) {
+        if (argc == 2 && (argv[1] == std::string("--list") || argv[1] == std::string("--help") ||
+                          argv[1] == std::string("-list") || argv[1] == std::string("-help"))) {
             this->describe();
             return 0;
         }

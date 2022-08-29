@@ -297,6 +297,28 @@ namespace utopia {
         utopia_test_assert(!ss.str().empty());
     }
 
+    template <class Matrix, class Vector>
+    class MatrixStructureTest {
+    public:
+        using TraitsT = utopia::Traits<Matrix>;
+        using Comm = typename TraitsT::Communicator;
+        using Scalar = typename TraitsT::Scalar;
+        using SizeType = typename TraitsT::SizeType;
+
+        void is_col_imbalanced_test() {
+            auto comm = Comm();
+
+            auto ml = utopia::layout(comm, 5, 5, TraitsT::determine(), TraitsT::determine());
+            Matrix mat;
+            mat.identity(ml, 0.1);
+
+            // Identity has perfect balance!
+            utopia_test_assert(!transpose_distro_is_strongly_imbalanced(mat, 0));
+        }
+
+        void run() { UTOPIA_RUN_TEST(is_col_imbalanced_test); }
+    };
+
     static void utilities() {
         UTOPIA_RUN_TEST(authored_work_test);
         UTOPIA_RUN_TEST(describe_test);
@@ -311,6 +333,8 @@ namespace utopia {
 
         UtilitiesTest<PetscMatrix, PetscVector>().run();
         BlockTest<PetscMatrix, PetscVector>().run();
+
+        MatrixStructureTest<PetscMatrix, PetscVector>().run();
 
 #endif  // UTOPIA_WITH_PETSC
 

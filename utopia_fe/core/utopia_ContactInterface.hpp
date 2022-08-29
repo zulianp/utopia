@@ -8,7 +8,7 @@
 namespace utopia {
 
     template <class FunctionSpace>
-    class IObstacle : public Configurable, public Describable {
+    class ContactInterface : public Configurable, public Describable {
     public:
         using Vector = typename Traits<FunctionSpace>::Vector;
         using Matrix = typename Traits<FunctionSpace>::Matrix;
@@ -27,7 +27,7 @@ namespace utopia {
         virtual const Vector &is_contact() const = 0;
         virtual const Vector &normals() const = 0;
 
-        virtual ~IObstacle() = default;
+        virtual ~ContactInterface() = default;
     };
 
 }  // namespace utopia

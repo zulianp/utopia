@@ -42,7 +42,7 @@ namespace utopia {
             SizeType n_local_dofs() const;
 
             // void create_matrix(Matrix &mat) const;
-            // void create_vector(Vector &vec) const;
+            void create_vector(Vector &vec) const;
 
         private:
             class Impl;

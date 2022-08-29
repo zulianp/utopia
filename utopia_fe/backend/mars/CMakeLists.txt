@@ -1,11 +1,12 @@
 if(UTOPIA_ENABLE_MARS)
-    find_package(MARS REQUIRED)
+    find_package(Mars 0 REQUIRED)
 
     message(STATUS "MARS_LIBRARIES=${MARS_LIBRARIES}")
 
     utopiafe_add_module(utopia_mars ${CMAKE_CURRENT_SOURCE_DIR} ".;assemblers;io;fe")
-    target_include_directories(utopia_mars PUBLIC ${MARS_INCLUDES})
-    target_link_libraries(utopia_mars INTERFACE ${MARS_LIBRARIES})
+    # target_include_directories(utopia_mars PUBLIC ${MARS_INCLUDES})
+    # target_link_libraries(utopia_mars INTERFACE ${MARS_LIBRARIES})
+    target_link_libraries(utopia_mars PUBLIC Mars::mars)
     target_link_libraries(utopia_mars PUBLIC Utopia::utopia utopia_fe_core utopia_fe_kokkos)
 
     # target_compile_features(utopia_mars PUBLIC cxx_std_17)

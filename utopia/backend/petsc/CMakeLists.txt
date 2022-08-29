@@ -78,6 +78,7 @@ if(PETSC_FOUND)
         PETSC_MODULES
         .
         eval
+        operators
         solvers
         solvers/linear
         solvers/multilevel

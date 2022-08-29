@@ -176,11 +176,6 @@ namespace utopia {
                 }
 
                 rename("transfer_matrix", *data.transfer_matrix);
-
-                if (opts.export_tensors_) {
-                    write("load_transfer_matrix.m", *data.transfer_matrix);
-                }
-
                 UTOPIA_TRACE_REGION_END("FETransferPrepareData::apply");
                 return ok;
             }
@@ -496,6 +491,11 @@ namespace utopia {
             }
 
             UTOPIA_TRACE_REGION_END("FETransfer::init");
+
+            if (impl_->opts.export_tensors) {
+                ::utopia::write("load_transfer_matrix.m", *transfer_matrix());
+            }
+
             return has_intersection;
         }
 
@@ -549,12 +549,16 @@ namespace utopia {
 
         std::shared_ptr<FETransfer::Matrix> FETransfer::transfer_matrix() const { return impl_->data.transfer_matrix; }
 
-        bool FETransfer::apply(const Matrix &to_matrix, Matrix &matrix_in_from_space) const {
+        bool FETransfer::apply(const Matrix &to_matrix, Matrix &from_matrix, const bool reuse_matrix) const {
             if (!empty()) {
                 assert(!utopia::empty(*impl_->data.transfer_matrix));
                 assert(!utopia::empty(to_matrix));
-                matrix_in_from_space =
-                    transpose(*impl_->data.transfer_matrix) * to_matrix * (*impl_->data.transfer_matrix);
+
+                if (!utopia::empty(from_matrix) && reuse_matrix) {
+                    ptap_reuse_matrix(to_matrix, *impl_->data.transfer_matrix, from_matrix);
+                } else {
+                    from_matrix = transpose(*impl_->data.transfer_matrix) * to_matrix * (*impl_->data.transfer_matrix);
+                }
                 return true;
             } else {
                 return false;
@@ -615,6 +619,20 @@ namespace utopia {
         void FETransfer::set_constraint_matrix_to(const std::shared_ptr<Matrix> &constraint_matrix) {
             impl_->data.constraint_matrix_to = constraint_matrix;
         }
+
+        // void count_transpose_operator_imbalance(const Matrix &mat, IndexArray &array) {
+        // auto &&comm = mat.comm();
+        // array.resize(comm.size());
+
+        //
+        // }
+
+        // void FETransfer::rebalance_the_from_system() {
+        //     // TODO
+        //     // Redistribute transfer matrix columns
+        //     // Generate index set OR ranges for external routines
+        //     // std::vector<long>
+        // }
 
     }  // namespace moonolith
 

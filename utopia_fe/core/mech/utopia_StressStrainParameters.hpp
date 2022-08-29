@@ -85,6 +85,7 @@ namespace utopia {
     public:
         void read(Input &in) override {
             in.get("ni", this->get());
+            in.get("nu", this->get());
             in.get("poisson_ratio", this->get());
         }
 

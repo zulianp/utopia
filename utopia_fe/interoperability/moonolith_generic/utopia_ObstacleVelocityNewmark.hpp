@@ -5,13 +5,13 @@
 
 #include "utopia_BoxConstrainedFEFunction.hpp"
 #include "utopia_BoxConstraints.hpp"
-#include "utopia_IObstacle.hpp"
+#include "utopia_ContactInterface.hpp"
 #include "utopia_fe_Core.hpp"
 
 #include "utopia_AnalyticObstacle_impl.hpp"
 #include "utopia_ImplicitObstacle_impl.hpp"
 
-#include "utopia_ObstacleFactory.hpp"
+#include "utopia_ContactFactory.hpp"
 
 #include "utopia_IsNotSupported.hpp"
 #include "utopia_LineSearchBoxProjection.hpp"
@@ -165,8 +165,12 @@ namespace utopia {
 
             if (!obstacle_) {
                 std::string type;
-                in.get("obstacle",
-                       [&](Input &node) { obstacle_ = ObstacleFactory<FunctionSpace>::new_obstacle(node); });
+                in.get("obstacle", [&](Input &node) { obstacle_ = ContactFactory<FunctionSpace>::new_obstacle(node); });
+            }
+
+            if (!obstacle_) {
+                std::string type;
+                in.get("contact", [&](Input &node) { obstacle_ = ContactFactory<FunctionSpace>::new_contact(node); });
             }
 
             ////////////////////////////////////////////////////////////////////////////////
@@ -380,7 +384,7 @@ namespace utopia {
         }
 
     private:
-        std::shared_ptr<IObstacle<FunctionSpace>> obstacle_;
+        std::shared_ptr<ContactInterface<FunctionSpace>> obstacle_;
         std::shared_ptr<LogBarrierBase> barrier_;
         bool debug_{false};
         int debug_from_iteration_{0};

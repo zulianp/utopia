@@ -10,10 +10,10 @@ d, d_hat = sp.symbols('d d_hat')
 param = (d - d_hat) / d_hat;
 
 # Quadratic barrier
-# f = 0.5 * (param * param)
+f = 0.5 * (param * param)
 
 # High-order barrier
-f = sp.Rational(1,4) * (param * param * param * param)
+# f = sp.Rational(1,4) * (param * param * param * param)
 
 grad_f = sp.simplify(sp.diff(f, d))
 H_f = sp.simplify(sp.diff(grad_f, d))
