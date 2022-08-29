@@ -8,6 +8,7 @@
 #include "utopia_MPI.hpp"
 #include "utopia_Tracer.hpp"
 #include "utopia_make_unique.hpp"
+#include "utopia_Banner.hpp"
 
 #include "utopia_Reporter.hpp"
 
@@ -57,6 +58,7 @@ namespace utopia {
         // }
 
         CitationsDB::instance().cite(Cite<Utopia2016Git>::bibtex());
+        CitationsDB::instance().cite(Cite<Utopia2021>::bibtex());
     }
 
     int Utopia::Finalize() {
@@ -202,6 +204,11 @@ namespace utopia {
                 Tracer::instance().log_regions(true);
             }
 #endif  // UTOPIA_TRACE_ENABLED
+        }
+
+        if(verbose()) 
+        {
+            Banner::welcome();
         }
     }
 

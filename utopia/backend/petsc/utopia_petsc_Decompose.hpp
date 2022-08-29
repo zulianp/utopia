@@ -23,7 +23,7 @@ namespace utopia {
 
     bool rebalance(const PetscMatrix &in,
                    PetscMatrix &out,
-                   Traits<PetscMatrix>::IndexArray &partitioning,
+                   std::vector<int> &partitioning,
                    Traits<PetscMatrix>::IndexArray &permutation);
 
     bool partitions_to_permutations(const PetscMatrix &matrix,
@@ -33,7 +33,7 @@ namespace utopia {
     bool inverse_partition_mapping(const int comm_size,
                                    const ArrayView<const PetscInt> &original_row_ranges,
                                    const Traits<PetscMatrix>::IndexArray &permutation,
-                                   Traits<PetscMatrix>::IndexArray &partitioning);
+                                   std::vector<int> &partitioning);
 
 }  // namespace utopia
 

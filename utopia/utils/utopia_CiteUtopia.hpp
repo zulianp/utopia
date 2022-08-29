@@ -7,11 +7,21 @@ namespace utopia {
     // Bibliography
 
     ///////////////////////////////////////////
-
+    
     class Utopia2016Git {};
 
     template <>
     class Cite<Utopia2016Git> {
+    public:
+        static BibTeX bibtex();
+    };
+
+    ///////////////////////////////////////////
+
+    class Utopia2021 {};
+
+    template <>
+    class Cite<Utopia2021> {
     public:
         static BibTeX bibtex();
     };

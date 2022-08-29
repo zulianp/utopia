@@ -124,7 +124,7 @@ public:
         mat.sparse(layout(comm, n_local, n_local, Traits::determine(), Traits::determine()), 3, 3);
         assemble_laplacian_1D(mat);
 
-        std::vector<SizeType> decomposition(n_local, 0);
+        std::vector<int> decomposition(n_local, 0);
 
         for (int i = 0; i < n_local; ++i) {
             // shift entries to 3 ranks above in a circular way
@@ -137,7 +137,7 @@ public:
         Matrix redistributed;
         redistribute_from_permutation(mat, partitioning, redistributed);
 
-        IndexArray inverse_decomposition;
+        std::vector<int> inverse_decomposition;
         inverse_partition_mapping(comm.size(), mat.row_ranges(), partitioning, inverse_decomposition);
 
         IndexArray inverse_partitioning;
