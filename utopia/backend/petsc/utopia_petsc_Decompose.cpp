@@ -224,7 +224,7 @@ namespace utopia {
 
         std::vector<PetscInt> sendbuf(local_rows, 0);
         std::vector<int> sdispls(comm_size + 1, 0);
-        std::vector<PetscInt> sendcounts(comm_size, 0);
+        std::vector<int> sendcounts(comm_size, 0);
 
         {  // Fill send buffers!
 
@@ -247,17 +247,17 @@ namespace utopia {
         }
 
         std::vector<int> rdispls(comm_size + 1, 0);
-        std::vector<PetscInt> recvcounts(comm_size, 0);
+        std::vector<int> recvcounts(comm_size, 0);
         PetscInt incoming = 0;
 
         {  // Fill recv buffers
             // exchange send/receive permuatation info
             MPI_Alltoall(sendcounts.data(),
                          1,
-                         utopia::MPIType<PetscInt>::value(),
+                         utopia::MPIType<int>::value(),
                          recvcounts.data(),
                          1,
-                         utopia::MPIType<PetscInt>::value(),
+                         utopia::MPIType<int>::value(),
                          comm.raw_comm());
 
             for (int r = 0; r < comm_size; ++r) {
@@ -350,7 +350,7 @@ namespace utopia {
     bool inverse_partition_mapping(const int comm_size,
                                    const ArrayView<const PetscInt> &original_row_ranges,
                                    const Traits<PetscMatrix>::IndexArray &permutation,
-                                   Traits<PetscMatrix>::IndexArray &partitioning) {
+                                   std::vector<int> &partitioning) {
         partitioning.resize(permutation.size());
         int n_local = original_row_ranges[1] - original_row_ranges[0];
 
@@ -413,7 +413,7 @@ namespace utopia {
 
     bool rebalance(const PetscMatrix &in,
                    PetscMatrix &out,
-                   Traits<PetscMatrix>::IndexArray &partitioning,
+                   std::vector<int> &partitioning,
                    Traits<PetscMatrix>::IndexArray &permutation) {
         if (in.comm().size() == 1) {
             return false;
