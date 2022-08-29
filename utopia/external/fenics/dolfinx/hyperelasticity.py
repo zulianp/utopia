@@ -73,6 +73,6 @@ J_form = derivative(F_form, u, du)
 # Compute Cauchy stress
 sigma = (1/J)*diff(psi, F)*F.T
 
-forms = [F_form, J_form]
+forms = [Pi, F_form, J_form]
 elements = [(element)]
 expressions = [(sigma, [[0.25, 0.25, 0.25]])]

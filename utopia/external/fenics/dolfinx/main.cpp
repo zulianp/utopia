@@ -20,10 +20,12 @@ using T = PetscScalar;
 
 class HyperElasticProblem : public utopia::Function<utopia::PetscMatrix, utopia::PetscVector> {
 public:
-    HyperElasticProblem(std::shared_ptr<fem::Form<T>> L,
+    HyperElasticProblem(std::shared_ptr<fem::Form<T>> e,
+                        std::shared_ptr<fem::Form<T>> L,
                         std::shared_ptr<fem::Form<T>> J,
                         std::vector<std::shared_ptr<const fem::DirichletBC<T>>> bcs)
-        : _l(L),
+        : _e(e),
+          _l(L),
           _j(J),
           _bcs(bcs),
           _b(L->function_spaces()[0]->dofmap()->index_map, L->function_spaces()[0]->dofmap()->index_map_bs()),
@@ -102,11 +104,12 @@ public:
         return true;
     }
 
-    bool value(const utopia::PetscVector &, PetscScalar &value) const override {
-        // auto that = const_cast<HyperElasticProblem *>(this);
-        // auto H_fun = that->J();
-        value = -1;
-        return false;
+    bool value(const utopia::PetscVector &x, PetscScalar &value) const override {
+        auto that = const_cast<HyperElasticProblem *>(this);
+        that->form()(x.raw_type());
+        value = fem::assemble_scalar<T>(*_e);
+        value = x.comm().sum(value);
+        return true;
     }
 
     bool gradient(const utopia::PetscVector &x, utopia::PetscVector &g) const override {
@@ -137,7 +140,7 @@ public:
     Mat matrix() const { return _matA.mat(); }
 
 private:
-    std::shared_ptr<fem::Form<T>> _l, _j;
+    std::shared_ptr<fem::Form<T>> _e, _l, _j;
     std::vector<std::shared_ptr<const fem::DirichletBC<T>>> _bcs;
     la::Vector<T> _b;
     Vec _b_petsc = nullptr;
@@ -168,7 +171,7 @@ int main(int argc, char *argv[]) {
         // Create mesh and define function space
         auto mesh = std::make_shared<mesh::Mesh>(mesh::create_box(MPI_COMM_WORLD,
                                                                   {{{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}}},
-                                                                  {20, 20, 20},
+                                                                  {40, 40, 40},
                                                                   mesh::CellType::tetrahedron,
                                                                   mesh::GhostMode::none));
 
@@ -177,8 +180,14 @@ int main(int argc, char *argv[]) {
 
         // Define solution function
         auto u = std::make_shared<fem::Function<T>>(V);
+
+        auto e = std::make_shared<fem::Form<T>>(
+            fem::create_form<T>(*form_hyperelasticity_Pi, {}, {{"u", u}}, {}, {}, mesh)
+            );
+        
         auto a = std::make_shared<fem::Form<T>>(
             fem::create_form<T>(*form_hyperelasticity_J_form, {V, V}, {{"u", u}}, {}, {}));
+        
         auto L =
             std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_hyperelasticity_F_form, {V}, {{"u", u}}, {}, {}));
 
@@ -210,7 +219,7 @@ int main(int argc, char *argv[]) {
         auto bcs = std::vector{std::make_shared<const fem::DirichletBC<T>>(xt::xarray<T>{0, 0, 0}, bdofs_left, V),
                                std::make_shared<const fem::DirichletBC<T>>(u_rotation, bdofs_right)};
 
-        HyperElasticProblem problem(L, a, bcs);
+        HyperElasticProblem problem(e, L, a, bcs);
 
         la::petsc::Vector _u(la::petsc::create_vector_wrap(*u->x()), false);
 
