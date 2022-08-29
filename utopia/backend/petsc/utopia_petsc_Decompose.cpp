@@ -350,7 +350,7 @@ namespace utopia {
     bool inverse_partition_mapping(const int comm_size,
                                    const ArrayView<const PetscInt> &original_row_ranges,
                                    const Traits<PetscMatrix>::IndexArray &permutation,
-                                   Traits<PetscMatrix>::IndexArray &partitioning) {
+                                   std::vector<int> &partitioning) {
         partitioning.resize(permutation.size());
         int n_local = original_row_ranges[1] - original_row_ranges[0];
 
@@ -413,7 +413,7 @@ namespace utopia {
 
     bool rebalance(const PetscMatrix &in,
                    PetscMatrix &out,
-                   Traits<PetscMatrix>::IndexArray &partitioning,
+                   std::vector<int> &partitioning,
                    Traits<PetscMatrix>::IndexArray &permutation) {
         if (in.comm().size() == 1) {
             return false;
