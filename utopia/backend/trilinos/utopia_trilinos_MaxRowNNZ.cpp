@@ -4,7 +4,7 @@
 #include "utopia_kokkos_Operations.hpp"
 #include "utopia_trilinos_MaxRowNNZ.hpp"
 
-#include <Kokkos_View.hpp>
+#include <Kokkos_Core.hpp>
 
 #include <Trilinos_version.h>
 
