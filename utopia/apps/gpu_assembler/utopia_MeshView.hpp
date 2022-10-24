@@ -10,7 +10,6 @@
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_DualView.hpp>
-#include <Kokkos_View.hpp>
 
 #include <array>
 
