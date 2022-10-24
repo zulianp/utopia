@@ -21,7 +21,12 @@ PETSC_EXTERN PetscErrorCode KSPCreate_UTOPIA(KSP);
 PETSC_INTERN PetscErrorCode KSPDestroy_UTOPIA(KSP);
 PETSC_INTERN PetscErrorCode KSPReset_UTOPIA(KSP);
 PETSC_INTERN PetscErrorCode KSPView_UTOPIA(KSP, PetscViewer);
+
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 18, 0)
+PETSC_INTERN PetscErrorCode KSPSetFromOptions_UTOPIA(KSP, PetscOptionItems *PetscOptionsObject);
+#else
 PETSC_INTERN PetscErrorCode KSPSetFromOptions_UTOPIA(PetscOptionItems *PetscOptionsObject, KSP);
+#endif
 
 PETSC_INTERN PetscErrorCode
 KSPSetSolveRoutine_UTOPIA(KSP ksp, std::function<void(const Mat &, const Mat &, const Vec &, Vec &)> solve_routine);

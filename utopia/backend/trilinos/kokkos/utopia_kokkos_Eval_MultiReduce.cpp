@@ -42,10 +42,11 @@ namespace utopia {
         }
 
         KOKKOS_INLINE_FUNCTION
-        Tuple operator+=(const Tuple &other) {
+        Tuple& operator+=(const Tuple &other) {
             for (int i = 0; i < N; ++i) {
                 data_[i] = other.data_[i];
             }
+            return *this;
         }
 
         KOKKOS_INLINE_FUNCTION
