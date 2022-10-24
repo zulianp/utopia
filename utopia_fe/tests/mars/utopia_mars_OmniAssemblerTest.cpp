@@ -93,13 +93,10 @@ void mars_solve_aux(Input &in) {
 
     utopia::out() << "min_x: " << min_x << ", max_x: " << max_x << "\n";
 
-    // x.set(1.);
-
-    /* utopia_test_assert(
-        space.write("result.vtu",
-                    // "result",
-                    // + std::to_string(nx) + "x" + std::to_string(ny) + "x" + std::to_string(nz) + ".vtu",
-                    x)); */
+    // static int once = 0;
+    // if (once++ == 1) {
+    //     utopia_test_assert(space.write("result.bp", x));
+    // }
 
     c.stop();
 
@@ -134,6 +131,7 @@ void mars_assembler() {
     UTOPIA_RUN_TEST(mars_poisson_2D);
     UTOPIA_RUN_TEST(mars_poisson_3D);
 
+    // FIXME output.bp not working for vector values
     UTOPIA_RUN_TEST(mars_linear_elasticity);
 }
 
