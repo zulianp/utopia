@@ -20,6 +20,8 @@
 #include "utopia_ObstacleFEFunction.hpp"
 #include "utopia_moonolith_ObstacleFEFunctionFactory.hpp"
 
+#include "utopia_MeshTransform.hpp"
+
 #include <memory>
 
 namespace utopia {
@@ -61,6 +63,12 @@ namespace utopia {
                 } else {
                     space.read(in);
                 }
+            });
+
+            in.get("displace", [&](Input &in) {
+                MeshTransform<FunctionSpace> transform;
+                transform.read(in);
+                transform.generate_displacement_field(space, deformation);
             });
 
             if (space.empty()) {

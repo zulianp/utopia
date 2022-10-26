@@ -34,17 +34,17 @@ static const char * info =
 "to your runs to see which papers have to be cited.\n";
 
 namespace utopia {
-	void Banner::welcome()
-	{
-		if(mpi_world_rank() == 0)
-		utopia::out() << utopia_logo_;
-		utopia::out() << info;
-	}
+    void Banner::welcome() {
+        if (mpi_world_rank() == 0) {
+            utopia::out() << utopia_logo_;
+            utopia::out() << info;
+        }
+    }
 
-	void Banner::bye()
-	{
-		if(mpi_world_rank() == 0)
-		utopia::out() << "Bye!\n";
-	}
+    void Banner::bye() {
+        if (mpi_world_rank() == 0) {
+            utopia::out() << "Bye!\n";
+        }
+    }
 }
 
