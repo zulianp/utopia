@@ -24,6 +24,7 @@
 
 # find dependencies
 set(PETSC_TEST_RUNS TRUE)
+set(PETSC_EXECUTABLE_RUNS TRUE) # On daint we cannot run them
 find_package(Petsc)
 
 if(PETSC_FOUND)
