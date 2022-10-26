@@ -22,6 +22,18 @@ try:
 except ImportError:
     from yaml import Loader, Dumper
 
+
+class Displace(yaml.YAMLObject):
+    yaml_tag = u'!Displace'
+    def __init__(self, xscale, yscale, zscale, xshift=0, yshift=0, zshift=0):
+        self.xscale = xscale
+        self.yscale = yscale
+        self.zscale = zscale
+        self.xshift = xshift
+        self.yshift = yshift
+        self.zshift = zshift
+
+
 class Newton(yaml.YAMLObject):
     yaml_tag = u'!Newton'
     def __init__(self, linear_solver, max_it = 40, atol = 1e-8, verbose = True):
@@ -334,7 +346,7 @@ class FEProblem(yaml.YAMLObject):
 
 
 class NLSolve(yaml.YAMLObject):
-    yaml_tag = u'!ObstacleSimulation'
+    yaml_tag = u'!NLSolve'
 
     def __init__(self, env, space, problem, solver):
         self.env = env
@@ -363,7 +375,7 @@ class NLSolve(yaml.YAMLObject):
 class ObstacleSimulation(yaml.YAMLObject):
     yaml_tag = u'!ObstacleSimulation'
 
-    def __init__(self, env, space,  material, forcing_functions, obstacle, solver, output_path):
+    def __init__(self, env, space,  material, forcing_functions, obstacle, solver, output_path, displace = None):
         self.env = env
         self.app = 'stk_obs'
         self.executable = env.utopia_fe_exec
@@ -373,6 +385,9 @@ class ObstacleSimulation(yaml.YAMLObject):
         self.solver = solver
         self.output_path = output_path
         self.enable_line_search = True
+
+        if displace:
+            self.displace = displace
 
         # problem = Problem(assembly, output_path)
         self.assembly = assembly = Assembly(material, forcing_functions)
@@ -647,9 +662,11 @@ class FSIInit:
                 distance_var
             ])
 
+        displace = Displace(1, .8, 1, 0, 0 ,0)
+
         step1_sim = ObstacleSimulation(
             env, solid_fs, VectorLaplaceOperator(), [], ImplicitObstacle(distance_field),
-            ObstacleSolver(MPRGP(), 30, containement_iterations), implitic_obstacle_result_db)
+            ObstacleSolver(MPRGP(), 30, containement_iterations), implitic_obstacle_result_db, displace)
 
         #########################################################
         ### Step 2

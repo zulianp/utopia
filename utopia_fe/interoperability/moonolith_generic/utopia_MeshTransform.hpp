@@ -17,16 +17,21 @@ namespace utopia {
         using SizeType = typename Traits<FunctionSpace>::SizeType;
 
         void read(Input &in) override {
-            shift_.resize(3, 0);
+            preshift_.resize(3, 0);
             scale_factors_.resize(3, 1);
+            postshift_.resize(3, 0);
 
-            in.get("xshift", shift_[0]);
-            in.get("yshift", shift_[1]);
-            in.get("zshift", shift_[2]);
+            in.get("xpreshift", preshift_[0]);
+            in.get("ypreshift", preshift_[1]);
+            in.get("zpreshift", preshift_[2]);
 
             in.get("xscale", scale_factors_[0]);
             in.get("yscale", scale_factors_[1]);
             in.get("zscale", scale_factors_[2]);
+
+            in.get("xpostshift", postshift_[0]);
+            in.get("ypostshift", postshift_[1]);
+            in.get("zpostshift", postshift_[2]);
         }
 
         void generate_displacement_field(FunctionSpace &space, Field<FunctionSpace> &displacement) {
@@ -63,7 +68,7 @@ namespace utopia {
                 }
 
                 for (int d = 0; d < dim; ++d) {
-                    transformed_p3[d] = (p3[d] + shift_[d]) * scale_factors_[d];
+                    transformed_p3[d] = (p3[d] + preshift_[d]) * scale_factors_[d] + postshift_[d];
                 }
 
                 for (int d = 0; d < dim; ++d) {
@@ -75,7 +80,8 @@ namespace utopia {
         }
 
     private:
-        std::vector<Scalar> shift_;
+        std::vector<Scalar> preshift_;
+        std::vector<Scalar> postshift_;
         std::vector<Scalar> scale_factors_;
     };
 }  // namespace utopia
