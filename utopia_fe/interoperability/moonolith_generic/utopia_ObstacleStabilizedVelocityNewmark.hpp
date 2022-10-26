@@ -1,9 +1,9 @@
 #ifndef UTOPIA_OBSTACLE_STABILIZED_VELOCITY_NEWMARK_INTEGRATOR_HPP
 #define UTOPIA_OBSTACLE_STABILIZED_VELOCITY_NEWMARK_INTEGRATOR_HPP
 
+#include "utopia_ContactFactory.hpp"
+#include "utopia_ContactInterface.hpp"
 #include "utopia_FEModelFunction.hpp"
-#include "utopia_IObstacle.hpp"
-#include "utopia_ObstacleFactory.hpp"
 
 #include "utopia_LineSearchBoxProjection.hpp"
 #include "utopia_LogBarrierFactory.hpp"
@@ -17,7 +17,7 @@ namespace utopia {
     // Unconditionally Stable gamma = 0.5, beta = 0.25
     template <class FunctionSpace>
     class ObstacleStabilizedVelocityNewmark : public TimeDependentFunction<FunctionSpace>,
-                                              public ObstacleDependentFunction<FunctionSpace>,
+                                              public ContactDependentFunction<FunctionSpace>,
                                               public LSStrategy<typename Traits<FunctionSpace>::Vector> {
     public:
         using Super = utopia::TimeDependentFunction<FunctionSpace>;
@@ -45,13 +45,13 @@ namespace utopia {
 
             if (!obstacle_) {
                 std::string type;
-                in.get("obstacle",
-                       [&](Input &node) { obstacle_ = ObstacleFactory<FunctionSpace>::new_obstacle(node); });
+                in.get("obstacle", [&](Input &node) { obstacle_ = ContactFactory<FunctionSpace>::new_obstacle(node); });
             }
 
-            // if (stabilized_formulation_) {
-            //     utopia::out() << "Using stabilized formulation!\n";
-            // }
+            if (!obstacle_) {
+                std::string type;
+                in.get("contact", [&](Input &node) { obstacle_ = ContactFactory<FunctionSpace>::new_contact(node); });
+            }
 
             ////////////////////////////////////////////////////////////////////////////////
             std::string function_type;
@@ -348,7 +348,7 @@ namespace utopia {
             return true;
         }
 
-        inline void set_obstacle(const std::shared_ptr<IObstacle<FunctionSpace>> obstacle) override {
+        inline void set_contact(const std::shared_ptr<ContactInterface<FunctionSpace>> obstacle) override {
             obstacle_ = obstacle;
         }
 
@@ -417,7 +417,7 @@ namespace utopia {
         Vector_t force_old_;
         bool has_zero_density_{false};
 
-        std::shared_ptr<IObstacle<FunctionSpace>> obstacle_;
+        std::shared_ptr<ContactInterface<FunctionSpace>> obstacle_;
         bool debug_{false};
         int debug_from_iteration_{0};
         bool stabilized_formulation_{true};

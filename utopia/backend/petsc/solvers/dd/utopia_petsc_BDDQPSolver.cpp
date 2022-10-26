@@ -12,6 +12,9 @@
 #include "utopia_petsc_Vector_impl.hpp"
 
 #include "utopia_petsc_BDDOperator.hpp"
+#include "utopia_petsc_Factorization.hpp"
+
+#include "utopia_DeviceView.hpp"
 
 namespace utopia {
 
@@ -23,6 +26,8 @@ namespace utopia {
         bool debug{false};
         bool determine_boolean_selector{false};
         Scalar infinity{1000};
+        bool use_preconditioner{true};
+        std::shared_ptr<Vector> boolean_selector;
     };
 
     template <class Matrix, class Vector, int Backend>
@@ -56,6 +61,7 @@ namespace utopia {
         in.get("debug", impl_->debug);
         in.get("infinity", impl_->infinity);
         in.get("determine_boolean_selector", impl_->determine_boolean_selector);
+        in.get("use_preconditioner", impl_->use_preconditioner);
 
         if (impl_->solver) {
             // impl_->solver->read(in);
@@ -85,7 +91,8 @@ namespace utopia {
         }
 
         bool ok = true;
-        if (b.comm().size() == 1) {
+        // if (b.comm().size() == 1) {
+        if (false) {
             impl_->solver->set_box_constraints(this->get_box_constraints());
             ok = impl_->solver->solve(*this->get_operator(), b, x);
         } else {
@@ -117,8 +124,40 @@ namespace utopia {
 
                 impl_->solver->lower_bound() = l_G;
             }
+#if 0
+            if (impl_->use_preconditioner) {
+                std::cout << "BDDQPSolver: Using preconditoner!!!\n";
+                auto &&skeleton_dofs = impl_->op.skeleton_dofs();
+                Matrix A_GG_copy = *impl_->op.reduced_matrix();
 
-            ok = impl_->solver->solve(impl_->op, impl_->op.righthand_side(), x_G);
+                auto s = const_local_view_device(*impl_->boolean_selector);
+
+                IndexSet idx;
+                idx.reserve(skeleton_dofs.size());
+
+                std::size_t n = skeleton_dofs.size();
+
+                for (std::size_t i = 0; i < n; ++i) {
+                    auto dof = skeleton_dofs[i];
+                    if (s.get(dof) > 0) {
+                        idx.push_back(i);
+                    }
+                }
+
+                A_GG_copy.set_zero_rows(idx, 1);
+
+                auto prec = std::make_shared<Factorization<Matrix, Vector>>();
+                prec->update(std::make_shared<Matrix>(std::move(A_GG_copy)));
+
+                Vector prec_residual(layout(impl_->op.righthand_side()), 0);
+                prec->apply(impl_->op.righthand_side(), prec_residual);
+
+                auto composite_op = utopia::mult<Vector>(prec, make_ref(impl_->op));
+                ok = impl_->solver->solve(*composite_op, prec_residual, x_G);
+
+            } else
+#endif
+            { ok = impl_->solver->solve(impl_->op, impl_->op.righthand_side(), x_G); }
 
             impl_->op.finalize(x_G, x);
         }
@@ -138,7 +177,8 @@ namespace utopia {
 
         assert(impl_->solver);
 
-        if (layout.comm().size() == 1) {
+        // if (layout.comm().size() == 1) {
+        if (false) {
             impl_->solver->init_memory(layout);
         } else {
             impl_->solver->init_memory(impl_->op.vector_layout());
@@ -151,7 +191,8 @@ namespace utopia {
 
         Super::update(op);
 
-        if (op->comm().size() == 1) {
+        // if (op->comm().size() == 1) {
+        if (false) {
         } else {
             if (impl_->op.selector().empty() || impl_->determine_boolean_selector) {
                 determine_boolean_selector();
@@ -167,6 +208,7 @@ namespace utopia {
 
     template <class Matrix, class Vector, int Backend>
     void BDDQPSolver<Matrix, Vector, Backend>::set_selection(const std::shared_ptr<Vector> &boolean_selector) {
+        impl_->boolean_selector = boolean_selector;
         if (!boolean_selector) return;
 
         auto selector_view = local_view_device(*boolean_selector);

@@ -447,8 +447,8 @@ namespace utopia {
         void MPRGP_DD() {
             auto &&comm = Comm::get_default();
 
-            static const bool verbose = false;
-            // static const bool verbose = Traits::Backend == PETSC;
+            // static const bool verbose = false;
+            static const bool verbose = Traits::Backend == PETSC;
 
             Matrix A;
             Vector b;
@@ -515,7 +515,7 @@ namespace utopia {
             // params.set("use_preconditioner", true);
             // params.set("preconditioner_type", "amg");
             params.set("verbose", verbose);
-            // params.set("analize_block_structure", true);
+            params.set("num_blocks", 3);
 
             // params.set("preconditioner_type", "inv");
             // params.set("use_preconditioner", false);
@@ -561,12 +561,13 @@ namespace utopia {
                 c.start();
 
                 auto qp_params = param_list(param("infinity", 0.55),
+                                            param("use_preconditioner", false),
                                             param("debug", verbose),
                                             param("inner_solver",
                                                   param_list(param("verbose", verbose),
-                                                             param("atol", 1e-10),
-                                                             param("rtol", 1e-10),
-                                                             param("stol", 1e-10),
+                                                             param("atol", 1e-14),
+                                                             param("rtol", 1e-14),
+                                                             param("stol", 1e-14),
                                                              param("max_it", 2000))));
 
                 qp_params.set("verbose", verbose);

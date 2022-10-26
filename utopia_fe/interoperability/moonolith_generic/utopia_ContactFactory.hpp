@@ -3,7 +3,9 @@
 
 #include "utopia_fe_Core.hpp"
 
-#include "utopia_IObstacle.hpp"
+#include "utopia_FECoreForwardDeclarations.hpp"
+
+#include "utopia_ContactInterface.hpp"
 
 #include "utopia_AnalyticObstacle_impl.hpp"
 #include "utopia_ImplicitObstacle_impl.hpp"
@@ -11,10 +13,10 @@
 namespace utopia {
 
     template <class FunctionSpace>
-    class ObstacleFactory {
+    class ContactFactory {
     public:
-        using IObstacle = utopia::IObstacle<FunctionSpace>;
-        using IObstaclePtr = std::unique_ptr<IObstacle>;
+        using ContactInterface = utopia::ContactInterface<FunctionSpace>;
+        using ContactInterfacePtr = std::unique_ptr<ContactInterface>;
 
         // Use specialized components for function space
         using Mesh_t = typename Traits<FunctionSpace>::Mesh;
@@ -24,54 +26,44 @@ namespace utopia {
         using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using ImplicitObstacle_t = utopia::ImplicitObstacle<FunctionSpace>;
         using AnalyticObstacle_t = utopia::AnalyticObstacle<FunctionSpace>;
+        using Contact_t = utopia::Contact<FunctionSpace>;
 
-        static IObstaclePtr new_obstacle(Input &in) {
+        static ContactInterfacePtr new_contact(Input &in) {
+            auto contact = utopia::make_unique<Contact_t>();
+            contact->read(in);
+            return std::move(contact);
+        }
+
+        static ContactInterfacePtr new_obstacle(Input &in) {
             std::string type;
             in.get("type", type);
 
-            IObstaclePtr obstacle;
+            ContactInterfacePtr obstacle;
             if (type == "implicit") {
 #ifdef UTOPIA_WITH_LIBMESH
-                // FIXME Once we go to c++17
-                // if constexpr (IsNotSupported<ImplicitObstacle_t>::value) {
                 Utopia::Abort("ImplicitObstacle not supported for this backend!");
 #else
-                // } else {
                 obstacle = utopia::make_unique<ImplicitObstacle_t>();
                 obstacle->read(in);
 #endif
-                // }
             } else if (type == "analytic") {
-                // FIXME Once we go to c++17
-                // if constexpr (IsNotSupported<AnalyticObstacle_t>::value) {
 #ifdef UTOPIA_WITH_LIBMESH
                 Utopia::Abort("AnalyticObstacle not supported for this backend!");
-                // } else {
 #else
                 obstacle = utopia::make_unique<AnalyticObstacle_t>();
                 obstacle->read(in);
-                // }
 #endif
-
             } else {
                 auto obs = utopia::make_unique<Obstacle_t>();
                 typename Obstacle_t::Params params;
                 params.read(in);
+
                 // Must be created for every process independently and the same
                 Mesh_t obstacle_mesh(Communicator_t::self());
                 obstacle_mesh.read(in);
 
                 obs->set_params(params);
                 obs->init_obstacle(obstacle_mesh);
-
-                // bool export_obstacle = false;
-                // in.get("export_obstacle", export_obstacle);
-
-                // if (export_obstacle) {
-                //     if (this->space()->comm().rank() == 0) {
-                //         obstacle_mesh.write("obstacle.e");
-                //     }
-                // }
 
                 obstacle = std::move(obs);
             }

@@ -1,7 +1,7 @@
 #ifndef UTOPIA_MOONOLITH_STK_OBSTACLE_HPP
 #define UTOPIA_MOONOLITH_STK_OBSTACLE_HPP
 
-#include "utopia_IObstacle.hpp"
+#include "utopia_ContactInterface.hpp"
 #include "utopia_fe_Core.hpp"
 #include "utopia_ui.hpp"
 
@@ -12,7 +12,7 @@ namespace utopia {
 
     namespace stk {
 
-        class Obstacle : public IObstacle<stk::FunctionSpace> {
+        class Obstacle : public ContactInterface<stk::FunctionSpace> {
         public:
             using Params = utopia::moonolith::Obstacle::Params;
             using Mesh = utopia::stk::Mesh;

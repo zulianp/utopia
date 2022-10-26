@@ -16,7 +16,6 @@
 #include <KokkosBlas2_gemv.hpp>
 #include <KokkosBlas3_gemm.hpp>
 #include <Kokkos_Core.hpp>
-#include <Kokkos_View.hpp>
 
 namespace utopia {
 

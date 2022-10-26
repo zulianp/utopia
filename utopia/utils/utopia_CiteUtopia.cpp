@@ -2,6 +2,21 @@
 #include "utopia_AuthoredWork.hpp"
 
 namespace utopia {
+    BibTeX Cite<Utopia2021>::bibtex() 
+    {
+        return BibTeX(
+            "@article{utopia2021,\n"
+            "\tauthor = {Zulian, Patrick and Kopani{\\v{c}}{\\'{a}}kov{\\'{a}}, Alena and Nestola, Maria G C and\n" 
+            "\t\tFadel, Nur and Fink, Andreas and VandeVondele, Joost and Krause, Rolf},\n"
+            "\ttitle = {Large scale simulation of pressure induced phase‐field fracture propagation using {U}topia},\n"
+            "\tjournal = {CCF Transactions on High Performance Computing},\n"
+            "\tyear = {2021},\n"
+            "\tmonth = {06},\n"
+            "\tdoi = {10.1007/s42514-021-00069-6},\n"
+            "\turl = {https://doi.org/10.1007/s42514-021-00069-6},\n"
+            "\teprint = {https://doi.org/10.1007/s42514-021-00069-6},\n"
+            "}\n");
+    }
 
     BibTeX Cite<Utopia2016Git>::bibtex() {
         return BibTeX(

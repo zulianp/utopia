@@ -78,7 +78,7 @@ namespace utopia {
         block.update_mirror();
     }
 
-    UTOPIA_FUNCTION int find_rank(int comm_size, PetscInt n_local, const PetscInt *ranges, const Size_t global_id) {
+    int find_rank(int comm_size, PetscInt n_local, const PetscInt *ranges, const PetscInt global_id) {
         int rank = device::min(int(global_id * (float(comm_size) / n_local)), comm_size - 1);
 
         bool found = (global_id >= ranges[rank]) && (global_id < ranges[rank + 1]);
@@ -118,7 +118,6 @@ namespace utopia {
     void compute_column_nnz_weight(const PetscMatrix &mat, PetscVector &weights) {
         using TraitsT = utopia::Traits<PetscMatrix>;
 
-        using Comm = typename TraitsT::Communicator;
         using Scalar = typename TraitsT::Scalar;
         using SizeType = typename TraitsT::SizeType;
 
@@ -126,7 +125,6 @@ namespace utopia {
 
         int n_local = mat.local_cols();
         int comm_size = comm.size();
-        int comm_rank = comm.rank();
 
         weights.zeros(serial_layout(comm_size));
 

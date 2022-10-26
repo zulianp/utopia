@@ -84,14 +84,14 @@ namespace utopia {
             const Scalar gamma = 1.0;
             Scalar alpha_bar = 1;
             if (!hardik_variant_) {
-                alpha_bar = 1.95 / this->get_normA(A);
+                alpha_bar = 1.95 / this->power_method(A);
             }
 
             Scalar pAp, beta_beta, fi_fi, gp_dot, g_betta, beta_Abeta;
 
             SizeType it = 0;
             bool converged = false;
-            Scalar gnorm;
+            Scalar gnorm = -1;
 
             Scalar alpha_cg, alpha_f, beta_sc;
 
@@ -170,6 +170,10 @@ namespace utopia {
                     dots(g, beta, g_betta, beta, Abeta, beta_Abeta);
                     // detecting negative curvature
                     if (beta_Abeta <= 0.0) {
+                        if (this->verbose()) {
+                            PrintInfo::print_iter_status(it, {gnorm});
+                        }
+
                         return true;
                     }
 
@@ -288,7 +292,7 @@ namespace utopia {
         }
 
     private:
-        Scalar get_normA(const Operator<Vector> &A) {
+        Scalar power_method(const Operator<Vector> &A) {
             // Super simple power method to estimate the biggest eigenvalue
             assert(!empty(help_f2));
             help_f2.set(1.0);
@@ -318,7 +322,7 @@ namespace utopia {
                 it = it + 1;
             }
 
-            if (this->verbose())
+            if (this->verbose() && mpi_world_rank() == 0)
                 utopia::out() << "Power method converged in " << it << " iterations. Largest eig: " << lambda << "  \n";
 
             return lambda;

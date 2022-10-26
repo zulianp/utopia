@@ -13,6 +13,9 @@
 
 #include "utopia_petsc_Utils.hpp"
 
+#include "utopia_petsc_Decompose.hpp"
+#include "utopia_petsc_SchurComplement.hpp"
+
 #include <sstream>
 
 namespace utopia {
@@ -20,288 +23,56 @@ namespace utopia {
     template <class Matrix, class Vector>
     class BDDOperator<Matrix, Vector>::Impl {
     public:
-        static void parallel_to_serial(const Vector &x_from, Vector &x_to) {
-            {
-                // FIXME (copying stuff just because of abstractions!)
-                auto x_from_view = local_view_device(x_from);
-                auto x_to_view = local_view_device(x_to);
-                parallel_for(
-                    local_range_device(x_to),
-                    UTOPIA_LAMBDA(const SizeType i) { x_to_view.set(i, x_from_view.get(i)); });
-            }
-        }
+        void init_skeleton_selection(const Matrix &mat) {
+            SizeType local_rows = mat.local_rows();
+            is_skeleton.resize(local_rows);
 
-        static void serial_to_parallel(const Vector &x_from, Vector &x_to) { parallel_to_serial(x_from, x_to); }
-
-        bool init(const std::shared_ptr<Matrix> &A_GG,
-                  const std::shared_ptr<Matrix> &A_GI,
-                  const std::shared_ptr<Matrix> &A_II,
-                  const std::shared_ptr<Matrix> &A_IG) {
-            A_GG_ = A_GG;
-            A_GI_ = A_GI;
-            A_II_ = A_II;
-            A_IG_ = A_IG;
-
-            UTOPIA_TRACE_REGION_BEGIN("BDDOperator::initialize::decomposition");
-            // A_II_inv_ = std::make_shared<Factorization<Matrix, Vector>>("superlu", "lu");
-            A_II_inv_ = std::make_shared<Factorization<Matrix, Vector>>("mumps", "cholesky");
-            A_II_inv_->update(A_II_);
-            UTOPIA_TRACE_REGION_END("BDDOperator::initialize::decomposition");
-            return true;
-        }
-
-        bool init_rhs(const Vector &rhs_G, const Vector &rhs_I) {
-            assert(A_II_inv_);
-
-            // Compute rhs
-            secant_G_ = std::make_shared<Vector>(layout(rhs_G));
-            xL_ = std::make_shared<Vector>(row_layout(*A_GI_));
-            rhsL_ = std::make_shared<Vector>(row_layout(*A_GI_));
-            A_IG_x_ = std::make_shared<Vector>(row_layout(*A_II_));
-            sol_I_ = std::make_shared<Vector>(row_layout(*A_II_));
-
-            Vector inv_A_II_rhs_I(layout(rhs_I), 0);
-
-            UTOPIA_TRACE_REGION_BEGIN("BDDOperator::init_rhs::apply");
-
-            A_II_inv_->apply(rhs_I, inv_A_II_rhs_I);
-
-            UTOPIA_TRACE_REGION_END("BDDOperator::init_rhs::apply");
-
-            (*secant_G_) = rhs_G;
-
-            Vector temp = (*A_GI_) * inv_A_II_rhs_I;
-
-            assert(secant_G_->local_size() == temp.local_size());
-
-            {
-                auto sG_view = local_view_device(*secant_G_);
-                auto temp_view = local_view_device(temp);
-
-                parallel_for(
-                    local_range_device(temp),
-                    UTOPIA_LAMBDA(const SizeType i) { sG_view.set(i, sG_view.get(i) - temp_view.get(i)); });
-            }
-
-            return true;
-        }
-
-        bool apply(const Vector &x_G, Vector &rhs_G) const {
-            parallel_to_serial(x_G, *xL_);
-
-            *A_IG_x_ = (*A_IG_) * (*xL_);
-            sol_I_->set(0);
-
-            A_II_inv_->apply(*A_IG_x_, *sol_I_);
-
-            (*rhsL_) = (*A_GI_) * (*sol_I_);
-
-            if (empty(rhs_G)) {
-                rhs_G.zeros(layout(x_G));
-            }
-
-            (*rhsL_) *= -1;
-
-            serial_to_parallel(*rhsL_, rhs_G);
-            rhs_G += (*A_GG_) * x_G;
-            return true;
-        }
-
-        bool finalize(const Vector &x_G, const Vector &rhs_I, Vector &x_I) {
-            parallel_to_serial(x_G, *xL_);
-
-            *A_IG_x_ = (*A_IG_) * (*xL_);
-            *rhsL_ = rhs_I;
-            *rhsL_ -= *A_IG_x_;
-
-            if (empty(x_I)) {
-                x_I.zeros(layout(*rhsL_));
+            if (!selector.empty()) {
+                assert(SizeType(selector.size()) == local_rows);
+                // Copy user selector as initial state
+                is_skeleton = selector;
             } else {
-                x_I.set(0);
+                // Empty skeleton
+                std::fill(std::begin(is_skeleton), std::end(is_skeleton), false);
             }
 
-            A_II_inv_->apply(*rhsL_, x_I);
-            return true;
-        }
+            // Add DD dofs to the skeleton
+            auto rr = mat.row_range();
 
-        void check(const Matrix &A) const {
-            if (!debug) return;
+            IndexSet min_idx(local_rows, mat.rows());
+            IndexSet max_idx(local_rows, 0);
 
-            Matrix c_A = A;
+            mat.read([&](const SizeType i, const SizeType j, const Scalar) {
+                min_idx[i - rr.begin()] = std::min(SizeType(min_idx[i - rr.begin()]), j);
+                max_idx[i - rr.begin()] = std::max(SizeType(max_idx[i - rr.begin()]), j);
+            });
 
-            c_A.transform([](const Scalar &) { return 1; });
-
-            Matrix diff = c_A - transpose(c_A);
-            SizeType n_diff = norm1(diff);
-
-            if (n_diff != 0) {
-                std::stringstream ss;
-                ss << "[Error] matrix does not have a symmetric graph. N diff = " << SizeType(n_diff) << "\n";
-                A.comm().root_print(ss.str());
-                A.comm().barrier();
-
-                assert(false);
-
-                Utopia::Abort("Quitting!");
+            for (SizeType i = 0; i < local_rows; ++i) {
+                if (!rr.inside(min_idx[i]) || !rr.inside(max_idx[i])) {
+                    is_skeleton[i] = true;
+                }
             }
         }
 
-        inline static unsigned int count_nnz_bits(unsigned int n) {
-            static const unsigned int masks[] = {0x55555555, 0x33333333, 0x0F0F0F0F, 0x00FF00FF, 0x0000FFFF};
+        void extend_skeleton_selection_with_local_decomposition(const Matrix &mat) {
+            if (num_blocks == 0) return;
 
-            for (unsigned int i = 0; i < 5; i++) {
-                n = (n & masks[i]) + ((n >> (1 << i)) & masks[i]);
-            }
-
-            return n;
-        }
-
-        inline static double cosine_similarity(unsigned int x, unsigned int y) {
-            unsigned int ew_mult = x & y;
-            unsigned int nnz_prod = count_nnz_bits(ew_mult);
-            unsigned int nnz_x = count_nnz_bits(x);
-            unsigned int nnz_y = count_nnz_bits(y);
-            return nnz_prod / (std::sqrt(nnz_x) * std::sqrt(nnz_y));
-        }
-
-        inline static void showbits(unsigned int x) {
-            int i = 0;
-            for (i = (sizeof(int) * 8) - 1; i >= 0; i--) {
-                putchar(x & (1u << i) ? '1' : '0');
-            }
-            printf("\n");
-        }
-
-        // https://ui.adsabs.harvard.edu/abs/2022arXiv220205868S/abstract
-        void split_local_blocks(const Matrix &mat) {
-            UTOPIA_TRACE_REGION_BEGIN("BDDOperator::split_local_blocks");
+#ifdef UTOPIA_WITH_METIS
+            UTOPIA_TRACE_REGION_BEGIN("BDDOperator::extend_skeleton_with_local_blocks");
 
             Matrix local_block;
             local_block_view(mat, local_block);
 
-            PetscCrsView mat_view = crs_view(local_block);
+            std::vector<SizeType> partitions(local_block.rows(), -1);
+
+            if (!decompose(local_block, num_blocks, &partitions[0])) {
+                UTOPIA_TRACE_REGION_END("BDDOperator::extend_skeleton_with_local_blocks");
+                Utopia::Abort("Failed to decompose into blocks");
+            }
+
+            auto mat_view = crs_view(local_block);
+
             int n_rows = mat_view.rows();
-            double tol = 0.55;
-
-            int pattern_length = sizeof(unsigned int) * 8;
-
-            std::vector<unsigned int> row_pattern(n_rows, 0);
-
-            for (int r = 0; r < n_rows; ++r) {
-                auto row = mat_view.row(r);
-
-                for (int k = 0; k < int(row.length); ++k) {
-                    auto c = row.colidx(k);
-
-                    unsigned int membership = (c * pattern_length - 1) / n_rows;
-                    assert(membership < pattern_length);
-                    row_pattern[r] |= 1 << membership;
-                }
-            }
-
-            std::vector<unsigned int> block_pattern(n_rows, 0);
-            std::vector<int> block(n_rows, -1);
-
-            int next_block_id = 0;
-
-            for (int r = 0; r < n_rows; ++r) {
-                auto row = mat_view.row(r);
-
-                if (block[r] < 0) {
-                    bool has_neighs_in_block = false;
-
-                    for (int k = 0; k < int(row.length); ++k) {
-                        auto c = row.colidx(k);
-                        assert(c < block.size());
-                        int block_c = block[c];
-
-                        if (block_c > 0) {
-                            assert(block_c < block_pattern.size());
-                            assert(r < row_pattern.size());
-
-                            if (cosine_similarity(block_pattern[block_c], row_pattern[r]) >= tol) {
-                                assert(r < block.size());
-
-                                block[r] = block_c;
-                                block_pattern[block_c] |= row_pattern[r];
-                                has_neighs_in_block = true;
-                                assert(block[r] > 0);
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!has_neighs_in_block) {
-                        block_pattern[next_block_id] = row_pattern[r];
-                        block[r] = next_block_id++;
-                        assert(block[r] >= 0);
-                    }
-                }
-
-                int block_r = block[r];
-                assert(block_r >= 0);
-
-                for (int k = 0; k < int(row.length); ++k) {
-                    auto c = row.colidx(k);
-
-                    if (block_pattern[c]) continue;
-
-                    unsigned int pattern_c = row_pattern[c];
-
-                    if (cosine_similarity(block_pattern[block_r], pattern_c) > tol) {
-                        block[c] = block_r;
-                        block_pattern[block_r] |= pattern_c;
-                    }
-                }
-            }
-
-            int n_blocks = next_block_id;
-
-            int loops = 0;
-            for (int iter = 0; iter < n_blocks; ++iter) {
-                bool merged = false;
-                // Merge similar blocks
-                for (int r = 0; r < n_rows; ++r) {
-                    auto row = mat_view.row(r);
-                    for (int k = 0; k < int(row.length); ++k) {
-                        auto c = row.colidx(k);
-
-                        if (block[c] != block[r] &&
-                            cosine_similarity(block_pattern[block[r]], block_pattern[block[c]]) >= 0.95 * tol) {
-                            int block_id = std::min(block[r], block[c]);
-                            block[c] = block_id;
-                            block[r] = block_id;
-                            merged = true;
-                        }
-                    }
-                }
-
-                loops++;
-                if (!merged) break;
-            }
-
-            // Compaction of block numbering
-            std::vector<int> map(n_blocks, -1);
-
-            int next_map_id = 0;
-
-            for (int r = 0; r < n_rows; ++r) {
-                int block_id = block[r];
-                if (map[block_id] < 0) {
-                    map[block_id] = next_map_id++;
-                }
-            }
-
-            std::vector<unsigned int> clusters(next_map_id, 0);
-
-            for (int r = 0; r < n_rows; ++r) {
-                int block_id = block[r];
-                int mapped_id = map[block_id];
-
-                clusters[mapped_id] |= block_pattern[block_id];
-                block[r] = mapped_id;
-            }
-
             int n_interface = 0;
 
             for (int r = 0; r < n_rows; ++r) {
@@ -310,9 +81,9 @@ namespace utopia {
                 for (int k = 0; k < int(row.length); ++k) {
                     auto c = row.colidx(k);
 
-                    if (block[r] != block[c]) {
+                    if (partitions[r] != partitions[c]) {
                         ++n_interface;
-                        selector[r] = true;
+                        is_skeleton[r] = true;
                         break;
                     }
                 }
@@ -320,138 +91,50 @@ namespace utopia {
 
             if (verbose) {
                 std::stringstream ss;
-                ss << next_map_id << " blocks (" << n_interface << "/" << n_rows << ") algo loops " << loops << "\n";
+                ss << num_blocks << " blocks (" << n_interface << "/" << n_rows << ")\n";
                 mat.comm().synched_print(ss.str(), utopia::out().stream());
             }
 
-            UTOPIA_TRACE_REGION_END("BDDOperator::split_local_blocks");
+            UTOPIA_TRACE_REGION_END("BDDOperator::extend_skeleton_with_local_blocks");
+#else
+            UTOPIA_UNUSED(mat);
+#endif  // UTOPIA_WITH_METIS
         }
 
-        // MOVE TO AMG
-        void aggregation(const Matrix &mat) {
-            PetscCrsView mat_view = crs_view(mat);
-            int n_rows = mat_view.rows();
+        void initialize_dof_indices(const Matrix &mat) {
+            const SizeType local_rows = mat.local_rows();
 
-            std::vector<int> block(n_rows, 0);
+            SizeType n_skeleton = 0;
+            for (SizeType i = 0; i < local_rows; ++i) {
+                n_skeleton += is_skeleton[i];
+            }
 
-            int next_block_id = 1;
+            const SizeType n_eliminated = local_rows - n_skeleton;
 
-            for (int r = 0; r < n_rows; ++r) {
-                auto row = mat_view.row(r);
+            skeleton_dofs.clear();
+            eliminated_dofs.clear();
 
-                bool has_neighs_in_block = false;
-                bool has_neighs = false;
+            skeleton_dofs.reserve(n_skeleton);
+            eliminated_dofs.reserve(n_eliminated);
 
-                for (int k = 0; k < int(row.length); ++k) {
-                    auto c = row.colidx(k);
-
-                    if (c != r) {
-                        has_neighs = true;
-
-                        if (block[c]) {
-                            has_neighs_in_block = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (!has_neighs) {
-                    block[r] = -n_rows;
-                } else if (!has_neighs_in_block) {
-                    block[r] = next_block_id;
-                    int block_id = block[r];
-
-                    for (int k = 0; k < int(row.length); ++k) {
-                        auto c = row.colidx(k);
-                        block[c] = block_id;
-                    }
-
-                    next_block_id++;
+            auto rr = mat.row_range();
+            for (SizeType i = 0; i < local_rows; ++i) {
+                if (is_skeleton[i]) {
+                    skeleton_dofs.push_back(i + rr.begin());
                 }
             }
 
-            for (int r = 0; r < n_rows; ++r) {
-                if (block[r]) continue;
-
-                auto row = mat_view.row(r);
-
-                for (int k = 0; k < int(row.length); ++k) {
-                    auto c = row.colidx(k);
-
-                    int block_id = block[c];
-
-                    if (block_id > 0) {
-                        block[c] = -block_id;
-                        break;
-                    }
+            for (SizeType i = 0; i < local_rows; ++i) {
+                if (!is_skeleton[i]) {
+                    eliminated_dofs.push_back(i + rr.begin());
                 }
-            }
-
-            next_block_id--;
-
-            for (SizeType r = 0; r < n_rows; ++r) {
-                SizeType block_id = block[r];
-
-                if (block_id != 0) {
-                    if (block_id > 0) {
-                        block[r] = block_id - 1;
-                    } else if (block_id == -n_rows) {
-                        block[r] = -1;
-                    } else {
-                        block[r] = -block_id - 1;
-                    }
-
-                    continue;
-                }
-
-                block[r] = next_block_id;
-                auto row = mat_view.row(r);
-
-                for (int k = 0; k < int(row.length); ++k) {
-                    auto c = row.colidx(k);
-
-                    if (block[c] == 0) {
-                        block[c] = next_block_id;
-                    }
-                }
-
-                next_block_id++;
-            }
-
-            const int n_blocks = next_block_id;
-            std::vector<int> block_to_row_offsets(n_blocks + 1, 0);
-
-            for (auto b : block) {
-                block_to_row_offsets[b + 1]++;
-            }
-
-            for (int i = 0; i < n_blocks; ++i) {
-                block_to_row_offsets[i + 1] += block_to_row_offsets[i];
-            }
-
-            std::vector<int> insertion_count(n_blocks, 0);
-            std::vector<int> block_to_row(n_rows, -1);
-
-            for (SizeType r = 0; r < n_rows; ++r) {
-                int block_id = block[r];
-                int offset = block_to_row_offsets[block_id] + insertion_count[block_id];
-
-                block_to_row[offset] = r;
-                insertion_count[block_id]++;
             }
         }
 
-        void select_constrained_rows(const Matrix &mat) {
+        void extend_skeleton_with_constrained_dofs(const Matrix &mat) {
             const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon();
 
             Vector mask(row_layout(mat), 0);
-
-            if (selector.empty()) {
-                selector.resize(mask.range().extent(), false);
-            } else if (SizeType(selector.size()) != mask.range().extent()) {
-                selector.resize(mask.range().extent());
-                std::fill(std::begin(selector), std::end(selector), false);
-            }
 
             {
                 auto mask_view = view_device(mask);
@@ -471,7 +154,7 @@ namespace utopia {
                 // FIXME ref capture
                 parallel_for(local_range_device(mask), [&](const SizeType i) {
                     if (mask_view.get(i) == 0) {
-                        selector[i] = true;
+                        is_skeleton[i] = true;
                     }
                 });
 
@@ -489,17 +172,16 @@ namespace utopia {
 
             if (verbose) {
                 SizeType n_linear_constraints = sum(mask);
-
-                if (mat.comm().rank() == 0) {
-                    utopia::out() << "n_linear_constraints: " << n_linear_constraints << "\n";
-                }
+                std::stringstream ss;
+                ss << "n_linear_constraints: " << n_linear_constraints << "\n";
+                mat.comm().root_print(ss.str(), utopia::out().stream());
             }
         }
 
-        void fix_selected(const Matrix &mat) {
+        void fix_skeleton_wrt_block_size(const Matrix &mat) {
             if (block_size <= 1) return;
 
-            const SizeType n = selector.size();
+            const SizeType n = is_skeleton.size();
 
             SizeType n_selected_before = 0;
             SizeType n_selected_after = 0;
@@ -508,7 +190,7 @@ namespace utopia {
                 bool is_selected = false;
 
                 for (int d = 0; d < block_size; ++d) {
-                    bool is_selected_i = selector[i + d];
+                    bool is_selected_i = is_skeleton[i + d];
                     is_selected = is_selected || is_selected_i;
 
                     n_selected_before += is_selected_i;
@@ -516,7 +198,7 @@ namespace utopia {
 
                 if (is_selected) {
                     for (int d = 0; d < block_size; ++d) {
-                        selector[i + d] = true;
+                        is_skeleton[i + d] = true;
                     }
 
                     n_selected_after += block_size;
@@ -524,535 +206,70 @@ namespace utopia {
             }
 
             if (verbose) {
+                auto &&comm = mat.comm();
+
+                n_selected_before = comm.sum(n_selected_before);
+                n_selected_after = comm.sum(n_selected_after);
+
                 std::stringstream ss;
-
-                n_selected_before = mat.comm().sum(n_selected_before);
-                n_selected_after = mat.comm().sum(n_selected_after);
-
                 ss << "n_selected_before:\t" << n_selected_before << "/" << mat.rows() << "\n";
                 ss << "n_selected_after:\t" << n_selected_after << "/" << mat.rows() << "\n";
-                Communicator().root_print(ss.str());
+                comm.root_print(ss.str());
             }
         }
 
-        void init_interface(const Matrix &A) {
-            UTOPIA_TRACE_REGION_BEGIN("BDDOperator::init_interface");
-
-            check(A);
-            if (handle_linear_constraints) {
-                select_constrained_rows(A);
-            }
-
-            if (local_block_splitting) {
-                split_local_blocks(A);
-            }
-
-            fix_selected(A);
-
-            auto &&comm = A.comm();
-
-            original_range = row_range(A);
-            n_global = A.rows();
-
-            SizeType n_local = original_range.extent();
-
-            IndexSet min_idx(n_local, A.rows()), max_idx(n_local, 0);
-
-            A.read([&](const SizeType i, const SizeType j, const Scalar) {
-                min_idx[i - original_range.begin()] = std::min(SizeType(min_idx[i - original_range.begin()]), j);
-                max_idx[i - original_range.begin()] = std::max(SizeType(max_idx[i - original_range.begin()]), j);
-            });
-
-            n_interface = 0;
-            n_selected = 0;
-            for (SizeType i = 0; i < n_local; ++i) {
-                if (!original_range.inside(min_idx[i]) || !original_range.inside(max_idx[i])) {
-                    ++n_interface;
-                } else if (owned_is_selected(i)) {
-                    ++n_selected;
-                }
-            }
-
-            local_interface_idx.resize(n_interface + n_selected);
-            std::fill(std::begin(local_interface_idx), std::end(local_interface_idx), 0);
-
-            local_to_global.resize(n_interface + n_selected);
-            std::fill(std::begin(local_to_global), std::end(local_to_global), 0);
-
-            global_to_local.resize(n_local);
-            std::fill(std::begin(global_to_local), std::end(global_to_local), -1);
-
-            n_interface = 0;
-            for (SizeType i = 0; i < n_local; ++i) {
-                if (!original_range.inside(min_idx[i]) || !original_range.inside(max_idx[i])) {
-                    local_to_global[n_interface] = (i + original_range.begin());
-                    global_to_local[i] = n_interface;
-                    local_interface_idx[n_interface++] = i;
-                }
-            }
-
-            if (n_selected) {
-                n_selected = 0;
-                for (SizeType i = 0; i < n_local; ++i) {
-                    if (global_to_local[i] == -1 && owned_is_selected(i)) {
-                        local_to_global[n_interface + n_selected] = (i + original_range.begin());
-                        global_to_local[i] = n_interface + n_selected;
-                        local_interface_idx[n_interface + n_selected] = i;
-                        ++n_selected;
-                    }
-                }
-            }
-
-            interface_offset = 0;
-            selected_offset = 0;
-
-            SizeType temp_buff_1[2] = {n_interface, n_selected};
-            SizeType temp_buff_2[2] = {0, 0};
-            comm.exscan_sum(temp_buff_1, temp_buff_2, 2);
-
-            // comm.exscan_sum(&n_interface, &interface_offset, 1);
-
-            interface_offset = temp_buff_2[0];
-            selected_offset = temp_buff_2[1];
-
-            UTOPIA_TRACE_REGION_END("BDDOperator::init_interface");
+        bool initialize_operator(const Matrix &mat) {
+            init_skeleton_selection(mat);
+            extend_skeleton_selection_with_local_decomposition(mat);
+            initialize_dof_indices(mat);
+            fix_skeleton_wrt_block_size(mat);
+            return schur_complement.initialize_from_selection(mat, eliminated_dofs);
         }
 
-        void build_A_II(const Matrix &A, Matrix &A_II) const {
-            UTOPIA_TRACE_REGION_BEGIN("BDDOperator::build_A_II");
-
-            Matrix A_II_view;
-            local_block_view(A, A_II_view);
-
-            A_II = A_II_view;
-            set_zero_rows(A_II, local_interface_idx, 1);
-
-            A_II.transform_ijv([&](const SizeType i, const SizeType j, const Scalar value) -> Scalar {
-                bool is_removed = this->owned_is_in_G(j);
-                if (is_removed) {
-                    return i == j ? 1.0 : 0.;
-                } else {
-                    return value;
-                }
-            });
-
-            if (local_block_splitting || compress_rows) {
-                optimize_nnz(A_II);
-            }
-
-            UTOPIA_TRACE_REGION_END("BDDOperator::build_A_II");
+        bool initialize_righthand_side(const Vector &rhs) {
+            return schur_complement.apply_righthand_side(rhs, rhs_eliminated, rhs_skeleton);
         }
 
-        void build_matrices(const Matrix &A, Matrix &A_GG, Matrix &A_IG, Matrix &A_GI) const {
-            UTOPIA_TRACE_REGION_BEGIN("BDDOperator::build_matrices");
-
-            auto &&comm = A.comm();
-
-            auto r = row_range(A);
-            SizeType n_local = r.extent();
-
-            const PetscInt *ranges;
-            MatGetOwnershipRanges(A.raw_type(), &ranges);
-
-            SizeType n_col_dofs = A.cols();
-            int comm_size = comm.size();
-            auto find_rank = [=](const SizeType i) -> int {
-                int rank = std::min(int(i * (float(comm_size) / n_col_dofs)), comm_size - 1);
-
-                bool found = (i >= ranges[rank]) && (i < ranges[rank + 1]);
-
-                while (!found) {
-                    if (i < ranges[rank]) {
-                        --rank;
-                    } else if (i >= ranges[rank + 1]) {
-                        ++rank;
-                    } else {
-                        assert(false);
-                    }
-
-                    assert(i >= 0);
-                    assert(i < ranges[comm_size]);
-                    assert(rank < comm_size);
-                    assert(rank >= 0);
-
-                    found = (i >= ranges[rank]) && (i < ranges[rank + 1]);
-                }
-
-                assert(found);
-
-                return rank;
-            };
-
-            ////////////////////////////////////////////////////////////////////////
-
-            std::vector<SizeType> counter(comm.size(), 0);
-            std::vector<IndexSet> recv_list(comm.size()), send_list(comm.size());
-            std::vector<SizeType> interface_ghosts;
-
-            {
-                Mat d, o;
-                MatMPIAIJGetSeqAIJ(A.raw_type(), &d, &o, nullptr);
-
-                utopia::PetscCrsView d_crs_view(d);
-                utopia::PetscCrsView o_crs_view(o);
-
-                PetscInt nghosts;
-                const PetscInt *ghosts = nullptr;
-                MatGetGhosts(A.raw_type(), &nghosts, &ghosts);
-                interface_ghosts.resize(nghosts, -1);
-
-                auto d_row_ptr = d_crs_view.row_ptr();
-                auto d_colidx = d_crs_view.colidx();
-                auto d_values = d_crs_view.values();
-
-                auto o_row_ptr = o_crs_view.row_ptr();
-                auto o_colidx = o_crs_view.colidx();
-                auto o_values = o_crs_view.values();
-
-                // Count incoming number of indices per process
-                std::stringstream ss;
-                for (SizeType i = 0; i < nghosts; ++i) {
-                    int r = find_rank(ghosts[i]);
-                    ++counter[r];
-                }
-
-                for (int r = 0; r < comm_size; ++r) {
-                    if (r == comm.rank() || counter[r] == 0) continue;
-                    recv_list[r].resize(counter[r]);
-                }
-
-                // Count outgoing number of indices per process
-                std::fill(std::begin(counter), std::end(counter), 0);
-
-                std::vector<SizeType> encountered_ranks;
-                std::vector<bool> is_rank_counted(comm.size(), false);
-
-                for (SizeType i = 0; i < n_interface; ++i) {
-                    SizeType original_local_idx = local_interface_idx[i];
-                    auto row_begin = o_row_ptr[original_local_idx];
-                    auto row_end = o_row_ptr[original_local_idx + 1];
-
-                    auto n_cols = row_end - row_begin;
-
-                    if (SizeType(encountered_ranks.size()) < n_cols) {
-                        encountered_ranks.resize(n_cols, -1);
-                    }
-
-                    for (SizeType k = row_begin; k < row_end; ++k) {
-                        SizeType col = o_colidx[k];
-                        int rank = find_rank(ghosts[col]);
-
-                        if (!is_rank_counted[rank]) {
-                            ++counter[rank];
-                        }
-
-                        is_rank_counted[rank] = true;
-                        encountered_ranks[k - row_begin] = rank;
-                    }
-
-                    for (SizeType k = 0; k < n_cols; ++k) {
-                        assert(encountered_ranks[k] >= 0);
-                        is_rank_counted[encountered_ranks[k]] = false;
-                    }
-
-#ifndef NDEBUG
-                    for (auto irc : is_rank_counted) {
-                        assert(!irc);
-                    }
-#endif
-                }
-
-                for (int r = 0; r < comm_size; ++r) {
-                    if (r == comm.rank() || counter[r] == 0) continue;
-                    send_list[r].reserve(counter[r]);
-                }
-
-                // Fill send_list with global indices
-                for (SizeType i = 0; i < n_interface; ++i) {
-                    SizeType original_local_idx = local_interface_idx[i];
-                    SizeType new_global_idx = global_offset_G() + i;
-
-                    auto row_begin = o_row_ptr[original_local_idx];
-                    auto row_end = o_row_ptr[original_local_idx + 1];
-                    auto n_cols = row_end - row_begin;
-
-                    if (SizeType(encountered_ranks.size()) < n_cols) {
-                        encountered_ranks.resize(n_cols, -1);
-                    }
-
-                    for (SizeType k = row_begin; k < row_end; ++k) {
-                        SizeType col = o_colidx[k];
-                        int rank = find_rank(ghosts[col]);
-
-                        if (!is_rank_counted[rank]) {
-                            send_list[rank].push_back(new_global_idx);
-                        }
-
-                        is_rank_counted[rank] = true;
-                        encountered_ranks[k - row_begin] = rank;
-                    }
-
-                    for (SizeType k = 0; k < n_cols; ++k) {
-                        assert(encountered_ranks[k] >= 0);
-                        is_rank_counted[encountered_ranks[k]] = false;
-                    }
-
-#ifndef NDEBUG
-                    for (auto irc : is_rank_counted) {
-                        assert(!irc);
-                    }
-#endif
-                }
-
-                for (int r = 0; r < comm_size; ++r) {
-                    if (send_list[r].empty()) {
-                        assert(recv_list[r].empty());
-                        continue;
-                    }
-
-                    int tag = 0;
-                    MPI_Status status;
-                    auto &send_buff = send_list[r];
-                    auto &recv_buff = recv_list[r];
-
-                    assert(!recv_buff.empty());
-
-                    MPI_Sendrecv(send_buff.data(),
-                                 send_buff.size(),
-                                 MPIType<SizeType>::value(),
-                                 r,
-                                 tag,
-                                 recv_buff.data(),
-                                 recv_buff.size(),
-                                 MPIType<SizeType>::value(),
-                                 r,
-                                 tag,
-                                 comm.raw_comm(),
-                                 &status);
-                }
-
-                SizeType linear_index = 0;
-                for (int r = 0; r < comm_size; ++r) {
-                    if (recv_list[r].empty()) continue;
-
-                    for (auto idx : recv_list[r]) {
-                        interface_ghosts[linear_index++] = idx;
-                    }
-                }
-
-                ////////////////////////////////////////////////////////////////////////////////
-
-                auto G_layout = layout(comm, local_size_G(), Traits::determine());
-                auto GG_layout = square_matrix_layout(G_layout);
-
-                IndexSet d_nnz(local_size_G(), 0), o_nnz(local_size_G(), 0);
-
-                {
-                    for (SizeType i = 0; i < local_size_G(); ++i) {
-                        SizeType original_local_idx = local_interface_idx[i];
-                        auto row_begin = d_row_ptr[original_local_idx];
-                        auto row_end = d_row_ptr[original_local_idx + 1];
-
-                        for (SizeType k = row_begin; k < row_end; ++k) {
-                            SizeType col = d_colidx[k];
-                            if (this->owned_is_in_G(col)) {
-                                ++d_nnz[i];
-                            }
-                        }
-                    }
-
-                    // count off proc nnz
-                    for (SizeType i = 0; i < local_size_G(); ++i) {
-                        SizeType original_local_idx = local_interface_idx[i];
-                        auto row_begin = o_row_ptr[original_local_idx];
-                        auto row_end = o_row_ptr[original_local_idx + 1];
-                        auto n_cols = row_end - row_begin;
-                        o_nnz[i] = n_cols;
-                    }
-                }
-
-                ////////////////////////////////////////////////////////////////////////////////
-
-                A_GG.sparse(GG_layout, d_nnz, o_nnz);
-
-                {
-                    Write<Matrix> w_A(A_GG);
-                    for (SizeType i = 0; i < local_size_G(); ++i) {
-                        SizeType original_local_idx = local_interface_idx[i];
-                        auto row_begin = d_row_ptr[original_local_idx];
-                        auto row_end = d_row_ptr[original_local_idx + 1];
-                        SizeType new_row = global_offset_G() + i;
-
-                        for (SizeType k = row_begin; k < row_end; ++k) {
-                            SizeType col = d_colidx[k];
-                            SizeType new_col_local = global_to_local[col];
-
-                            if (new_col_local != -1) {
-                                SizeType new_col = global_offset_G() + new_col_local;
-                                Scalar value = d_values[k];
-                                A_GG.set(new_row, new_col, value);
-                            }
-                        }
-                    }
-
-                    // count off proc nnz
-                    for (SizeType i = 0; i < local_size_G(); ++i) {
-                        SizeType original_local_idx = local_interface_idx[i];
-                        auto row_begin = o_row_ptr[original_local_idx];
-                        auto row_end = o_row_ptr[original_local_idx + 1];
-                        SizeType new_row = global_offset_G() + i;
-
-                        for (SizeType k = row_begin; k < row_end; ++k) {
-                            Scalar value = o_values[k];
-                            SizeType col = o_colidx[k];
-                            SizeType new_col = interface_ghosts[col];
-                            A_GG.set(new_row, new_col, value);
-                        }
-                    }
-                }
-
-                ////////////////////////////////////////////////////////////////////////////////
-
-                auto GI_layout = serial_layout(local_size_G(), n_local);
-                auto IG_layout = serial_layout(n_local, local_size_G());
-                auto I_layout = serial_layout(n_local);
-
-                std::fill(std::begin(d_nnz), std::end(d_nnz), 0);
-                std::fill(std::begin(o_nnz), std::end(o_nnz), 0);
-
-                {
-                    for (SizeType i = 0; i < local_size_G(); ++i) {
-                        SizeType original_local_idx = local_interface_idx[i];
-                        auto row_begin = d_row_ptr[original_local_idx];
-                        auto row_end = d_row_ptr[original_local_idx + 1];
-                        // auto n_cols = row_end - row_begin;
-
-                        for (SizeType k = row_begin; k < row_end; ++k) {
-                            SizeType col = d_colidx[k];
-                            if (!this->owned_is_in_G(col)) {
-                                ++d_nnz[i];
-                            }
-                        }
-                    }
-
-                    A_GI.sparse(GI_layout, d_nnz, o_nnz);
-
-                    Write<Matrix> w(A_GI);
-
-                    for (SizeType i = 0; i < local_size_G(); ++i) {
-                        SizeType original_local_idx = local_interface_idx[i];
-                        auto row_begin = d_row_ptr[original_local_idx];
-                        auto row_end = d_row_ptr[original_local_idx + 1];
-
-                        for (SizeType k = row_begin; k < row_end; ++k) {
-                            SizeType col = d_colidx[k];
-                            if (!this->owned_is_in_G(col)) {
-                                Scalar value = d_values[k];
-                                A_GI.set(i, col, value);
-                            }
-                        }
-                    }
-                }
-
-                /////////////////////////////////////////////////
-
-                d_nnz.resize(n_local);
-                o_nnz.resize(n_local);
-
-                std::fill(std::begin(d_nnz), std::end(d_nnz), 0);
-                std::fill(std::begin(o_nnz), std::end(o_nnz), 0);
-
-                {
-                    for (SizeType i = 0; i < n_local; ++i) {
-                        auto row_begin = d_row_ptr[i];
-                        auto row_end = d_row_ptr[i + 1];
-
-                        for (SizeType k = row_begin; k < row_end; ++k) {
-                            SizeType col = d_colidx[k];
-
-                            if (!this->owned_is_in_G(col)) {
-                                ++d_nnz[i];
-                            }
-                        }
-                    }
-
-                    A_IG.sparse(IG_layout, d_nnz, o_nnz);
-                    Write<Matrix> w_A(A_IG);
-
-                    for (SizeType i = 0; i < n_local; ++i) {
-                        if (this->owned_is_in_G(i)) continue;
-
-                        auto row_begin = d_row_ptr[i];
-                        auto row_end = d_row_ptr[i + 1];
-
-                        for (SizeType k = row_begin; k < row_end; ++k) {
-                            SizeType col = d_colidx[k];
-
-                            SizeType new_col_local = global_to_local[col];
-
-                            if (new_col_local != -1) {
-                                Scalar value = d_values[k];
-                                A_IG.set(i, new_col_local, value);
-                            }
-                        }
-                    }
-                }
-            }
-
-            UTOPIA_TRACE_REGION_END("BDDOperator::build_matrices");
+        bool apply(const Vector &x_skeleton, Vector &y_skeleton) const {
+            return schur_complement.apply(x_skeleton, y_skeleton);
         }
 
-        inline bool owned_is_in_G(const SizeType i_owned) const {
-            assert(i_owned < SizeType(global_to_local.size()));
-            return (global_to_local[i_owned] != -1);
+        bool finalize(const Vector &x_skeleton, Vector &x) {
+            return schur_complement.finalize_from_eliminated_rhs(rhs_eliminated, x_skeleton, x);
         }
 
-        inline bool owned_is_selected(const SizeType i_owned) const {
-            assert(selector.empty() || i_owned < SizeType(selector.size()));
-            return (!selector.empty()) && selector[i_owned];
-        }
+        Vector rhs_eliminated;
+        Vector rhs_skeleton;
 
-        inline SizeType global_offset_G() const { return interface_offset + selected_offset; }
-        inline SizeType local_size_G() const { return n_interface + n_selected; }
+        IndexSet skeleton_dofs;
+        IndexSet eliminated_dofs;
 
-        std::shared_ptr<Matrix> A_GG_, A_GI_, A_II_, A_IG_;
-        std::shared_ptr<Vector> secant_G_;
-        std::shared_ptr<Factorization<Matrix, Vector>> A_II_inv_;
-        std::shared_ptr<Vector> xL_, rhsL_, A_IG_x_, sol_I_;
-        Vector b_I;
-
-        // Interface support
-        IndexSet local_interface_idx;
-        IndexSet global_to_local;
-        IndexSet local_to_global;
-        SizeType interface_offset{0};
-        SizeType selected_offset{0};
-        SizeType n_interface{0};
-        SizeType n_selected{0};
-        Range original_range;
-        SizeType n_global{0};
-
+        // User selector
         Selector selector;
 
-        std::string preconditioner_type{"inv_diag"};
+        // Internal selector
+        Selector is_skeleton;
+
         bool verbose{false};
-        bool debug{false};
-        bool handle_linear_constraints{true};
+        // bool debug{false};
+        // bool handle_linear_constraints{true};
 
         int block_size{1};
-        bool local_block_splitting{false};
-        bool compress_rows{false};
+        int num_blocks{0};
+
+        std::string preconditioner_type{"inv_diag"};
+
+        SchurComplement<Matrix> schur_complement;
     };
 
     template <class Matrix, class Vector>
     void BDDOperator<Matrix, Vector>::read(Input &in) {
         in.get("preconditioner_type", impl_->preconditioner_type);
         in.get("verbose", impl_->verbose);
-        in.get("debug", impl_->debug);
+        // in.get("debug", impl_->debug);
         in.get("block_size", impl_->block_size);
-        in.get("handle_linear_constraints", impl_->handle_linear_constraints);
-        in.get("local_block_splitting", impl_->local_block_splitting);
-        in.get("compress_rows", impl_->compress_rows);
+        // in.get("handle_linear_constraints", impl_->handle_linear_constraints);
+        in.get("num_blocks", impl_->num_blocks);
     }
 
     template <class Matrix, class Vector>
@@ -1064,41 +281,8 @@ namespace utopia {
     template <class Matrix, class Vector>
     bool BDDOperator<Matrix, Vector>::initialize(const std::shared_ptr<const Vector> &rhs) {
         UTOPIA_TRACE_REGION_BEGIN("BDDOperator::initialize(vector)");
-
-        const auto &b = *rhs;
-        auto &&comm = b.comm();
-
-        const SizeType n_local = b.local_size();
-
-        auto G_layout = layout(comm, impl_->local_size_G(), Traits::determine());
-        auto I_layout = serial_layout(n_local);
-
-        Vector b_G;
-        Vector &b_I = impl_->b_I;
-
-        {
-            b_G.zeros(G_layout);
-
-            auto b_G_view = local_view_device(b_G);
-            auto b_view = local_view_device(b);
-
-            for (SizeType i = 0; i < impl_->local_size_G(); ++i) {
-                SizeType original_local_idx = impl_->local_interface_idx[i];
-                b_G_view.set(i, b_view.get(original_local_idx));
-            }
-
-            b_I.zeros(I_layout);
-
-            auto b_I_view = local_view_device(b_I);
-
-            for (SizeType i = 0; i < n_local; ++i) {
-                if (impl_->owned_is_in_G(i)) continue;
-                b_I_view.set(i, b_view.get(i));
-            }
-        }
-
-        bool ok = impl_->init_rhs(b_G, b_I);
-
+        assert(rhs);
+        bool ok = impl_->initialize_righthand_side(*rhs);
         UTOPIA_TRACE_REGION_END("BDDOperator::initialize(vector)");
         return ok;
     }
@@ -1111,69 +295,41 @@ namespace utopia {
     template <class Matrix, class Vector>
     bool BDDOperator<Matrix, Vector>::initialize(const std::shared_ptr<const Matrix> &matrix) {
         UTOPIA_TRACE_REGION_BEGIN("BDDOperator::initialize(matrix)");
-
-        auto A_GG_ptr = std::make_shared<Matrix>();
-        auto A_GI_ptr = std::make_shared<Matrix>();
-        auto A_IG_ptr = std::make_shared<Matrix>();
-        auto A_II_ptr = std::make_shared<Matrix>();
-
-        const Matrix &A = *matrix;
-        Matrix &A_GG = *A_GG_ptr;
-        Matrix &A_GI = *A_GI_ptr;
-        Matrix &A_IG = *A_IG_ptr;
-        Matrix &A_II = *A_II_ptr;
-
-        impl_->init_interface(A);
-        impl_->build_A_II(A, A_II);
-        impl_->build_matrices(A, A_GG, A_IG, A_GI);
-
-        bool ok = impl_->init(A_GG_ptr, A_GI_ptr, A_II_ptr, A_IG_ptr);
-
+        bool ok = impl_->initialize_operator(*matrix);
         UTOPIA_TRACE_REGION_END("BDDOperator::initialize(matrix)");
         return ok;
     }
 
     template <class Matrix, class Vector>
     const Vector &BDDOperator<Matrix, Vector>::righthand_side() const {
-        return *impl_->secant_G_;
+        return impl_->rhs_skeleton;
     }
 
     template <class Matrix, class Vector>
     std::shared_ptr<Matrix> BDDOperator<Matrix, Vector>::reduced_matrix() const {
-        return impl_->A_GG_;
+        return impl_->schur_complement.reduced_matrix();
     }
 
     template <class Matrix, class Vector>
-    bool BDDOperator<Matrix, Vector>::apply(const Vector &x_G, Vector &rhs_G) const {
-        return impl_->apply(x_G, rhs_G);
+    const typename BDDOperator<Matrix, Vector>::IndexSet &BDDOperator<Matrix, Vector>::skeleton_dofs() const {
+        return impl_->skeleton_dofs;
     }
 
     template <class Matrix, class Vector>
-    bool BDDOperator<Matrix, Vector>::finalize(const Vector &x_G, Vector &x) {
+    bool BDDOperator<Matrix, Vector>::apply(const Vector &x_skeleton, Vector &rhs_skeleton) const {
+        UTOPIA_TRACE_REGION_BEGIN("BDDOperator::apply");
+
+        bool ok = impl_->apply(x_skeleton, rhs_skeleton);
+
+        UTOPIA_TRACE_REGION_END("BDDOperator::apply");
+        return ok;
+    }
+
+    template <class Matrix, class Vector>
+    bool BDDOperator<Matrix, Vector>::finalize(const Vector &x_skeleton, Vector &x) {
         UTOPIA_TRACE_REGION_BEGIN("BDDOperator::finalize");
 
-        if (empty(x)) {
-            x.zeros(layout(x_G.comm(), impl_->original_range.extent(), impl_->n_global));
-        }
-
-        bool ok = true;
-
-        Vector x_I;
-        if (!impl_->finalize(x_G, impl_->b_I, x_I)) {
-            ok = false;
-        } else {
-            auto x_view = local_view_device(x);
-            auto x_I_view = local_view_device(x_I);
-            auto x_G_view = local_view_device(x_G);
-
-            parallel_for(
-                local_range_device(x), UTOPIA_LAMBDA(const SizeType i) { x_view.set(i, x_I_view.get(i)); });
-
-            parallel_for(local_range_device(x_G), [&](const SizeType i) {
-                SizeType i_local = impl_->local_to_global[i] - impl_->original_range.begin();
-                x_view.set(i_local, x_G_view.get(i));
-            });
-        }
+        bool ok = impl_->finalize(x_skeleton, x);
 
         UTOPIA_TRACE_REGION_END("BDDOperator::finalize");
         return ok;
@@ -1185,7 +341,7 @@ namespace utopia {
             if (impl_->verbose) comm().root_print("Using inv(A_GG) preconditioner");
 
             auto solver = std::make_shared<Factorization<Matrix, Vector>>();
-            solver->update(impl_->A_GG_);
+            solver->update(reduced_matrix());
             return solver;
         } else if (impl_->preconditioner_type == "amg") {
             if (impl_->verbose) comm().root_print("Using amg(A_GG) preconditioner");
@@ -1193,7 +349,7 @@ namespace utopia {
             auto solver = std::make_shared<KSPSolver<Matrix, Vector>>();
             solver->ksp_type("preonly");
             solver->pc_type("hypre");
-            solver->update(impl_->A_GG_);
+            solver->update(reduced_matrix());
             solver->max_it(1);
             return solver;
         } else {
@@ -1209,56 +365,42 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     typename BDDOperator<Matrix, Vector>::Layout BDDOperator<Matrix, Vector>::vector_layout() const {
-        assert(impl_->A_GG_);
-        return row_layout(*impl_->A_GG_);
+        return row_layout(*impl_->schur_complement.reduced_matrix());
     }
 
     template <class Matrix, class Vector>
-    void BDDOperator<Matrix, Vector>::create_vector(Vector &x_G) {
-        x_G.zeros(this->vector_layout());
+    void BDDOperator<Matrix, Vector>::create_vector(Vector &x_skeleton) {
+        x_skeleton.zeros(this->vector_layout());
     }
 
     template <class Matrix, class Vector>
-    void BDDOperator<Matrix, Vector>::select(const Vector &x, Vector &x_G) const {
-        auto &&comm = x.comm();
-        auto G_layout = layout(comm, impl_->local_size_G(), Traits::determine());
-
-        {
-            x_G.zeros(G_layout);
-
-            auto x_G_view = local_view_device(x_G);
-            auto x_view = local_view_device(x);
-
-            for (SizeType i = 0; i < impl_->local_size_G(); ++i) {
-                SizeType original_local_idx = impl_->local_interface_idx[i];
-                x_G_view.set(i, x_view.get(original_local_idx));
-            }
-        }
+    void BDDOperator<Matrix, Vector>::select(const Vector &x, Vector &x_skeleton) const {
+        impl_->schur_complement.select(x, x_skeleton);
     }
 
     template <class Matrix, class Vector>
     void BDDOperator<Matrix, Vector>::diag(Vector &d) const {
-        impl_->A_GG_->build_diag(d);
+        impl_->schur_complement.reduced_matrix()->build_diag(d);
     }
 
     template <class Matrix, class Vector>
     Size BDDOperator<Matrix, Vector>::size() const {
-        return impl_->A_GG_->size();
+        return impl_->schur_complement.size();
     }
 
     template <class Matrix, class Vector>
     Size BDDOperator<Matrix, Vector>::local_size() const {
-        return impl_->A_GG_->local_size();
+        return impl_->schur_complement.local_size();
     }
 
     template <class Matrix, class Vector>
     typename Traits<Vector>::Communicator &BDDOperator<Matrix, Vector>::comm() {
-        return impl_->A_GG_->comm();
+        return impl_->schur_complement.comm();
     }
 
     template <class Matrix, class Vector>
     const typename Traits<Vector>::Communicator &BDDOperator<Matrix, Vector>::comm() const {
-        return impl_->A_GG_->comm();
+        return impl_->schur_complement.comm();
     }
 
     template class BDDOperator<PetscMatrix, PetscVector>;

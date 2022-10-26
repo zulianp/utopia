@@ -30,6 +30,8 @@ namespace utopia {
     namespace moonolith {
 
         void Contact::Params::read(Input &in) {
+            in.get("verbose", verbose);
+
             std::set<int> temp;
 
             in.get("radius", this->search_radius);
@@ -556,7 +558,6 @@ namespace utopia {
                 }
             }
 
-
             void process_banned_nodes(Vector &is_contact, Vector &normals) const override {
                 if (!banned_nodes) return;
 
@@ -580,10 +581,9 @@ namespace utopia {
                         }
                     });
             }
-
         };
 
-        bool Contact::assemble(const FunctionSpace &space) {
+        bool Contact::assemble(FunctionSpace &space) {
             Chrono overall_time;
             overall_time.start();
 
@@ -601,7 +601,16 @@ namespace utopia {
             }
 
             overall_time.stop();
-            std::cout << "Contact::assemble: " << overall_time << std::endl;
+
+            if (params_->verbose) {
+                std::stringstream ss;
+
+                ss << "Contact::assemble(space) -> has_contact = " << impl_->has_contact << ":\n"
+                   << overall_time << "\n";
+
+                space.comm().root_print(ss.str(), utopia::out().stream());
+            }
+
             return impl_->has_contact;
         }
 
@@ -632,9 +641,19 @@ namespace utopia {
             return impl_->gap;
         }
 
+        const Contact::Vector &Contact::normals() const {
+            assert(impl_);
+            return impl_->normals;
+        }
+
         Contact::Vector &Contact::normals() {
             assert(impl_);
             return impl_->normals;
+        }
+
+        const Contact::Vector &Contact::is_contact() const {
+            assert(impl_);
+            return impl_->is_contact;
         }
 
         Contact::Vector &Contact::is_contact() {

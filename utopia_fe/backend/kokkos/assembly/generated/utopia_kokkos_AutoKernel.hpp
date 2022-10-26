@@ -52,7 +52,7 @@ namespace utopia {
                     }
 
                     for (int i = 0; i < NNodes; ++i) {
-                        for (int j = 0; j < NNodes * NNodes; ++j) {
+                        for (int j = 0; j < NNodes; ++j) {
                             result(cell, i, j) += H[i * NNodes + j];
                         }
                     }

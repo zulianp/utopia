@@ -2,9 +2,16 @@
 #define UTOPIA_CONTACTF_EF_UNCTION_HPP
 
 #include "utopia_BoxConstrainedFEFunction.hpp"
-// #include "utopia_IContact.hpp"
-#include "utopia_IsNotSupported.hpp"
+#include "utopia_ContactInterface.hpp"
 #include "utopia_fe_Core.hpp"
+
+#include "utopia_AnalyticObstacle_impl.hpp"
+#include "utopia_ImplicitObstacle_impl.hpp"
+#include "utopia_ObstacleStabilizedNewmark.hpp"
+
+#include "utopia_ContactFactory.hpp"
+
+#include "utopia_IsNotSupported.hpp"
 
 namespace utopia {
 
@@ -19,7 +26,9 @@ namespace utopia {
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
         using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using Mesh_t = typename Traits<FunctionSpace>::Mesh;
-        using Contact_t = utopia::Contact<FunctionSpace>;
+
+        using FEFunctionInterface_t = utopia::FEFunctionInterface<FunctionSpace>;
+        using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
 
         bool has_nonlinear_constraints() const override { return !linear_contact_; }
 
@@ -65,6 +74,12 @@ namespace utopia {
         ContactFEFunction(const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &unconstrained)
             : Super(unconstrained) {}
 
+        ContactFEFunction() {}
+
+        virtual void initialize(const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &unconstrained) override {
+            Super::initialize(unconstrained);
+        }
+
         void ouput_debug_data(const Size_t iter_debug, const Vector_t &) const {
             // Output extras
             {
@@ -95,17 +110,33 @@ namespace utopia {
         void read(Input &in) override {
             Super::read(in);
 
+            assert(this->is_initialized());
+
+            in.get("linear_obstacle", linear_contact_);
             in.get("linear_contact", linear_contact_);
             in.get("debug", debug_);
 
             if (!contact_) {
-                contact_ = std::make_shared<Contact_t>();
-                in.get("contact", [&](Input &node) { contact_->read(node); });
+                in.get("obstacle", [&](Input &node) { contact_ = ContactFactory<FunctionSpace>::new_obstacle(node); });
+            }
+
+            if (!contact_) {
+                in.get("contact", [&](Input &node) { contact_ = ContactFactory<FunctionSpace>::new_contact(node); });
+            }
+
+            if (!contact_) {
+                assert(contact_);
+                Utopia::Abort("Missing definition. Define either obstacle or contact node in input file!");
+            }
+
+            auto ptr = std::dynamic_pointer_cast<ContactDependentFunction<FunctionSpace>>(this->unconstrained());
+            if (ptr) {
+                ptr->set_contact(contact_);
             }
         }
 
     private:
-        std::shared_ptr<Contact_t> contact_;
+        std::shared_ptr<ContactInterface<FunctionSpace>> contact_;
         bool linear_contact_{false};
         bool debug_{false};
     };
