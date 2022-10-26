@@ -172,7 +172,9 @@ namespace utopia {
 
         void read(Input &in) override {
             NewtonBase<Matrix, Vector>::read(in);
-            in.get("dumping", alpha_);
+            in.get("damping", alpha_);
+            in.get_deprecated("dumping", "damping", alpha_);
+
             in.get("inverse_diagonal_scaling", inverse_diagonal_scaling_);
 
             if (ls_strategy_) {

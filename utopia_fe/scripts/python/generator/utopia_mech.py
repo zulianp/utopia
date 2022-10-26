@@ -15,6 +15,18 @@ from rich.syntax import Syntax
 
 console = rich.get_console()
 
+def displacement(d):
+    if d == 1:
+        u00 = symbols('disp[0]')
+        u = se.matrix(1,1,[u0])
+    elif d == 2:
+        u00, u01 = se.symbols('disp[0] disp[1]')
+        u = se.matrix(2,1,[u00,u01])
+    else:
+        u00, u01, u02,  = se.symbols('disp[0] disp[1] disp[2]')
+        u = se.matrix(3,1,[u00, u01, u02])
+    return u
+
 def displacement_gradient(d):
     if d == 1:
         u00 = symbols('disp_grad[0]')
@@ -26,6 +38,18 @@ def displacement_gradient(d):
         u00, u01, u02, u10, u11, u12, u20, u21, u22  = se.symbols('disp_grad[0] disp_grad[1] disp_grad[2] disp_grad[3] disp_grad[4] disp_grad[5] disp_grad[6] disp_grad[7] disp_grad[8]')
         F = se.matrix(3,3,[u00, u01, u02, u10, u11, u12, u20, u21, u22])
     return F
+
+def symbolic_vector(d, var):
+    if d == 1:
+        f00 = symbols(f'{var}[0]')
+        V = se.matrix(1,1,[f00])
+    elif d == 2:
+        f00, f01 = se.symbols(f'{var}[0] {var}[1]')
+        V = se.matrix(2,1,[f00,f01])
+    else:
+        f00, f01, f02 = se.symbols(f'{var}[0] {var}[1] {var}[2]')
+        V = se.matrix(3,1,[f00, f01, f02])
+    return V
 
 def symbolic_matrix(d, var):
     if d == 1:
@@ -196,6 +220,16 @@ def first_piola(strain_energy, F):
             P[i, j] = se.diff(strain_energy, F[i, j])
 
     return P
+
+def tensor_derivative(fun, tensor):
+    shape = tensor.shape
+    ret = se.zeros(shape[0], shape[1])
+
+    for i in range(0, shape[0]):
+        for j in range(0, shape[1]):
+            ret[i, j] = se.diff(fun, tensor[i, j])
+
+    return ret
 
 class Template:
     def __init__(self, header_tpl_path, impl_tpl_path, header_output_path, impl_output_path):
