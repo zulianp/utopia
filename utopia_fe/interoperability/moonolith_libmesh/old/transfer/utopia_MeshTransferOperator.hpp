@@ -27,7 +27,8 @@ namespace utopia {
 
         void read(Input &is) override;
 
-        //@brief operator_type \in \{ INTERPOLATION| L2_PROJECTION| PSEUDO_L2_PROJECTION | APPROX_L2_PROJECTION \}
+        //@brief operator_type \in \{ INTERPOLATION| L2_PROJECTION| PSEUDO_L2_PROJECTION | APPROX_L2_PROJECTION |
+        //BIDIRECTIONAL_L2_PROJECTION | BIDIRECTIONAL_PSEUDO_L2_PROJECTION \}
         bool initialize(const TransferOperatorType operator_type = utopia::INTERPOLATION);
         bool initialize(const std::string operator_type);
         bool assemble();
