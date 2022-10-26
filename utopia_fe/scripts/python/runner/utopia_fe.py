@@ -29,9 +29,9 @@ class Displace(yaml.YAMLObject):
         self.xscale = xscale
         self.yscale = yscale
         self.zscale = zscale
-        self.xshift = xshift
-        self.yshift = yshift
-        self.zshift = zshift
+        self.xpostshift = xshift
+        self.ypostshift = yshift
+        self.zpostshift = zshift
 
 
 class Newton(yaml.YAMLObject):
@@ -632,10 +632,10 @@ class FSIInit:
             Mesh(env, fluid_mesh),
             [distance_var],
             [
-                DirichletBC('INLET', 0.),
-                DirichletBC('OUTLET', 0.),
-                DirichletBC('WALLS', 0.),
-                DirichletBC('SYMMETRY', 0)
+                DirichletBC('ARTIFICIAL_MEMBRANE', 0.),
+                DirichletBC('LEFT_OPENING', 0.),
+                DirichletBC('RIGHT_OPENING', 0.),
+                DirichletBC('WALLS', 0.)
             ])
 
 
@@ -647,8 +647,8 @@ class FSIInit:
             Mesh(env, solid_mesh),
             [Var("disp", 3)],
             [
-                DirichletBC('SYMMETRY', 0., 0),
-                DirichletBC('SYMMETRY', 0., 2)
+                # DirichletBC('fixed', 0., 0),
+                # DirichletBC('SYMMETRY', 0., 2)
             ]
         )
 
@@ -662,11 +662,17 @@ class FSIInit:
                 distance_var
             ])
 
-        displace = Displace(1, .8, 1, 0, 0 ,0)
+        displace = Displace(1, .6, 1.085, 0, 0.00126/4 ,0)
+
+        iobs = ImplicitObstacle(distance_field)
+        # iobs.debug = True
 
         step1_sim = ObstacleSimulation(
-            env, solid_fs, VectorLaplaceOperator(), [], ImplicitObstacle(distance_field),
+            env, solid_fs, VectorLaplaceOperator(), [], iobs,
             ObstacleSolver(MPRGP(), 30, containement_iterations), implitic_obstacle_result_db, displace)
+
+        #  for debugging or if this stage fails
+        step1_sim.skip_solve = True
 
         #########################################################
         ### Step 2
@@ -680,9 +686,13 @@ class FSIInit:
         solid_fs_2.read_state = True
         solid_fs_2.mesh.path = implitic_obstacle_result_db
 
+        mobs = MeshObstacle(fluid_mesh)
+        
         step2_sim = ObstacleSimulation(
-            env, solid_fs_2, dummy_material, [], MeshObstacle(fluid_mesh),
+            env, solid_fs_2, dummy_material, [], mobs,
             ObstacleSolver(MPRGP(1e-14), 15, 15), obstacle_at_rest_result_db)
+
+        # step2_sim.debug = True
 
         #########################################################
         ### Step 3
@@ -714,11 +724,14 @@ class FSIInit:
 
         barrier_solver = BarrierQPSolver(1e-14)
 
-        bff = BoundaryForcingFunction("valveanchor", 10., 3, 1)
-        bff.density = 998
+        # bff = BoundaryForcingFunction("valveanchor", 10., 3, 1)
+        # bff.density = 998
+
+        # bffs = [bff]
+        bffs = []
 
         step4_sim = ObstacleSimulation(
-            env, solid_fs_4, elastic_material, [bff], MeshObstacle(fluid_mesh),
+            env, solid_fs_4, elastic_material, bffs, MeshObstacle(fluid_mesh),
             ObstacleSolver(barrier_solver, 30, 30), fsi_ready_db)
 
 
