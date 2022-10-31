@@ -499,8 +499,11 @@ namespace utopia {
                 if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                     fun_finest->elastic_energy(this->solution_, elastic_energy);
                     fun_finest->fracture_energy(this->solution_, fracture_energy);
-                    fun_finest->compute_tcv(this->solution_, error_tcv);
-                    fun_finest->compute_cod(this->solution_, error_cod);
+
+                    if(FunctionSpace::Dim == 3) {
+                        fun_finest->compute_tcv(this->solution_, error_tcv);
+                        fun_finest->compute_cod(this->solution_, error_cod);
+                    }
                 }
 
                 if (mpi_world_rank() == 0) {

@@ -1091,6 +1091,50 @@ namespace utopia {
             impl_->dirichlet_boundary.add(dirichlet_boundary);
         }
 
+        // void FunctionSpace::displacement_field_from_transform(const std::vector<Scalar> &scale_factors,
+        //                                                       Field<FunctionSpace> &displacement) {
+        //     if (displacement.empty()) {
+        //         this->create_field(displacement);
+        //     }
+
+        //     auto &&space = *this;
+
+        //     int n_var = space.n_var();
+
+        //     assert(n_var == mesh().spatial_dimension());
+
+        //     auto d_view = view_device(displacement.data());
+
+        //     Range r = range(displacement.data());
+        //     SizeType r_begin = r.begin() / n_var;
+        //     SizeType r_end = r.end() / n_var;
+
+        //     const int n_factors = scale_factors.size();
+
+        //     int dim = std::min(mesh().spatial_dimension(), n_var);
+
+        //     auto fun = [=](const SizeType idx, const Scalar *point) {
+        //         if (idx < r_begin || idx >= r_end) return;
+
+        //         Scalar p3[3] = {0.0, 0.0, 0.0};
+        //         Scalar transformed_p3[3] = {0.0, 0.0, 0.0};
+
+        //         for (int d = 0; d < dim; ++d) {
+        //             p3[d] = point[d];
+        //         }
+
+        //         for (int i = 0; i < n_factors; ++i) {
+        //             transformed_p3[i] = p3[i] * scale_factors[i];
+        //         }
+
+        //         for (int d = 0; d < dim; ++d) {
+        //             d_view.set(idx * n_var + d, transformed_p3[d]);
+        //         }
+        //     };
+
+        //     space.node_eval(fun);
+        // }
+
         void FunctionSpace::displace(const Vector &displacement) {
             Vector local_displacement;
             global_to_local(displacement, local_displacement);
