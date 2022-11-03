@@ -64,14 +64,6 @@ namespace utopia {
                 }
 
                 UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::scalar_op_assemble_matrix::TpetraCrsMatrix()");
-
-                // FIXME Bad it should not do this
-                // auto mat_impl =
-                //     Teuchos::rcp(new Matrix::CrsMatrixType(this->handler()->get_sparsity_pattern().get_matrix(),
-                //                                            hessian.raw_type()->getRowMap(),
-                //                                            hessian.raw_type()->getColMap()));
-                // hessian.wrap(mat_impl, false);
-
                 UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::scalar_op_assemble_matrix::TpetraCrsMatrix()");
                 UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::scalar_op_assemble_matrix");
                 return true;
@@ -451,13 +443,6 @@ namespace utopia {
                               vector_var, scalar_var, couple_vec_scalar_op, matrix_builder);
 
                 if (!ok) return false;
-
-                // // FIXME Bad it should not do this
-                // auto mat_impl =
-                //     Teuchos::rcp(new Matrix::CrsMatrixType(this->handler()->get_sparsity_pattern().get_matrix(),
-                //                                            hessian.raw_type()->getRowMap(),
-                //                                            hessian.raw_type()->getColMap()));
-                // hessian.wrap(mat_impl, false);
                 return true;
             }
 
