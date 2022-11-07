@@ -11,29 +11,7 @@ namespace utopia {
 
     class PetscCommunicator final : public MPICommunicator {
     public:
-        class Wrapper {
-        public:
-            Wrapper(const MPI_Comm &comm, const bool owned) : comm(comm), owned(owned) {}
-
-            ~Wrapper() {
-                if (owned) {
-                    MPI_Comm_free(&comm);
-                }
-            }
-
-            MPI_Comm comm;
-            bool owned;
-        };
-
         inline PetscCommunicator *clone() const override { return new PetscCommunicator(get()); }
-
-        inline MPI_Comm get() const override { return wrapper_->comm; }
-
-        inline MPI_Comm raw_comm() const override { return get(); }
-
-        inline void set(MPI_Comm comm) { wrapper_ = make_not_owned(comm); }
-
-        inline void own(MPI_Comm comm) { wrapper_ = std::make_shared<Wrapper>(comm, true); }
 
         static PetscCommunicator self();
         static PetscCommunicator world();
@@ -43,27 +21,13 @@ namespace utopia {
             return instance_;
         }
 
-        PetscCommunicator split(const int color) const;
-
         PetscCommunicator();
-        explicit PetscCommunicator(const MPI_Comm comm) : wrapper_(make_not_owned(comm)) {}
-        explicit PetscCommunicator(const Communicator &comm) : wrapper_(make_not_owned(comm.raw_comm())) {}
-        inline PetscCommunicator(const PetscCommunicator &other) : wrapper_(other.wrapper_) {}
-        inline PetscCommunicator(PetscCommunicator &&other) : wrapper_(std::move(other.wrapper_)) {}
 
-        inline PetscCommunicator &operator=(const PetscCommunicator &other) {
-            wrapper_ = other.wrapper_;
-            return *this;
-        }
-        inline PetscCommunicator &operator=(PetscCommunicator &&other) {
-            wrapper_ = std::move(other.wrapper_);
-            return *this;
-        }
+        explicit PetscCommunicator(const MPI_Comm comm) : MPICommunicator(comm, false) {}
+        explicit PetscCommunicator(const Communicator &comm) : MPICommunicator(comm) {}
 
-    private:
-        std::shared_ptr<Wrapper> wrapper_;
-
-        static std::shared_ptr<Wrapper> make_not_owned(MPI_Comm comm) { return std::make_shared<Wrapper>(comm, false); }
+        inline PetscCommunicator(const MPICommunicator &other) : MPICommunicator(other) {}
+        inline PetscCommunicator(MPICommunicator &&other) : MPICommunicator(std::move(other)) {}
     };
 }  // namespace utopia
 

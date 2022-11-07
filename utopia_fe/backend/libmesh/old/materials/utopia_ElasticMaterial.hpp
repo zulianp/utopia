@@ -23,12 +23,14 @@ namespace utopia {
         }
 
         virtual bool normal_stress(const UVector &x, UVector &out, const int subspace = 0) {
-            out = local_values(local_size(x).get(0), -1);
+            // out = local_values(local_size(x).get(0), -1);
+            out.values(layout(x), -1);
             return false;
         }
 
         virtual bool von_mises_stress(const UVector &x, UVector &out, const int subspace = 0) {
-            out = local_values(local_size(x).get(0), -1);
+            // out = local_values(local_size(x).get(0), -1);
+            out.values(layout(x), -1);
             return false;
         }
 

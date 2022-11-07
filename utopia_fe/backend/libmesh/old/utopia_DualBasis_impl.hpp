@@ -5,6 +5,8 @@
 #include "utopia_libmesh_FunctionSpace.hpp"
 #include "utopia_libmesh_Utils.hpp"
 
+#include "utopia_DeprecatedHeaders.hpp"
+
 namespace utopia {
 
     template <class EDofMap>

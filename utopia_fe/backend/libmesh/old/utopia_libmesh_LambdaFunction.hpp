@@ -3,6 +3,17 @@
 
 #include "libmesh/analytic_function.h"
 #include "libmesh/dirichlet_boundaries.h"
+#include "libmesh/function_base.h"
+#include "libmesh/libmesh_config.h"
+
+#include <memory>
+
+#ifdef LIBMESH_HAVE_CXX14_MAKE_UNIQUE
+namespace libMesh {
+    template <typename T>
+    using UniquePtr = std::unique_ptr<T>;
+}
+#endif
 
 namespace utopia {
 

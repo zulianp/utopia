@@ -66,7 +66,9 @@ namespace utopia {
     template <class Vector>
     void mark_constrained_dofs(libMesh::DofMap &dof_map, Tensor<Vector, 1> &t_vec) {
         auto &vec = t_vec.derived();
-        vec = local_zeros(dof_map.n_local_dofs());
+        // vec = local_zeros(dof_map.n_local_dofs());
+        vec.zeros(layout(PetscCommunicator(dof_map.comm().get()), dof_map.n_local_dofs(), dof_map.n_dofs()));
+
         const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
 
         Write<Vector> w_v(vec);

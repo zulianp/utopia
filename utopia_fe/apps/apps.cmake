@@ -24,6 +24,9 @@ if(UTOPIA_ENABLE_PETSC)
     list(APPEND APPS_MODULES petsc)
 endif()
 
+if(UTOPIA_ENABLE_KOKKOS)
+    list(APPEND APPS_MODULES kokkos)
+endif()
 
 find_project_files(${UTOPIA_APPS_DIR} "${APPS_MODULES}" LOCAL_HEADERS
                    LOCAL_SOURCES)

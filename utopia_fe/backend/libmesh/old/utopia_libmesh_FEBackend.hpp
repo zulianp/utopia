@@ -7,6 +7,8 @@
 #include "utopia_libmesh_FunctionSpace.hpp"
 #include "utopia_libmesh_LambdaFunction.hpp"
 
+#include "utopia_DeprecatedHeaders.hpp"
+
 #include "utopia_FEBackend.hpp"
 #include "utopia_FEBasicOverloads.hpp"
 

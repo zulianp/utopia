@@ -30,6 +30,8 @@ public:
 
     void run() {
         // UTOPIA_RUN_TEST(test_amg_add_corr);
+
+        if(mpi_world_size() == 1)
         UTOPIA_RUN_TEST(test_amg);
     }
 

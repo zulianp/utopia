@@ -4,6 +4,7 @@
 #include "utopia_ObstacleApp.hpp"
 
 #include "utopia_libmesh.hpp"
+#include "utopia_moonolith_libmesh_Contact.hpp"
 #include "utopia_moonolith_libmesh_FETransfer.hpp"
 #include "utopia_moonolith_libmesh_Obstacle.hpp"
 

@@ -47,6 +47,9 @@ option(UTOPIA_ENABLE_ARBORX "Enable the ArborX backend" OFF)
 
 option(UTOPIA_ENABLE_FLUYA_MODE "Create utopia_fe configuration required by Fluya (overrides everything else)" OFF)
 
+if(UTOPIA_ENABLE_TRILINOS OR UTOPIA_ENABLE_MARS OR UTOPIA_ENABLE_INTREPID2)
+    set(UTOPIA_ENABLE_KOKKOS TRUE)
+endif()
 
 # ##############################################################################
 # ##############################################################################

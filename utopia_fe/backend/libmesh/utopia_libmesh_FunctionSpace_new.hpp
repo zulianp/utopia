@@ -48,6 +48,7 @@ namespace utopia {
             using Matrix = Traits<FunctionSpace>::Matrix;
             using SizeType = Traits<FunctionSpace>::SizeType;
             using Scalar = Traits<FunctionSpace>::Scalar;
+            using IndexArray = Traits<FunctionSpace>::IndexArray;
             using Comm = Traits<FunctionSpace>::Communicator;
 
             FunctionSpace(const Comm &comm = Comm::get_default());
@@ -92,6 +93,8 @@ namespace utopia {
             // access other spaces (auxiliry systems)
             FunctionSubspace auxiliary_space(const SizeType i);
 
+            void node_eval(std::function<void(const SizeType idx, const Scalar *)> fun);
+
             void create_matrix(Matrix &mat) const override;
             void create_vector(Vector &vec) const override;
             void create_field(Field<FunctionSpace> &field);
@@ -99,6 +102,8 @@ namespace utopia {
             void apply_constraints(Matrix &mat, Vector &vec) const override;
             void apply_constraints(Vector &vec) const override;
             void apply_constraints(Matrix &mat, const Scalar diag_value = 1) const override;
+
+            void create_boundary_node_list(IndexArray &indices) const;
 
             void apply_zero_constraints(Vector &vec) const override;
             void add_dirichlet_boundary_condition(const std::string &boundary_name,
