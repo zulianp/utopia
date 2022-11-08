@@ -79,11 +79,6 @@ if(UTOPIA_ENABLE_INTREPID2)
         set(INTEROP_EXISTS TRUE)
     endif()
 
-    if(UTOPIA_ENABLE_LIBMESH)
-        list(APPEND INTEROP_MODULES libmesh_intrepid2)
-        set(INTEROP_EXISTS TRUE)
-    endif()
-
     if(UTOPIA_ENABLE_ARBORX)
         list(APPEND INTEROP_MODULES intrepid2_arborx)
         list(APPEND INTEROP_DEP utopia_arborx)
@@ -95,6 +90,12 @@ if(UTOPIA_ENABLE_INTREPID2)
         set(INTEROP_EXISTS TRUE)
     endif()
 
+endif()
+
+
+if(UTOPIA_ENABLE_LIBMESH AND UTOPIA_ENABLE_KOKKOS)
+    list(APPEND INTEROP_MODULES libmesh_kokkos)
+    set(INTEROP_EXISTS TRUE)
 endif()
 
 # ##############################################################################

@@ -8,7 +8,7 @@
 
 #include "utopia_fe_Environment.hpp"
 
-#include "utopia_intrepid2_OmniAssembler.hpp"
+#include "utopia_kokkos_OmniAssembler.hpp"
 #include "utopia_libmesh_ForwardDeclarations.hpp"
 #include "utopia_libmesh_FunctionSpace_new.hpp"
 
@@ -16,9 +16,9 @@ namespace utopia {
 
     template <>
     class OmniAssembler<utopia::libmesh::FunctionSpace> final
-        : public utopia::intrepid2::OmniAssembler<utopia::libmesh::FunctionSpace> {
+        : public utopia::kokkos::OmniAssembler<utopia::libmesh::FunctionSpace, utopia::kokkos::FE<double>> {
     public:
-        using Super = utopia::intrepid2::OmniAssembler<utopia::libmesh::FunctionSpace>;
+        using Super = utopia::kokkos::OmniAssembler<utopia::libmesh::FunctionSpace, utopia::kokkos::FE<double>>;
         using Super::Super;
     };
 

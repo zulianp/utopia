@@ -58,8 +58,7 @@ namespace utopia {
 
             void set_n_parts(int n) { parts.resize(n); }
 
-            // Mesh(const Comm &comm)
-            // : comm(comm) {}
+            Mesh(const Comm &comm) : comm(comm) {}
 
             Comm comm;
             Kokkos::DynRankView<Scalar, ExecutionSpace> points;

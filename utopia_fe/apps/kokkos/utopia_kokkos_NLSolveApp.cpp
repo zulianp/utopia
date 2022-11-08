@@ -30,7 +30,9 @@ void kokkos_nlsolve(utopia::Input &in) {
     // }
 
     using Scalar = double;
-    utopia::kokkos::FunctionSpace<Scalar> space;
+
+    utopia::MPICommunicator comm(MPI_COMM_WORLD);
+    utopia::kokkos::FunctionSpace<Scalar> space(comm);
     in.get("space", space);
 }
 

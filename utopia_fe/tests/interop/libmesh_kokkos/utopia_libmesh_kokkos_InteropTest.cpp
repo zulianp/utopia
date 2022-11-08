@@ -12,22 +12,22 @@
 #include "utopia_libmesh_Mesh.hpp"
 
 // Intrepid2 includes
-#include "utopia_intrepid2_LaplaceOperator.hpp"
-#include "utopia_intrepid2_LinearElasticity.hpp"
-#include "utopia_intrepid2_NeoHookean.hpp"
-#include "utopia_intrepid2_ShellTools.hpp"
-#include "utopia_intrepid2_VectorLaplaceOperator.hpp"
+// #include "utopia_intrepid2_LaplaceOperator.hpp"
+// #include "utopia_intrepid2_LinearElasticity.hpp"
+// #include "utopia_intrepid2_NeoHookean.hpp"
+// #include "utopia_intrepid2_ShellTools.hpp"
+// #include "utopia_intrepid2_VectorLaplaceOperator.hpp"
 
-#include "utopia_libmesh_intrepid2.hpp"
+#include "utopia_libmesh_kokkos.hpp"
 
 // FIXME: This is the last include because the operator files are not yet in the correct place
 #include "utopia_SpaceAndFETest.hpp"
 
 using namespace utopia;
 
-using StkScalar = Traits<utopia::libmesh::FunctionSpace>::Scalar;
+using LibMeshScalar_t = Traits<utopia::libmesh::FunctionSpace>::Scalar;
 void interop_libmesh_intrepid2() {
-    SpaceAndFETest<utopia::libmesh::FunctionSpace, utopia::intrepid2::FE<StkScalar>>().run();
+    SpaceAndFETest<utopia::libmesh::FunctionSpace, utopia::kokkos::FE<LibMeshScalar_t>>().run();
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(interop_libmesh_intrepid2);

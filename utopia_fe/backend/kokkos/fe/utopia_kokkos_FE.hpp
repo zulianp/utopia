@@ -4,7 +4,9 @@
 #include "utopia_Logger.hpp"
 
 #include "utopia_Base.hpp"
+#include "utopia_Traits.hpp"
 #include "utopia_kokkos_FEBase.hpp"
+#include "utopia_kokkos_FEForwardDeclarations.hpp"
 
 #include <Kokkos_DynRankView.hpp>
 #include <Kokkos_View.hpp>

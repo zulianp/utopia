@@ -41,7 +41,7 @@ if(UTOPIA_ENABLE_INTREPID2 AND UTOPIA_ENABLE_ARBORX)
 endif()
 
 if(UTOPIA_ENABLE_INTREPID2 AND UTOPIA_ENABLE_LIBMESH)
-    list(APPEND TEST_MODULES interop/libmesh_intrepid2)
+    list(APPEND TEST_MODULES interop/libmesh_kokkos)
 endif()
 
 set(LOCAL_HEADERS "")

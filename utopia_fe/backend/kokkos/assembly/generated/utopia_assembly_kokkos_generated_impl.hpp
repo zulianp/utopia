@@ -25,6 +25,11 @@
 namespace utopia {
     namespace kokkos {
 
+        template <class FunctionSpace, class... Args>
+        void register_generated_assemblers(AssemblerRegistry<FunctionSpace, kokkos::FE<Args...>> &) {
+            m_utopia_warning_once("register_generated_assemblers does not work for this backend!");
+        }
+
         template <class FunctionSpace, class FE>
         void register_generated_assemblers(AssemblerRegistry<FunctionSpace, FE> &registry) {
             registry.template register_assembler_variant<utopia::kokkos::MassTri3<FE>>("MassLine2", 1);
