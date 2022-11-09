@@ -67,7 +67,10 @@ namespace utopia {
             make(node, out.add_node());
         }
 
-        for (auto it = elements_begin(in); it != elements_end(in); ++it) {
+        auto ebegin = in.active_local_elements_begin();
+        auto eend = in.active_local_elements_end();
+
+        for (auto it = ebegin; it != eend; ++it) {
             const auto &elem = **it;
             auto &e = out.add_elem();
             e.type = convert(elem.type());
@@ -137,9 +140,10 @@ namespace utopia {
         auto fe_type = dof_map.variable(var_num).type();
 
         SizeType local_el_idx = -1;
-        auto ebegin = elements_begin(in);
-        auto eend = elements_end(in);
-        for (auto it = ebegin; it != ebegin; ++it) {
+        auto ebegin = in.active_local_elements_begin();
+        auto eend = in.active_local_elements_end();
+
+        for (auto it = ebegin; it != eend; ++it) {
             auto elem_ptr = *it;
 
             ++local_el_idx;
