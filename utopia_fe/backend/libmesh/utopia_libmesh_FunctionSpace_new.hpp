@@ -1,6 +1,8 @@
 #ifndef UTOPIA_LIBMESH_FUNCTION_SPACE_NEW_HPP
 #define UTOPIA_LIBMESH_FUNCTION_SPACE_NEW_HPP
 
+#include "utopia_Hanger.hpp"
+
 #include "utopia_Field.hpp"
 #include "utopia_FunctionSpaceBase.hpp"
 
@@ -21,7 +23,7 @@ namespace utopia {
 
         class FunctionSpaceWrapper;
 
-        class FunctionSubspace : public Traits<FunctionSubspace> {
+        class FunctionSubspace : public Traits<FunctionSubspace>, public Hanger {
         public:
             FunctionSubspace();
             ~FunctionSubspace();

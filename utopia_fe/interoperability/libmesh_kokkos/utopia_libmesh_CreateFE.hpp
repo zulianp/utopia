@@ -58,7 +58,8 @@ namespace utopia {
         static void apply(const utopia::libmesh::FunctionSpace &space,
                           const LibMeshViewDevice_t &element_matrices,
                           AssemblyMode mode,
-                          PetscMatrix &matrix);
+                          PetscMatrix &matrix,
+                          int var = 0);
     };
 
     template <>
@@ -67,19 +68,22 @@ namespace utopia {
         static void apply(const utopia::libmesh::FunctionSpace &space,
                           const LibMeshViewDevice_t &element_vectors,
                           AssemblyMode mode,
-                          PetscVector &vector);
+                          PetscVector &vector,
+                          int var = 0);
 
         static void apply(const utopia::libmesh::FunctionSpace &space,
                           const LibMeshViewDevice_t &element_vectors,
                           AssemblyMode mode,
                           PetscVector &vector,
-                          const int n_var);
+                          const int n_var,
+                          int var = 0);
 
         static void side_apply(const utopia::libmesh::FunctionSpace &space,
                                const LibMeshViewDevice_t &element_vectors,
                                AssemblyMode mode,
                                PetscVector &vector,
-                               const std::string &part_name);
+                               const std::string &part_name,
+                               int var = 0);
     };
 
 }  // namespace utopia

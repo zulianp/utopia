@@ -5,6 +5,8 @@
 #include "utopia_libmesh_Utils.hpp"
 #include "utopia_triangulate.hpp"
 
+#include "utopia_intersector.hpp"
+
 #include <assert.h>
 #include <algorithm>
 #include <memory>
