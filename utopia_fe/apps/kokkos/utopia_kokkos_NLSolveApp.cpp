@@ -20,15 +20,6 @@
 // }  // namespace utopia
 
 void kokkos_nlsolve(utopia::Input &in) {
-    // utopia::NLSolveApp<utopia::kokkos::FunctionSpace> app;
-    // app.read(in);
-
-    // if (app.valid()) {
-    //     app.run();
-    // } else {
-    //     utopia::err() << "kokkos_nlsolve: invalid app setup\n";
-    // }
-
     using Scalar = double;
 
     utopia::MPICommunicator comm(MPI_COMM_WORLD);
