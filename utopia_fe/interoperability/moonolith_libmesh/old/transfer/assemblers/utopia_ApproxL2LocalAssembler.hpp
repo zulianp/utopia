@@ -4,6 +4,8 @@
 #include "MortarAssemble.hpp"
 #include "utopia_LocalAssembler.hpp"
 
+#include "utopia_libmesh_Transform.hpp"
+
 #include "libmesh/dense_matrix.h"
 #include "libmesh/point.h"
 

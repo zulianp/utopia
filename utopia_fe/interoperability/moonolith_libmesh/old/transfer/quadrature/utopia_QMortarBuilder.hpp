@@ -7,6 +7,7 @@
 #include "libmesh/fe.h"
 
 #include <cassert>
+#include <memory>
 
 namespace utopia {
 
@@ -102,8 +103,7 @@ namespace utopia {
 
         libMesh::Point trial_normal, test_normal;
 
-        // intersector
-        typedef Intersector::Scalar Scalar;
+        typedef double Scalar;
 
         Scalar A[3 * 3], b[3];
         Scalar Ainv[3 * 3], binv[3];
@@ -139,7 +139,8 @@ namespace utopia {
         using Matrix = libMesh::DenseMatrix<libMesh::Real>;
         using Real = libMesh::Real;
 
-        QMortarBuilder3() : total_intersection_volume(0.), composite_ir(3) {}
+        QMortarBuilder3();
+        ~QMortarBuilder3();
 
         bool build(const Elem &trial,
                    FEType trial_type,
@@ -148,16 +149,10 @@ namespace utopia {
                    QMortar &q_trial,
                    QMortar &q_test) override;
 
-        inline double get_total_intersection_volume() const override { return total_intersection_volume; }
+        double get_total_intersection_volume() const override;
 
     private:
-        Real total_intersection_volume;
-        QMortar composite_ir;
-
-        Polyhedron trial_poly, test_poly;
-        Polyhedron intersection, temp_poly;
-
-        Matrix shell_poly;
+        class Impl;
 
         bool build_vol_2_surf(const Elem &trial,
                               FEType trial_type,
@@ -165,6 +160,8 @@ namespace utopia {
                               FEType test_type,
                               QMortar &q_trial,
                               QMortar &q_test);
+
+        std::unique_ptr<Impl> impl_;
     };
 }  // namespace utopia
 

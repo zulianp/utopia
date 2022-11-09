@@ -7,6 +7,8 @@
 #include <queue>
 #include <sstream>
 
+#include "utopia_libmesh_Deprecated.hpp"
+
 namespace utopia {
     static bool check(const LocalAssembler::Matrix &mat) {
         for (const auto &v : mat.get_values()) {

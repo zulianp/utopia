@@ -99,7 +99,7 @@ namespace utopia {
             auto mesh = std::make_shared<MeshT>(comm);
 
             FunctionSpaceT space(mesh);
-            convert(lm_mesh, lm_dofs, opts.from_var_num, space);
+            convert_libmesh_to_moonolith(lm_mesh, lm_dofs, opts.from_var_num, space);
 
             comm.barrier();
 

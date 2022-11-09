@@ -4,7 +4,11 @@
 #include <libmesh/elem.h>
 #include "utopia.hpp"
 
+#include "utopia_libmesh_RetroCompatibility.hpp"
+
 #include "MortarAssemble.hpp"
+
+#include "utopia_libmesh_Deprecated.hpp"
 
 namespace utopia {
     void HashGrid::print(std::ostream &os) const {
@@ -368,8 +372,8 @@ namespace utopia {
             // remove self
             if (first == second) continue;
 
-            const auto &e_first = *utopia::elem_ptr(mesh, first);
-            const auto &e_second = *utopia::elem_ptr(mesh, second);
+            const auto &e_first = *utopia::libmesh::elem_ptr(mesh, first);
+            const auto &e_second = *utopia::libmesh::elem_ptr(mesh, second);
 
             if (are_neighbors(e_first, e_second)) {
                 // std::cout << "neigs\n";

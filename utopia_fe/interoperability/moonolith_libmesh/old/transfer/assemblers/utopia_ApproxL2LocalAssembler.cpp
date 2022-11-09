@@ -1,6 +1,8 @@
 #include "utopia_ApproxL2LocalAssembler.hpp"
 #include "libmesh/fe_interface.h"
 
+#include "utopia_libmesh_Deprecated.hpp"
+
 namespace utopia {
 
     using Vector2 = Intersector::Vector2;

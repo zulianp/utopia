@@ -1,5 +1,7 @@
 #include "utopia_InterpolationLocalAssembler.hpp"
 
+#include "utopia_libmesh_Deprecated.hpp"
+
 namespace utopia {
 
     using Vector2 = Intersector::Vector2;

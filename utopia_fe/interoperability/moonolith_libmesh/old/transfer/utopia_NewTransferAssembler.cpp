@@ -547,8 +547,8 @@ namespace utopia {
 
             FunctionSpaceT master(master_mesh), slave(slave_mesh);
 
-            convert(from_mesh, from_dofs, opts.from_var_num, master);
-            convert(to_mesh, to_dofs, opts.to_var_num, slave);
+            convert_libmesh_to_moonolith(from_mesh, from_dofs, opts.from_var_num, master);
+            convert_libmesh_to_moonolith(to_mesh, to_dofs, opts.to_var_num, slave);
 
             return apply(master, slave, opts, data);
         }
@@ -680,8 +680,8 @@ namespace utopia {
 
             FunctionSpaceT master(master_mesh), slave(slave_mesh);
 
-            convert(from_mesh, from_dofs, opts.from_var_num, master);
-            convert(to_mesh, to_dofs, opts.to_var_num, slave);
+            convert_libmesh_to_moonolith(from_mesh, from_dofs, opts.from_var_num, master);
+            convert_libmesh_to_moonolith(to_mesh, to_dofs, opts.to_var_num, slave);
 
             return apply_with_covering_check(master, slave, opts, data);
         }

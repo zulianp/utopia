@@ -3,6 +3,8 @@
 
 #include "utopia_BoxAdapter.hpp"
 
+#include "HashGrid.hpp"
+
 #include "MortarAssemble.hpp"
 #include "libmesh/serial_mesh.h"
 #include "moonolith_input_stream.hpp"

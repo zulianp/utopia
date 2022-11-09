@@ -5,8 +5,11 @@
 #include "MortarAssemble.hpp"
 #include "utopia_SideSetAssignment.hpp"
 
+#include "libmesh/boundary_info.h"
 #include "libmesh/elem.h"
 #include "libmesh/parallel_mesh.h"
+
+#include "utopia_libmesh_RetroCompatibility.hpp"
 
 #include <cmath>
 
@@ -91,7 +94,7 @@ namespace utopia {
                         continue;
                     }
 
-                    int side_set = utopia::boundary_id(bi, elem_ptr, i);
+                    int side_set = utopia::libmesh::boundary_id(bi, elem_ptr, i);
 
                     auto side_ptr = elem_ptr->build_side_ptr(i);
 
@@ -113,7 +116,7 @@ namespace utopia {
                                 }
 
                                 bi.add_side(elem_ptr, i, n.side_set);
-                                assert(utopia::boundary_id(bi, elem_ptr, i) == n.side_set);
+                                assert(utopia::libmesh::boundary_id(bi, elem_ptr, i) == n.side_set);
 
                                 std::cout << "changed " << side_set << " to " << n.side_set << std::endl;
                             }

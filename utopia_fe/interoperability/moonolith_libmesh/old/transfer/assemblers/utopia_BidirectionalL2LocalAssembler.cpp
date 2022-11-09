@@ -7,6 +7,8 @@
 #include <queue>
 #include <sstream>
 
+#include "utopia_libmesh_Deprecated.hpp"
+
 namespace utopia {
 
     BidirectionalL2LocalAssembler::BidirectionalL2LocalAssembler(const int dim,

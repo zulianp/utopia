@@ -26,6 +26,8 @@
 #include <numeric>
 #include <queue>
 
+#include "utopia_libmesh_Deprecated.hpp"
+
 namespace utopia {
 
     using namespace libMesh;

@@ -8,6 +8,8 @@
 #include "utopia_QMortarBuilder.hpp"
 #include "utopia_TransferAssembler.hpp"
 
+#include "utopia_libmesh_Transform.hpp"
+
 #include "utopia_Socket.hpp"
 #include "utopia_intersector.hpp"
 #include "utopia_make_unique.hpp"
@@ -18,7 +20,9 @@
 #include <array>
 #include <functional>
 #include <map>
+#include <memory>
 #include <vector>
+
 #include "libmesh/serial_mesh.h"
 
 namespace utopia {

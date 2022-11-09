@@ -11,6 +11,8 @@
 #include "utopia_ZeroRowsToIdentity.hpp"
 #include "utopia_libmesh_NonLinearFEFunction.hpp"
 
+#include "utopia_libmesh_Deprecated.hpp"
+
 #include "moonolith_affine_transform.hpp"
 #include "moonolith_assign_functions.hpp"
 #include "moonolith_contact.hpp"

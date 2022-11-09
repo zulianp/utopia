@@ -1,6 +1,7 @@
 #include "utopia_LinePostProcessor.hpp"
 #include "moonolith_elem_node1.hpp"
 #include "moonolith_interpolator_impl.hpp"
+#include "utopia_libmesh_FunctionSpace.hpp"
 #include "utopia_make_unique.hpp"
 
 #include "utopia_fe_base.hpp"

@@ -30,6 +30,10 @@
 #include <queue>
 #include <unordered_set>
 
+#include "utopia_libmesh_Transform.hpp"
+
+#include "utopia_libmesh_Deprecated.hpp"
+
 using namespace libMesh;
 
 namespace utopia {
@@ -839,9 +843,8 @@ namespace utopia {
 // dof_reverse_master, dof_reverse_slave, from_var_num, to_var_num, from_var_num_r, to_var_num_r); 		int
 // offset = 0; 		int
 // space_num = 0; 		if(tags.empty()){ 			for(auto s : local_spaces->spaces()) {
-// if(s) { 					bool first = true; 					libMesh::dof_id_type
-// local_element_id = 0; 					for (auto it = s->active_local_elements_begin(); it !=
-// s->active_local_elements_end(); ++it,
+// if(s) { 					bool first = true; libMesh::dof_id_type local_element_id = 0;
+// for (auto it = s->active_local_elements_begin(); it != s->active_local_elements_end(); ++it,
 // ++local_element_id) { 						auto elem = *it;
 // Adapter a(*s, elem->id(), offset + local_element_id, space_num);
 // 						assert(!local_spaces->dof_map(space_num)[local_element_id].empty());
@@ -1386,7 +1389,8 @@ namespace utopia {
 // 		utopia::Write<USparseMatrix> w_B_reverse(B_reverse);
 // 		utopia::each_read(B_x_reverse, [&](const utopia::SizeType i, const utopia::SizeType j, const double
 // value)
-// { 			for(utopia::SizeType d = 0; d < n_var_r ; ++d) { 				B_reverse.set(i + d,
+// { 			for(utopia::SizeType d = 0; d < n_var_r ; ++d) { 				B_reverse.set(i
+// + d,
 // j
 // + d, value);
 // 			}

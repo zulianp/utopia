@@ -11,7 +11,7 @@
 #include "libmesh/serial_mesh.h"
 #include "libmesh/transient_system.h"
 #include "utopia_LibMeshBackend.hpp"
-#include "utopia_intersector.hpp"
+#include "utopia_libmesh_Deprecated.hpp"
 
 // #include "MortarAssemble.hpp"
 // #include "utopia_Socket.hpp"
