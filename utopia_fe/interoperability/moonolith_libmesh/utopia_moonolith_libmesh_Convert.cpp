@@ -134,31 +134,16 @@ namespace utopia {
         moonolith::Communicator comm(in.comm().get());
         comm.exscan(&n_local_elems, &idx, 1, moonolith::MPISum());
 
-        // comm.barrier();
-        // std::cout << comm << "n_local_elems: " << n_elem << std::endl;
-
-        // if(idx >= in.n_active_elem()) {
-        //     std::cout << comm << " " << idx << " < " << in.n_active_elem() << std::endl;
-        //     std::cout << std::flush;
-        // }
-
-        // assert(idx < n_elem);
-
-        // if(n_elem > 0) {
-
         for (long i = 0; i < n_elem; ++i) {
             out_dof_map.dof_object(i).element_dof = idx++;
         }
 
-        // comm.barrier();
-        // std::cout << comm << "idx: " << idx << std::endl;
-
         auto fe_type = dof_map.variable(var_num).type();
 
         SizeType local_el_idx = -1;
-        // for(const auto &elem_ptr : in.active_local_element_ptr_range())
-
-        for (auto it = elements_begin(in); it != elements_end(in); ++it) {
+        auto ebegin = elements_begin(in);
+        auto eend = elements_end(in);
+        for (auto it = ebegin; it != ebegin; ++it) {
             auto elem_ptr = *it;
 
             ++local_el_idx;
@@ -186,19 +171,10 @@ namespace utopia {
                 for (std::size_t i = 0; i < nn; ++i) {
                     const auto &node_ref = elem_ptr->node_ref(i);
                     const auto dof = node_ref.dof_number(sys_num, var_num, 0);
-
-                    // assert(dof == dof_indices[i]);
-
                     dof_object.dofs[i] = dof;
                 }
             }
         }
-        // }
-
-        // std::cout << comm << " HERE bro" << std::endl << std::flush;
-        // comm.barrier();
-        // if(in.comm().rank() == 0) { moonolith::logger() << "ConvertFunctionSpace::apply end" << std::endl <<
-        // std::flush; }
     }
 
     template class ConvertFunctionSpace<LibMeshFunctionSpace, moonolith::FunctionSpace<moonolith::Mesh<double, 1>>>;

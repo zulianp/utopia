@@ -17,7 +17,8 @@ namespace utopia {
 
         static void apply(const utopia::libmesh::FunctionSpace &space,
                           utopia::kokkos::FE<LibMeshScalar_t> &fe,
-                          const int degree = 0);
+                          const int order = 0,
+                          const int var = 0);
     };
 
     template <>
@@ -25,11 +26,12 @@ namespace utopia {
     public:
         using FE = utopia::kokkos::FE<LibMeshScalar_t>;
 
-        static void apply(const utopia::libmesh::FunctionSpace &space, FE &fe, int order = 0);
+        static void apply(const utopia::libmesh::FunctionSpace &space, FE &fe, int order = 0, int var = 0);
         static void apply(const utopia::libmesh::FunctionSpace &space,
                           FE &fe,
                           const std::string &boundary_name,
-                          int order = 0);
+                          int order = 0,
+                          int var = 0);
     };
 
     template <>
