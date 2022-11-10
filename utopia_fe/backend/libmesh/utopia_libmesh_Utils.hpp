@@ -4,6 +4,8 @@
 #include "libmesh/enum_elem_type.h"
 #include "libmesh/libmesh_version.h"
 
+#include <cassert>
+
 namespace libMesh {
     class DofMap;
 }
