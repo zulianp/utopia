@@ -69,13 +69,13 @@ if(UTOPIA_ENABLE_MOONOLITH)
             list(
                 APPEND
                 INTEROP_MODULES
-                moonolith_libmesh/old
-                moonolith_libmesh/old/transfer
-                moonolith_libmesh/old/transfer/assemblers
-                moonolith_libmesh/old/transfer/quadrature
-                moonolith_libmesh/old/transfer/contact_assemblers
-                moonolith_libmesh/old/transfer/adapters
-                moonolith_libmesh/old/clipper)
+                moonolith_libmesh/deprecated
+                moonolith_libmesh/deprecated/transfer
+                moonolith_libmesh/deprecated/transfer/assemblers
+                moonolith_libmesh/deprecated/transfer/quadrature
+                moonolith_libmesh/deprecated/transfer/contact_assemblers
+                moonolith_libmesh/deprecated/transfer/adapters
+                moonolith_libmesh/deprecated/clipper)
         endif()
         
         set(INTEROP_EXISTS TRUE)

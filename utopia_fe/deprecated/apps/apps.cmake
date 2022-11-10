@@ -1,7 +1,7 @@
 if(UTOPIA_ENABLE_LIBMESH)
 
     set(APPS_MODULES "")
-    set(UTOPIA_APPS_DIR ${CMAKE_SOURCE_DIR}/old/apps)
+    set(UTOPIA_APPS_DIR ${CMAKE_SOURCE_DIR}/deprecated/apps)
 
     list(APPEND APPS_MODULES .)
 

@@ -80,7 +80,7 @@ namespace utopia {
         return true;
     }
 
-    static const bool is_empty_line(const std::string &line) {
+    static bool is_empty_line(const std::string &line) {
         return std::find_if_not(begin(line), end(line), [](unsigned char c) { return std::isspace(c); }) == line.end();
     }
 
