@@ -1,6 +1,7 @@
 #include "utopia_libmesh_Transform.hpp"
 #include <libmesh/fe.h>
-#include "utopia_intersector.hpp"
+
+#include "moonolith_invert.hpp"
 
 namespace utopia {
 
@@ -121,8 +122,11 @@ namespace utopia {
         A(2, 1) = p2(2) - p0(2);
         A(2, 2) = p3(2) - p0(2);
 
-        libMesh::Real det = Intersector::det_3(&A.get_values()[0]);
-        Intersector::inverse_3(&A.get_values()[0], det, &A_inv.get_values()[0]);
+        // libMesh::Real det = Intersector::det_3(&A.get_values()[0]);
+        // Intersector::inverse_3(&A.get_values()[0], det, &A_inv.get_values()[0]);
+
+        libMesh::Real det = moonolith::det3(&A.get_values()[0]);
+        moonolith::invert3<libMesh::Real *const, libMesh::Real>(&A.get_values()[0], &A_inv.get_values()[0], det);
 
         A_inv_m_b(0) = -1.0 * A_inv(0, 0) * p0(0) - A_inv(0, 1) * p0(1) - 1.0 * A_inv(0, 2) * p0(2);
         A_inv_m_b(1) = -1.0 * A_inv(1, 0) * p0(0) - A_inv(1, 1) * p0(1) - 1.0 * A_inv(1, 2) * p0(2);
@@ -211,8 +215,11 @@ namespace utopia {
         A(2, 1) = v(2);
         A(2, 2) = n(2);
 
-        libMesh::Real det = Intersector::det_3(&A.get_values()[0]);
-        Intersector::inverse_3(&A.get_values()[0], det, &A_inv.get_values()[0]);
+        // libMesh::Real det = Intersector::det_3(&A.get_values()[0]);
+        // Intersector::inverse_3(&A.get_values()[0], det, &A_inv.get_values()[0]);
+
+        libMesh::Real det = moonolith::det3(&A.get_values()[0]);
+        moonolith::invert3<libMesh::Real *const, libMesh::Real>(&A.get_values()[0], &A_inv.get_values()[0], det);
 
         A_inv_m_b(0) = -1.0 * A_inv(0, 0) * p0(0) - A_inv(0, 1) * p0(1) - 1.0 * A_inv(0, 2) * p0(2);
         A_inv_m_b(1) = -1.0 * A_inv(1, 0) * p0(0) - A_inv(1, 1) * p0(1) - 1.0 * A_inv(1, 2) * p0(2);

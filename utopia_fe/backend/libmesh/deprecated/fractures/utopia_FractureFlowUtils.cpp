@@ -9,6 +9,8 @@
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/mesh_tools.h"
 
+#include "utopia_LibMeshBackend.hpp"
+
 #include <vector>
 
 namespace utopia {

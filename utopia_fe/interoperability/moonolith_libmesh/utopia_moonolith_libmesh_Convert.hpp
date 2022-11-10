@@ -26,9 +26,9 @@
 #include "moonolith_sparse_matrix.hpp"
 #include "moonolith_vector.hpp"
 
-#include "libmesh/fe.h"
 #include "libmesh/elem.h"
 #include "libmesh/equation_systems.h"
+#include "libmesh/fe.h"
 #include "libmesh/point.h"
 #include "libmesh/quadrature_gauss.h"
 
@@ -456,7 +456,6 @@ namespace utopia {
 
     //     make(p0, p1, p2, trafo);
     // }
-
 
     inline void make_transform(const libMesh::Elem &elem, ::moonolith::AffineTransform<double, 2, 2> &trafo) {
         libMesh::Point p0(0.0, 0.0, 0.0);
@@ -1218,12 +1217,12 @@ namespace utopia {
                          const std::vector<int> &tags = std::vector<int>());
 
     template <int Dim>
-    inline void extract_trace_space(const libMesh::MeshBase &in,
-                                    const libMesh::DofMap &dof_map,
-                                    unsigned int var_num,
-                                    ::moonolith::FunctionSpace<::moonolith::Mesh<double, Dim>> &out,
-                                    const std::vector<int> &tags = std::vector<int>(),
-                                    unsigned int comp = 0  // I do not think we need anything but 0 at the moment
+    void extract_trace_space(const libMesh::MeshBase &in,
+                             const libMesh::DofMap &dof_map,
+                             unsigned int var_num,
+                             ::moonolith::FunctionSpace<::moonolith::Mesh<double, Dim>> &out,
+                             const std::vector<int> &tags = std::vector<int>(),
+                             unsigned int comp = 0  // I do not think we need anything but 0 at the moment
     );
 
 }  // namespace utopia

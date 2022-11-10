@@ -1,7 +1,7 @@
 #ifndef UTOPIA_LIBMESH_NON_LINEAR_FE_FUNCTION_HPP
 #define UTOPIA_LIBMESH_NON_LINEAR_FE_FUNCTION_HPP
 
-#include "utopia_NonLinearFEFunction.hpp"
+// #include "utopia_NonLinearFEFunction.hpp"
 #include "utopia_fe_base.hpp"
 
 #include "utopia.hpp"
