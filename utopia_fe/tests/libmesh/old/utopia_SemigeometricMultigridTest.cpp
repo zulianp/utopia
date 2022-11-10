@@ -63,10 +63,10 @@ namespace utopia {
 
         std::cout << "assembly complete" << std::endl;
 
-        // auto linear_solver = std::make_shared<ConjugateGradient<USparseMatrix, UVector, HOMEMADE>>();
+        auto linear_solver = std::make_shared<ConjugateGradient<USparseMatrix, UVector, HOMEMADE>>();
         // auto linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>();
         // auto linear_solver = std::make_shared<ConjugateGradient<USparseMatrix, UVector>>();
-        auto linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
+        // auto linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
         auto smoother = std::make_shared<GaussSeidel<USparseMatrix, UVector>>();
         // auto smoother = std::make_shared<ProjectedGaussSeidel<USparseMatrix, UVector>>();
         // auto smoother = std::make_shared<ConjugateGradient<USparseMatrix, UVector, HOMEMADE>>();
@@ -137,8 +137,8 @@ namespace utopia {
 
         apply_boundary_conditions(V.dof_map(), lapl_mat, rhs);
 
-        // auto linear_solver = std::make_shared<ConjugateGradient<USparseMatrix, UVector, HOMEMADE>>();
-        auto linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
+        auto linear_solver = std::make_shared<ConjugateGradient<USparseMatrix, UVector, HOMEMADE>>();
+        // auto linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
         // auto linear_solver = std::make_shared<ConjugateGradient<USparseMatrix, UVector>>();
         auto smoother = std::make_shared<GaussSeidel<USparseMatrix, UVector>>();
         // auto smoother = std::make_shared<ProjectedGaussSeidel<USparseMatrix, UVector, HOMEMADE>>();

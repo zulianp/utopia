@@ -14,7 +14,7 @@ int main(const int argc, char *argv[]) {
         return TestOld(argc, argv);
     } else {
         utopia::Utopia::instance().add_library(utopia::make_unique<utopia::LibMeshLibrary>());
+        return UTOPIA_TEST(argc, argc);
     }
 #endif
-    return UTOPIA_TEST(argc, argc);
 }
