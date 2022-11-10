@@ -22,7 +22,7 @@ namespace utopia {
     }
 
     int LibMeshLibrary::finalize() {
-        impl_.release();
+        impl_ = nullptr;
         return 0;
     }
     std::string LibMeshLibrary::name() const { return "libMesh"; }
