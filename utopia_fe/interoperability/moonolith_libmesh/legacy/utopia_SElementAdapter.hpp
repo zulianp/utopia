@@ -41,14 +41,14 @@ namespace utopia {
               face_id_(nullptr) {
             assert(element < fe.n_elem());
 
-            libMesh::Elem *e = utopia::elem_ptr(fe, element);
+            libMesh::Elem *e = utopia::libmesh::elem_ptr(fe, element);
 
             const int dim = fe.mesh_dimension();
 
             libMesh::Point o, u, v, n, c, p;
 
             for (uint side = 0; side < e->n_sides(); ++side) {
-                libMesh::UniquePtr<libMesh::Elem> s = e->build_side_ptr(side);
+                auto s = e->build_side_ptr(side);
 
                 if (!s->on_boundary()) continue;
 
@@ -99,12 +99,12 @@ namespace utopia {
 
             assert(element_ < fe_->n_local_elem());
 
-            return utopia::elem_ptr(*fe_, element_);
+            return utopia::libmesh::elem_ptr(*fe_, element_);
         }
 
         const libMesh::Elem *get() const {
             assert(fe_);
-            return utopia::elem_ptr(*fe_, element_);
+            return utopia::libmesh::elem_ptr(*fe_, element_);
         }
 
         inline const libMesh::MeshBase &space() const {

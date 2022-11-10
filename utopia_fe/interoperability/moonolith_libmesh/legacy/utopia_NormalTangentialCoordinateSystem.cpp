@@ -1,6 +1,7 @@
 #include "utopia_NormalTangentialCoordinateSystem.hpp"
 #include "libmesh/fem_context.h"
 
+#include "libmesh/boundary_info.h"
 #include "libmesh/dof_map.h"
 #include "libmesh/elem.h"
 #include "libmesh/fe.h"
@@ -10,11 +11,14 @@
 #include "libmesh/quadrature_gauss.h"
 #include "libmesh/serial_mesh.h"
 #include "libmesh/transient_system.h"
-#include "utopia_LibMeshBackend.hpp"
-#include "utopia_libmesh_Deprecated.hpp"
+
+// #include "utopia_LibMeshBackend.hpp"
+// #include "utopia_libmesh_Deprecated.hpp"
 
 // #include "MortarAssemble.hpp"
 // #include "utopia_Socket.hpp"
+
+#include "utopia_intersector.hpp"
 
 #include <cmath>
 

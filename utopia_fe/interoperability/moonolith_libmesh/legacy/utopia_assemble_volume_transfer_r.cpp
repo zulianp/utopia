@@ -32,7 +32,8 @@
 
 #include "utopia_libmesh_Transform.hpp"
 
-#include "utopia_libmesh_Deprecated.hpp"
+// #include "utopia_libmesh_Deprecated.hpp"
+#include "utopia_intersector.hpp"
 
 using namespace libMesh;
 
@@ -335,9 +336,9 @@ namespace utopia {
 
             const int slave_index = slave.element();
 
-            auto &master_el = *utopia::elem_ptr(master_mesh, master_index);
+            auto &master_el = *utopia::libmesh::elem_ptr(master_mesh, master_index);
 
-            auto &slave_el = *utopia::elem_ptr(slave_mesh, slave_index);
+            auto &slave_el = *utopia::libmesh::elem_ptr(slave_mesh, slave_index);
 
             const int dim = master_mesh.mesh_dimension();
 

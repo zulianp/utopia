@@ -1,9 +1,10 @@
 #ifndef UTOPIA_VOXEL_TO_ELEMENT_HPP
 #define UTOPIA_VOXEL_TO_ELEMENT_HPP
 
+#include "libmesh/distributed_mesh.h"
 #include "libmesh/serial_mesh.h"
 
-#include "utopia_LibMeshBackend.hpp"
+#include "utopia_libmesh_RetroCompatibility.hpp"
 
 namespace utopia {
 
@@ -49,7 +50,7 @@ namespace utopia {
             auto elem = libMesh::Elem::build(libMesh::QUAD4);
 
             for (int i = 0; i < 4; ++i) {
-                elem->set_node(i) = utopia::node_ptr(*mesh, i);
+                elem->set_node(i) = utopia::libmesh::node_ptr(*mesh, i);
             }
 
             mesh->add_elem(elem.release());
@@ -139,7 +140,7 @@ namespace utopia {
             auto elem = libMesh::Elem::build(libMesh::HEX8);
 
             for (int i = 0; i < 8; ++i) {
-                elem->set_node(i) = utopia::node_ptr(*mesh, i);
+                elem->set_node(i) = utopia::libmesh::node_ptr(*mesh, i);
             }
 
             mesh->add_elem(elem.release());

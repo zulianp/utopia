@@ -6,7 +6,7 @@
 #include <cmath>
 #include <numeric>
 
-#include "utopia_LibMeshBackend.hpp"
+#include "utopia_libmesh_RetroCompatibility.hpp"
 
 using libMesh::dof_id_type;
 using libMesh::DofMap;
@@ -120,7 +120,7 @@ namespace utopia {
                     {
                         if (is_tagged_contact_boundary(mesh, elem, side_elem, tags) && check_side_id_one_tag) {
                             side_set_id[local_element_id].global.push_back(
-                                utopia::boundary_id(mesh.get_boundary_info(), elem, side_elem));
+                                utopia::libmesh::boundary_id(mesh.get_boundary_info(), elem, side_elem));
                             check_side_id_one_tag = false;
                             jj_side_id_one_tag++;
                         }

@@ -8,7 +8,9 @@
 
 #include "MortarAssemble.hpp"
 
-#include "utopia_libmesh_Deprecated.hpp"
+// #include "utopia_libmesh_Deprecated.hpp"
+
+#include "utopia_intersector.hpp"
 
 namespace utopia {
     void HashGrid::print(std::ostream &os) const {

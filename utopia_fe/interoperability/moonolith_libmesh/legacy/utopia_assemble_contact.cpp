@@ -1,5 +1,5 @@
 #include "utopia_assemble_contact.hpp"
-#include "utopia_LibMeshBackend.hpp"
+// #include "utopia_LibMeshBackend.hpp"
 #include "utopia_fe_EDSL.hpp"
 
 #include "MortarAssemble.hpp"
@@ -19,14 +19,18 @@
 #include "moonolith_redistribute.hpp"
 #include "moonolith_sparse_matrix.hpp"
 
-#include "utopia_Socket.hpp"
+// #include "utopia_Socket.hpp"
 
 #include <algorithm>
 #include <cmath>
 #include <numeric>
 #include <queue>
 
-#include "utopia_libmesh_Deprecated.hpp"
+// #include "utopia_libmesh_Deprecated.hpp"
+
+#include "utopia_libmesh_Transform.hpp"
+
+#include "utopia_intersector.hpp"
 
 namespace utopia {
 
@@ -337,7 +341,7 @@ namespace utopia {
             }
 
             for (uint side_elem = 0; side_elem < elem->n_sides(); ++side_elem) {
-                auto b_id = utopia::boundary_id(master_slave->get_boundary_info(), elem, side_elem);
+                auto b_id = utopia::libmesh::boundary_id(master_slave->get_boundary_info(), elem, side_elem);
                 if ((predicate->select(b_id))) {
                     // ID_FIX
                     SurfaceAdapter a(*master_slave, elem->id(), element_id, b_id, search_radius);
@@ -516,8 +520,8 @@ namespace utopia {
             const int index_master = master.element();
             const int index_slave = slave.element();
 
-            auto &el_master = *utopia::elem_ptr(master_mesh, index_master);
-            auto &el_slave = *utopia::elem_ptr(slave_mesh, index_slave);
+            auto &el_master = *utopia::libmesh::elem_ptr(master_mesh, index_master);
+            auto &el_slave = *utopia::libmesh::elem_ptr(slave_mesh, index_slave);
 
             const int dim_master = master_mesh.mesh_dimension();
             const int dim_slave = slave_mesh.mesh_dimension();

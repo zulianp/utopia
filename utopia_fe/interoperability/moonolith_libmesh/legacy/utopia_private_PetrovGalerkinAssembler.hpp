@@ -8,14 +8,16 @@
 #include "utopia_QMortarBuilder.hpp"
 #include "utopia_TransferAssembler.hpp"
 
-#include "utopia_Socket.hpp"
-#include "utopia_intersector.hpp"
+// #include "utopia_Socket.hpp"
+
 #include "utopia_make_unique.hpp"
 
 #include <array>
 #include <functional>
 #include <vector>
 #include "libmesh/serial_mesh.h"
+
+#include "utopia_intersector.hpp"
 
 namespace utopia {
     namespace private_ {

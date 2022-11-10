@@ -10,7 +10,7 @@
 
 #include "utopia_libmesh_Transform.hpp"
 
-#include "utopia_Socket.hpp"
+// #include "utopia_Socket.hpp"
 #include "utopia_intersector.hpp"
 #include "utopia_make_unique.hpp"
 
@@ -23,13 +23,13 @@
 #include <memory>
 #include <vector>
 
+#include "libmesh/dof_map.h"
 #include "libmesh/serial_mesh.h"
 
 namespace utopia {
 
     class Grid2MeshSurfaceTransferAssembler {
     public:
-        using FunctionSpace = utopia::LibMeshFunctionSpace;
         using SparseMatrix = utopia::USparseMatrix;
         using MeshBase = libMesh::MeshBase;
         using DofMap = libMesh::DofMap;
@@ -282,7 +282,7 @@ namespace utopia {
                             if (skip_element) continue;
 
                             auto temp_mesh = Voxel2Element::build(to_mesh->comm(), from_mesh, ind);
-                            auto grid_elem = utopia::elem_ptr(*temp_mesh, 0);
+                            auto grid_elem = utopia::libmesh::elem_ptr(*temp_mesh, 0);
 
                             auto dof_fun = [&](std::vector<long> &master_dofs, std::vector<long> &slave_dofs) {
                                 from_mesh.dofs(ind, master_dofs);
@@ -300,7 +300,7 @@ namespace utopia {
                     } else {
                         for (auto ind : index) {
                             auto temp_mesh = Voxel2Element::build(to_mesh->comm(), from_mesh, ind);
-                            auto grid_elem = utopia::elem_ptr(*temp_mesh, 0);
+                            auto grid_elem = utopia::libmesh::elem_ptr(*temp_mesh, 0);
 
                             // temp_mesh->prepare_for_use();
                             // plot_mesh(*temp_mesh, "grid/m" + std::to_string(ind));

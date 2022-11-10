@@ -9,7 +9,7 @@
 #include "libmesh/mesh_inserter_iterator.h"
 
 #include "utopia_VTree.hpp"
-#include "utopia_libmesh_old.hpp"
+// #include "utopia_libmesh_old.hpp"
 
 #include "utopia_ElementDofMap.hpp"
 #include "utopia_FESpacesAdapter.hpp"
@@ -23,7 +23,7 @@
 #include "moonolith_tree.hpp"
 #include "par_moonolith.hpp"
 
-#include "utopia_Socket.hpp"
+// #include "utopia_Socket.hpp"
 
 #include "utopia_private_PetrovGalerkinAssembler.hpp"
 
@@ -154,7 +154,7 @@ namespace utopia {
     template <int Dimensions>
     class DefaultAlgorithm final : public TransferAssembler::Algorithm {
     public:
-        using FunctionSpace = utopia::LibMeshFunctionSpace;
+        // using FunctionSpace = utopia::LibMeshFunctionSpace;
         using SparseMatrix = utopia::USparseMatrix;
         using MeshBase = libMesh::MeshBase;
         using DofMap = libMesh::DofMap;
@@ -195,7 +195,7 @@ namespace utopia {
                     "---------------------------------------\n"
                     "begin: initializing fespaces adapter\n",
                     comm,
-                    logger());
+                    moonolith::logger());
             }
 
             this->local_spaces = std::make_shared<FESpacesAdapter>(
@@ -216,7 +216,7 @@ namespace utopia {
                     "---------------------------------------\n"
                     "end: initializing fespaces adapter\n",
                     comm,
-                    logger());
+                    moonolith::logger());
             }
         }
 
@@ -232,8 +232,8 @@ namespace utopia {
             const int src_index = master.element();
             const int dest_index = slave.element();
 
-            auto &master_el = *utopia::elem_ptr(master_mesh, src_index);
-            auto &slave_el = *utopia::elem_ptr(slave_mesh, dest_index);
+            auto &master_el = *utopia::libmesh::elem_ptr(master_mesh, src_index);
+            auto &slave_el = *utopia::libmesh::elem_ptr(slave_mesh, dest_index);
 
             return pg_assembler_.assemble(master_el,
                                           master_type,
@@ -337,9 +337,9 @@ namespace utopia {
                     "---------------------------------------\n"
                     "begin: init_tree\n",
                     comm,
-                    logger());
+                    moonolith::logger());
 
-                moonolith::synch_describe("n_elements: " + std::to_string(n_elements), comm, logger());
+                moonolith::synch_describe("n_elements: " + std::to_string(n_elements), comm, moonolith::logger());
             }
 
             tree = NTreeT::New(predicate, settings.max_elements, settings.max_depth);

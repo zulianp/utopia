@@ -12,7 +12,7 @@
 #include <utility>
 #include <vector>
 
-#include "utopia_LibMeshBackend.hpp"
+#include "utopia_libmesh_RetroCompatibility.hpp"
 
 namespace libMesh {
     class MeshBase;
@@ -144,8 +144,8 @@ namespace utopia {
         for (Iterator it = begin; it != end; ++it) {
             // ID_FIX
             const libMesh::dof_id_type global_element_id = handle_to_element_id[*it];
-            // const libMesh::Elem *elem = utopia::elem_ptr(space, *it);
-            const libMesh::Elem *elem = utopia::elem_ptr(space, global_element_id);
+            // const libMesh::Elem *elem = utopia::libmesh::elem_ptr(space, *it);
+            const libMesh::Elem *elem = utopia::libmesh::elem_ptr(space, global_element_id);
 
             for (libMesh::dof_id_type j = 0; j != elem->n_nodes(); ++j) {
                 nodeIds.insert(elem->node_id(j));
@@ -172,7 +172,7 @@ namespace utopia {
         os << n_elements;
 
         for (auto node_id : nodeIds) {
-            const libMesh::Point &p = *utopia::node_ptr(space, node_id);
+            const libMesh::Point &p = *utopia::libmesh::node_ptr(space, node_id);
 
             for (int i = 0; i < dim; ++i) {
                 // WRITE 3
@@ -187,8 +187,8 @@ namespace utopia {
             // ID_FIX
             const libMesh::dof_id_type local_element_id = *it;
             const libMesh::dof_id_type global_element_id = handle_to_element_id[*it];
-            const libMesh::Elem *elem = utopia::elem_ptr(space, global_element_id);
-            // const libMesh::Elem *elem = utopia::elem_ptr(space, *it);
+            const libMesh::Elem *elem = utopia::libmesh::elem_ptr(space, global_element_id);
+            // const libMesh::Elem *elem = utopia::libmesh::elem_ptr(space, *it);
 
             const int e_n_nodes = elem->n_nodes();
 
@@ -330,7 +330,7 @@ namespace utopia {
                 // READ 8
                 is >> index;
                 // std::cout<<"index = "<<index<<std::endl;
-                elem->set_node(ii) = utopia::node_ptr(*mesh_ptr, index);
+                elem->set_node(ii) = utopia::libmesh::node_ptr(*mesh_ptr, index);
             }
 
             // READ 9

@@ -16,6 +16,8 @@
 #include "utopia_libmesh_Types.hpp"
 #include "utopia_libmesh_Utils.hpp"
 
+#include "utopia_libmesh_RetroCompatibility.hpp"
+
 #include "utopia_fe_EDSL.hpp"
 
 #include "libmesh/elem.h"
@@ -114,7 +116,7 @@ namespace utopia {
             space_ptr->initialize();
             quadrature_order_ = functional_order(expr, *this);
             const int dim = space_ptr->mesh().mesh_dimension();
-            const libMesh::Elem *elem = utopia::elem_ptr(space_ptr->mesh(), current_element_);
+            const libMesh::Elem *elem = utopia::libmesh::elem_ptr(space_ptr->mesh(), current_element_);
 
             if (is_quad(elem->type())) {
                 const int temp = quadrature_order_ / 2;
@@ -170,7 +172,7 @@ namespace utopia {
         template <class Expr>
         void reinit_fe_from(const Expr &expr, const std::shared_ptr<libMesh::QBase> &quad) {
             auto space_ptr = find_any_space(expr);
-            const libMesh::Elem *elem = utopia::elem_ptr(space_ptr->mesh(), current_element_);
+            const libMesh::Elem *elem = utopia::libmesh::elem_ptr(space_ptr->mesh(), current_element_);
             block_id_ = elem->subdomain_id();
 
             if (quad) {
@@ -245,7 +247,7 @@ namespace utopia {
             space_ptr->initialize();
             quadrature_order_ = functional_order(expr, *this);
             const int dim = space_ptr->mesh().mesh_dimension();
-            const libMesh::Elem *elem = utopia::elem_ptr(space_ptr->mesh(), current_element_);
+            const libMesh::Elem *elem = utopia::libmesh::elem_ptr(space_ptr->mesh(), current_element_);
 
             auto s_type = side_type(elem->type());
 
@@ -299,7 +301,7 @@ namespace utopia {
         void reinit_side_fe_from(const Expr &expr, const int side) {
             auto space_ptr = find_any_space(expr);
             const int dim = space_ptr->mesh().mesh_dimension();
-            const libMesh::Elem *elem = utopia::elem_ptr(space_ptr->mesh(), current_element_);
+            const libMesh::Elem *elem = utopia::libmesh::elem_ptr(space_ptr->mesh(), current_element_);
 
             block_id_ = utopia::boundary_id(space_ptr->mesh().get_boundary_info(), elem, side);
 

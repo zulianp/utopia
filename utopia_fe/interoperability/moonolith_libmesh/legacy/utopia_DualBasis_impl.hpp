@@ -2,10 +2,12 @@
 #define UTOPIA_DUAL_BASIS_IMPL_HPP
 
 #include "utopia_DualBasis.hpp"
-#include "utopia_libmesh_FunctionSpace.hpp"
+// #include "utopia_libmesh_FunctionSpace.hpp"
 #include "utopia_libmesh_Utils.hpp"
 
 #include "utopia_DeprecatedHeaders.hpp"
+
+#include <libmesh/mesh_base.h>
 
 namespace utopia {
 
@@ -19,8 +21,8 @@ namespace utopia {
                                        const bool inverse) {
         using SizeType = UTOPIA_SIZE_TYPE(USparseMatrix);
 
-        auto e_begin = elements_begin(mesh);
-        auto e_end = elements_end(mesh);
+        auto e_begin = mesh.active_local_elements_begin();
+        auto e_end = mesh.active_local_elements_end();
 
         SizeType nnz = 0;
         if (!dof_map.empty()) {
