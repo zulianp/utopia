@@ -61,7 +61,7 @@ namespace utopia {
             using Vector_t = Traits<FunctionSpace>::Vector;
             using Scalar_t = Traits<FunctionSpace>::Scalar;
 
-            inline static void tensorize(const Matrix_t &T_x, const SizeType n_var, Matrix_t &T) {
+            static void tensorize(const Matrix_t &T_x, const SizeType n_var, Matrix_t &T) {
                 auto max_nnz = utopia::max_row_nnz(T_x);
                 T.sparse(layout(T_x), max_nnz, max_nnz);
 

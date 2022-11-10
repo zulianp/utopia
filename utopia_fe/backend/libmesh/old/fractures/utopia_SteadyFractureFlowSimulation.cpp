@@ -6,7 +6,9 @@
 #include "utopia_SPStaticCondensationKrylov.hpp"
 #include "utopia_Socket.hpp"
 #include "utopia_TransferAssembler.hpp"
-#include "utopia_TransferUtils.hpp"
+#include "utopia_libmesh_TransferUtils.hpp"
+
+#include "utopia_libmesh_assemble_projection.hpp"
 
 #include <iostream>
 

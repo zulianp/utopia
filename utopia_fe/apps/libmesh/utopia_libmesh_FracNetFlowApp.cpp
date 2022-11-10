@@ -10,7 +10,7 @@
 #include "utopia_SemiGeometricMultigridNew.hpp"
 
 #include "utopia_libmesh.hpp"
-#include "utopia_libmesh_OmniAssembler.hpp"
+#include "utopia_libmesh_kokkos_OmniAssembler.hpp"
 #include "utopia_moonolith_libmesh_FETransfer.hpp"
 
 // REMOVE ME

@@ -1,24 +1,37 @@
 find_package(LIBMESH)
 
 if(LIBMESH_FOUND)
-
     list(
         APPEND
         UTOPIA_LIBMESH_MODULES
         .
-        old
-        old/multiphysics
-        old/fractures
-        old/wear
-        old/ui
-        old/multigrid
-        old/transfer
-        old/visualization
-        backend/libmesh
-        old/intersection
-        old/contact
-        old/materials
-        old/functions)
+       )
+
+    if(UTOPIA_ENABLE_LIBMESH_LEGACY)
+        list(
+            APPEND
+            UTOPIA_LIBMESH_MODULES
+            legacy
+           )
+    endif()
+
+    if(UTOPIA_ENABLE_LIBMESH_DEPRECATED)
+        list(
+            APPEND
+            UTOPIA_LIBMESH_MODULES
+            old
+            old/multiphysics
+            old/fractures
+            old/wear
+            old/ui
+            old/multigrid
+            old/transfer
+            old/visualization
+            old/intersection
+            old/contact
+            old/materials
+            old/functions)
+    endif()
 
     utopiafe_add_module(utopia_libmesh ${CMAKE_CURRENT_SOURCE_DIR}
                         "${UTOPIA_LIBMESH_MODULES}")

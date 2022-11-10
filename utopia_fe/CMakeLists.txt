@@ -40,7 +40,13 @@ option(UTOPIA_ENABLE_NEW_TRANSFER "Use new transfer features" ON)
 # option(UTOPIA_INSTALL_LIBMESH "install libmesh" OFF)
 option(UTOPIA_ENABLE_WARNINGS "Compiler warnings" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
+
 option(UTOPIA_ENABLE_LIBMESH "Enable the libmesh functionalities" ON)
+option(UTOPIA_ENABLE_LIBMESH_LEGACY "Enable the legacy utopia::libmesh functionalities" ON)
+
+# Once we have cleaner separation between this and legacy turn OFF
+option(UTOPIA_ENABLE_LIBMESH_DEPRECATED "Enable the deprecated utopia::libmesh functionalities" ON)
+
 option(UTOPIA_ENABLE_STK "Enable the stk functionalities" OFF)
 option(UTOPIA_ENABLE_MOONOLITH "Enable the moonolith functionalities" ON)
 option(UTOPIA_ENABLE_ARBORX "Enable the ArborX backend" OFF)
@@ -519,10 +525,9 @@ target_link_libraries(utopia_fe_test utopia_fe)
 target_link_libraries(utopia_fe_exec utopia_fe)
 
 include(tests/tests.cmake)
-
 include(apps/apps.cmake)
 
-if(UTOPIA_ENABLE_LIBMESH)
+if(UTOPIA_ENABLE_LIBMESH AND UTOPIA_ENABLE_LIBMESH_DEPRECATED)
     include(old/apps/apps.cmake)
 endif()
 

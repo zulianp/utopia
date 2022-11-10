@@ -1,5 +1,5 @@
-#ifndef UTOPIA_LIBMESH_OMNI_ASSEMBLER_HPP
-#define UTOPIA_LIBMESH_OMNI_ASSEMBLER_HPP
+#ifndef UTOPIA_LIBMESH_LEGACY_OMNI_ASSEMBLER_HPP
+#define UTOPIA_LIBMESH_LEGACY_OMNI_ASSEMBLER_HPP
 
 #include "utopia_Input.hpp"
 #include "utopia_Traits.hpp"
@@ -13,15 +13,15 @@
 namespace utopia {
     namespace libmesh {
 
-        class OmniAssembler : public Configurable {
+        class DeprecatedOmniAssembler : public Configurable {
         public:
             using Matrix = Traits<libmesh::FunctionSpace>::Matrix;
             using Vector = Traits<libmesh::FunctionSpace>::Vector;
             using Scalar = Traits<libmesh::FunctionSpace>::Scalar;
             using SimulationTime = utopia::SimulationTime<Scalar>;
 
-            OmniAssembler(const std::shared_ptr<libmesh::FunctionSpace> &space);
-            virtual ~OmniAssembler();
+            DeprecatedOmniAssembler(const std::shared_ptr<libmesh::FunctionSpace> &space);
+            virtual ~DeprecatedOmniAssembler();
 
             bool assemble(const Vector &x, Matrix &jacobian, Vector &fun);
             bool assemble(const Vector &x, Matrix &jacobian);
@@ -44,13 +44,13 @@ namespace utopia {
         };
     }  // namespace libmesh
 
-    template <>
-    class OmniAssembler<utopia::libmesh::FunctionSpace> final : public utopia::libmesh::OmniAssembler {
-    public:
-        using Super = utopia::libmesh::OmniAssembler;
-        using Super::Super;
-    };
+    // template <>
+    // class OmniAssembler<utopia::libmesh::FunctionSpace> final : public utopia::libmesh::OmniAssembler {
+    // public:
+    //     using Super = utopia::libmesh::OmniAssembler;
+    //     using Super::Super;
+    // };
 
 }  // namespace utopia
 
-#endif  // UTOPIA_LIBMESH_OMNI_ASSEMBLER_HPP
+#endif  // UTOPIA_LIBMESH_LEGACY_OMNI_ASSEMBLER_HPP

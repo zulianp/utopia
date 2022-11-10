@@ -1,9 +1,11 @@
 #include "utopia_moonolith_libmesh_Convert.hpp"
 
 #include "utopia_libmesh_RetroCompatibility.hpp"
+#include "utopia_libmesh_TransferUtils.hpp"
 
-#include "utopia_libmesh_FunctionSpace.hpp"
+#include "utopia_MaxRowNNZ.hpp"
 
+#include <libmesh/dof_map.h>
 #include <libmesh/mesh_base.h>
 
 namespace utopia {

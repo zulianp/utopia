@@ -6,8 +6,8 @@
 #include "utopia_ConvertFunctionSpace.hpp"
 #include "utopia_ConvertMesh.hpp"
 
-#include "MortarAssemble.hpp"
-#include "utopia_libmesh_Transform.hpp"
+// #include "MortarAssemble.hpp"
+// #include "utopia_libmesh_Transform.hpp"
 #include "utopia_libmesh_Utils.hpp"
 
 #include "moonolith_affine_transform.hpp"
@@ -26,9 +26,11 @@
 #include "moonolith_sparse_matrix.hpp"
 #include "moonolith_vector.hpp"
 
+#include "libmesh/fe.h"
 #include "libmesh/elem.h"
 #include "libmesh/equation_systems.h"
 #include "libmesh/point.h"
+#include "libmesh/quadrature_gauss.h"
 
 #include <unordered_map>
 
@@ -412,40 +414,6 @@ namespace utopia {
         }
     }
 
-    template <typename T, int Dim>
-    inline void convert(const ::moonolith::Quadrature<T, Dim> &q_in,
-                        const ::moonolith::Vector<T, Dim> &point_shift,
-                        const T &point_rescale,
-                        const T &weight_rescale,
-                        QMortar &q_out) {
-        const auto &p_in = q_in.points;
-        const auto &w_in = q_in.weights;
-
-        auto &p_out = q_out.get_points();
-        auto &w_out = q_out.get_weights();
-
-        const std::size_t n_qp = q_in.n_points();
-
-        q_out.resize(n_qp);
-
-        for (std::size_t k = 0; k < n_qp; ++k) {
-            w_out[k] = w_in[k] * weight_rescale;
-
-            const auto &pk_in = p_in[k];
-            auto &pk_out = p_out[k];
-
-            for (int i = 0; i < Dim; ++i) {
-                pk_out(i) = pk_in[i] * point_rescale + point_shift[i];
-            }
-        }
-    }
-
-    template <typename T, int Dim>
-    inline void convert(const ::moonolith::Quadrature<T, Dim> &q_in, const T &weight_rescale, QMortar &q_out) {
-        static const ::moonolith::Vector<T, Dim> zero;
-        return convert(q_in, zero, 1., weight_rescale, q_out);
-    }
-
     // inline void make_line_transform(
     //     const libMesh::Elem &elem,
     //     ::moonolith::AffineTransform<double, 1, 2> &trafo)
@@ -489,15 +457,6 @@ namespace utopia {
     //     make(p0, p1, p2, trafo);
     // }
 
-    inline void make_transform(const libMesh::Elem &elem,
-                               std::shared_ptr<::moonolith::Transform<double, 2, 3>> &trafo) {
-        trafo = std::make_shared<Transform2>(elem);
-    }
-
-    inline void make_transform(const libMesh::Elem &elem,
-                               std::shared_ptr<::moonolith::Transform<double, 1, 2>> &trafo) {
-        trafo = std::make_shared<Transform1>(elem);
-    }
 
     inline void make_transform(const libMesh::Elem &elem, ::moonolith::AffineTransform<double, 2, 2> &trafo) {
         libMesh::Point p0(0.0, 0.0, 0.0);

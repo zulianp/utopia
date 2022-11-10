@@ -5,7 +5,11 @@ if(UTOPIA_ENABLE_STK)
 endif()
 
 if(UTOPIA_ENABLE_LIBMESH)
-    list(APPEND TEST_MODULES libmesh libmesh/old)
+    list(APPEND TEST_MODULES libmesh)
+
+    if(UTOPIA_ENABLE_LIBMESH_DEPRECATED)
+        list(APPEND TEST_MODULES libmesh/old)
+    endif()
 endif()
 
 if(UTOPIA_ENABLE_MOONOLITH)

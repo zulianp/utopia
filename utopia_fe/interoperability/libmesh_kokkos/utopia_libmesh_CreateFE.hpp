@@ -52,40 +52,6 @@ namespace utopia {
         static void apply(const FromField &from, ToField &to);
     };
 
-    template <>
-    class LocalToGlobal<utopia::libmesh::FunctionSpace, LibMeshViewDevice_t, PetscMatrix> {
-    public:
-        static void apply(const utopia::libmesh::FunctionSpace &space,
-                          const LibMeshViewDevice_t &element_matrices,
-                          AssemblyMode mode,
-                          PetscMatrix &matrix,
-                          int var = 0);
-    };
-
-    template <>
-    class LocalToGlobal<utopia::libmesh::FunctionSpace, LibMeshViewDevice_t, PetscVector> {
-    public:
-        static void apply(const utopia::libmesh::FunctionSpace &space,
-                          const LibMeshViewDevice_t &element_vectors,
-                          AssemblyMode mode,
-                          PetscVector &vector,
-                          int var = 0);
-
-        static void apply(const utopia::libmesh::FunctionSpace &space,
-                          const LibMeshViewDevice_t &element_vectors,
-                          AssemblyMode mode,
-                          PetscVector &vector,
-                          const int n_var,
-                          int var = 0);
-
-        static void side_apply(const utopia::libmesh::FunctionSpace &space,
-                               const LibMeshViewDevice_t &element_vectors,
-                               AssemblyMode mode,
-                               PetscVector &vector,
-                               const std::string &part_name,
-                               int var = 0);
-    };
-
 }  // namespace utopia
 
 #endif  // UTOPIA_LIBMESH_CREATE_FE_HPP

@@ -4,6 +4,10 @@
 #include "libmesh/enum_elem_type.h"
 #include "libmesh/libmesh_version.h"
 
+namespace libMesh {
+    class DofMap;
+}
+
 namespace utopia {
     inline bool is_pyramid(const int type) {
         return type == static_cast<int>(libMesh::PYRAMID5) || type == static_cast<int>(libMesh::PYRAMID13) ||
@@ -86,6 +90,8 @@ namespace utopia {
             }
         }
     }
+
+    std::size_t max_nnz_x_row(const libMesh::DofMap &dof_map);
 }  // namespace utopia
 
 #endif  // UTOPIA_LIBMESH_UTILS_HPP

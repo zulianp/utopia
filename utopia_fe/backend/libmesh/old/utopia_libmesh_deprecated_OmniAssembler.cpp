@@ -1,14 +1,16 @@
-#include "utopia_libmesh_OmniAssembler.hpp"
+#include "utopia_libmesh_deprecated_OmniAssembler.hpp"
 
 #include "utopia_libmesh_FunctionSpace.hpp"
 
-#include "utopia_libmesh_Legacy.hpp"
+#include "utopia_libmesh_Deprecated.hpp"
 
 #include "utopia_UFlow.hpp"
 #include "utopia_UIForcingFunction.hpp"
 #include "utopia_UIMaterial.hpp"
 
 #include "utopia_libmesh_Transport.hpp"
+
+#include "utopia_libmesh_Legacy.hpp"
 
 namespace utopia {
     namespace libmesh {
@@ -45,7 +47,7 @@ namespace utopia {
             }
         };
 
-        class OmniAssembler::Impl {
+        class DeprecatedOmniAssembler::Impl {
         public:
             using Scalar = Traits<libmesh::FunctionSpace>::Scalar;
             // New abstraction
@@ -53,41 +55,41 @@ namespace utopia {
             std::shared_ptr<Environment<libmesh::FunctionSpace>> env;
             AssemblerRegistry registry;
 
-            // Legacy abstractions
-            using LegacyFunctionSpace = utopia::LibMeshFunctionSpace;
-            using LegacyProductFunctionSpace = utopia::ProductFunctionSpace<LegacyFunctionSpace>;
-            using LegacyMaterial = utopia::UIMaterial<LegacyProductFunctionSpace, Matrix, Vector>;
-            using LegacyForcingFunction = utopia::UIForcingFunction<LegacyProductFunctionSpace, Vector>;
-            using LegacyForcedMaterial = utopia::ForcedMaterial<Matrix, Vector>;
-            using LegacyFlow = utopia::UFlow<LegacyFunctionSpace, Matrix, Vector>;
+            // Deprecated abstractions
+            using DeprecatedFunctionSpace = utopia::LibMeshFunctionSpace;
+            using DeprecatedProductFunctionSpace = utopia::ProductFunctionSpace<DeprecatedFunctionSpace>;
+            using DeprecatedMaterial = utopia::UIMaterial<DeprecatedProductFunctionSpace, Matrix, Vector>;
+            using DeprecatedForcingFunction = utopia::UIForcingFunction<DeprecatedProductFunctionSpace, Vector>;
+            using DeprecatedForcedMaterial = utopia::ForcedMaterial<Matrix, Vector>;
+            using DeprecatedFlow = utopia::UFlow<DeprecatedFunctionSpace, Matrix, Vector>;
 
-            std::shared_ptr<LegacyProductFunctionSpace> legacy_space;
+            std::shared_ptr<DeprecatedProductFunctionSpace> legacy_space;
             std::shared_ptr<Model<Matrix, Vector>> legacy_model;
-            std::shared_ptr<LegacyForcingFunction> forcing_function;
+            std::shared_ptr<DeprecatedForcingFunction> forcing_function;
             Scalar rescale{1.0};
 
             void update_legacy_mirror() { legacy_space = make_legacy(*space); }
         };
 
-        void OmniAssembler::set_environment(const std::shared_ptr<Environment<libmesh::FunctionSpace>> &env) {
+        void DeprecatedOmniAssembler::set_environment(const std::shared_ptr<Environment<libmesh::FunctionSpace>> &env) {
             impl_->env = env;
         }
 
-        OmniAssembler::OmniAssembler(const std::shared_ptr<libmesh::FunctionSpace> &space)
+        DeprecatedOmniAssembler::DeprecatedOmniAssembler(const std::shared_ptr<libmesh::FunctionSpace> &space)
             : impl_(utopia::make_unique<Impl>()) {
             impl_->space = space;
             impl_->update_legacy_mirror();
         }
 
-        OmniAssembler::~OmniAssembler() = default;
+        DeprecatedOmniAssembler::~DeprecatedOmniAssembler() = default;
 
-        bool OmniAssembler::apply(const Vector &x, Vector &hessian_times_x) {
+        bool DeprecatedOmniAssembler::apply(const Vector &x, Vector &hessian_times_x) {
             assert(false);
             Utopia::Abort("IMPLEMENT ME");
             return false;
         }
 
-        bool OmniAssembler::assemble(const Vector &x, Matrix &jacobian, Vector &fun) {
+        bool DeprecatedOmniAssembler::assemble(const Vector &x, Matrix &jacobian, Vector &fun) {
             if (!impl_->legacy_model) {
                 return false;
             }
@@ -109,7 +111,7 @@ namespace utopia {
             return true;
         }
 
-        bool OmniAssembler::assemble(const Vector &x, Matrix &jacobian) {
+        bool DeprecatedOmniAssembler::assemble(const Vector &x, Matrix &jacobian) {
             if (!impl_->legacy_model) {
                 return false;
             }
@@ -117,7 +119,7 @@ namespace utopia {
             return impl_->legacy_model->assemble_hessian(x, jacobian);
         }
 
-        bool OmniAssembler::assemble(const Vector &x, Vector &fun) {
+        bool DeprecatedOmniAssembler::assemble(const Vector &x, Vector &fun) {
             if (!impl_->legacy_model) {
                 return false;
             }
@@ -139,7 +141,7 @@ namespace utopia {
             return true;
         }
 
-        bool OmniAssembler::assemble(Matrix &jacobian) {
+        bool DeprecatedOmniAssembler::assemble(Matrix &jacobian) {
             if (!impl_->legacy_model) {
                 return false;
             }
@@ -151,11 +153,11 @@ namespace utopia {
             return (name.find("Flow") != std::string::npos) || (name.find("LaplaceOperator") != std::string::npos);
         }
 
-        void OmniAssembler::read(Input &in) {
+        void DeprecatedOmniAssembler::read(Input &in) {
             std::string type;
             in.get("material", [&](Input &node) { node.get("type", type); });
 
-            impl_->forcing_function = utopia::make_unique<Impl::LegacyForcingFunction>(*impl_->legacy_space);
+            impl_->forcing_function = utopia::make_unique<Impl::DeprecatedForcingFunction>(*impl_->legacy_space);
             in.get("forcing_functions", *impl_->forcing_function);
 
             if (!type.empty()) {
@@ -168,14 +170,14 @@ namespace utopia {
                     impl_->legacy_model = new_assembler;
                 } else if (is_flow(type)) {
                     // Flow problems
-                    auto material = utopia::make_unique<Impl::LegacyFlow>(impl_->legacy_space->subspace(0));
+                    auto material = utopia::make_unique<Impl::DeprecatedFlow>(impl_->legacy_space->subspace(0));
                     in.get("material", *material);
                     impl_->rescale = material->rescaling();
 
                     impl_->legacy_model = std::move(material);
                 } else {
                     // Elasticity
-                    auto material = utopia::make_unique<Impl::LegacyMaterial>(*impl_->legacy_space);
+                    auto material = utopia::make_unique<Impl::DeprecatedMaterial>(*impl_->legacy_space);
                     in.get("material", *material);
                     assert(material->good());
 
@@ -192,11 +194,11 @@ namespace utopia {
             }
         }
 
-        void OmniAssembler::set_time(const std::shared_ptr<SimulationTime> &) {
-            utopia::err() << "[Warning] libmesh::OmniAssembler ingores time, for the moment!\n";
+        void DeprecatedOmniAssembler::set_time(const std::shared_ptr<SimulationTime> &) {
+            utopia::err() << "[Warning] libmesh::DeprecatedOmniAssembler ingores time, for the moment!\n";
         }
 
-        bool OmniAssembler::is_linear() const {
+        bool DeprecatedOmniAssembler::is_linear() const {
             if (impl_->legacy_model) {
                 return impl_->legacy_model->is_linear();
             } else {

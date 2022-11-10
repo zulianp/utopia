@@ -7,6 +7,8 @@
 #include "utopia_libmesh_old.hpp"
 #include "utopia_moonolith_libmesh_Convert.hpp"
 
+#include "utopia_libmesh_QMortar.hpp"
+
 namespace utopia {
 
     class Fracture : public Configurable {

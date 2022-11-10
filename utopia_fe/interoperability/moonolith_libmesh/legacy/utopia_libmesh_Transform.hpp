@@ -415,6 +415,16 @@ namespace utopia {
                                                   libMesh::DenseMatrix<libMesh::Real> &A_inv,
                                                   libMesh::DenseVector<libMesh::Real> &A_inv_m_b);
     };
+
+    inline void make_transform(const libMesh::Elem &elem,
+                               std::shared_ptr<::moonolith::Transform<double, 2, 3>> &trafo) {
+        trafo = std::make_shared<Transform2>(elem);
+    }
+
+    inline void make_transform(const libMesh::Elem &elem,
+                               std::shared_ptr<::moonolith::Transform<double, 1, 2>> &trafo) {
+        trafo = std::make_shared<Transform1>(elem);
+    }
 }  // namespace utopia
 
 #endif  // UTOPIA_LIBMESH_TRANSFORM_HPP

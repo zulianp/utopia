@@ -14,6 +14,8 @@
 
 #include "utopia_libmesh_Utils.hpp"
 
+#include "utopia_libmesh_QMortar.hpp"
+
 #include <math.h>
 #include <algorithm>
 #include <memory>
@@ -31,30 +33,30 @@ namespace utopia {
     double ref_volume(int type);
     double ref_area_of_surf(int type);
 
-    class QMortar : public libMesh::QBase {
-    public:
-        void resize(const int n_points) {
-            this->get_points().resize(n_points);
-            this->get_weights().resize(n_points);
-        }
+    // class QMortar : public libMesh::QBase {
+    // public:
+    //     void resize(const int n_points) {
+    //         this->get_points().resize(n_points);
+    //         this->get_weights().resize(n_points);
+    //     }
 
-        QMortar(const unsigned int dim, const libMesh::Order order = libMesh::INVALID_ORDER)
-            : libMesh::QBase(dim, order) {}
+    //     QMortar(const unsigned int dim, const libMesh::Order order = libMesh::INVALID_ORDER)
+    //         : libMesh::QBase(dim, order) {}
 
-        libMesh::QuadratureType type() const override { return libMesh::QGAUSS; }
+    //     libMesh::QuadratureType type() const override { return libMesh::QGAUSS; }
 
-        void init_1D(const libMesh::ElemType type = libMesh::INVALID_ELEM, unsigned int p_level = 0) override {
-            // assert(false);
-        }
+    //     void init_1D(const libMesh::ElemType type = libMesh::INVALID_ELEM, unsigned int p_level = 0) override {
+    //         // assert(false);
+    //     }
 
-        void init_2D(const libMesh::ElemType type = libMesh::INVALID_ELEM, unsigned int p_level = 0) override {
-            // assert(false);
-        }
+    //     void init_2D(const libMesh::ElemType type = libMesh::INVALID_ELEM, unsigned int p_level = 0) override {
+    //         // assert(false);
+    //     }
 
-        void init_3D(const libMesh::ElemType type = libMesh::INVALID_ELEM, unsigned int p_level = 0) override {
-            // assert(false);
-        }
-    };
+    //     void init_3D(const libMesh::ElemType type = libMesh::INVALID_ELEM, unsigned int p_level = 0) override {
+    //         // assert(false);
+    //     }
+    // };
 
 }  // namespace utopia
 
