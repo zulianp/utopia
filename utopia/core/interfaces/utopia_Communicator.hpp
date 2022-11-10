@@ -7,6 +7,8 @@
 
 #include "utopia_MPI_Operations.hpp"
 
+#include <memory>
+
 #ifdef UTOPIA_WITH_MPI
 #include <mpi.h>
 #endif
