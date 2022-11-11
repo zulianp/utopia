@@ -15,8 +15,8 @@ namespace utopia {
 
     namespace kokkos {
 
-        template <class FE_, int Dim, class Field>
-        class Transport : public utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>> {
+        template <class FunctionSpace, class FE_, int Dim, class Field>
+        class Transport : public utopia::kokkos::FEAssembler<FunctionSpace, FE_, DefaultView<typename FE_::Scalar>> {
         public:
             using FE = FE_;
 
@@ -25,7 +25,7 @@ namespace utopia {
             using DynRankView = typename FE::DynRankView;
             using ExecutionSpace = typename FE::ExecutionSpace;
 
-            using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;
+            using Super = utopia::kokkos::FEAssembler<FunctionSpace, FE_, DefaultView<typename FE_::Scalar>>;
             using VectorView = typename Super::VectorView;
 
             class Params : public Configurable {

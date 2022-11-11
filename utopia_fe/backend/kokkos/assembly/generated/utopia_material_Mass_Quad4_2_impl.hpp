@@ -300,9 +300,9 @@ namespace utopia {
     }  // namespace kernels
 
     namespace kokkos {
-        template <class FE>
+        template <class FunctionSpace, class FE>
         using MassQuad4 = utopia::kokkos::
-            AutoKernel<FE, utopia::kernels::Mass<utopia::kernels::Quad4<typename FE::Scalar, typename FE::Scalar>>, 2>;
+            AutoKernel<FunctionSpace, FE, utopia::kernels::Mass<utopia::kernels::Quad4<typename FE::Scalar, typename FE::Scalar>>, 2>;
     }
 }  // namespace utopia
 

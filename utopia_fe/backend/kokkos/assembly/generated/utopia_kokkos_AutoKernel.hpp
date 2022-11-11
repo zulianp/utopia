@@ -9,11 +9,11 @@
 namespace utopia {
     namespace kokkos {
 
-        template <class FE_, class Kernel, int Dim>
+        template <class FunctionSpace, class FE_, class Kernel, int Dim>
         class AutoKernel {};
 
-        template <class FE_, class Kernel>
-        class AutoKernel<FE_, Kernel, 2> : public FEAssembler<FE_> {
+        template <class FunctionSpace, class FE_, class Kernel>
+        class AutoKernel<FunctionSpace, FE_, Kernel, 2> : public FEAssembler<FunctionSpace, FE_> {
         public:
             using FE = FE_;
             using SizeType = typename FE::SizeType;
@@ -22,7 +22,7 @@ namespace utopia {
             using Params = typename Kernel::Params;
 
             using ExecutionSpace = typename FE::ExecutionSpace;
-            using Super = utopia::kokkos::FEAssembler<FE_>;
+            using Super = utopia::kokkos::FEAssembler<FunctionSpace, FE_>;
 
             class MatrixKernel {
             public:
@@ -155,8 +155,8 @@ namespace utopia {
             Params op_;
         };
 
-        template <class FE_, class Kernel>
-        class AutoKernel<FE_, Kernel, 3> : public FEAssembler<FE_> {
+        template <class FunctionSpace, class FE_, class Kernel>
+        class AutoKernel<FunctionSpace, FE_, Kernel, 3> : public FEAssembler<FunctionSpace, FE_> {
         public:
             using FE = FE_;
             using SizeType = typename FE::SizeType;
@@ -165,7 +165,7 @@ namespace utopia {
             using Params = typename Kernel::Params;
 
             using ExecutionSpace = typename FE::ExecutionSpace;
-            using Super = utopia::kokkos::FEAssembler<FE_>;
+            using Super = utopia::kokkos::FEAssembler<FunctionSpace, FE_>;
 
             class MatrixKernel {
             public:

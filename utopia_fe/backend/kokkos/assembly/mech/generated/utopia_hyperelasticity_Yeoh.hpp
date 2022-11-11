@@ -22,8 +22,8 @@ namespace utopia {
 
 
 	namespace kokkos {
-		template<class FE, int Dim>
-		using Yeoh = utopia::kokkos::AutoHyperElasticity<FE, utopia::kernels::Yeoh<typename FE::Scalar, Dim>>;
+		template<class FunctionSpace, class FE, int Dim>
+		using Yeoh = utopia::kokkos::AutoHyperElasticity<FunctionSpace, FE, utopia::kernels::Yeoh<typename FE::Scalar, Dim>>;
 	}
 }
 

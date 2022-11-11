@@ -454,8 +454,8 @@ namespace utopia {
     }  // namespace kernels
 
     namespace kokkos {
-        template <class FE>
-        using LaplaceOperatorQuad4 = utopia::kokkos::AutoKernel<
+        template <class FunctionSpace, class FE>
+        using LaplaceOperatorQuad4 = utopia::kokkos::AutoKernel<FunctionSpace,
             FE,
             utopia::kernels::LaplaceOperator<utopia::kernels::Quad4<typename FE::Scalar, typename FE::Scalar>>,
             2>;

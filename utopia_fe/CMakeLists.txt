@@ -43,6 +43,9 @@ option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
 
 option(UTOPIA_ENABLE_LIBMESH "Enable the libmesh functionalities" ON)
 option(UTOPIA_ENABLE_LIBMESH_LEGACY "Enable the legacy utopia::libmesh functionalities" ON)
+option(UTOPIA_ENABLE_LIBMESH_KOKKOS "Enable the libmesh functionalities" OFF)
+
+option(UTOPIA_ENABLE_PETSC "Enable the PETSc DM functionalities" OFF)
 
 # Once we have cleaner separation between this and legacy turn OFF
 option(UTOPIA_ENABLE_LIBMESH_DEPRECATED "Enable the deprecated utopia::libmesh functionalities" ON)

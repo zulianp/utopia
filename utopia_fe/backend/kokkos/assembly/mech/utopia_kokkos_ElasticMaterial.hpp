@@ -4,10 +4,10 @@
 namespace utopia {
     namespace kokkos {
 
-        template <class FE_>
-        class ElasticMaterial : public FEAssembler<FE_, DefaultView<typename FE_::Scalar>> {
+        template <class FunctionSpace, class FE_>
+        class ElasticMaterial : public FEAssembler<FunctionSpace, FE_, DefaultView<typename FE_::Scalar>> {
         public:
-            using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;
+            using Super = utopia::kokkos::FEAssembler<FunctionSpace, FE_, DefaultView<typename FE_::Scalar>>;
             using FE = FE_;
             using DynRankView = typename FE::DynRankView;
             using VectorView = typename Super::VectorView;

@@ -17,10 +17,11 @@
 namespace utopia {
     namespace kokkos {
 
-        template <class FE_, int Dim>
-        class IsotropicPhaseFieldForBrittleFractures : public FEAssembler<FE_, DefaultView<typename FE_::Scalar>> {
+        template <class FunctionSpace, class FE_, int Dim>
+        class IsotropicPhaseFieldForBrittleFractures
+            : public utopia::kokkos::FEAssembler<FunctionSpace, FE_, DefaultView<typename FE_::Scalar>> {
         public:
-            using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;
+            using Super = utopia::kokkos::FEAssembler<FunctionSpace, FE_, DefaultView<typename FE_::Scalar>>;
             using FE = FE_;
             using SizeType = typename FE::SizeType;
             using Scalar = typename FE::Scalar;

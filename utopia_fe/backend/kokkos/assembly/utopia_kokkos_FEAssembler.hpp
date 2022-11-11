@@ -1,6 +1,8 @@
 #ifndef UTOPIA_KOKKOS_FEASSEMBLER_HPP
 #define UTOPIA_KOKKOS_FEASSEMBLER_HPP
 
+#include "utopia_FEAssembler.hpp"
+
 #include "utopia_SimulationTime.hpp"
 #include "utopia_fe_Core.hpp"
 
@@ -21,7 +23,7 @@ namespace utopia {
         class OpAndStoreCellIJ {
         public:
             template <typename... Args>
-            UTOPIA_INLINE_FUNCTION OpAndStoreCellIJ(const View &data, Args &&... args)
+            UTOPIA_INLINE_FUNCTION OpAndStoreCellIJ(const View &data, Args &&...args)
                 : op(std::forward<Args>(args)...), data(data) {}
 
             UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int i, const int j) const {
@@ -36,7 +38,7 @@ namespace utopia {
         class BlockOpAndStoreCellIJ {
         public:
             template <typename... Args>
-            UTOPIA_INLINE_FUNCTION BlockOpAndStoreCellIJ(const View &data, Args &&... args)
+            UTOPIA_INLINE_FUNCTION BlockOpAndStoreCellIJ(const View &data, Args &&...args)
                 : op(std::forward<Args>(args)...), data(data) {}
 
             UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int i, const int j) const {
@@ -57,8 +59,7 @@ namespace utopia {
         };
 
         template <class Op, class View, typename... Args>
-        UTOPIA_INLINE_FUNCTION OpAndStoreCellIJ<View, Op> build_op_and_store_cell_ij(const View &data,
-                                                                                     Args &&... args) {
+        UTOPIA_INLINE_FUNCTION OpAndStoreCellIJ<View, Op> build_op_and_store_cell_ij(const View &data, Args &&...args) {
             return OpAndStoreCellIJ<View, Op>(data, std::forward<Args>(args)...);
         }
 
@@ -72,12 +73,14 @@ namespace utopia {
             return BlockOpAndStoreCellIJ<View, Op>(data, op);
         }
 
-        template <typename FE_,
+        template <class FunctionSpace_,
+                  typename FE_,
                   typename MatrixView_ = DefaultView<typename FE_::Scalar>,
                   typename VectorView_ = MatrixView_,
                   typename ScalarView_ = VectorView_>
         class FEAssembler : public Describable, public Configurable {
         public:
+            using FunctionSpace = FunctionSpace_;
             using FE = FE_;
             using MatrixView = MatrixView_;
             using VectorView = VectorView_;

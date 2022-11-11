@@ -14,8 +14,8 @@ namespace utopia {
 
     namespace kokkos {
 
-        template <class FE_, class DiffusionCoefficient = typename FE_::Scalar>
-        class LaplaceOperator : public FEAssembler<FE_, DefaultView<typename FE_::Scalar>> {
+        template <class FunctionSpace, class FE_, class DiffusionCoefficient = typename FE_::Scalar>
+        class LaplaceOperator : public FEAssembler<FunctionSpace, FE_, DefaultView<typename FE_::Scalar>> {
         public:
             using FE = FE_;
             using SizeType = typename FE::SizeType;
@@ -23,7 +23,7 @@ namespace utopia {
             using DynRankView = typename FE::DynRankView;
 
             using ExecutionSpace = typename FE::ExecutionSpace;
-            using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;
+            using Super = utopia::kokkos::FEAssembler<FunctionSpace, FE_, DefaultView<typename FE_::Scalar>>;
             using Gradient = typename FE::Gradient;
             using Measure = typename FE::Measure;
 

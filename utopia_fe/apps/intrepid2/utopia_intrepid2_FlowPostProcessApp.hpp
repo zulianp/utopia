@@ -30,8 +30,8 @@ namespace utopia {
             using Intrepid2QPField_t = utopia::kokkos::QPField<Intrepid2FE_t>;
             using Intrepid2Gradient_t = utopia::kokkos::Gradient<Intrepid2FE_t>;
 
-            using Flow_t = utopia::kokkos::LaplaceOperator<Intrepid2FE_t>;
-            using ForcingFunction_t = utopia::kokkos::ForcingFunction<Intrepid2FE_t>;
+            using Flow_t = utopia::kokkos::LaplaceOperator<FunctionSpace, Intrepid2FE_t>;
+            using ForcingFunction_t = utopia::kokkos::ForcingFunction<FunctionSpace, Intrepid2FE_t>;
 
             struct Subdomain : public Configurable {
                 int id{-1};
