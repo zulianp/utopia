@@ -2,6 +2,7 @@ from sympy import cse
 from sympy.printing.c import C99CodePrinter
 from sympy.utilities.codegen import CCodeGen
 from sympy.utilities.codegen import codegen
+import pdb
 
 import fe
 se = fe.get_symbolic_engine()
@@ -155,10 +156,12 @@ class TensorProductBasis:
         ret = expr
 
         for i in range(0, self.dim):
+            key = se.symbols(f'trial_{i}')
+
             if d_trial == i:
-                ret = ret.subs(f'trial_{i}', f'fun_{i_trial}')
+                ret = ret.subs(key, f'fun_{i_trial}')
             else:
-                ret = ret.subs(f'trial_{i}', 0)
+                ret = ret.subs(key, 0)
         return ret
 
     def bilinear_apply_subs_gradients(self, trial_grad, i_test, d_test, expr):
@@ -167,11 +170,12 @@ class TensorProductBasis:
 
         for k1 in range(0, dim):
             for k2 in range(0, dim):
-                ret = ret.subs(f'trial_grad_{k1}{k2}', trial_grad[k1, k2])
+                key = se.symbols(f'trial_grad_{k1}{k2}')
+                ret = ret.subs(key, trial_grad[k1, k2])
 
         return ret
 
-    def bilinear_subs_gradients(self, i_trial, d_trial, i_test, d_test, expr):
+    def bilinear_subs_gradients(self, i_test, d_test, i_trial, d_trial, expr):
         return self.subs_gradient_test(i_test, d_test, self.subs_gradient_trial(i_trial, d_trial, expr))
 
     def linear_subs_gradients(self, i_test, d_test, expr):
@@ -184,13 +188,16 @@ class TensorProductBasis:
         
         ret = f;
         for k in range(0, dim):
-            ret = ret.subs(f'trial_grad_{d}{k}', se.symbols(f'{trial}[{k}]'))
+            key = se.symbols(f'trial_grad_{d}{k}')
+            ret = ret.subs(key, se.symbols(f'{trial}[{k}]'))
 
         for k in range(0, dim):
             if k != d:
                 for j in range(0, dim):
-                    ret = ret.subs(f'trial_grad_{k}{j}', 0)
+                    key = se.symbols(f'trial_grad_{k}{j}')
+                    ret = ret.subs(key, 0)
 
+        
         return ret
 
     def subs_gradient_test(self, i, d,f):
@@ -200,12 +207,14 @@ class TensorProductBasis:
 
         ret = f;
         for k in range(0, dim):
-            ret = ret.subs(f'test_grad_{d}{k}', se.symbols(f'{test}[{k}]'))
+            key = se.symbols(f'test_grad_{d}{k}')
+            ret = ret.subs(key, se.symbols(f'{test}[{k}]'))
 
         for k in range(0, dim):
             if k != d:
                 for j in range(0, dim):
-                    ret = ret.subs(f'test_grad_{k}{j}', 0)
+                    key = se.symbols(f'test_grad_{k}{j}')
+                    ret = ret.subs(key, 0)
 
         return ret
 
