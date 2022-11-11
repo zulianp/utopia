@@ -3,7 +3,7 @@
 
 #include "utopia_kokkos_FE.hpp"
 #include "utopia_kokkos_OmniAssembler.hpp"
-#include "utopia_libmesh_FunctionSpace.hpp"
+#include "utopia_libmesh_FunctionSpace_new.hpp"
 
 #include "utopia_kokkos_OmniAssembler_impl.hpp"
 
@@ -11,7 +11,6 @@
 
 #include "utopia_kokkos_FE.hpp"
 #include "utopia_kokkos_OmniAssembler.hpp"
-#include "utopia_libmesh_FunctionSpace.hpp"
 
 namespace utopia {
 
@@ -22,7 +21,7 @@ namespace utopia {
     public:
         using Scalar = Traits<utopia::libmesh::FunctionSpace>::Scalar;
         using FE = utopia::kokkos::FE<Scalar>;
-        using Super = kokkos::OmniAssembler<utopia::libmesh::FunctionSpace>;
+        using Super = kokkos::OmniAssembler<utopia::libmesh::FunctionSpace, FE>;
         using Super::Super;
     };
 

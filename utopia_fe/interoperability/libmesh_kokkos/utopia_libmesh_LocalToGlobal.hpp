@@ -1,5 +1,5 @@
-#ifndef UTOPIA_LIBMESH_CREATE_FE_HPP
-#define UTOPIA_LIBMESH_CREATE_FE_HPP
+#ifndef UTOPIA_LIBMESH_LOCAL_TO_GLOBAL_HPP
+#define UTOPIA_LIBMESH_LOCAL_TO_GLOBAL_HPP
 
 #include "utopia_LocalToGlobal.hpp"
 
@@ -45,4 +45,4 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif  // UTOPIA_LIBMESH_CREATE_FE_HPP
+#endif  // UTOPIA_LIBMESH_LOCAL_TO_GLOBAL_HPP
