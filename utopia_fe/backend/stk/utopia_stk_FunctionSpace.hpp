@@ -78,6 +78,9 @@ namespace utopia {
 
             bool empty() const override;
 
+            // void displacement_field_from_transform(const std::vector<Scalar> &scale_factors,
+            //                                        Field<FunctionSpace> &displacement);
+            
             void displace(const Vector &displacement) override;
             void global_to_local(const Vector &global, Vector &local) const;
             void local_to_global(const Vector &local, Vector &global, AssemblyMode mode) const;

@@ -20,6 +20,8 @@
 #include "utopia_ObstacleFEFunction.hpp"
 #include "utopia_moonolith_ObstacleFEFunctionFactory.hpp"
 
+#include "utopia_MeshTransform.hpp"
+
 #include <memory>
 
 namespace utopia {
@@ -60,6 +62,18 @@ namespace utopia {
 
                 } else {
                     space.read(in);
+                }
+            });
+
+            in.get("displace", [&](Input &in) {
+                MeshTransform<FunctionSpace> transform;
+                transform.read(in);
+                transform.generate_displacement_field(space, deformation);
+
+                const Scalar_t norm_deformation = norm2(deformation.data());
+
+                if (mpi_world_rank() == 0) {
+                    utopia::out() << "displace (norm_deformation): " << norm_deformation << std::endl;
                 }
             });
 
@@ -107,6 +121,15 @@ namespace utopia {
                 if (deformation.empty() || !fun->set_initial_condition(deformation.data())) {
                     Utopia::Abort("Called set_initial_condition on function that does not support it!");
                 }
+            }
+
+            bool skip_solve = false;
+            in.get("skip_solve", skip_solve);
+
+            if (skip_solve) {
+                fun->update_IVP(x);
+                obs_fun->report_solution(x);
+                return;
             }
 
             do {
