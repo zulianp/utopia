@@ -157,8 +157,8 @@ namespace utopia {{
 	}}
 
 	namespace kokkos {{
-		template<class FE>
-		using {name}{trial} = utopia::kokkos::AutoKernel<FE, utopia::kernels::{name}<utopia::kernels::{trial}<typename FE::Scalar, typename FE::Scalar>>, {dim}>;
+		template<class FunctionSpace, class FE>
+		using {name}{trial} = utopia::kokkos::AutoKernel<FunctionSpace, FE, utopia::kernels::{name}<utopia::kernels::{trial}<typename FE::Scalar, typename FE::Scalar>>, {dim}>;
 	}}
 }}
 
