@@ -7,30 +7,18 @@
 #include "utopia_SimulationTime.hpp"
 #include "utopia_fe_Environment.hpp"
 
-namespace utopia {
+#include <memory>
+#include <string>
 
-    template <class FunctionSpace_>
-    class FEAssembler : public Configurable {
+namespace utopia {
+    template <class FunctionSpace>
+    class FEAssemblerBase : public Configurable {
     public:
-        using FunctionSpace = FunctionSpace_;
-        using Matrix = typename Traits<FunctionSpace>::Matrix;
-        using Vector = typename Traits<FunctionSpace>::Vector;
-        using Environment = utopia::Environment<FunctionSpace>;
-        using Scalar = typename Traits<Vector>::Scalar;
+        using Environment = typename Traits<FunctionSpace>::Environment;
+        using Scalar = typename Traits<FunctionSpace>::Scalar;
         using SimulationTime = utopia::SimulationTime<Scalar>;
 
-        virtual ~FEAssembler() = default;
-        virtual void clear() {}
-        virtual std::string name() const = 0;
-        virtual bool assemble(const Vector &x, Matrix &hessian, Vector &gradient) = 0;
-        virtual bool assemble(const Vector &x, Matrix &jacobian) = 0;
-        virtual bool assemble(const Vector &x, Vector &fun) = 0;
-        virtual bool apply(const Vector &x, Vector &hessian_times_x) = 0;
-        virtual bool is_operator() const = 0;
-
-        // For linear only
-        virtual bool assemble(Matrix &jacobian) = 0;
-        virtual bool assemble(Vector &fun) = 0;
+        virtual ~FEAssemblerBase() = default;
 
         inline void read(Input &in) override {
             if (environment() && !space()) {
@@ -53,10 +41,59 @@ namespace utopia {
 
         virtual void set_time(const std::shared_ptr<SimulationTime> &time) = 0;
 
-        // private:
-        //     std::shared_ptr<Environment> env_;
-        //     std::shared_ptr<FunctionSpace> space_;
+        virtual void clear() {}
+        virtual std::string name() const = 0;
+
+        virtual bool is_operator() const = 0;
     };
+
+    template <>
+    class Traits<void> {
+    public:
+        using Environment = void;
+        using Scalar = double;
+    };
+
+    template <>
+    class FEAssemblerBase<void> : public Configurable {
+    public:
+        using SimulationTime = utopia::SimulationTime<double>;
+
+        virtual ~FEAssemblerBase() = default;
+
+        inline void read(Input &in) override {}
+
+        virtual bool is_linear() const = 0;
+        virtual void clear() {}
+        virtual std::string name() const = 0;
+        virtual bool is_operator() const = 0;
+    };
+
+    template <class FunctionSpace_>
+    class FEAssembler : public FEAssemblerBase<FunctionSpace_> {
+    public:
+        using Super = utopia::FEAssemblerBase<FunctionSpace_>;
+        using FunctionSpace = FunctionSpace_;
+        using Matrix = typename Traits<FunctionSpace>::Matrix;
+        using Vector = typename Traits<FunctionSpace>::Vector;
+        using Environment = utopia::Environment<FunctionSpace>;
+        using Scalar = typename Traits<Vector>::Scalar;
+
+        virtual ~FEAssembler() = default;
+
+        virtual bool assemble(const Vector &x, Matrix &hessian, Vector &gradient) = 0;
+        virtual bool assemble(const Vector &x, Matrix &jacobian) = 0;
+        virtual bool assemble(const Vector &x, Vector &fun) = 0;
+        virtual bool apply(const Vector &x, Vector &hessian_times_x) = 0;
+
+        // For linear only
+        virtual bool assemble(Matrix &jacobian) = 0;
+        virtual bool assemble(Vector &fun) = 0;
+    };
+
+    // Nothing to do here!
+    template <>
+    class FEAssembler<void> : public FEAssemblerBase<void> {};
 
 }  // namespace utopia
 

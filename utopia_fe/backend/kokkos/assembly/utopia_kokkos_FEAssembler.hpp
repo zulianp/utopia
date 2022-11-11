@@ -1,6 +1,9 @@
 #ifndef UTOPIA_KOKKOS_FEASSEMBLER_HPP
 #define UTOPIA_KOKKOS_FEASSEMBLER_HPP
 
+#include "utopia_Instance.hpp"
+#include "utopia_Traits.hpp"
+
 #include "utopia_FEAssembler.hpp"
 
 #include "utopia_SimulationTime.hpp"
@@ -8,15 +11,17 @@
 
 #include "utopia_kokkos_FE.hpp"
 #include "utopia_kokkos_Field.hpp"
-// #include "utopia_kokkos_ForwardDeclarations.hpp"
 
 #include "utopia_kokkos_TensorAccumulator.hpp"
 
 #include "utopia_kokkos_SubdomainValue.hpp"
 
+#include "utopia_kokkos_DiscretizationManager.hpp"
+
 #include <memory>
 
 namespace utopia {
+
     namespace kokkos {
 
         template <class View, class Op>
@@ -73,13 +78,97 @@ namespace utopia {
             return BlockOpAndStoreCellIJ<View, Op>(data, op);
         }
 
+        template <class FunctionSpace,
+                  typename FE,
+                  typename MatrixView = DefaultView<typename FE::Scalar>,
+                  typename VectorView = DefaultView<typename FE::Scalar>,
+                  typename ScalarView = DefaultView<typename FE::Scalar>>
+        class FEAssemblerWithManager : public FEAssembler<FunctionSpace> {
+        public:
+            using DiscretizationManager =
+                utopia::kokkos::DiscretizationManager<FunctionSpace, FE, MatrixView, VectorView, ScalarView>;
+
+            using Matrix = typename Traits<FunctionSpace>::Matrix;
+            using Vector = typename Traits<FunctionSpace>::Vector;
+            using Environment = utopia::Environment<FunctionSpace>;
+            using Scalar = typename Traits<Vector>::Scalar;
+            using SimulationTime = utopia::SimulationTime<Scalar>;
+
+            virtual ~FEAssemblerWithManager() = default;
+
+            void set_discretization_manager(const std::shared_ptr<DiscretizationManager> &dm) { dm_ = dm; }
+
+            bool assemble(const Vector &x, Matrix &hessian, Vector &gradient) override {
+                Utopia::Abort();
+                return false;
+            }
+            bool assemble(const Vector &x, Matrix &jacobian) override {
+                Utopia::Abort();
+                return false;
+            }
+            bool assemble(const Vector &x, Vector &fun) override {
+                Utopia::Abort();
+                return false;
+            }
+            bool apply(const Vector &x, Vector &hessian_times_x) override {
+                Utopia::Abort();
+                return false;
+            }
+
+            // For linear only
+            bool assemble(Matrix &jacobian) override {
+                Utopia::Abort();
+                return false;
+            }
+            bool assemble(Vector &fun) override {
+                Utopia::Abort();
+                return false;
+            }
+
+            void set_time(const std::shared_ptr<SimulationTime> &time) override { time_ = time; }
+
+            void clear() override { Utopia::Abort(); }
+
+            void set_environment(const std::shared_ptr<Environment> &env) override { Utopia::Abort(); }
+
+            std::shared_ptr<Environment> environment() const override {
+                Utopia::Abort();
+                return nullptr;
+            }
+
+            void set_space(const std::shared_ptr<FunctionSpace> &space) override { Utopia::Abort(); }
+
+            std::shared_ptr<FunctionSpace> space() const override {
+                Utopia::Abort();
+                return nullptr;
+            }
+
+            std::shared_ptr<SimulationTime> time() const { return time_; }
+
+        private:
+            std::shared_ptr<DiscretizationManager> dm_;
+            std::shared_ptr<SimulationTime> time_;
+        };
+
+        // Handle case where no FunctionSpace is used i.e., FunctionSpace=void
+        template <typename FE_, typename MatrixView_, typename VectorView_, typename ScalarView_>
+        class FEAssemblerWithManager<void, FE_, MatrixView_, VectorView_, ScalarView_> : public FEAssembler<void> {
+        public:
+            virtual ~FEAssemblerWithManager() = default;
+            bool assemble() { return false; }
+        };
+
         template <class FunctionSpace_,
                   typename FE_,
                   typename MatrixView_ = DefaultView<typename FE_::Scalar>,
-                  typename VectorView_ = MatrixView_,
-                  typename ScalarView_ = VectorView_>
-        class FEAssembler : public Describable, public Configurable {
+                  typename VectorView_ = DefaultView<typename FE_::Scalar>,
+                  typename ScalarView_ = DefaultView<typename FE_::Scalar>>
+        class FEAssembler : public Describable,
+                            public FEAssemblerWithManager<FunctionSpace_, FE_, MatrixView_, VectorView_, ScalarView_> {
         public:
+            using Super =
+                utopia::kokkos::FEAssemblerWithManager<FunctionSpace_, FE_, MatrixView_, VectorView_, ScalarView_>;
+
             using FunctionSpace = FunctionSpace_;
             using FE = FE_;
             using MatrixView = MatrixView_;
@@ -96,7 +185,12 @@ namespace utopia {
             using CellTestTrialRange = typename FE::CellTestTrialRange;
             using CellTestRange = typename FE::CellTestRange;
             using CellRange = typename FE::CellRange;
-            using SimulationTime = utopia::SimulationTime<Scalar>;
+
+            ////////////////////////////////////////////////////////////////////////////////////
+            /// utopia::FEAssembler Types
+            ////////////////////////////////////////////////////////////////////////////////////
+
+            using Environment = typename Traits<FunctionSpace>::Environment;
 
             virtual ~FEAssembler() = default;
 
@@ -195,9 +289,6 @@ namespace utopia {
             virtual bool is_matrix() const = 0;
             virtual bool is_vector() const = 0;
             virtual bool is_scalar() const = 0;
-            virtual bool is_operator() const { return false; }
-
-            virtual bool is_linear() const { return true; }
 
             virtual bool assemble_matrix() {
                 assert(!is_matrix() && "IMPLEMENT ME IN SUB CLASS");
@@ -311,13 +402,8 @@ namespace utopia {
                 if (is_matrix()) ensure_matrix_accumulator();
             }
 
-            inline std::shared_ptr<MatrixAccumulator> matrix_accumulator() { return matrix_accumulator_; }
             inline std::shared_ptr<MatrixAccumulator> matrix_accumulator() const { return matrix_accumulator_; }
-
-            inline std::shared_ptr<VectorAccumulator> vector_accumulator() { return vector_accumulator_; }
             inline std::shared_ptr<VectorAccumulator> vector_accumulator() const { return vector_accumulator_; }
-
-            inline std::shared_ptr<ScalarAccumulator> scalar_accumulator() { return scalar_accumulator_; }
             inline std::shared_ptr<ScalarAccumulator> scalar_accumulator() const { return scalar_accumulator_; }
 
             virtual void set_matrix_accumulator(const std::shared_ptr<MatrixAccumulator> &matrix_accumulator) {
@@ -410,8 +496,10 @@ namespace utopia {
 
             inline std::shared_ptr<Field<FE>> current_solution() { return current_solution_; }
 
-            void set_time(const std::shared_ptr<SimulationTime> &time) { time_ = time; }
-            std::shared_ptr<SimulationTime> time() const { return time_; }
+            //////////////////////////////////////////////////////////////////////////////
+
+            bool is_operator() const override { return false; }
+            bool is_linear() const override { return true; }
 
         private:
             std::shared_ptr<FE> fe_;
@@ -419,7 +507,6 @@ namespace utopia {
             std::shared_ptr<VectorAccumulator> vector_accumulator_;
             std::shared_ptr<ScalarAccumulator> scalar_accumulator_;
             std::shared_ptr<Field<FE>> current_solution_;
-            std::shared_ptr<SimulationTime> time_;
         };
 
     }  // namespace kokkos

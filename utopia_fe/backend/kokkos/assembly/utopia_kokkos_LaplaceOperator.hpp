@@ -46,12 +46,8 @@ namespace utopia {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<LaplaceOperator>::assemble");
                 this->ensure_matrix_accumulator();
 
-                // if (op_.is_uniform()) {
                 this->loop_cell_test_trial("Assemble<LaplaceOperator>::assemble",
                                            op_and_store_cell_ij(this->matrix_data(), op_.uniform_kernel(this->fe())));
-                // } else {
-
-                // }
 
                 if (!op_.subdomain_value.empty) {
                     auto data = this->matrix_data();
@@ -62,8 +58,6 @@ namespace utopia {
 
                 UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperator>::assemble");
                 return true;
-
-                // return assemble_matrix_intrepid_tutorial();
             }
 
             bool apply(const DynRankView &x, DynRankView &y) override {
@@ -83,8 +77,6 @@ namespace utopia {
             bool check_op() {
                 auto data = this->matrix_data();
                 const int n_shape_functions = this->fe().n_shape_functions();
-
-                // this->matrix_accumulator()->describe(utopia::out().stream());
 
                 this->loop_cell(
                     "LaplaceOperator::check_op()", UTOPIA_LAMBDA(int cell) {

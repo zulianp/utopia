@@ -15,6 +15,7 @@ namespace utopia {
     class Traits<utopia::mars::FunctionSpace> : public Traits<utopia::mars::Mesh> {
     public:
         using Mesh = utopia::mars::Mesh;
+        using Environment = utopia::Environment<utopia::mars::FunctionSpace>;
     };
 
     namespace mars {
