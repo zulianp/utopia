@@ -5,7 +5,7 @@
 
 #include "utopia_fe_base.hpp"
 
-#ifdef UTOPIA_WITH_LIBMESH
+#ifdef UTOPIA_WITH_LIBMESH_DEPRECATED
 #include "moonolith_communicator.hpp"
 #include "utopia_LibMeshBackend.hpp"
 #include "utopia_assemble_contact.hpp"

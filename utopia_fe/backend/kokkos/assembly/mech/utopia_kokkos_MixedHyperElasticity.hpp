@@ -18,7 +18,6 @@ namespace utopia {
             using SizeType = typename FE::SizeType;
             using Scalar = typename FE::Scalar;
             using DynRankView = typename FE::DynRankView;
-            using FunctionSpaceTools = typename FE::FunctionSpaceTools;
 
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;
@@ -96,7 +95,7 @@ namespace utopia {
                         "Hessian", UTOPIA_LAMBDA(int cell) {
                             StaticVector<Scalar, Dim> grad_test, grad_trial;
                             StaticMatrix<Scalar, Dim, Dim> F_qp;
-                            StaticMatrix<Scalar, Dim+1, Dim+1> stress;
+                            StaticMatrix<Scalar, Dim + 1, Dim + 1> stress;
 
                             for (int qp = 0; qp < n_quad_points; ++qp) {
                                 // Copy deformation gradient at qp
@@ -179,7 +178,7 @@ namespace utopia {
                         "Gradient", UTOPIA_LAMBDA(int cell) {
                             StaticVector<Scalar, Dim> grad_test;
                             StaticMatrix<Scalar, Dim, Dim> F_qp;
-                            StaticVector<Scalar, Dim+1> stress;
+                            StaticVector<Scalar, Dim + 1> stress;
 
                             for (int qp = 0; qp < n_quad_points; ++qp) {
                                 // Copy deformation gradient at qp

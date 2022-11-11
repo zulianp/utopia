@@ -7,7 +7,7 @@
 #include "utopia_libmesh_ConvertTensor.hpp"
 #include "utopia_libmesh_FunctionSpace_new.hpp"
 #include "utopia_libmesh_Mesh.hpp"
-#include "utopia_libmesh_OmniAssembler.hpp"
+// #include "utopia_libmesh_OmniAssembler.hpp"
 #include "utopia_libmesh_SpaceIO.hpp"
 
 #include "utopia_libmesh_UnsupportedAlgorithms.hpp"

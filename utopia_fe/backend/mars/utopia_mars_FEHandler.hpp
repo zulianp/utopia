@@ -30,7 +30,7 @@ namespace utopia {
 
             void describe() const override {
                 dof_handler->print_dofs();
-                sparsity_pattern->print_sparsity_pattern();
+                // sparsity_pattern->print_sparsity_pattern();
 
                 // ::mars::print_fe_dof_map(*dof_handler_impl, *fe_dof_map_impl);
             }
@@ -110,7 +110,7 @@ namespace utopia {
             auto factory() -> Factory & override { return ConcreteFactory<DMesh>::instance(); };
 
             void init(DMesh &mesh_impl, int block_size) {
-                dof_handler = std::make_shared<DofHandler>(&mesh_impl);  //, mesh->raw_type_context());
+                dof_handler = std::make_shared<DofHandler>(mesh_impl);  //, mesh->raw_type_context());
                 dof_handler->set_block(block_size);
                 dof_handler->enumerate_dofs();
 

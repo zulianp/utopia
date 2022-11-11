@@ -30,11 +30,16 @@ namespace utopia {
                 handler = handler_impl;
 
 #ifdef MARS_WITH_WITH_IO
-                write = [handler_impl](const Path &path, const Vector &x) -> bool {
+                write = [handler_impl, this](const Path &path, const Vector &x) -> bool {
                     MarsIOImpl<typename FEHandler::FEDofMap> w(handler_impl->get_fe_dof_map());
 
+                    // auto x_kokkos = x.raw_type()->getLocalViewHost();
+                    // return w.write_tpetra(path.to_string(), x_kokkos);
+
                     auto x_kokkos = x.raw_type()->getLocalViewHost();
-                    return w.write_tpetra(path.to_string(), x_kokkos);
+                    w.add_field_tpetra("U", this->n_var, x_kokkos);
+                    w.set_output_path(path);
+                    return w.write();
                 };
 #else
                 write = [](const Path &, const Vector &) -> bool { return false; };

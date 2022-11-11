@@ -7,6 +7,8 @@
 
 #include "utopia_MPI_Operations.hpp"
 
+#include <memory>
+
 #ifdef UTOPIA_WITH_MPI
 #include <mpi.h>
 #endif
@@ -152,9 +154,9 @@ namespace utopia {
         inline static MPI_Datatype value() noexcept { return MPI_CHAR; }
     };
 
-    class MPICommunicator : public Communicator {
+    class MPIBaseCommunicator : public Communicator {
     public:
-        ~MPICommunicator() override = default;
+        ~MPIBaseCommunicator() override = default;
 
         virtual MPI_Comm get() const = 0;
 
@@ -229,6 +231,61 @@ namespace utopia {
             MPI_Allreduce(MPI_IN_PLACE, &ret, 1, (MPIType<T>::value()), (MPIReduceOp<Op, HOMEMADE>::op()), get());
             return ret;
         }
+    };
+
+    class MPICommunicator : public MPIBaseCommunicator {
+    public:
+        class Wrapper {
+        public:
+            Wrapper(const MPI_Comm &comm, const bool owned) : comm(comm), owned(owned) {}
+
+            ~Wrapper() {
+                if (owned) {
+                    MPI_Comm_free(&comm);
+                }
+            }
+
+            MPI_Comm comm;
+            bool owned;
+        };
+
+        inline MPICommunicator *clone() const override { return new MPICommunicator(get()); }
+
+        inline MPI_Comm get() const override { return wrapper_->comm; }
+
+        inline MPI_Comm raw_comm() const override { return get(); }
+
+        inline void set(MPI_Comm comm) { wrapper_ = make_not_owned(comm); }
+
+        inline void own(MPI_Comm comm) { wrapper_ = std::make_shared<Wrapper>(comm, true); }
+
+        MPICommunicator split(const int color) const;
+
+        MPICommunicator(MPI_Comm comm, const bool owned) {
+            if(owned) {
+                own(comm);
+            } else {
+                set(comm);
+            }
+        }
+
+        explicit MPICommunicator(const MPI_Comm comm) : wrapper_(make_not_owned(comm)) {}
+        explicit MPICommunicator(const Communicator &comm) : wrapper_(make_not_owned(comm.raw_comm())) {}
+        inline MPICommunicator(const MPICommunicator &other) : wrapper_(other.wrapper_) {}
+        inline MPICommunicator(MPICommunicator &&other) : wrapper_(std::move(other.wrapper_)) {}
+
+        inline MPICommunicator &operator=(const MPICommunicator &other) {
+            wrapper_ = other.wrapper_;
+            return *this;
+        }
+        inline MPICommunicator &operator=(MPICommunicator &&other) {
+            wrapper_ = std::move(other.wrapper_);
+            return *this;
+        }
+
+    private:
+        std::shared_ptr<Wrapper> wrapper_;
+        static std::shared_ptr<Wrapper> make_not_owned(MPI_Comm comm) { return std::make_shared<Wrapper>(comm, false); }
     };
 
 #endif  // UTOPIA_WITH_MPI

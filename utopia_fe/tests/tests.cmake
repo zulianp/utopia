@@ -5,7 +5,11 @@ if(UTOPIA_ENABLE_STK)
 endif()
 
 if(UTOPIA_ENABLE_LIBMESH)
-    list(APPEND TEST_MODULES libmesh libmesh/old)
+    list(APPEND TEST_MODULES libmesh)
+
+    if(UTOPIA_ENABLE_LIBMESH_DEPRECATED)
+        list(APPEND TEST_MODULES libmesh/deprecated)
+    endif()
 endif()
 
 if(UTOPIA_ENABLE_MOONOLITH)
@@ -41,7 +45,7 @@ if(UTOPIA_ENABLE_INTREPID2 AND UTOPIA_ENABLE_ARBORX)
 endif()
 
 if(UTOPIA_ENABLE_INTREPID2 AND UTOPIA_ENABLE_LIBMESH)
-    list(APPEND TEST_MODULES interop/libmesh_intrepid2)
+    list(APPEND TEST_MODULES interop/libmesh_kokkos)
 endif()
 
 set(LOCAL_HEADERS "")
