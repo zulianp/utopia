@@ -16,7 +16,7 @@
 
 #include "utopia_kokkos_SubdomainValue.hpp"
 
-#include "utopia_kokkos_DiscretizationManager.hpp"
+#include "utopia_kokkos_Discretization.hpp"
 
 #include <memory>
 
@@ -85,8 +85,8 @@ namespace utopia {
                   typename ScalarView = DefaultView<typename FE::Scalar>>
         class FEAssemblerWithManager : public FEAssembler<FunctionSpace> {
         public:
-            using DiscretizationManager =
-                utopia::kokkos::DiscretizationManager<FunctionSpace, FE, MatrixView, VectorView, ScalarView>;
+            using Discretization =
+                utopia::kokkos::Discretization<FunctionSpace, FE, MatrixView, VectorView, ScalarView>;
 
             using Matrix = typename Traits<FunctionSpace>::Matrix;
             using Vector = typename Traits<FunctionSpace>::Vector;
@@ -96,7 +96,7 @@ namespace utopia {
 
             virtual ~FEAssemblerWithManager() = default;
 
-            void set_discretization_manager(const std::shared_ptr<DiscretizationManager> &dm) { dm_ = dm; }
+            void set_discretization_manager(const std::shared_ptr<Discretization> &dm) { dm_ = dm; }
 
             bool assemble(const Vector &x, Matrix &hessian, Vector &gradient) override {
                 Utopia::Abort();
@@ -146,7 +146,7 @@ namespace utopia {
             std::shared_ptr<SimulationTime> time() const { return time_; }
 
         private:
-            std::shared_ptr<DiscretizationManager> dm_;
+            std::shared_ptr<Discretization> dm_;
             std::shared_ptr<SimulationTime> time_;
         };
 
