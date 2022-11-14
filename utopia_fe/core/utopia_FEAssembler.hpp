@@ -52,6 +52,8 @@ namespace utopia {
     public:
         using Environment = void;
         using Scalar = double;
+        using Matrix = double **;
+        using Vector = double *;
     };
 
     template <>
