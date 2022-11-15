@@ -207,7 +207,7 @@ namespace utopia {
             KSP ksp = nullptr;
             KSPCreate(comm, &ksp);
 
-            ksp_ = std::shared_ptr<void>((void *)ksp, [](void *&ptr) {
+            ksp_ = std::shared_ptr<void>((void *)ksp, [](void *ptr) {
                 auto ksp_ptr = (KSP *)&ptr;
                 KSPDestroy(ksp_ptr);
             });
