@@ -565,6 +565,34 @@ namespace utopia {
             }
 
             template <class Op>
+            bool assemble_apply_ei(const std::string &name,
+                                   AssemblyMode mode,
+                                   Op op,
+                                   const Field<FE> &field,
+                                   const Part part = Discretization::all()) {
+                ensure_vector_accumulator();
+
+                auto data = this->vector_data();
+                auto x = field.data();
+
+                const Scalar a = OVERWRITE_MODE == mode ? 0 : 1;
+                const Scalar b = SUBTRACT_MODE == mode ? -1 : 1;
+
+                auto &fe = this->fe();
+                const int n_shape_functions = fe.n_shape_functions();
+
+                this->loop_cell_test(
+                    name, UTOPIA_LAMBDA(const int cell, const int i) {
+                        Scalar val = 0.0;
+                        for (int j = 0; j < n_shape_functions; ++j) {
+                            val += op(cell, i, j) * x(cell, j);
+                        }
+                        auto &v = data(cell, i);
+                        v = a * v + b * val;
+                    });
+            }
+
+            template <class Op>
             bool assemble_vector_ei_block(const std::string &name,
                                           AssemblyMode mode,
                                           Op op,

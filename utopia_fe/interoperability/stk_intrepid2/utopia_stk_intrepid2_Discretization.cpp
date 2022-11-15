@@ -137,7 +137,14 @@ namespace utopia {
 
     void Discretization<stk_FS_t, stk_FE_t>::create(std::vector<FE_ptr> &fe, int order, const Part &part) {
         // FIXME
-        FE_ptr fe0 = std::make_shared<FE>();
+        FE_ptr fe0;
+
+        if (fe.size() == 1) {
+            fe0 = fe[0];
+        } else {
+            fe0 = std::make_shared<FE>();
+        }
+
         create_fe(*this->space(), *fe0, order);
 
         fe.clear();
