@@ -146,7 +146,13 @@ namespace utopia {
 
     void Discretization<stk_FS_t, stk_FE_t>::create_on_boundary(std::vector<FE_ptr> &fe, int order, const Part &part) {
         // FIXME
-        FE_ptr fe0 = std::make_shared<FE>();
+        FE_ptr fe0;
+
+        if (fe.size() == 1) {
+            fe0 = fe[0];
+        } else {
+            fe0 = std::make_shared<FE>();
+        }
 
         if (part.is_all()) {
             create_fe_on_boundary(*this->space(), *fe0, order);
@@ -169,11 +175,6 @@ namespace utopia {
             utopia::convert_field(in, *out[0]);
         } else {
             assert(false);
-            // auto field0 = std::make_shared<FEField>();
-            // utopia::convert_field(*field0, out);
-
-            // out.clear();
-            // out.push_back(field0);
         }
     }
     void Discretization<stk_FS_t, stk_FE_t>::convert_field(const std::vector<std::shared_ptr<FEField>> &in,
