@@ -49,7 +49,7 @@ namespace utopia {
             ////////////////////////////////////////////////////////////////////////////////////
 
             virtual void create(std::vector<FE_ptr> &fe, int order, const Part &part = all()) = 0;
-            virtual void create_on_boundary(FE &fe, int order, const Part &part = all()) = 0;
+            virtual void create_on_boundary(std::vector<FE_ptr> &fe, int order, const Part &part = all()) = 0;
 
             ////////////////////////////////////////////////////////////////////////////////////
 
@@ -64,7 +64,7 @@ namespace utopia {
             ////////////////////////////////////////////////////////////////////////////////////
 
             virtual void global_to_local(const Vector &vector,
-                                         const std::vector<VectorAccumulator> &element_vectors,
+                                         std::vector<VectorAccumulator> &element_vectors,
                                          const Part &part = all(),
                                          const int comp = 0) = 0;
 
@@ -85,33 +85,33 @@ namespace utopia {
 
             ////////////////////////////////////////////////////////////////////////////////
             // Single acc (Retro comp tobe removed)
-            virtual void global_to_local(const Vector &vector,
-                                         const VectorAccumulator &element_vectors,
-                                         const Part &part = all(),
-                                         const int comp = 0) {
-                global_to_local(vector, {element_vectors}, part, comp);
-            }
+            // virtual void global_to_local(const Vector &vector,
+            //                              const VectorAccumulator &element_vectors,
+            //                              const Part &part = all(),
+            //                              const int comp = 0) {
+            //     global_to_local(vector, {element_vectors}, part, comp);
+            // }
 
-            virtual void local_to_global(const MatrixAccumulator &acc,
-                                         AssemblyMode mode,
-                                         Matrix &mat,
-                                         const Part &part = all()) {
-                local_to_global({acc}, mode, mat, part);
-            }
+            // virtual void local_to_global(const MatrixAccumulator &acc,
+            //                              AssemblyMode mode,
+            //                              Matrix &mat,
+            //                              const Part &part = all()) {
+            //     local_to_global({acc}, mode, mat, part);
+            // }
 
-            virtual void local_to_global(const VectorAccumulator &acc,
-                                         AssemblyMode mode,
-                                         Vector &vec,
-                                         const Part &part = all()) {
-                local_to_global({acc}, mode, vec, part);
-            }
+            // virtual void local_to_global(const VectorAccumulator &acc,
+            //                              AssemblyMode mode,
+            //                              Vector &vec,
+            //                              const Part &part = all()) {
+            //     local_to_global({acc}, mode, vec, part);
+            // }
 
-            virtual void local_to_global_on_boundary(const VectorAccumulator &acc,
-                                                     AssemblyMode mode,
-                                                     Vector &vec,
-                                                     const Part &part = all()) {
-                local_to_global_on_boundary({acc}, mode, vec, part);
-            }
+            // virtual void local_to_global_on_boundary(const VectorAccumulator &acc,
+            //                                          AssemblyMode mode,
+            //                                          Vector &vec,
+            //                                          const Part &part = all()) {
+            //     local_to_global_on_boundary({acc}, mode, vec, part);
+            // }
 
             Discretization(const FunctionSpace_ptr &space) : space_(space) {}
             inline FunctionSpace_ptr space() const { return space_; }

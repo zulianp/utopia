@@ -79,8 +79,10 @@ void new_assembler_test() {
     x.set(0.0);
 
     lapl.hessian(x, mat);
+
+    // disp(mat);
 }
 
-// UTOPIA_REGISTER_TEST_FUNCTION(new_assembler_test);
+UTOPIA_REGISTER_TEST_FUNCTION(new_assembler_test);
 
 #endif  // UTOPIA_WITH_INTREPID2

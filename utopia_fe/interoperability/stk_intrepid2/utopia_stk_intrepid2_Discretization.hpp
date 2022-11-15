@@ -41,7 +41,7 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////////////////////////
 
         void create(std::vector<FE_ptr> &fe, int order, const Part &part = Super::all()) override;
-        void create_on_boundary(FE &fe, int order, const Part &part = Super::all()) override;
+        void create_on_boundary(std::vector<FE_ptr> &fe, int order, const Part &part = Super::all()) override;
 
         ////////////////////////////////////////////////////////////////////////////////////
 
@@ -56,7 +56,7 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////////////////////////
 
         void global_to_local(const Vector &vector,
-                             const std::vector<VectorAccumulator> &element_vectors,
+                             std::vector<VectorAccumulator> &element_vectors,
                              const Part &part = Super::all(),
                              const int comp = 0) override;
 

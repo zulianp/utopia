@@ -677,7 +677,7 @@ namespace utopia {
             void matrix_assembly_begin(Matrix &, AssemblyMode) {}
 
             void matrix_assembly_end(Matrix &matrix, AssemblyMode mode) {
-                this->discretization()->local_to_global(this->matrix_data(), mode, matrix);
+                this->discretization()->local_to_global({this->matrix_data()}, mode, matrix);
             }
 
             void vector_assembly_begin(Vector &, AssemblyMode) {}
