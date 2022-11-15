@@ -21,6 +21,7 @@ namespace utopia {
 
             UTOPIA_RUN_TEST(petsc_bicgstab);
             UTOPIA_RUN_TEST(petsc_gmres);
+
 // FIXME make it work also without mumps
 #ifndef PETSC_HAVE_MUMPS
             if (Comm::world().size() > 1) return;

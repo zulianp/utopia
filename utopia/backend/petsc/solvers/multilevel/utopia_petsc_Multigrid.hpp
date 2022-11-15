@@ -1,6 +1,7 @@
 #ifndef UTOPIA_PETSC_MULTIGRID_HPP
 #define UTOPIA_PETSC_MULTIGRID_HPP
 
+#include <memory>
 #include <utility>
 
 #include "utopia_IPTransfer.hpp"
