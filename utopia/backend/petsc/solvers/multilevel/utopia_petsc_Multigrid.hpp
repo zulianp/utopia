@@ -36,10 +36,10 @@ namespace utopia {
             }
 
             this->galerkin_assembly(op);
-            KSPSetOperators(*ksp_, raw_type(*op), raw_type(*op));
+            KSPSetOperators(get_ksp(), raw_type(*op), raw_type(*op));
 
             PC pc;
-            KSPGetPC(*ksp_, &pc);
+            KSPGetPC(get_ksp(), &pc);
 
             std::size_t n_smoothers = this->n_levels() - 1;
             for (std::size_t i = 0; i < n_smoothers; i++) {
@@ -56,12 +56,12 @@ namespace utopia {
         bool apply(const Vector &rhs, Vector &x) override {
             if (this->verbose()) this->init_solver("utopia/petsc Multigrid", {"it.", "|| Au - b||"});
 
-            KSPSolve(*ksp_, raw_type(rhs), raw_type(x));
+            KSPSolve(get_ksp(), raw_type(rhs), raw_type(x));
 
             KSPConvergedReason reason;
             PetscInt its;
-            KSPGetConvergedReason(*ksp_, &reason);
-            KSPGetIterationNumber(*ksp_, &its);
+            KSPGetConvergedReason(get_ksp(), &reason);
+            KSPGetIterationNumber(get_ksp(), &its);
 
             if (this->verbose()) this->exit_solver(its, reason);
             // FIXME
@@ -109,13 +109,15 @@ namespace utopia {
         std::shared_ptr<Smoother> smoother_;
         std::shared_ptr<Solver> linear_solver_;
 
-        std::shared_ptr<KSP> ksp_;
+        std::shared_ptr<void> ksp_;
         std::vector<Level> levels_;
 
         KSPType default_ksp_type_{KSPRICHARDSON};
         PCType default_pc_type_{PCSOR};
 
         PetscInt block_size_{1};
+
+        KSP get_ksp() const { return (KSP)ksp_.get(); }
 
         void aux_update_transfer(const SizeType level) {
             auto mat_transfer = dynamic_cast<MatrixTransfer *>(&this->transfer(level));
@@ -130,7 +132,7 @@ namespace utopia {
                 init_ksp(mat_transfer->I().comm().get());
             } else {
                 PC pc;
-                KSPGetPC(*ksp_, &pc);
+                KSPGetPC(get_ksp(), &pc);
                 Mat I = raw_type(mat_transfer->I());
                 PCMGSetInterpolation(pc, level + 1, I);
 
@@ -201,17 +203,18 @@ namespace utopia {
         }
 
         void init_ksp(MPI_Comm comm) {
-            ksp_ = std::shared_ptr<KSP>(new KSP, [](KSP *&ksp) {
-                KSPDestroy(ksp);
-                delete ksp;
-                ksp = nullptr;
+            KSP ksp = nullptr;
+            KSPCreate(comm, &ksp);
+
+            ksp_ = std::shared_ptr<void>((void *)ksp, [](void *&ptr) {
+                auto ksp_ptr = (KSP *)&ptr;
+                KSPDestroy(ksp_ptr);
             });
 
-            KSPCreate(comm, ksp_.get());
-            KSPSetFromOptions(*ksp_);
+            KSPSetFromOptions(ksp);
 
             PC pc;
-            KSPGetPC(*ksp_, &pc);
+            KSPGetPC(ksp, &pc);
             PCSetType(pc, PCMG);
 
             PCMGSetLevels(pc, this->n_levels(), nullptr);
@@ -221,7 +224,7 @@ namespace utopia {
 #else
             PCMGSetGalerkin(pc, PC_MG_GALERKIN_NONE);
 #endif
-            KSPSetInitialGuessNonzero(*ksp_, PETSC_TRUE);
+            KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
 
             const std::size_t n_smoothers = this->n_levels() - 1;
             for (std::size_t i = 0; i < n_smoothers; i++) {
@@ -286,11 +289,11 @@ namespace utopia {
             m_utopia_warning_once("PCMGSetNumberSmooth{Up,Down} not available in petsc 3.9.0 find equivalent");
 #endif
 
-            KSPSetTolerances(*ksp_, this->rtol(), this->atol(), PETSC_DEFAULT, this->max_it());
+            KSPSetTolerances(ksp, this->rtol(), this->atol(), PETSC_DEFAULT, this->max_it());
 
             if (this->verbose()) {
                 KSPMonitorSet(
-                    *ksp_,
+                    ksp,
                     [](KSP, PetscInt iter, PetscReal res, void *) -> PetscErrorCode {
                         PrintInfo::print_iter_status(iter, {res});
                         return 0;

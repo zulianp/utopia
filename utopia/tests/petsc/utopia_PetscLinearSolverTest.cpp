@@ -22,7 +22,10 @@ namespace utopia {
             UTOPIA_RUN_TEST(petsc_bicgstab);
             UTOPIA_RUN_TEST(petsc_gmres);
 // FIXME make it work also without mumps
-#ifdef PETSC_HAVE_MUMPS
+#ifndef PETSC_HAVE_MUMPS
+            if (Comm::world().size() > 1) return;
+#endif  // PETSC_HAVE_MUMPS
+
             UTOPIA_RUN_TEST(petsc_mg);
             UTOPIA_RUN_TEST(petsc_cg_mg);
             UTOPIA_RUN_TEST(petsc_mg_1D);
@@ -35,8 +38,6 @@ namespace utopia {
             UTOPIA_RUN_TEST(petsc_factorization);
             UTOPIA_RUN_TEST(petsc_st_cg_mg);
             UTOPIA_RUN_TEST(petsc_redundant_test);
-
-#endif  // PETSC_HAVE_MUMPS
         }
 
         void petsc_cg() {
