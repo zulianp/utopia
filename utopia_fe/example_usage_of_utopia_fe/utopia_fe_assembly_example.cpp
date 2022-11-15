@@ -19,6 +19,8 @@
 
 #include "utopia_libmesh_Library.hpp"
 
+#include "utopia_ConjugateGradient.hpp"
+
 #include "../apps/generic/utopia_NLSolveApp.hpp"
 
 namespace utopia {
@@ -27,6 +29,9 @@ namespace utopia {
 }  // namespace utopia
 
 void libmesh_nlsolve(utopia::Input &in) {
+    using Matrix_t = utopia::Traits<utopia::libmesh::FunctionSpace>::Matrix;
+    using Vector_t = utopia::Traits<utopia::libmesh::FunctionSpace>::Vector;
+
     // utopia::NLSolveApp<utopia::libmesh::FunctionSpace> app;
     // app.read(in);
 
@@ -35,6 +40,9 @@ void libmesh_nlsolve(utopia::Input &in) {
     // } else {
     //     utopia::err() << "libmesh_nlsolve: invalid app setup\n";
     // }
+
+    utopia::ConjugateGradient<Matrix_t, Vector_t> cg;
+    cg.import("ciao.yaml");
 }
 
 UTOPIA_REGISTER_APP(libmesh_nlsolve);
