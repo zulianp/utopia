@@ -22,7 +22,7 @@
 #include "libmesh/string_to_enum.h"
 #include "libmesh/utility.h"
 
-// #define UTOPIA_ENABLE_LIBMESH_PARSED_FUNCTION
+#define UTOPIA_ENABLE_LIBMESH_PARSED_FUNCTION
 #ifdef UTOPIA_ENABLE_LIBMESH_PARSED_FUNCTION
 #include "libmesh/parsed_function.h"
 #endif

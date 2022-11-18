@@ -26,7 +26,10 @@ option(UTOPIA_ENABLE_SANITIZER "check for memory access problems" OFF)
 option(UTOPIA_ENABLE_BOOST "enable boost features" OFF)
 option(UTOPIA_ENABLE_MOONOLITH_PROFILER
        "enable moonolith profiling capabilities" OFF)
+
 option(UTOPIA_ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
+option(UTOPIA_ENABLE_CXX17_FEATURES "Enable usage of cxx17 standard" ON)
+
 option(UTOPIA_ENABLE_MOOSE_ENV_MODE
        "Allows to use the moose installation compilers" ON)
 option(UTOPIA_ENABLE_TRILINOS_ALGEBRA

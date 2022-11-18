@@ -76,6 +76,8 @@ option(UTOPIA_ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 # option(UTOPIA_ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers
 # developed in the PASSO library" OFF)
 option(UTOPIA_ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
+option(UTOPIA_ENABLE_CXX17_FEATURES "Enable usage of cxx17 standard" ON)
+
 option(UTOPIA_ENABLE_MOOSE_ENV_MODE
        "Allows to use the moose installation compilers" OFF)
 option(UTOPIA_ENABLE_DEPRECATED_API
