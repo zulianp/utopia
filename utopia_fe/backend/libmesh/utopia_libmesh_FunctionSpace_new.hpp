@@ -14,6 +14,7 @@ namespace utopia {
     class Traits<utopia::libmesh::FunctionSpace> : public Traits<utopia::libmesh::Mesh> {
     public:
         using Mesh = utopia::libmesh::Mesh;
+        using Environment = utopia::Environment<utopia::libmesh::FunctionSpace>;
     };
 
     template <>

@@ -12,7 +12,7 @@
 #include "utopia_libmesh_ForwardDeclarations.hpp"
 #include "utopia_libmesh_FunctionSpace_new.hpp"
 
-#include "utopia_libmesh_CreateFe.hpp"
+#include "utopia_libmesh_CreateFE.hpp"
 #include "utopia_libmesh_LocalToGlobal.hpp"
 
 namespace utopia {
