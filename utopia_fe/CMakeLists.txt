@@ -533,9 +533,9 @@ target_link_libraries(utopia_fe_exec utopia_fe)
 include(tests/tests.cmake)
 include(apps/apps.cmake)
 
-if(UTOPIA_ENABLE_LIBMESH AND UTOPIA_ENABLE_LIBMESH_DEPRECATED)
-    include(deprecated/apps/apps.cmake)
-endif()
+# if(UTOPIA_ENABLE_LIBMESH AND UTOPIA_ENABLE_LIBMESH_DEPRECATED)
+#     include(deprecated/apps/apps.cmake)
+# endif()
 
 # ##############################################################################
 

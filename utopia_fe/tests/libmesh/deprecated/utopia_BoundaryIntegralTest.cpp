@@ -8,7 +8,7 @@
 // fe extension
 #include "moonolith_profiler.hpp"
 #include "utopia_ContactSimParams.hpp"
-#include "utopia_Socket.hpp"
+// #include "utopia_Socket.hpp"
 #include "utopia_fe_EDSL.hpp"
 
 #include <libmesh/const_function.h>
