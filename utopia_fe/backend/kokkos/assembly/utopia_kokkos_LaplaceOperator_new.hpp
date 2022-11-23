@@ -33,41 +33,49 @@ namespace utopia {
             inline std::string name() const override { return "LaplaceOperatorNew"; }
 
             inline bool has_hessian() const override { return true; }
-            inline bool has_gradient() const override { return true; }
-            inline bool has_value() const override { return false; }
             inline bool is_linear() const override { return true; }
-            bool is_operator() const override { return true; }
+            inline bool is_operator() const override { return true; };
+
+            inline bool has_gradient() const override { return false; }
+            inline bool has_value() const override { return false; }
 
             bool hessian_assemble(AssemblyMode mode) override {
-                UTOPIA_TRACE_REGION_BEGIN("Assemble<LaplaceOperatorNew>::hessian");
+                UTOPIA_TRACE_REGION_BEGIN("LaplaceOperatorNew::hessian");
 
                 auto &&assembler = this->assembler();
                 assert(assembler);
 
                 assembler->assemble_matrix_eij(
-                    "Assemble<LaplaceOperatorNew>::hessian", mode, op_.uniform_kernel(assembler->fe()));
+                    "LaplaceOperatorNew::hessian", mode, op_.uniform_kernel(assembler->fe()));
 
                 if (!op_.subdomain_value.empty) {
                     assert(false);
                 }
 
-                UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperatorNew>::hessian");
+                UTOPIA_TRACE_REGION_END("LaplaceOperatorNew::hessian");
                 return true;
             }
 
-            bool gradient_assemble(AssemblyMode mode) override {
-                assert(false);
-                return false;
-            }
+            // bool gradient_assemble(AssemblyMode mode) override {
+            //     assert(false);
+            //     return false;
+            // }
             bool value_assemble(AssemblyMode mode) override {
                 assert(false);
                 return false;
             }
 
             // Matrix free hessian application
-            bool apply_assemble(AssemblyMode mode) override {
-                assert(false);
-                return false;
+            bool apply_assemble(utopia::kokkos::Field<FE> &field, AssemblyMode mode) override {
+                UTOPIA_TRACE_REGION_BEGIN("LaplaceOperatorNew::apply");
+                auto &&assembler = this->assembler();
+                assert(assembler);
+
+                assembler->assemble_apply_ei(
+                    "LaplaceOperatorNew::apply", mode, op_.uniform_kernel(assembler->fe()), field);
+
+                UTOPIA_TRACE_REGION_END("LaplaceOperatorNew::apply");
+                return true;
             }
 
             // NVCC_PRIVATE :
