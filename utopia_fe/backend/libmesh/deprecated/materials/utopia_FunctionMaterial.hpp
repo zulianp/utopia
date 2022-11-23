@@ -18,6 +18,14 @@ namespace utopia {
             return ok;
         }
 
+        bool assemble_hessian(const Vector &x, Matrix &H) override { return fun_->hessian(x, H); }
+        bool assemble_gradient(const Vector &x, Vector &g) override { return fun_->gradient(x, g); }
+
+        bool assemble_hessian(Matrix &) override {
+            assert(false);
+            return false;
+        }
+
         virtual void clear() {}
 
     private:
