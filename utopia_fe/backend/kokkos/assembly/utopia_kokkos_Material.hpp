@@ -135,6 +135,7 @@ namespace utopia {
 
                 bool ok = const_cast<Material *>(this)->hessian_assemble(mode_);
                 if (!ok) {
+                    assert(false);
                     return false;
                 }
 

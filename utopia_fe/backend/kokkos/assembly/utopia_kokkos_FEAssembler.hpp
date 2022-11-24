@@ -526,9 +526,11 @@ namespace utopia {
                 this->loop_cell_test_trial(
                     name, UTOPIA_LAMBDA(const int cell, const int i, const int j) {
                         auto value = op(cell, i, j);
-                        auto &v = data(cell, op.offset_test(), op.offset_trial());
+                        auto &v = data(cell, i + op.offset_test(), j + op.offset_trial());
                         v += a * v + b * value;
                     });
+
+                // matrix_accumulator_->describe(std::cout);
 
                 return true;
             }

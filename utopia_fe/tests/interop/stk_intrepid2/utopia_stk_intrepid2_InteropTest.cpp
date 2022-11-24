@@ -44,6 +44,20 @@ void scalar_product_stk_intrepid2() { ScalarProductTest<utopia::stk::FunctionSpa
 
 UTOPIA_REGISTER_TEST_FUNCTION(scalar_product_stk_intrepid2);
 
+std::shared_ptr<utopia::kokkos::FEAssembler<utopia::stk::FunctionSpace, utopia::intrepid2::FE<double>>> make_assembler(
+    const std::shared_ptr<utopia::stk::FunctionSpace> &space,
+    const int order) {
+    using Assembler_t = utopia::kokkos::FEAssembler<utopia::stk::FunctionSpace, utopia::intrepid2::FE<double>>;
+    using Discretization_t = utopia::Discretization<utopia::stk::FunctionSpace, utopia::intrepid2::FE<double>>;
+
+    auto fe_ptr = std::make_shared<utopia::intrepid2::FE<double>>();
+    create_fe(*space, *fe_ptr, order);
+    auto discretization = std::make_shared<Discretization_t>(space, fe_ptr);
+    auto assembler = std::make_shared<Assembler_t>(fe_ptr);
+    assembler->set_discretization(discretization);
+    return assembler;
+}
+
 void new_assembler_test() {
     using FS_t = utopia::stk::FunctionSpace;
     using FE_t = utopia::intrepid2::FE<double>;
@@ -52,22 +66,16 @@ void new_assembler_test() {
     using Scalar_t = Traits<FS_t>::Scalar;
     using Assembler_t = utopia::kokkos::FEAssembler<FS_t, FE_t>;
     using Discretization_t = utopia::Discretization<FS_t, FE_t>;
+    using Solver_t = utopia::ConjugateGradient<Matrix_t, Vector_t, HOMEMADE>;
 
     UnitCubeSpaceAndFETest<FS_t, FE_t> test;
     auto params = test.cube_space_param(1);
 
     FS_t space;
     space.read(params);
-
     test.add_cube_bc(space, 1);
 
-    auto fe_ptr = std::make_shared<FE_t>();
-    create_fe(space, *fe_ptr, 2);
-
-    auto discretization = std::make_shared<Discretization_t>(make_ref(space), fe_ptr);
-    // FIXME remove args once we remove the superset features
-    auto assembler = std::make_shared<Assembler_t>(fe_ptr);
-    assembler->set_discretization(discretization);
+    auto assembler = make_assembler(make_ref(space), 2);
 
     utopia::kokkos::LaplaceOperatorNew<FS_t, FE_t, Assembler_t> lapl;
     lapl.set_assembler(assembler);
@@ -80,34 +88,21 @@ void new_assembler_test() {
     space.create_vector(g);
 
     x.set(0.0);
-    g.set(0.0);
 
-    lapl.hessian(x, mat);
-    lapl.gradient(x, g);
+    utopia_test_assert(lapl.hessian(x, mat));
+    utopia_test_assert(lapl.gradient(x, g));
+
+    Scalar_t ng = norm2(g);
+    Scalar_t nx = norm2(x);
+    Scalar_t nm = norm2(mat);
 
     g *= -1;
     space.apply_constraints(mat, g);
     space.apply_constraints(x);
 
-    Scalar_t ng = norm2(g);
-    Scalar_t nx = norm2(x);
-
-    rename("A", mat);
-    rename("g", g);
-    write("MAT.m", mat);
-    write("RHS.m", g);
-
-    disp(ng);
-    disp(nx);
-
-    ConjugateGradient<Matrix_t, Vector_t, HOMEMADE> cg;
-    cg.verbose(true);
-    cg.apply_gradient_descent_step(true);
-    cg.solve(mat, g, x);
-
-    space.write("x.e", x);
-
-    // disp(mat);
+    Solver_t solver;
+    solver.apply_gradient_descent_step(true);
+    utopia_test_assert(solver.solve(mat, g, x));
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(new_assembler_test);
