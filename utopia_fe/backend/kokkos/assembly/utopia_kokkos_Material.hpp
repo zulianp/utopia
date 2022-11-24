@@ -29,6 +29,7 @@ namespace utopia {
             using Discretization = utopia::kokkos::Discretization<FunctionSpace, FE>;
             using Environment = utopia::Environment<FunctionSpace>;
             using Field = utopia::kokkos::Field<FE>;
+            using FieldPtr = std::shared_ptr<utopia::kokkos::Field<FE>>;
 
             virtual ~Material() = default;
 
@@ -55,7 +56,7 @@ namespace utopia {
 
             const Communicator &comm() const override { return assembler()->discretization()->space()->comm(); }
 
-            virtual bool apply(const Vector &x, Vector &y) const {
+            bool apply(const Vector &x, Vector &y) const override {
                 if (!is_operator()) {
                     assert(false);
                     return false;
@@ -76,7 +77,7 @@ namespace utopia {
                 return false;
             }
 
-            virtual bool value(const Vector &x, Scalar &value) const {
+            bool value(const Vector &x, Scalar &value) const override {
                 if (!has_value()) {
                     assert(false);
                     return false;
@@ -95,7 +96,7 @@ namespace utopia {
                 return true;
             }
 
-            virtual bool gradient(const Vector &x, Vector &g) const {
+            bool gradient(const Vector &x, Vector &g) const override {
                 if (!has_gradient() && is_linear() && is_operator()) {
                 } else if (!has_gradient()) {
                     assert(false);
@@ -108,6 +109,11 @@ namespace utopia {
 
                 if (has_gradient()) {
                     bool ok = const_cast<Material *>(this)->gradient_assemble(mode_);
+                    if (!ok) {
+                        return false;
+                    }
+                } else {
+                    bool ok = const_cast<Material *>(this)->apply_assemble(*assembler()->current_solution(), mode_);
                     if (!ok) {
                         return false;
                     }

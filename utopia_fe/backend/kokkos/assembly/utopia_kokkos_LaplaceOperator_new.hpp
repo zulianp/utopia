@@ -56,10 +56,6 @@ namespace utopia {
                 return true;
             }
 
-            // bool gradient_assemble(AssemblyMode mode) override {
-            //     assert(false);
-            //     return false;
-            // }
             bool value_assemble(AssemblyMode mode) override {
                 assert(false);
                 return false;

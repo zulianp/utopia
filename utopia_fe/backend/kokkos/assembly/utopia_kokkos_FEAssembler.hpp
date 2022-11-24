@@ -590,6 +590,8 @@ namespace utopia {
                         auto &v = data(cell, i);
                         v = a * v + b * val;
                     });
+
+                return true;
             }
 
             template <class Op>
@@ -616,6 +618,8 @@ namespace utopia {
                             v = a * v + b * block(di);
                         }
                     });
+
+                return true;
             }
 
             template <class Op>
@@ -636,6 +640,8 @@ namespace utopia {
                         auto &v = data(cell, i);
                         v = a * v + b * val;
                     });
+
+                return true;
             }
 
             template <class Op>
@@ -656,6 +662,8 @@ namespace utopia {
                         auto &v = data(cell);
                         v = a * v + b * val;
                     });
+
+                return true;
             }
 
             template <class Op>
@@ -682,6 +690,8 @@ namespace utopia {
                             v = a * v + b * block(di);
                         }
                     });
+
+                return true;
             }
 
             //////////////////////////////////////////////////////////////////////////////////////////////////
