@@ -49,6 +49,7 @@ void new_assembler_test() {
     using FE_t = utopia::intrepid2::FE<double>;
     using Matrix_t = Traits<FS_t>::Matrix;
     using Vector_t = Traits<FS_t>::Vector;
+    using Scalar_t = Traits<FS_t>::Scalar;
     using Assembler_t = utopia::kokkos::FEAssembler<FS_t, FE_t>;
     using Discretization_t = utopia::Discretization<FS_t, FE_t>;
 
@@ -74,11 +75,37 @@ void new_assembler_test() {
     Matrix_t mat;
     space.create_matrix(mat);
 
-    Vector_t x;
+    Vector_t x, g;
     space.create_vector(x);
+    space.create_vector(g);
+
     x.set(0.0);
+    g.set(0.0);
 
     lapl.hessian(x, mat);
+    lapl.gradient(x, g);
+
+    g *= -1;
+    space.apply_constraints(mat, g);
+    space.apply_constraints(x);
+
+    Scalar_t ng = norm2(g);
+    Scalar_t nx = norm2(x);
+
+    rename("A", mat);
+    rename("g", g);
+    write("MAT.m", mat);
+    write("RHS.m", g);
+
+    disp(ng);
+    disp(nx);
+
+    ConjugateGradient<Matrix_t, Vector_t, HOMEMADE> cg;
+    cg.verbose(true);
+    cg.apply_gradient_descent_step(true);
+    cg.solve(mat, g, x);
+
+    space.write("x.e", x);
 
     // disp(mat);
 }
