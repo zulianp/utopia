@@ -96,6 +96,8 @@ void new_assembler_test() {
     Scalar_t nx = norm2(x);
     Scalar_t nm = norm2(mat);
 
+    utopia_test_assert(nm > 0.0);
+
     g *= -1;
     space.apply_constraints(mat, g);
     space.apply_constraints(x);
