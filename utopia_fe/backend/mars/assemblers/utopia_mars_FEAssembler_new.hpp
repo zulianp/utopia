@@ -32,50 +32,11 @@ namespace utopia {
             using Scalar = Traits<FunctionSpace>::Scalar;
             using FE = FE_;
             using Discretization = utopia::Discretization<utopia::mars::FunctionSpace, FE>;
-
-            //     using MatrixView = MatrixView_;
-            //     using VectorView = VectorView_;
-            //     using ScalarView = ScalarView_;
-
-            //     using Scalar = typename FE::Scalar;
-            //     using SizeType = typename FE::SizeType;
-            //     using ExecutionSpace = typename FE::ExecutionSpace;
-            //     using MatrixAccumulator = utopia::kokkos::TensorAccumulator<MatrixView>;
-            //     using VectorAccumulator = utopia::kokkos::TensorAccumulator<VectorView>;
-            //     using ScalarAccumulator = utopia::kokkos::TensorAccumulator<ScalarView>;
-
-            //     using CellTestTrialRange = typename FE::CellTestTrialRange;
-            //     using CellTestRange = typename FE::CellTestRange;
-            //     using CellRange = typename FE::CellRange;
-
-            //     ////////////////////////////////////////////////////////////////////////////////////
-            //     /// utopia::FEAssemblerNew Types
-            //     ////////////////////////////////////////////////////////////////////////////////////
-
-            //     using Discretization = utopia::kokkos::Discretization<FunctionSpace, FE>;
             using Part = typename Discretization::Part;
-            //     using Environment = typename Traits<FunctionSpace>::Environment;
-
-            //     virtual ~FEAssemblerNew() = default;
-
-            //     virtual bool update(const std::shared_ptr<Field<FE>> &current_solution) {
-            //         current_solution_ = current_solution;
-            //         return true;
-            //     }
 
             inline std::shared_ptr<kokkos::Field<FE>> current_solution() { return current_solution_; }
             std::shared_ptr<Discretization> discretization() { return nullptr; }
 
-            //     //////////////////////////////////////////////////////////////////////////////
-
-            //     virtual bool is_operator() const /*override*/ { return false; }
-            //     virtual bool is_linear() const /*override*/ { return true; }
-
-            //     //////////////////////////////////////////////////////////////////////////////
-            //     // NEW interface!
-            //     //////////////////////////////////////////////////////////////////////////////
-
-            //     // Scalar
             template <class Op>
             bool assemble_matrix_eij(const std::string &name,
                                      AssemblyMode mode,

@@ -14,13 +14,14 @@
 #include "utopia_LibMeshBackend.hpp"
 #include "utopia_Mechanics.hpp"
 #include "utopia_ProjectedGradient.hpp"
-#include "utopia_SemiGeometricMultigrid.hpp"
-#include "utopia_materials.hpp"
+// #include "utopia_SemiGeometricMultigrid.hpp"
+// #include "utopia_materials.hpp"
 #include "utopia_petsc_TaoSolver.hpp"
 #include "utopia_polymorphic_QPSolver.hpp"
 
 #include "utopia_SemismoothNewton.hpp"
 
+#include "utopia_Deformation.hpp"
 #include "utopia_libmesh_old.hpp"
 
 #include "libmesh/exodusII_io.h"

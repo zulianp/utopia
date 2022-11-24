@@ -1,7 +1,7 @@
 #ifndef UTOPIA_KOKKOS_MATERIAL_HPP
 #define UTOPIA_KOKKOS_MATERIAL_HPP
 
-#include "utopia_Function.hpp"
+#include "utopia_Material.hpp"
 
 #include "utopia_fe_Environment.hpp"
 #include "utopia_kokkos_Discretization.hpp"
@@ -15,16 +15,14 @@ namespace utopia {
     namespace kokkos {
 
         template <class FunctionSpace, class FE, class Assembler>
-        class Material
-            : public utopia::Function<typename Traits<FunctionSpace>::Matrix, typename Traits<FunctionSpace>::Vector>,
-              public Operator<typename Traits<FunctionSpace>::Vector> {
+        class Material : public utopia::AbstractMaterial<FunctionSpace> {
         public:
+            using Super = utopia::AbstractMaterial<FunctionSpace>;
+
             using Matrix = typename Traits<FunctionSpace>::Matrix;
             using Vector = typename Traits<FunctionSpace>::Vector;
             using Scalar = typename Traits<FunctionSpace>::Scalar;
             using Communicator = typename Traits<FunctionSpace>::Communicator;
-
-            using Super = utopia::Function<Matrix, Vector>;
 
             using Discretization = utopia::kokkos::Discretization<FunctionSpace, FE>;
             using Environment = utopia::Environment<FunctionSpace>;
@@ -34,15 +32,6 @@ namespace utopia {
             virtual ~Material() = default;
 
             virtual int n_vars() const = 0;
-            virtual std::string name() const = 0;
-
-            virtual bool has_hessian() const = 0;
-            virtual bool has_gradient() const = 0;
-            virtual bool has_value() const = 0;
-            virtual bool is_operator() const = 0;
-            virtual bool is_linear() const { return false; }
-
-            bool is_hessian_constant() const override { return is_linear(); }
 
             Size size() const override {
                 auto n = assembler()->discretization()->space()->n_dofs();
@@ -57,7 +46,7 @@ namespace utopia {
             const Communicator &comm() const override { return assembler()->discretization()->space()->comm(); }
 
             bool apply(const Vector &x, Vector &y) const override {
-                if (!is_operator()) {
+                if (!this->is_operator()) {
                     assert(false);
                     return false;
                 }
@@ -78,7 +67,7 @@ namespace utopia {
             }
 
             bool value(const Vector &x, Scalar &value) const override {
-                if (!has_value()) {
+                if (!this->has_value()) {
                     assert(false);
                     return false;
                 }
@@ -97,8 +86,8 @@ namespace utopia {
             }
 
             bool gradient(const Vector &x, Vector &g) const override {
-                if (!has_gradient() && is_linear() && is_operator()) {
-                } else if (!has_gradient()) {
+                if (!this->has_gradient() && this->is_linear() && this->is_operator()) {
+                } else if (!this->has_gradient()) {
                     assert(false);
                     return false;
                 }
@@ -107,7 +96,7 @@ namespace utopia {
 
                 assembler()->update_input(x);
 
-                if (has_gradient()) {
+                if (this->has_gradient()) {
                     bool ok = const_cast<Material *>(this)->gradient_assemble(mode_);
                     if (!ok) {
                         return false;
@@ -124,7 +113,7 @@ namespace utopia {
             }
 
             virtual bool hessian(const Vector &x, Matrix &H) const {
-                if (!has_hessian()) {
+                if (!this->has_hessian()) {
                     assert(false);
                     return false;
                 }

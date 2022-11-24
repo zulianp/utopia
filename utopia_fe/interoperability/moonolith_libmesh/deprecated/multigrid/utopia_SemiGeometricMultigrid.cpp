@@ -3,7 +3,7 @@
 
 #include "utopia_BoundingBoxCoarsener.hpp"
 #include "utopia_Contact.hpp"
-#include "utopia_Socket.hpp"
+// #include "utopia_Socket.hpp"
 #include "utopia_assemble_volume_transfer.hpp"
 #include "utopia_libmesh_old.hpp"
 #include "utopia_make_unique.hpp"

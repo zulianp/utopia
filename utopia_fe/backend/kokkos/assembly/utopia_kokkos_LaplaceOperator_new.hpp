@@ -15,13 +15,12 @@ namespace utopia {
 
     namespace kokkos {
 
-        template <class FunctionSpace, class FE_, class Assembler_, class DiffusionCoefficient = typename FE_::Scalar>
-        class LaplaceOperatorNew : public Material<FunctionSpace, FE_, Assembler_> {
+        template <class FunctionSpace, class FE_, class DiffusionCoefficient = typename FE_::Scalar>
+        class LaplaceOperatorNew : public utopia::Material<FunctionSpace, FE_> {
         public:
             using FE = FE_;
-            using Assembler = Assembler_;
 
-            using Super = utopia::kokkos::Material<FunctionSpace, FE_, Assembler_>;
+            using Super = utopia::Material<FunctionSpace, FE_>;
             using Params = utopia::kokkos::LaplaceOp<FE, DiffusionCoefficient>;
             using Op = typename Params::UniformKernel;
 

@@ -32,6 +32,7 @@
 #include "utopia_kokkos_LaplaceOperator_new.hpp"
 
 #include "utopia_stk_intrepid2_Discretization.hpp"
+#include "utopia_stk_intrepid2_Material.hpp"
 
 using namespace utopia;
 
@@ -43,20 +44,6 @@ UTOPIA_REGISTER_TEST_FUNCTION(interop_stk_intrepid2);
 void scalar_product_stk_intrepid2() { ScalarProductTest<utopia::stk::FunctionSpace>().run(); }
 
 UTOPIA_REGISTER_TEST_FUNCTION(scalar_product_stk_intrepid2);
-
-std::shared_ptr<utopia::kokkos::FEAssembler<utopia::stk::FunctionSpace, utopia::intrepid2::FE<double>>> make_assembler(
-    const std::shared_ptr<utopia::stk::FunctionSpace> &space,
-    const int order) {
-    using Assembler_t = utopia::kokkos::FEAssembler<utopia::stk::FunctionSpace, utopia::intrepid2::FE<double>>;
-    using Discretization_t = utopia::Discretization<utopia::stk::FunctionSpace, utopia::intrepid2::FE<double>>;
-
-    auto fe_ptr = std::make_shared<utopia::intrepid2::FE<double>>();
-    create_fe(*space, *fe_ptr, order);
-    auto discretization = std::make_shared<Discretization_t>(space, fe_ptr);
-    auto assembler = std::make_shared<Assembler_t>(fe_ptr);
-    assembler->set_discretization(discretization);
-    return assembler;
-}
 
 void new_assembler_test() {
     using FS_t = utopia::stk::FunctionSpace;
@@ -75,10 +62,8 @@ void new_assembler_test() {
     space.read(params);
     test.add_cube_bc(space, 1);
 
-    auto assembler = make_assembler(make_ref(space), 2);
-
-    utopia::kokkos::LaplaceOperatorNew<FS_t, FE_t, Assembler_t> lapl;
-    lapl.set_assembler(assembler);
+    utopia::kokkos::LaplaceOperatorNew<FS_t, FE_t> lapl;
+    lapl.initialize(make_ref(space));
 
     Matrix_t mat;
     space.create_matrix(mat);
@@ -104,6 +89,7 @@ void new_assembler_test() {
 
     Solver_t solver;
     solver.apply_gradient_descent_step(true);
+    solver.verbose(true);
     utopia_test_assert(solver.solve(mat, g, x));
 }
 
