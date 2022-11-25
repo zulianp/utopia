@@ -37,6 +37,7 @@ namespace utopia {
 
             using MarsCrsMatrix = Matrix::CrsMatrixType::local_matrix_type;
 
+            using FE = Traits<FunctionSpace>::FE;
             using KokkosDiscretization = utopia::kokkos::Discretization<FunctionSpace, FE>;
             using Part = KokkosDiscretization::Part;
 
@@ -180,10 +181,11 @@ namespace utopia {
 
             const Factory &factory() const;
 
+            std::shared_ptr<IFEHandler> handler() const;
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;
-            std::shared_ptr<IFEHandler> handler() const;
         };
 
     }  // namespace mars
