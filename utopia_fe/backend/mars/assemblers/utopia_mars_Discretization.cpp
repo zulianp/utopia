@@ -15,48 +15,20 @@ namespace utopia {
 
     Discretization<mars_FS_t, mars_FE_t>::~Discretization() {}
 
-    void Discretization<mars_FS_t, mars_FE_t>::read(Input &in) {
+    void Discretization<mars_FS_t, mars_FE_t>::read(Input & /*in*/) {
         // TODO
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
 
     void Discretization<mars_FS_t, mars_FE_t>::create(std::vector<FE_ptr> &fe, int order, const Part &part) {
-        // FIXME
-        // FE_ptr fe0;
-
-        // if (fe.size() == 1) {
-        //     fe0 = fe[0];
-        // } else {
-        //     fe0 = std::make_shared<FE>();
-        // }
-
-        // create_fe(*this->space(), *fe0, order);
-
-        // fe.clear();
-        // fe.push_back(fe0);
+        this->space()->create(fe, order, part);
     }
 
     void Discretization<mars_FS_t, mars_FE_t>::create_on_boundary(std::vector<FE_ptr> &fe,
                                                                   int order,
                                                                   const Part &part) {
-        // // FIXME
-        // FE_ptr fe0;
-
-        // if (fe.size() == 1) {
-        //     fe0 = fe[0];
-        // } else {
-        //     fe0 = std::make_shared<FE>();
-        // }
-
-        // if (part.is_all()) {
-        //     create_fe_on_boundary(*this->space(), *fe0, order);
-        // } else {
-        //     create_fe_on_boundary(*this->space(), *fe0, part.name, order);
-        // }
-
-        // fe.clear();
-        // fe.push_back(fe0);
+        this->space()->create_on_boundary(fe, order, part);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -64,20 +36,12 @@ namespace utopia {
     void Discretization<mars_FS_t, mars_FE_t>::convert_field(const Field &in,
                                                              std::vector<std::shared_ptr<FEField>> &out,
                                                              const Part &part) {
-        // FIXME
-
-        // if (out.size() == 1) {
-        //     utopia::convert_field(in, *out[0]);
-        // } else {
-        //     assert(false);
-        // }
+        this->space()->convert_field(in, out, part);
     }
     void Discretization<mars_FS_t, mars_FE_t>::convert_field(const std::vector<std::shared_ptr<FEField>> &in,
                                                              Field &out,
                                                              const Part &part) {
-        // FIXME
-        // assert(in.size() == 1);
-        // utopia::convert_field(*in[0], out);
+        this->space()->convert_field(in, out, part);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -86,35 +50,28 @@ namespace utopia {
                                                                std::vector<VectorAccumulator> &element_vectors,
                                                                const Part &part,
                                                                const int comp) {
-        // FIXME
-        // element_vectors.resize(1);
-        // utopia::global_to_local(*this->space(), vector, element_vectors[0], comp);
+        this->space()->global_to_local(vector, element_vectors, part, comp);
     }
 
     void Discretization<mars_FS_t, mars_FE_t>::local_to_global(const std::vector<MatrixAccumulator> &acc,
                                                                AssemblyMode mode,
                                                                Matrix &mat,
                                                                const Part &part) {
-        // FIXME
-        assert(acc.size() == 1);
-        // utopia::local_to_global(*this->space(), acc[0], mode, mat);
+        this->space()->local_to_global(acc, mode, mat, part);
     }
 
     void Discretization<mars_FS_t, mars_FE_t>::local_to_global(const std::vector<VectorAccumulator> &acc,
                                                                AssemblyMode mode,
                                                                Vector &vec,
                                                                const Part &part) {
-        // FIXME
-        assert(acc.size() == 1);
-        // utopia::local_to_global(*this->space(), acc[0], mode, vec);
+        this->space()->local_to_global(acc, mode, vec, part);
     }
 
     void Discretization<mars_FS_t, mars_FE_t>::local_to_global_on_boundary(const std::vector<VectorAccumulator> &acc,
                                                                            AssemblyMode mode,
                                                                            Vector &vec,
                                                                            const Part &part) {
-        // TODO
-        // utopia::side_local_to_global(*this->space(), acc[0], mode, vec, part.name);
+        this->space()->local_to_global_on_boundary(acc, mode, vec, part);
     }
 
 }  // namespace utopia

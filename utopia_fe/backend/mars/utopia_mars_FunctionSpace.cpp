@@ -7,6 +7,8 @@
 
 #include "utopia_mars_MeshIO.hpp"
 
+#include "utopia_mars_Discretization.hpp"
+
 namespace utopia {
     namespace mars {
         class FunctionSpace::Impl {
@@ -46,6 +48,7 @@ namespace utopia {
 #endif  // UTOPIA_WITH_VTK
             }
 
+          
             template <class RawType>
             std::shared_ptr<RawType> raw_type() const {
                 return std::dynamic_pointer_cast<RawType>(handler);
@@ -98,6 +101,61 @@ namespace utopia {
             std::vector<FEVar> variables;
 
             std::function<bool(const Path &, const Vector &)> write;
+
+            ////////////////////////////////////////////////////////////////////////////////////
+            // Discretization protoyping
+            ////////////////////////////////////////////////////////////////////////////////////
+
+            std::function<void(std::vector<KokkosDiscretization::FE_ptr> &, int, const KokkosDiscretization::Part &)>
+                create;
+
+            std::function<void(std::vector<KokkosDiscretization::FE_ptr> &, int, const KokkosDiscretization::Part &)>
+                create_on_boundary;
+
+            ////////////////////////////////////////////////////////////////////////////////////
+
+            std::function<void(const Field<FunctionSpace> &,
+                               std::vector<std::shared_ptr<KokkosDiscretization::FEField>> &,
+                               const KokkosDiscretization::Part &)>
+                convert_field;
+
+            std::function<void(const std::vector<std::shared_ptr<KokkosDiscretization::FEField>> &,
+                               Field<FunctionSpace> &,
+                               const KokkosDiscretization::Part &)>
+                convert_fields;
+
+            ////////////////////////////////////////////////////////////////////////////////////
+
+            std::function<void(const Vector &vector,
+                               std::vector<KokkosDiscretization::VectorAccumulator> &,
+                               const KokkosDiscretization::Part &,
+                               const int)>
+                global_to_local;
+
+            // Local to global
+            std::function<void(const std::vector<KokkosDiscretization::MatrixAccumulator> &,
+                               AssemblyMode,
+                               Matrix &,
+                               const KokkosDiscretization::Part &)>
+                local_to_global_mat;
+
+            std::function<void(const std::vector<KokkosDiscretization::VectorAccumulator> &,
+                               AssemblyMode,
+                               Vector &,
+                               const KokkosDiscretization::Part &)>
+                local_to_global_vec;
+
+            std::function<void(const std::vector<KokkosDiscretization::VectorAccumulator> &,
+                               AssemblyMode,
+                               Vector &,
+                               const KokkosDiscretization::Part &)>
+                local_to_global_on_boundary;
+
+
+            template <class DMesh>
+            void init_discretization(DMesh &mesh_impl) {
+                //
+            }
 
             bool verbose{false};
             int n_var{1};
@@ -282,6 +340,71 @@ namespace utopia {
         template <class RawType>
         std::shared_ptr<RawType> FunctionSpace::raw_type() const {
             return impl_->raw_type<RawType>();
+        }
+
+        void FunctionSpace::create(std::vector<KokkosDiscretization::FE_ptr> &fe,
+                                   int order,
+                                   const KokkosDiscretization::Part &part) {
+            assert(false);
+            Utopia::Abort();
+        }
+
+        void FunctionSpace::create_on_boundary(std::vector<KokkosDiscretization::FE_ptr> &fe,
+                                               int order,
+                                               const KokkosDiscretization::Part &part) {
+            assert(false);
+            Utopia::Abort();
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////
+
+        void FunctionSpace::convert_field(const Field<FunctionSpace> &in,
+                                          std::vector<std::shared_ptr<KokkosDiscretization::FEField>> &out,
+                                          const KokkosDiscretization::Part &part) {
+            assert(false);
+            Utopia::Abort();
+        }
+
+        void FunctionSpace::convert_field(const std::vector<std::shared_ptr<KokkosDiscretization::FEField>> &in,
+                                          Field<FunctionSpace> &out,
+                                          const KokkosDiscretization::Part &part) {
+            assert(false);
+            Utopia::Abort();
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////
+
+        void FunctionSpace::global_to_local(const Vector &vector,
+                                            std::vector<KokkosDiscretization::VectorAccumulator> &element_vectors,
+                                            const KokkosDiscretization::Part &part,
+                                            const int comp) {
+            assert(false);
+            Utopia::Abort();
+        }
+
+        // Local to global
+        void FunctionSpace::local_to_global(const std::vector<KokkosDiscretization::MatrixAccumulator> &acc,
+                                            AssemblyMode mode,
+                                            Matrix &mat,
+                                            const KokkosDiscretization::Part &part) {
+            assert(false);
+            Utopia::Abort();
+        }
+
+        void FunctionSpace::local_to_global(const std::vector<KokkosDiscretization::VectorAccumulator> &acc,
+                                            AssemblyMode mode,
+                                            Vector &vec,
+                                            const KokkosDiscretization::Part &part) {
+            assert(false);
+            Utopia::Abort();
+        }
+
+        void FunctionSpace::local_to_global_on_boundary(const std::vector<KokkosDiscretization::VectorAccumulator> &acc,
+                                                        AssemblyMode mode,
+                                                        Vector &vec,
+                                                        const KokkosDiscretization::Part &part) {
+            assert(false);
+            Utopia::Abort();
         }
 
     }  // namespace mars
