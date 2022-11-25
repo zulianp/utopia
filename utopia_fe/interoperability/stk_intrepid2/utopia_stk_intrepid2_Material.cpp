@@ -10,8 +10,8 @@ namespace utopia {
     void Material<utopia::stk::FunctionSpace, stk_FE_t>::initialize(
         const std::shared_ptr<utopia::stk::FunctionSpace> &space) {
         using Scalar_t = utopia::Traits<utopia::stk::FunctionSpace>::Scalar;
-        using Assembler_t = utopia::kokkos::FEAssembler<utopia::stk::FunctionSpace, utopia::intrepid2::FE<double>>;
-        using Discretization_t = utopia::Discretization<utopia::stk::FunctionSpace, utopia::intrepid2::FE<double>>;
+        using Assembler_t = utopia::kokkos::FEAssembler<utopia::stk::FunctionSpace, utopia::intrepid2::FE<Scalar_t>>;
+        using Discretization_t = utopia::Discretization<utopia::stk::FunctionSpace, utopia::intrepid2::FE<Scalar_t>>;
 
         auto fe_ptr = std::make_shared<utopia::intrepid2::FE<Scalar_t>>();
         create_fe(*space, *fe_ptr, order());

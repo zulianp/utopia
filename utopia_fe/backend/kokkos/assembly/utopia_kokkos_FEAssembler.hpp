@@ -710,7 +710,9 @@ namespace utopia {
                     current_solution_ = std::make_shared<Field<FE>>(fe_);
                 }
 
-                convert_field(in, *current_solution_);
+                std::vector<std::shared_ptr<Field<FE>>> fields{current_solution_};
+
+                this->discretization()->convert_field(in, fields);
                 return true;
             }
 

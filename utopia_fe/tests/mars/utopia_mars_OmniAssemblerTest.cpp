@@ -6,7 +6,7 @@
 #include "utopia_kokkos_LaplaceOperator_new.hpp"
 #include "utopia_kokkos_UniformFE.hpp"
 #include "utopia_mars_Discretization.hpp"
-#include "utopia_mars_FEAssembler_new.hpp"
+#include "utopia_mars_Material.hpp"
 
 using namespace utopia;
 
@@ -142,14 +142,14 @@ void mars_assembler() {
 
 UTOPIA_REGISTER_TEST_FUNCTION(mars_assembler);
 
-// using FS_t = utopia::mars::FunctionSpace;
-// using FE_t = utopia::kokkos::UniformFE<double>;
-// using Matrix_t = Traits<FS_t>::Matrix;
-// using Vector_t = Traits<FS_t>::Vector;
-// using Scalar_t = Traits<FS_t>::Scalar;
+using FS_t = utopia::mars::FunctionSpace;
+using FE_t = utopia::kokkos::UniformFE<double>;
+using Matrix_t = Traits<FS_t>::Matrix;
+using Vector_t = Traits<FS_t>::Vector;
+using Scalar_t = Traits<FS_t>::Scalar;
 // using Assembler_t = utopia::mars::FEAssemblerNew<FE_t>;
-// using Discretization_t = utopia::Discretization<FS_t, FE_t>;
-// using Solver_t = utopia::ConjugateGradient<Matrix_t, Vector_t, HOMEMADE>;
+using Discretization_t = utopia::Discretization<FS_t, FE_t>;
+using Solver_t = utopia::ConjugateGradient<Matrix_t, Vector_t, HOMEMADE>;
 
 // std::shared_ptr<utopia::mars::FEAssemblerNew<FE_t>> make_assembler(
 //     const std::shared_ptr<utopia::mars::FunctionSpace> &space,
@@ -157,45 +157,45 @@ UTOPIA_REGISTER_TEST_FUNCTION(mars_assembler);
 //     return std::make_shared<utopia::mars::FEAssemblerNew<FE_t>>();
 // }
 
-// void mars_new_assembler_test() {
-//     auto params =
-//         param_list(param("n_var", 1),
-//                    param("mesh", param_list(param("type", "cube"), param("nx", 4), param("ny", 4), param("nz", 4))),
-//                    param("material", param_list(param("type", "LaplaceOperator"))));
+void mars_new_assembler_test() {
+    auto params =
+        param_list(param("n_var", 1),
+                   param("mesh", param_list(param("type", "cube"), param("nx", 4), param("ny", 4), param("nz", 4))),
+                   param("material", param_list(param("type", "LaplaceOperator"))));
 
-//     FS_t space;
-//     space.read(params);
+    FS_t space;
+    space.read(params);
 
-//     // auto assembler = make_assembler(make_ref(space), 2);
+    // auto assembler = make_assembler(make_ref(space), 2);
 
-//     utopia::kokkos::LaplaceOperatorNew<FS_t, FE_t, Assembler_t> lapl;
-//     lapl.initialize(make_ref(space));
+    utopia::kokkos::LaplaceOperatorNew<FS_t, FE_t> lapl;
+    lapl.initialize(make_ref(space));
 
-//     Matrix_t mat;
-//     space.create_matrix(mat);
+    Matrix_t mat;
+    space.create_matrix(mat);
 
-//     Vector_t x, g;
-//     space.create_vector(x);
-//     space.create_vector(g);
+    Vector_t x, g;
+    space.create_vector(x);
+    space.create_vector(g);
 
-//     x.set(0.0);
+    x.set(0.0);
 
-//     utopia_test_assert(lapl.hessian(x, mat));
-//     utopia_test_assert(lapl.gradient(x, g));
+    utopia_test_assert(lapl.hessian(x, mat));
+    utopia_test_assert(lapl.gradient(x, g));
 
-//     Scalar_t ng = norm2(g);
-//     Scalar_t nx = norm2(x);
-//     Scalar_t nm = norm2(mat);
+    Scalar_t ng = norm2(g);
+    Scalar_t nx = norm2(x);
+    Scalar_t nm = norm2(mat);
 
-//     utopia_test_assert(nm > 0.0);
+    utopia_test_assert(nm > 0.0);
 
-//     g *= -1;
-//     space.apply_constraints(mat, g);
-//     space.apply_constraints(x);
+    g *= -1;
+    space.apply_constraints(mat, g);
+    space.apply_constraints(x);
 
-//     Solver_t solver;
-//     solver.apply_gradient_descent_step(true);
-//     utopia_test_assert(solver.solve(mat, g, x));
-// }
+    Solver_t solver;
+    solver.apply_gradient_descent_step(true);
+    utopia_test_assert(solver.solve(mat, g, x));
+}
 
-// UTOPIA_REGISTER_TEST_FUNCTION(mars_new_assembler_test);
+UTOPIA_REGISTER_TEST_FUNCTION(mars_new_assembler_test);
