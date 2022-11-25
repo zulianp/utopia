@@ -143,19 +143,12 @@ void mars_assembler() {
 UTOPIA_REGISTER_TEST_FUNCTION(mars_assembler);
 
 using FS_t = utopia::mars::FunctionSpace;
-using FE_t = utopia::kokkos::UniformFE<double>;
 using Matrix_t = Traits<FS_t>::Matrix;
 using Vector_t = Traits<FS_t>::Vector;
 using Scalar_t = Traits<FS_t>::Scalar;
-// using Assembler_t = utopia::mars::FEAssemblerNew<FE_t>;
-using Discretization_t = utopia::Discretization<FS_t, FE_t>;
-using Solver_t = utopia::ConjugateGradient<Matrix_t, Vector_t, HOMEMADE>;
 
-// std::shared_ptr<utopia::mars::FEAssemblerNew<FE_t>> make_assembler(
-//     const std::shared_ptr<utopia::mars::FunctionSpace> &space,
-//     const int order) {
-//     return std::make_shared<utopia::mars::FEAssemblerNew<FE_t>>();
-// }
+using FE_t = utopia::kokkos::UniformFE<Scalar_t>;
+using Solver_t = utopia::ConjugateGradient<Matrix_t, Vector_t, HOMEMADE>;
 
 void mars_new_assembler_test() {
     auto params =
@@ -165,8 +158,8 @@ void mars_new_assembler_test() {
 
     FS_t space;
     space.read(params);
-
-    // auto assembler = make_assembler(make_ref(space), 2);
+    space.add_dirichlet_boundary_condition("left", -1);
+    space.add_dirichlet_boundary_condition("right", 1);
 
     utopia::kokkos::LaplaceOperatorNew<FS_t, FE_t> lapl;
     lapl.initialize(make_ref(space));
@@ -193,8 +186,11 @@ void mars_new_assembler_test() {
     space.apply_constraints(mat, g);
     space.apply_constraints(x);
 
+    mat.write("m.mm");
+
     Solver_t solver;
     solver.apply_gradient_descent_step(true);
+    solver.verbose(true);
     utopia_test_assert(solver.solve(mat, g, x));
 }
 

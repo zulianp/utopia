@@ -530,8 +530,6 @@ namespace utopia {
                         v += a * v + b * value;
                     });
 
-                // matrix_accumulator_->describe(std::cout);
-
                 return true;
             }
 

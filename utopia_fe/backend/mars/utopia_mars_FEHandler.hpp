@@ -24,6 +24,7 @@ namespace utopia {
             using SPattern =
                 ::mars::SparsityPattern<Scalar, LocalSizeType, SizeType, DofHandler, MarsCrsMatrix::size_type>;
 
+            using FE = Traits<FunctionSpace>::FE;
             using KokkosDiscretization = utopia::kokkos::Discretization<FunctionSpace, FE>;
             using Part = KokkosDiscretization::Part;
 
@@ -143,17 +144,43 @@ namespace utopia {
             inline const DofHandler &get_dof_handler() const { return *dof_handler; }
             inline const FEDofMap &get_fe_dof_map() const { return *fe_dof_map; }
 
+            void collect_ghost_layer(const Vector &in, ::mars::ViewVectorType<Scalar> &out) {
+                UTOPIA_TRACE_REGION_BEGIN("mars::FEHandler::collect_ghost_layer");
+
+                auto fe_dof_map = this->get_fe_dof_map();
+                auto dof_handler = this->get_dof_handler();
+
+                auto x_view = local_view_device(in).raw_type();  // Rank 2 tensor N x 1
+                if (out.extent(0) != dof_handler.get_dof_size()) {
+                    out = ::mars::ViewVectorType<Scalar>("x_local", dof_handler.get_dof_size());  // Rank 1 tensor
+                }
+
+                ::mars::ViewVectorType<Scalar> x_view_rank1(::Kokkos::subview(x_view, ::Kokkos::ALL, 0));
+                ::mars::set_locally_owned_data(dof_handler, out, x_view_rank1);
+                ::mars::gather_ghost_data(dof_handler, out);
+                Kokkos::fence();
+
+                UTOPIA_TRACE_REGION_END("mars::FEHandler::collect_ghost_layer");
+            }
+
             ////////////////////////////////////////////////////////////////////////////////////
 
-            void create(std::vector<KokkosDiscretization::FE_ptr> &fe,
+            void create(std::vector<KokkosDiscretization::FE_ptr> &fes,
                         int order,
                         const KokkosDiscretization::Part &part = KokkosDiscretization::all()) override {
-                Utopia::Abort();
+                fes.clear();
+                auto fe = std::make_shared<FE>();
+                FEBuilder<FEHandler, FE> builder;
+                builder.build(*this, *fe);
+                fes.push_back(fe);
+
+                assert(fe->n_cells() > 0);
             }
 
             void create_on_boundary(std::vector<KokkosDiscretization::FE_ptr> &fe,
                                     int order,
                                     const KokkosDiscretization::Part &part = KokkosDiscretization::all()) override {
+                assert(false && "IMPLEMENT ME!");
                 Utopia::Abort();
             }
 
@@ -162,13 +189,64 @@ namespace utopia {
             void convert_field(const Field<FunctionSpace> &in,
                                std::vector<std::shared_ptr<KokkosDiscretization::FEField>> &out,
                                const KokkosDiscretization::Part &part = KokkosDiscretization::all()) override {
-                Utopia::Abort();
+                ::mars::ViewVectorType<Scalar> x;
+                collect_ghost_layer(in.data(), x);
+
+                int block_size = in.tensor_size();
+                int b_offset_j = 0;
+
+                auto fe_dof_map = this->get_fe_dof_map();
+                auto dof_handler = this->get_dof_handler();
+
+                assert(out.size() == 1);
+                auto &&field = out[0]->data();
+                auto fe = out[0]->fe();
+                int n_fun = fe->n_shape_functions();
+
+                size_t num_elem = fe_dof_map.get_fe_dof_map_size();
+
+                if (Size_t(field.extent(0)) < num_elem || Size_t(field.extent(1)) < n_fun * block_size) {
+                    field = KokkosDiscretization::FEField::DynRankView("Coefficients", num_elem, n_fun * block_size);
+                }
+
+                auto kernel = MARS_LAMBDA(const ::mars::Integer elem_index) {
+                    Scalar val = 0;
+                    for (int j = 0; j < n_fun; j++) {
+                        for (int sub_j = 0; sub_j < block_size; ++sub_j) {
+                            auto offset_j = dof_handler.compute_block_index(j, sub_j + b_offset_j);
+                            const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, offset_j);
+                            auto x_j = x(local_dof_j);
+                            field(elem_index, j * block_size + sub_j) = x_j;
+                        }
+                    }
+                };
+
+                fe_dof_map.iterate(kernel);
             }
 
             void convert_field(const std::vector<std::shared_ptr<KokkosDiscretization::FEField>> &in,
                                Field<FunctionSpace> &out,
                                const KokkosDiscretization::Part &part = KokkosDiscretization::all()) override {
+                assert(false && "IMPLEMENT ME!");
                 Utopia::Abort();
+
+                // assert(in.size() == 1);
+                // auto &&field = in[0]->data();
+
+                // fe_dof_map.iterate(MARS_LAMBDA(const ::mars::Integer elem_index) {
+                //     for (int i = 0; i < n_fun; i++) {
+                //         for (int sub_i = 0; sub_i < block_size; ++sub_i) {
+                //             auto offset_i = dof_handler.compute_block_index(i, sub_i + b_offset_i);
+                //             const auto local_dof_i = fe_dof_map.get_elem_local_dof(elem_index, offset_i);
+                //             if (local_dof_i < 0 || !dof_handler.is_owned(local_dof_i)) continue;
+
+                //             Scalar val = field(elem_index, i * block_size + sub_i);
+
+                //             const auto owned_dof_i = dof_handler.local_to_owned_index(local_dof_i);
+                //             &y(owned_dof_i, 0) = val;
+                //         }
+                //     }
+                // });
             }
 
             ////////////////////////////////////////////////////////////////////////////////////
@@ -177,6 +255,7 @@ namespace utopia {
                                  std::vector<KokkosDiscretization::VectorAccumulator> &element_vectors,
                                  const KokkosDiscretization::Part &part = KokkosDiscretization::all(),
                                  const int comp = 0) override {
+                assert(false && "IMPLEMENT ME!");
                 Utopia::Abort();
             }
 
@@ -186,14 +265,82 @@ namespace utopia {
                                  AssemblyMode mode,
                                  Matrix &mat,
                                  const KokkosDiscretization::Part &part = KokkosDiscretization::all()) override {
-                Utopia::Abort();
+                auto fe_dof_map = this->get_fe_dof_map();
+                auto dof_handler = this->get_dof_handler();
+                auto sp = this->get_sparsity_pattern();
+
+                int b_offset_i = 0;
+                int b_offset_j = 0;
+
+                int block_size = dof_handler.get_block();
+                assert(acc.size() == 1);
+
+                auto &&m = acc[0];
+
+                const int n_fun_i = m.extent(1) / block_size;
+                const int n_fun_j = m.extent(2) / block_size;
+
+                using SparseMatrixBuilder = ::mars::SparsityMatrix<SPattern>;
+
+                SparseMatrixBuilder matrix_builder(sp, mat.raw_type()->getLocalMatrixDevice());
+
+                assert(block_size <= dof_handler.get_block());
+
+                fe_dof_map.iterate(MARS_LAMBDA(const ::mars::Integer elem_index) {
+                    for (int i = 0; i < n_fun_i; i++) {
+                        for (int sub_i = 0; sub_i < block_size; ++sub_i) {
+                            auto offset_i = dof_handler.compute_block_index(i, b_offset_i + sub_i);
+                            const auto local_dof_i = fe_dof_map.get_elem_local_dof(elem_index, offset_i);
+                            if (local_dof_i < 0 || !dof_handler.is_owned(local_dof_i)) continue;
+
+                            for (int j = 0; j < n_fun_j; j++) {
+                                for (int sub_j = 0; sub_j < block_size; ++sub_j) {
+                                    auto offset_j = dof_handler.compute_block_index(j, b_offset_j + sub_j);
+                                    const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, offset_j);
+                                    if (local_dof_j > -1) {
+                                        const Scalar val =
+                                            m(elem_index, i * block_size + sub_i, j * block_size + sub_j);
+
+                                        assert(val == val);
+                                        matrix_builder.atomic_add_value(local_dof_i, local_dof_j, val);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
             }
 
             void local_to_global(const std::vector<KokkosDiscretization::VectorAccumulator> &acc,
                                  AssemblyMode mode,
                                  Vector &vec,
                                  const KokkosDiscretization::Part &part = KokkosDiscretization::all()) override {
-                Utopia::Abort();
+                auto fe_dof_map = this->get_fe_dof_map();
+                auto dof_handler = this->get_dof_handler();
+
+                int block_size = dof_handler.get_block();
+                assert(acc.size() == 1);
+
+                auto &&v = acc[0];
+
+                const int n_fun = v.extent(1) / block_size;
+                auto vec_view = local_view_device(vec).raw_type();
+
+                auto kernel = MARS_LAMBDA(const ::mars::Integer elem_index) {
+                    for (int i = 0; i < n_fun; i++) {
+                        for (int sub_i = 0; sub_i < block_size; ++sub_i) {
+                            auto offset_i = dof_handler.compute_block_index(i, sub_i);
+                            const auto local_dof_i = fe_dof_map.get_elem_local_dof(elem_index, offset_i);
+                            if (local_dof_i < 0 || !dof_handler.is_owned(local_dof_i)) continue;
+                            const auto owned_dof_i = dof_handler.local_to_owned_index(local_dof_i);
+
+                            auto val = v(elem_index, i * n_fun + sub_i);
+                            Kokkos::atomic_fetch_add(&vec_view(owned_dof_i, 0), val);
+                        }
+                    }
+                };
+
+                fe_dof_map.iterate(kernel);
             }
 
             void local_to_global_on_boundary(
@@ -201,6 +348,7 @@ namespace utopia {
                 AssemblyMode mode,
                 Vector &vec,
                 const KokkosDiscretization::Part &part = KokkosDiscretization::all()) override {
+                assert(false && "IMPLEMENT ME!");
                 Utopia::Abort();
             }
 
