@@ -37,6 +37,9 @@ namespace utopia {
 
             using MarsCrsMatrix = Matrix::CrsMatrixType::local_matrix_type;
 
+            using KokkosDiscretization = utopia::kokkos::Discretization<FunctionSpace, FE>;
+            using Part = KokkosDiscretization::Part;
+
             virtual ~IFEHandler() = default;
 
             virtual MarsCrsMatrix new_crs_matrix() = 0;
@@ -66,6 +69,51 @@ namespace utopia {
             virtual SizeType n_dofs() = 0;
 
             virtual Factory &factory() = 0;
+
+            ////////////////////////////////////////////////////////////////////////////////////
+
+            virtual void create(std::vector<KokkosDiscretization::FE_ptr> &fe,
+                                int order,
+                                const KokkosDiscretization::Part &part = KokkosDiscretization::all()) = 0;
+
+            virtual void create_on_boundary(std::vector<KokkosDiscretization::FE_ptr> &fe,
+                                            int order,
+                                            const KokkosDiscretization::Part &part = KokkosDiscretization::all()) = 0;
+
+            ////////////////////////////////////////////////////////////////////////////////////
+
+            virtual void convert_field(const Field<FunctionSpace> &in,
+                                       std::vector<std::shared_ptr<KokkosDiscretization::FEField>> &out,
+                                       const KokkosDiscretization::Part &part = KokkosDiscretization::all()) = 0;
+
+            virtual void convert_field(const std::vector<std::shared_ptr<KokkosDiscretization::FEField>> &in,
+                                       Field<FunctionSpace> &out,
+                                       const KokkosDiscretization::Part &part = KokkosDiscretization::all()) = 0;
+
+            ////////////////////////////////////////////////////////////////////////////////////
+
+            virtual void global_to_local(const Vector &vector,
+                                         std::vector<KokkosDiscretization::VectorAccumulator> &element_vectors,
+                                         const KokkosDiscretization::Part &part = KokkosDiscretization::all(),
+                                         const int comp = 0) = 0;
+
+            // Local to global
+
+            virtual void local_to_global(const std::vector<KokkosDiscretization::MatrixAccumulator> &acc,
+                                         AssemblyMode mode,
+                                         Matrix &mat,
+                                         const KokkosDiscretization::Part &part = KokkosDiscretization::all()) = 0;
+
+            virtual void local_to_global(const std::vector<KokkosDiscretization::VectorAccumulator> &acc,
+                                         AssemblyMode mode,
+                                         Vector &vec,
+                                         const KokkosDiscretization::Part &part = KokkosDiscretization::all()) = 0;
+
+            virtual void local_to_global_on_boundary(
+                const std::vector<KokkosDiscretization::VectorAccumulator> &acc,
+                AssemblyMode mode,
+                Vector &vec,
+                const KokkosDiscretization::Part &part = KokkosDiscretization::all()) = 0;
         };
 
         class FunctionSpace : public Configurable, public Describable, public Traits<FunctionSpace> {
@@ -78,10 +126,7 @@ namespace utopia {
             using IndexSet = Traits<FunctionSpace>::IndexSet;
             using Comm = Traits<FunctionSpace>::Communicator;
 
-            using KokkosDiscretization = utopia::kokkos::Discretization<FunctionSpace, FE>;
-            using Part = KokkosDiscretization::Part;            
             using Discretization = Traits<FunctionSpace>::Discretization;
-
 
             using DirichletBoundary = utopia::DirichletBoundary<Traits<FunctionSpace>>;
 
@@ -134,45 +179,6 @@ namespace utopia {
             const std::string &name() const;
 
             const Factory &factory() const;
-
-            ////////////////////////////////////////////////////////////////////////////////////
-
-            void create(std::vector<KokkosDiscretization::FE_ptr> &fe, int order, const KokkosDiscretization::Part &part = KokkosDiscretization::all());
-            void create_on_boundary(std::vector<KokkosDiscretization::FE_ptr> &fe, int order, const KokkosDiscretization::Part &part = KokkosDiscretization::all());
-
-            ////////////////////////////////////////////////////////////////////////////////////
-
-            void convert_field(const Field<FunctionSpace> &in,
-                               std::vector<std::shared_ptr<KokkosDiscretization::FEField>> &out,
-                               const KokkosDiscretization::Part &part = KokkosDiscretization::all());
-
-            void convert_field(const std::vector<std::shared_ptr<KokkosDiscretization::FEField>> &in,
-                               Field<FunctionSpace> &out,
-                               const KokkosDiscretization::Part &part = KokkosDiscretization::all());
-
-            ////////////////////////////////////////////////////////////////////////////////////
-
-            void global_to_local(const Vector &vector,
-                                 std::vector<KokkosDiscretization::VectorAccumulator> &element_vectors,
-                                 const KokkosDiscretization::Part &part = KokkosDiscretization::all(),
-                                 const int comp = 0);
-
-            // Local to global
-
-            void local_to_global(const std::vector<KokkosDiscretization::MatrixAccumulator> &acc,
-                                 AssemblyMode mode,
-                                 Matrix &mat,
-                                 const KokkosDiscretization::Part &part = KokkosDiscretization::all());
-
-            void local_to_global(const std::vector<KokkosDiscretization::VectorAccumulator> &acc,
-                                 AssemblyMode mode,
-                                 Vector &vec,
-                                 const KokkosDiscretization::Part &part = KokkosDiscretization::all());
-
-            void local_to_global_on_boundary(const std::vector<KokkosDiscretization::VectorAccumulator> &acc,
-                                             AssemblyMode mode,
-                                             Vector &vec,
-                                             const KokkosDiscretization::Part &part = KokkosDiscretization::all());
 
         private:
             class Impl;

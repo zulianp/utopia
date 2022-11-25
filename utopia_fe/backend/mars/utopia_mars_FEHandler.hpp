@@ -24,6 +24,9 @@ namespace utopia {
             using SPattern =
                 ::mars::SparsityPattern<Scalar, LocalSizeType, SizeType, DofHandler, MarsCrsMatrix::size_type>;
 
+            using KokkosDiscretization = utopia::kokkos::Discretization<FunctionSpace, FE>;
+            using Part = KokkosDiscretization::Part;
+
             static_assert(std::is_same<SizeType, Matrix::CrsMatrixType::global_ordinal_type>::value, "Weird!");
 
             auto new_crs_matrix() -> MarsCrsMatrix override { return sparsity_pattern->new_crs_matrix(); }
@@ -139,6 +142,67 @@ namespace utopia {
             inline const SPattern &get_sparsity_pattern() const { return *sparsity_pattern; }
             inline const DofHandler &get_dof_handler() const { return *dof_handler; }
             inline const FEDofMap &get_fe_dof_map() const { return *fe_dof_map; }
+
+            ////////////////////////////////////////////////////////////////////////////////////
+
+            void create(std::vector<KokkosDiscretization::FE_ptr> &fe,
+                        int order,
+                        const KokkosDiscretization::Part &part = KokkosDiscretization::all()) override {
+                Utopia::Abort();
+            }
+
+            void create_on_boundary(std::vector<KokkosDiscretization::FE_ptr> &fe,
+                                    int order,
+                                    const KokkosDiscretization::Part &part = KokkosDiscretization::all()) override {
+                Utopia::Abort();
+            }
+
+            ////////////////////////////////////////////////////////////////////////////////////
+
+            void convert_field(const Field<FunctionSpace> &in,
+                               std::vector<std::shared_ptr<KokkosDiscretization::FEField>> &out,
+                               const KokkosDiscretization::Part &part = KokkosDiscretization::all()) override {
+                Utopia::Abort();
+            }
+
+            void convert_field(const std::vector<std::shared_ptr<KokkosDiscretization::FEField>> &in,
+                               Field<FunctionSpace> &out,
+                               const KokkosDiscretization::Part &part = KokkosDiscretization::all()) override {
+                Utopia::Abort();
+            }
+
+            ////////////////////////////////////////////////////////////////////////////////////
+
+            void global_to_local(const Vector &vector,
+                                 std::vector<KokkosDiscretization::VectorAccumulator> &element_vectors,
+                                 const KokkosDiscretization::Part &part = KokkosDiscretization::all(),
+                                 const int comp = 0) override {
+                Utopia::Abort();
+            }
+
+            // Local to global
+
+            void local_to_global(const std::vector<KokkosDiscretization::MatrixAccumulator> &acc,
+                                 AssemblyMode mode,
+                                 Matrix &mat,
+                                 const KokkosDiscretization::Part &part = KokkosDiscretization::all()) override {
+                Utopia::Abort();
+            }
+
+            void local_to_global(const std::vector<KokkosDiscretization::VectorAccumulator> &acc,
+                                 AssemblyMode mode,
+                                 Vector &vec,
+                                 const KokkosDiscretization::Part &part = KokkosDiscretization::all()) override {
+                Utopia::Abort();
+            }
+
+            void local_to_global_on_boundary(
+                const std::vector<KokkosDiscretization::VectorAccumulator> &acc,
+                AssemblyMode mode,
+                Vector &vec,
+                const KokkosDiscretization::Part &part = KokkosDiscretization::all()) override {
+                Utopia::Abort();
+            }
 
         private:
             std::shared_ptr<SPattern> sparsity_pattern;
