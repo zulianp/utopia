@@ -18,6 +18,9 @@
 #include "utopia_kokkos_NeoHookean.hpp"
 #include "utopia_kokkos_VectorLaplaceOperator.hpp"
 
+#include "utopia_hyperelasticity_NeoHookeanOgden_3.hpp"
+#include "utopia_kokkos_AutoHyperElasticityNew.hpp"
+
 // utopia/intrepid2 includes
 #include "utopia_intrepid2_ShellTools.hpp"
 
@@ -94,5 +97,37 @@ void new_assembler_test() {
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(new_assembler_test);
+
+void new_auto_assembler_test() {
+    using FS_t = utopia::stk::FunctionSpace;
+    using FE_t = utopia::intrepid2::FE<double>;
+    using Matrix_t = Traits<FS_t>::Matrix;
+    using Vector_t = Traits<FS_t>::Vector;
+    using Scalar_t = Traits<FS_t>::Scalar;
+    using Assembler_t = utopia::kokkos::FEAssembler<FS_t, FE_t>;
+    using Discretization_t = utopia::Discretization<FS_t, FE_t>;
+    using Solver_t = utopia::ConjugateGradient<Matrix_t, Vector_t, HOMEMADE>;
+
+    int n = 4;
+    auto params =
+        param_list(param("n_var", 1),
+                   param("mesh", param_list(param("type", "cube"), param("nx", n), param("ny", n), param("nz", n))),
+                   param("material", param_list(param("type", "LaplaceOperator"))));
+
+    FS_t space;
+    space.read(params);
+
+    space.add_dirichlet_boundary_condition("left", -1, 0);
+    space.add_dirichlet_boundary_condition("right", 1, 0);
+
+    space.add_dirichlet_boundary_condition("left", 0, 1);
+    space.add_dirichlet_boundary_condition("right", 0, 1);
+
+    space.add_dirichlet_boundary_condition("left", 0, 2);
+    space.add_dirichlet_boundary_condition("right", 0, 2);
+
+    utopia::kokkos::AutoHyperElasticityNew<FS_t, FE_t, utopia::kernels::NeoHookeanOgden<Scalar_t, 3>> neohook;
+    neohook.initialize(make_ref(space));
+}
 
 #endif  // UTOPIA_WITH_INTREPID2
