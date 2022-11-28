@@ -222,6 +222,9 @@ namespace utopia {
                 };
 
                 fe_dof_map.iterate(kernel);
+
+                out[0]->set_tensor_size(in.tensor_size());
+                out[0]->set_elem_type(in.elem_type());
             }
 
             void convert_field(const std::vector<std::shared_ptr<KokkosDiscretization::FEField>> &in,

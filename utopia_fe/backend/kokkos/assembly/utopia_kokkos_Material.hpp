@@ -35,6 +35,8 @@ namespace utopia {
 
             virtual int n_vars() const = 0;
 
+            virtual int order() const { return 2; }
+
             Size size() const override {
                 auto n = assembler()->discretization()->space()->n_dofs();
                 return {n, n};

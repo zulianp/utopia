@@ -23,12 +23,13 @@ namespace utopia {
             using SizeType = typename FE::SizeType;
             using DynRankView = typename FE::DynRankView;
             using ExecutionSpace = typename FE::ExecutionSpace;
+            using Grad = typename FE::Gradient;
 
             Gradient(const std::shared_ptr<FE> &fe, const std::string &name = "Gradient") : Super(fe, name) {}
 
             class Rank1Op {
             public:
-                UTOPIA_INLINE_FUNCTION Rank1Op(const DynRankView &grad, const DynRankView &coeff)
+                UTOPIA_INLINE_FUNCTION Rank1Op(const Grad &grad, const DynRankView &coeff)
                     : grad(grad), coeff(coeff), n_shape_functions(grad.extent(1)), n_var(grad.extent(3)) {}
 
                 UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int qp, const int d) const {
@@ -51,16 +52,15 @@ namespace utopia {
                     }
                 }
 
-                const DynRankView grad, coeff;
+                const Grad grad;
+                const DynRankView coeff;
                 const int n_shape_functions;
                 const int n_var;
             };
 
             class Rank1OpAndStore {
             public:
-                UTOPIA_INLINE_FUNCTION Rank1OpAndStore(const DynRankView &grad,
-                                                       const DynRankView &coeff,
-                                                       DynRankView &field)
+                UTOPIA_INLINE_FUNCTION Rank1OpAndStore(const Grad &grad, const DynRankView &coeff, DynRankView &field)
                     : op_(grad, coeff), field(field) {}
 
                 UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int qp, const int d) const {
@@ -73,7 +73,7 @@ namespace utopia {
 
             class Rank2Op {
             public:
-                UTOPIA_INLINE_FUNCTION Rank2Op(const DynRankView &grad, const DynRankView &coeff)
+                UTOPIA_INLINE_FUNCTION Rank2Op(const Grad &grad, const DynRankView &coeff)
                     : grad(grad),
                       coeff(coeff),
                       n_shape_functions(grad.extent(1)),
@@ -91,16 +91,15 @@ namespace utopia {
                     return ret;
                 }
 
-                const DynRankView grad, coeff;
+                const Grad grad;
+                const DynRankView coeff;
                 const int n_shape_functions;
                 const int n_var;
             };
 
             class Rank2OpAndStore {
             public:
-                UTOPIA_INLINE_FUNCTION Rank2OpAndStore(const DynRankView &grad,
-                                                       const DynRankView &coeff,
-                                                       DynRankView &field)
+                UTOPIA_INLINE_FUNCTION Rank2OpAndStore(const Grad &grad, const DynRankView &coeff, DynRankView &field)
                     : op_(grad, coeff), spatial_dim(grad.extent(3)), field(field) {}
 
                 UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int qp, const int var, const int d) const {
@@ -114,9 +113,7 @@ namespace utopia {
 
             class Rank2SubOp {
             public:
-                UTOPIA_INLINE_FUNCTION Rank2SubOp(const DynRankView &grad,
-                                                  const DynRankView &coeff,
-                                                  const int component)
+                UTOPIA_INLINE_FUNCTION Rank2SubOp(const Grad &grad, const DynRankView &coeff, const int component)
                     : grad(grad),
                       coeff(coeff),
                       n_shape_functions(grad.extent(1)),
@@ -135,7 +132,8 @@ namespace utopia {
                     return ret;
                 }
 
-                const DynRankView grad, coeff;
+                const Grad grad;
+                const DynRankView coeff;
                 const int n_shape_functions;
                 const int n_var;
                 const int component;
@@ -143,7 +141,7 @@ namespace utopia {
 
             class Rank2SubOpAndStore {
             public:
-                UTOPIA_INLINE_FUNCTION Rank2SubOpAndStore(const DynRankView &grad,
+                UTOPIA_INLINE_FUNCTION Rank2SubOpAndStore(const Grad &grad,
                                                           const DynRankView &coeff,
                                                           DynRankView &field,
                                                           const int component)

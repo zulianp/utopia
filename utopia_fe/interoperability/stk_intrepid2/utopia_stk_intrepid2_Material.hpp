@@ -18,8 +18,6 @@ namespace utopia {
                                           utopia::kokkos::FEAssembler<utopia::stk::FunctionSpace, stk_FE_t>> {
     public:
         void initialize(const std::shared_ptr<utopia::stk::FunctionSpace> &space);
-        // FIXME
-        virtual int order() const { return 2; }
     };
 
 }  // namespace utopia

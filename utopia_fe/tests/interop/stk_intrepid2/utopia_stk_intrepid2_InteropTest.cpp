@@ -48,7 +48,7 @@ void scalar_product_stk_intrepid2() { ScalarProductTest<utopia::stk::FunctionSpa
 
 UTOPIA_REGISTER_TEST_FUNCTION(scalar_product_stk_intrepid2);
 
-void new_assembler_test() {
+void stk_new_assembler_test() {
     using FS_t = utopia::stk::FunctionSpace;
     using FE_t = utopia::intrepid2::FE<double>;
     using Matrix_t = Traits<FS_t>::Matrix;
@@ -96,9 +96,9 @@ void new_assembler_test() {
     utopia_test_assert(solver.solve(mat, g, x));
 }
 
-UTOPIA_REGISTER_TEST_FUNCTION(new_assembler_test);
+UTOPIA_REGISTER_TEST_FUNCTION(stk_new_assembler_test);
 
-void new_auto_assembler_test() {
+void stk_new_auto_assembler_test() {
     using FS_t = utopia::stk::FunctionSpace;
     using FE_t = utopia::intrepid2::FE<double>;
     using Matrix_t = Traits<FS_t>::Matrix;
@@ -108,7 +108,7 @@ void new_auto_assembler_test() {
     using Discretization_t = utopia::Discretization<FS_t, FE_t>;
     using Solver_t = utopia::ConjugateGradient<Matrix_t, Vector_t, HOMEMADE>;
 
-    int n = 80;
+    int n = 10;
     auto params =
         param_list(param("n_var", 3),
                    param("mesh", param_list(param("type", "cube"), param("nx", n), param("ny", n), param("nz", n))),
@@ -167,6 +167,6 @@ void new_auto_assembler_test() {
     space.write("neo.e", x);
 }
 
-UTOPIA_REGISTER_TEST_FUNCTION(new_auto_assembler_test);
+UTOPIA_REGISTER_TEST_FUNCTION(stk_new_auto_assembler_test);
 
 #endif  // UTOPIA_WITH_INTREPID2
