@@ -135,8 +135,6 @@ void mars_poisson_3D() { mars_poisson_aux(30, 24, 20); }
 void mars_assembler() {
     UTOPIA_RUN_TEST(mars_poisson_2D);
     UTOPIA_RUN_TEST(mars_poisson_3D);
-
-    // FIXME output.bp not working for vector values
     UTOPIA_RUN_TEST(mars_linear_elasticity);
 }
 
@@ -151,9 +149,10 @@ using FE_t = utopia::kokkos::UniformFE<Scalar_t>;
 using Solver_t = utopia::ConjugateGradient<Matrix_t, Vector_t, HOMEMADE>;
 
 void mars_new_assembler_test() {
+    int n = 20;
     auto params =
         param_list(param("n_var", 1),
-                   param("mesh", param_list(param("type", "cube"), param("nx", 4), param("ny", 4), param("nz", 4))),
+                   param("mesh", param_list(param("type", "cube"), param("nx", n), param("ny", n), param("nz", n))),
                    param("material", param_list(param("type", "LaplaceOperator"))));
 
     FS_t space;
@@ -186,12 +185,14 @@ void mars_new_assembler_test() {
     space.apply_constraints(mat, g);
     space.apply_constraints(x);
 
-    mat.write("m.mm");
+    // mat.write("m.mm");
 
     Solver_t solver;
     solver.apply_gradient_descent_step(true);
     solver.verbose(true);
     utopia_test_assert(solver.solve(mat, g, x));
+
+    // space.write("x.bp", x);
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(mars_new_assembler_test);
