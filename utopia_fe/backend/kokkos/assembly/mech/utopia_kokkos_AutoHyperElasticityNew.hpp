@@ -154,7 +154,7 @@ namespace utopia {
                       n_qp(n_qp) {}
 
                 void operator()(const int cell, const int i, StaticVector<Scalar, Dim> &block) const {
-                    StaticVector<Scalar, Dim> grad_test, grad_trial;
+                    StaticVector<Scalar, Dim> grad_test;
                     StaticMatrix<Scalar, Dim, Dim> F;
 
                     block.set(0.0);
@@ -169,7 +169,7 @@ namespace utopia {
                         Scalar dx = measure(cell, qp);
 
                         for (int d = 0; d < Dim; ++d) {
-                            grad_trial[d] = grad(cell, i, qp, d);
+                            grad_test[d] = grad(cell, i, qp, d);
                         }
 
                         material.gradient(&F.raw_type()[0], &grad_test[0], dx, &block.raw_type()[0]);
