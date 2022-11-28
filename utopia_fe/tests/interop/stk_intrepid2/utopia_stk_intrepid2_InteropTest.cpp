@@ -107,9 +107,8 @@ void new_auto_assembler_test() {
     using Assembler_t = utopia::kokkos::FEAssembler<FS_t, FE_t>;
     using Discretization_t = utopia::Discretization<FS_t, FE_t>;
     using Solver_t = utopia::ConjugateGradient<Matrix_t, Vector_t, HOMEMADE>;
-    // using Solver_t = utopia::Factorization<Matrix_t, Vector_t>;
 
-    int n = 10;
+    int n = 80;
     auto params =
         param_list(param("n_var", 3),
                    param("mesh", param_list(param("type", "cube"), param("nx", n), param("ny", n), param("nz", n))),

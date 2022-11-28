@@ -144,24 +144,6 @@ namespace utopia {
 
             virtual bool solution_updated(const FieldPtr &) const { return true; }
 
-            virtual std::shared_ptr<Gradient<FE>> compute_deformation_gradient() const {
-                auto displacement = assembler()->current_solution();
-
-                assert(displacement);
-                assert(displacement->is_coefficient());
-
-                if (!displacement->is_coefficient()) {
-                    Utopia::Abort("compute_deformation_gradient: displacement must me in coefficient form!");
-                }
-
-                auto deformation_gradient = std::make_shared<utopia::kokkos::Gradient<FE>>(this->assembler()->fe_ptr());
-
-                deformation_gradient->init(*displacement);
-                deformation_gradient->add_identity();
-                assert(deformation_gradient->check_dets_are_positive());
-                return deformation_gradient;
-            }
-
             // Matrix free hessian application
             virtual bool apply_assemble(utopia::kokkos::Field<FE> &field, AssemblyMode mode) = 0;
 

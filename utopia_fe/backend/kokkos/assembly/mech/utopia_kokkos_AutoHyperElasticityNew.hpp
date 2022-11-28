@@ -31,7 +31,7 @@ namespace utopia {
 
             AutoHyperElasticityNew(Params op = Params()) : Super(), material_(std::move(op)) {}
 
-             int order() const override { return 6; }
+            int order() const override { return 6; }
 
             inline int n_vars() const override { return Dim; }
 
@@ -45,7 +45,24 @@ namespace utopia {
                 return std::string("AutoHyperElasticityNew<") + Material::class_name() + ">";
             }
 
-            
+            std::shared_ptr<Gradient> compute_deformation_gradient() const {
+                auto displacement = this->assembler()->current_solution();
+
+                assert(displacement);
+                assert(displacement->is_coefficient());
+
+                if (!displacement->is_coefficient()) {
+                    Utopia::Abort("compute_deformation_gradient: displacement must me in coefficient form!");
+                }
+
+                auto deformation_gradient = std::make_shared<Gradient>(this->assembler()->fe_ptr());
+
+                deformation_gradient->init(*displacement);
+                deformation_gradient->add_identity();
+                assert(deformation_gradient->check_dets_are_positive());
+                return deformation_gradient;
+            }
+
             bool value_assemble(AssemblyMode mode) override { return false; }
             bool apply_assemble(utopia::kokkos::Field<FE> &field, AssemblyMode mode) override { return false; }
 
@@ -60,10 +77,10 @@ namespace utopia {
                 static const int NComponentsTrial = Dim;
 
                 HessianKernel(const Grad &grad,
-                        const Measure &measure,
-                        const Material &material,
-                        const DynRankView &deformation_gradient,
-                        int n_qp)
+                              const Measure &measure,
+                              const Material &material,
+                              const DynRankView &deformation_gradient,
+                              int n_qp)
                     : grad(grad),
                       measure(measure),
                       material(material),
@@ -106,10 +123,10 @@ namespace utopia {
 
             template <class Grad, class Measure>
             inline HessianKernel<Grad, Measure> hessian_kernel(const Grad &grad,
-                                                         const Measure &measure,
-                                                         const Material &material,
-                                                         const DynRankView &deformation_gradient,
-                                                         int n_qp) {
+                                                               const Measure &measure,
+                                                               const Material &material,
+                                                               const DynRankView &deformation_gradient,
+                                                               int n_qp) {
                 return HessianKernel<Grad, Measure>(grad, measure, material, deformation_gradient, n_qp);
             }
 
@@ -122,16 +139,14 @@ namespace utopia {
 
                 auto deformation_gradient = this->compute_deformation_gradient();
 
-                auto k = hessian_kernel(fe.grad(), fe.measure(), material_, deformation_gradient->data(), fe.n_quad_points());
+                auto k = hessian_kernel(
+                    fe.grad(), fe.measure(), material_, deformation_gradient->data(), fe.n_quad_points());
 
-                assembler->assemble_matrix_eij_block(
-                    name() + "::hessian", mode, k);
-
+                assembler->assemble_matrix_eij_block(name() + "::hessian", mode, k);
 
                 UTOPIA_TRACE_REGION_END(name() + "::hessian_assemble");
                 return true;
             }
-
 
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             /// Gradient
@@ -143,10 +158,10 @@ namespace utopia {
                 static const int NComponentsTest = Dim;
 
                 GradientKernel(const Grad &grad,
-                        const Measure &measure,
-                        const Material &material,
-                        const DynRankView &deformation_gradient,
-                        int n_qp)
+                               const Measure &measure,
+                               const Material &material,
+                               const DynRankView &deformation_gradient,
+                               int n_qp)
                     : grad(grad),
                       measure(measure),
                       material(material),
@@ -185,15 +200,15 @@ namespace utopia {
 
             template <class Grad, class Measure>
             inline GradientKernel<Grad, Measure> gradient_kernel(const Grad &grad,
-                                                         const Measure &measure,
-                                                         const Material &material,
-                                                         const DynRankView &deformation_gradient,
-                                                         int n_qp) {
+                                                                 const Measure &measure,
+                                                                 const Material &material,
+                                                                 const DynRankView &deformation_gradient,
+                                                                 int n_qp) {
                 return GradientKernel<Grad, Measure>(grad, measure, material, deformation_gradient, n_qp);
             }
 
             bool gradient_assemble(AssemblyMode mode) override {
-                      UTOPIA_TRACE_REGION_BEGIN(name() + "::gradient_assemble");
+                UTOPIA_TRACE_REGION_BEGIN(name() + "::gradient_assemble");
 
                 auto &&assembler = this->assembler();
                 assert(assembler);
@@ -201,16 +216,14 @@ namespace utopia {
 
                 auto deformation_gradient = this->compute_deformation_gradient();
 
-                auto k = gradient_kernel(fe.grad(), fe.measure(), material_, deformation_gradient->data(), fe.n_quad_points());
+                auto k = gradient_kernel(
+                    fe.grad(), fe.measure(), material_, deformation_gradient->data(), fe.n_quad_points());
 
-                assembler->assemble_vector_ei_block(
-                    name() + "::gradient", mode, k);
-
+                assembler->assemble_vector_ei_block(name() + "::gradient", mode, k);
 
                 UTOPIA_TRACE_REGION_END(name() + "::gradient_assemble");
                 return true;
             }
-
 
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
