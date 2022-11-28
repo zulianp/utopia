@@ -541,7 +541,11 @@ namespace utopia {
 
         assert(!implementation().getRowMap().is_null());
 
+#if UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE == 1
+        return implementation().getRowMap()->getLocalNumElements();
+#else
         return implementation().getRowMap()->getNodeNumElements();
+#endif
     }
 
     TpetraMatrix::SizeType TpetraMatrix::local_cols() const {
@@ -551,9 +555,18 @@ namespace utopia {
 
         if (implementation().getDomainMap().is_null()) {
             assert(!init_->domain_map.is_null());
+#if UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE == 1
+            return init_->domain_map->getLocalNumElements();
+#else
             return init_->domain_map->getNodeNumElements();
+#endif
         }
+
+#if UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE == 1
+        return implementation().getDomainMap()->getLocalNumElements();
+#else
         return implementation().getDomainMap()->getNodeNumElements();
+#endif
     }
 
     void TpetraMatrix::clear() {
