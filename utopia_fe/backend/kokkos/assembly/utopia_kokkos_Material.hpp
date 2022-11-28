@@ -6,6 +6,8 @@
 #include "utopia_fe_Environment.hpp"
 #include "utopia_kokkos_Discretization.hpp"
 
+#include "utopia_kokkos_Gradient.hpp"
+
 #include <map>
 #include <memory>
 #include <string>
@@ -54,6 +56,7 @@ namespace utopia {
                 assembler()->vector_assembly_begin(y, mode_);
 
                 assembler()->update_input(x);
+                solution_updated(assembler()->current_solution());
 
                 auto sol = assembler()->current_solution();
 
@@ -75,6 +78,7 @@ namespace utopia {
                 assembler()->scalar_assembly_begin(value, mode_);
 
                 assembler()->update_input(x);
+                solution_updated(assembler()->current_solution());
 
                 bool ok = const_cast<Material *>(this)->value_assemble(mode_);
                 if (!ok) {
@@ -95,6 +99,7 @@ namespace utopia {
                 assembler()->vector_assembly_begin(g, mode_);
 
                 assembler()->update_input(x);
+                solution_updated(assembler()->current_solution());
 
                 if (this->has_gradient()) {
                     bool ok = const_cast<Material *>(this)->gradient_assemble(mode_);
@@ -121,6 +126,7 @@ namespace utopia {
                 assembler()->matrix_assembly_begin(H, mode_);
 
                 assembler()->update_input(x);
+                solution_updated(assembler()->current_solution());
 
                 bool ok = const_cast<Material *>(this)->hessian_assemble(mode_);
                 if (!ok) {
@@ -136,10 +142,33 @@ namespace utopia {
             virtual bool gradient_assemble(AssemblyMode) { return false; }
             virtual bool value_assemble(AssemblyMode mode) = 0;
 
+            virtual bool solution_updated(const FieldPtr &) const { return true; }
+
+            virtual std::shared_ptr<Gradient<FE>> compute_deformation_gradient() const {
+                auto displacement = assembler()->current_solution();
+
+                assert(displacement);
+                assert(displacement->is_coefficient());
+
+                if (!displacement->is_coefficient()) {
+                    Utopia::Abort("compute_deformation_gradient: displacement must me in coefficient form!");
+                }
+
+                auto deformation_gradient = std::make_shared<utopia::kokkos::Gradient<FE>>(this->assembler()->fe_ptr());
+
+                deformation_gradient->init(*displacement);
+                deformation_gradient->add_identity();
+                assert(deformation_gradient->check_dets_are_positive());
+                return deformation_gradient;
+            }
+
             // Matrix free hessian application
             virtual bool apply_assemble(utopia::kokkos::Field<FE> &field, AssemblyMode mode) = 0;
 
-            virtual void set_assembler(const std::shared_ptr<Assembler> &assembler) { assembler_ = assembler; }
+            virtual void set_assembler(const std::shared_ptr<Assembler> &assembler) {
+                assembler_ = assembler;
+                assembler_->set_n_vars(this->n_vars());
+            }
 
             inline std::shared_ptr<Assembler> assembler() const {
                 assert(assembler_);

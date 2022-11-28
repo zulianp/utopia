@@ -19,7 +19,7 @@ namespace utopia {
     public:
         void initialize(const std::shared_ptr<utopia::stk::FunctionSpace> &space);
         // FIXME
-        inline int order() { return 2; }
+        virtual int order() const { return 2; }
     };
 
 }  // namespace utopia

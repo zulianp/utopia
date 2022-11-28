@@ -107,27 +107,67 @@ void new_auto_assembler_test() {
     using Assembler_t = utopia::kokkos::FEAssembler<FS_t, FE_t>;
     using Discretization_t = utopia::Discretization<FS_t, FE_t>;
     using Solver_t = utopia::ConjugateGradient<Matrix_t, Vector_t, HOMEMADE>;
+    // using Solver_t = utopia::Factorization<Matrix_t, Vector_t>;
 
-    int n = 4;
+    int n = 10;
     auto params =
-        param_list(param("n_var", 1),
+        param_list(param("n_var", 3),
                    param("mesh", param_list(param("type", "cube"), param("nx", n), param("ny", n), param("nz", n))),
                    param("material", param_list(param("type", "LaplaceOperator"))));
 
     FS_t space;
     space.read(params);
 
-    space.add_dirichlet_boundary_condition("left", -1, 0);
-    space.add_dirichlet_boundary_condition("right", 1, 0);
+    auto l = utopia::stk::SideSet::Cube::convert("left");
+    auto r = utopia::stk::SideSet::Cube::convert("right");
 
-    space.add_dirichlet_boundary_condition("left", 0, 1);
-    space.add_dirichlet_boundary_condition("right", 0, 1);
+    space.add_dirichlet_boundary_condition(l, -0.05, 0);
+    space.add_dirichlet_boundary_condition(r, 0.05, 0);
 
-    space.add_dirichlet_boundary_condition("left", 0, 2);
-    space.add_dirichlet_boundary_condition("right", 0, 2);
+    space.add_dirichlet_boundary_condition(l, 0, 1);
+    space.add_dirichlet_boundary_condition(r, 0.05, 1);
+
+    space.add_dirichlet_boundary_condition(l, 0, 2);
+    space.add_dirichlet_boundary_condition(r, 0, 2);
 
     utopia::kokkos::AutoHyperElasticityNew<FS_t, FE_t, utopia::kernels::NeoHookeanOgden<Scalar_t, 3>> neohook;
     neohook.initialize(make_ref(space));
+
+    Matrix_t mat;
+    space.create_matrix(mat);
+
+    Vector_t x, g;
+    space.create_vector(x);
+    space.create_vector(g);
+
+    x.set(0.0);
+
+    utopia_test_assert(neohook.hessian(x, mat));
+    utopia_test_assert(neohook.gradient(x, g));
+
+    Scalar_t ng = norm2(g);
+    Scalar_t nx = norm2(x);
+    Scalar_t nm = norm2(mat);
+
+    Scalar_t sm = sum(mat);
+    Scalar_t sg = sum(g);
+
+    utopia_test_assert(sg < 1e-8);
+    utopia_test_assert(sm < 1e-8);
+    utopia_test_assert(nm > 0.0);
+
+    g *= -1;
+    space.apply_constraints(mat, g);
+    space.apply_constraints(x);
+
+    Solver_t solver;
+    solver.apply_gradient_descent_step(true);
+    solver.verbose(true);
+    utopia_test_assert(solver.solve(mat, g, x));
+
+    space.write("neo.e", x);
 }
+
+UTOPIA_REGISTER_TEST_FUNCTION(new_auto_assembler_test);
 
 #endif  // UTOPIA_WITH_INTREPID2

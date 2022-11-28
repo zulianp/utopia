@@ -194,8 +194,10 @@ namespace utopia {
                 // assert(false);
                 // Utopia::Abort();
                 // return 0;
-                return 1;
+                return n_vars_;
             }
+
+            inline void set_n_vars(int n_vars) { n_vars_ = n_vars; }
 
             virtual std::string name() const {
                 assert(false);
@@ -553,9 +555,12 @@ namespace utopia {
                         // Evaluate block operator
                         op(cell, i, j, block);
 
+                        auto ixn = op.offset_test() + i * Op::NComponentsTest;
+                        auto jxn = op.offset_trial() + j * Op::NComponentsTrial;
+
                         for (int di = 0; di < Op::NComponentsTest; ++di) {
                             for (int dj = 0; dj < Op::NComponentsTrial; ++dj) {
-                                auto &v = data(cell, op.offset_test() + di, op.offset_trial() + dj);
+                                auto &v = data(cell, ixn + di, jxn + dj);
                                 v += a * v + b * block(di, dj);
                             }
                         }
@@ -610,11 +615,13 @@ namespace utopia {
                         StaticVector<Scalar, Op::NComponentsTest> block;
                         block.set(0.);
 
+                        auto ixn = op.offset_test() + i * Op::NComponentsTest;
+
                         // Evaluate block operator
                         op(cell, i, block);
 
                         for (int di = 0; di < Op::NComponentsTest; ++di) {
-                            auto &v = data(cell, op.offset_test() + di);
+                            auto &v = data(cell, ixn + di);
                             v = a * v + b * block(di);
                         }
                     });
@@ -742,6 +749,7 @@ namespace utopia {
             std::shared_ptr<VectorAccumulator> vector_accumulator_;
             std::shared_ptr<ScalarAccumulator> scalar_accumulator_;
             std::shared_ptr<Field<FE>> current_solution_;
+            int n_vars_{1};
         };
 
     }  // namespace kokkos

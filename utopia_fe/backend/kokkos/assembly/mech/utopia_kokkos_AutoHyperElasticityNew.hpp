@@ -23,186 +23,199 @@ namespace utopia {
             using SizeType = typename FE::SizeType;
             using Scalar = typename FE::Scalar;
             using Super = utopia::Material<FunctionSpace, FE_>;
+            using Gradient = utopia::kokkos::Gradient<FE>;
+            using DynRankView = typename Gradient::DynRankView;
 
             static constexpr int Dim = Material::Dim;
             using Params = typename Material::Params;
 
             AutoHyperElasticityNew(Params op = Params()) : Super(), material_(std::move(op)) {}
 
+             int order() const override { return 6; }
+
             inline int n_vars() const override { return Dim; }
 
-            bool has_hessian() const override { return true; }
-            bool has_gradient() const override { return true; }
-            bool has_value() const override { return true; }
-            bool is_operator() const override { return true; }
+            inline bool has_hessian() const override { return true; }
+            inline bool has_gradient() const override { return true; }
+            inline bool has_value() const override { return false; }
+            inline bool is_operator() const override { return false; }
+            inline bool is_linear() const override { return false; }
 
             inline std::string name() const override {
                 return std::string("AutoHyperElasticityNew<") + Material::class_name() + ">";
             }
 
-            bool hessian_assemble(AssemblyMode mode) override { return false; }
-            bool gradient_assemble(AssemblyMode) override { return false; }
+            
             bool value_assemble(AssemblyMode mode) override { return false; }
             bool apply_assemble(utopia::kokkos::Field<FE> &field, AssemblyMode mode) override { return false; }
 
-            // virtual bool update(const std::shared_ptr<Field<FE>> &displacement) override {
-            //     if (!Super::update(displacement)) {
-            //         return false;
-            //     }
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // Hessian
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-            //     assert(displacement);
-            //     assert(displacement->is_coefficient());
+            template <class Grad, class Measure>
+            class HessianKernel : public TestTrialOp {
+            public:
+                static const int NComponentsTest = Dim;
+                static const int NComponentsTrial = Dim;
 
-            //     if (!displacement->is_coefficient()) {
-            //         Utopia::Abort(name() + ":update, displacement must me in coefficient form!");
-            //     }
+                HessianKernel(const Grad &grad,
+                        const Measure &measure,
+                        const Material &material,
+                        const DynRankView &deformation_gradient,
+                        int n_qp)
+                    : grad(grad),
+                      measure(measure),
+                      material(material),
+                      deformation_gradient(deformation_gradient),
+                      n_qp(n_qp) {}
 
-            //     if (!deformation_gradient_) {
-            //         // Initialize gradient
-            //         deformation_gradient_ = std::make_shared<Gradient<FE>>(this->fe_ptr());
-            //     }
+                void operator()(const int cell, const int i, const int j, StaticMatrix<Scalar, Dim, Dim> &block) const {
+                    StaticVector<Scalar, Dim> grad_test, grad_trial;
+                    StaticMatrix<Scalar, Dim, Dim> F;
 
-            //     deformation_gradient_->init(*displacement);
-            //     deformation_gradient_->add_identity();
-            //     assert(deformation_gradient_->check_dets_are_positive());
-            //     return true;
-            // }
+                    block.set(0.0);
 
-            // bool assemble_matrix() override {
-            //     UTOPIA_TRACE_REGION_BEGIN(name() + "::assemble_matrix");
+                    for (int qp = 0; qp < n_qp; ++qp) {
+                        for (int d1 = 0; d1 < Dim; ++d1) {
+                            for (int d2 = 0; d2 < Dim; ++d2) {
+                                F(d1, d2) = deformation_gradient(cell, qp, d1 * Dim + d2);
+                            }
+                        }
 
-            //     this->ensure_matrix_accumulator();
+                        Scalar dx = measure(cell, qp);
 
-            //     auto &fe = this->fe();
-            //     auto data = this->matrix_data();
+                        for (int d = 0; d < Dim; ++d) {
+                            grad_test[d] = grad(cell, i, qp, d);
+                        }
 
-            //     {
-            //         assert(deformation_gradient_);
-            //         auto F = deformation_gradient_->data();
-            //         auto material = material_;
+                        for (int d = 0; d < Dim; ++d) {
+                            grad_trial[d] = grad(cell, j, qp, d);
+                        }
 
-            //         int n_quad_points = this->fe().n_quad_points();
-            //         int n_shape_functions = this->fe().n_shape_functions();
+                        material.hessian(&F.raw_type()[0], &grad_test[0], &grad_trial[0], dx, &block.raw_type()[0]);
+                    }
+                }
 
-            //         auto grad = this->fe().grad();
-            //         auto measure = this->fe().measure();
+                Grad grad;
+                Measure measure;
+                Material material;
+                DynRankView deformation_gradient;
+                int n_qp;
+            };
 
-            //         this->loop_cell(
-            //             "Hessian", UTOPIA_LAMBDA(int cell) {
-            //                 StaticVector<Scalar, Dim> grad_test, grad_trial;
-            //                 StaticMatrix<Scalar, Dim, Dim> F_qp, stress;
+            template <class Grad, class Measure>
+            inline HessianKernel<Grad, Measure> hessian_kernel(const Grad &grad,
+                                                         const Measure &measure,
+                                                         const Material &material,
+                                                         const DynRankView &deformation_gradient,
+                                                         int n_qp) {
+                return HessianKernel<Grad, Measure>(grad, measure, material, deformation_gradient, n_qp);
+            }
 
-            //                 for (int qp = 0; qp < n_quad_points; ++qp) {
-            //                     // Copy deformation gradient at qp
-            //                     for (int d1 = 0; d1 < Dim; ++d1) {
-            //                         for (int d2 = 0; d2 < Dim; ++d2) {
-            //                             F_qp(d1, d2) = F(cell, qp, d1 * Dim + d2);
-            //                         }
-            //                     }
+            bool hessian_assemble(AssemblyMode mode) override {
+                UTOPIA_TRACE_REGION_BEGIN(name() + "::hessian_assemble");
 
-            //                     Scalar dx = measure(cell, qp);
+                auto &&assembler = this->assembler();
+                assert(assembler);
+                auto &&fe = assembler->fe();
 
-            //                     for (int i = 0; i < n_shape_functions; ++i) {
-            //                         // Copy deformation gradient at qp
-            //                         for (int d1 = 0; d1 < Dim; ++d1) {
-            //                             grad_test[d1] = grad(cell, i, qp, d1);
-            //                         }
+                auto deformation_gradient = this->compute_deformation_gradient();
 
-            //                         for (int j = 0; j < n_shape_functions; ++j) {
-            //                             for (int d1 = 0; d1 < Dim; ++d1) {
-            //                                 grad_trial[d1] = grad(cell, j, qp, d1);
-            //                             }
-            //                             // Assemble
-            //                             stress.set(0.);
+                auto k = hessian_kernel(fe.grad(), fe.measure(), material_, deformation_gradient->data(), fe.n_quad_points());
 
-            //                             material.hessian(&F_qp.raw_type()[0],
-            //                                              &grad_test[0],
-            //                                              &grad_trial[0],
-            //                                              dx,
-            //                                              &stress.raw_type()[0]);
+                assembler->assemble_matrix_eij_block(
+                    name() + "::hessian", mode, k);
 
-            //                             for (int d1 = 0; d1 < Dim; ++d1) {
-            //                                 auto dof_i = i * Dim + d1;
-            //                                 for (int d2 = 0; d2 < Dim; ++d2) {
-            //                                     auto dof_j = j * Dim + d2;
 
-            //                                     assert(stress(d1, d2) == stress(d1, d2));
-            //                                     data(cell, dof_i, dof_j) += stress(d1, d2);
-            //                                 }
-            //                             }
-            //                         }
-            //                     }
-            //                 }
-            //             });
-            //     }
+                UTOPIA_TRACE_REGION_END(name() + "::hessian_assemble");
+                return true;
+            }
 
-            //     UTOPIA_TRACE_REGION_END(name() + "::assemble_matrix");
-            //     return true;
-            // }
 
-            // bool assemble_vector() override {
-            //     UTOPIA_TRACE_REGION_BEGIN(name() + "::assemble_vector");
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            /// Gradient
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-            //     this->ensure_vector_accumulator();
+            template <class Grad, class Measure>
+            class GradientKernel : public TestOp {
+            public:
+                static const int NComponentsTest = Dim;
 
-            //     auto &fe = this->fe();
-            //     auto data = this->vector_data();
+                GradientKernel(const Grad &grad,
+                        const Measure &measure,
+                        const Material &material,
+                        const DynRankView &deformation_gradient,
+                        int n_qp)
+                    : grad(grad),
+                      measure(measure),
+                      material(material),
+                      deformation_gradient(deformation_gradient),
+                      n_qp(n_qp) {}
 
-            //     {
-            //         assert(deformation_gradient_);
-            //         auto F = deformation_gradient_->data();
+                void operator()(const int cell, const int i, StaticVector<Scalar, Dim> &block) const {
+                    StaticVector<Scalar, Dim> grad_test, grad_trial;
+                    StaticMatrix<Scalar, Dim, Dim> F;
 
-            //         auto material = material_;
+                    block.set(0.0);
 
-            //         int n_quad_points = this->fe().n_quad_points();
-            //         int n_shape_functions = this->fe().n_shape_functions();
+                    for (int qp = 0; qp < n_qp; ++qp) {
+                        for (int d1 = 0; d1 < Dim; ++d1) {
+                            for (int d2 = 0; d2 < Dim; ++d2) {
+                                F(d1, d2) = deformation_gradient(cell, qp, d1 * Dim + d2);
+                            }
+                        }
 
-            //         auto grad = this->fe().grad();
-            //         auto measure = this->fe().measure();
+                        Scalar dx = measure(cell, qp);
 
-            //         this->loop_cell(
-            //             "Gradient", UTOPIA_LAMBDA(int cell) {
-            //                 StaticVector<Scalar, Dim> stress, grad_test;
-            //                 StaticMatrix<Scalar, Dim, Dim> F_qp;
+                        for (int d = 0; d < Dim; ++d) {
+                            grad_trial[d] = grad(cell, i, qp, d);
+                        }
 
-            //                 for (int qp = 0; qp < n_quad_points; ++qp) {
-            //                     // Copy deformation gradient at qp
-            //                     for (int d1 = 0; d1 < Dim; ++d1) {
-            //                         for (int d2 = 0; d2 < Dim; ++d2) {
-            //                             F_qp(d1, d2) = F(cell, qp, d1 * Dim + d2);
-            //                         }
-            //                     }
+                        material.gradient(&F.raw_type()[0], &grad_test[0], dx, &block.raw_type()[0]);
+                    }
+                }
 
-            //                     Scalar dx = measure(cell, qp);
+                Grad grad;
+                Measure measure;
+                Material material;
+                DynRankView deformation_gradient;
+                int n_qp;
+            };
 
-            //                     for (int i = 0; i < n_shape_functions; ++i) {
-            //                         // Copy deformation gradient at qp
-            //                         for (int d1 = 0; d1 < Dim; ++d1) {
-            //                             grad_test[d1] = grad(cell, i, qp, d1);
-            //                         }
+            template <class Grad, class Measure>
+            inline GradientKernel<Grad, Measure> gradient_kernel(const Grad &grad,
+                                                         const Measure &measure,
+                                                         const Material &material,
+                                                         const DynRankView &deformation_gradient,
+                                                         int n_qp) {
+                return GradientKernel<Grad, Measure>(grad, measure, material, deformation_gradient, n_qp);
+            }
 
-            //                         // Assemble
-            //                         stress.set(0.);
-            //                         material.gradient(&F_qp.raw_type()[0], &grad_test[0], dx, &stress.raw_type()[0]);
+            bool gradient_assemble(AssemblyMode mode) override {
+                      UTOPIA_TRACE_REGION_BEGIN(name() + "::gradient_assemble");
 
-            //                         for (int d1 = 0; d1 < Dim; ++d1) {
-            //                             auto dof_i = i * Dim + d1;
+                auto &&assembler = this->assembler();
+                assert(assembler);
+                auto &&fe = assembler->fe();
 
-            //                             assert(stress[d1] == stress[d1]);
-            //                             data(cell, dof_i) += stress[d1];
-            //                         }
-            //                     }
-            //                 }
-            //             });
-            //     }
+                auto deformation_gradient = this->compute_deformation_gradient();
 
-            //     UTOPIA_TRACE_REGION_END(name() + "::assemble_vector");
-            //     return true;
-            // }
+                auto k = gradient_kernel(fe.grad(), fe.measure(), material_, deformation_gradient->data(), fe.n_quad_points());
+
+                assembler->assemble_vector_ei_block(
+                    name() + "::gradient", mode, k);
+
+
+                UTOPIA_TRACE_REGION_END(name() + "::gradient_assemble");
+                return true;
+            }
+
+
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
             // NVCC_PRIVATE :
             Material material_;
-            std::shared_ptr<Gradient<FE>> deformation_gradient_;
         };
     }  // namespace kokkos
 }  // namespace utopia
