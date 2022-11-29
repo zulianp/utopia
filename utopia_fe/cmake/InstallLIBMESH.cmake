@@ -8,11 +8,12 @@ if(NOT LIBMESH_FOUND)
     if(UTOPIA_DEPENDENCIES_DIR)
         set(LIBMESH_INSTALL_DIR ${UTOPIA_DEPENDENCIES_DIR}/libmesh)
     else()
-        set(LIBMESH_INSTALL_DIR ${CMAKE_SOURCE_DIR}/../../external/libmesh)
+        get_filename_component(LIBMESH_INSTALL_DIR "${CMAKE_SOURCE_DIR}/../../external/libmesh" REALPATH)
+        message(STATUS "LIBMESH_INSTALL_DIR=${LIBMESH_INSTALL_DIR}")
     endif()
 
     set(STAGE_DIR "${CMAKE_BINARY_DIR}/stage")
-    set(LIBMESH_URL git://github.com/libMesh/libmesh.git)
+    set(LIBMESH_URL https://github.com/libMesh/libmesh.git)
     set(LIBMESH_SOURCE_DIR ${STAGE_DIR}/libmesh)
     set(LIBMESH_BIN_DIR ${STAGE_DIR}/libmesh/bin)
     set(LIBMESH_MPI_BASE_DIR $ENV{MPI_DIR})
@@ -36,7 +37,7 @@ if(NOT LIBMESH_FOUND)
         CONFIGURE_COMMAND
             <SOURCE_DIR>/configure --prefix=<INSTALL_DIR>
             --with-methods=${METHODS} --enable-silent-rules --enable-unique-id
-            --disable-warnings --disable-maintainer-mode  --enable-petsc-required
+            --disable-warnings --disable-maintainer-mode  --enable-petsc-required ${UTOPIA_LIBMESH_CONFIG}
         BUILD_COMMAND make
         INSTALL_COMMAND make install
         # COMMAND       ${MAKE_COMMAND}

@@ -26,7 +26,10 @@ option(UTOPIA_ENABLE_SANITIZER "check for memory access problems" OFF)
 option(UTOPIA_ENABLE_BOOST "enable boost features" OFF)
 option(UTOPIA_ENABLE_MOONOLITH_PROFILER
        "enable moonolith profiling capabilities" OFF)
+
 option(UTOPIA_ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
+option(UTOPIA_ENABLE_CXX17_FEATURES "Enable usage of cxx17 standard" ON)
+
 option(UTOPIA_ENABLE_MOOSE_ENV_MODE
        "Allows to use the moose installation compilers" ON)
 option(UTOPIA_ENABLE_TRILINOS_ALGEBRA
@@ -40,13 +43,25 @@ option(UTOPIA_ENABLE_NEW_TRANSFER "Use new transfer features" ON)
 # option(UTOPIA_INSTALL_LIBMESH "install libmesh" OFF)
 option(UTOPIA_ENABLE_WARNINGS "Compiler warnings" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
+
 option(UTOPIA_ENABLE_LIBMESH "Enable the libmesh functionalities" ON)
+option(UTOPIA_ENABLE_LIBMESH_LEGACY "Enable the legacy utopia::libmesh functionalities" ON)
+option(UTOPIA_ENABLE_LIBMESH_KOKKOS "Enable the libmesh functionalities" OFF)
+
+option(UTOPIA_ENABLE_PETSC "Enable the PETSc DM functionalities" OFF)
+
+# Once we have cleaner separation between this and legacy turn OFF
+option(UTOPIA_ENABLE_LIBMESH_DEPRECATED "Enable the deprecated utopia::libmesh functionalities" ON)
+
 option(UTOPIA_ENABLE_STK "Enable the stk functionalities" OFF)
 option(UTOPIA_ENABLE_MOONOLITH "Enable the moonolith functionalities" ON)
 option(UTOPIA_ENABLE_ARBORX "Enable the ArborX backend" OFF)
 
 option(UTOPIA_ENABLE_FLUYA_MODE "Create utopia_fe configuration required by Fluya (overrides everything else)" OFF)
 
+if(UTOPIA_ENABLE_TRILINOS OR UTOPIA_ENABLE_MARS OR UTOPIA_ENABLE_INTREPID2)
+    set(UTOPIA_ENABLE_KOKKOS TRUE)
+endif()
 
 # ##############################################################################
 # ##############################################################################
@@ -516,12 +531,11 @@ target_link_libraries(utopia_fe_test utopia_fe)
 target_link_libraries(utopia_fe_exec utopia_fe)
 
 include(tests/tests.cmake)
-
 include(apps/apps.cmake)
 
-if(UTOPIA_ENABLE_LIBMESH)
-    include(old/apps/apps.cmake)
-endif()
+# if(UTOPIA_ENABLE_LIBMESH AND UTOPIA_ENABLE_LIBMESH_DEPRECATED)
+#     include(deprecated/apps/apps.cmake)
+# endif()
 
 # ##############################################################################
 

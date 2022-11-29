@@ -10,15 +10,15 @@
 namespace utopia {
     namespace kokkos {
 
-        template <class FE_, int Dim, typename Coefficient = typename FE_::Scalar>
-        class VectorLaplaceOperator : public FEAssembler<FE_, DefaultView<typename FE_::Scalar>> {
+        template <class FunctionSpace, class FE_, int Dim, typename Coefficient = typename FE_::Scalar>
+        class VectorLaplaceOperator
+            : public utopia::kokkos::FEAssembler<FunctionSpace, FE_, DefaultView<typename FE_::Scalar>> {
         public:
             using FE = FE_;
             using SizeType = typename FE::SizeType;
             using Scalar = typename FE::Scalar;
             using DynRankView = typename FE::DynRankView;
-            using FunctionSpaceTools = typename FE::FunctionSpaceTools;
-            using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;
+            using Super = utopia::kokkos::FEAssembler<FunctionSpace, FE_, DefaultView<typename FE_::Scalar>>;
 
             class Params : public Configurable {
             public:

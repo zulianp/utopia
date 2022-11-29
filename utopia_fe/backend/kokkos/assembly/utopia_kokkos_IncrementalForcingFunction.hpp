@@ -11,17 +11,17 @@
 namespace utopia {
     namespace kokkos {
 
-        template <typename FE_, class Fun = typename FE_::Scalar>
-        class IncrementalForcingFunction : public FEAssembler<FE_, DefaultView<typename FE_::Scalar>> {
+        template <class FunctionSpace, typename FE_, class Fun = typename FE_::Scalar>
+        class IncrementalForcingFunction
+            : public utopia::kokkos::FEAssembler<FunctionSpace, FE_, DefaultView<typename FE_::Scalar>> {
         public:
             using Scalar = typename Traits<Fun>::Scalar;
             using FE = FE_;
             using SizeType = typename FE::SizeType;
             using DynRankView = typename FE::DynRankView;
-            using FunctionSpaceTools = typename FE::FunctionSpaceTools;
 
             using ExecutionSpace = typename FE::ExecutionSpace;
-            using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;
+            using Super = utopia::kokkos::FEAssembler<FunctionSpace, FE_, DefaultView<typename FE_::Scalar>>;
 
             class Params : public Configurable {
             public:

@@ -24,8 +24,8 @@ namespace utopia {
 
             using Environment = utopia::Environment<FunctionSpace>;
 
-            using Intrepid2FEAssembler = utopia::kokkos::FEAssembler<FE>;
-            using Intrepid2FEAssemblerPtr = std::shared_ptr<Intrepid2FEAssembler>;
+            using FEAssembler = utopia::kokkos::FEAssembler<FunctionSpace, FE>;
+            using FEAssemblerPtr = std::shared_ptr<FEAssembler>;
 
             OmniAssembler(const std::shared_ptr<FunctionSpace> &space);
             virtual ~OmniAssembler();
@@ -56,7 +56,7 @@ namespace utopia {
             bool is_linear() const override;
             bool is_operator() const override;
 
-            void add_domain_assembler(const Intrepid2FEAssemblerPtr &assembler);
+            void add_domain_assembler(const FEAssemblerPtr &assembler);
             void fail_if_unregistered(const bool val);
 
             void set_time(const std::shared_ptr<SimulationTime> &time) override;

@@ -60,6 +60,9 @@ namespace utopia {
                 }
 
                 this->space()->write("rays_" + std::to_string(iter_debug) + ".e", rays);
+
+                // utopia::out() << "ISCONTACT\n";
+                this->space()->write("isc_" + std::to_string(iter_debug) + ".e", obstacle_->is_contact());
             }
         }
 

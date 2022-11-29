@@ -362,7 +362,11 @@ namespace utopia {
                 return 0;
             }
 
+#if UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE == 1
+            return implementation().getMap()->getLocalNumElements();
+#else
             return implementation().getMap()->getNodeNumElements();
+#endif
         }
 
         inline Scalar norm2() const override { return implementation().norm2(); }

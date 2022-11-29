@@ -403,8 +403,8 @@ namespace utopia {
     }  // namespace kernels
 
     namespace kokkos {
-        template <class FE>
-        using MassPentatope5 = utopia::kokkos::AutoKernel<
+        template <class FunctionSpace, class FE>
+        using MassPentatope5 = utopia::kokkos::AutoKernel<FunctionSpace,
             FE,
             utopia::kernels::Mass<utopia::kernels::Pentatope5<typename FE::Scalar, typename FE::Scalar>>,
             4>;

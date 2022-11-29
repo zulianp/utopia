@@ -167,8 +167,8 @@ namespace utopia {
     }  // namespace kernels
 
     namespace kokkos {
-        template <class FE>
-        using LaplaceOperatorLine2 = utopia::kokkos::AutoKernel<
+        template <class FunctionSpace, class FE>
+        using LaplaceOperatorLine2 = utopia::kokkos::AutoKernel<FunctionSpace,
             FE,
             utopia::kernels::LaplaceOperator<utopia::kernels::Line2<typename FE::Scalar, typename FE::Scalar>>,
             1>;

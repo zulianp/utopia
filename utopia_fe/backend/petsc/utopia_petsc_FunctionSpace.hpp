@@ -14,6 +14,7 @@ namespace utopia {
     class Traits<petsc::FunctionSpace> : public Traits<petsc::StructuredGrid> {
     public:
         using Mesh = petsc::StructuredGrid;
+        using Environment = utopia::Environment<utopia::petsc::FunctionSpace>;
     };
 
     namespace petsc {

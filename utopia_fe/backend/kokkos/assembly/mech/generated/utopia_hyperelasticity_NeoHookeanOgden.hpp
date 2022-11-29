@@ -22,8 +22,8 @@ namespace utopia {
 
 
 	namespace kokkos {
-		template<class FE, int Dim>
-		using NeoHookeanOgden = utopia::kokkos::AutoHyperElasticity<FE, utopia::kernels::NeoHookeanOgden<typename FE::Scalar, Dim>>;
+		template<class FunctionSpace, class FE, int Dim>
+		using NeoHookeanOgden = utopia::kokkos::AutoHyperElasticity<FunctionSpace, FE, utopia::kernels::NeoHookeanOgden<typename FE::Scalar, Dim>>;
 	}
 }
 

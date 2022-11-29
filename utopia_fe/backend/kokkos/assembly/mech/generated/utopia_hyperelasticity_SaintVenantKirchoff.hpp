@@ -22,8 +22,8 @@ namespace utopia {
 
 
 	namespace kokkos {
-		template<class FE, int Dim>
-		using SaintVenantKirchoff = utopia::kokkos::AutoHyperElasticity<FE, utopia::kernels::SaintVenantKirchoff<typename FE::Scalar, Dim>>;
+		template<class FunctionSpace, class FE, int Dim>
+		using SaintVenantKirchoff = utopia::kokkos::AutoHyperElasticity<FunctionSpace, FE, utopia::kernels::SaintVenantKirchoff<typename FE::Scalar, Dim>>;
 	}
 }
 

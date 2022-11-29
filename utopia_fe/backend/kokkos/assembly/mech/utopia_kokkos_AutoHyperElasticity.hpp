@@ -11,17 +11,16 @@
 namespace utopia {
     namespace kokkos {
 
-        template <class FE_, class Material>
-        class AutoHyperElasticity : public FEAssembler<FE_, DefaultView<typename FE_::Scalar>> {
+        template <class FunctionSpace, class FE_, class Material>
+        class AutoHyperElasticity : public FEAssembler<FunctionSpace, FE_, DefaultView<typename FE_::Scalar>> {
         public:
             using FE = FE_;
             using SizeType = typename FE::SizeType;
             using Scalar = typename FE::Scalar;
             using DynRankView = typename FE::DynRankView;
-            using FunctionSpaceTools = typename FE::FunctionSpaceTools;
 
             using ExecutionSpace = typename FE::ExecutionSpace;
-            using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;
+            using Super = utopia::kokkos::FEAssembler<FunctionSpace, FE_, DefaultView<typename FE_::Scalar>>;
 
             static constexpr int Dim = Material::Dim;
             using Params = typename Material::Params;

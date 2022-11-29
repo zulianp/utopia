@@ -19,10 +19,12 @@ namespace utopia {
     namespace stk {
 
         class StkIntrepid2Assembler
-            : public utopia::kokkos::FEAssembler<intrepid2::FE<Traits<stk::FunctionSpace>::Scalar>> {
+            : public utopia::kokkos::FEAssembler<stk::FunctionSpace,
+                                                 intrepid2::FE<Traits<stk::FunctionSpace>::Scalar>> {
         public:
             using Scalar = Traits<stk::FunctionSpace>::Scalar;
-            using Super = utopia::kokkos::FEAssembler<intrepid2::FE<Traits<stk::FunctionSpace>::Scalar>>;
+            using Super =
+                utopia::kokkos::FEAssembler<stk::FunctionSpace, intrepid2::FE<Traits<stk::FunctionSpace>::Scalar>>;
             using Environment = utopia::Environment<utopia::stk::FunctionSpace>;
 
             StkIntrepid2Assembler(const std::shared_ptr<FE> &fe);
@@ -42,7 +44,8 @@ namespace utopia {
         class StkIntrepid2ProxyAssembler : public StkIntrepid2Assembler {
         public:
             using Super = utopia::stk::StkIntrepid2Assembler;
-            using Intrepid2Assembler = utopia::kokkos::FEAssembler<intrepid2::FE<Traits<stk::FunctionSpace>::Scalar>>;
+            using Intrepid2Assembler =
+                utopia::kokkos::FEAssembler<stk::FunctionSpace, intrepid2::FE<Traits<stk::FunctionSpace>::Scalar>>;
             using Intrepid2FE = intrepid2::FE<Scalar>;
             using MatrixAccumulator = Intrepid2Assembler::MatrixAccumulator;
             using VectorAccumulator = Intrepid2Assembler::VectorAccumulator;

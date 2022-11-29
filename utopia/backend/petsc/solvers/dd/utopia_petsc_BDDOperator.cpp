@@ -220,9 +220,11 @@ namespace utopia {
 
         bool initialize_operator(const Matrix &mat) {
             init_skeleton_selection(mat);
+            extend_skeleton_with_constrained_dofs(mat);
             extend_skeleton_selection_with_local_decomposition(mat);
-            initialize_dof_indices(mat);
             fix_skeleton_wrt_block_size(mat);
+            initialize_dof_indices(mat);
+
             return schur_complement.initialize_from_selection(mat, eliminated_dofs);
         }
 

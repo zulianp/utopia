@@ -166,9 +166,9 @@ namespace utopia {
     }  // namespace kernels
 
     namespace kokkos {
-        template <class FE>
+        template <class FunctionSpace, class FE>
         using MassLine2 = utopia::kokkos::
-            AutoKernel<FE, utopia::kernels::Mass<utopia::kernels::Line2<typename FE::Scalar, typename FE::Scalar>>, 1>;
+            AutoKernel<FunctionSpace, FE, utopia::kernels::Mass<utopia::kernels::Line2<typename FE::Scalar, typename FE::Scalar>>, 1>;
     }
 }  // namespace utopia
 

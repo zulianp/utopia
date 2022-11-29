@@ -386,7 +386,7 @@ namespace utopia {
                         printf("Negative distance at dof %d: %g, ILLEGAL!\n", int(i), d);
                     }
 
-                    assert(d > 0);
+                    // assert(d > 0);
 
                     diff_view.set(i, d);
                 });

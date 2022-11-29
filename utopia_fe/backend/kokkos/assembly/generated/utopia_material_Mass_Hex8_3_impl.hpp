@@ -681,9 +681,9 @@ namespace utopia {
     }  // namespace kernels
 
     namespace kokkos {
-        template <class FE>
+        template <class FunctionSpace, class FE>
         using MassHex8 = utopia::kokkos::
-            AutoKernel<FE, utopia::kernels::Mass<utopia::kernels::Hex8<typename FE::Scalar, typename FE::Scalar>>, 3>;
+            AutoKernel<FunctionSpace, FE, utopia::kernels::Mass<utopia::kernels::Hex8<typename FE::Scalar, typename FE::Scalar>>, 3>;
     }
 }  // namespace utopia
 

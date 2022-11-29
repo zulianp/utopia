@@ -79,7 +79,7 @@ namespace utopia {
 
             auto fe_ptr = std::make_shared<FE>();
             create_fe(space, *fe_ptr, 2);
-            utopia::kokkos::LaplaceOperator<FE> lapl(fe_ptr, {1.0});
+            utopia::kokkos::LaplaceOperator<FunctionSpace, FE> lapl(fe_ptr, {1.0});
 
             Super::assemble_and_solve("poisson", space, lapl);
         }
@@ -104,7 +104,7 @@ namespace utopia {
 
             auto fe_ptr = std::make_shared<FE>();
             create_fe(space, *fe_ptr, 2);
-            utopia::kokkos::VectorLaplaceOperator<FE, 3> lapl(fe_ptr, {1.0});
+            utopia::kokkos::VectorLaplaceOperator<FunctionSpace, FE, 3> lapl(fe_ptr, {1.0});
 
             Super::assemble_and_solve("vector_poisson", space, lapl);
         }
@@ -131,10 +131,10 @@ namespace utopia {
             auto fe_ptr = std::make_shared<FE>();
             create_fe(space, *fe_ptr, 2);
 
-            utopia::kokkos::LinearElasticity<FE, Dim> linear_elasticity(fe_ptr, {1.0, 1.0});
+            utopia::kokkos::LinearElasticity<FunctionSpace, FE, Dim> linear_elasticity(fe_ptr, {1.0, 1.0});
             Super::assemble_and_solve("linear_elasticity", space, linear_elasticity);
 
-            utopia::kokkos::NeoHookean<FE> neohookean(fe_ptr, {1.0, 1.0});
+            utopia::kokkos::NeoHookean<FunctionSpace, FE> neohookean(fe_ptr, {1.0, 1.0});
             Super::assemble_and_solve("neohookean", space, neohookean);
         }
 
@@ -153,7 +153,7 @@ namespace utopia {
 
             auto fe_ptr = std::make_shared<FE>();
             create_fe(space, *fe_ptr, 2);
-            utopia::kokkos::LaplaceOperator<FE> lapl(fe_ptr, {1.0});
+            utopia::kokkos::LaplaceOperator<FunctionSpace, FE> lapl(fe_ptr, {1.0});
 
             std::stringstream ss;
             space.describe(ss);
@@ -176,7 +176,7 @@ namespace utopia {
 
             auto fe_ptr = std::make_shared<FE>();
             create_fe(space, *fe_ptr, 2);
-            utopia::kokkos::LaplaceOperator<FE> lapl(fe_ptr, {1.0});
+            utopia::kokkos::LaplaceOperator<FunctionSpace, FE> lapl(fe_ptr, {1.0});
 
             std::stringstream ss;
             space.describe(ss);
@@ -206,7 +206,7 @@ namespace utopia {
             auto fe_ptr = std::make_shared<FE>();
             create_fe(space, *fe_ptr, 2);
 
-            utopia::kokkos::LinearElasticity<FE, Dim> linear_elasticity(fe_ptr, {1.0, 1.0});
+            utopia::kokkos::LinearElasticity<FunctionSpace, FE, Dim> linear_elasticity(fe_ptr, {1.0, 1.0});
 
             Super::assemble_and_solve("elasticity_problem_parallel", space, linear_elasticity);
         }
@@ -226,7 +226,7 @@ namespace utopia {
 
             auto fe_ptr = std::make_shared<FE>();
             create_fe(space, *fe_ptr, 2);
-            utopia::kokkos::LaplaceOperator<FE> lapl(fe_ptr, {1.0});
+            utopia::kokkos::LaplaceOperator<FunctionSpace, FE> lapl(fe_ptr, {1.0});
 
             std::stringstream ss;
             space.describe(ss);

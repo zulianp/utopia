@@ -260,8 +260,8 @@ namespace utopia {
     }  // namespace kernels
 
     namespace kokkos {
-        template <class FE>
-        using MassAxisAlignedQuad4 = utopia::kokkos::AutoKernel<
+        template <class FunctionSpace, class FE>
+        using MassAxisAlignedQuad4 = utopia::kokkos::AutoKernel<FunctionSpace,
             FE,
             utopia::kernels::Mass<utopia::kernels::AxisAlignedQuad4<typename FE::Scalar, typename FE::Scalar>>,
             2>;

@@ -1,27 +1,34 @@
 #ifndef UTOPIA_KOKKOS_FEASSEMBLER_HPP
 #define UTOPIA_KOKKOS_FEASSEMBLER_HPP
 
+#include "utopia_Instance.hpp"
+#include "utopia_Traits.hpp"
+
+#include "utopia_FEAssembler.hpp"
+
 #include "utopia_SimulationTime.hpp"
 #include "utopia_fe_Core.hpp"
 
 #include "utopia_kokkos_FE.hpp"
 #include "utopia_kokkos_Field.hpp"
-// #include "utopia_kokkos_ForwardDeclarations.hpp"
 
 #include "utopia_kokkos_TensorAccumulator.hpp"
 
 #include "utopia_kokkos_SubdomainValue.hpp"
 
+#include "utopia_kokkos_Discretization.hpp"
+
 #include <memory>
 
 namespace utopia {
+
     namespace kokkos {
 
         template <class View, class Op>
         class OpAndStoreCellIJ {
         public:
             template <typename... Args>
-            UTOPIA_INLINE_FUNCTION OpAndStoreCellIJ(const View &data, Args &&... args)
+            UTOPIA_INLINE_FUNCTION OpAndStoreCellIJ(const View &data, Args &&...args)
                 : op(std::forward<Args>(args)...), data(data) {}
 
             UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int i, const int j) const {
@@ -36,7 +43,7 @@ namespace utopia {
         class BlockOpAndStoreCellIJ {
         public:
             template <typename... Args>
-            UTOPIA_INLINE_FUNCTION BlockOpAndStoreCellIJ(const View &data, Args &&... args)
+            UTOPIA_INLINE_FUNCTION BlockOpAndStoreCellIJ(const View &data, Args &&...args)
                 : op(std::forward<Args>(args)...), data(data) {}
 
             UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int i, const int j) const {
@@ -57,8 +64,7 @@ namespace utopia {
         };
 
         template <class Op, class View, typename... Args>
-        UTOPIA_INLINE_FUNCTION OpAndStoreCellIJ<View, Op> build_op_and_store_cell_ij(const View &data,
-                                                                                     Args &&... args) {
+        UTOPIA_INLINE_FUNCTION OpAndStoreCellIJ<View, Op> build_op_and_store_cell_ij(const View &data, Args &&...args) {
             return OpAndStoreCellIJ<View, Op>(data, std::forward<Args>(args)...);
         }
 
@@ -72,12 +78,80 @@ namespace utopia {
             return BlockOpAndStoreCellIJ<View, Op>(data, op);
         }
 
-        template <typename FE_,
-                  typename MatrixView_ = DefaultView<typename FE_::Scalar>,
-                  typename VectorView_ = MatrixView_,
-                  typename ScalarView_ = VectorView_>
-        class FEAssembler : public Describable, public Configurable {
+        template <class FunctionSpace,
+                  typename FE,
+                  typename MatrixView = DefaultView<typename FE::Scalar>,
+                  typename VectorView = DefaultView<typename FE::Scalar>,
+                  typename ScalarView = DefaultView<typename FE::Scalar>>
+        class FEAssemblerWithManager : public Configurable
+        //: public FEAssembler<FunctionSpace>
+        {
         public:
+            using Discretization =
+                utopia::kokkos::Discretization<FunctionSpace, FE, MatrixView, VectorView, ScalarView>;
+
+            using Matrix = typename Traits<FunctionSpace>::Matrix;
+            using Vector = typename Traits<FunctionSpace>::Vector;
+            using Environment = utopia::Environment<FunctionSpace>;
+            using Scalar = typename Traits<Vector>::Scalar;
+            using SimulationTime = utopia::SimulationTime<Scalar>;
+
+            virtual ~FEAssemblerWithManager() = default;
+
+            void set_time(const std::shared_ptr<SimulationTime> &time) /*override*/ { time_ = time; }
+
+            void clear() /*override*/ { Utopia::Abort(); }
+
+            void set_environment(const std::shared_ptr<Environment> &env) /*override*/ { Utopia::Abort(); }
+
+            std::shared_ptr<Environment> environment() const /*override*/ {
+                Utopia::Abort();
+                return nullptr;
+            }
+
+            void set_space(const std::shared_ptr<FunctionSpace> &space) /*override*/ { Utopia::Abort(); }
+
+            std::shared_ptr<FunctionSpace> space() const /*override*/ {
+                Utopia::Abort();
+                return nullptr;
+            }
+
+            std::shared_ptr<SimulationTime> time() const { return time_; }
+
+            virtual void set_discretization(const std::shared_ptr<Discretization> &discretization) {
+                discretization_ = discretization;
+            }
+
+            virtual std::shared_ptr<Discretization> discretization() const { return discretization_; }
+
+        private:
+            std::shared_ptr<Discretization> discretization_;
+            std::shared_ptr<SimulationTime> time_;
+        };
+
+        // Handle case where no FunctionSpace is used i.e., FunctionSpace=void
+        template <typename FE_, typename MatrixView_, typename VectorView_, typename ScalarView_>
+        class FEAssemblerWithManager<void, FE_, MatrixView_, VectorView_, ScalarView_> : public FEAssembler<void> {
+        public:
+            virtual ~FEAssemblerWithManager() = default;
+            bool assemble() { return false; }
+        };
+
+        template <class FunctionSpace_,
+                  typename FE_,
+                  typename MatrixView_ = DefaultView<typename FE_::Scalar>,
+                  typename VectorView_ = DefaultView<typename FE_::Scalar>,
+                  typename ScalarView_ = DefaultView<typename FE_::Scalar>>
+        class FEAssembler : public Describable,
+                            public FEAssemblerWithManager<FunctionSpace_, FE_, MatrixView_, VectorView_, ScalarView_> {
+        public:
+            using Super =
+                utopia::kokkos::FEAssemblerWithManager<FunctionSpace_, FE_, MatrixView_, VectorView_, ScalarView_>;
+
+            using FunctionSpace = FunctionSpace_;
+            using Matrix = typename Traits<FunctionSpace>::Matrix;
+            using Vector = typename Traits<FunctionSpace>::Vector;
+
             using FE = FE_;
             using MatrixView = MatrixView_;
             using VectorView = VectorView_;
@@ -93,7 +167,14 @@ namespace utopia {
             using CellTestTrialRange = typename FE::CellTestTrialRange;
             using CellTestRange = typename FE::CellTestRange;
             using CellRange = typename FE::CellRange;
-            using SimulationTime = utopia::SimulationTime<Scalar>;
+
+            ////////////////////////////////////////////////////////////////////////////////////
+            /// utopia::FEAssembler Types
+            ////////////////////////////////////////////////////////////////////////////////////
+
+            using Discretization = utopia::kokkos::Discretization<FunctionSpace, FE>;
+            using Part = typename Discretization::Part;
+            using Environment = typename Traits<FunctionSpace>::Environment;
 
             virtual ~FEAssembler() = default;
 
@@ -109,8 +190,20 @@ namespace utopia {
                 return false;
             }
 
-            virtual int n_vars() const = 0;
-            virtual std::string name() const = 0;
+            virtual int n_vars() const {
+                // assert(false);
+                // Utopia::Abort();
+                // return 0;
+                return n_vars_;
+            }
+
+            inline void set_n_vars(int n_vars) { n_vars_ = n_vars; }
+
+            virtual std::string name() const {
+                assert(false);
+                Utopia::Abort();
+                return "Undefined";
+            }
 
             void read(Input &) override {}
 
@@ -189,12 +282,21 @@ namespace utopia {
                     name, UTOPIA_LAMBDA(const int &cell, const int &i) { y(cell, i) += op(cell, i) * x(cell, i); });
             }
 
-            virtual bool is_matrix() const = 0;
-            virtual bool is_vector() const = 0;
-            virtual bool is_scalar() const = 0;
-            virtual bool is_operator() const { return false; }
-
-            virtual bool is_linear() const { return true; }
+            virtual bool is_matrix() const {
+                assert(false);
+                Utopia::Abort();
+                return false;
+            };
+            virtual bool is_vector() const {
+                assert(false);
+                Utopia::Abort();
+                return false;
+            };
+            virtual bool is_scalar() const {
+                assert(false);
+                Utopia::Abort();
+                return false;
+            };
 
             virtual bool assemble_matrix() {
                 assert(!is_matrix() && "IMPLEMENT ME IN SUB CLASS");
@@ -308,13 +410,8 @@ namespace utopia {
                 if (is_matrix()) ensure_matrix_accumulator();
             }
 
-            inline std::shared_ptr<MatrixAccumulator> matrix_accumulator() { return matrix_accumulator_; }
             inline std::shared_ptr<MatrixAccumulator> matrix_accumulator() const { return matrix_accumulator_; }
-
-            inline std::shared_ptr<VectorAccumulator> vector_accumulator() { return vector_accumulator_; }
             inline std::shared_ptr<VectorAccumulator> vector_accumulator() const { return vector_accumulator_; }
-
-            inline std::shared_ptr<ScalarAccumulator> scalar_accumulator() { return scalar_accumulator_; }
             inline std::shared_ptr<ScalarAccumulator> scalar_accumulator() const { return scalar_accumulator_; }
 
             virtual void set_matrix_accumulator(const std::shared_ptr<MatrixAccumulator> &matrix_accumulator) {
@@ -407,8 +504,244 @@ namespace utopia {
 
             inline std::shared_ptr<Field<FE>> current_solution() { return current_solution_; }
 
-            void set_time(const std::shared_ptr<SimulationTime> &time) { time_ = time; }
-            std::shared_ptr<SimulationTime> time() const { return time_; }
+            //////////////////////////////////////////////////////////////////////////////
+
+            virtual bool is_operator() const /*override*/ { return false; }
+            virtual bool is_linear() const /*override*/ { return true; }
+
+            //////////////////////////////////////////////////////////////////////////////
+            // NEW interface!
+            //////////////////////////////////////////////////////////////////////////////
+
+            // Scalar
+            template <class Op>
+            bool assemble_matrix_eij(const std::string &name,
+                                     AssemblyMode mode,
+                                     Op op,
+                                     const Part part = Discretization::all()) {
+                ensure_matrix_accumulator();
+                auto data = this->matrix_data();
+
+                const Scalar a = OVERWRITE_MODE == mode ? 0 : 1;
+                const Scalar b = SUBTRACT_MODE == mode ? -1 : 1;
+
+                this->loop_cell_test_trial(
+                    name, UTOPIA_LAMBDA(const int cell, const int i, const int j) {
+                        auto value = op(cell, i, j);
+                        auto &v = data(cell, i + op.offset_test(), j + op.offset_trial());
+                        v += a * v + b * value;
+                    });
+
+                return true;
+            }
+
+            // Block
+            template <class Op>
+            bool assemble_matrix_eij_block(const std::string &name,
+                                           AssemblyMode mode,
+                                           Op op,
+                                           const Part part = Discretization::all()) {
+                ensure_matrix_accumulator();
+                auto data = this->matrix_data();
+
+                const Scalar a = OVERWRITE_MODE == mode ? 0 : 1;
+                const Scalar b = SUBTRACT_MODE == mode ? -1 : 1;
+
+                this->loop_cell_test_trial(
+                    name, UTOPIA_LAMBDA(const int cell, const int i, const int j) {
+                        StaticMatrix<Scalar, Op::NComponentsTest, Op::NComponentsTrial> block;
+                        block.set(0.);
+
+                        // Evaluate block operator
+                        op(cell, i, j, block);
+
+                        auto ixn = op.offset_test() + i * Op::NComponentsTest;
+                        auto jxn = op.offset_trial() + j * Op::NComponentsTrial;
+
+                        for (int di = 0; di < Op::NComponentsTest; ++di) {
+                            for (int dj = 0; dj < Op::NComponentsTrial; ++dj) {
+                                auto &v = data(cell, ixn + di, jxn + dj);
+                                v += a * v + b * block(di, dj);
+                            }
+                        }
+                    });
+
+                return true;
+            }
+
+            template <class Op>
+            bool assemble_apply_ei(const std::string &name,
+                                   AssemblyMode mode,
+                                   Op op,
+                                   const Field<FE> &field,
+                                   const Part part = Discretization::all()) {
+                ensure_vector_accumulator();
+
+                auto data = this->vector_data();
+                auto x = field.data();
+
+                const Scalar a = OVERWRITE_MODE == mode ? 0 : 1;
+                const Scalar b = SUBTRACT_MODE == mode ? -1 : 1;
+
+                auto &fe = this->fe();
+                const int n_shape_functions = fe.n_shape_functions();
+
+                this->loop_cell_test(
+                    name, UTOPIA_LAMBDA(const int cell, const int i) {
+                        Scalar val = 0.0;
+                        for (int j = 0; j < n_shape_functions; ++j) {
+                            val += op(cell, i, j) * x(cell, j);
+                        }
+                        auto &v = data(cell, i);
+                        v = a * v + b * val;
+                    });
+
+                return true;
+            }
+
+            template <class Op>
+            bool assemble_vector_ei_block(const std::string &name,
+                                          AssemblyMode mode,
+                                          Op op,
+                                          const Part part = Discretization::all()) {
+                ensure_vector_accumulator();
+                auto data = this->vector_data();
+
+                const Scalar a = OVERWRITE_MODE == mode ? 0 : 1;
+                const Scalar b = SUBTRACT_MODE == mode ? -1 : 1;
+
+                this->loop_cell_test(
+                    name, UTOPIA_LAMBDA(const int cell, const int i) {
+                        StaticVector<Scalar, Op::NComponentsTest> block;
+                        block.set(0.);
+
+                        auto ixn = op.offset_test() + i * Op::NComponentsTest;
+
+                        // Evaluate block operator
+                        op(cell, i, block);
+
+                        for (int di = 0; di < Op::NComponentsTest; ++di) {
+                            auto &v = data(cell, ixn + di);
+                            v = a * v + b * block(di);
+                        }
+                    });
+
+                return true;
+            }
+
+            template <class Op>
+            bool assemble_vector_ei(const std::string &name,
+                                    AssemblyMode mode,
+                                    Op op,
+                                    const Part part = Discretization::all()) {
+                ensure_vector_accumulator();
+
+                auto data = this->vector_data();
+
+                const Scalar a = OVERWRITE_MODE == mode ? 0 : 1;
+                const Scalar b = SUBTRACT_MODE == mode ? -1 : 1;
+
+                this->loop_cell_test(
+                    name, UTOPIA_LAMBDA(const int cell, const int i) {
+                        const Scalar val = op(cell, i);
+                        auto &v = data(cell, i);
+                        v = a * v + b * val;
+                    });
+
+                return true;
+            }
+
+            template <class Op>
+            bool assemble_scalar_e(const std::string &name,
+                                   AssemblyMode mode,
+                                   Op op,
+                                   const Part part = Discretization::all()) {
+                ensure_scalar_accumulator();
+
+                auto data = this->scalar_data();
+
+                const Scalar a = OVERWRITE_MODE == mode ? 0 : 1;
+                const Scalar b = SUBTRACT_MODE == mode ? -1 : 1;
+
+                this->loop_cell_test(
+                    name, UTOPIA_LAMBDA(const int &cell) {
+                        const Scalar val = op(cell);
+                        auto &v = data(cell);
+                        v = a * v + b * val;
+                    });
+
+                return true;
+            }
+
+            template <class Op>
+            bool assemble_scalar_e_block(const std::string &name,
+                                         AssemblyMode mode,
+                                         Op op,
+                                         const Part part = Discretization::all()) {
+                ensure_scalar_accumulator();
+
+                auto data = this->scalar_data();
+
+                const Scalar a = OVERWRITE_MODE == mode ? 0 : 1;
+                const Scalar b = SUBTRACT_MODE == mode ? -1 : 1;
+
+                this->loop_cell_test(
+                    name, UTOPIA_LAMBDA(const int cell) {
+                        StaticVector<Scalar, Op::NComponentsTest> block;
+                        block.set(0.);
+
+                        op(cell, block);
+
+                        for (int di = 0; di < Op::NComponentsTest; ++di) {
+                            auto &v = data(cell, op.offset() + di);
+                            v = a * v + b * block(di);
+                        }
+                    });
+
+                return true;
+            }
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////
+
+            bool update_input(const Vector &x) {
+                auto space = this->discretization()->space();
+                utopia::Field<FunctionSpace> in("x", space, make_ref(const_cast<Vector &>(x)));
+
+                // FIXME does not work for mixed FE
+                in.set_tensor_size(space->n_var());
+
+                if (!current_solution_) {
+                    assert(fe_);
+                    current_solution_ = std::make_shared<Field<FE>>(fe_);
+                }
+
+                std::vector<std::shared_ptr<Field<FE>>> fields{current_solution_};
+
+                this->discretization()->convert_field(in, fields);
+                return true;
+            }
+
+            void matrix_assembly_begin(Matrix &, AssemblyMode) {}
+
+            void matrix_assembly_end(Matrix &matrix, AssemblyMode mode) {
+                this->discretization()->local_to_global({this->matrix_data()}, mode, matrix);
+            }
+
+            void vector_assembly_begin(Vector &, AssemblyMode) {}
+
+            void vector_assembly_end(Vector &vector, AssemblyMode mode) {
+                // this->discretization()->local_to_global(this->vector_data(), mode, vector);
+            }
+
+            void scalar_assembly_begin(Scalar &scalar, AssemblyMode mode) {
+                assert(false);
+                Utopia::Abort();
+            }
+
+            void scalar_assembly_end(Scalar &scalar, AssemblyMode mode) {
+                assert(false);
+                Utopia::Abort();
+            }
 
         private:
             std::shared_ptr<FE> fe_;
@@ -416,7 +749,7 @@ namespace utopia {
             std::shared_ptr<VectorAccumulator> vector_accumulator_;
             std::shared_ptr<ScalarAccumulator> scalar_accumulator_;
             std::shared_ptr<Field<FE>> current_solution_;
-            std::shared_ptr<SimulationTime> time_;
+            int n_vars_{1};
         };
 
     }  // namespace kokkos

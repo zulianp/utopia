@@ -22,8 +22,8 @@ namespace utopia {{
 
 
 	namespace kokkos {{
-		template<class FE, int Dim>
-		using {name} = utopia::kokkos::MixedHyperElasticity<FE, utopia::kernels::{name}<typename FE::Scalar, Dim>>;
+		template<class FunctionSpace, class FE, int Dim>
+		using {name} = utopia::kokkos::MixedHyperElasticity<FunctionSpace, FE, utopia::kernels::{name}<typename FE::Scalar, Dim>>;
 	}}
 }}
 

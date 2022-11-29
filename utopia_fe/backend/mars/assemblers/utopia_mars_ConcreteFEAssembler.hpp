@@ -26,6 +26,7 @@ namespace utopia {
             using DofHandler = typename FEHandler::DofHandler;
             using FEDofMap = typename FEHandler::FEDofMap;
             using SPattern = typename FEHandler::SPattern;
+            using SparseMatrixBuilder = ::mars::SparsityMatrix<SPattern>;
 
             static const ::mars::Integer Type = SPattern::DofHandler::ElemType;
             using UniformFE = utopia::kokkos::UniformFE<Scalar>;
@@ -54,20 +55,14 @@ namespace utopia {
                 auto handler = this->handler();
                 auto sp = handler->get_sparsity_pattern();
 
-                if (!add_offsetted_scalar_op_to_matrix(0, 0, op)) {
+                SparseMatrixBuilder matrix_builder(sp, hessian.raw_type()->getLocalMatrixDevice());
+
+                assert(!hessian.empty());
+
+                if (!add_offsetted_scalar_op_to_matrix(0, 0, op, matrix_builder)) {
                     return false;
                 }
 
-                UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::scalar_op_assemble_matrix::TpetraCrsMatrix()");
-
-                // FIXME Bad it should not do this
-                auto mat_impl =
-                    Teuchos::rcp(new Matrix::CrsMatrixType(this->handler()->get_sparsity_pattern().get_matrix(),
-                                                           hessian.raw_type()->getRowMap(),
-                                                           hessian.raw_type()->getColMap()));
-                hessian.wrap(mat_impl, false);
-
-                UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::scalar_op_assemble_matrix::TpetraCrsMatrix()");
                 UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::scalar_op_assemble_matrix");
                 return true;
             }
@@ -196,6 +191,8 @@ namespace utopia {
                 auto fe_dof_map = handler->get_fe_dof_map();
                 auto dof_handler = handler->get_dof_handler();
 
+                SparseMatrixBuilder matrix_builder(sp, hessian.raw_type()->getLocalMatrixDevice());
+
                 auto matrix = hessian.raw_type()->getLocalMatrix();
                 // TODO: Add execution space for the Range policy
                 Kokkos::parallel_for(
@@ -231,7 +228,7 @@ namespace utopia {
                                         const Scalar val = op(elem_index, i, j, sub_i, sub_j);
 
                                         assert(val == val);
-                                        sp.atomic_add_value(local_dof_i, local_dof_j, val, matrix);
+                                        matrix_builder.atomic_add_value(local_dof_i, local_dof_j, val, matrix);
                                     }
                                 }
                             }
@@ -426,8 +423,11 @@ namespace utopia {
                 ensure_fe();
 
                 auto handler = this->handler();
-                auto fe_dof_map = handler->get_fe_dof_map();
+                // auto fe_dof_map = handler->get_fe_dof_map();
                 auto dof_handler = handler->get_dof_handler();
+
+                auto sp = handler->get_sparsity_pattern();
+                SparseMatrixBuilder matrix_builder(sp, hessian.raw_type()->getLocalMatrixDevice());
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -435,18 +435,12 @@ namespace utopia {
                 int block_size = vec_op.dim();
                 assert(block_size <= dof_handler.get_block());
 
-                bool ok = add_offsetted_block_op_to_matrix(vector_var, vector_var, vec_op) &&
-                          add_offsetted_scalar_op_to_matrix(scalar_var, scalar_var, scalar_op) &&
-                          add_offsetted_block_x_scalar_op_to_matrix(vector_var, scalar_var, couple_vec_scalar_op);
+                bool ok = add_offsetted_block_op_to_matrix(vector_var, vector_var, vec_op, matrix_builder) &&
+                          add_offsetted_scalar_op_to_matrix(scalar_var, scalar_var, scalar_op, matrix_builder) &&
+                          add_offsetted_block_x_scalar_op_to_matrix(
+                              vector_var, scalar_var, couple_vec_scalar_op, matrix_builder);
 
                 if (!ok) return false;
-
-                // // FIXME Bad it should not do this
-                auto mat_impl =
-                    Teuchos::rcp(new Matrix::CrsMatrixType(this->handler()->get_sparsity_pattern().get_matrix(),
-                                                           hessian.raw_type()->getRowMap(),
-                                                           hessian.raw_type()->getColMap()));
-                hessian.wrap(mat_impl, false);
                 return true;
             }
 
@@ -492,11 +486,13 @@ namespace utopia {
             ////////////////////
 
             template <class Op>
-            bool add_offsetted_scalar_op_to_matrix(const int s_offset_i, const int s_offset_j, Op op) {
+            bool add_offsetted_scalar_op_to_matrix(const int s_offset_i,
+                                                   const int s_offset_j,
+                                                   Op op,
+                                                   SparseMatrixBuilder matrix_builder) {
                 ensure_fe();
 
                 auto handler = this->handler();
-                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
                 auto dof_handler = handler->get_dof_handler();
 
@@ -516,7 +512,7 @@ namespace utopia {
                                 Scalar val = op(elem_index, i, j);
 
                                 assert(val == val);
-                                sp.atomic_add_value(local_dof_i, local_dof_j, val);
+                                matrix_builder.atomic_add_value(local_dof_i, local_dof_j, val);
                             }
                         }
                     }
@@ -528,11 +524,14 @@ namespace utopia {
             ////////////////////
 
             template <class Op>
-            bool add_offsetted_block_op_to_matrix(const int b_offset_i, const int b_offset_j, Op op) {
+            bool add_offsetted_block_op_to_matrix(const int b_offset_i,
+                                                  const int b_offset_j,
+                                                  Op op,
+                                                  SparseMatrixBuilder matrix_builder) {
                 ensure_fe();
 
                 auto handler = this->handler();
-                auto sp = handler->get_sparsity_pattern();
+                // auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
                 auto dof_handler = handler->get_dof_handler();
 
@@ -562,7 +561,7 @@ namespace utopia {
                                         const Scalar val = op(elem_index, i, j, sub_i, sub_j);
 
                                         assert(val == val);
-                                        sp.atomic_add_value(local_dof_i, local_dof_j, val);
+                                        matrix_builder.atomic_add_value(local_dof_i, local_dof_j, val);
                                     }
                                 }
                             }
@@ -576,11 +575,14 @@ namespace utopia {
             ////////////////////
 
             template <class Op>
-            bool add_offsetted_block_x_scalar_op_to_matrix(const int b_offset_i, const int s_offset_j, Op op) {
+            bool add_offsetted_block_x_scalar_op_to_matrix(const int b_offset_i,
+                                                           const int s_offset_j,
+                                                           Op op,
+                                                           SparseMatrixBuilder matrix_builder) {
                 ensure_fe();
 
                 auto handler = this->handler();
-                auto sp = handler->get_sparsity_pattern();
+                // auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
                 auto dof_handler = handler->get_dof_handler();
 
@@ -609,7 +611,7 @@ namespace utopia {
                                     const Scalar val = op(elem_index, i, j, sub_i);
 
                                     assert(val == val);
-                                    sp.atomic_add_value(local_dof_i, local_dof_j, val);
+                                    matrix_builder.atomic_add_value(local_dof_i, local_dof_j, val);
                                 }
                             }
                         }

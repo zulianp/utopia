@@ -64,10 +64,10 @@ void intrepid2_basis_functions() {
 }
 
 void intrepid2_laplace_operator() {
-    kokkos::LaplaceOperator<FE>::Params lapl{1.0};
+    kokkos::LaplaceOperator<void,FE>::Params lapl{1.0};
     auto fe_ptr = make_ref_tet();
 
-    kokkos::LaplaceOperator<FE> assembler(fe_ptr, lapl);
+    kokkos::LaplaceOperator<void,FE> assembler(fe_ptr, lapl);
     assembler.assemble_matrix();
     // assembler.describe(std::cout);
 
