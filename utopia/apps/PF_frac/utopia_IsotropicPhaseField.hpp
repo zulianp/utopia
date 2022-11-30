@@ -873,6 +873,14 @@ namespace utopia {
                     params.regularization) *
                    strain_energy(params, trace, strain);
         }
+
+        void write_to_file(const std::string &output_path, const Vector &x, const Scalar time) override {
+            PhaseFieldFracBase<FunctionSpace, Dim>::write_to_file(output_path, x, time);
+
+            // Post-processing functions
+            // And write outputs
+            printf("HELLO WORLD!\n");
+        }
     };
 
 }  // namespace utopia
