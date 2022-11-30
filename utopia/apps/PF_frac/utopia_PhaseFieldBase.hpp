@@ -752,6 +752,10 @@ namespace utopia {
 
         Scalar get_dt() const { return dt_; }
 
+        virtual void write_to_file(const std::string &output_path, const Vector &x, const Scalar time) {
+            space_.write(output_path + "_" + std::to_string(time) + ".vtr", x);
+        }
+
     protected:
         FunctionSpace &space_;
         PFFracParameters params_;
