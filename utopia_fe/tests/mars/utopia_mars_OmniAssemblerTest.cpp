@@ -11,6 +11,8 @@
 #include "utopia_hyperelasticity_NeoHookeanOgden_3.hpp"
 #include "utopia_kokkos_AutoHyperElasticityNew.hpp"
 
+#include "utopia_kokkos_MaterialFactory_impl.hpp"
+
 using namespace utopia;
 
 using Mesh_t = utopia::mars::Mesh;
@@ -151,20 +153,21 @@ using Scalar_t = Traits<FS_t>::Scalar;
 using FE_t = utopia::kokkos::UniformFE<Scalar_t>;
 using Solver_t = utopia::ConjugateGradient<Matrix_t, Vector_t, HOMEMADE>;
 
+using MaterialFactory_t = utopia::kokkos::MaterialFactory<FS_t, FE_t>;
+
 void mars_new_assembler_test() {
     int n = 20;
     auto params =
         param_list(param("n_var", 1),
-                   param("mesh", param_list(param("type", "cube"), param("nx", n), param("ny", n), param("nz", n))),
-                   param("material", param_list(param("type", "LaplaceOperator"))));
+                   param("mesh", param_list(param("type", "cube"), param("nx", n), param("ny", n), param("nz", n))));
 
     FS_t space;
     space.read(params);
     space.add_dirichlet_boundary_condition("left", -1);
     space.add_dirichlet_boundary_condition("right", 1);
 
-    utopia::kokkos::LaplaceOperatorNew<FS_t, FE_t> lapl;
-    lapl.initialize(make_ref(space));
+    auto lapl = MaterialFactory_t::make(space.mesh().spatial_dimension(), "LaplaceOperator");
+    lapl->initialize(make_ref(space));
 
     Matrix_t mat;
     space.create_matrix(mat);
@@ -175,8 +178,8 @@ void mars_new_assembler_test() {
 
     x.set(0.0);
 
-    utopia_test_assert(lapl.hessian(x, mat));
-    utopia_test_assert(lapl.gradient(x, g));
+    utopia_test_assert(lapl->hessian(x, mat));
+    utopia_test_assert(lapl->gradient(x, g));
 
     Scalar_t ng = norm2(g);
     Scalar_t nx = norm2(x);
@@ -201,11 +204,10 @@ void mars_new_assembler_test() {
 UTOPIA_REGISTER_TEST_FUNCTION(mars_new_assembler_test);
 
 void mars_new_auto_assembler_test() {
-    int n = 10;
+    int n = 5;
     auto params =
         param_list(param("n_var", 3),
-                   param("mesh", param_list(param("type", "cube"), param("nx", n), param("ny", n), param("nz", n))),
-                   param("material", param_list(param("type", "LaplaceOperator"))));
+                   param("mesh", param_list(param("type", "cube"), param("nx", n), param("ny", n), param("nz", n))));
 
     FS_t space;
     space.read(params);
@@ -222,8 +224,8 @@ void mars_new_auto_assembler_test() {
     space.add_dirichlet_boundary_condition(l, 0, 2);
     space.add_dirichlet_boundary_condition(r, 0, 2);
 
-    utopia::kokkos::AutoHyperElasticityNew<FS_t, FE_t, utopia::kernels::NeoHookeanOgden<Scalar_t, 3>> neohook;
-    neohook.initialize(make_ref(space));
+    auto neohook = MaterialFactory_t::make(space.mesh().spatial_dimension(), "NeoHookeanOgden");
+    neohook->initialize(make_ref(space));
 
     Matrix_t mat;
     space.create_matrix(mat);
@@ -234,8 +236,8 @@ void mars_new_auto_assembler_test() {
 
     x.set(0.0);
 
-    utopia_test_assert(neohook.hessian(x, mat));
-    utopia_test_assert(neohook.gradient(x, g));
+    utopia_test_assert(neohook->hessian(x, mat));
+    utopia_test_assert(neohook->gradient(x, g));
 
     Scalar_t ng = norm2(g);
     Scalar_t nx = norm2(x);
