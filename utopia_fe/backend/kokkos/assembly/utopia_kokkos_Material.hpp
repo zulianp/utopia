@@ -55,20 +55,19 @@ namespace utopia {
                     return false;
                 }
 
+                UTOPIA_TRACE_REGION_BEGIN("utopia::Kokkos::Material::apply");
+
                 assembler()->vector_assembly_begin(y, mode_);
 
                 assembler()->update_input(x);
                 solution_updated(assembler()->current_solution());
-
                 auto sol = assembler()->current_solution();
 
                 bool ok = const_cast<Material *>(this)->apply_assemble(*sol, mode_);
-                if (!ok) {
-                    return false;
-                }
-
                 assembler()->vector_assembly_end(y, mode_);
-                return false;
+
+                UTOPIA_TRACE_REGION_END("utopia::Kokkos::Material::apply");
+                return ok;
             }
 
             bool value(const Vector &x, Scalar &value) const override {
@@ -77,18 +76,18 @@ namespace utopia {
                     return false;
                 }
 
+                UTOPIA_TRACE_REGION_BEGIN("utopia::Kokkos::Material::value");
+
                 assembler()->scalar_assembly_begin(value, mode_);
 
                 assembler()->update_input(x);
                 solution_updated(assembler()->current_solution());
 
                 bool ok = const_cast<Material *>(this)->value_assemble(mode_);
-                if (!ok) {
-                    return false;
-                }
-
                 assembler()->scalar_assembly_end(value, mode_);
-                return true;
+
+                UTOPIA_TRACE_REGION_END("utopia::Kokkos::Material::value");
+                return ok;
             }
 
             bool gradient(const Vector &x, Vector &g) const override {
@@ -98,25 +97,24 @@ namespace utopia {
                     return false;
                 }
 
+                UTOPIA_TRACE_REGION_BEGIN("utopia::Kokkos::Material::gradient");
+
                 assembler()->vector_assembly_begin(g, mode_);
 
                 assembler()->update_input(x);
                 solution_updated(assembler()->current_solution());
 
+                bool ok = false;
                 if (this->has_gradient()) {
-                    bool ok = const_cast<Material *>(this)->gradient_assemble(mode_);
-                    if (!ok) {
-                        return false;
-                    }
+                    ok = const_cast<Material *>(this)->gradient_assemble(mode_);
                 } else {
-                    bool ok = const_cast<Material *>(this)->apply_assemble(*assembler()->current_solution(), mode_);
-                    if (!ok) {
-                        return false;
-                    }
+                    ok = const_cast<Material *>(this)->apply_assemble(*assembler()->current_solution(), mode_);
                 }
 
                 assembler()->vector_assembly_end(g, mode_);
-                return true;
+
+                UTOPIA_TRACE_REGION_END("utopia::Kokkos::Material::gradient");
+                return ok;
             }
 
             virtual bool hessian(const Vector &x, Matrix &H) const {
@@ -125,19 +123,19 @@ namespace utopia {
                     return false;
                 }
 
+                UTOPIA_TRACE_REGION_BEGIN("utopia::Kokkos::Material::hessian");
+
                 assembler()->matrix_assembly_begin(H, mode_);
 
                 assembler()->update_input(x);
                 solution_updated(assembler()->current_solution());
 
                 bool ok = const_cast<Material *>(this)->hessian_assemble(mode_);
-                if (!ok) {
-                    assert(false);
-                    return false;
-                }
 
                 assembler()->matrix_assembly_end(H, mode_);
-                return true;
+
+                UTOPIA_TRACE_REGION_END("utopia::Kokkos::Material::hessian");
+                return ok;
             }
 
             virtual bool hessian_assemble(AssemblyMode mode) = 0;
@@ -173,6 +171,8 @@ namespace utopia {
                     Utopia::Abort();
                 }
 
+                UTOPIA_TRACE_REGION_BEGIN("utopia::Kokkos::Material::field");
+
                 auto discretization = assembler()->discretization();
 
                 if (!discretization) {
@@ -191,6 +191,8 @@ namespace utopia {
 
                 auto &fef = fields_[name];
                 discretization->convert_field(f, fef, part);
+
+                UTOPIA_TRACE_REGION_END("utopia::Kokkos::Material::field");
                 return fef;
             }
 

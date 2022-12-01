@@ -18,6 +18,7 @@ namespace utopia {
         public:
             using DiffusionFunction = utopia::kokkos::SubdomainValue<FE>;
             using Field = utopia::kokkos::Field<FE>;
+            using GradientField = utopia::kokkos::Gradient<FE>;
 
             using TransportOp2 = utopia::kokkos::kernels::
                 TransportOp<2, Scalar, Field, typename FE::Gradient, typename FE::Function, typename FE::Measure>;
@@ -25,7 +26,7 @@ namespace utopia {
             using TransportOp3 = utopia::kokkos::kernels::
                 TransportOp<3, Scalar, Field, typename FE::Gradient, typename FE::Function, typename FE::Measure>;
 
-            std::shared_ptr<Field> field;
+            std::shared_ptr<GradientField> vector_field;
             std::shared_ptr<DiffusionFunction> diffusion_function;
             Scalar coeff{1.0};
             bool stabilize_transport{false};
@@ -41,74 +42,50 @@ namespace utopia {
 
         template <class FunctionSpace, class FE>
         void TransportNew<FunctionSpace, FE>::read(Input &in) {
-            // Super::read(in);
+            Super::read(in);
+            // Model parameters
+            in.get("coeff", impl_->coeff);
+            in.get("stabilize_transport", impl_->stabilize_transport);
+            in.get("verbose", impl_->verbose);
+            in.get("print_field", impl_->print_field);
 
-            // auto env = this->environment();
+            // Vector field
+            // impl_->field = std::make_shared<Impl::GradientField>();
 
-            // if (env) {
-            //     std::string pressure_field;
-            //     in.require("pressure_field", pressure_field);
+            // Compute from pressure
+            // std::string pressure_field;
+            // in.require("pressure_field", pressure_field);
+            // auto p = this->find_field(pressure_field);
 
-            //     auto p = env->find_field(*this->space(), pressure_field);
+            // if (!p) {
+            //     // Read directly from file
+            //     std::string vector_field;
+            //     in.get("vector_field", vector_field);
+            //     auto v = this->find_field(vector_field);
 
-            //     if (!p) {
-            //         utopia::err() << "pressure_field not found in environment:";
-            //         env->describe(utopia::err().stream());
-            //     }
-
-            //     assert(p);
-
-            //     if (p) {
-            //         impl_->field = p;
-            //     } else {
-            //         std::string vector_field;
-            //         in.get("vector_field", vector_field);
-            //         auto v = env->find_field(*this->space(), vector_field);
-
-            //         if (v) {
-            //             impl_->field = v;
-            //         }
-            //     }
-
-            // } else {
-            //     std::string pressure_field;
-            //     in.get("pressure_field", pressure_field);
-
-            //     if (!pressure_field.empty()) {
+            //     if (!v) {
             //         assert(false);
-            //         Utopia::Abort("In order to retrive the pressure_field, The env must be defined!");
+            //         Utopia::Abort("Neither -- pressure_field -- nor -- vector_field -- are properly defined!");
+            //     } else {
+            //         impl_->field->set_data(v->data());
             //     }
+            // } else {
+            //     impl_->field->init(p);
+            //     impl_->field->scale(-impl_->coeff);
             // }
 
-            // in.get("coeff", impl_->coeff);
-            // in.get("stabilize_transport", impl_->stabilize_transport);
-            // in.get("verbose", impl_->verbose);
-            // in.get("print_field", impl_->print_field);
+            // in.get("diffusion_function", [this](Input &node) {
+            //     impl_->diffusion_function = std::make_shared<Impl::DiffusionFunction>(1.0);
+            //     node.get("function", [this, &g](Input &inner_node) {
+            //         impl_->diffusion_function->read(inner_node);
+
+            //         if (p) {
+            //             impl_->field->scale(*impl_->diffusion_function);
+            //         }
+            //     });
+            // });
 
             // const int spatial_dim = this->space()->mesh().spatial_dimension();
-
-            // utopia::kokkos::Gradient<FE> g(this->fe_ptr());
-
-            // if (impl_->field->tensor_size() == 1) {
-            //     assert(this->fe_ptr()->spatial_dimension() != 1);
-            //     // If scalar field differentiate
-            //     utopia::kokkos::Field<FE> field(this->fe_ptr());
-            //     convert_field(*impl_->field, field);
-            //     g.init(field);
-            //     g.scale(-impl_->coeff);
-
-            //     in.get("diffusion_function", [this, &g](Input &node) {
-            //         impl_->diffusion_function = std::make_shared<Impl::DiffusionFunction>(1.0);
-            //         // impl_->diffusion_function->read(node);
-            //         node.get("function", [this, &g](Input &inner_node) {
-            //             impl_->diffusion_function->read(inner_node);
-            //             g.scale(*impl_->diffusion_function);
-            //         });
-            //     });
-
-            // } else {
-            //     convert_field(*impl_->field, static_cast<utopia::kokkos::Field<FE> &>(g));
-            // }
 
             // if (impl_->print_field) {
             //     g.describe(utopia::out().stream());
