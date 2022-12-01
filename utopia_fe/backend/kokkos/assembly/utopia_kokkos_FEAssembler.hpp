@@ -519,6 +519,8 @@ namespace utopia {
                                      AssemblyMode mode,
                                      Op op,
                                      const Part part = Discretization::all()) {
+                UTOPIA_TRACE_REGION_BEGIN("utopia::kokkos::FEAssembler::assemble_matrix_eij");
+
                 ensure_matrix_accumulator();
                 auto data = this->matrix_data();
 
@@ -532,6 +534,7 @@ namespace utopia {
                         v += a * v + b * value;
                     });
 
+                UTOPIA_TRACE_REGION_END("utopia::kokkos::FEAssembler::assemble_matrix_eij");
                 return true;
             }
 
@@ -541,6 +544,8 @@ namespace utopia {
                                            AssemblyMode mode,
                                            Op op,
                                            const Part part = Discretization::all()) {
+                UTOPIA_TRACE_REGION_BEGIN("utopia::kokkos::FEAssembler::assemble_matrix_eij_block");
+
                 ensure_matrix_accumulator();
                 auto data = this->matrix_data();
 
@@ -566,6 +571,7 @@ namespace utopia {
                         }
                     });
 
+                UTOPIA_TRACE_REGION_END("utopia::kokkos::FEAssembler::assemble_matrix_eij_block");
                 return true;
             }
 
@@ -575,6 +581,8 @@ namespace utopia {
                                    Op op,
                                    const Field<FE> &field,
                                    const Part part = Discretization::all()) {
+                UTOPIA_TRACE_REGION_BEGIN("utopia::kokkos::FEAssembler::assemble_apply_ei");
+
                 ensure_vector_accumulator();
 
                 auto data = this->vector_data();
@@ -596,6 +604,7 @@ namespace utopia {
                         v = a * v + b * val;
                     });
 
+                UTOPIA_TRACE_REGION_END("utopia::kokkos::FEAssembler::assemble_apply_ei");
                 return true;
             }
 
@@ -604,6 +613,8 @@ namespace utopia {
                                           AssemblyMode mode,
                                           Op op,
                                           const Part part = Discretization::all()) {
+                UTOPIA_TRACE_REGION_BEGIN("utopia::kokkos::FEAssembler::assemble_vector_ei_block");
+
                 ensure_vector_accumulator();
                 auto data = this->vector_data();
 
@@ -626,6 +637,7 @@ namespace utopia {
                         }
                     });
 
+                UTOPIA_TRACE_REGION_END("utopia::kokkos::FEAssembler::assemble_vector_ei_block");
                 return true;
             }
 
@@ -634,6 +646,8 @@ namespace utopia {
                                     AssemblyMode mode,
                                     Op op,
                                     const Part part = Discretization::all()) {
+                UTOPIA_TRACE_REGION_BEGIN("utopia::kokkos::FEAssembler::assemble_vector_ei");
+
                 ensure_vector_accumulator();
 
                 auto data = this->vector_data();
@@ -648,6 +662,7 @@ namespace utopia {
                         v = a * v + b * val;
                     });
 
+                UTOPIA_TRACE_REGION_END("utopia::kokkos::FEAssembler::assemble_vector_ei");
                 return true;
             }
 
@@ -656,6 +671,8 @@ namespace utopia {
                                    AssemblyMode mode,
                                    Op op,
                                    const Part part = Discretization::all()) {
+                UTOPIA_TRACE_REGION_BEGIN("utopia::kokkos::FEAssembler::assemble_scalar_e");
+
                 ensure_scalar_accumulator();
 
                 auto data = this->scalar_data();
@@ -670,6 +687,7 @@ namespace utopia {
                         v = a * v + b * val;
                     });
 
+                UTOPIA_TRACE_REGION_END("utopia::kokkos::FEAssembler::assemble_scalar_e");
                 return true;
             }
 
@@ -678,6 +696,8 @@ namespace utopia {
                                          AssemblyMode mode,
                                          Op op,
                                          const Part part = Discretization::all()) {
+                UTOPIA_TRACE_REGION_BEGIN("utopia::kokkos::FEAssembler::assemble_scalar_e_block");
+
                 ensure_scalar_accumulator();
 
                 auto data = this->scalar_data();
@@ -698,12 +718,15 @@ namespace utopia {
                         }
                     });
 
+                UTOPIA_TRACE_REGION_END("utopia::kokkos::FEAssembler::assemble_scalar_e_block");
                 return true;
             }
 
             //////////////////////////////////////////////////////////////////////////////////////////////////
 
             bool update_input(const Vector &x) {
+                UTOPIA_TRACE_REGION_BEGIN("utopia::kokkos::FEAssembler::update_input");
+
                 auto space = this->discretization()->space();
                 utopia::Field<FunctionSpace> in("x", space, make_ref(const_cast<Vector &>(x)));
 
@@ -718,6 +741,8 @@ namespace utopia {
                 std::vector<std::shared_ptr<Field<FE>>> fields{current_solution_};
 
                 this->discretization()->convert_field(in, fields);
+
+                UTOPIA_TRACE_REGION_END("utopia::kokkos::FEAssembler::update_input");
                 return true;
             }
 
