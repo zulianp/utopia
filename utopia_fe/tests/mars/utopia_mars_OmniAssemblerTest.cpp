@@ -159,7 +159,7 @@ void mars_new_assembler_test() {
     int n = 20;
     auto params =
         param_list(param("n_var", 1),
-                   param("mesh", param_list(param("type", "cube"), param("nx", n), param("ny", n), param("nz", n))));
+                   param("mesh", param_list(param("type", "square"), param("nx", n), param("ny", n), param("nz", 0))));
 
     FS_t space;
     space.read(params);
@@ -191,20 +191,27 @@ void mars_new_assembler_test() {
     space.apply_constraints(mat, g);
     space.apply_constraints(x);
 
-    // mat.write("m.mm");
+    // mat.write("mat.mm");
+    // g.write("g.mm");
+    // disp("Matrix----------------------------");
+    // disp(mat);
+
+    // mat.comm().barrier();
+    // disp("Gradient----------------------------");
+    // disp(g);
 
     Solver_t solver;
     solver.apply_gradient_descent_step(true);
     solver.verbose(true);
     utopia_test_assert(solver.solve(mat, g, x));
 
-    // space.write("x.bp", x);
+    space.write("x.bp", x);
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(mars_new_assembler_test);
 
 void mars_new_auto_assembler_test() {
-    int n = 5;
+    int n = 10;
     auto params =
         param_list(param("n_var", 3),
                    param("mesh", param_list(param("type", "cube"), param("nx", n), param("ny", n), param("nz", n))));

@@ -45,7 +45,7 @@ namespace utopia {
                                           const int component) override {
                 // BC set constrained rows to zero, except diagonal where you set diag_value
                 auto sp = *sparsity_pattern;
-                auto mat = m.raw_type()->getLocalMatrix();
+                auto mat = m.raw_type()->getLocalMatrixDevice();
 
                 dof_handler->boundary_dof_iterate(
                     MARS_LAMBDA(const ::mars::Integer local_dof) {
@@ -137,6 +137,7 @@ namespace utopia {
 
                 return *sparsity_pattern;
             }
+
             inline DofHandler &get_dof_handler() { return *dof_handler; }
             inline FEDofMap &get_fe_dof_map() { return *fe_dof_map; }
 
@@ -173,6 +174,8 @@ namespace utopia {
                 FEBuilder<FEHandler, FE> builder;
                 builder.build(*this, *fe);
                 fes.push_back(fe);
+
+                std::cout << "n_cells: " << fe->n_cells() << "\n";
 
                 assert(fe->n_cells() > 0);
             }
@@ -289,7 +292,17 @@ namespace utopia {
 
                 assert(block_size <= dof_handler.get_block());
 
+                // int rank = mat.comm().rank();
+
+                // printf("%d) %d\n", rank, m.extent(0));
+
                 fe_dof_map.iterate(MARS_LAMBDA(const ::mars::Integer elem_index) {
+                    // printf("%d) idx: %d\n", rank, (int)elem_index);
+
+                    // if (elem_index >= m.extent(0)) return;
+
+                    assert(elem_index < m.extent(0));
+
                     for (int i = 0; i < n_fun_i; i++) {
                         for (int sub_i = 0; sub_i < block_size; ++sub_i) {
                             auto offset_i = dof_handler.compute_block_index(i, b_offset_i + sub_i);
@@ -363,4 +376,5 @@ namespace utopia {
 
     }  // namespace mars
 }  // namespace utopia
+
 #endif

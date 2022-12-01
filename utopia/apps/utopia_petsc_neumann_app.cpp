@@ -72,6 +72,16 @@ namespace utopia {
             UTOPIA_LAMBDA(const Point &x)->Scalar { return x[1]; },
             0);
 
+        // NeumannBoundaryCondition<FunctionSpace> bc2(
+        //     space,
+        //     // selector
+        //     UTOPIA_LAMBDA(const Point &x)->bool {
+        //         return (x[0] >= 1 - device::epsilon<Scalar>()) && (x[1] >= 0.0 && x[1] <= 1.0);
+        //     },
+        //     // value
+        //     UTOPIA_LAMBDA(const Point &x)->Scalar { return 1; },
+        //     2);
+
         v.set(0.0);
         bc2.apply(v);
 
