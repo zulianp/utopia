@@ -191,21 +191,15 @@ void mars_new_assembler_test() {
     space.apply_constraints(mat, g);
     space.apply_constraints(x);
 
-    // mat.write("mat.mm");
-    // g.write("g.mm");
-    // disp("Matrix----------------------------");
-    // disp(mat);
-
-    // mat.comm().barrier();
-    // disp("Gradient----------------------------");
-    // disp(g);
-
     Solver_t solver;
     solver.apply_gradient_descent_step(true);
     solver.verbose(true);
     utopia_test_assert(solver.solve(mat, g, x));
 
-    space.write("x.bp", x);
+    if (false)  //
+    {
+        space.write("x.bp", x);
+    }
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(mars_new_assembler_test);
@@ -266,7 +260,10 @@ void mars_new_auto_assembler_test() {
     solver.verbose(true);
     utopia_test_assert(solver.solve(mat, g, x));
 
-    // space.write("neo.bp", x);
+    if (false)  //
+    {
+        space.write("neo.bp", x);
+    }
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(mars_new_auto_assembler_test);

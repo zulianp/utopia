@@ -16,6 +16,8 @@
 
 #include "utopia_kokkos_AutoHyperElasticityNew.hpp"
 
+#include "utopia_kokkos_TransportNew_impl.hpp"
+
 #include <memory>
 #include <string>
 
@@ -50,16 +52,23 @@ namespace utopia {
 
             void register_materials() {
                 register_material<LaplaceOperatorNew<FunctionSpace, FE>>("LaplaceOperator");
+                register_porous_media_materials();
                 register_hyperelastic_materials();
             }
 
-            void register_hyperelastic_materials()
-            {
+            void register_porous_media_materials() {
+                //
+                register_material<TransportNew<FunctionSpace, FE>>("Transport");
+            }
+
+            void register_hyperelastic_materials() {
                 register_hyperelastic_material<utopia::kernels::NeoHookeanOgden<Scalar_t, 3>>(3, "NeoHookeanOgden");
                 register_hyperelastic_material<utopia::kernels::NeoHookeanOgden<Scalar_t, 2>>(2, "NeoHookeanOgden");
 
-                register_hyperelastic_material<utopia::kernels::SaintVenantKirchoff<Scalar_t, 3>>(3, "SaintVenantKirchoff");
-                register_hyperelastic_material<utopia::kernels::SaintVenantKirchoff<Scalar_t, 2>>(2, "SaintVenantKirchoff");
+                register_hyperelastic_material<utopia::kernels::SaintVenantKirchoff<Scalar_t, 3>>(
+                    3, "SaintVenantKirchoff");
+                register_hyperelastic_material<utopia::kernels::SaintVenantKirchoff<Scalar_t, 2>>(
+                    2, "SaintVenantKirchoff");
 
                 register_hyperelastic_material<utopia::kernels::Yeoh<Scalar_t, 3>>(3, "Yeoh");
                 register_hyperelastic_material<utopia::kernels::Yeoh<Scalar_t, 2>>(2, "Yeoh");
