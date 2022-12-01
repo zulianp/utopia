@@ -157,6 +157,8 @@ using MaterialFactory_t = utopia::kokkos::MaterialFactory<FS_t, FE_t>;
 
 void mars_new_assembler_test() {
     int n = 20;
+    bool write_output = false;
+
     auto params =
         param_list(param("n_var", 1),
                    param("mesh", param_list(param("type", "square"), param("nx", n), param("ny", n), param("nz", 0))));
@@ -181,6 +183,10 @@ void mars_new_assembler_test() {
     utopia_test_assert(lapl->hessian(x, mat));
     utopia_test_assert(lapl->gradient(x, g));
 
+    // Try also with reassemble
+    mat *= 0.;
+    utopia_test_assert(lapl->hessian(x, mat));
+
     Scalar_t ng = norm2(g);
     Scalar_t nx = norm2(x);
     Scalar_t nm = norm2(mat);
@@ -196,8 +202,7 @@ void mars_new_assembler_test() {
     solver.verbose(true);
     utopia_test_assert(solver.solve(mat, g, x));
 
-    if (false)  //
-    {
+    if (write_output) {
         space.write("x.bp", x);
     }
 }
@@ -205,7 +210,8 @@ void mars_new_assembler_test() {
 UTOPIA_REGISTER_TEST_FUNCTION(mars_new_assembler_test);
 
 void mars_new_auto_assembler_test() {
-    int n = 10;
+    int n = 100;
+    bool write_output = false;
     auto params =
         param_list(param("n_var", 3),
                    param("mesh", param_list(param("type", "cube"), param("nx", n), param("ny", n), param("nz", n))));
@@ -240,6 +246,10 @@ void mars_new_auto_assembler_test() {
     utopia_test_assert(neohook->hessian(x, mat));
     utopia_test_assert(neohook->gradient(x, g));
 
+    // Try also with reassemble
+    mat *= 0.;
+    utopia_test_assert(neohook->hessian(x, mat));
+
     Scalar_t ng = norm2(g);
     Scalar_t nx = norm2(x);
     Scalar_t nm = norm2(mat);
@@ -260,8 +270,7 @@ void mars_new_auto_assembler_test() {
     solver.verbose(true);
     utopia_test_assert(solver.solve(mat, g, x));
 
-    if (false)  //
-    {
+    if (write_output) {
         space.write("neo.bp", x);
     }
 }

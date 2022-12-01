@@ -55,7 +55,7 @@ namespace utopia {
                     return false;
                 }
 
-                UTOPIA_TRACE_REGION_BEGIN("utopia::Kokkos::Material::apply");
+                UTOPIA_TRACE_REGION_BEGIN("utopia::kokkos::Material::apply");
 
                 assembler()->vector_assembly_begin(y, mode_);
 
@@ -66,7 +66,7 @@ namespace utopia {
                 bool ok = const_cast<Material *>(this)->apply_assemble(*sol, mode_);
                 assembler()->vector_assembly_end(y, mode_);
 
-                UTOPIA_TRACE_REGION_END("utopia::Kokkos::Material::apply");
+                UTOPIA_TRACE_REGION_END("utopia::kokkos::Material::apply");
                 return ok;
             }
 
@@ -76,7 +76,7 @@ namespace utopia {
                     return false;
                 }
 
-                UTOPIA_TRACE_REGION_BEGIN("utopia::Kokkos::Material::value");
+                UTOPIA_TRACE_REGION_BEGIN("utopia::kokkos::Material::value");
 
                 assembler()->scalar_assembly_begin(value, mode_);
 
@@ -86,7 +86,7 @@ namespace utopia {
                 bool ok = const_cast<Material *>(this)->value_assemble(mode_);
                 assembler()->scalar_assembly_end(value, mode_);
 
-                UTOPIA_TRACE_REGION_END("utopia::Kokkos::Material::value");
+                UTOPIA_TRACE_REGION_END("utopia::kokkos::Material::value");
                 return ok;
             }
 
@@ -97,7 +97,7 @@ namespace utopia {
                     return false;
                 }
 
-                UTOPIA_TRACE_REGION_BEGIN("utopia::Kokkos::Material::gradient");
+                UTOPIA_TRACE_REGION_BEGIN("utopia::kokkos::Material::gradient");
 
                 assembler()->vector_assembly_begin(g, mode_);
 
@@ -113,7 +113,7 @@ namespace utopia {
 
                 assembler()->vector_assembly_end(g, mode_);
 
-                UTOPIA_TRACE_REGION_END("utopia::Kokkos::Material::gradient");
+                UTOPIA_TRACE_REGION_END("utopia::kokkos::Material::gradient");
                 return ok;
             }
 
@@ -123,7 +123,7 @@ namespace utopia {
                     return false;
                 }
 
-                UTOPIA_TRACE_REGION_BEGIN("utopia::Kokkos::Material::hessian");
+                UTOPIA_TRACE_REGION_BEGIN("utopia::kokkos::Material::hessian");
 
                 assembler()->matrix_assembly_begin(H, mode_);
 
@@ -134,7 +134,7 @@ namespace utopia {
 
                 assembler()->matrix_assembly_end(H, mode_);
 
-                UTOPIA_TRACE_REGION_END("utopia::Kokkos::Material::hessian");
+                UTOPIA_TRACE_REGION_END("utopia::kokkos::Material::hessian");
                 return ok;
             }
 
@@ -171,7 +171,7 @@ namespace utopia {
                     Utopia::Abort();
                 }
 
-                UTOPIA_TRACE_REGION_BEGIN("utopia::Kokkos::Material::field");
+                UTOPIA_TRACE_REGION_BEGIN("utopia::kokkos::Material::field");
 
                 auto discretization = assembler()->discretization();
 
@@ -192,7 +192,7 @@ namespace utopia {
                 auto &fef = fields_[name];
                 discretization->convert_field(f, fef, part);
 
-                UTOPIA_TRACE_REGION_END("utopia::Kokkos::Material::field");
+                UTOPIA_TRACE_REGION_END("utopia::kokkos::Material::field");
                 return fef;
             }
 
