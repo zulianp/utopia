@@ -18,6 +18,8 @@
 
 #include "utopia_kokkos_Discretization.hpp"
 
+#include "utopia_Tracer.hpp"
+
 #include <memory>
 
 namespace utopia {
