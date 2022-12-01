@@ -76,18 +76,21 @@ namespace utopia {
                 static const int NComponentsTest = Dim;
                 static const int NComponentsTrial = Dim;
 
-                HessianKernel(const Grad &grad,
-                              const Measure &measure,
-                              const Material &material,
-                              const DynRankView &deformation_gradient,
-                              int n_qp)
+                UTOPIA_INLINE_FUNCTION HessianKernel(const Grad &grad,
+                                                     const Measure &measure,
+                                                     const Material &material,
+                                                     const DynRankView &deformation_gradient,
+                                                     int n_qp)
                     : grad(grad),
                       measure(measure),
                       material(material),
                       deformation_gradient(deformation_gradient),
                       n_qp(n_qp) {}
 
-                void operator()(const int cell, const int i, const int j, StaticMatrix<Scalar, Dim, Dim> &block) const {
+                UTOPIA_INLINE_FUNCTION void operator()(const int cell,
+                                                       const int i,
+                                                       const int j,
+                                                       StaticMatrix<Scalar, Dim, Dim> &block) const {
                     StaticVector<Scalar, Dim> grad_test, grad_trial;
                     StaticMatrix<Scalar, Dim, Dim> F;
 
@@ -157,18 +160,20 @@ namespace utopia {
             public:
                 static const int NComponentsTest = Dim;
 
-                GradientKernel(const Grad &grad,
-                               const Measure &measure,
-                               const Material &material,
-                               const DynRankView &deformation_gradient,
-                               int n_qp)
+                UTOPIA_INLINE_FUNCTION GradientKernel(const Grad &grad,
+                                                      const Measure &measure,
+                                                      const Material &material,
+                                                      const DynRankView &deformation_gradient,
+                                                      int n_qp)
                     : grad(grad),
                       measure(measure),
                       material(material),
                       deformation_gradient(deformation_gradient),
                       n_qp(n_qp) {}
 
-                void operator()(const int cell, const int i, StaticVector<Scalar, Dim> &block) const {
+                UTOPIA_INLINE_FUNCTION void operator()(const int cell,
+                                                       const int i,
+                                                       StaticVector<Scalar, Dim> &block) const {
                     StaticVector<Scalar, Dim> grad_test;
                     StaticMatrix<Scalar, Dim, Dim> F;
 
