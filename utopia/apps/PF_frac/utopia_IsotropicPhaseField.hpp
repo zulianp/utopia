@@ -53,6 +53,171 @@ namespace utopia {
         IsotropicPhaseFieldForBrittleFractures(FunctionSpace &space, const Parameters &params)
             : PhaseFieldFracBase<FunctionSpace, Dim>(space, params) {}
 
+        bool export_strain(const Vector &x_const, const Scalar time) const {
+            UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::strain");
+
+            using SSpace = typename FunctionSpace::template Subspace<(Dim - 1) * 3>;
+            using SElem = typename SSpace::ViewDevice::Elem;
+
+            Vector w;
+            Vector g;
+            // Getting displacement subspace
+            USpace U;
+            this->space_.subspace(1, U);
+            CSpace C = this->space_.subspace(0);
+
+            /// Creating strain subspace
+            static const int strain_components = (Dim - 1) * 3;
+            // cloning mesh
+            auto strain_mesh = this->space_.mesh().clone(strain_components);
+            // Creating Subspace with cloned mesh
+
+            typename FunctionSpace::template Subspace<(Dim - 1) * 3> S(std::move(strain_mesh));
+
+            S.create_vector(g);
+            C.create_vector(w);
+
+            ///////////////////////////////////////////////////////////////////////////
+
+            // update local vector x
+            this->space_.global_to_local(x_const, *this->local_x_);  // Gets the vector local to the MPI processor
+            auto u_coeff = std::make_shared<Coefficient<USpace>>(
+                U, this->local_x_);  // Sets stage for getting accessing the element node variables
+
+            // getting FEFunction Space which contains objects for shape function manipulation
+            FEFunction<USpace> u_fun(u_coeff);
+
+            {
+                ////////////////////////////////////////////////////////////////////////////
+
+                // Quadrature for shape function integration
+                Quadrature q;
+
+                // Creating objects for Nodal and Gradient interpolation
+                auto u_val = u_fun.value(q);
+                auto u_grad = u_fun.gradient(q);
+
+                // What is thAis for ???
+                auto differential = C.differential(q);
+
+                // auto v_grad_shape = U.shape_grad(q);
+                auto c_shape = C.shape(q);            // Getting shape functions from FunctionSpace
+                auto c_grad_shape = C.shape_grad(q);  // Getting derivative of shape functions from FunctionSpace
+
+                CoefStrain<USpace, Quadrature> strain(u_coeff, q);  // displacement coefficients
+                // Strain<USpace, Quadrature> ref_strain_u(U, q); //Test strains (just shape functions gradients for
+                // strain)
+
+                auto U_view = U.view_device();
+                auto C_view = C.view_device();
+                auto S_view = S.view_device();
+
+                auto u_view = u_val.view_device();
+
+                auto strain_view = strain.view_device();
+                auto differential_view = differential.view_device();
+
+                // auto v_grad_shape_view = v_grad_shape.view_device();
+                auto c_shape_view = c_shape.view_device();  // scalar shape functions
+                // auto c_grad_shape_view = c_grad_shape.view_device();
+
+                // Preparing the vector for which the Strain function space nows the dimensions (nodes*components), so
+                // that we can write on this later
+                auto g_view = S.assembly_view_device(g);
+                auto w_view = C.assembly_view_device(w);
+
+                // auto ref_strain_u_view = ref_strain_u.view_device();
+
+                Device::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        StaticMatrix<Scalar, Dim, Dim> strain_value;  //, strain_p;
+                        StaticVector<Scalar, strain_components * C_NDofs> strain_el_vec;
+                        StaticVector<Scalar, C_NDofs> weight_el_vec;
+
+                        strain_el_vec.set(0.0);
+                        weight_el_vec.set(0.0);
+
+                        ////////////////////////////////////////////
+
+                        UElem u_e;
+                        U_view.elem(i, u_e);
+                        auto el_strain =
+                            strain_view.make(u_e);  // el_strain.strain[qp] gives matrix of strain at int point
+
+                        SElem s_e;
+                        S_view.elem(i, s_e);  // just needed for add_vector into g
+
+                        // auto u_grad_shape_el = v_grad_shape_view.make(u_e);
+                        // auto &&u_strain_shape_el = ref_strain_u_view.make(u_e);
+
+                        ////////////////////////////////////////////
+
+                        CElem c_e;
+                        C_view.elem(i, c_e);  // getting element for storing wieghts in CSpace
+
+                        auto dx = differential_view.make(c_e);
+                        auto c_shape_fun_el = c_shape_view.make(c_e);  // shape functions (scalar)
+
+                        ////////////////////////////////////////////
+
+                        // loop over all nodes, and for each node, we integrate the strain at the int point weightwd by
+                        // the distance to the node (shape function)
+                        for (SizeType n = 0; n < C_NDofs; n++) {
+                            strain_value.set(0.0);
+                            for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                                // const Scalar tr_strain_u = trace(el_strain.strain[qp]);
+
+                                auto shape = c_shape_fun_el(n, qp);  // shape function at N and Quadrature point
+                                auto weight = dx(qp);                // no need for weights! we want length instead
+
+                                auto &epsi = el_strain.strain[qp];  // strain at integration point
+                                strain_value +=
+                                    epsi * shape * weight;  // matrix of strains added to existing nodal strain (
+
+                                // getting nodal weight for normalisation
+                                weight_el_vec[n] += shape * weight;
+                            }
+
+                            // now we need to accumulate the matrix strain into engineering strain vector
+                            int offset = n * strain_components;
+                            for (int r = 0; r < Dim; ++r) {
+                                for (int c = r; c < Dim; c++) {
+                                    strain_el_vec[offset++] = strain_value(r, c);
+                                }
+                            }
+                        }
+
+                        // now adding element contribution to global strain and weight vector
+                        S_view.add_vector(s_e, strain_el_vec, g_view);
+                        C_view.add_vector(c_e, weight_el_vec, w_view);
+                    });  // end of parallel for
+
+            }  // destruction of view activates MPI Synchronisation
+
+            //            int weight_index = (i - (i % strain_components) ) / strain_components;
+
+            {
+                // viewing strain vector we just created
+                auto strain_view = local_view_device(g);
+                auto weight_view = local_view_device(w);
+                auto r = local_range_device(w);  // range of vector w (using primitivo di utopio)
+                parallel_for(
+                    r, UTOPIA_LAMBDA(int i) {
+                        auto wi = weight_view.get(i);  // extracts vector component
+                        for (int k = 0; k < strain_components; k++) {
+                            auto si = strain_view.get(i * strain_components + k);
+                            strain_view.set(i * strain_components + k, si / wi);
+                        }
+                    });
+            }  // incase backed PETSC needs synchronisation (create view in scopes and destroy them when not needed)
+
+            std::string output_path = "strain_" + std::to_string(time) + ".vtr";
+            S.write(output_path, g);  // Function space knows how to write
+
+            UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::strain");
+            return true;
+        }
+
         bool value(const Vector &x_const, Scalar &val) const override {
             UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::value");
 
@@ -879,7 +1044,7 @@ namespace utopia {
 
             // Post-processing functions
             // And write outputs
-            printf("HELLO WORLD!\n");
+            export_strain(x, time);
         }
     };
 
