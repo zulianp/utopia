@@ -360,11 +360,11 @@ namespace utopia {
                 2  // disp_y
             );
 
-            this->space_.emplace_dirichlet_condition(
-                SideSet::right(),
-                UTOPIA_LAMBDA(const Point &)->Scalar { return -disp_x_ * time; },
-                1  // disp_x
-            );
+            // this->space_.emplace_dirichlet_condition(
+            //     SideSet::right(),
+            //     UTOPIA_LAMBDA(const Point &)->Scalar { return -disp_x_ * time; },
+            //     1  // disp_x
+            // );
         }
 
     private:
