@@ -228,8 +228,6 @@ namespace utopia {
             std::string output_path = "strain_" + std::to_string(time) + ".vtr";
             S.write(output_path, g);  // Function space knows how to write
 
-            // C.write("weight_" + std::to_string(time) + ".vtr", w);
-
             UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::strain");
             return true;
         }
