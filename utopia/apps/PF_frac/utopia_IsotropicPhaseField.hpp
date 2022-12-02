@@ -206,8 +206,8 @@ namespace utopia {
             //            int weight_index = (i - (i % strain_components) ) / strain_components;
 
             {
-                disp(g.size());
-                disp(w.size());
+                // disp(g.size());
+                // disp(w.size());
 
                 // viewing strain vector we just created
                 auto strain_view = local_view_device(g);
