@@ -56,7 +56,10 @@ namespace utopia {
         bool export_strain(const Vector &x_const, const Scalar time) const {
             UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::strain");
 
-            using SSpace = typename FunctionSpace::template Subspace<(Dim - 1) * 3>;
+            static const int strain_components = (Dim - 1) * 3;
+
+            using WSpace = typename FunctionSpace::template Subspace<1>;
+            using SSpace = typename FunctionSpace::template Subspace<strain_components>;
             using SElem = typename SSpace::ViewDevice::Elem;
 
             Vector w;
@@ -64,18 +67,24 @@ namespace utopia {
             // Getting displacement subspace
             USpace U;
             this->space_.subspace(1, U);
-            CSpace C = this->space_.subspace(0);
+
+            WSpace C(this->space_.mesh().clone(1));
 
             /// Creating strain subspace
-            static const int strain_components = (Dim - 1) * 3;
+
             // cloning mesh
             auto strain_mesh = this->space_.mesh().clone(strain_components);
+            assert(strain_mesh->n_components() == strain_components);
             // Creating Subspace with cloned mesh
 
-            typename FunctionSpace::template Subspace<(Dim - 1) * 3> S(std::move(strain_mesh));
+            SSpace S(std::move(strain_mesh));
+
+            assert(S.n_dofs() == C.n_dofs() * strain_components);
 
             S.create_vector(g);
             C.create_vector(w);
+
+            assert(g.size() == w.size() * strain_components);
 
             ///////////////////////////////////////////////////////////////////////////
 
@@ -197,6 +206,9 @@ namespace utopia {
             //            int weight_index = (i - (i % strain_components) ) / strain_components;
 
             {
+                disp(g.size());
+                disp(w.size());
+
                 // viewing strain vector we just created
                 auto strain_view = local_view_device(g);
                 auto weight_view = local_view_device(w);
@@ -205,14 +217,18 @@ namespace utopia {
                     r, UTOPIA_LAMBDA(int i) {
                         auto wi = weight_view.get(i);  // extracts vector component
                         for (int k = 0; k < strain_components; k++) {
-                            auto si = strain_view.get(i * strain_components + k);
-                            strain_view.set(i * strain_components + k, si / wi);
+                            int idx = i * strain_components + k;
+                            auto si = strain_view.get(idx);
+                            strain_view.set(idx, si / wi);
                         }
                     });
             }  // incase backed PETSC needs synchronisation (create view in scopes and destroy them when not needed)
 
+            rename("strain", g);
             std::string output_path = "strain_" + std::to_string(time) + ".vtr";
             S.write(output_path, g);  // Function space knows how to write
+
+            // C.write("weight_" + std::to_string(time) + ".vtr", w);
 
             UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::strain");
             return true;
