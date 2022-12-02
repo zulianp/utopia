@@ -184,9 +184,9 @@ namespace utopia {
                         force_field_.set(0.0);
                     }
 
-                    // NeumannBoundaryCondition<FunctionSpace> bc(space_);
-                    // bc.read(in);
-                    // bc.apply(force_field_);
+                    NeumannBoundaryCondition<FunctionSpace> bc(space_);
+                    bc.read(in);
+                    bc.apply(force_field_);
                 });
             });
         }

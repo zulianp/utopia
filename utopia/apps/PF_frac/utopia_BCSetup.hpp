@@ -322,7 +322,6 @@ namespace utopia {
         Scalar disp_y_;
     };
 
-    
     template <class FunctionSpace>
     class BiaxialLoading2D : public BCSetup<FunctionSpace> {
     public:
@@ -332,8 +331,10 @@ namespace utopia {
         BiaxialLoading2D(FunctionSpace &space, const Scalar &Top_disp_y = 1.0, const Scalar &Right_disp_x = 1.0)
             : BCSetup<FunctionSpace>(space), disp_y_(Top_disp_y), disp_x_(Right_disp_x) {}
 
-        void read(Input &in) override { in.get("disp_y", disp_y_);
-                                        in.get("disp_x", disp_x_); }
+        void read(Input &in) override {
+            in.get("disp_y", disp_y_);
+            in.get("disp_x", disp_x_);
+        }
 
         void emplace_time_dependent_BC(const Scalar &time) override {
             // static const int Dim = FunctionSpace::Dim;
@@ -355,23 +356,21 @@ namespace utopia {
 
             this->space_.emplace_dirichlet_condition(
                 SideSet::top(),
-                UTOPIA_LAMBDA(const Point &)->Scalar { return disp_y_ * time; },
+                UTOPIA_LAMBDA(const Point &)->Scalar { return -disp_y_ * time; },
                 2  // disp_y
             );
 
             this->space_.emplace_dirichlet_condition(
                 SideSet::right(),
-                UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_ * time; },
+                UTOPIA_LAMBDA(const Point &)->Scalar { return -disp_x_ * time; },
                 1  // disp_x
             );
         }
 
     private:
         Scalar disp_y_;
-        Scalar disp_x_; 
+        Scalar disp_x_;
     };
-
-
 
     template <class FunctionSpace>
     class PFMixed2D : public BCSetup<FunctionSpace> {
