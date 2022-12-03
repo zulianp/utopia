@@ -295,7 +295,7 @@ public:
         int nl_all = this->comm().sum(nl);
 
         auto ml = layout(this->comm(), nxp(), nl, ng, nl_all);
-        disp(ml);
+        // disp(ml);
         mat->sparse(ml, 1, 1);
 
         auto rr = row_range(*mat);
