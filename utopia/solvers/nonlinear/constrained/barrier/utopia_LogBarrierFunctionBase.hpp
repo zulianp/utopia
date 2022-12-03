@@ -411,7 +411,7 @@ namespace utopia {
                         d = zero;
                     }
 
-                    assert(d > 0);
+                    // assert(d > 0);
 
                     diff_view.set(i, d);
                 });
@@ -447,6 +447,33 @@ namespace utopia {
                      .parse(in)) {
                 return;
             }
+
+            if (mpi_world_rank() == 0) {
+                describe(utopia::out().stream());
+            }
+        }
+
+        void describe(std::ostream &os) const {
+            os << "-----------------------------------------\n";
+            os << "utopia::LogBarrierBase\n";
+            os << "-----------------------------------------\n";
+
+            os << "barrier_parameter:\t" << barrier_parameter_ << "\n";
+            os << "barrier_parameter_shrinking_factor:\t" << barrier_parameter_shrinking_factor_ << "\n";
+            os << "min_barrier_parameter:\t" << min_barrier_parameter_ << "\n";
+            os << "current_barrier_parameter:\t" << current_barrier_parameter_ << "\n";
+
+            // Soft limit
+            os << "soft_boundary:\t" << soft_boundary_ << "\n";
+            os << "zero:\t" << zero_ << "\n";
+
+            // Auto selector tol
+            os << "infinity:\t" << infinity_ << "\n";
+            os << "auto_selector:\t" << auto_selector_ << "\n";
+
+            os << "verbose:\t" << verbose_ << "\n";
+
+            os << "-----------------------------------------\n";
         }
 
         UTOPIA_NVCC_PRIVATE

@@ -89,7 +89,7 @@ namespace utopia {
                            const Vector_t &correction,
                            Scalar_t &alpha) {
             bool ok = true;
-            alpha = dumping_;
+            alpha = damping_;
             Vector_t work, x;
 
             if (line_search_) {
@@ -163,7 +163,8 @@ namespace utopia {
             in.get("enable_NaN_safe_line_search", enable_NaN_safe_line_search_);
             in.get("max_bisections", max_bisections_);
             in.get("zero_initial_guess", zero_initial_guess_);
-            in.get("dumping", dumping_);
+            in.get_deprecated("dumping", "damping", damping_);
+            in.get("damping", damping_);
             in.get("allow_projection", allow_projection_);
 
             if (!obstacle_) {
@@ -188,6 +189,30 @@ namespace utopia {
             if (use_barrier_mass_scaling) {
                 barrier_->set_scaling_matrix(obstacle_->mass_matrix());
             }
+
+            if (mpi_world_rank() == 0) {
+                describe(utopia::out().stream());
+            }
+        }
+
+        void describe(std::ostream &os) const {
+            os << "-----------------------------------------\n";
+            os << "utopia::ObstacleVelocityNewmark\n";
+            os << "-----------------------------------------\n";
+
+            os << "debug:\t" << debug_ << "\n";
+            os << "debug_from_iteration:\t" << debug_from_iteration_ << "\n";
+            os << "trivial_obstacle:\t" << trivial_obstacle_ << "\n";
+            os << "enable_line_search:\t" << enable_line_search_ << "\n";
+            os << "enable_NaN_safe_line_search:\t" << enable_NaN_safe_line_search_ << "\n";
+            os << "allow_projection:\t" << allow_projection_ << "\n";
+            os << "max_bisections:\t" << max_bisections_ << "\n";
+            os << "verbose:\t" << verbose_ << "\n";
+            os << "zero_initial_guess:\t" << zero_initial_guess_ << "\n";
+
+            os << "damping:\t" << damping_ << "\n";
+
+            os << "-----------------------------------------\n";
         }
 
         bool setup_IVP(Vector_t &x) override {
@@ -271,7 +296,7 @@ namespace utopia {
                     this->~ObstacleVelocityNewmark();
                     g.comm().barrier();
                     assert(false);
-                    Utopia::Abort("barrier_gradient: NaN detected!");
+                    Utopia::Abort("ObstacleVelocityNewmark::barrier_gradient: NaN detected!");
                 }
             }
         }
@@ -399,7 +424,7 @@ namespace utopia {
         bool verbose_{false};
         bool zero_initial_guess_{true};
 
-        Scalar_t dumping_{0.98};
+        Scalar_t damping_{0.98};
 
         std::shared_ptr<LineSearchBoxProjection<Vector_t>> line_search_;
 
@@ -459,7 +484,7 @@ namespace utopia {
                 }
 
                 line_search_->set_transform(trafo);
-                line_search_->set_dumping(dumping_);
+                line_search_->set_dumping(damping_);
             }
 
             return ok;
