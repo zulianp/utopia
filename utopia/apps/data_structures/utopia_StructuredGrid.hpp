@@ -162,6 +162,7 @@ namespace utopia {
             device::copy(other.ghost_corners_begin_, ghost_corners_begin_);
             device::copy(other.ghost_corners_extent_, ghost_corners_extent_);
             device::copy(other.box_min_, box_min_);
+            device::copy(other.box_max_, box_max_);
         }
 
         UTOPIA_INLINE_FUNCTION constexpr StructuredGrid(const IntArray &dims,

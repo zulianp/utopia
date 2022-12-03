@@ -424,6 +424,84 @@ namespace utopia {
         Scalar pressure0_;
     };
 
+
+
+
+    template <class FunctionSpace>
+    class SlantedCrack2D : public InitialCondition<FunctionSpace> {
+    public:
+        // using Comm           = typename FunctionSpace::Comm;
+        using Mesh = typename FunctionSpace::Mesh;
+        using Elem = typename FunctionSpace::Shape;
+        using ElemView = typename FunctionSpace::ViewDevice::Elem;
+        using SizeType = typename FunctionSpace::SizeType;
+        using Scalar = typename FunctionSpace::Scalar;
+        using Dev = typename FunctionSpace::Device;
+        using Point = typename FunctionSpace::Point;
+        using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+        static const int NNodes = Elem::NNodes;
+
+        SlantedCrack2D(FunctionSpace &space, const SizeType &PF_component)
+            : InitialCondition<FunctionSpace>(space), PF_component_(PF_component){}
+
+        void init(PetscVector &x) override {
+            using CoeffVector = utopia::StaticVector<Scalar, NNodes>;
+            // un-hard-code
+            auto C = this->space_.subspace(PF_component_);
+
+            auto width = 3.0 * this->space_.mesh().min_spacing();
+
+            auto xyz_min = this->space_.mesh().box_min();
+
+            // auto width = 0.2;
+
+            if (mpi_world_rank() == 0) {
+                utopia::out() << "width: " << width << "  \n";
+            }
+
+            std::vector<Rectangle<Scalar>> rectangles;
+
+            Point2D<Scalar> A{};
+            A.x = 12.00;
+            A.y = 21.50;
+            rectangles.push_back(Rectangle<Scalar>(A, -3.5355, width, 45));
+
+            Point2D<Scalar> B{};
+            B.x = 15;
+            B.y = 20.00;
+            //rectangles.push_back(Rectangle<Scalar>(B, 5.000, width, 0.0));
+
+            auto sampler = utopia::sampler(C, [&rectangles](const Point &x) -> Scalar {
+                for (std::size_t r = 0; r < rectangles.size(); r++) {
+                    if (rectangles[r].belongs_to_rectangle(x[0], x[1])) return 1.0;
+                }
+                return 0.0;
+            });
+
+            {
+                auto C_view = C.view_device();
+                auto sampler_view = sampler.view_device();
+                auto x_view = this->space_.assembly_view_device(x);
+
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
+
+                        CoeffVector s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
+            }
+        }
+
+    private:
+        SizeType PF_component_;
+    };
+
+
+
+
     template <class FunctionSpace>
     class FracPlateIC : public InitialCondition<FunctionSpace> {
     public:

@@ -97,8 +97,8 @@ namespace utopia {
 
         MLIncrementalLoading<FunctionSpace,
                              FractureModel<FunctionSpace>,
-                             AsphaltTension2D<FunctionSpace>,
-                             AsphaltTension<FunctionSpace>>
+                             BiaxialLoading2D<FunctionSpace>,
+                             SlantedCrack2D<FunctionSpace>>
             time_stepper(space);
 
         time_stepper.read(in);

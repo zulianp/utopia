@@ -94,6 +94,32 @@ namespace utopia {
             Scalar d_hat{0.1};
         };
 
+        class CompositePolynomialBarrier {
+        public:
+            UTOPIA_INLINE_FUNCTION Scalar value(const Scalar d) const {
+                return factor1 * barrier1.value(d) + factor2 * barrier2.value(d);
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar gradient(const Scalar d) const {
+                return factor1 * barrier1.gradient(d) + factor2 * barrier2.gradient(d);
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar hessian(const Scalar d) const {
+                return factor1 * barrier1.gradient(d) + factor2 * barrier2.gradient(d);
+            }
+
+            UTOPIA_INLINE_FUNCTION CompositePolynomialBarrier(const Scalar barrier_thickness1,
+                                                              const Scalar barrier_thickness2 = 1e-16) {
+                barrier1.d_hat = barrier_thickness1;
+                barrier2.d_hat = barrier_thickness2;
+            }
+
+            PolynomialBarrier barrier1;
+            PolynomialBarrier barrier2;
+            Scalar factor1{1};
+            Scalar factor2{10};
+        };
+
         class HighOrderPolynomialBarrier {
         public:
             UTOPIA_INLINE_FUNCTION Scalar value(const Scalar d) const {
@@ -145,6 +171,9 @@ namespace utopia {
             } else if (barrier_subtype == "polynomial4") {
                 HighOrderPolynomialBarrier b{barrier_thickness_};
                 return barrier_hessian_aux(b, x, h);
+            } else if (barrier_subtype == "composite_polynomial") {
+                CompositePolynomialBarrier b(barrier_thickness_);
+                return barrier_hessian_aux(b, x, h);
             } else {
                 DefaultBarrier b{barrier_thickness_};
                 return barrier_hessian_aux(b, x, h);
@@ -158,6 +187,9 @@ namespace utopia {
             } else if (barrier_subtype == "polynomial4") {
                 HighOrderPolynomialBarrier b{barrier_thickness_};
                 return barrier_gradient_aux(b, x, g);
+            } else if (barrier_subtype == "composite_polynomial") {
+                CompositePolynomialBarrier b(barrier_thickness_);
+                return barrier_gradient_aux(b, x, g);
             } else {
                 DefaultBarrier b{barrier_thickness_};
                 return barrier_gradient_aux(b, x, g);
@@ -170,6 +202,9 @@ namespace utopia {
                 return barrier_value_aux(b, x, value);
             } else if (barrier_subtype == "polynomial4") {
                 HighOrderPolynomialBarrier b{barrier_thickness_};
+                return barrier_value_aux(b, x, value);
+            } else if (barrier_subtype == "composite_polynomial") {
+                CompositePolynomialBarrier b(barrier_thickness_);
                 return barrier_value_aux(b, x, value);
             } else {
                 DefaultBarrier b{barrier_thickness_};
