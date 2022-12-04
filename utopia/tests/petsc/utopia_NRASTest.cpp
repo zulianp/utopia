@@ -325,18 +325,18 @@ public:
         auto co = cutoff_operator();
         auto p = projection();
 
-        auto f = global_fun();
-
-        nras.set_local_function(local_fun());
-        nras.set_global_function(f);
         nras.set_cutoff_operator(co);
         nras.set_projection_operator(p);
 
-        Vector x = f->initial_guess();
-        // x.set(1.0);
+        auto f = global_fun();
 
-        // disp(x);
-        nras.solve(x);
+        // nras.set_global_function(f);
+        // nras.set_local_function(local_fun());
+        // Vector x = f->initial_guess();
+        // // x.set(1.0);
+
+        // // disp(x);
+        // nras.solve(x);
     }
 };
 

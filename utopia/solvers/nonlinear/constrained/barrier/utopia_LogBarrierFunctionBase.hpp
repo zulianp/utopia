@@ -383,7 +383,7 @@ namespace utopia {
                     }
 
                     if (d < 0) {
-                        printf("Negative distance at dof %d: %g, ILLEGAL!\n", int(i), d);
+                        if (verbose_) printf("Negative distance at dof %d: %g, ILLEGAL!\n", int(i), d);
                     }
 
                     // assert(d > 0);

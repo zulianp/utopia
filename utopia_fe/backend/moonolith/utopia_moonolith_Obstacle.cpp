@@ -32,6 +32,7 @@ namespace utopia {
             in.get("invert_face_orientation", invert_face_orientation);
             in.get("debug", debug);
             in.get("snap_to_canonical_vectors", snap_to_canonical_vectors);
+            in.get("extend_contact_surface", extend_contact_surface);
             in.get("skip_dir", skip_dir);
             in.get("skip_dir_tol", skip_dir_tol);
             in.get("verbose", verbose);
@@ -70,6 +71,7 @@ namespace utopia {
             os << "skip_dir: \t" << skip_dir << "\n";
             os << "skip_dir_tol: \t" << skip_dir_tol << "\n";
             os << "margin: \t" << margin << "\n";
+            os << "extend_contact_surface: \t" << extend_contact_surface << "\n";
         }
 
         class Obstacle::Output {
@@ -309,6 +311,7 @@ namespace utopia {
                 obstacle->set_gap_bounds(params.gap_negative_bound, params.gap_positive_bound);
                 obstacle->skip_dir(params.skip_dir);
                 obstacle->skip_dir_tol(params.skip_dir_tol);
+                obstacle->extend_contact_surface(params.extend_contact_surface);
                 obstacle->assemble(params.tags, *space_d);
 
                 this->finalize_tensors(Dim, obstacle->buffers(), output);
