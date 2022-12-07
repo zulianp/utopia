@@ -210,8 +210,9 @@ void mars_new_assembler_test() {
 UTOPIA_REGISTER_TEST_FUNCTION(mars_new_assembler_test);
 
 void mars_new_auto_assembler_test() {
-    int n = 100;
-    bool write_output = false;
+    // int n = 100;
+    int n = 120;
+    bool write_output = true;
     auto params =
         param_list(param("n_var", 3),
                    param("mesh", param_list(param("type", "cube"), param("nx", n), param("ny", n), param("nz", n))));

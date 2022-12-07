@@ -80,8 +80,8 @@ namespace utopia {
             bool convert_to_block_matrix = false;
             bool amg_as_preconditioner = false;
 
-            in.get("A", path_A);
-            in.get("b", path_b);
+            in.require("A", path_A);
+            in.require("b", path_b);
             in.get("oracle", path_oracle);
             in.get("out", path_output);
             in.get("use_amg", use_amg);
