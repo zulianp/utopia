@@ -97,6 +97,47 @@ namespace utopia {
 
         MLIncrementalLoading<FunctionSpace,
                              FractureModel<FunctionSpace>,
+                             UniaxialLoading2D<FunctionSpace>,
+                             RandomlyDistributed<FunctionSpace>>
+            time_stepper(space);
+
+        time_stepper.read(in);
+        time_stepper.run();
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
+
+    UTOPIA_REGISTER_APP(franetg);
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
+    static void VolDevSplit(Input &in) {
+        static const int Dim = 2;
+        static const int NVars = Dim + 1;
+
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        // using SizeType = FunctionSpace::SizeType;
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
+
+        stats.start();
+
+        MLIncrementalLoading<FunctionSpace,
+                             utopia::PhaseFieldVolDevSplit<FunctionSpace>,
                              BiaxialLoading2D<FunctionSpace>,
                              SlantedCrack2D<FunctionSpace>>
             time_stepper(space);
@@ -111,7 +152,8 @@ namespace utopia {
         stats.describe(std::cout);
     }
 
-    UTOPIA_REGISTER_APP(franetg);
+    UTOPIA_REGISTER_APP(VolDevSplit);
+
 
 }  // namespace utopia
 

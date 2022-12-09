@@ -53,7 +53,7 @@ namespace utopia {
         IsotropicPhaseFieldForBrittleFractures(FunctionSpace &space, const Parameters &params)
             : PhaseFieldFracBase<FunctionSpace, Dim>(space, params) {}
 
-        bool export_strain(const Vector &x_const, const Scalar time) const {
+        bool export_strain(std::string output_path , const Vector &x_const, const Scalar time) const {
             UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::strain");
 
             static const int strain_components = (Dim - 1) * 3;
@@ -225,7 +225,7 @@ namespace utopia {
             }  // incase backed PETSC needs synchronisation (create view in scopes and destroy them when not needed)
 
             rename("strain", g);
-            std::string output_path = "strain_" + std::to_string(time) + ".vtr";
+            output_path += "_strain_" + std::to_string(time) + ".vtr";
             S.write(output_path, g);  // Function space knows how to write
 
             UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::strain");
@@ -1058,7 +1058,11 @@ namespace utopia {
 
             // Post-processing functions
             // And write outputs
-            export_strain(x, time);
+            export_strain(output_path, x, time);
+            if (mpi_world_rank() == 0 )
+                std::cout << "Saving file: " << output_path << std::endl;
+
+
         }
     };
 

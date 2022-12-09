@@ -503,6 +503,81 @@ namespace utopia {
 
 
     template <class FunctionSpace>
+    class RandomlyDistributed : public InitialCondition<FunctionSpace> {
+    public:
+        // using Comm           = typename FunctionSpace::Comm;
+        using Mesh = typename FunctionSpace::Mesh;
+        using Elem = typename FunctionSpace::Shape;
+        using ElemView = typename FunctionSpace::ViewDevice::Elem;
+        using SizeType = typename FunctionSpace::SizeType;
+        using Scalar = typename FunctionSpace::Scalar;
+        using Dev = typename FunctionSpace::Device;
+        using Point = typename FunctionSpace::Point;
+        using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+        static const int NNodes = Elem::NNodes;
+
+        RandomlyDistributed(FunctionSpace &space, const SizeType &PF_component)
+            : InitialCondition<FunctionSpace>(space), PF_component_(PF_component){}
+
+        void init(PetscVector &x) override {
+            using CoeffVector = utopia::StaticVector<Scalar, NNodes>;
+            // un-hard-code
+            auto C = this->space_.subspace(PF_component_);
+            int  total_nodes = this->space_.mesh().n_nodes();
+            auto xyz_min = this->space_.mesh().box_min();
+            auto xyz_max = this->space_.mesh().box_max();
+
+            double width = (xyz_max(0) - xyz_min(1)) / 4.0;
+            double max_damage = 1.0;
+
+            std::default_random_engine generator;
+            std::poisson_distribution<int> distribution(4);
+
+            if (mpi_world_rank() == 0) {
+                utopia::out() << "rand: " << double(rand())/RAND_MAX << "  \n";
+            }
+
+            std::vector<Rectangle<Scalar>> rectangles;
+
+            int seed = mpi_world_rank()*total_nodes;
+            generator.seed(seed);
+
+            auto sampler = utopia::sampler(C, [&generator, &distribution, xyz_min, xyz_max, width, total_nodes, max_damage](const Point &x) -> Scalar {
+                if ( x(1) < xyz_max(1) - width && x(1) > xyz_min(1) + width &&
+                     x(0) > xyz_min(0) + width && x(0) < xyz_max(0) - width ) {
+                    double random_damage = double(distribution(generator))/10.0;
+                    if (random_damage >= 0.92) return 1.0;
+                    else return random_damage;
+                } else return 0.0;
+                });
+
+            {
+                auto C_view = C.view_device();
+                auto sampler_view = sampler.view_device();
+                auto x_view = this->space_.assembly_view_device(x);
+
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
+
+                        CoeffVector s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
+            }
+        }
+
+    private:
+        SizeType PF_component_;
+    };
+
+
+
+
+
+
+    template <class FunctionSpace>
     class FracPlateIC : public InitialCondition<FunctionSpace> {
     public:
         // using Comm           = typename FunctionSpace::Comm;

@@ -286,6 +286,8 @@ namespace utopia {
                 if (true) {
                     UTOPIA_UNUSED(space);
 
+                    //E.P Writing to file from Fracture model done here
+                    //Casting Fracture model into type and calling its write to file functionality
                     if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                         fun_finest->write_to_file(this->output_path_, this->solution_, time);
                     }
