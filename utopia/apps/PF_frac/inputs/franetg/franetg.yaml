@@ -13,7 +13,7 @@ x_min: 0
 x_max: 20
 y_min: 0
 y_max: 40
-n_levels: 3
+n_levels: 2
 # Problem specification
 disp_y: 1
 disp_x: 0.333
@@ -21,6 +21,9 @@ neumann_bc:
   side: right
   value: 0.1
   component: 1
+# Heterogeneous material
+# hetero_params: example
+# tough_factor: 10
 
 with_damage: true
 mobility: 1.0e-06

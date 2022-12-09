@@ -24,7 +24,10 @@ namespace utopia {
     template <class FunctionSpace, int Dim = FunctionSpace::Dim>
     class PFFracParameters : public Configurable {
     public:
+        using Point = typename FunctionSpace::Point;
         using Scalar = typename FunctionSpace::Scalar;
+        using HeteroParamsFunction = std::function<void(const Point &, Scalar &, Scalar &, Scalar &)>;
+
         void read(Input &in) override {
             in.get("a", a);
             in.get("b", b);
@@ -68,6 +71,34 @@ namespace utopia {
                     utopia::out() << "mu: " << mu << "  lambda: " << lambda << "  Gc: " << fracture_toughness << "  \n";
                 }
             }
+
+            std::string type;
+            in.get("hetero_params", type);
+
+            if (type == "example") {
+                Scalar split = 20;
+                Scalar tough_factor = 2;
+                in.get("hetero_params_split", split);
+                in.get("tough_factor", tough_factor);
+
+                const Scalar mu_in = mu;
+                const Scalar lambda_in = lambda;
+                const Scalar fracture_toughness_in = fracture_toughness;
+
+                hetero_params =
+                    [mu_in, lambda_in, fracture_toughness_in, split, tough_factor](
+                        const Point &p, Scalar &mu_out, Scalar &lambda_out, Scalar &fracture_toughness_out) {
+                        if (p[1] < split) {
+                            mu_out = mu_in * tough_factor;
+                            lambda_out = lambda_in * tough_factor;
+                            fracture_toughness_out = fracture_toughness_in * tough_factor;
+                        } else {
+                            mu_out = 1.1 * mu_in;
+                            lambda_out = lambda_in;
+                            fracture_toughness_out = fracture_toughness_in;
+                        }
+                    };
+            }
         }
 
         PFFracParameters()
@@ -94,6 +125,12 @@ namespace utopia {
 
         {
             kappa = lambda + (2.0 * mu / Dim);
+        }
+
+        void update(const Point &p) {
+            if (hetero_params) {
+                hetero_params(p, mu, lambda, fracture_toughness);
+            }
         }
 
         bool kroneckerDelta(const SizeType &i, const SizeType &j) { return (i == j) ? 1.0 : 0.0; }
@@ -124,6 +161,8 @@ namespace utopia {
 
         Tensor4th<Scalar, Dim, Dim, Dim, Dim> elast_tensor;
         Tensor4th<Scalar, Dim, Dim, Dim, Dim> I4sym;
+
+        HeteroParamsFunction hetero_params;
     };
 
     template <class FunctionSpace, int Dim = FunctionSpace::Dim>
@@ -143,6 +182,7 @@ namespace utopia {
         using MixedElem = typename FunctionSpace::ViewDevice::Elem;
 
         using PFFracParameters = utopia::PFFracParameters<FunctionSpace>;
+        using HeteroParamsFunction = typename PFFracParameters::HeteroParamsFunction;
 
         // FIXME
         using Shape = typename FunctionSpace::Shape;
@@ -175,6 +215,8 @@ namespace utopia {
 
         void turn_off_uc_coupling(const bool &flg) { params_.turn_off_uc_coupling = flg; }
         void turn_off_cu_coupling(const bool &flg) { params_.turn_off_cu_coupling = flg; }
+
+        PFFracParameters &non_const_params() const { return const_cast<PhaseFieldFracBase *>(this)->params_; }
 
         void init_force_field(Input &in) {
             in.get("neumann_bc", [&](Input &in) {
@@ -227,6 +269,8 @@ namespace utopia {
             this->local_c_old_ = std::make_shared<Vector>();
             space_.create_local_vector(*this->local_c_old_);
         }
+
+        void set_hetero_params(HeteroParamsFunction hetero_params) { params_.hetero_params = hetero_params; }
 
         PhaseFieldFracBase(FunctionSpace &space, const PFFracParameters &params) : space_(space), params_(params) {
             this->local_x_ = std::make_shared<Vector>();
@@ -756,9 +800,7 @@ namespace utopia {
             space_.write(output_path + "_" + std::to_string(time) + ".vtr", x);
         }
 
-        virtual bool must_reduce_time_step(const Vector &) {
-            return false;
-        }
+        virtual bool must_reduce_time_step(const Vector &) { return false; }
 
     protected:
         FunctionSpace &space_;
