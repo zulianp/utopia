@@ -27,6 +27,7 @@ namespace utopia {
     class IsotropicPhaseFieldForBrittleFractures final : public PhaseFieldFracBase<FunctionSpace, Dim> {
     public:
         using Scalar = typename FunctionSpace::Scalar;
+        using Point = typename FunctionSpace::Point;
         using SizeType = typename FunctionSpace::SizeType;
         using Vector = typename FunctionSpace::Vector;
         using Matrix = typename FunctionSpace::Matrix;
@@ -167,8 +168,6 @@ namespace utopia {
                         auto dx = differential_view.make(c_e);
                         auto c_shape_fun_el = c_shape_view.make(c_e);  // shape functions (scalar)
 
-                        ////////////////////////////////////////////
-
                         // loop over all nodes, and for each node, we integrate the strain at the int point weightwd by
                         // the distance to the node (shape function)
                         for (SizeType n = 0; n < C_NDofs; n++) {
@@ -308,6 +307,12 @@ namespace utopia {
 
                         auto dx = differential_view.make(c_e);
 
+                        ////////////////////////////////////////////
+                        Point centroid;
+                        c_e.centroid(centroid);
+                        this->non_const_params().update(centroid);
+                        ////////////////////////////////////////////
+
                         Scalar el_energy = 0.0;
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             Scalar tr = trace(el_strain.strain[qp]);
@@ -421,6 +426,12 @@ namespace utopia {
 
                         auto dx = differential_view.make(c_e);
 
+                        ////////////////////////////////////////////
+                        Point centroid;
+                        c_e.centroid(centroid);
+                        this->non_const_params().update(centroid);
+                        ////////////////////////////////////////////
+
                         Scalar el_energy = 0.0;
 
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
@@ -511,6 +522,12 @@ namespace utopia {
                         auto c_grad_el = c_grad_view.make(c_e);
 
                         auto dx = differential_view.make(c_e);
+
+                        ////////////////////////////////////////////
+                        Point centroid;
+                        c_e.centroid(centroid);
+                        this->non_const_params().update(centroid);
+                        ////////////////////////////////////////////
 
                         Scalar el_energy = 0.0;
 
@@ -640,6 +657,10 @@ namespace utopia {
                         auto c_grad_shape_el = c_grad_shape_view.make(c_e);
                         auto c_shape_fun_el = c_shape_view.make(c_e);
 
+                        ////////////////////////////////////////////
+                        Point centroid;
+                        c_e.centroid(centroid);
+                        this->non_const_params().update(centroid);
                         ////////////////////////////////////////////
 
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
@@ -829,6 +850,11 @@ namespace utopia {
                         auto c_shape_fun_el = c_shape_view.make(c_e);
 
                         ////////////////////////////////////////////
+                        Point centroid;
+                        c_e.centroid(centroid);
+                        this->non_const_params().update(centroid);
+                        ////////////////////////////////////////////
+
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             const Scalar tr_strain_u = trace(el_strain.strain[qp]);
 

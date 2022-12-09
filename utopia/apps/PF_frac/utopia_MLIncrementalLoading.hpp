@@ -421,7 +421,15 @@ namespace utopia {
         void update_time_step(const SizeType &conv_reason) override {
             UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::update_time_step(...)");
 
-            if (this->adjust_dt_on_failure_ && conv_reason < 0) {
+            bool repeat_step = this->adjust_dt_on_failure_ && conv_reason < 0;
+            if (!repeat_step) {
+                auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get());
+                if (fun_finest) {
+                    repeat_step = fun_finest->must_reduce_time_step(this->solution_);
+                }
+            }
+
+            if (repeat_step) {
                 this->time_ -= this->dt_;
                 this->dt_ = this->dt_ * this->shrinking_factor_;
                 this->time_ += this->dt_;
