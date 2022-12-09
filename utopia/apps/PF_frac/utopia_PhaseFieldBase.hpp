@@ -756,6 +756,10 @@ namespace utopia {
             space_.write(output_path + "_" + std::to_string(time) + ".vtr", x);
         }
 
+        virtual bool must_reduce_time_step(const Vector &) {
+            return false;
+        }
+
     protected:
         FunctionSpace &space_;
         PFFracParameters params_;
