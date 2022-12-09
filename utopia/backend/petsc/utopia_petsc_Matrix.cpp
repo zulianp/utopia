@@ -173,6 +173,14 @@ namespace utopia {
             return false;
         }
 
+        PetscInt *rowptr = (PetscInt *)crs.rowptr;
+        PetscInt firstrow = rowptr[0];
+
+        // Remove global indexing
+        for (ptrdiff_t i = 0; i <= crs.lrows; ++i) {
+            rowptr[i] -= firstrow;
+        }
+
         // FIXME add workaround
         assert(crs.values_type_size == sizeof(Scalar));
         assert(crs.rowptr_type_size == sizeof(SizeType));
@@ -184,13 +192,8 @@ namespace utopia {
         MPI_Comm_size(comm, &size);
 
         if (size == 1) {
-            check_error(MatCreateSeqAIJWithArrays(comm,
-                                                  crs.grows,
-                                                  crs.grows,
-                                                  (PetscInt *)crs.rowptr,
-                                                  (PetscInt *)crs.colidx,
-                                                  (Scalar *)crs.values,
-                                                  &raw_type()));
+            check_error(MatCreateSeqAIJWithArrays(
+                comm, crs.grows, crs.grows, rowptr, (PetscInt *)crs.colidx, (Scalar *)crs.values, &raw_type()));
 
         } else {
             check_error(MatCreateMPIAIJWithArrays(comm,
@@ -204,7 +207,7 @@ namespace utopia {
                                                   &raw_type()));
         }
 
-        destroy_callback = [crs] () {
+        destroy_callback = [crs]() {
             crs_t crs_copy = crs;
             crs_free(&crs_copy);
         };
