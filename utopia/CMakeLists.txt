@@ -35,30 +35,6 @@ set(UTOPIA_WITH_CPP11 ON)
 # ##############################################################################
 # ##############################################################################
 # ##############################################################################
-
-# #################DOXYGEN######################
-
-find_package(Doxygen)
-if(NOT DOXYGEN_FOUND)
-  message(
-    WARNING
-      "Doxygen is needed to build the documentation. Please install it correctly"
-  )
-endif()
-# -- Configure the Template Doxyfile for our specific project
-configure_file(${UTOPIA_ROOT_PATH}/Doxyfile.txt ${CMAKE_BINARY_DIR} @ONLY
-               IMMEDIATE)
-# -- Add a custom target to run Doxygen when ever the project is built
-add_custom_target(
-  docs
-  COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile.txt
-  SOURCES ${CMAKE_BINARY_DIR}/Doxyfile.txt)
-# IF you do NOT want the documentation to be generated EVERY time you build the
-# project then leave out the 'ALL' keyword from the above command.
-
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
 # LIBRARY
 
 
