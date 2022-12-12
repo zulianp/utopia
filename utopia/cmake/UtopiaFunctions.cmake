@@ -3,6 +3,12 @@
 # ##############################################################################
 # Utitlity functions
 
+# ##############################################################################
+
+# Place for utopia_add_library
+
+# ##############################################################################
+
 function(create_absolute_paths root paths absolutePaths)
     foreach(path ${${paths}})
         set(temp; ${temp} ${${root}}/${path})
@@ -41,23 +47,6 @@ macro(print_dependency_table)
     message(STATUS ${DEP_TABLE})
 endmacro()
 
-# ##############################################################################
-function(utopia_add_library libraryRootDir subDirs)
-    set(THIS_MODULE_SOURCES "")
-    set(THIS_MODULE_HEADERS "")
-    find_project_files(${libraryRootDir} "${subDirs}" THIS_MODULE_HEADERS
-                       THIS_MODULE_SOURCES)
-    target_sources(
-        utopia
-        PRIVATE ${THIS_MODULE_SOURCES}
-        PRIVATE ${THIS_MODULE_HEADERS})
-
-    install(FILES ${THIS_MODULE_HEADERS} DESTINATION include)
-    foreach(MODULE ${subDirs})
-        target_include_directories(
-            utopia BEFORE PUBLIC $<BUILD_INTERFACE:${libraryRootDir}/${MODULE}>)
-    endforeach(MODULE)
-endfunction()
 
 # ##############################################################################
 

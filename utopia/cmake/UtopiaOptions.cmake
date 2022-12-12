@@ -66,3 +66,47 @@ option(UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE
 
 option(UTOPIA_ENABLE_FLUYA_MODE "Create utopia configuration required by Fluya"
        OFF)
+
+
+
+
+set(UTOPIA_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_ROOT_PATH}/cmake")
+
+set(CMAKE_C_FLAGS_ASAN
+    "-fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -g -O1"
+    CACHE STRING "Flags used by the C compiler during AddressSanitizer builds."
+          FORCE)
+
+set(CMAKE_CXX_FLAGS_ASAN
+    "-fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -g -O1"
+    CACHE STRING
+          "Flags used by the C++ compiler during AddressSanitizer builds."
+          FORCE)
+
+
+# ##############################################################################
+# ######################## UTOPIA VERSION INFORMATION
+# ##############################################################################
+# ##############################################################################
+
+set(UTOPIA_VERSION_MAJOR 0)
+set(UTOPIA_VERSION_MINOR 1)
+set(UTOPIA_VERSION_PATCH 0)
+set(UTOPIA_VERSION
+    "${UTOPIA_VERSION_MAJOR}.${UTOPIA_VERSION_MINOR}.${UTOPIA_VERSION_PATCH}")
+# ##############################################################################
+
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE
+        "Release"
+        CACHE STRING "Choose the type of build, options are: Debug Release
+RelWithDebInfo MinSizeRel." FORCE)
+
+    message(STATUS "[Status] CMAKE_BUILD_TYPE=Release")
+endif(NOT CMAKE_BUILD_TYPE)
+
+# To kill the policy warning  (maybe not a good idea yet)
+set(CMAKE_MACOSX_RPATH 1)
+
+set(CMAKE_CXX_EXTENSIONS OFF)
