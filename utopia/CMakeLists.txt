@@ -36,7 +36,7 @@ set(UTOPIA_WITH_CPP11 ON)
 # ##############################################################################
 # ##############################################################################
 
-##################DOXYGEN######################
+# #################DOXYGEN######################
 
 find_package(Doxygen)
 if(NOT DOXYGEN_FOUND)
@@ -61,36 +61,48 @@ add_custom_target(
 # ##############################################################################
 # LIBRARY
 
+
 list(APPEND UTOPIA_HEADERS utopia.hpp utopia_Base.hpp utopia_Instance.hpp
      utopia_DeprecatedHeaders.hpp)
 
 list(APPEND UTOPIA_SOURCES utopia.cpp utopia_Instance.cpp utopia_Base.cpp)
+
 add_library(utopia ${UTOPIA_SOURCES})
-
-
 
 # TEMPORAY PLACEMENT OF FUNCTION.
 function(utopia_add_library libraryRootDir subDirs)
-    set(THIS_MODULE_SOURCES "")
-    set(THIS_MODULE_HEADERS "")
-    find_project_files(${libraryRootDir} "${subDirs}" THIS_MODULE_HEADERS
-                       THIS_MODULE_SOURCES)
-    target_sources(
-        utopia
-        PRIVATE ${THIS_MODULE_SOURCES}
-        PRIVATE ${THIS_MODULE_HEADERS})
+  set(THIS_MODULE_SOURCES "")
+  set(THIS_MODULE_HEADERS "")
+  find_project_files(${libraryRootDir} "${subDirs}" THIS_MODULE_HEADERS
+                     THIS_MODULE_SOURCES)
+  target_sources(
+    utopia
+    PRIVATE ${THIS_MODULE_SOURCES}
+    PRIVATE ${THIS_MODULE_HEADERS})
 
-    install(FILES ${THIS_MODULE_HEADERS} DESTINATION include)
-    foreach(MODULE ${subDirs})
-        target_include_directories(
-            utopia BEFORE PUBLIC $<BUILD_INTERFACE:${libraryRootDir}/${MODULE}>)
-    endforeach(MODULE)
+  install(FILES ${THIS_MODULE_HEADERS} DESTINATION include)
+  foreach(MODULE ${subDirs})
+    target_include_directories(
+      utopia BEFORE PUBLIC $<BUILD_INTERFACE:${libraryRootDir}/${MODULE}>)
+  endforeach(MODULE)
 endfunction()
 
 # ALSO TEMPORARY
 include(cmake/UtopiaDependencies.cmake)
 
+# core modules
+set(UTOPIA_MODULES
+    interoperability
+    backend
+    solvers
+    differentiable
+    core
+    ui
+    utils)
 
+foreach(MODULE ${UTOPIA_MODULES})
+  add_subdirectory(${MODULE})
+endforeach(MODULE)
 
 # if(UTOPIA_ENABLE_KOKKOS_SIMD) set(UTOPIA_WITH_KOKKOS_SIMD TRUE)
 
@@ -116,19 +128,6 @@ install(
 add_subdirectory(examples)
 add_subdirectory(backend/polymorphic)
 
-# core modules
-set(UTOPIA_MODULES
-    interoperability
-    backend
-    solvers
-    differentiable
-    core
-    ui
-    utils)
-
-foreach(MODULE ${UTOPIA_MODULES})
-  add_subdirectory(${MODULE})
-endforeach(MODULE)
 
 add_definitions(${UTOPIA_DEFS})
 
@@ -143,31 +142,31 @@ configure_file(${UTOPIA_ROOT_PATH}/utopia_Version.hpp.in
 
 # ##############################################################################
 
+# Deprecated since version 3.20 include(WriteCompilerDetectionHeader)
 
-# Deprecated since version 3.20
-# include(WriteCompilerDetectionHeader)
-
-# write_compiler_detection_header(
-#   FILE utopia_compiler_features.hpp PREFIX UTOPIA
-#   COMPILERS GNU Clang MSVC Intel AppleClang
-#   FEATURES # cxx_final #already in c++11 cxx_noexcept #already in c++11
-#            cxx_attribute_deprecated # in c++14
-#   ALLOW_UNKNOWN_COMPILERS)
+# write_compiler_detection_header( FILE utopia_compiler_features.hpp PREFIX
+# UTOPIA COMPILERS GNU Clang MSVC Intel AppleClang FEATURES # cxx_final #already
+# in c++11 cxx_noexcept #already in c++11 cxx_attribute_deprecated # in c++14
+# ALLOW_UNKNOWN_COMPILERS)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/utopia_compiler_features.hpp
               ${CMAKE_CURRENT_BINARY_DIR}/utopia_Version.hpp
         DESTINATION include)
 
+install(FILES ${UTOPIA_ROOT_PATH}/utopia.hpp DESTINATION include)
+install(FILES ${UTOPIA_HEADERS} DESTINATION include)
+install(FILES ${CMAKE_BINARY_DIR}/utopia_Config.hpp DESTINATION include)
+
 # ##############################################################################
 
 # test suite
-add_executable(utopia_test EXCLUDE_FROM_ALL test.cpp)
+add_executable(utopia_test EXCLUDE_FROM_ALL tests/test.cpp)
 utopia_link_default_targets(utopia_test)
 target_link_libraries(utopia_test PRIVATE utopia)
 include(tests/tests.cmake)
 
 # bench suite
-add_executable(utopia_bench EXCLUDE_FROM_ALL bench.cpp)
+add_executable(utopia_bench EXCLUDE_FROM_ALL benchmarks/bench.cpp)
 utopia_link_default_targets(utopia_bench)
 target_link_libraries(utopia_bench PRIVATE utopia)
 include(benchmarks/benchmarks.cmake)
@@ -177,10 +176,6 @@ add_executable(utopia_exec EXCLUDE_FROM_ALL main.cpp)
 utopia_link_default_targets(utopia_exec)
 target_link_libraries(utopia_exec PRIVATE utopia)
 include(apps/apps.cmake)
-
-install(FILES ${UTOPIA_ROOT_PATH}/utopia.hpp DESTINATION include)
-install(FILES ${UTOPIA_HEADERS} DESTINATION include)
-install(FILES ${CMAKE_BINARY_DIR}/utopia_Config.hpp DESTINATION include)
 
 # Generate files useful for dependent build systems
 list(REVERSE UTOPIA_THIRDPARTY_LIBRARIES)
@@ -239,7 +234,6 @@ install(
   NAMESPACE Utopia::
   DESTINATION lib/cmake)
 
-include(CMakePackageConfigHelpers)
 # generate the config file that is includes the exports
 configure_package_config_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/UtopiaConfig.cmake.in
