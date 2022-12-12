@@ -22,8 +22,8 @@ neumann_bc:
   value: 0.1
   component: 1
 # Heterogeneous material
-# hetero_params: example
-# tough_factor: 10
+hetero_params: example
+tough_factor: 1000
 
 with_damage: true
 mobility: 1.0e-06
