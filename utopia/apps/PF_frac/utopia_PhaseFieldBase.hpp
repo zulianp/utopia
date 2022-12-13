@@ -220,6 +220,7 @@ namespace utopia {
         //                        typename
         //                        FunctionSpace::Vector>::get_eq_constrains_values;
 
+
         void read(Input &in) override {
             params_.read(in);
             in.get("use_dense_hessian", use_dense_hessian_);
@@ -821,7 +822,25 @@ namespace utopia {
             space_.write(output_path + "_" + std::to_string(time) + ".vtr", x);
         }
 
-        virtual bool must_reduce_time_step(const Vector &) { return false; }
+        //calculates global fracture energy, and compares it to the previous time step. Only returns true if max change ,
+        virtual bool must_reduce_time_step(const Vector &x, Scalar& frac_energy_old, Scalar& frac_energy_max_change) {
+
+            std::cout << "Deducing time step" << std::endl;
+
+            if (frac_energy_old == 0.0)
+                return false; //dont check on the first time step
+
+            Scalar trial_frac_energy{0.0};
+            fracture_energy(x, trial_frac_energy);
+
+            std::cout << "Calc frac energy" << trial_frac_energy << std::endl;
+
+
+            if ( trial_frac_energy/frac_energy_old > frac_energy_max_change )
+                return true; //repeat iteration
+
+            return false;       //dont repeat iteration
+        }
 
     protected:
         FunctionSpace &space_;

@@ -99,6 +99,7 @@ namespace utopia {
             in.get("pressure_increase_factor", pressure_increase_factor_);
             in.get("use_pressure", use_pressure_);
             in.get("use_constant_pressure", use_constant_pressure_);
+            in.get("frac_energy_max_change", frac_energy_max_change_);
         }
 
         virtual void run() = 0;
@@ -143,6 +144,10 @@ namespace utopia {
         Scalar pressure_increase_factor_;
         bool use_pressure_{true};
         bool use_constant_pressure_{false};
+
+        Scalar frac_energy_old_{0.0};
+        Scalar frac_energy_max_change_{1e10};
+
 
         Vector solution_;
         Vector lb_;  // this is quite particular for PF-frac

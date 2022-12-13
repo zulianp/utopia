@@ -425,11 +425,12 @@ namespace utopia {
             if (!repeat_step) {
                 auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get());
                 if (fun_finest) {
-                    repeat_step = fun_finest->must_reduce_time_step(this->solution_);
+                    repeat_step = fun_finest->must_reduce_time_step(this->solution_, this->frac_energy_old_, this->frac_energy_max_change_);
                 }
             }
 
             if (repeat_step) {
+                std::cout << "reached repeat" << std::endl;
                 this->time_ -= this->dt_;
                 this->dt_ = this->dt_ * this->shrinking_factor_;
                 this->time_ += this->dt_;
@@ -504,12 +505,16 @@ namespace utopia {
                 }
             }
 
-            this->export_energies_csv();
+            //E.P this also updates the fracture energy at old time step
+            //Need to call for dynamic time stepping strategy that uses fracture energy
+            this->export_energies_csv(repeat_step);
+
+
 
             UTOPIA_TRACE_REGION_END("MLIncrementalLoading::update_time_step(...)");
         }
 
-        void export_energies_csv() {
+        void export_energies_csv(bool repeat_step) {
             if (!csv_file_name_.empty()) {
                 CSVWriter writer{};
                 Scalar elastic_energy = 0.0, fracture_energy = 0.0, error_tcv = 0.0, error_cod = 0.0;
@@ -536,6 +541,10 @@ namespace utopia {
                     writer.write_table_row<Scalar>(
                         {this->time_, elastic_energy, fracture_energy, error_tcv, error_cod});
                     writer.close_file();
+
+                    if (!repeat_step)
+                        this->frac_energy_old_ = fracture_energy; //only store old value if we dont repeat
+
                 }
             }
         }
@@ -563,6 +572,7 @@ namespace utopia {
 
                 prepare_for_solve();
 
+                //Just for very first time step
                 if (this->time_ == this->dt_) {
                     auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get());
                     fun_finest->set_old_solution(this->solution_);
