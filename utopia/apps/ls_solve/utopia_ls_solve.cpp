@@ -62,6 +62,9 @@ namespace utopia {
         using Scalar = typename Traits<Vector>::Scalar;
 
         void read(Input &in) override {
+            Chrono tts;
+            tts.start();
+
             Matrix A;
             Vector x, b, oracle;
 
@@ -244,6 +247,11 @@ namespace utopia {
 
             stats.stop_collect_and_restart("write");
             stats.describe(utopia::out().stream());
+
+            tts.stop();
+            if (!mpi_world_rank()) {
+                utopia::out() << "TTS: " << tts.get_seconds() << " seconds\n";
+            }
         }
     };
 
