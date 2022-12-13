@@ -286,8 +286,8 @@ namespace utopia {
                 if (true) {
                     UTOPIA_UNUSED(space);
 
-                    //E.P Writing to file from Fracture model done here
-                    //Casting Fracture model into type and calling its write to file functionality
+                    // E.P Writing to file from Fracture model done here
+                    // Casting Fracture model into type and calling its write to file functionality
                     if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                         fun_finest->write_to_file(this->output_path_, this->solution_, time);
                     }
@@ -425,7 +425,8 @@ namespace utopia {
             if (!repeat_step) {
                 auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get());
                 if (fun_finest) {
-                    repeat_step = fun_finest->must_reduce_time_step(this->solution_, this->frac_energy_old_, this->frac_energy_max_change_);
+                    repeat_step = fun_finest->must_reduce_time_step(
+                        this->solution_, this->frac_energy_old_, this->frac_energy_max_change_);
                 }
             }
 
@@ -505,11 +506,9 @@ namespace utopia {
                 }
             }
 
-            //E.P this also updates the fracture energy at old time step
-            //Need to call for dynamic time stepping strategy that uses fracture energy
+            // E.P this also updates the fracture energy at old time step
+            // Need to call for dynamic time stepping strategy that uses fracture energy
             this->export_energies_csv(repeat_step);
-
-
 
             UTOPIA_TRACE_REGION_END("MLIncrementalLoading::update_time_step(...)");
         }
@@ -529,6 +528,8 @@ namespace utopia {
                     }
                 }
 
+                if (!repeat_step) this->frac_energy_old_ = fracture_energy;  // only store old value if we dont repeat
+
                 if (mpi_world_rank() == 0) {
                     if (!writer.file_exists(csv_file_name_)) {
                         writer.open_file(csv_file_name_);
@@ -541,10 +542,6 @@ namespace utopia {
                     writer.write_table_row<Scalar>(
                         {this->time_, elastic_energy, fracture_energy, error_tcv, error_cod});
                     writer.close_file();
-
-                    if (!repeat_step)
-                        this->frac_energy_old_ = fracture_energy; //only store old value if we dont repeat
-
                 }
             }
         }
@@ -572,7 +569,7 @@ namespace utopia {
 
                 prepare_for_solve();
 
-                //Just for very first time step
+                // Just for very first time step
                 if (this->time_ == this->dt_) {
                     auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get());
                     fun_finest->set_old_solution(this->solution_);
