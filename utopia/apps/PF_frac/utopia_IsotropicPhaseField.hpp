@@ -853,6 +853,9 @@ namespace utopia {
                         Point centroid;
                         c_e.centroid(centroid);
                         this->non_const_params().update(centroid);
+                        //Getting new material parameter values
+                        const Scalar mu = this->params_.mu;
+                        const Scalar lambda = this->params_.lambda;
                         ////////////////////////////////////////////
 
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
@@ -900,9 +903,15 @@ namespace utopia {
                                 auto &&u_strain_shape_l = u_strain_shape_el(l, qp);
 
                                 for (SizeType j = l; j < U_NDofs; ++j) {
+                                // Varying stress tensor
+                                auto element_stress = 2.0 * mu * u_strain_shape_el(j, qp) +
+                                                    lambda * trace(u_strain_shape_el(j, qp)) * (device::identity<Scalar>());
                                     Scalar val =
                                         PhaseFieldFracBase<FunctionSpace, Dim>::bilinear_uu(
-                                            this->params_, c[qp], p_stress_view.stress(j, qp), u_strain_shape_l) *
+                                            this->params_, c[qp], 
+                                            //p_stress_view.stress(j, qp),       //constant material props  
+                                            element_stress,                      //hetero material props
+                                            u_strain_shape_l) *
                                         dx(qp);
 
                                     val = (l == j) ? (0.5 * val) : val;

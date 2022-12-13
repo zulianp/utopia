@@ -527,7 +527,8 @@ namespace utopia {
             auto xyz_min = this->space_.mesh().box_min();
             auto xyz_max = this->space_.mesh().box_max();
 
-            double width = (xyz_max(0) - xyz_min(1)) / 4.0;
+            double width_x = (xyz_max(0) - xyz_min(0)) / 6.0;
+            double width_y = (xyz_max(1) - xyz_min(1)) / 6.0;
             double max_damage = 1.0;
 
             std::default_random_engine generator;
@@ -542,11 +543,11 @@ namespace utopia {
             int seed = mpi_world_rank()*total_nodes;
             generator.seed(seed);
 
-            auto sampler = utopia::sampler(C, [&generator, &distribution, xyz_min, xyz_max, width, total_nodes, max_damage](const Point &x) -> Scalar {
-                if ( x(1) < xyz_max(1) - width && x(1) > xyz_min(1) + width &&
-                     x(0) > xyz_min(0) + width && x(0) < xyz_max(0) - width ) {
+            auto sampler = utopia::sampler(C, [&generator, &distribution, xyz_min, xyz_max, width_x, width_y, total_nodes, max_damage](const Point &x) -> Scalar {
+                if ( x(1) < xyz_max(1) - width_y && x(1) > xyz_min(1) + width_y &&
+                     x(0) > xyz_min(0) + width_x && x(0) < xyz_max(0) - width_x ) {
                     double random_damage = double(distribution(generator))/10.0;
-                    if (random_damage >= 0.92) return 1.0;
+                    if (random_damage >= 0.97) return 1.0;
                     else return random_damage;
                 } else return 0.0;
                 });

@@ -75,28 +75,49 @@ namespace utopia {
             std::string type;
             in.get("hetero_params", type);
 
-            if (type == "example") {
-                Scalar split = 20;
-                Scalar tough_factor = 2;
-                in.get("hetero_params_split", split);
+            if (type == "threelayer") {
+                Scalar bottom_layer_height;
+                Scalar top_layer_height;
+                Scalar tough_factor;
+                in.get("bottom_layer_height", bottom_layer_height);
+                in.get("top_layer_height", top_layer_height);
                 in.get("tough_factor", tough_factor);
 
                 const Scalar mu_in = mu;
                 const Scalar lambda_in = lambda;
                 const Scalar fracture_toughness_in = fracture_toughness;
 
+                bool boundary_protection(false);
+                Scalar layer_width(0);
+                Scalar xmin, xmax, ymin, ymax;
+                in.get("boundary_protection", boundary_protection);
+                in.get("layer_width",layer_width);
+                in.get("x_min", xmin);
+                in.get("x_max", xmax);
+                in.get("y_min", ymin);
+                in.get("y_max", ymax);
+
+
                 hetero_params =
-                    [mu_in, lambda_in, fracture_toughness_in, split, tough_factor](
+                    [mu_in, lambda_in, fracture_toughness_in, bottom_layer_height, top_layer_height, tough_factor,
+                     boundary_protection,xmin,xmax,ymin,ymax,layer_width](
                         const Point &p, Scalar &mu_out, Scalar &lambda_out, Scalar &fracture_toughness_out) {
-                        if (p[1] < split) {
-                            mu_out = mu_in * tough_factor;
-                            lambda_out = lambda_in * tough_factor;
-                            fracture_toughness_out = fracture_toughness_in * tough_factor;
-                        } else {
-                            mu_out = 1.1 * mu_in;
+                        if (p[1] < bottom_layer_height || p[1] > top_layer_height) {
+                            mu_out =  mu_in;
                             lambda_out = lambda_in;
                             fracture_toughness_out = fracture_toughness_in;
+                        } else {
+                            mu_out = mu_in * tough_factor;              //modify middle layer to tougher
+                            lambda_out = lambda_in * tough_factor;
+                            fracture_toughness_out = fracture_toughness_in ; //* tough_factor;
                         }
+
+                        if (boundary_protection){
+                            if (p[0] < xmin + layer_width || p[0] > xmax - layer_width ||
+                                p[1] < ymin + layer_width || p[1] > ymax - layer_width)
+                                fracture_toughness_out = fracture_toughness_in*1000.0;
+                        }
+
                     };
             }
         }
