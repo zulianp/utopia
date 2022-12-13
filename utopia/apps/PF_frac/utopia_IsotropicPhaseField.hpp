@@ -906,7 +906,7 @@ namespace utopia {
                                 for (SizeType j = l; j < U_NDofs; ++j) {
                                     // Varying stress tensor
                                     auto element_stress =
-                                        2.0 * mu * u_strain_shape_el(j, qp) +
+                                        (2.0 * mu) * u_strain_shape_el(j, qp) +
                                         lambda * trace(u_strain_shape_el(j, qp)) * (device::identity<Scalar>());
 
                                     Scalar val = PhaseFieldFracBase<FunctionSpace, Dim>::bilinear_uu(

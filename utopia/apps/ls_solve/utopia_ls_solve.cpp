@@ -129,7 +129,7 @@ namespace utopia {
                 A = std::move(A_temp);
             }
 
-            utopia::out() << "Matrix::type() " << A.type() << '\n';
+            // utopia::out() << "Matrix::type() " << A.type() << '\n';
 
             if (write_matlab) {
                 rename("a", A);
@@ -223,9 +223,12 @@ namespace utopia {
 
             Vector r = b - A * x;
             Scalar r_norm = norm2(r);
-            utopia::out() << "norm_residual (pre): " << r_norm << "\n";
 
-            utopia::out() << "ndofs " << x.size() << std::endl;
+            if (!mpi_world_rank()) {
+                utopia::out() << "norm_residual (pre): " << r_norm << "\n";
+                utopia::out() << "ndofs " << x.size() << std::endl;
+            }
+
             solver->solve(A, b, x);
 
             stats.stop_collect_and_restart("solve");
@@ -233,7 +236,9 @@ namespace utopia {
             r = b - A * x;
             r_norm = norm2(r);
 
-            utopia::out() << "norm_residual (post): " << r_norm << "\n";
+            if (!mpi_world_rank()) {
+                utopia::out() << "norm_residual (post): " << r_norm << "\n";
+            }
 
             write(path_output, x);
 

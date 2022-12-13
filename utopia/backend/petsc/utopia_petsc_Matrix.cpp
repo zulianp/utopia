@@ -130,7 +130,6 @@ namespace utopia {
 
     bool PetscMatrix::read(MPI_Comm comm, const std::string &path) {
 #ifdef UTOPIA_WITH_MATRIX_IO
-        std::cout << path << std::endl;
         Path ppath = path;
         if (ppath.extension() == "raw") {
             Path folder = ppath.parent();
