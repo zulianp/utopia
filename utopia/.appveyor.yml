@@ -1,0 +1,12 @@
+version: '{build}'
+# clone_folder: c:\projects\sgrid
+
+image: Visual Studio 2019
+
+init:
+  - ps: ($env:APPVEYOR_SAVE_CACHE_ON_ERROR = "true")
+
+
+# cache dependencies libraries.
+cache:
+
