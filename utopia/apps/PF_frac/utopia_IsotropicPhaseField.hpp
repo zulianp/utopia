@@ -325,6 +325,8 @@ namespace utopia {
                             el_energy += energy(this->params_, c[qp], c_grad_el[qp], tr, el_strain.strain[qp]) * dx(qp);
 
                             if (this->params_.use_penalty_irreversibility) {
+                                //if (mpi_world_rank()==0) utopia::out() << "Penalty: " << this->params_.penalty_param << std::endl;
+
                                 auto c_cold = c[qp] - c_old[qp];
                                 auto c_cold_bracket = c_cold < 0.0 ? c_cold : 0.0;
                                 el_energy +=

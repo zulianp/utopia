@@ -42,7 +42,7 @@ namespace utopia {
             in.get("use_pressure", use_pressure);
 
             in.get("use_penalty_irreversibility", use_penalty_irreversibility);
-            in.get("penalty_param", penalty_param);
+            in.get("penalty_tol", penalty_tol);
 
             in.get("use_crack_set_irreversibiblity", use_crack_set_irreversibiblity);
             in.get("crack_set_tol", crack_set_tol);
@@ -141,6 +141,7 @@ namespace utopia {
               pressure(0.0),
               penalty_param(0.0),
               crack_set_tol(0.93),
+              penalty_tol(0.01),
               // mobility(1e-5)
               mobility(1e-6)
 
@@ -174,8 +175,9 @@ namespace utopia {
             kappa = lambda + (2.0 * mu / Dim);
         }
 
+
         Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda, kappa, nu, E, l_0, pressure0;
-        Scalar regularization, pressure, penalty_param, crack_set_tol, mobility;
+        Scalar regularization, pressure, penalty_param, crack_set_tol, penalty_tol, mobility;
         bool use_penalty_irreversibility{false}, use_crack_set_irreversibiblity{false}, use_pressure{false};
         bool turn_off_uc_coupling{false}, turn_off_cu_coupling{false};
         bool use_mobility{false};
@@ -220,13 +222,31 @@ namespace utopia {
         //                        typename
         //                        FunctionSpace::Vector>::get_eq_constrains_values;
 
+        // E.P FIX: HardCoded for AT2 Model
+        // this computation follows eq. 50 from "On penalization in variational
+        // phase-field models of britlle fracture, Gerasimov, Lorenzis"
+        void configure_penalty_term_for_AT2(){
+            assert(params_.use_penalty_irreversibility);
+            Scalar tol2 = params_.penalty_tol * params_.penalty_tol;
+            params_.penalty_param = params_.fracture_toughness / 1.81 /*params_.length_scale*/ * (1.0 / tol2 - 1.0);
+            if (mpi_world_rank()==0)
+                utopia::out() << "Lengthscale: " << params_.length_scale << "  Penalty: " << params_.penalty_param << std::endl;
+        }
 
         void read(Input &in) override {
+            //reading parameters
             params_.read(in);
+
+            //configuring penalty term
+            if (params_.use_penalty_irreversibility)
+                configure_penalty_term_for_AT2();
+
             in.get("use_dense_hessian", use_dense_hessian_);
             in.get("check_derivatives", check_derivatives_);
             in.get("diff_controller", diff_ctrl_);
             init_force_field(in);
+
+
         }
 
         // this is a bit of hack
@@ -264,13 +284,8 @@ namespace utopia {
                 }
             }
 
-            // this computation follows eq. 50 from "On penalization in variational
-            // phase-field models of britlle fracture, Gerasimov, Lorenzis"
-            if (params_.use_penalty_irreversibility) {
-                Scalar tol = 1e-3;
-                Scalar tol2 = tol * tol;
-                params_.penalty_param = params_.fracture_toughness / params_.length_scale * (1.0 / tol2 - 1.0);
-            }
+            if (params_.use_penalty_irreversibility)
+                configure_penalty_term_for_AT2();
 
             // in case of constant pressure field
             // if(params_.pressure){
@@ -295,6 +310,7 @@ namespace utopia {
         void set_hetero_params(HeteroParamsFunction hetero_params) { params_.hetero_params = hetero_params; }
 
         PhaseFieldFracBase(FunctionSpace &space, const PFFracParameters &params) : space_(space), params_(params) {
+
             this->local_x_ = std::make_shared<Vector>();
             space_.create_local_vector(*this->local_x_);
 
@@ -602,6 +618,7 @@ namespace utopia {
             update_history_field(x_old_);
         }
 
+        // E.P Question: What is this doing? Why is it hardcoded?
         void build_irreversility_constraint(Vector &lb) {
             {
                 auto d_x_old = const_device_view(x_old_);
@@ -618,6 +635,7 @@ namespace utopia {
             }
         }
 
+        // E.P Question: What is this doing? Why is it hardcoded?
         void build_irreversility_constraint(Vector &lb, Vector &ub) {
             {
                 auto d_x_old = const_device_view(x_old_);
@@ -626,12 +644,12 @@ namespace utopia {
                 auto ub_view = view_device(ub);
                 parallel_for(
                     range_device(lb), UTOPIA_LAMBDA(const SizeType &i) {
-                        if (i % (Dim + 1) == 0) {
+                        if (i % (Dim + 1) == 0) {               //Is this for the phase field equation
                             lb_view.set(i, d_x_old.get(i));
                             ub_view.set(i, 1.0);
                         } else {
-                            lb_view.set(i, -9e15);
-                            ub_view.set(i, 9e15);
+                            lb_view.set(i, -9e15);          //WHIS IS THIS HARD CODED??? Cant we just set nothing there...?
+                            ub_view.set(i, 9e15);           //WHAT IS THIS FOR? Is this a constraint for the displacement?
                         }
                     });
             }
@@ -822,25 +840,6 @@ namespace utopia {
             space_.write(output_path + "_" + std::to_string(time) + ".vtr", x);
         }
 
-        //calculates global fracture energy, and compares it to the previous time step. Only returns true if max change ,
-        virtual bool must_reduce_time_step(const Vector &x, Scalar& frac_energy_old, Scalar& frac_energy_max_change) {
-
-            std::cout << "Deducing time step" << std::endl;
-
-            if (frac_energy_old == 0.0)
-                return false; //dont check on the first time step
-
-            Scalar trial_frac_energy{0.0};
-            fracture_energy(x, trial_frac_energy);
-
-            std::cout << "Calc frac energy" << trial_frac_energy << std::endl;
-
-
-            if ( trial_frac_energy/frac_energy_old > frac_energy_max_change )
-                return true; //repeat iteration
-
-            return false;       //dont repeat iteration
-        }
 
     protected:
         FunctionSpace &space_;

@@ -74,6 +74,8 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("MLIncrementalLoading::read(...)");
         }
 
+        void standardise_penalty_parameters(){}
+
         bool init_ml_setup() {
             if (n_levels_ < 2) {
                 std::cerr << "n_levels must be at least 2" << std::endl;
@@ -370,7 +372,7 @@ namespace utopia {
             spaces_.back()->apply_constraints(this->solution_);
 
             if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
-                fun_finest->build_irreversility_constraint(this->lb_, this->ub_);
+                fun_finest->build_irreversility_constraint(this->lb_, this->ub_);                       //What is this doing and why is it hard coded values???? Double size
             }
 
             for (std::size_t l = 0; l < BC_conditions_.size(); l++) {
@@ -425,17 +427,31 @@ namespace utopia {
             if (!repeat_step) {
                 auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get());
                 if (fun_finest) {
-                    repeat_step = fun_finest->must_reduce_time_step(
-                        this->solution_, this->frac_energy_old_, this->frac_energy_max_change_);
+                    // E.P Calc frac energy at new solution
+                    // And repeat if larger than a certain tolerance
+                    Scalar trial_fracture_energy{0.0};
+                    fun_finest->fracture_energy(this->solution_, trial_fracture_energy);
+                    repeat_step = this->must_reduce_time_step(trial_fracture_energy);                   //this also checks if frac energy change is too small
+
+                    //if we are at the minimum time step, do not shrink
+                    if (repeat_step == true && this->dt_*this->shrinking_factor_ < this->dt_min_ ) {
+                        repeat_step = false;
+                        if (mpi_world_rank()==0) {
+                            utopia::out() << "time step " << this->dt_
+                                          << " too close to minumum " << this->dt_min_
+                                          << " not reducing\n";
+                        }
+                    }
                 }
             }
 
             if (repeat_step) {
-                std::cout << "reached repeat" << std::endl;
+                if (mpi_world_rank()==0) {
+                     utopia::out() << "------- Repeating time step\n";
+                }
                 this->time_ -= this->dt_;
                 this->dt_ = this->dt_ * this->shrinking_factor_;
                 this->time_ += this->dt_;
-
                 if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                     fun_finest->make_iterate_feasible(this->lb_, this->ub_, this->solution_);
                     fun_finest->get_old_solution(this->solution_);
@@ -496,13 +512,23 @@ namespace utopia {
                     this->write_to_file(*spaces_.back(), this->time_);
                 }
 
+                //Advance time step
+                this->time_step_counter_ += 1;
+
+                // Choosing time step
+                if (this->increase_next_time_step_ && this->dt_*this->increase_factor_ < this->dt_max_){
+                    this->dt_ *= this->increase_factor_;     // E.P Increasing time step if decided earlier by IncrementalLoadingBase
+                    this->increase_next_time_step_ = false;  // reset to zero for next time step
+                    if (mpi_world_rank()==0) {
+                         utopia::out() << "------- Increasing next time step:  " << this->dt_ << "\n";
+                    }
+                }
+
+                //Changing time step if decided by Second Phase
                 if (this->time_ < second_phase_time_stepper_.start_time_) {
-                    // increment time step
-                    this->time_ += this->dt_;
-                    this->time_step_counter_ += 1;
+                    this->time_ += this->dt_;                       // increment time step by first phase
                 } else {
-                    this->time_ += second_phase_time_stepper_.dt_;
-                    this->time_step_counter_ += 1;
+                    this->time_ += second_phase_time_stepper_.dt_;  //increment time step by second phase
                 }
             }
 
@@ -567,6 +593,7 @@ namespace utopia {
                                      "################# \n";
                 }
 
+                //applies boundary conditions based on time
                 prepare_for_solve();
 
                 // Just for very first time step

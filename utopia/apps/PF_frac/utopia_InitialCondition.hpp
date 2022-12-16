@@ -529,7 +529,7 @@ namespace utopia {
 
             double width_x = (xyz_max(0) - xyz_min(0)) / 6.0;
             double width_y = (xyz_max(1) - xyz_min(1)) / 6.0;
-            double max_damage = 1.0;
+            double damage_threshold = 1.1;
 
             std::default_random_engine generator;
             std::poisson_distribution<int> distribution(4);
@@ -543,12 +543,12 @@ namespace utopia {
             int seed = mpi_world_rank()*total_nodes;
             generator.seed(seed);
 
-            auto sampler = utopia::sampler(C, [&generator, &distribution, xyz_min, xyz_max, width_x, width_y, total_nodes, max_damage](const Point &x) -> Scalar {
+            auto sampler = utopia::sampler(C, [&generator, &distribution, xyz_min, xyz_max, width_x, width_y, total_nodes, damage_threshold](const Point &x) -> Scalar {
                 if ( x(1) < xyz_max(1) - width_y && x(1) > xyz_min(1) + width_y &&
                      x(0) > xyz_min(0) + width_x && x(0) < xyz_max(0) - width_x ) {
                     double random_damage = double(distribution(generator))/10.0;
-                    if (random_damage >= 0.97) return 1.0;
-                    else return random_damage;
+                    if (random_damage >= damage_threshold) return 1.0;
+                    else return 0.0;
                 } else return 0.0;
                 });
 
