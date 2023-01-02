@@ -7,6 +7,8 @@
 
 #include "utopia_mars_MeshIO.hpp"
 
+#include "utopia_mars_Discretization.hpp"
+
 namespace utopia {
     namespace mars {
         class FunctionSpace::Impl {

@@ -20,12 +20,14 @@ namespace utopia {
 
     namespace kokkos {
 
-        template <class FE_,
+        template <class FunctionSpace,
+                  class FE_,
                   int Dim,
                   class FirstLameParameter = typename FE_::Scalar,
                   class ShearModulus = FirstLameParameter,
                   class Alpha = FirstLameParameter>
-        class WeakLinearThermoElasticity : public FEAssembler<FE_, DefaultView<typename FE_::Scalar>> {
+        class WeakLinearThermoElasticity
+            : public utopia::kokkos::FEAssembler<FunctionSpace, FE_, DefaultView<typename FE_::Scalar>> {
         public:
             using FE = FE_;
             using Grad = typename FE::Gradient;
@@ -36,7 +38,7 @@ namespace utopia {
             using DynRankView = typename FE::DynRankView;
 
             using ExecutionSpace = typename FE::ExecutionSpace;
-            using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;
+            using Super = utopia::kokkos::FEAssembler<FunctionSpace, FE_, DefaultView<typename FE_::Scalar>>;
             using VectorView = typename Super::VectorView;
 
             class Params : public Configurable {

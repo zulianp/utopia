@@ -2,8 +2,9 @@
 #define UTOPIA_UI_MATERIAL_FUNCTION_HPP
 
 #include "utopia_ElasticMaterial.hpp"
-#include "utopia_LameeParameters.hpp"
 #include "utopia_ui.hpp"
+
+#include "utopia_LameeParameters.hpp"
 
 namespace utopia {
     template <class FunctionSpace, class Matrix, class Vector>

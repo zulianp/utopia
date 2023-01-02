@@ -255,8 +255,8 @@ class MooneyRivlin(HyperElasticModel):
 # 		self.name = 'IncompressibleMooneyRivlin'
 
 def generate_materials(d,simplify_expressions):
-	# output_dir = f'../../../backend/kokkos/assembly/mech/generated/{d}D'
-	output_dir = f'./workspace/{d}D'
+	output_dir = f'../../../backend/kokkos/assembly/mech/generated/{d}D'
+	# output_dir = f'./workspace/{d}D'
 	models = [NeoHookeanOgden(d), NeoHookeanBower(d), NeoHookeanWang(d), NeoHookeanSmith(d), Fung(d), MooneyRivlin(d), SaintVenantKirchoff(d), Yeoh(d, 2)]
 	# models.append(Yeoh(d, 3))
 	# models = [ NeoHookeanSmith(d), Fung(d)]

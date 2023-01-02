@@ -1,5 +1,8 @@
 #include "utopia_assemble_volume_transfer_r.hpp"
 
+#include "utopia.hpp"
+#include "utopia_DeprecatedHeaders.hpp"
+
 #include "Box.hpp"
 #include "MortarAssemble.hpp"
 #include "utopia_BoxAdapter.hpp"

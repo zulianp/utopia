@@ -34,7 +34,7 @@ namespace utopia {
             void clear();
             bool empty() const;
             bool apply(const Vector &from, Vector &to) const override;
-            bool apply(const Matrix &to_matrix, Matrix &matrix_in_from_space) const;
+            bool apply(const Matrix &to_matrix, Matrix &from_matrix_result, const bool reuse_matrix = false) const;
             Size size() const override;
             Size local_size() const override;
 

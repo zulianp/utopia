@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Sympy
 from symengine import *
 import sympy
@@ -182,7 +184,8 @@ class SymPyEngine:
 
         sub_expr, simpl_expr = sympy.cse(expr)
 
-        cost = f'FLOATING POINT OPS!\n//\t- Result: {sympy.count_ops(simpl_expr, visual=True)}\n//\t- Subexpressions: {sympy.count_ops(sub_expr, visual=True)}'
+        totalflop = sympy.count_ops(sub_expr) + sympy.count_ops(simpl_expr)
+        cost = f'FLOATING POINT OPS! (total = {totalflop})\n//\t- Result: {sympy.count_ops(simpl_expr, visual=True)}\n//\t- Subexpressions: {sympy.count_ops(sub_expr, visual=True)}'
         
         printer = sympy.printing.c.C99CodePrinter()
         lines = []

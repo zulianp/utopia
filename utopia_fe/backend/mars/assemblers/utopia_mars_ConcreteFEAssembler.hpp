@@ -63,8 +63,6 @@ namespace utopia {
                     return false;
                 }
 
-                UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::scalar_op_assemble_matrix::TpetraCrsMatrix()");
-                UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::scalar_op_assemble_matrix::TpetraCrsMatrix()");
                 UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::scalar_op_assemble_matrix");
                 return true;
             }

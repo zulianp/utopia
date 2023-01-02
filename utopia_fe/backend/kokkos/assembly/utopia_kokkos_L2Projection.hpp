@@ -15,8 +15,8 @@ namespace utopia {
 
     namespace kokkos {
 
-        template <class FE_, class Field>
-        class L2Projection : public utopia::kokkos::FEAssembler<FE_> {
+        template <class FunctionSpace, class FE_, class Field>
+        class L2Projection : public utopia::kokkos::FEAssembler<FunctionSpace, FE_> {
         public:
             using FE = FE_;
             using SizeType = typename FE::SizeType;
@@ -24,7 +24,7 @@ namespace utopia {
             using DynRankView = typename FE::DynRankView;
 
             using ExecutionSpace = typename FE::ExecutionSpace;
-            using Super = utopia::kokkos::FEAssembler<FE>;
+            using Super = utopia::kokkos::FEAssembler<FunctionSpace, FE>;
 
             class Params : public Configurable {
             public:

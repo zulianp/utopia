@@ -75,7 +75,12 @@ if(UTOPIA_ENABLE_MOONOLITH)
                 moonolith_libmesh/deprecated/transfer/quadrature
                 moonolith_libmesh/deprecated/transfer/contact_assemblers
                 moonolith_libmesh/deprecated/transfer/adapters
-                moonolith_libmesh/deprecated/clipper)
+                moonolith_libmesh/deprecated/clipper
+                moonolith_libmesh/deprecated/contact
+                moonolith_libmesh/deprecated/transfer
+                # moonolith_libmesh/deprecated/multigrid
+                # moonolith_libmesh/deprecated/wear
+                )
         endif()
         
         set(INTEROP_EXISTS TRUE)
@@ -108,7 +113,7 @@ if(UTOPIA_ENABLE_INTREPID2)
 endif()
 
 
-if(UTOPIA_ENABLE_LIBMESH AND UTOPIA_ENABLE_KOKKOS)
+if(UTOPIA_ENABLE_LIBMESH AND UTOPIA_ENABLE_KOKKOS AND UTOPIA_ENABLE_LIBMESH_KOKKOS)
     list(APPEND INTEROP_MODULES libmesh_kokkos)
     set(INTEROP_EXISTS TRUE)
 endif()

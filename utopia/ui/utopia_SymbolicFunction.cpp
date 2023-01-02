@@ -48,17 +48,17 @@ namespace utopia {
 
     SymbolicFunction::~SymbolicFunction() = default;
 
-    SymbolicFunction::SymbolicFunction(const std::string &expr) { impl_ = make_unique<Impl>(expr); }
+    SymbolicFunction::SymbolicFunction(const std::string &expr) { impl_ = utopia::make_unique<Impl>(expr); }
 
     SymbolicFunction &SymbolicFunction::operator=(const SymbolicFunction &other) {
         if (this == &other) return *this;
 
-        impl_ = make_unique<Impl>(other.impl_->expr());
+        impl_ = utopia::make_unique<Impl>(other.impl_->expr());
         return *this;
     }
 
     SymbolicFunction::SymbolicFunction(const SymbolicFunction &other) {
-        impl_ = make_unique<Impl>(other.impl_->expr());
+        impl_ = utopia::make_unique<Impl>(other.impl_->expr());
     }
 
     bool SymbolicFunction::valid() const { return impl_->valid(); }

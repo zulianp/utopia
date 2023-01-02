@@ -1,7 +1,9 @@
 #ifndef UTOPIA_PARAMETER_HPP
 #define UTOPIA_PARAMETER_HPP
 
-#include "utopia.hpp"
+#include "utopia_Expression.hpp"
+#include "utopia_FillTypeQuery.hpp"
+#include "utopia_Traits.hpp"
 
 #include <unordered_map>
 #include <utility>

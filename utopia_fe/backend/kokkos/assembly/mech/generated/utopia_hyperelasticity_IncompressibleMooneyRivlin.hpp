@@ -22,8 +22,8 @@ namespace utopia {
 
 
 	namespace kokkos {
-		template<class FE, int Dim>
-		using IncompressibleMooneyRivlin = utopia::kokkos::MixedHyperElasticity<FE, utopia::kernels::IncompressibleMooneyRivlin<typename FE::Scalar, Dim>>;
+		template<class FunctionSpace, class FE, int Dim>
+		using IncompressibleMooneyRivlin = utopia::kokkos::MixedHyperElasticity<FunctionSpace, FE, utopia::kernels::IncompressibleMooneyRivlin<typename FE::Scalar, Dim>>;
 	}
 }
 

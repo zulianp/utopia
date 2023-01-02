@@ -18,10 +18,14 @@
 #include "libmesh/linear_implicit_system.h"
 #include "libmesh/namebased_io.h"
 #include "libmesh/nonlinear_implicit_system.h"
-#include "libmesh/parsed_function.h"
 #include "libmesh/reference_counter.h"
 #include "libmesh/string_to_enum.h"
 #include "libmesh/utility.h"
+
+#define UTOPIA_ENABLE_LIBMESH_PARSED_FUNCTION
+#ifdef UTOPIA_ENABLE_LIBMESH_PARSED_FUNCTION
+#include "libmesh/parsed_function.h"
+#endif
 
 namespace utopia {
     namespace libmesh {
@@ -128,8 +132,15 @@ namespace utopia {
                         dof_map.add_dirichlet_boundary(libMesh::DirichletBoundary(
                             bt, vars, libMesh::ConstFunction<libMesh::Real>(atof(value.c_str()))));
                     } else {
+#ifdef UTOPIA_ENABLE_LIBMESH_PARSED_FUNCTION
                         dof_map.add_dirichlet_boundary(
                             libMesh::DirichletBoundary(bt, vars, libMesh::ParsedFunction<libMesh::Real>(value)));
+#else
+                        m_utopia_error(
+                            "libMesh::ParsedFunction has been disabled because of compilation issues on certain "
+                            "platforms");
+                        Utopia::Abort();
+#endif
                     }
                 }
             }

@@ -8,16 +8,8 @@
 		"normalize" : true,
 		"master": {
 			"mesh": {
-				"type": "square",
-				"elem-type": "quad",
-				"order": 1,
-				"n-x": 200,
-				"n-y": 180,
-				"min-x": 0.0,
-				"max-x": 1.0,
-
-				"min-y": 0.0,
-				"max-y": 0.5
+				"type": "file",
+				"path" : "../data/transfer/fluid_grid.e"
 			},
 			"space": {
 				"system-name" : "master",
@@ -32,7 +24,7 @@
 		"slave": {
 			"mesh": {
 				"type": "file",
-				"path" : "../data/transfer/mesh_bug.e"
+				"path" : "../data/transfer/CaseBaseExodus.e"
 			},
 			"space": {
 				"system-name" : "slave",

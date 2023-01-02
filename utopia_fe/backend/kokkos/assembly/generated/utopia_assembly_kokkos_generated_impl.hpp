@@ -32,31 +32,31 @@ namespace utopia {
 
         template <class FunctionSpace, class FE>
         void register_generated_assemblers(AssemblerRegistry<FunctionSpace, FE> &registry) {
-            registry.template register_assembler_variant<utopia::kokkos::MassTri3<FE>>("MassLine2", 1);
-            registry.template register_assembler_variant<utopia::kokkos::MassTri3<FE>>("MassTri3", 2);
-            registry.template register_assembler_variant<utopia::kokkos::MassQuad4<FE>>("MassQuad4", 2);
-            registry.template register_assembler_variant<utopia::kokkos::MassAxisAlignedQuad4<FE>>(
+            registry.template register_assembler_variant<utopia::kokkos::MassTri3<FunctionSpace, FE>>("MassLine2", 1);
+            registry.template register_assembler_variant<utopia::kokkos::MassTri3<FunctionSpace, FE>>("MassTri3", 2);
+            registry.template register_assembler_variant<utopia::kokkos::MassQuad4<FunctionSpace, FE>>("MassQuad4", 2);
+            registry.template register_assembler_variant<utopia::kokkos::MassAxisAlignedQuad4<FunctionSpace, FE>>(
                 "MassAxisAlignedQuad4", 2);
 
-            registry.template register_assembler_variant<utopia::kokkos::MassTet4<FE>>("MassTet4", 3);
-            registry.template register_assembler_variant<utopia::kokkos::MassHex8<FE>>("MassHex8", 3);
-            registry.template register_assembler_variant<utopia::kokkos::MassAxisAlignedHex8<FE>>("MassAxisAlignedHex8",
+            registry.template register_assembler_variant<utopia::kokkos::MassTet4<FunctionSpace, FE>>("MassTet4", 3);
+            registry.template register_assembler_variant<utopia::kokkos::MassHex8<FunctionSpace, FE>>("MassHex8", 3);
+            registry.template register_assembler_variant<utopia::kokkos::MassAxisAlignedHex8<FunctionSpace, FE>>("MassAxisAlignedHex8",
                                                                                                   3);
 
-            registry.template register_assembler_variant<utopia::kokkos::LaplaceOperatorTri3<FE>>(
+            registry.template register_assembler_variant<utopia::kokkos::LaplaceOperatorTri3<FunctionSpace, FE>>(
                 "LaplaceOperatorLine2", 1);
-            registry.template register_assembler_variant<utopia::kokkos::LaplaceOperatorTri3<FE>>("LaplaceOperatorTri3",
+            registry.template register_assembler_variant<utopia::kokkos::LaplaceOperatorTri3<FunctionSpace, FE>>("LaplaceOperatorTri3",
                                                                                                   2);
-            registry.template register_assembler_variant<utopia::kokkos::LaplaceOperatorQuad4<FE>>(
+            registry.template register_assembler_variant<utopia::kokkos::LaplaceOperatorQuad4<FunctionSpace, FE>>(
                 "LaplaceOperatorQuad4", 2);
-            registry.template register_assembler_variant<utopia::kokkos::LaplaceOperatorAxisAlignedQuad4<FE>>(
+            registry.template register_assembler_variant<utopia::kokkos::LaplaceOperatorAxisAlignedQuad4<FunctionSpace, FE>>(
                 "LaplaceOperatorAxisAlignedQuad4", 2);
 
-            registry.template register_assembler_variant<utopia::kokkos::LaplaceOperatorTet4<FE>>("LaplaceOperatorTet4",
+            registry.template register_assembler_variant<utopia::kokkos::LaplaceOperatorTet4<FunctionSpace, FE>>("LaplaceOperatorTet4",
                                                                                                   3);
-            registry.template register_assembler_variant<utopia::kokkos::LaplaceOperatorHex8<FE>>("LaplaceOperatorHex8",
+            registry.template register_assembler_variant<utopia::kokkos::LaplaceOperatorHex8<FunctionSpace, FE>>("LaplaceOperatorHex8",
                                                                                                   3);
-            registry.template register_assembler_variant<utopia::kokkos::LaplaceOperatorAxisAlignedHex8<FE>>(
+            registry.template register_assembler_variant<utopia::kokkos::LaplaceOperatorAxisAlignedHex8<FunctionSpace, FE>>(
                 "LaplaceOperatorAxisAlignedHex8", 3);
         }
 

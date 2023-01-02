@@ -13,7 +13,7 @@
 #include "par_moonolith.hpp"
 
 #include "utopia_Contact.hpp"
-#include "utopia_Socket.hpp"
+// #include "utopia_Socket.hpp"
 #include "utopia_assemble_volume_transfer.hpp"
 #include "utopia_libmesh_old.hpp"
 
@@ -374,9 +374,9 @@ namespace utopia {
         if (impl_->coarse_mesh) {
             impl_->coarse_mesh->print_info(os);
 
-            if (mpi_world_size() == 1) {
-                plot_mesh(*impl_->coarse_mesh, "mesh/coarse");
-            }
+            // if (mpi_world_size() == 1) {
+            //     plot_mesh(*impl_->coarse_mesh, "mesh/coarse");
+            // }
         }
     }
 

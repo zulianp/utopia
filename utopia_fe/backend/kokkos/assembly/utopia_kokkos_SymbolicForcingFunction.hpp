@@ -21,7 +21,7 @@
 //             using Fun = utopia::SymbolicFunction;
 
 //             using ExecutionSpace = typename FE::ExecutionSpace;
-//             using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;
+//             using Super = utopia::kokkos::FEAssembler<FunctionSpace, FE_, DefaultView<typename FE_::Scalar>>;
 
 //             class Params : public Configurable {
 //             public:

@@ -41,17 +41,19 @@ if(TARGET tinyexpr)
     target_link_libraries(utopia PUBLIC tinyexpr)
 endif()
 
-find_path(
-    JSON_DIR
-    NAMES json.hpp
-    HINTS ${EXTERNAL_DIR}/json ${JSON_DIR} $ENV{JSON_DIR} ${INSTALL_DIR}/json
-          $ENV{INSTALL_DIR}/json
-    PATH_SUFFIXES single_include/nlohmann)
-if(JSON_DIR)
-    target_include_directories(utopia SYSTEM PRIVATE ${JSON_DIR})
-    set(UTOPIA_WITH_JSON
-        ON
-        PARENT_SCOPE)
+if(UTOPIA_ENABLE_RAPIDJSON)
+    find_path(
+        JSON_DIR
+        NAMES json.hpp
+        HINTS ${EXTERNAL_DIR}/json ${JSON_DIR} $ENV{JSON_DIR} ${INSTALL_DIR}/json
+              $ENV{INSTALL_DIR}/json
+        PATH_SUFFIXES single_include/nlohmann)
+    if(JSON_DIR)
+        target_include_directories(utopia SYSTEM PRIVATE ${JSON_DIR})
+        set(UTOPIA_WITH_JSON
+            ON
+            PARENT_SCOPE)
+    endif()
 endif()
 
 set(UTOPIA_COMPONENTS

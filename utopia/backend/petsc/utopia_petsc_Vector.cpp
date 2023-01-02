@@ -1,10 +1,19 @@
 #include "utopia_Tracer.hpp"
+#include "utopia_TypeToString.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
 #include "utopia_petsc_quirks.hpp"
 
 #include <cstring>
 #include <map>
 #include <set>
+
+#ifdef UTOPIA_WITH_MATRIX_IO
+
+extern "C" {
+#include "matrixio_array.h"
+}
+
+#endif
 
 namespace utopia {
 
@@ -337,6 +346,13 @@ namespace utopia {
     void PetscVector::convert_to(Vec &vec) const { check_error(VecCopy(raw_type(), vec)); }
 
     bool PetscVector::read(MPI_Comm comm, const std::string &path) {
+#ifdef UTOPIA_WITH_MATRIX_IO
+        Path ppath = path;
+        if (ppath.extension() == "raw") {
+            return read_raw(comm, path);
+        }
+#endif  // UTOPIA_WITH_MATRIX_IO
+
         destroy();
 
         PetscViewer fd;
@@ -355,7 +371,55 @@ namespace utopia {
         return err;
     }
 
+#ifdef UTOPIA_WITH_MATRIX_IO
+    bool PetscVector::read_raw(MPI_Comm comm, const std::string &path) {
+        double *data;
+        ptrdiff_t nlocal, nglobal;
+        if (array_read(comm, path.c_str(), MPI_DOUBLE, (void **)&data, &nlocal, &nglobal)) {
+            return false;
+        }
+
+        this->zeros(comm, type_override(), nlocal, nglobal);
+
+        Scalar *stored;
+        VecGetArray(implementation(), &stored);
+
+        for (SizeType i = 0; i < nlocal; ++i) {
+            stored[i] = data[i];
+        }
+
+        VecRestoreArray(implementation(), &stored);
+        free(data);
+
+        return true;
+    }
+
+    bool PetscVector::write_raw(const std::string &path) const {
+        const Scalar *stored;
+        VecGetArrayRead(implementation(), &stored);
+
+        ptrdiff_t nlocal = local_size();
+        ptrdiff_t nglobal = size();
+
+        bool ok = true;
+        if (array_write(comm().get(), path.c_str(), MPI_DOUBLE, (void *)stored, nlocal, nglobal)) {
+            ok = false;
+        }
+
+        VecRestoreArrayRead(implementation(), &stored);
+        return ok;
+    }
+
+#endif  // UTOPIA_WITH_MATRIX_IO
+
     bool PetscVector::write(const std::string &path) const {
+#ifdef UTOPIA_WITH_MATRIX_IO
+        Path ppath = path;
+        if (ppath.extension() == "raw") {
+            return write_raw(path);
+        }
+#endif  // UTOPIA_WITH_MATRIX_IO
+
         if (is_matlab_file(path)) {
             return write_matlab(path);
         }

@@ -17,7 +17,7 @@ namespace utopia {
         virtual Size size() const = 0;
         virtual Size local_size() const = 0;
 
-        Communicator &comm() override = 0;
+        // Communicator &comm() override = 0;
         const Communicator &comm() const override = 0;
     };
 

@@ -143,9 +143,7 @@ namespace utopia {
 
     //! [pattern matching and optimizations]
 
-    inline void ptap_reuse_matrix(const PetscMatrix &A, const PetscMatrix &P, PetscMatrix &result) {
-        PetscEvalTripleMatrixProduct::ptap(result, A, P, MAT_REUSE_MATRIX);
-    }
+    void ptap_reuse_matrix(const PetscMatrix &A, const PetscMatrix &P, PetscMatrix &result);
 
 }  // namespace utopia
 

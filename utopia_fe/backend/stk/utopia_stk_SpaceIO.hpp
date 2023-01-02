@@ -26,13 +26,10 @@ namespace utopia {
             void import_all_field_data(const bool value);
 
             // Statefull functions
-            // bool load();
-
             bool write(const Field<FunctionSpace> &field);
             bool write(const Vector &v);
             bool write(const Vector &v, const int step, const Scalar);
             bool write(const int step, const Scalar t);
-            // bool read(Vector &v, const int step = 1, const Scalar t = 0);
 
             void set_output_path(const Path &path);
             bool open_output();
@@ -40,7 +37,6 @@ namespace utopia {
             void set_input_path(const Path &path);
             bool open_input();
             bool open_input(Input &in);
-            // void set_read_path(const Path &path);
 
             SpaceIO(FunctionSpace &space);
             ~SpaceIO();

@@ -26,6 +26,8 @@ namespace utopia {
     template <class FE, class Op>
     class AssembleTraits {};
 
+    template <class FunctionSpace, class FE>
+    class Discretization {};
 }  // namespace utopia
 
 #endif  // UTOPIA_FE_CORE_HPP

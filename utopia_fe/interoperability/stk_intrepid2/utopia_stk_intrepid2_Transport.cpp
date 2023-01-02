@@ -14,10 +14,10 @@ namespace utopia {
 
         class Transport::Impl {
         public:
-            using Transport2 = utopia::kokkos::Transport<Intrepid2FE, 2, Intrepid2FE::DynRankView>;
-            using Transport3 = utopia::kokkos::Transport<Intrepid2FE, 3, Intrepid2FE::DynRankView>;
+            using Transport2 = utopia::kokkos::Transport<FunctionSpace, Intrepid2FE, 2, Intrepid2FE::DynRankView>;
+            using Transport3 = utopia::kokkos::Transport<FunctionSpace, Intrepid2FE, 3, Intrepid2FE::DynRankView>;
             using DiffusionFunction = utopia::kokkos::SubdomainValue<Intrepid2FE>;
-            using Intrepid2Assembler = utopia::kokkos::FEAssembler<Intrepid2FE, Intrepid2FE::DynRankView>;
+            using Intrepid2Assembler = utopia::kokkos::FEAssembler<FunctionSpace, Intrepid2FE, Intrepid2FE::DynRankView>;
 
             std::shared_ptr<Field> field;
             std::shared_ptr<DiffusionFunction> diffusion_function;

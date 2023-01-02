@@ -49,11 +49,17 @@ namespace utopia {
 
     template <class Matrix, class Vector, int Backend>
     bool ConjugateGradient<Matrix, Vector, Backend>::solve(const Operator<Vector> &A, const Vector &b, Vector &x) {
+        UTOPIA_TRACE_REGION_BEGIN("utopia::ConjugateGradient::solve");
+
+        bool ok = false;
         if (this->has_preconditioner()) {
-            return preconditioned_solve(A, b, x);
+            ok = preconditioned_solve(A, b, x);
         } else {
-            return unpreconditioned_solve(A, b, x);
+            ok = unpreconditioned_solve(A, b, x);
         }
+
+        UTOPIA_TRACE_REGION_END("utopia::ConjugateGradient::solve");
+        return ok;
     }
 
     template <class Matrix, class Vector, int Backend>
