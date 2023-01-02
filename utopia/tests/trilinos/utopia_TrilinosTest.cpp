@@ -17,6 +17,8 @@
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
+#include "utopia_Multilevel.hpp"
+
 #include <Kokkos_DualView.hpp>
 
 // trilinos

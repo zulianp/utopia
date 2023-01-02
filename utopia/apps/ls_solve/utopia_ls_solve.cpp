@@ -62,6 +62,9 @@ namespace utopia {
         using Scalar = typename Traits<Vector>::Scalar;
 
         void read(Input &in) override {
+            Chrono tts;
+            tts.start();
+
             Matrix A;
             Vector x, b, oracle;
 
@@ -80,8 +83,8 @@ namespace utopia {
             bool convert_to_block_matrix = false;
             bool amg_as_preconditioner = false;
 
-            in.get("A", path_A);
-            in.get("b", path_b);
+            in.require("A", path_A);
+            in.require("b", path_b);
             in.get("oracle", path_oracle);
             in.get("out", path_output);
             in.get("use_amg", use_amg);
@@ -129,7 +132,7 @@ namespace utopia {
                 A = std::move(A_temp);
             }
 
-            utopia::out() << "Matrix::type() " << A.type() << '\n';
+            // utopia::out() << "Matrix::type() " << A.type() << '\n';
 
             if (write_matlab) {
                 rename("a", A);
@@ -223,9 +226,12 @@ namespace utopia {
 
             Vector r = b - A * x;
             Scalar r_norm = norm2(r);
-            utopia::out() << "norm_residual (pre): " << r_norm << "\n";
 
-            utopia::out() << "ndofs " << x.size() << std::endl;
+            if (!mpi_world_rank()) {
+                utopia::out() << "norm_residual (pre): " << r_norm << "\n";
+                utopia::out() << "ndofs " << x.size() << std::endl;
+            }
+
             solver->solve(A, b, x);
 
             stats.stop_collect_and_restart("solve");
@@ -233,12 +239,19 @@ namespace utopia {
             r = b - A * x;
             r_norm = norm2(r);
 
-            utopia::out() << "norm_residual (post): " << r_norm << "\n";
+            if (!mpi_world_rank()) {
+                utopia::out() << "norm_residual (post): " << r_norm << "\n";
+            }
 
             write(path_output, x);
 
             stats.stop_collect_and_restart("write");
             stats.describe(utopia::out().stream());
+
+            tts.stop();
+            if (!mpi_world_rank()) {
+                utopia::out() << "TTS: " << tts.get_seconds() << " seconds\n";
+            }
         }
     };
 

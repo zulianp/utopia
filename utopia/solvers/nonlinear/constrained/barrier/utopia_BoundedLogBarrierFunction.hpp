@@ -94,6 +94,32 @@ namespace utopia {
             Scalar d_hat{0.1};
         };
 
+        class CompositePolynomialBarrier {
+        public:
+            UTOPIA_INLINE_FUNCTION Scalar value(const Scalar d) const {
+                return factor1 * barrier1.value(d) + factor2 * barrier2.value(d);
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar gradient(const Scalar d) const {
+                return factor1 * barrier1.gradient(d) + factor2 * barrier2.gradient(d);
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar hessian(const Scalar d) const {
+                return factor1 * barrier1.hessian(d) + factor2 * barrier2.hessian(d);
+            }
+
+            UTOPIA_INLINE_FUNCTION CompositePolynomialBarrier(const Scalar barrier_thickness1,
+                                                              const Scalar barrier_thickness2 = 1e-16) {
+                barrier1.d_hat = barrier_thickness1;
+                barrier2.d_hat = barrier_thickness2;
+            }
+
+            PolynomialBarrier barrier1;
+            PolynomialBarrier barrier2;
+            Scalar factor1{1};
+            Scalar factor2{1};
+        };
+
         class HighOrderPolynomialBarrier {
         public:
             UTOPIA_INLINE_FUNCTION Scalar value(const Scalar d) const {
@@ -130,20 +156,36 @@ namespace utopia {
                                  barrier_thickness_,
                                  "see: Technical Supplement to Incremental Potential Contact: Intersection- and "
                                  "Inversion-free, Large-Deformation Dynamics.")
-                     .add_option("barrier_subtype", barrier_subtype, "{default|polynomial}")
+                     .add_option("barrier_subtype", barrier_subtype_, "{default|polynomial}")
                      .parse(in)) {
                 return;
             }
+
+            if (mpi_world_rank() == 0) {
+                describe(utopia::out().stream());
+            }
+        }
+
+        void describe(std::ostream &os) const {
+            os << "-----------------------------------------\n";
+            os << "utopia::BoundedLogBarrier\n";
+            os << "-----------------------------------------\n";
+            os << "barrier_thickness: " << barrier_thickness_ << "\n";
+            os << "barrier_subtype: " << barrier_subtype_ << "\n";
+            os << "-----------------------------------------\n";
         }
 
         inline std::string function_type() const override { return "BoundedLogBarrier"; }
 
         bool barrier_hessian(const Vector &x, Vector &h) const override {
-            if (barrier_subtype == "polynomial") {
+            if (barrier_subtype_ == "polynomial") {
                 PolynomialBarrier b{barrier_thickness_};
                 return barrier_hessian_aux(b, x, h);
-            } else if (barrier_subtype == "polynomial4") {
+            } else if (barrier_subtype_ == "polynomial4") {
                 HighOrderPolynomialBarrier b{barrier_thickness_};
+                return barrier_hessian_aux(b, x, h);
+            } else if (barrier_subtype_ == "composite_polynomial") {
+                CompositePolynomialBarrier b(barrier_thickness_);
                 return barrier_hessian_aux(b, x, h);
             } else {
                 DefaultBarrier b{barrier_thickness_};
@@ -152,11 +194,14 @@ namespace utopia {
         }
 
         bool barrier_gradient(const Vector &x, Vector &g) const override {
-            if (barrier_subtype == "polynomial") {
+            if (barrier_subtype_ == "polynomial") {
                 PolynomialBarrier b{barrier_thickness_};
                 return barrier_gradient_aux(b, x, g);
-            } else if (barrier_subtype == "polynomial4") {
+            } else if (barrier_subtype_ == "polynomial4") {
                 HighOrderPolynomialBarrier b{barrier_thickness_};
+                return barrier_gradient_aux(b, x, g);
+            } else if (barrier_subtype_ == "composite_polynomial") {
+                CompositePolynomialBarrier b(barrier_thickness_);
                 return barrier_gradient_aux(b, x, g);
             } else {
                 DefaultBarrier b{barrier_thickness_};
@@ -165,11 +210,14 @@ namespace utopia {
         }
 
         bool barrier_value(const Vector &x, Vector &value) const override {
-            if (barrier_subtype == "polynomial") {
+            if (barrier_subtype_ == "polynomial") {
                 PolynomialBarrier b{barrier_thickness_};
                 return barrier_value_aux(b, x, value);
-            } else if (barrier_subtype == "polynomial4") {
+            } else if (barrier_subtype_ == "polynomial4") {
                 HighOrderPolynomialBarrier b{barrier_thickness_};
+                return barrier_value_aux(b, x, value);
+            } else if (barrier_subtype_ == "composite_polynomial") {
+                CompositePolynomialBarrier b(barrier_thickness_);
                 return barrier_value_aux(b, x, value);
             } else {
                 DefaultBarrier b{barrier_thickness_};
@@ -179,7 +227,7 @@ namespace utopia {
 
         UTOPIA_NVCC_PRIVATE
         Scalar barrier_thickness_{0.01};
-        std::string barrier_subtype{"default"};
+        std::string barrier_subtype_{"default"};
 
         //////////////////////// Helper methods ////////////////////////
 

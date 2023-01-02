@@ -8,6 +8,8 @@
 #include "utopia_MPI.hpp"
 #include "utopia_Testing.hpp"
 
+#include "utopia_Multilevel.hpp"
+
 namespace utopia {
 
     template <class Matrix, class Vector>

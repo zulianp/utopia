@@ -7,6 +7,8 @@
 #include "utopia_Layout.hpp"
 #include "utopia_Traits.hpp"
 
+#include "utopia_Function.hpp"
+
 namespace utopia {
     /**
      * @brief      Class for Nonlinear Function, all application context needed by

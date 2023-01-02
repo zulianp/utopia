@@ -18,10 +18,14 @@
 #include "libmesh/linear_implicit_system.h"
 #include "libmesh/namebased_io.h"
 #include "libmesh/nonlinear_implicit_system.h"
-#include "libmesh/parsed_function.h"
 #include "libmesh/reference_counter.h"
 #include "libmesh/string_to_enum.h"
 #include "libmesh/utility.h"
+
+#define UTOPIA_ENABLE_LIBMESH_PARSED_FUNCTION
+#ifdef UTOPIA_ENABLE_LIBMESH_PARSED_FUNCTION
+#include "libmesh/parsed_function.h"
+#endif
 
 namespace utopia {
     namespace libmesh {
@@ -128,8 +132,15 @@ namespace utopia {
                         dof_map.add_dirichlet_boundary(libMesh::DirichletBoundary(
                             bt, vars, libMesh::ConstFunction<libMesh::Real>(atof(value.c_str()))));
                     } else {
+#ifdef UTOPIA_ENABLE_LIBMESH_PARSED_FUNCTION
                         dof_map.add_dirichlet_boundary(
                             libMesh::DirichletBoundary(bt, vars, libMesh::ParsedFunction<libMesh::Real>(value)));
+#else
+                        m_utopia_error(
+                            "libMesh::ParsedFunction has been disabled because of compilation issues on certain "
+                            "platforms");
+                        Utopia::Abort();
+#endif
                     }
                 }
             }
@@ -787,6 +798,11 @@ namespace utopia {
             }
         }
 
+        void FunctionSpace::node_eval(std::function<void(const SizeType idx, const Scalar *)> fun) {
+            assert(false && "IMPLEMENT ME!!!");
+            Utopia::Abort();
+        }
+
         void FunctionSpace::add_dirichlet_boundary_condition(const int boundary_id,
                                                              const Scalar &value,
                                                              const int variable) {
@@ -806,6 +822,25 @@ namespace utopia {
 
             dof_map.add_dirichlet_boundary(
                 libMesh::DirichletBoundary(bt, vars, libMesh::ConstFunction<libMesh::Real>(value)));
+        }
+
+        void FunctionSpace::create_boundary_node_list(IndexArray &indices) const {
+            auto &dof_map = impl_->systems->get_system(system_id()).get_dof_map();
+
+            auto crbegin = dof_map.constraint_rows_begin();
+            auto crend = dof_map.constraint_rows_end();
+
+            const bool has_constaints = crbegin != crend;
+            indices.clear();
+            if (has_constaints) {
+                auto n_local_dofs = dof_map.n_local_dofs();
+                indices.reserve(std::distance(crbegin, crend));
+
+                for (auto it = crbegin; it != crend; ++it) {
+                    // std::cout << it->first << "\n";
+                    indices.push_back(it->first);
+                }
+            }
         }
 
         void FunctionSpace::add_dirichlet_boundary_condition(const std::string &boundary_name,

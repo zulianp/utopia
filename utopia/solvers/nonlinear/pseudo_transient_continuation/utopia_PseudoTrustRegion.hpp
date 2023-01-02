@@ -7,6 +7,8 @@
 #include "utopia_LinearSolver.hpp"
 #include "utopia_NonLinearSolver.hpp"
 
+#include "utopia_TRBase.hpp"
+
 #include <iomanip>
 #include <limits>
 

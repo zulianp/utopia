@@ -2,6 +2,8 @@
 #define UTOPIA_HESSIAN_APPROXIMATIONS_HPP
 
 #include <memory>
+#include "utopia_AuthoredWork.hpp"
+#include "utopia_CiteUtopia.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
 

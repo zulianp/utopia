@@ -134,8 +134,21 @@ class BarrierQPSolver(QPSolver):
         self.min_barrier_parameter = 1e-9
         self.soft_boundary = 1e-16
         self.zero = 1e-20
-        self.allow_projection = True
-        self.enable_line_search = True
+        self.allow_projection = False
+        self.enable_line_search = False
+        self.enable_NaN_safe_line_search = True
+
+        self.init_polynomial()
+
+    def init_polynomial(self):
+        self.min_barrier_parameter = 20
+        self.barrier_parameter = 20
+        self.barrier_parameter_shrinking_factor = 1
+        self.barier_thickness = 0.00005
+        self.barrier_subtype = 'composite_polynomial'
+        self.use_barrier_mass_scaling = True
+        self.allow_projection = False
+        self.enable_line_search = False
         self.enable_NaN_safe_line_search = True
 
 class ObstacleSolver(yaml.YAMLObject):
@@ -588,7 +601,7 @@ class MeshObstacle(yaml.YAMLObject):
         self.gap_negative_bound = -1.0e-04
         self.gap_positive_bound = 1.e-4
         self.invert_face_orientation = True
-        self.margin = 1e-5
+        self.margin = 2e-5
         self.snap_to_canonical_vectors = True
 
 class DistanceField(yaml.YAMLObject):
@@ -687,10 +700,12 @@ class FSIInit:
         solid_fs_2.mesh.path = implitic_obstacle_result_db
 
         mobs = MeshObstacle(fluid_mesh)
+        mobs.gap_negative_bound = -5e-4
+        mobs.gap_positive_bound = 2e-4
         
         step2_sim = ObstacleSimulation(
             env, solid_fs_2, dummy_material, [], mobs,
-            ObstacleSolver(MPRGP(1e-14), 15, 15), obstacle_at_rest_result_db)
+            ObstacleSolver(MPRGP(1e-10), 15, 15), obstacle_at_rest_result_db)
 
         # step2_sim.debug = True
 
@@ -708,7 +723,7 @@ class FSIInit:
         solid_fs_3.mesh.path = obstacle_at_rest_result_db
 
         step3_sim = ObstacleSimulation(
-            env, solid_fs_3, elastic_material, [], MeshObstacle(fluid_mesh),
+            env, solid_fs_3, elastic_material, [], mobs,
             ObstacleSolver(
                 MPRGP(1e-14),
                 # InteriorPointSolver(1e-14),

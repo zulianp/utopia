@@ -2,13 +2,21 @@
 #include "utopia_Instance.hpp"
 #include "utopia_Logger.hpp"
 #include "utopia_Operators.hpp"
-#include "utopia_petsc_Vector.hpp"
-
+#include "utopia_TypeToString.hpp"
 #include "utopia_petsc_Matrix_impl.hpp"
+#include "utopia_petsc_Vector.hpp"
 
 #include <algorithm>
 #include <set>
 #include <utility>
+
+#ifdef UTOPIA_WITH_MATRIX_IO
+
+extern "C" {
+#include "matrixio_crs.h"
+}
+
+#endif
 
 // PetscObjectTypeCompare((PetscObject)mat,newtype,&sametype);
 // Experts: Mark Hoemmen, Chris Siefert
@@ -121,6 +129,14 @@ namespace utopia {
     }
 
     bool PetscMatrix::read(MPI_Comm comm, const std::string &path) {
+#ifdef UTOPIA_WITH_MATRIX_IO
+        Path ppath = path;
+        if (ppath.extension() == "raw") {
+            Path folder = ppath.parent();
+            return read_raw(comm, folder / "rowptr.raw", folder / "colidx.raw", folder / "values.raw");
+        }
+#endif  // UTOPIA_WITH_MATRIX_IO
+
         destroy();
 
         PetscViewer fd;
@@ -135,6 +151,83 @@ namespace utopia {
         UTOPIA_REPORT_ALLOC("PetscMatrix::read");
         return err;
     }
+
+#ifdef UTOPIA_WITH_MATRIX_IO
+    bool PetscMatrix::read_raw(MPI_Comm comm,
+                               const std::string &rowptr_path,
+                               const std::string &colidx_path,
+                               const std::string &values_path,
+                               const std::string &rowptr_type,
+                               const std::string &colidx_type,
+                               const std::string &values_type) {
+        crs_t crs;
+        if (crs_read_str(comm,
+                         rowptr_path.c_str(),
+                         colidx_path.c_str(),
+                         values_path.c_str(),
+                         rowptr_type.c_str(),
+                         colidx_type.c_str(),
+                         values_type.c_str(),
+                         &crs)) {
+            return false;
+        }
+
+        PetscInt *rowptr = (PetscInt *)crs.rowptr;
+        PetscInt firstrow = rowptr[0];
+
+        // Remove global indexing
+        for (ptrdiff_t i = 0; i <= crs.lrows; ++i) {
+            rowptr[i] -= firstrow;
+        }
+
+        // FIXME add workaround
+        // assert(crs.values_type_size == sizeof(Scalar));
+        // assert(crs.rowptr_type_size == sizeof(SizeType));
+        // assert(crs.colidx_type_size == sizeof(SizeType));
+
+        destroy();
+
+        int size;
+        MPI_Comm_size(comm, &size);
+
+        if (size == 1) {
+            check_error(MatCreateSeqAIJWithArrays(
+                comm, crs.grows, crs.grows, rowptr, (PetscInt *)crs.colidx, (Scalar *)crs.values, &raw_type()));
+
+        } else {
+            check_error(MatCreateMPIAIJWithArrays(comm,
+                                                  crs.lrows,
+                                                  crs.lrows,
+                                                  crs.grows,
+                                                  crs.grows,
+                                                  (PetscInt *)crs.rowptr,
+                                                  (PetscInt *)crs.colidx,
+                                                  (Scalar *)crs.values,
+                                                  &raw_type()));
+        }
+
+        destroy_callback = [crs]() {
+            crs_t crs_copy = crs;
+            crs_free(&crs_copy);
+        };
+
+        UTOPIA_REPORT_ALLOC("PetscMatrix::read_raw");
+        return true;
+    }
+
+    bool PetscMatrix::read_raw(MPI_Comm comm,
+                               const std::string &rowptr_path,
+                               const std::string &colidx_path,
+                               const std::string &values_path) {
+        return read_raw(comm,
+                        rowptr_path,
+                        colidx_path,
+                        values_path,
+                        TypeToString<SizeType>::get(),
+                        TypeToString<SizeType>::get(),
+                        TypeToString<Scalar>::get());
+    }
+#endif  // UTOPIA_WITH_MATRIX_IO
 
     bool PetscMatrix::write(const std::string &path) const {
         if (is_matlab_file(path)) {
@@ -1303,8 +1396,14 @@ namespace utopia {
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    void PetscMatrix::axpy(const Scalar &alpha, const PetscMatrix &x) {
-        check_error(MatAXPY(raw_type(), alpha, x.raw_type(), DIFFERENT_NONZERO_PATTERN));
+    void PetscMatrix::axpy(const Scalar &a, const PetscMatrix &x) {
+        UTOPIA_TRACE_SCOPE("PetscMatrix::axpy");
+        check_error(MatAXPY(raw_type(), a, x.raw_type(), DIFFERENT_NONZERO_PATTERN));
+    }
+
+    void PetscMatrix::axpy_subset(const Scalar &a, const PetscMatrix &x) {
+        UTOPIA_TRACE_SCOPE("PetscMatrix::axpy_subset");
+        check_error(MatAXPY(raw_type(), a, x.raw_type(), SUBSET_NONZERO_PATTERN));
     }
 
     void PetscMatrix::convert_to_mat_baij(const PetscInt block_size, PetscMatrix &output) {

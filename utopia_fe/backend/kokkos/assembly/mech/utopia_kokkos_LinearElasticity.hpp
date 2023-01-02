@@ -20,11 +20,12 @@ namespace utopia {
 
     namespace kokkos {
 
-        template <class FE_,
+        template <class FunctionSpace,
+                  class FE_,
                   int Dim,
                   class FirstLameParameter = typename FE_::Scalar,
                   class ShearModulus = FirstLameParameter>
-        class LinearElasticity : public ElasticMaterial<FE_> {
+        class LinearElasticity : public ElasticMaterial<FunctionSpace, FE_> {
         public:
             using FE = FE_;
             using SizeType = typename FE::SizeType;
@@ -32,7 +33,7 @@ namespace utopia {
             using DynRankView = typename FE::DynRankView;
 
             using ExecutionSpace = typename FE::ExecutionSpace;
-            using Super = utopia::kokkos::ElasticMaterial<FE_>;
+            using Super = utopia::kokkos::ElasticMaterial<FunctionSpace, FE_>;
             using VectorView = typename Super::VectorView;
 
             using Measure = typename FE::Measure;

@@ -10,6 +10,8 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_QuasiNewtonBase.hpp"
 
+#include "utopia_JFNKMultigrid.hpp"
+
 #include <iomanip>
 #include <limits>
 

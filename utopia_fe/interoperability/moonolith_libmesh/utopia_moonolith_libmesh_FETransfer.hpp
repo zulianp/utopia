@@ -1,9 +1,6 @@
 #ifndef UTOPIA_MOONOLITH_LIBMESH_FETRANSFER_HPP
 #define UTOPIA_MOONOLITH_LIBMESH_FETRANSFER_HPP
 
-#ifndef UTOPIA_MOONOLITH_STK_FE_TRANSFER_HPP
-#define UTOPIA_MOONOLITH_STK_FE_TRANSFER_HPP
-
 #include "utopia_Describable.hpp"
 #include "utopia_Input.hpp"
 #include "utopia_Operator.hpp"
@@ -64,7 +61,5 @@ namespace utopia {
     class FETransfer<utopia::libmesh::FunctionSpace> : public utopia::libmesh::FETransfer {};
 
 }  // namespace utopia
-
-#endif  // UTOPIA_MOONOLITH_STK_FE_TRANSFER_HPP
 
 #endif  // UTOPIA_MOONOLITH_LIBMESH_FETRANSFER_HPP

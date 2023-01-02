@@ -11,8 +11,8 @@
 namespace utopia {
     namespace kokkos {
 
-        template <class FE_, typename Fun = typename FE_::Scalar>
-        class Mass : public FEAssembler<FE_> {
+        template <class FunctionSpace, class FE_, typename Fun = typename FE_::Scalar>
+        class Mass : public utopia::kokkos::FEAssembler<FunctionSpace, FE_> {
         public:
             using FE = FE_;
             using SizeType = typename FE::SizeType;
@@ -20,7 +20,7 @@ namespace utopia {
             using DynRankView = typename FE::DynRankView;
 
             using ExecutionSpace = typename FE::ExecutionSpace;
-            using Super = utopia::kokkos::FEAssembler<FE_>;
+            using Super = utopia::kokkos::FEAssembler<FunctionSpace, FE_>;
 
             using Op = utopia::kokkos::kernels::MassOp<Scalar, Fun, typename FE::Function, typename FE::Measure>;
             using LumpedOp = utopia::kokkos::kernels::LumpedOp<Op>;

@@ -30,7 +30,7 @@ namespace utopia {
             using Intrepid2QPField_t = utopia::kokkos::QPField<Intrepid2FE_t>;
             using Intrepid2Gradient_t = utopia::kokkos::Gradient<Intrepid2FE_t>;
             using Intrepid2Strain_t = utopia::kokkos::Strain<Intrepid2FE_t>;
-            using ElasticMaterial_t = utopia::kokkos::ElasticMaterial<Intrepid2FE_t>;
+            using ElasticMaterial_t = utopia::kokkos::ElasticMaterial<FunctionSpace, Intrepid2FE_t>;
 
             void read(Input &in) override {
                 valid_ = true;
@@ -65,11 +65,11 @@ namespace utopia {
 
                 switch (space.mesh().spatial_dimension()) {
                     case 2: {
-                        material = std::make_shared<kokkos::LinearElasticity<Intrepid2FE_t, 2>>(fe);
+                        material = std::make_shared<kokkos::LinearElasticity<FunctionSpace, Intrepid2FE_t, 2>>(fe);
                         break;
                     }
                     case 3: {
-                        material = std::make_shared<kokkos::LinearElasticity<Intrepid2FE_t, 3>>(fe);
+                        material = std::make_shared<kokkos::LinearElasticity<FunctionSpace, Intrepid2FE_t, 3>>(fe);
                         break;
                     }
                     default: {

@@ -680,8 +680,8 @@ namespace utopia {
     }  // namespace kernels
 
     namespace kokkos {
-        template <class FE>
-        using LaplaceOperatorPentatope5 = utopia::kokkos::AutoKernel<
+        template <class FunctionSpace, class FE>
+        using LaplaceOperatorPentatope5 = utopia::kokkos::AutoKernel<FunctionSpace,
             FE,
             utopia::kernels::LaplaceOperator<utopia::kernels::Pentatope5<typename FE::Scalar, typename FE::Scalar>>,
             4>;

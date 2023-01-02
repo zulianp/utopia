@@ -1,0 +1,73 @@
+---
+app: franetg
+# Output 
+output-path: output/out
+energy_csv_file_name: output/energies.csv
+log_output_path: output/rmtr_log.csv
+save_output: true
+# Mesh specification
+nx: 40
+ny: 80
+# nz: 2
+x_min: 0
+x_max: 20
+y_min: 0
+y_max: 40
+n_levels: 2
+# Problem specification
+disp_y: 1
+disp_x: 0.333
+neumann_bc:
+  side: right
+  value: 0.1
+  component: 1
+# Heterogeneous material
+hetero_params: example
+tough_factor: 1000
+
+with_damage: true
+mobility: 1.0e-06
+# Material paramteters
+mu: 2.2308
+lambda: 3.3462
+fracture_toughness: 0.368
+# Time stepping
+dt: 0.05
+final_time: 1
+# When we predict that the fracture propagates (after 0.78) we have a much smaller timestep
+# second_phase_ts:
+#   dt: 0.0001
+#   start_time: 0.78
+adjust_dt_on_failure: false
+shrinking_factor: 0.5
+# Pressure handling
+use_pressure: false
+use_constant_pressure: false
+pressure0: 0
+pressure_increase_factor: 0
+# Solver specific options
+use_dense_hessian: false
+check_derivatives: false
+block_solver: true
+hjsmn_smoother: false
+diff_controller:
+  spacing: 1.0e-06
+  hessian_from_grad: false
+solver:
+  verbose: true
+  max_it: 500
+  atol: 1.0e-05
+  max_coarse_it: 2
+  max_sucessful_coarse_it: 1
+  pre_smoothing_steps: 2
+  post_smoothing_steps: 2
+  deltaH_lagging: false
+  Hpost_lagging: false
+  grad_smoothess_termination: 1.0e-06
+  max_sucessful_smoothing_it: 1
+  max_QP_smoothing_it: 40
+  max_QP_coarse_it: 1000
+  linear-solver:
+    verbose: false
+    atol: 1.0e-07
+    max_it: 1000

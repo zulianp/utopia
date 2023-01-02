@@ -11,6 +11,8 @@
 #include "utopia_For.hpp"
 #include "utopia_Testing.hpp"
 
+#include "utopia_Multilevel.hpp"
+
 namespace utopia {
 
     template <typename Matrix, typename Vector>
@@ -180,7 +182,9 @@ namespace utopia {
             }
 
             auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector>>("stcg", "lu", false);
-            // subproblem->pc_type("bjacobi");
+
+            if (x.comm().size() != 1) subproblem->pc_type("bjacobi");
+
             subproblem->atol(1e-14);
             subproblem->max_it(1000);
 

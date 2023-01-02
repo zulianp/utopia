@@ -283,8 +283,16 @@ namespace utopia {
         void write_to_file(FunctionSpace &space, const Scalar &time) override {
             UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::write_to_file(...)");
             if (save_output_) {
-                // only finest level
-                IncrementalLoadingBase<FunctionSpace>::write_to_file(space, time);
+                if (true) {
+                    UTOPIA_UNUSED(space);
+
+                    if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
+                        fun_finest->write_to_file(this->output_path_, this->solution_, time);
+                    }
+                } else {
+                    // only finest level
+                    IncrementalLoadingBase<FunctionSpace>::write_to_file(space, time);
+                }
 
                 // // all levels
                 // for(auto l=0; l < spaces_.size(); l++){
@@ -411,7 +419,15 @@ namespace utopia {
         void update_time_step(const SizeType &conv_reason) override {
             UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::update_time_step(...)");
 
-            if (this->adjust_dt_on_failure_ && conv_reason < 0) {
+            bool repeat_step = this->adjust_dt_on_failure_ && conv_reason < 0;
+            if (!repeat_step) {
+                auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get());
+                if (fun_finest) {
+                    repeat_step = fun_finest->must_reduce_time_step(this->solution_);
+                }
+            }
+
+            if (repeat_step) {
                 this->time_ -= this->dt_;
                 this->dt_ = this->dt_ * this->shrinking_factor_;
                 this->time_ += this->dt_;
@@ -500,7 +516,7 @@ namespace utopia {
                     fun_finest->elastic_energy(this->solution_, elastic_energy);
                     fun_finest->fracture_energy(this->solution_, fracture_energy);
 
-                    if(FunctionSpace::Dim == 3) {
+                    if (FunctionSpace::Dim == 3) {
                         fun_finest->compute_tcv(this->solution_, error_tcv);
                         fun_finest->compute_cod(this->solution_, error_cod);
                     }

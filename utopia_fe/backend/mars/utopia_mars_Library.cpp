@@ -19,7 +19,7 @@ namespace utopia {
     void MarsLibrary::init(int argc, char *argv[]) { impl_ = utopia::make_unique<Impl>(argc, argv); }
 
     int MarsLibrary::finalize() {
-        impl_.release();
+        impl_ = nullptr;
         return 0;
     }
     std::string MarsLibrary::name() const { return "Mars"; }

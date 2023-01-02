@@ -298,9 +298,9 @@ namespace utopia {
     }  // namespace kernels
 
     namespace kokkos {
-        template <class FE>
+        template <class FunctionSpace, class FE>
         using LaplaceOperatorAxisAlignedQuad4 =
-            utopia::kokkos::AutoKernel<FE,
+            utopia::kokkos::AutoKernel<FunctionSpace, FE,
                                        utopia::kernels::LaplaceOperator<
                                            utopia::kernels::AxisAlignedQuad4<typename FE::Scalar, typename FE::Scalar>>,
                                        2>;
