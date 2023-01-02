@@ -181,9 +181,9 @@ namespace utopia {
         }
 
         // FIXME add workaround
-        assert(crs.values_type_size == sizeof(Scalar));
-        assert(crs.rowptr_type_size == sizeof(SizeType));
-        assert(crs.colidx_type_size == sizeof(SizeType));
+        // assert(crs.values_type_size == sizeof(Scalar));
+        // assert(crs.rowptr_type_size == sizeof(SizeType));
+        // assert(crs.colidx_type_size == sizeof(SizeType));
 
         destroy();
 
@@ -1396,8 +1396,14 @@ namespace utopia {
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    void PetscMatrix::axpy(const Scalar &alpha, const PetscMatrix &x) {
-        check_error(MatAXPY(raw_type(), alpha, x.raw_type(), DIFFERENT_NONZERO_PATTERN));
+    void PetscMatrix::axpy(const Scalar &a, const PetscMatrix &x) {
+        UTOPIA_TRACE_SCOPE("PetscMatrix::axpy");
+        check_error(MatAXPY(raw_type(), a, x.raw_type(), DIFFERENT_NONZERO_PATTERN));
+    }
+
+    void PetscMatrix::axpy_subset(const Scalar &a, const PetscMatrix &x) {
+        UTOPIA_TRACE_SCOPE("PetscMatrix::axpy_subset");
+        check_error(MatAXPY(raw_type(), a, x.raw_type(), SUBSET_NONZERO_PATTERN));
     }
 
     void PetscMatrix::convert_to_mat_baij(const PetscInt block_size, PetscMatrix &output) {

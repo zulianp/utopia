@@ -526,6 +526,7 @@ namespace utopia {
 
         ///< Scalar>AXPY - y = a*x + y
         void axpy(const Scalar &a, const PetscMatrix &x) override;
+        void axpy_subset(const Scalar &a, const PetscMatrix &x);
 
         ///< Scalar>DOT - dot product
         Scalar dot(const PetscMatrix & /*other*/) const override {
@@ -892,7 +893,10 @@ namespace utopia {
         //  	SizeType o_nnz
         // );
 
-        inline void destroy() { wrapper_->destroy(); if(destroy_callback) destroy_callback(); }
+        inline void destroy() {
+            wrapper_->destroy();
+            if (destroy_callback) destroy_callback();
+        }
 
         void inverse(PetscMatrix &result) const;
 
