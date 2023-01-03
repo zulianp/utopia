@@ -34,7 +34,12 @@ install:
 #cmake -G "Ninja" -DCMAKE_BUILD_TYPE:STRING="Debug" -DCMAKE_INSTALL_PREFIX="C:\projects\installations\lapack -DCMAKE_C_COMPILER:FILEPATH="C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\bin\Hostx64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="C:\PROGRAM FILES (X86)\MICROSOFT VISUAL STUDIO\2019\COMMUNITY\COMMON7\IDE\COMMONEXTENTIONS\MICROSOFT\CMAKE\Ninja\ninja.exe" "C:\projects\lapack\lapack-3.10.1"
 
 #Install Petsc
-
+# Does not natively compile with windows
+# Cannot use MS-MPI, Intel-MPI, MPICH2
+# Options are, Cygwin to compile, MSYS, 
+# - ps: Start-FileDownload 'https://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-3.18.3.tar.gz'
+# - 7z x petsc-3.18.3.tar.gz -so | 7z x -si -ttar > nul
+# - cd 
 
 
 
