@@ -102,6 +102,15 @@ namespace utopia {
         return std::shared_ptr<const T>(&obj, EmptyDeleter<const T>());
     }
 
+    class ExitScopeCallback {
+    public:
+        ExitScopeCallback(std::function<void()> callback) : callback(callback) {}
+
+        ~ExitScopeCallback() { callback(); }
+
+        std::function<void()> callback;
+    };
+
     enum ColorCode {
         FG_RED = 31,
         FG_GREEN = 32,
