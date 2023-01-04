@@ -27,7 +27,7 @@ install:
 # Install Blas/Lapack
 - ps: Start-FileDownload 'http://netlib.org/lapack/lapack.tgz'
 - 7z x lapack.tgz -so | 7z x -si -ttar > nul
-- cd lapack\lapack-3.10.1
+- cd lapack-3.10.1
 - IF NOT EXIST C:\projects\installations\lapack cmake -G "Visual Studio 16 2019" -A x64 -S . -B "build" -DCMAKE_INSTALL_PREFIX="C:\projects\installations\lapack" -DCMAKE_CXX_FLAGS="/W0 /EHsc" && cmake --build build --config Release --target install
 
 # Other way with ninja
