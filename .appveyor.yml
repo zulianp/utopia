@@ -28,10 +28,10 @@ install:
 - ps: Start-FileDownload 'http://netlib.org/lapack/lapack.tgz'
 - 7z x lapack.tgz -so | 7z x -si -ttar > nul
 - cd lapack-3.10.1
-- IF NOT EXIST C:\projects\installations\lapack cmake -G "Visual Studio 16 2019" -A x64 -S . -B "build" -DCMAKE_INSTALL_PREFIX="C:\projects\installations\lapack" -DCMAKE_CXX_FLAGS="/W0 /EHsc" && cmake --build build --config Release --target install
+# - IF NOT EXIST C:\projects\installations\lapack cmake -G "Visual Studio 16 2019" -A x64 -S . -B "build" -DCMAKE_INSTALL_PREFIX="C:\projects\installations\lapack" -DCMAKE_CXX_FLAGS="/W0 /EHsc" && cmake --build build --config Release --target install
 
 # Other way with ninja
-#cmake -G "Ninja" -DCMAKE_BUILD_TYPE:STRING="Debug" -DCMAKE_INSTALL_PREFIX="C:\projects\installations\lapack -DCMAKE_C_COMPILER:FILEPATH="C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\bin\Hostx64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="C:\PROGRAM FILES (X86)\MICROSOFT VISUAL STUDIO\2019\COMMUNITY\COMMON7\IDE\COMMONEXTENTIONS\MICROSOFT\CMAKE\Ninja\ninja.exe" "C:\projects\lapack\lapack-3.10.1"
+- cmake -G "Ninja" -DCMAKE_BUILD_TYPE:STRING="Debug" -DCMAKE_INSTALL_PREFIX="C:\projects\installations\lapack -DCMAKE_C_COMPILER:FILEPATH="C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\bin\Hostx64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="C:\PROGRAM FILES (X86)\MICROSOFT VISUAL STUDIO\2019\COMMUNITY\COMMON7\IDE\COMMONEXTENTIONS\MICROSOFT\CMAKE\Ninja\ninja.exe" "C:\projects\lapack\lapack-3.10.1"
 
 #Install Petsc
 # Does not natively compile with windows
