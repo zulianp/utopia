@@ -207,6 +207,18 @@ namespace utopia {
                 // TODO
             }
 
+            virtual void initialize(const std::shared_ptr<FunctionSpace> &space) = 0;
+
+            // virtual void initialize_boundary(const std::shared_ptr<FunctionSpace> &space,
+            //                                  const std::string &boundary_name) {
+            //     Utopia::Abort();
+            // }
+
+            // virtual void initialize_block(const std::shared_ptr<FunctionSpace> &space, const std::string &block_name)
+            // {
+            //     Utopia::Abort();
+            // }
+
         private:
             AssemblyMode mode_{OVERWRITE_MODE};
             std::shared_ptr<Assembler> assembler_;

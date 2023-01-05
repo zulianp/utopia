@@ -14,7 +14,7 @@ namespace utopia {
     namespace kokkos {
 
         template <class FunctionSpace, class FE>
-        class TransportNew<FunctionSpace, FE>::Impl {
+        class TransportNew<FunctionSpace, FE>::Impl : public Configurable {
         public:
             using DiffusionFunction = utopia::kokkos::SubdomainValue<FE>;
             using Field = utopia::kokkos::Field<FE>;
@@ -27,13 +27,51 @@ namespace utopia {
             using TransportOp3 = utopia::kokkos::kernels::
                 TransportOp<3, Scalar, DynRankView, typename FE::Gradient, typename FE::Function, typename FE::Measure>;
 
-            std::shared_ptr<GradientField> vector_field;
-            std::shared_ptr<DiffusionFunction> diffusion_function;
+            void read(Input &in) override {
+                // Model parameters
+                in.get("coeff", coeff);
+                in.get("stabilize_transport", stabilize_transport);
+                in.get("verbose", verbose);
+                in.get("print_field", print_field);
+
+                in.require("pressure_field", pressure_field_name);
+
+                if (pressure_field_name.empty()) {
+                    in.get("vector_field", vector_field_name);
+
+                    if (vector_field_name.empty()) {
+                        assert(false);
+                        Utopia::Abort("Neither -- pressure_field -- nor -- vector_field -- are properly defined!");
+                    }
+
+                } else {
+                    in.get("diffusion_function", [this](Input &node) {
+                        this->diffusion_function = std::make_shared<typename Impl::DiffusionFunction>(1.0);
+                        node.get("function", [this](Input &inner_node) { this->diffusion_function->read(inner_node); });
+                    });
+                }
+
+                if (verbose) {
+                    utopia::out() << "-----------------------------\n";
+                    utopia::out() << "TransportNew\n";
+                    utopia::out() << "coeff:\t" << coeff << '\n';
+                    utopia::out() << "stabilize_transport:\t" << stabilize_transport << '\n';
+                    utopia::out() << "diffusion_function: ";
+                    utopia::out() << "print_field:\t" << print_field << '\n';
+                    utopia::out() << "-----------------------------\n";
+                }
+            }
+
             Scalar coeff{1.0};
             bool stabilize_transport{false};
             bool verbose{false};
             bool print_field{false};
             int spatial_dimension{-1};
+            std::string pressure_field_name;
+            std::string vector_field_name;
+
+            std::shared_ptr<GradientField> vector_field;
+            std::shared_ptr<DiffusionFunction> diffusion_function;
         };
 
         template <class FunctionSpace, class FE>
@@ -43,45 +81,29 @@ namespace utopia {
         TransportNew<FunctionSpace, FE>::~TransportNew() = default;
 
         template <class FunctionSpace, class FE>
-        void TransportNew<FunctionSpace, FE>::read(Input &in) {
-            Super::read(in);
-            // Model parameters
-            in.get("coeff", impl_->coeff);
-            in.get("stabilize_transport", impl_->stabilize_transport);
-            in.get("verbose", impl_->verbose);
-            in.get("print_field", impl_->print_field);
+        void TransportNew<FunctionSpace, FE>::initialize(const std::shared_ptr<FunctionSpace> &space) {
+            Super::initialize(space);
 
-            // Vector field
             impl_->vector_field = std::make_shared<typename Impl::GradientField>(this->assembler()->fe_ptr());
-
-            // Compute from pressure
-            std::string pressure_field;
-            in.require("pressure_field", pressure_field);
-            auto p = this->field(pressure_field);
+            auto p = this->field(impl_->pressure_field_name);
 
             if (p.empty()) {
                 // Read directly from file
-                std::string vector_field;
-                in.get("vector_field", vector_field);
-                auto v = this->field(vector_field);
+                auto v = this->field(impl_->vector_field_name);
 
                 if (v.empty()) {
-                    assert(false);
                     Utopia::Abort("Neither -- pressure_field -- nor -- vector_field -- are properly defined!");
                 } else {
                     impl_->vector_field->data() = v[0]->data();
                 }
             } else {
+                // Compute from pressure
                 impl_->vector_field->init(*p[0]);
                 impl_->vector_field->scale(-impl_->coeff);
 
-                in.get("diffusion_function", [this](Input &node) {
-                    impl_->diffusion_function = std::make_shared<typename Impl::DiffusionFunction>(1.0);
-                    node.get("function", [this](Input &inner_node) {
-                        impl_->diffusion_function->read(inner_node);
-                        impl_->vector_field->scale(*impl_->diffusion_function);
-                    });
-                });
+                if (impl_->diffusion_function) {
+                    impl_->vector_field->scale(*impl_->diffusion_function);
+                }
             }
 
             auto discretization = this->assembler()->discretization();
@@ -91,21 +113,12 @@ namespace utopia {
             if (impl_->print_field) {
                 impl_->vector_field->describe(utopia::out().stream());
             }
+        }
 
-            if (impl_->verbose) {
-                utopia::out() << "-----------------------------\n";
-                utopia::out() << "TransportNew\n";
-                if (impl_->vector_field) {
-                    utopia::out() << "Field:\t" << impl_->vector_field->name() << '\n';
-                }
-
-                utopia::out() << "coeff:\t" << impl_->coeff << '\n';
-                utopia::out() << "stabilize_transport:\t" << impl_->stabilize_transport << '\n';
-                utopia::out() << "diffusion_function: ";
-                // impl_->diffusion_function.describe(utopia::out().stream());
-                utopia::out() << "print_field:\t" << impl_->print_field << '\n';
-                utopia::out() << "-----------------------------\n";
-            }
+        template <class FunctionSpace, class FE>
+        void TransportNew<FunctionSpace, FE>::read(Input &in) {
+            Super::read(in);
+            impl_->read(in);
         }
 
         template <class FunctionSpace, class FE>
