@@ -28,7 +28,7 @@ namespace utopia {
             using Measure = typename FE::Measure;
             using Fun = typename FE::Fun;
 
-            class Params : public Configurable {
+            class Params : public Configurable, public Describable {
             public:
                 void read(Input &in) override {
                     Options()
@@ -38,16 +38,16 @@ namespace utopia {
                         .add_option("n_components", n_components, "Number of components of the forcing function")
                         .add_option("density", density, "Domain density constant.")
                         .parse(in);
+                }
 
-                    if (verbose) {
-                        utopia::out() << "-----------------------------\n";
-                        utopia::out() << "ForcingFunction:\n";
-                        utopia::out() << "value:\t" << value << "\n";
-                        utopia::out() << "component:\t" << component << "\n";
-                        utopia::out() << "n_components:\t" << n_components << "\n";
-                        utopia::out() << "density:\t" << density << "\n";
-                        utopia::out() << "-----------------------------\n";
-                    }
+                void describe(std::ostream &out = std::cout) const override {
+                    out << "-----------------------------\n";
+                    out << "ForcingFunction:\n";
+                    out << "value:\t" << value << "\n";
+                    out << "component:\t" << component << "\n";
+                    out << "n_components:\t" << n_components << "\n";
+                    out << "density:\t" << density << "\n";
+                    out << "-----------------------------\n";
                 }
 
                 Params(const Scalar &value = Scalar(0.0)) : value(value) {}
@@ -63,6 +63,14 @@ namespace utopia {
             void read(Input &in) override {
                 Super::read(in);
                 params_.read(in);
+            }
+
+            void describe(std::ostream &os = std::cout) const override {
+                if (params_.verbose) {
+                    if (!this->assembler()->space()->comm().rank()) {
+                        params_.describe(os);
+                    }
+                }
             }
 
             ForcingFunctionNew(Params params = Params()) : Super(), params_(std::move(params)) {}

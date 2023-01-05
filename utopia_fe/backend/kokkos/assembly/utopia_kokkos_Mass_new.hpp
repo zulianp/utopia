@@ -24,7 +24,6 @@ namespace utopia {
 
             using Super = utopia::Material<FunctionSpace, FE_>;
             using Scalar = typename Traits<FunctionSpace>::Scalar;
-            // using DynRankView = typename Traits<FE>::DynRankView;
             using DynRankView = typename Super::Field::DynRankView;
 
             using Op = utopia::kokkos::kernels::MassOp<Scalar, Scalar, typename FE::Function, typename FE::Measure>;
@@ -39,8 +38,6 @@ namespace utopia {
                     in.get("n_components", n_components);
                     in.get("lumped", lumped);
                     in.get("verbose", verbose);
-                    // in.get("expected_volume", expected_volume);
-                    // in.get("expected_volume_tol", expected_volume_tol);
 
                     in.get("density_function", [this](Input &node) {
                         density_function = std::make_shared<SubdomainValue>(1.0);
