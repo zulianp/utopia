@@ -91,7 +91,7 @@ namespace utopia {
             MassNew(Params op = Params()) : Super(), params_(std::move(op)) {}
 
             inline int n_vars() const override { return params_.n_components; }
-            inline std::string name() const override { return "MassNew"; }
+            inline std::string name() const override { return "Mass"; }
 
             inline bool has_hessian() const override { return true; }
             inline bool is_linear() const override { return true; }

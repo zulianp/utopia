@@ -29,7 +29,7 @@ namespace utopia {
             LaplaceOperatorNew(Params op = Params()) : Super(), op_(std::move(op)) {}
 
             inline int n_vars() const override { return 1; }
-            inline std::string name() const override { return "LaplaceOperatorNew"; }
+            inline std::string name() const override { return "LaplaceOperator"; }
 
             inline bool has_hessian() const override { return true; }
             inline bool is_linear() const override { return true; }
