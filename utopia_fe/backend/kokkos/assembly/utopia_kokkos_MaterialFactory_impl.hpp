@@ -3,6 +3,7 @@
 
 #include "utopia_kokkos_MaterialFactory.hpp"
 
+#include "utopia_kokkos_ForcingFunction_new.hpp"
 #include "utopia_kokkos_LaplaceOperator_new.hpp"
 #include "utopia_kokkos_Mass_new.hpp"
 
@@ -49,6 +50,10 @@ namespace utopia {
 
                 auto mat = it->second();
                 return mat;
+            }
+
+            void register_rhs_materials() {
+                register_material<ForcingFunctionNew<FunctionSpace, FE>>("ForcingFunction");
             }
 
             void register_materials() {
