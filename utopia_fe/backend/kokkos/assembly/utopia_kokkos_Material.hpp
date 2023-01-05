@@ -161,8 +161,9 @@ namespace utopia {
                 environment_ = environment;
             }
 
-            std::vector<std::shared_ptr<Field>> field(const std::string &name,
-                                                      const typename Discretization::Part part = Discretization::all) {
+            std::vector<std::shared_ptr<Field>> field(
+                const std::string &name,
+                const typename Discretization::Part part = Discretization::all()) {
                 auto it = fields_.find(name);
                 if (it != fields_.end()) return it->second;
 
@@ -187,10 +188,14 @@ namespace utopia {
                     Utopia::Abort();
                 }
 
-                auto f = environment_->find_field(name, space);
+                auto f = environment_->find_field(*space, name);
+
+                if (!f) {
+                    return {};
+                }
 
                 auto &fef = fields_[name];
-                discretization->convert_field(f, fef, part);
+                discretization->convert_field(*f, fef, part);
 
                 UTOPIA_TRACE_REGION_END("utopia::kokkos::Material::field");
                 return fef;
