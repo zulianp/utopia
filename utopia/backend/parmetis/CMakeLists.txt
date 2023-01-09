@@ -27,13 +27,13 @@ if(NOT PARMETIS_FOUND)
     # target_link_libraries(utopia PUBLIC parmetis)
 
 else()
-    target_include_directories(utopia PUBLIC ${PARMETIS_INCLUDES})
-    target_link_libraries(utopia PUBLIC ${PARMETIS_LIBRARIES})
+    # target_include_directories(utopia PUBLIC ${PARMETIS_INCLUDES})
+    # target_link_libraries(utopia PUBLIC ${PARMETIS_LIBRARIES})
 
-    list(APPEND UTOPIA_THIRDPARTY_INCLUDES ${PARMETIS_INCLUDES})
+    list(APPEND UTOPIA_BUILD_INCLUDES ${PARMETIS_INCLUDES})
     list(APPEND UTOPIA_THIRDPARTY_LIBRARIES ${PARMETIS_LIBRARIES})
 
-    set(UTOPIA_THIRDPARTY_INCLUDES
+    set(UTOPIA_BUILD_INCLUDES
         ${UTOPIA_THIRDPARTY_INCLUDES}
         PARENT_SCOPE)
 
@@ -52,4 +52,20 @@ list(
     .
     )
 
-utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${PARMETIS_MODULES}")
+
+scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "." UTOPIA_BUILD_INCLUDES UTOPIA_HEADERS UTOPIA_SOURCES)
+
+
+set(UTOPIA_BUILD_INCLUDES
+    ${UTOPIA_BUILD_INCLUDES}
+    PARENT_SCOPE)
+
+set(UTOPIA_HEADERS
+    ${UTOPIA_HEADERS}
+    PARENT_SCOPE)
+
+set(UTOPIA_SOURCES
+    ${UTOPIA_SOURCES}
+    PARENT_SCOPE)
+
+# utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${PARMETIS_MODULES}")
