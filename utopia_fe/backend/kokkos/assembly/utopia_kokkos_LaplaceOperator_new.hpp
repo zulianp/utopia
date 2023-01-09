@@ -24,7 +24,10 @@ namespace utopia {
             using Params = utopia::kokkos::LaplaceOp<FE, DiffusionCoefficient>;
             using Op = typename Params::UniformKernel;
 
-            void read(Input &in) override { op_.read(in); }
+            void read(Input &in) override {
+                Super::read(in);
+                op_.read(in);
+            }
 
             LaplaceOperatorNew(Params op = Params()) : Super(), op_(std::move(op)) {}
 
