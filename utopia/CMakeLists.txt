@@ -51,7 +51,7 @@ set(UTOPIA_MODULES
     utils)
 
 foreach(MODULE ${UTOPIA_MODULES})
-  add_subdirectory(${MODULE})
+  add_subdirectory("${MODULE}")
 endforeach(MODULE)
 
 # Utopia Headers and Sources.
@@ -60,7 +60,15 @@ list(APPEND UTOPIA_HEADERS utopia.hpp utopia_Base.hpp utopia_Instance.hpp
 
 list(APPEND UTOPIA_SOURCES utopia.cpp utopia_Instance.cpp utopia_Base.cpp)
 
-add_library(utopia ${UTOPIA_SOURCES})
+add_library(utopia ${UTOPIA_SOURCES} ${UTOPIA_HEADERS})
+
+
+
+message(STATUS "UTOPIA_HEADERS")
+foreach(header ${UTOPIA_HEADERS})
+  message(STATUS "${header}")
+endforeach(header)
+
 
 
 # We use this to force c++14
@@ -74,12 +82,20 @@ utopia_link_default_targets(utopia)
 # ##############################################################################
 # INCLUDE
 
-target_include_directories(
-  utopia BEFORE PUBLIC $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
-                       $<INSTALL_INTERFACE:include>)
-target_include_directories(
-  utopia BEFORE PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+foreach(include ${UTOPIA_BUILD_INCLUDES})
+  target_include_directories(utopia BEFORE PUBLIC $<BUILD_INTERFACE:${include}>)
+endforeach()
 
+target_include_directories(
+  utopia BEFORE PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
+                      $<INSTALL_INTERFACE:include>)
+
+target_include_directories(utopia PUBLIC ${UTOPIA_DEP_INCLUDES})
+message("UTOPIA_DEP_INCLUDES: ${UTOPIA_DEP_INCLUDES}")
+message("UTOPIA_DEP_LIBRARIES: ${UTOPIA_DEP_LIBRARIES}")
+
+
+target_link_libraries(utopia PUBLIC ${UTOPIA_DEP_LIBRARIES})
 
 
 # ##############################################################################
