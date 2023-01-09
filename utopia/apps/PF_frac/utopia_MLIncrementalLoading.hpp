@@ -74,8 +74,6 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("MLIncrementalLoading::read(...)");
         }
 
-        void standardise_penalty_parameters(){}
-
         bool init_ml_setup() {
             if (n_levels_ < 2) {
                 std::cerr << "n_levels must be at least 2" << std::endl;

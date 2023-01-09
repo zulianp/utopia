@@ -780,6 +780,7 @@ namespace utopia {
             Quadrature q;
 
             auto c_val = c_fun.value(q);
+            auto c_old = c_old_fun.value(q);  //E.P Added old value of damage at quadrature
             auto p_val = press_fun.value(q);
 
             auto c_grad = c_fun.gradient(q);
@@ -805,6 +806,7 @@ namespace utopia {
                 auto space_view = this->space_.view_device();
 
                 auto c_view = c_val.view_device();
+                auto c_old_view = c_old.view_device();      //E.P getting view device of old damage within scope
                 auto p_view = p_val.view_device();
 
                 auto c_grad_view = c_grad.view_device();
@@ -846,6 +848,9 @@ namespace utopia {
                         StaticVector<Scalar, NQuadPoints> p;
                         c_view.get(c_e, c);
                         p_view.get(c_e, p);
+
+                        StaticVector<Scalar, NQuadPoints> c_old;    //E.P Added c_old vector for penalty irreversability
+                        c_old_view.get(c_e, c_old);
 
                         auto dx = differential_view.make(c_e);
                         auto c_grad_shape_el = c_grad_shape_view.make(c_e);
@@ -890,8 +895,11 @@ namespace utopia {
                                                p[qp] * tr_strain_u * c_shape_j_l_prod * dx(qp);
                                     }
 
+
                                     if (this->params_.use_penalty_irreversibility) {
-                                        val += this->params_.penalty_param * c_shape_j_l_prod * dx(qp);
+                                        auto c_cold = c[qp] - c_old[qp];
+                                        auto c_heaviside = c_cold <= 0.0 ? 1.0 : 0.0;
+                                        val += c_heaviside* this->params_.penalty_param * c_shape_j_l_prod * dx(qp);
                                     }
 
                                     val = (l == j) ? (0.5 * val) : val;
