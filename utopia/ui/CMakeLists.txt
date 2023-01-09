@@ -27,34 +27,57 @@ if(UTOPIA_ENABLE_TINY_EXPR)
     endif()
 endif()
 
-utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} ".")
+
+#########################################################################
+
+# utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} ".")
+
+scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "." UTOPIA_BUILD_INCLUDES UTOPIA_HEADERS UTOPIA_SOURCES)
+
+
+set(UTOPIA_BUILD_INCLUDES
+    ${UTOPIA_BUILD_INCLUDES}
+    PARENT_SCOPE)
+
+set(UTOPIA_HEADERS
+    ${UTOPIA_HEADERS}
+    PARENT_SCOPE)
+
+set(UTOPIA_SOURCES
+    ${UTOPIA_SOURCES}
+    PARENT_SCOPE)
 # hidden dependencies
-target_include_directories(utopia SYSTEM
-                           PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/rapidxml)
+# target_include_directories(utopia SYSTEM
+#                            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/rapidxml)
+
+#########################################################################
 # target_compile_options(utopia PRIVATE "-Wno-cast-function-type")
 
 if(WIN32)
     target_include_directories(utopia PRIVATE windows)
 endif()
 
-if(TARGET tinyexpr)
-    target_link_libraries(utopia PUBLIC tinyexpr)
-endif()
 
-if(UTOPIA_ENABLE_RAPIDJSON)
-    find_path(
-        JSON_DIR
-        NAMES json.hpp
-        HINTS ${EXTERNAL_DIR}/json ${JSON_DIR} $ENV{JSON_DIR} ${INSTALL_DIR}/json
-              $ENV{INSTALL_DIR}/json
-        PATH_SUFFIXES single_include/nlohmann)
-    if(JSON_DIR)
-        target_include_directories(utopia SYSTEM PRIVATE ${JSON_DIR})
-        set(UTOPIA_WITH_JSON
-            ON
-            PARENT_SCOPE)
-    endif()
-endif()
+# TODO REMEMBER TO FIX
+# if(TARGET tinyexpr)
+#     target_link_libraries(utopia PUBLIC tinyexpr)
+# endif()
+
+# SAME
+# if(UTOPIA_ENABLE_RAPIDJSON)
+#     find_path(
+#         JSON_DIR
+#         NAMES json.hpp
+#         HINTS ${EXTERNAL_DIR}/json ${JSON_DIR} $ENV{JSON_DIR} ${INSTALL_DIR}/json
+#               $ENV{INSTALL_DIR}/json
+#         PATH_SUFFIXES single_include/nlohmann)
+#     if(JSON_DIR)
+#         target_include_directories(utopia SYSTEM PRIVATE ${JSON_DIR})
+#         set(UTOPIA_WITH_JSON
+#             ON
+#             PARENT_SCOPE)
+#     endif()
+# endif()
 
 set(UTOPIA_COMPONENTS
     "${UTOPIA_COMPONENTS}${UTOPIA_ADDITIONAL_COMPONENTS}"

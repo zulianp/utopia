@@ -132,3 +132,34 @@ function(append_list_to_string_for_cmake OUTPUT_STRING PRE_LIST POST_LIST
         ${TEMPSTR}
         PARENT_SCOPE)
 endfunction()
+
+
+# ##############################################################################
+
+
+function(scan_directories in_root_dir in_dirs_to_be_scanned out_includes
+         out_headers out_sources)
+
+    # APPEND the results
+    set(local_includes ${${out_includes}})
+    set(local_headers ${${out_headers}})
+    set(local_sources ${${out_sources}})
+
+    find_project_files(${in_root_dir} "${in_dirs_to_be_scanned}" local_headers
+                       local_sources)
+
+    foreach(dir ${in_dirs_to_be_scanned})
+        list(APPEND local_includes ${in_root_dir}/${dir})
+    endforeach(dir)
+
+    set(${out_includes}
+        ${local_includes}
+        PARENT_SCOPE)
+    set(${out_headers}
+        ${local_headers}
+        PARENT_SCOPE)
+    set(${out_sources}
+        ${local_sources}
+        PARENT_SCOPE)
+
+endfunction()
