@@ -49,8 +49,8 @@ if(UTOPIA_ENABLE_MPI)
           "${UTOPIA_DEP_LIBRARIES};${MPI_CXX_LIBRARIES}")
     endif()
 
-    # list(APPEND UTOPIA_THIRDPARTY_INCLUDES ${MPI_CXX_INCLUDE_PATH})
-    # list(APPEND UTOPIA_THIRDPARTY_LIBRARIES  ${MPI_CXX_LIBRARIES} )
+    # list(APPEND UTOPIA_BUILD_INCLUDES ${MPI_CXX_INCLUDE_PATH})
+    # list(APPEND UTOPIA_DEP_LIBRARIES  ${MPI_CXX_LIBRARIES} )
 
     # target_include_directories(utopia SYSTEM PUBLIC ${MPI_CXX_INCLUDE_PATH}) #
     # target_link_libraries(utopia_utils utopia_core ${MPI_CXX_LIBRARIES} )
