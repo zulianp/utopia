@@ -63,11 +63,11 @@ list(APPEND UTOPIA_SOURCES utopia.cpp utopia_Instance.cpp utopia_Base.cpp)
 add_library(utopia ${UTOPIA_SOURCES} ${UTOPIA_HEADERS})
 
 
-
-message(STATUS "UTOPIA_HEADERS")
-foreach(header ${UTOPIA_HEADERS})
-  message(STATUS "${header}")
-endforeach(header)
+# PRINT OUT HEADERS
+# message(STATUS "UTOPIA_HEADERS")
+# foreach(header ${UTOPIA_HEADERS})
+#   message(STATUS "${header}")
+# endforeach(header)
 
 
 
