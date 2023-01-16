@@ -37,6 +37,7 @@ namespace utopia {
             bool apply_assemble(utopia::kokkos::Field<FE> &field, AssemblyMode mode) override;
 
             void read(Input &in) override;
+            void initialize(const std::shared_ptr<FunctionSpace> &space) override;
 
             TransportNew();
             ~TransportNew();

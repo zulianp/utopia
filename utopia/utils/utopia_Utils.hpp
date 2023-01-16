@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -26,6 +27,11 @@
 #endif
 
 namespace utopia {
+    inline bool file_exists(const std::string &file_name) {
+        struct stat buffer {};
+        return (stat(file_name.c_str(), &buffer) == 0);
+    }
+
     bool is_matlab_file(const std::string &path);
 
     inline std::string str(const char *char_array) { return std::string(char_array); }

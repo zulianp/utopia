@@ -256,6 +256,10 @@ namespace utopia {
             rhs.comm().root_print("Alias!", utopia::out().stream());
         }
 
+        if (empty(out_restricted) || !layout(out_restricted).same(row_layout(impl_->A_GI))) {
+            out_restricted.zeros(row_layout(impl_->A_GI));
+        }
+
         out_restricted = impl_->A_GI * impl_->temp_I;
         out_restricted = impl_->x_G - out_restricted;
 

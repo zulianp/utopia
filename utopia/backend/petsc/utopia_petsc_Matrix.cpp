@@ -18,6 +18,10 @@ extern "C" {
 
 #endif
 
+#ifdef UTOPIA_WITH_YAML_CPP
+#include "utopia_YAMLInput.hpp"
+#endif
+
 // PetscObjectTypeCompare((PetscObject)mat,newtype,&sametype);
 // Experts: Mark Hoemmen, Chris Siefert
 
@@ -131,6 +135,38 @@ namespace utopia {
     bool PetscMatrix::read(MPI_Comm comm, const std::string &path) {
 #ifdef UTOPIA_WITH_MATRIX_IO
         Path ppath = path;
+
+#ifdef UTOPIA_WITH_YAML_CPP
+        auto ext = ppath.extension();
+        if (ext == "yaml" || ext == "yml") {
+            Path folder = ppath.parent();
+            Path rowptr_path = folder / "rowptr.raw";
+            Path colidx_path = folder / "colidx.raw";
+            Path values_path = folder / "values.raw";
+
+            std::string rowptr_type = TypeToString<SizeType>::get();
+            std::string colidx_type = TypeToString<SizeType>::get();
+            std::string values_type = TypeToString<Scalar>::get();
+
+            YAMLInput yaml;
+            if (yaml.open(path)) {
+                return false;
+            }
+
+            // Read paths from file
+            yaml.get("rowptr_path", rowptr_path);
+            yaml.get("colidx_path", colidx_path);
+            yaml.get("values_path", values_path);
+
+            // Read type information from file
+            yaml.get("rowptr_type", rowptr_type);
+            yaml.get("colidx_type", colidx_type);
+            yaml.get("values_type", values_type);
+
+            return read_raw(comm, rowptr_path, colidx_path, values_path, rowptr_type, colidx_type, values_type);
+        }
+#endif
+
         if (ppath.extension() == "raw") {
             Path folder = ppath.parent();
             return read_raw(comm, folder / "rowptr.raw", folder / "colidx.raw", folder / "values.raw");
@@ -171,6 +207,8 @@ namespace utopia {
                          &crs)) {
             return false;
         }
+
+        // if()
 
         PetscInt *rowptr = (PetscInt *)crs.rowptr;
         PetscInt firstrow = rowptr[0];

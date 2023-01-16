@@ -611,6 +611,53 @@ namespace utopia {
             }
 
             template <class Op>
+            bool assemble_apply_ei_block(const std::string &name,
+                                         AssemblyMode mode,
+                                         Op op,
+                                         const Field<FE> &field,
+                                         const Part part = Discretization::all()) {
+                UTOPIA_TRACE_REGION_BEGIN("utopia::kokkos::FEAssembler::assemble_apply_ei_block");
+
+                ensure_vector_accumulator();
+
+                auto data = this->vector_data();
+                auto x = field.data();
+
+                const Scalar a = OVERWRITE_MODE == mode ? 0 : 1;
+                const Scalar b = SUBTRACT_MODE == mode ? -1 : 1;
+
+                const int n_shape_functions = this->fe().n_shape_functions();
+
+                this->loop_cell_test(
+                    name, UTOPIA_LAMBDA(const int cell, const int i) {
+                        StaticMatrix<Scalar, Op::NComponentsTest, Op::NComponentsTrial> block;
+                        block.set(0.);
+
+                        auto ixn = op.offset_test() + i * Op::NComponentsTest;
+
+                        // Evaluate block operator
+                        for (int j = 0; j < n_shape_functions; ++j) {
+                            auto jxn = op.offset_trial() + j * Op::NComponentsTrial;
+
+                            op(cell, i, j, block);
+
+                            for (int di = 0; di < Op::NComponentsTest; ++di) {
+                                Scalar val = 0;
+                                for (int dj = 0; dj < Op::NComponentsTrial; ++dj) {
+                                    val += block(di, dj) * x(jxn + dj);
+                                }
+
+                                auto &v = data(cell, ixn + di);
+                                v = a * v + b * val;
+                            }
+                        }
+                    });
+
+                UTOPIA_TRACE_REGION_END("utopia::kokkos::FEAssembler::assemble_apply_ei_block");
+                return true;
+            }
+
+            template <class Op>
             bool assemble_vector_ei_block(const std::string &name,
                                           AssemblyMode mode,
                                           Op op,

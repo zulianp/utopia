@@ -10,7 +10,8 @@ namespace utopia {
     template <class FunctionSpace>
     class AbstractMaterial
         : public utopia::Function<typename Traits<FunctionSpace>::Matrix, typename Traits<FunctionSpace>::Vector>,
-          public Operator<typename Traits<FunctionSpace>::Vector> {
+          public Operator<typename Traits<FunctionSpace>::Vector>,
+          public Describable {
     public:
         virtual ~AbstractMaterial() = default;
 
@@ -22,6 +23,10 @@ namespace utopia {
         virtual bool is_operator() const = 0;
         virtual bool is_linear() const { return false; }
         bool is_hessian_constant() const override { return this->is_linear(); }
+
+        void describe(std::ostream &os = std::cout) const override {
+            os << "AbstractMaterial::describe(...) Implement me!!!" << std::endl;
+        }
     };
 
     template <class FunctionSpace, class FE>

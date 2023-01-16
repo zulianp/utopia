@@ -161,8 +161,9 @@ namespace utopia {
                 environment_ = environment;
             }
 
-            std::vector<std::shared_ptr<Field>> field(const std::string &name,
-                                                      const typename Discretization::Part part = Discretization::all) {
+            std::vector<std::shared_ptr<Field>> field(
+                const std::string &name,
+                const typename Discretization::Part part = Discretization::all()) {
                 auto it = fields_.find(name);
                 if (it != fields_.end()) return it->second;
 
@@ -187,10 +188,14 @@ namespace utopia {
                     Utopia::Abort();
                 }
 
-                auto f = environment_->find_field(name, space);
+                auto f = environment_->find_field(*space, name);
+
+                if (!f) {
+                    return {};
+                }
 
                 auto &fef = fields_[name];
-                discretization->convert_field(f, fef, part);
+                discretization->convert_field(*f, fef, part);
 
                 UTOPIA_TRACE_REGION_END("utopia::kokkos::Material::field");
                 return fef;
@@ -201,6 +206,18 @@ namespace utopia {
             void read(Input &) override {
                 // TODO
             }
+
+            virtual void initialize(const std::shared_ptr<FunctionSpace> &space) = 0;
+
+            // virtual void initialize_boundary(const std::shared_ptr<FunctionSpace> &space,
+            //                                  const std::string &boundary_name) {
+            //     Utopia::Abort();
+            // }
+
+            // virtual void initialize_block(const std::shared_ptr<FunctionSpace> &space, const std::string &block_name)
+            // {
+            //     Utopia::Abort();
+            // }
 
         private:
             AssemblyMode mode_{OVERWRITE_MODE};

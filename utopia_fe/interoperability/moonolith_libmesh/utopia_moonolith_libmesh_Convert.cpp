@@ -432,21 +432,21 @@ namespace utopia {
                                          const libMesh::DofMap &dof_map,
                                          unsigned int var_num,
                                          ::moonolith::FunctionSpace<::moonolith::Mesh<double, 1>> &out,
-                                         const std::vector<int> &tags = std::vector<int>(),
+                                         const std::vector<int> &tags,
                                          unsigned int comp);
 
     template void extract_trace_space<2>(const libMesh::MeshBase &in,
                                          const libMesh::DofMap &dof_map,
                                          unsigned int var_num,
                                          ::moonolith::FunctionSpace<::moonolith::Mesh<double, 2>> &out,
-                                         const std::vector<int> &tags = std::vector<int>(),
+                                         const std::vector<int> &tags,
                                          unsigned int comp);
 
     template void extract_trace_space<3>(const libMesh::MeshBase &in,
                                          const libMesh::DofMap &dof_map,
                                          unsigned int var_num,
                                          ::moonolith::FunctionSpace<::moonolith::Mesh<double, 3>> &out,
-                                         const std::vector<int> &tags = std::vector<int>(),
+                                         const std::vector<int> &tags,
                                          unsigned int comp);
 
 }  // namespace utopia
