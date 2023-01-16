@@ -60,7 +60,7 @@ if(NOT MOONOLITH_FOUND OR FORCE_INSTALL_MOONOLITH)
     message(STATUS "Fetching par_moonolith, since it could not be found.")
 
     set(MOONOLITH_ENABLE_BENCHMARK
-        OFF}
+        OFF
         CACHE INTERNAL "")
 
     set(MOONOLITH_ENABLE_TESTING
