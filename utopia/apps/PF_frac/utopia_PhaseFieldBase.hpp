@@ -34,9 +34,6 @@ namespace utopia {
             in.get("d", d);
             in.get("f", f);
             in.get("length_scale", length_scale);
-            in.get("fracture_toughness", fracture_toughness);
-            in.get("mu", mu);
-            in.get("lambda", lambda);
             in.get("regularization", regularization);
             in.get("pressure", pressure);
             in.get("use_pressure", use_pressure);
@@ -49,9 +46,18 @@ namespace utopia {
 
             in.get("mu", mu);
             in.get("lambda", lambda);
-            in.get("fracture_toughness", fracture_toughness);
             in.get("nu", nu);
             in.get("E", E);
+            if (nu != 0.0 && E != 0.0) {
+                initialise_Lame_parameters();
+
+                if (mpi_world_rank() == 0) {
+                    utopia::out() << "E: " << E << "  nu: " << nu << "  Gc: " << fracture_toughness
+                                  << " mu: " << mu << "  lambda: " << lambda << "  \n";
+                }
+            }
+
+            in.get("fracture_toughness", fracture_toughness);
             in.get("l_0", l_0);
             in.get("pressure0", pressure0);
 
@@ -61,16 +67,8 @@ namespace utopia {
             in.get("mobility", mobility);
             in.get("use_mobility", use_mobility);
 
+            //Must be done after lambda and mu
             kappa = lambda + (2.0 * mu / Dim);
-
-            if (nu != 0.0 && E != 0.0) {
-                mu = E / (2.0 * (1. + nu));
-                lambda = (2.0 * nu * mu) / (1.0 - (2.0 * nu));
-
-                if (mpi_world_rank() == 0) {
-                    utopia::out() << "mu: " << mu << "  lambda: " << lambda << "  Gc: " << fracture_toughness << "  \n";
-                }
-            }
 
             std::string type;
             in.get("hetero_params", type);
@@ -155,6 +153,11 @@ namespace utopia {
             }
         }
 
+        void initialise_Lame_parameters(){
+            lambda  = E*nu/((1.+nu)*(1.-2.*nu));
+            mu      = E/(2.*(1.+nu));
+         }
+
         bool kroneckerDelta(const SizeType &i, const SizeType &j) { return (i == j) ? 1.0 : 0.0; }
 
         void fill_in_isotropic_elast_tensor() {
@@ -222,13 +225,16 @@ namespace utopia {
         //                        typename
         //                        FunctionSpace::Vector>::get_eq_constrains_values;
 
+
+
+
         // E.P FIX: HardCoded for AT2 Model
         // this computation follows eq. 50 from "On penalization in variational
         // phase-field models of britlle fracture, Gerasimov, Lorenzis"
         void configure_penalty_term_for_AT2(){
             assert(params_.use_penalty_irreversibility);
             Scalar tol2 = params_.penalty_tol * params_.penalty_tol;
-            params_.penalty_param = params_.fracture_toughness / 1.81 /*params_.length_scale*/ * (1.0 / tol2 - 1.0);
+            params_.penalty_param = params_.fracture_toughness / params_.length_scale * (1.0 / tol2 - 1.0);
             if (mpi_world_rank()==0)
                 utopia::out() << "Lengthscale: " << params_.length_scale << "  Penalty: " << params_.penalty_param << std::endl;
         }
@@ -236,6 +242,14 @@ namespace utopia {
         void read(Input &in) override {
             //reading parameters
             params_.read(in);
+
+            //Sets a length scale based on mesh size if it is not set in the Yaml file (NOT GOOD SINCE different material properties for each level
+            if (params_.length_scale == 0) {
+                params_.length_scale = 2.0 * space_.mesh().min_spacing();
+            }
+            if (mpi_world_rank() == 0) {
+                utopia::out() << "using ls = " << params_.length_scale << "  \n";
+            }
 
             //configuring penalty term
             if (params_.use_penalty_irreversibility)
@@ -276,17 +290,6 @@ namespace utopia {
         }
 
         PhaseFieldFracBase(FunctionSpace &space) : space_(space) {
-            if (params_.length_scale == 0) {
-                params_.length_scale = 2.0 * space.mesh().min_spacing();
-                // params_.length_scale = 2.0;
-                if (mpi_world_rank() == 0) {
-                    utopia::out() << "using ls = " << params_.length_scale << "  \n";
-                }
-            }
-
-            if (params_.use_penalty_irreversibility)
-                configure_penalty_term_for_AT2();
-
             // in case of constant pressure field
             // if(params_.pressure){
             params_.use_pressure = true;

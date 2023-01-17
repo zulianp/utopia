@@ -11,7 +11,6 @@
 #include "utopia_Backtracking.hpp"
 #include "utopia_BratuFE.hpp"
 #include "utopia_ConjugateGradient.hpp"
-#include "utopia_Core.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_GradInterpolate.hpp"

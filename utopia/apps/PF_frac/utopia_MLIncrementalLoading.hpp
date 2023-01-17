@@ -55,6 +55,7 @@ namespace utopia {
 
             in.get("energy_csv_file_name", csv_file_name_);
 
+            //Creates the Problem Type
             init_ml_setup();
 
             for (std::size_t l = 0; l < level_functions_.size(); l++) {
@@ -79,7 +80,6 @@ namespace utopia {
                 std::cerr << "n_levels must be at least 2" << std::endl;
                 return false;
             }
-
             spaces_.resize(n_levels_);
 
             level_functions_.resize(n_levels_);
@@ -540,12 +540,13 @@ namespace utopia {
         void export_energies_csv(bool repeat_step) {
             if (!csv_file_name_.empty()) {
                 CSVWriter writer{};
-                Scalar elastic_energy = 0.0, fracture_energy = 0.0, error_tcv = 0.0, error_cod = 0.0;
+                Scalar elastic_energy = 0.0, fracture_energy = 0.0, error_tcv = 0.0, error_cod = 0.0, residual = 0.0;
 
                 if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                     fun_finest->elastic_energy(this->solution_, elastic_energy);
                     fun_finest->fracture_energy(this->solution_, fracture_energy);
 
+                    residual = rmtr_->get_gnorm( );
                     if (FunctionSpace::Dim == 3) {
                         fun_finest->compute_tcv(this->solution_, error_tcv);
                         fun_finest->compute_cod(this->solution_, error_cod);
@@ -558,13 +559,13 @@ namespace utopia {
                     if (!writer.file_exists(csv_file_name_)) {
                         writer.open_file(csv_file_name_);
                         writer.write_table_row<std::string>(
-                            {"time", "elastic_energy", "fracture_energy", "error_tcv", "error_cod"});
+                            {"time step", "time", "elastic_energy", "fracture_energy", "error_tcv", "error_cod", "residual"});
                     } else {
                         writer.open_file(csv_file_name_);
                     }
 
                     writer.write_table_row<Scalar>(
-                        {this->time_, elastic_energy, fracture_energy, error_tcv, error_cod});
+                        {this->time_step_counter_, this->time_, elastic_energy, fracture_energy, error_tcv, error_cod, residual});
                     writer.close_file();
                 }
             }

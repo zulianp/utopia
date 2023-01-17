@@ -98,7 +98,7 @@ namespace utopia {
         MLIncrementalLoading<FunctionSpace,
                              FractureModel<FunctionSpace>,
                              UniaxialLoading2D<FunctionSpace>,
-                             RandomlyDistributed<FunctionSpace>>
+                             UniformSpacingOnLine<FunctionSpace>>
             time_stepper(space);
 
         time_stepper.read(in);
