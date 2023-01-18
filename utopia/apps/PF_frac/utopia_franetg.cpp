@@ -51,6 +51,9 @@
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_RedundantQPSolver.hpp"
+#include "utopia_GenericPhaseFieldFormulation.hpp"
+#include "utopia_IsotropicGenericPhaseField.hpp"
+
 #endif  // UTOPIA_WITH_PETSC
 
 #include <chrono>
@@ -95,8 +98,11 @@ namespace utopia {
 
         stats.start();
 
+//        IsotropicGenericPhaseField<FunctionSpace, Dim, AT2> BrittleRock(space);
+
         MLIncrementalLoading<FunctionSpace,
                              FractureModel<FunctionSpace>,
+                             //IsotropicGenericPhaseField<FunctionSpace,Dim,AT2>,
                              UniaxialLoading2D<FunctionSpace>,
                              UniformSpacingOnLine<FunctionSpace>>
             time_stepper(space);
