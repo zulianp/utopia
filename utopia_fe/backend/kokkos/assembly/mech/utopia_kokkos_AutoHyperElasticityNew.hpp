@@ -334,7 +334,7 @@ namespace utopia {
 
             // NVCC_PRIVATE :
             Material material_;
-            int order_{0};
+            int order_{6};
         };
     }  // namespace kokkos
 }  // namespace utopia

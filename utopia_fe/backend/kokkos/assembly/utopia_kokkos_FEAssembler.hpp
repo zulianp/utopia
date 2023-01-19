@@ -799,6 +799,8 @@ namespace utopia {
             void matrix_assembly_begin(Matrix &matrix, AssemblyMode mode) {
                 if (mode == OVERWRITE_MODE && (!matrix.empty() && matrix.is_assembled())) {
                     matrix *= 0.0;
+                } else if (matrix.empty()) {
+                    this->discretization()->space()->create_matrix(matrix);
                 }
 
                 ensure_matrix_accumulator();
@@ -815,7 +817,11 @@ namespace utopia {
                 }
             }
 
-            void vector_assembly_begin(Vector &, AssemblyMode mode) {
+            void vector_assembly_begin(Vector &vector, AssemblyMode mode) {
+                if (vector.empty()) {
+                    this->discretization()->space()->create_vector(vector);
+                }
+
                 ensure_vector_accumulator();
                 vector_accumulator()->zero();
             }

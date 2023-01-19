@@ -6,7 +6,7 @@ set(APPS_MODULES "")
 
 set(UTOPIA_APPS_DIR ${CMAKE_SOURCE_DIR}/apps)
 
-list(APPEND APPS_MODULES generic)
+list(APPEND APPS_MODULES generic generic/papers/bddsqp)
 
 if(UTOPIA_ENABLE_LIBMESH AND UTOPIA_ENABLE_KOKKOS AND UTOPIA_ENABLE_LIBMESH_KOKKOS)
     list(APPEND APPS_MODULES libmesh utopia_fe)
@@ -17,7 +17,7 @@ if(UTOPIA_ENABLE_STK AND UTOPIA_ENABLE_INTREPID2)
 endif()
 
 if(UTOPIA_ENABLE_MARS)
-    list(APPEND APPS_MODULES mars)
+    list(APPEND APPS_MODULES mars mars/papers/bddsqp)
 endif()
 
 if(UTOPIA_ENABLE_PETSC)
