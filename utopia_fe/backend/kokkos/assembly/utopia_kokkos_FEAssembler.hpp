@@ -733,7 +733,7 @@ namespace utopia {
                 this->loop_cell(
                     name, UTOPIA_LAMBDA(const int &cell) {
                         const Scalar val = op(cell);
-                        auto &v = data(cell);
+                        auto &v = data(cell, 0);
                         v = a * v + b * val;
                     });
 
@@ -808,10 +808,33 @@ namespace utopia {
                 this->discretization()->local_to_global({this->vector_data()}, mode, vector);
             }
 
-            void scalar_assembly_begin(Scalar &scalar, AssemblyMode mode) {
+            void scalar_assembly_begin(Scalar &scalar, AssemblyMode mode) {}
+
+            void scalar_assembly_end(Scalar &scalar, AssemblyMode mode) {
+                auto space = this->discretization()->space();
+
+                auto data = this->scalar_data();
+
+                Scalar temp = 0;
+                Kokkos::parallel_reduce(
+                    "scalar_assembly_end",
+                    cell_range(),
+                    UTOPIA_LAMBDA(const int i, Scalar &acc) { acc += data(i, 0); },
+                    temp);
+
+                temp = space->comm().sum(temp);
+
                 switch (mode) {
+                    case SUBTRACT_MODE: {
+                        scalar -= temp;
+                        break;
+                    }
                     case OVERWRITE_MODE: {
-                        scalar = 0;
+                        scalar = temp;
+                        break;
+                    }
+                    case ADD_MODE: {
+                        scalar += temp;
                         break;
                     }
 
@@ -819,11 +842,6 @@ namespace utopia {
                         break;
                     }
                 }
-            }
-
-            void scalar_assembly_end(Scalar &scalar, AssemblyMode mode) {
-                auto space = this->discretization()->space();
-                scalar = space->comm().sum(scalar);
             }
 
         private:
