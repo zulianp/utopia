@@ -709,6 +709,7 @@ namespace utopia {
                         const Scalar val = op(cell, i);
                         auto &v = data(cell, i);
                         v = a * v + b * val;
+                        // printf("%d %d %g\n", cell, i, v);
                     });
 
                 UTOPIA_TRACE_REGION_END("utopia::kokkos::FEAssembler::assemble_vector_ei");
@@ -729,7 +730,7 @@ namespace utopia {
                 const Scalar a = OVERWRITE_MODE == mode ? 0 : 1;
                 const Scalar b = SUBTRACT_MODE == mode ? -1 : 1;
 
-                this->loop_cell_test(
+                this->loop_cell(
                     name, UTOPIA_LAMBDA(const int &cell) {
                         const Scalar val = op(cell);
                         auto &v = data(cell);
@@ -804,17 +805,25 @@ namespace utopia {
             void vector_assembly_begin(Vector &, AssemblyMode) {}
 
             void vector_assembly_end(Vector &vector, AssemblyMode mode) {
-                // this->discretization()->local_to_global(this->vector_data(), mode, vector);
+                this->discretization()->local_to_global({this->vector_data()}, mode, vector);
             }
 
             void scalar_assembly_begin(Scalar &scalar, AssemblyMode mode) {
-                assert(false);
-                Utopia::Abort();
+                switch (mode) {
+                    case OVERWRITE_MODE: {
+                        scalar = 0;
+                        break;
+                    }
+
+                    default: {
+                        break;
+                    }
+                }
             }
 
             void scalar_assembly_end(Scalar &scalar, AssemblyMode mode) {
-                assert(false);
-                Utopia::Abort();
+                auto space = this->discretization()->space();
+                scalar = space->comm().sum(scalar);
             }
 
         private:

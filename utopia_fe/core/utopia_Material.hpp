@@ -14,6 +14,7 @@ namespace utopia {
           public Describable {
     public:
         virtual ~AbstractMaterial() = default;
+        virtual void initialize(const std::shared_ptr<FunctionSpace> &space) = 0;
 
         virtual std::string name() const = 0;
 
