@@ -50,7 +50,7 @@ namespace utopia {
 
         void run(Input &in) {
             FunctionSpace space;
-            Field<FunctionSpace> deformation;
+            Field<FunctionSpace> input_state;
             bool use_state_as_initial_condition = false;
 
             in.get("use_state_as_initial_condition", use_state_as_initial_condition);
@@ -60,10 +60,10 @@ namespace utopia {
                 in.get("read_state", read_state);
 
                 if (read_state) {
-                    space.read_with_state(in, deformation);
+                    space.read_with_state(in, input_state);
 
-                    const Scalar_t norm_deformation = norm2(deformation.data());
-                    utopia::out() << "norm_deformation: " << norm_deformation << std::endl;
+                    const Scalar_t norm_input_state = norm2(input_state.data());
+                    utopia::out() << "norm_input_state: " << norm_input_state << std::endl;
 
                 } else {
                     space.read(in);
@@ -107,12 +107,12 @@ namespace utopia {
 
             ////////////////////////////////////////////////////////////////////////////////////////////////
 
-            bool zero_initial_guess = deformation.empty();
+            bool zero_initial_guess = input_state.empty();
             Vector_t x;
             if (zero_initial_guess) {
                 space.create_vector(x);
             } else {
-                x = deformation.data();
+                x = input_state.data();
             }
 
             Matrix_t hessian;
@@ -120,6 +120,26 @@ namespace utopia {
 
             Vector_t grad;
             space.create_vector(grad);
+
+            // {
+            //     Matrix_t hessian;
+            //     Vector_t grad;
+            //     Vector_t x0;
+
+            //     space.create_matrix(hessian);
+            //     space.create_vector(grad);
+            //     space.create_vector(x0);
+
+            //     space.apply_constraints(x0);
+
+            //     material->hessian_and_gradient(x0, hessian, grad);
+
+            //     rename("hessian", hessian);
+            //     rename("grad", grad);
+
+            //     write("load_H.m", hessian);
+            //     write("load_g.m", grad);
+            // }
 
             bool ok = true;
             if (zero_initial_guess) {
@@ -133,14 +153,14 @@ namespace utopia {
                 ok = linear_solver->solve(hessian, grad, x);
             }
 
+            space.apply_constraints(x);
+            ok = nonlinear_solver->solve(*material, x);
+
+            space.write(output, x);
+
             if (!ok) {
                 utopia::out() << "Yo!\n";
             }
-
-            space.apply_constraints(x);
-            nonlinear_solver->solve(*material, x);
-
-            space.write(output, x);
         }
     };
 

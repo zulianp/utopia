@@ -796,19 +796,38 @@ namespace utopia {
                 return true;
             }
 
-            void matrix_assembly_begin(Matrix &, AssemblyMode) {}
+            void matrix_assembly_begin(Matrix &matrix, AssemblyMode mode) {
+                if (mode == OVERWRITE_MODE && (!matrix.empty() && matrix.is_assembled())) {
+                    matrix *= 0.0;
+                }
+
+                ensure_matrix_accumulator();
+                matrix_accumulator()->zero();
+            }
 
             void matrix_assembly_end(Matrix &matrix, AssemblyMode mode) {
                 this->discretization()->local_to_global({this->matrix_data()}, mode, matrix);
+
+                if (ensure_scalar_matrix) {
+                    if (matrix.is_block()) {
+                        matrix.convert_to_scalar_matrix();
+                    }
+                }
             }
 
-            void vector_assembly_begin(Vector &, AssemblyMode) {}
+            void vector_assembly_begin(Vector &, AssemblyMode mode) {
+                ensure_vector_accumulator();
+                vector_accumulator()->zero();
+            }
 
             void vector_assembly_end(Vector &vector, AssemblyMode mode) {
                 this->discretization()->local_to_global({this->vector_data()}, mode, vector);
             }
 
-            void scalar_assembly_begin(Scalar &scalar, AssemblyMode mode) {}
+            void scalar_assembly_begin(Scalar &scalar, AssemblyMode mode) {
+                ensure_scalar_accumulator();
+                scalar_accumulator()->zero();
+            }
 
             void scalar_assembly_end(Scalar &scalar, AssemblyMode mode) {
                 auto space = this->discretization()->space();
@@ -851,6 +870,8 @@ namespace utopia {
             std::shared_ptr<ScalarAccumulator> scalar_accumulator_;
             std::shared_ptr<Field<FE>> current_solution_;
             int n_vars_{1};
+
+            bool ensure_scalar_matrix{true};
         };
 
     }  // namespace kokkos
