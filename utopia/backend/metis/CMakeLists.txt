@@ -1,4 +1,4 @@
-find_package(Metis REQUIRED)
+find_package(METIS REQUIRED)
 
 # If METIS FOUND?
 
