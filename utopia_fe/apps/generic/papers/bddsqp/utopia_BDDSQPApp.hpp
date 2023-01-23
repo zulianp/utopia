@@ -91,7 +91,12 @@ namespace utopia {
 
             ////////////////////////////////////////////////////////////////////////////////////////////////
 
-            std::shared_ptr<LinearSolver_t> linear_solver = std::make_shared<OmniLinearSolver_t>();
+            auto cg = std::make_shared<ConjugateGradient<Matrix_t, Vector_t, HOMEMADE>>();
+            cg->apply_gradient_descent_step(true);
+            std::shared_ptr<LinearSolver_t> linear_solver = cg;
+
+            // std::shared_ptr<LinearSolver_t> linear_solver = std::make_shared<OmniLinearSolver_t>();
+
             std::shared_ptr<NewtonBase_t> nonlinear_solver = std::make_shared<Newton<Matrix_t>>();
 
             nonlinear_solver->set_linear_solver(linear_solver);
@@ -103,6 +108,7 @@ namespace utopia {
             Vector_t x;
             if (zero_initial_guess) {
                 space.create_vector(x);
+                x.set(0.);
             } else {
                 x = input_state.data();
             }
@@ -142,12 +148,45 @@ namespace utopia {
                 material->hessian_and_gradient(x, hessian, grad);
 
                 // We need the negative gradient
-                grad *= -1;
+                grad = -grad;
+
+                // space.apply_constraints(x);
+                // space.write("x.bp", x);
 
                 space.apply_constraints(grad);
 
                 ok = linear_solver->solve(hessian, grad, x);
+
+                space.apply_zero_constraints(grad);
+
+                Scalar_t norm_h0 = norm2(hessian);
+                Scalar_t norm_g0 = norm2(grad);
+                Scalar_t norm_x = norm2(x);
+
+
+
+                space.apply_constraints(grad);
+                material->gradient(x, grad);
+                Scalar_t norm_g = norm2(grad);
+                Scalar_t sum_g = sum(grad);
+
+                material->hessian(x, hessian);
+                Scalar_t norm_h = norm2(hessian);
+                Scalar_t sum_h = sum(hessian);
+
+                if(!x.comm().rank()) {
+                    utopia::out() << "norm_h0 : " << norm_h0 << "\n";
+                    utopia::out() << "norm_h  : " << norm_h << "\n";
+                    utopia::out() << "sum_h   : " << sum_h << "\n";
+
+                    utopia::out() << "norm_g0 : " << norm_g0  << "\n";
+                    utopia::out() << "norm_g  : " << norm_g  << "\n";
+                    utopia::out() << "norm_x  : " << norm_x << "\n";
+                    utopia::out() << "sum_g   : " << sum_g << "\n";
+                }
             }
+
+            // space.write("linear.bp", x);
 
             space.apply_constraints(x);
             ok = nonlinear_solver->solve(*material, x);

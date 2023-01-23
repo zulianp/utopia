@@ -53,7 +53,7 @@ namespace utopia {
                             for (int d = 0; d < coords.extent(1); ++d) {
                                 coords(i, d) = p[d];
 
-                                // printf("%g ", (double) p[d]);
+                                // printf("%g ", (double)p[d]);
                             }
 
                             // printf("\n");
