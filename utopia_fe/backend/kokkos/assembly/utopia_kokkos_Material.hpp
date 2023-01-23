@@ -82,6 +82,9 @@ namespace utopia {
 
                 UTOPIA_TRACE_REGION_BEGIN("utopia::kokkos::Material::value");
 
+                // if (OVERWRITE_MODE == mode_)
+                // value = 0;
+
                 assembler()->scalar_assembly_begin(value, mode_);
 
                 assembler()->update_input(x);

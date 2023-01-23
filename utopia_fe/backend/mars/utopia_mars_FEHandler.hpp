@@ -218,8 +218,11 @@ namespace utopia {
                         for (int sub_j = 0; sub_j < block_size; ++sub_j) {
                             auto offset_j = dof_handler.compute_block_index(j, sub_j + b_offset_j);
                             const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, offset_j);
-                            auto x_j = x(local_dof_j);
-                            field(elem_index, j * block_size + sub_j) = x_j;
+
+                            if (local_dof_j > -1) {
+                                auto x_j = x(local_dof_j);
+                                field(elem_index, j * block_size + sub_j) = x_j;
+                            }
                         }
                     }
                 };
@@ -350,7 +353,7 @@ namespace utopia {
                             if (local_dof_i < 0 || !dof_handler.is_owned(local_dof_i)) continue;
                             const auto owned_dof_i = dof_handler.local_to_owned_index(local_dof_i);
 
-                            auto val = v(elem_index, i * n_fun + sub_i);
+                            auto val = v(elem_index, i * block_size + sub_i);
                             Kokkos::atomic_fetch_add(&vec_view(owned_dof_i, 0), val);
                         }
                     }

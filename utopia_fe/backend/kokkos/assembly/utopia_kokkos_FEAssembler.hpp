@@ -833,6 +833,10 @@ namespace utopia {
             void scalar_assembly_begin(Scalar &scalar, AssemblyMode mode) {
                 ensure_scalar_accumulator();
                 scalar_accumulator()->zero();
+
+                if (mode == OVERWRITE_MODE) {
+                    scalar = 0.0;
+                }
             }
 
             void scalar_assembly_end(Scalar &scalar, AssemblyMode mode) {
@@ -847,7 +851,11 @@ namespace utopia {
                     UTOPIA_LAMBDA(const int i, Scalar &acc) { acc += data(i, 0); },
                     temp);
 
+                assert(temp == temp);
+
                 temp = space->comm().sum(temp);
+
+                assert(temp == temp);
 
                 switch (mode) {
                     case SUBTRACT_MODE: {
