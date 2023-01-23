@@ -34,7 +34,7 @@ else()
     set(UTOPIA_WITH_LAPACK OFF)
 endif()
 
-find_package(Umfpack)
+find_package(UMFPACK)
 if(UMFPACK_FOUND)
     list(APPEND UTOPIA_BUILD_INCLUDES ${UMFPACK_INCLUDES})
     list(APPEND UTOPIA_DEP_LIBRARIES ${UMFPACK_LIBRARIES})

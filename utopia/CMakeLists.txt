@@ -129,7 +129,6 @@ if(UTOPIA_ENABLE_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
-add_subdirectory(backend/polymorphic)
 
 add_definitions(${UTOPIA_DEFS})
 

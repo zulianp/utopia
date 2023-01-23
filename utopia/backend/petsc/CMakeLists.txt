@@ -20,7 +20,7 @@
 # find dependencies
 set(PETSC_TEST_RUNS TRUE)
 set(PETSC_EXECUTABLE_RUNS TRUE) # On daint we cannot run them
-find_package(Petsc)
+find_package(PETSc)
 
 if(PETSC_FOUND)
   list(APPEND UTOPIA_BUILD_INCLUDES ${PETSC_INCLUDES})

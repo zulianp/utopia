@@ -3,7 +3,7 @@ cmake .. \
 -DCMAKE_BUILD_TYPE=Release \
 -DCMAKE_CXX_COMPILER=mpicxx \
 -DCMAKE_C_COMPILER=mpicc \
--DCMAKE_CXX_STANDARD=14 \
+-DCMAKE_CXX_STANDARD=17 \
 -DBUILD_SHARED_LIBS=OFF \
 -DAmesos2_ENABLE_EXPLICIT_INSTANTIATION=ON \
 -DIfpack2_ENABLE_EXPLICIT_INSTANTIATION=ON \
@@ -54,7 +54,12 @@ cmake .. \
 -DTrilinos_ENABLE_Zoltan2:BOOL=ON \
 -DTrilinos_ENABLE_Zoltan:BOOL=ON \
 -DTPL_ENABLE_SuperLU:BOOL=OFF \
--DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON
+-DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON \
+
+# Enable and specify HDF5 if linkage errors. 
+# Installed it with homebrew so maybe that's the problem. 
+# Trilinos compiled no problems afterwards.
+
 # -DTPL_ENABLE_SuperLU=ON \
 # -DTPL_ENABLE_Boost:BOOL=ON \
 # -DTPL_ENABLE_HDF5=ON \
