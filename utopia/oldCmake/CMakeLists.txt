@@ -126,10 +126,10 @@ configure_file(${UTOPIA_ROOT_PATH}/utopia_Version.hpp.in
 
 # Deprecated since version 3.20 include(WriteCompilerDetectionHeader)
 
-# write_compiler_detection_header( FILE utopia_compiler_features.hpp PREFIX
-# UTOPIA COMPILERS GNU Clang MSVC Intel AppleClang FEATURES # cxx_final #already
-# in c++11 cxx_noexcept #already in c++11 cxx_attribute_deprecated # in c++14
-# ALLOW_UNKNOWN_COMPILERS)
+write_compiler_detection_header( FILE utopia_compiler_features.hpp PREFIX
+UTOPIA COMPILERS GNU Clang MSVC Intel AppleClang FEATURES # cxx_final #already
+in c++11 cxx_noexcept #already in c++11 cxx_attribute_deprecated # in c++14
+ALLOW_UNKNOWN_COMPILERS)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/utopia_compiler_features.hpp
               ${CMAKE_CURRENT_BINARY_DIR}/utopia_Version.hpp

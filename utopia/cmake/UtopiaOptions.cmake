@@ -1,13 +1,18 @@
 # option(UTOPIA_ENABLE_VC "SIMD wrapper" ON)
 option(UTOPIA_ENABLE_VC "SIMD wrapper" OFF)
+
 option(UTOPIA_STATIC_DEPENDENCIES_ONLY
        "Allows to restrict the linking to static libraries" OFF)
+
+
+option(UTOPIA_ENABLE_EXAMPLES "Enable utopia examples." OFF)
 
 option(UTOPIA_ENABLE_MPI "Enable the cuda backend" ON)
 # option(UTOPIA_ENABLE_OPENCL "Enable the opencl backend" OFF)
 option(UTOPIA_ENABLE_PETSC "Enable the petsc backend" ON)
 option(UTOPIA_ENABLE_SLEPC "Enable the slepc backend" OFF)
 option(UTOPIA_ENABLE_METIS "Enable the Metis backend" OFF)
+option(UTOPIA_ENABLE_POLYMORPHIC "Enable polymorphic" OFF)
 option(UTOPIA_ENABLE_PARMETIS "Enable the ParMetis backend" OFF)
 option(UTOPIA_ENABLE_TRILINOS "Enable the Trilinos backend" ON)
 # option(UTOPIA_ENABLE_KOKKOS_SIMD "Enable kokkos intriniscs wrapper" OFF)

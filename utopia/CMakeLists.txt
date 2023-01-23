@@ -39,7 +39,6 @@ set(UTOPIA_WITH_CPP11 ON)
 # ##############################################################################
 # LIBRARY
 
-
 # core modules
 set(UTOPIA_MODULES
     interoperability
@@ -62,20 +61,13 @@ list(APPEND UTOPIA_SOURCES utopia.cpp utopia_Instance.cpp utopia_Base.cpp)
 
 add_library(utopia ${UTOPIA_SOURCES} ${UTOPIA_HEADERS})
 
-
-# PRINT OUT HEADERS
-# message(STATUS "UTOPIA_HEADERS")
-# foreach(header ${UTOPIA_HEADERS})
-#   message(STATUS "${header}")
-# endforeach(header)
-
-
+# PRINT OUT HEADERS message(STATUS "UTOPIA_HEADERS") foreach(header
+# ${UTOPIA_HEADERS}) message(STATUS "${header}") endforeach(header)
 
 # We use this to force c++14
 set_utopia_compiler_features(utopia)
 
 utopia_link_default_targets(utopia)
-
 
 # ##############################################################################
 # ##############################################################################
@@ -87,16 +79,16 @@ foreach(include ${UTOPIA_BUILD_INCLUDES})
 endforeach()
 
 target_include_directories(
-  utopia BEFORE PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-                      $<INSTALL_INTERFACE:include>)
+  utopia BEFORE
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+         $<INSTALL_INTERFACE:include>)
 
 target_include_directories(utopia PUBLIC ${UTOPIA_DEP_INCLUDES})
 message("UTOPIA_DEP_INCLUDES: ${UTOPIA_DEP_INCLUDES}")
 message("UTOPIA_DEP_LIBRARIES: ${UTOPIA_DEP_LIBRARIES}")
 
-
 target_link_libraries(utopia PUBLIC ${UTOPIA_DEP_LIBRARIES})
-
 
 # ##############################################################################
 # ##############################################################################
@@ -126,7 +118,6 @@ include(apps/apps.cmake)
 # ##############################################################################
 # INSTALL
 
-
 install(
   TARGETS utopia
   EXPORT UtopiaTargets
@@ -134,9 +125,11 @@ install(
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
 
-add_subdirectory(examples)
-add_subdirectory(backend/polymorphic)
+if(UTOPIA_ENABLE_EXAMPLES)
+  add_subdirectory(examples)
+endif()
 
+add_subdirectory(backend/polymorphic)
 
 add_definitions(${UTOPIA_DEFS})
 
@@ -149,9 +142,12 @@ configure_file(${UTOPIA_ROOT_PATH}/utopia_Config.hpp.in
 configure_file(${UTOPIA_ROOT_PATH}/utopia_Version.hpp.in
                ${CMAKE_BINARY_DIR}/utopia_Version.hpp)
 
+# write_compiler_detection_header( FILE utopia_compiler_features.hpp PREFIX
+# UTOPIA COMPILERS GNU Clang MSVC Intel AppleClang FEATURES # cxx_final #already
+# in c++11 cxx_noexcept #already in c++11 cxx_attribute_deprecated # in c++14
+# ALLOW_UNKNOWN_COMPILERS)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/utopia_compiler_features.hpp
-              ${CMAKE_CURRENT_BINARY_DIR}/utopia_Version.hpp
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/utopia_Version.hpp
         DESTINATION include)
 
 install(FILES ${UTOPIA_ROOT_PATH}/utopia.hpp DESTINATION include)
@@ -162,6 +158,3 @@ install(FILES ${CMAKE_BINARY_DIR}/utopia_Config.hpp DESTINATION include)
 # ##############################################################################
 # ##############################################################################
 # EXTRA TARGETS
-
-
-

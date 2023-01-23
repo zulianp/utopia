@@ -80,6 +80,21 @@
 #define utopia_lock_check_assert(expr_)
 #endif //NDEBUG
 
-#include "utopia_compiler_features.hpp"
+
+#  ifndef UTOPIA_DEPRECATED
+#    if defined(UTOPIA_COMPILER_CXX_ATTRIBUTE_DEPRECATED) && UTOPIA_COMPILER_CXX_ATTRIBUTE_DEPRECATED
+#      define UTOPIA_DEPRECATED [[deprecated]]
+#      define UTOPIA_DEPRECATED_MSG(MSG) [[deprecated(MSG)]]
+#    elif UTOPIA_COMPILER_IS_GNU || UTOPIA_COMPILER_IS_Clang
+#      define UTOPIA_DEPRECATED __attribute__((__deprecated__))
+#      define UTOPIA_DEPRECATED_MSG(MSG) __attribute__((__deprecated__(MSG)))
+#    elif UTOPIA_COMPILER_IS_MSVC
+#      define UTOPIA_DEPRECATED __declspec(deprecated)
+#      define UTOPIA_DEPRECATED_MSG(MSG) __declspec(deprecated(MSG))
+#    else
+#      define UTOPIA_DEPRECATED
+#      define UTOPIA_DEPRECATED_MSG(MSG)
+#    endif
+#  endif
 
 #endif //UTOPIA_CONFIG_HPP
