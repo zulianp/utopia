@@ -40,6 +40,24 @@ namespace utopia {
         using NewtonBase_t = utopia::NewtonBase<Matrix_t, Vector_t>;
         using Newton_t = utopia::Newton<Matrix_t, Vector_t>;
 
+        static void print_norms(const Matrix_t &hessian, const Vector_t &grad, const Vector_t &x) {
+            Scalar_t norm_x = norm2(x);
+            Scalar_t norm_g = norm2(grad);
+            Scalar_t sum_g = sum(grad);
+            Scalar_t norm_h = norm2(hessian);
+            Scalar_t sum_h = sum(hessian);
+
+            if (!x.comm().rank()) {
+                utopia::out() << "-------------------------------\n";
+                utopia::out() << "norm_h  : " << norm_h << "\n";
+                utopia::out() << "sum_h   : " << sum_h << "\n";
+                utopia::out() << "norm_g  : " << norm_g << "\n";
+                utopia::out() << "norm_x  : " << norm_x << "\n";
+                utopia::out() << "sum_g   : " << sum_g << "\n";
+                utopia::out() << "-------------------------------\n";
+            }
+        }
+
         void run(Input &in) {
             FunctionSpace space;
             Field<FunctionSpace> input_state;
@@ -163,8 +181,6 @@ namespace utopia {
                 Scalar_t norm_g0 = norm2(grad);
                 Scalar_t norm_x = norm2(x);
 
-
-
                 space.apply_constraints(grad);
                 material->gradient(x, grad);
                 Scalar_t norm_g = norm2(grad);
@@ -174,13 +190,13 @@ namespace utopia {
                 Scalar_t norm_h = norm2(hessian);
                 Scalar_t sum_h = sum(hessian);
 
-                if(!x.comm().rank()) {
+                if (!x.comm().rank()) {
                     utopia::out() << "norm_h0 : " << norm_h0 << "\n";
                     utopia::out() << "norm_h  : " << norm_h << "\n";
                     utopia::out() << "sum_h   : " << sum_h << "\n";
 
-                    utopia::out() << "norm_g0 : " << norm_g0  << "\n";
-                    utopia::out() << "norm_g  : " << norm_g  << "\n";
+                    utopia::out() << "norm_g0 : " << norm_g0 << "\n";
+                    utopia::out() << "norm_g  : " << norm_g << "\n";
                     utopia::out() << "norm_x  : " << norm_x << "\n";
                     utopia::out() << "sum_g   : " << sum_g << "\n";
                 }
@@ -189,7 +205,26 @@ namespace utopia {
             // space.write("linear.bp", x);
 
             space.apply_constraints(x);
-            ok = nonlinear_solver->solve(*material, x);
+
+            if (false) {
+                // Use this branch for debugging materials
+
+                Vector_t correction;
+                space.create_vector(correction);
+                correction.set(0.);
+
+                for (int i = 0; i < 4 && ok; ++i) {
+                    ok = material->hessian_and_gradient(x, hessian, grad);
+                    ok = linear_solver->solve(hessian, grad, correction);
+
+                    x -= correction;
+
+                    print_norms(hessian, grad, x);
+                }
+
+            } else {
+                ok = nonlinear_solver->solve(*material, x);
+            }
 
             space.write(output, x);
 

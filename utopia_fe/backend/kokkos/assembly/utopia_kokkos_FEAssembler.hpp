@@ -822,6 +822,10 @@ namespace utopia {
                     this->discretization()->space()->create_vector(vector);
                 }
 
+                if (mode == OVERWRITE_MODE) {
+                    vector.set(0);
+                }
+
                 ensure_vector_accumulator();
                 vector_accumulator()->zero();
             }
