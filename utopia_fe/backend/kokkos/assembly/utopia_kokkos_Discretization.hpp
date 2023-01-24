@@ -78,6 +78,10 @@ namespace utopia {
                                          Vector &vec,
                                          const Part &part = all()) = 0;
 
+            virtual void local_to_global(const std::vector<ScalarAccumulator> &acc,
+                                         std::vector<Scalar> &scalars,
+                                         const Part &part = all()) = 0;
+
             virtual void local_to_global_on_boundary(const std::vector<VectorAccumulator> &acc,
                                                      AssemblyMode mode,
                                                      Vector &vec,

@@ -107,6 +107,9 @@ namespace utopia {
             Path output = "out.e";
             in.get("output", output);
 
+            bool debug = false;
+            in.get("debug", debug);
+
             ////////////////////////////////////////////////////////////////////////////////////////////////
 
             auto cg = std::make_shared<ConjugateGradient<Matrix_t, Vector_t, HOMEMADE>>();
@@ -115,9 +118,14 @@ namespace utopia {
 
             // std::shared_ptr<LinearSolver_t> linear_solver = std::make_shared<OmniLinearSolver_t>();
 
-            std::shared_ptr<NewtonBase_t> nonlinear_solver = std::make_shared<Newton<Matrix_t>>();
+            // std::shared_ptr<NewtonBase_t> nonlinear_solver = std::make_shared<Newton<Matrix_t>>();
+            // nonlinear_solver->set_linear_solver(linear_solver);
 
-            nonlinear_solver->set_linear_solver(linear_solver);
+            auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix_t, Vector_t, HOMEMADE>>();
+            std::shared_ptr<NewtonBase_t> nonlinear_solver = std::make_shared<TrustRegion<Matrix_t>>(subproblem);
+
+            // auto qp_solver = std::make_shared<utopia::MPRGP<PetscMatrix, PetscVector> >();
+
             in.get("solver", *nonlinear_solver);
 
             ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -137,30 +145,6 @@ namespace utopia {
             Vector_t grad;
             space.create_vector(grad);
 
-            // {
-            //     Matrix_t hessian;
-            //     Vector_t grad;
-            //     Vector_t x0;
-
-            //     space.create_matrix(hessian);
-            //     space.create_vector(grad);
-            //     space.create_vector(x0);
-
-            //     x0.set(0.);
-
-            //     space.apply_constraints(x0);
-
-            //     material->hessian_and_gradient(x0, hessian, grad);
-
-            //     disp(norm2(grad));
-
-            //     // rename("hessian", hessian);
-            //     // rename("grad", grad);
-
-            //     // write("load_H.mm", hessian);
-            //     // write("load_g.mm", grad);
-            // }
-
             bool ok = true;
             if (zero_initial_guess) {
                 material->hessian_and_gradient(x, hessian, grad);
@@ -168,47 +152,19 @@ namespace utopia {
                 // We need the negative gradient
                 grad = -grad;
 
-                // space.apply_constraints(x);
-                // space.write("x.bp", x);
-
                 space.apply_constraints(grad);
 
                 ok = linear_solver->solve(hessian, grad, x);
 
                 space.apply_zero_constraints(grad);
 
-                Scalar_t norm_h0 = norm2(hessian);
-                Scalar_t norm_g0 = norm2(grad);
-                Scalar_t norm_x = norm2(x);
-
-                space.apply_constraints(grad);
-                material->gradient(x, grad);
-                Scalar_t norm_g = norm2(grad);
-                Scalar_t sum_g = sum(grad);
-
-                material->hessian(x, hessian);
-                Scalar_t norm_h = norm2(hessian);
-                Scalar_t sum_h = sum(hessian);
-
-                if (!x.comm().rank()) {
-                    utopia::out() << "norm_h0 : " << norm_h0 << "\n";
-                    utopia::out() << "norm_h  : " << norm_h << "\n";
-                    utopia::out() << "sum_h   : " << sum_h << "\n";
-
-                    utopia::out() << "norm_g0 : " << norm_g0 << "\n";
-                    utopia::out() << "norm_g  : " << norm_g << "\n";
-                    utopia::out() << "norm_x  : " << norm_x << "\n";
-                    utopia::out() << "sum_g   : " << sum_g << "\n";
-                }
+                if (debug) print_norms(hessian, grad, x);
             }
-
-            // space.write("linear.bp", x);
 
             space.apply_constraints(x);
 
             if (false) {
                 // Use this branch for debugging materials
-
                 Vector_t correction;
                 space.create_vector(correction);
                 correction.set(0.);
@@ -219,7 +175,7 @@ namespace utopia {
 
                     x -= correction;
 
-                    print_norms(hessian, grad, x);
+                    if (debug) print_norms(hessian, grad, x);
                 }
 
             } else {

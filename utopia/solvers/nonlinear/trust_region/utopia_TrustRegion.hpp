@@ -8,7 +8,7 @@
 #include "utopia_TRSubproblem.hpp"
 
 namespace utopia {
-    template <class Matrix, class Vector>
+    template <class Matrix, class Vector = typename Traits<Matrix>::Vector>
     class TrustRegion final : public NewtonBase<Matrix, Vector>, public TrustRegionBase<Vector> {
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;

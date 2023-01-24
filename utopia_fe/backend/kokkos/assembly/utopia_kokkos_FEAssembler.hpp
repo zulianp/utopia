@@ -848,18 +848,22 @@ namespace utopia {
 
                 auto data = this->scalar_data();
 
-                Scalar temp = 0;
-                Kokkos::parallel_reduce(
-                    "scalar_assembly_end",
-                    cell_range(),
-                    UTOPIA_LAMBDA(const int i, Scalar &acc) { acc += data(i, 0); },
-                    temp);
+                std::vector<Scalar> scalars(1, 0);
+                this->discretization()->local_to_global({data}, scalars);
+                Scalar temp = scalars[0];
 
-                assert(temp == temp);
+                // Scalar temp = 0;
+                // Kokkos::parallel_reduce(
+                //     "scalar_assembly_end",
+                //     cell_range(),
+                //     UTOPIA_LAMBDA(const int i, Scalar &acc) { acc += data(i, 0); },
+                //     temp);
 
-                temp = space->comm().sum(temp);
+                // assert(temp == temp);
 
-                assert(temp == temp);
+                // temp = space->comm().sum(temp);
+
+                // assert(temp == temp);
 
                 switch (mode) {
                     case SUBTRACT_MODE: {

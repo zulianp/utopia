@@ -362,6 +362,26 @@ namespace utopia {
                 fe_dof_map.iterate(kernel);
             }
 
+            void local_to_global(const Comm &comm,
+                                 const std::vector<KokkosDiscretization::ScalarAccumulator> &acc,
+                                 std::vector<Scalar> &scalars,
+                                 const Part &part = KokkosDiscretization::all()) override {
+                auto n = fe_dof_map->get_dof_handler().get_mesh().get_chunk_size();
+
+                Scalar summed = 0;
+                for (auto &a : acc) {
+                    Scalar temp = 0;
+
+                    Kokkos::parallel_reduce(
+                        "scalar_local_to_global", n, UTOPIA_LAMBDA(const int i, Scalar &acc) { acc += a(i, 0); }, temp);
+
+                    summed += temp;
+                }
+
+                summed = comm.sum(summed);
+                scalars[0] = summed;
+            }
+
             void local_to_global_on_boundary(
                 const std::vector<KokkosDiscretization::VectorAccumulator> &acc,
                 AssemblyMode mode,
