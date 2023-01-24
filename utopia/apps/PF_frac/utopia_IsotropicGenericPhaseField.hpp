@@ -143,7 +143,7 @@ namespace utopia {
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             Scalar tr = trace(el_strain.strain[qp]);
                             if (this->params_.use_pressure) {
-                                el_energy += GenericPhaseFieldFormulation<FunctionSpace,Dim,PFFormulation>::pf_formulation_.degradation(c[qp]) *
+                                el_energy += PFFormulation::degradation(c[qp]) *
                                              p[qp] * tr * dx(qp);
                             }
 
@@ -155,7 +155,16 @@ namespace utopia {
                                 auto c_cold = c[qp] - c_old[qp];
                                 auto c_cold_bracket = c_cold < 0.0 ? c_cold : 0.0;
                                 el_energy +=
-                                    this->params_.penalty_param / 2.0 * c_cold_bracket * c_cold_bracket * dx(qp);
+                                    this->params_.penalty_param_irreversible / 2.0 * c_cold_bracket * c_cold_bracket * dx(qp);
+
+                                if ( PFFormulation::penalise_negative_phase_field_values ){
+//                                    std::cout << "Should not be here" << std::endl;
+                                    auto c_at_qp = c[qp];
+                                    auto c_neg_bracket = c_at_qp < 0.0 ? c_at_qp : 0.0;
+                                    el_energy +=
+                                        this->params_.penalty_param_non_neg / 2.0 * c_neg_bracket * c_neg_bracket * dx(qp);
+                                }
+
                             }
                         }
 
@@ -494,8 +503,7 @@ namespace utopia {
                             const Scalar tr_strain_u = trace(el_strain.strain[qp]);
 
                             compute_stress(this->params_, tr_strain_u, el_strain.strain[qp], stress);
-                            Scalar gc_qp =
-                                GenericPhaseFieldFormulation<FunctionSpace, Dim,PFFormulation>::pf_formulation_.degradation(c[qp]);
+                            Scalar gc_qp =PFFormulation::degradation(c[qp]);
                             stress =
                                 (gc_qp * (1.0 - this->params_.regularization) + this->params_.regularization) * stress;
 
@@ -509,7 +517,8 @@ namespace utopia {
                             }
 
                             const Scalar elast =
-                                grad_elastic_energy_wrt_c(this->params_, c[qp], tr_strain_u, el_strain.strain[qp]);
+                                IsotropicGenericPhaseField<FunctionSpace,Dim,PFFormulation>::grad_elastic_energy_wrt_c(
+                                    this->params_, c[qp], tr_strain_u, el_strain.strain[qp]);
 
                             for (SizeType j = 0; j < C_NDofs; ++j) {
                                 const Scalar shape_test = c_shape_fun_el(j, qp);
@@ -517,8 +526,7 @@ namespace utopia {
                                     this->params_, c[qp], c_grad_el[qp], shape_test, c_grad_shape_el(j, qp));
 
                                 if (this->params_.use_pressure) {
-                                    const Scalar der_c_pres =
-                                        GenericPhaseFieldFormulation<FunctionSpace, Dim,PFFormulation>::pf_formulation_.degradation_deriv(
+                                    const Scalar der_c_pres = PFFormulation::degradation_deriv(
                                             c[qp]) *
                                         p[qp] * tr_strain_u * shape_test;
                                     c_el_vec(j) += der_c_pres * dx(qp);
@@ -529,7 +537,14 @@ namespace utopia {
                                 if (this->params_.use_penalty_irreversibility) {
                                     auto c_cold = c[qp] - c_old[qp];
                                     auto c_cold_bracket = c_cold < 0.0 ? c_cold : 0.0;
-                                    c_el_vec(j) += this->params_.penalty_param * c_cold_bracket * shape_test * dx(qp);
+                                    c_el_vec(j) += this->params_.penalty_param_irreversible * c_cold_bracket * shape_test * dx(qp);
+
+                                    if (PFFormulation::penalise_negative_phase_field_values ){
+  //                                      std::cout << "Should not be here" << std::endl;
+                                        auto c_at_qp = c[qp];
+                                        auto c_neg_bracket = c_at_qp < 0.0 ? c_at_qp : 0.0;
+                                        c_el_vec += this->params_.penalty_param_non_neg * c_neg_bracket * shape_test * dx(qp);
+                                    }
                                 }
                             }
                         }
@@ -561,7 +576,7 @@ namespace utopia {
         }
 
         bool hessian(const Vector &x_const, Matrix &H) const override {
-            UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::hessian");
+            UTOPIA_TRACE_REGION_BEGIN("IsotropicGenericPhaseField::hessian");
 
             if (empty(H)) {
                 // if(use_dense_hessian_) {
@@ -624,7 +639,7 @@ namespace utopia {
             Strain<USpace, Quadrature> ref_strain_u(U, q);
 
             {
-                UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::hessian_local_assembly");
+                UTOPIA_TRACE_REGION_BEGIN("IsotropicGenericPhaseField::hessian_local_assembly");
 
                 auto U_view = U.view_device();
                 auto C_view = C.view_device();
@@ -715,7 +730,7 @@ namespace utopia {
                                                  dx(qp);
 
                                     if (this->params_.use_pressure) {
-                                        val -= GenericPhaseFieldFormulation<FunctionSpace, Dim,PFFormulation>::pf_formulation_.degradation_deriv2(
+                                        val -= PFFormulation::degradation_deriv2(
                                                    c[qp]) *
                                                p[qp] * tr_strain_u * c_shape_j_l_prod * dx(qp);
                                     }
@@ -724,7 +739,15 @@ namespace utopia {
                                     if (this->params_.use_penalty_irreversibility) {
                                         auto c_cold = c[qp] - c_old[qp];
                                         auto c_heaviside = c_cold <= 0.0 ? 1.0 : 0.0;
-                                        val += c_heaviside* this->params_.penalty_param * c_shape_j_l_prod * dx(qp);
+                                        val += c_heaviside* this->params_.penalty_param_irreversible * c_shape_j_l_prod * dx(qp);
+
+
+                                        if (PFFormulation::penalise_negative_phase_field_values ){
+//                                            std::cout << "Should not be here" << std::endl;
+                                            auto c_at_qp = c[qp];
+                                            auto c_neg_bracket = c_at_qp < 0.0 ? 1.0 : 0.0;
+                                            val += this->params_.penalty_param_non_neg * c_neg_bracket * c_shape_j_l_prod * dx(qp);
+                                        }
                                     }
 
                                     val = (l == j) ? (0.5 * val) : val;
@@ -778,7 +801,7 @@ namespace utopia {
 
                                         if (this->params_.use_pressure) {
                                             const Scalar tr_strain_shape = sum(diag(strain_shape));
-                                            val += GenericPhaseFieldFormulation<FunctionSpace, Dim,PFFormulation>::pf_formulation_.degradation_deriv(
+                                            val += PFFormulation::degradation_deriv(
                                                        c[qp]) *
                                                    p[qp] * tr_strain_shape * c_shape_i * dx(qp);
                                         }
@@ -799,7 +822,7 @@ namespace utopia {
                         space_view.add_matrix(e, el_mat, H_view);
                     });
 
-                UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::hessian_local_assembly");
+                UTOPIA_TRACE_REGION_END("IsotropicGenericPhaseField::hessian_local_assembly");
             }
 
             // check before boundary conditions
@@ -813,7 +836,7 @@ namespace utopia {
                 this->apply_zero_constraints_irreversibiblity(H, x_const);
             }
 
-            UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::hessian");
+            UTOPIA_TRACE_REGION_END("IsotropicGenericPhaseField::hessian");
             return true;
         }
 
@@ -833,18 +856,6 @@ namespace utopia {
                    elastic_deriv_cc(params, phase_field_value, elastic_energy, shape_prod);
         }
 
-        // (sigma+(phi_u), epsilon(u)) * g'_c * phi_c
-/*        template <class Stress, class FullStrain>
-        UTOPIA_INLINE_FUNCTION static Scalar bilinear_cu(const Parameters &params,
-                                                         const Scalar &phase_field_value,
-                                                         const Stress &stress_p,
-                                                         const FullStrain &full_strain,
-                                                         const Scalar &c_trial_fun) {
-            return ((1.0 - params.regularization) *
-                    GenericPhaseFieldFormulation<FunctionSpace, Dim,PFFormulation>::pf_formulation_.degradation_deriv(phase_field_value)) *
-                   c_trial_fun * inner(stress_p, full_strain);
-        }
-*/
 
         template <class Stress, class FullStrain>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_uc(const Parameters &params,
@@ -852,7 +863,7 @@ namespace utopia {
                                                          const Stress &stress,
                                                          const FullStrain &full_strain,
                                                          const Scalar &c_trial_fun) {
-            return GenericPhaseFieldFormulation<FunctionSpace, Dim,PFFormulation>::pf_formulation_.degradation_deriv(phase_field_value) *
+            return PFFormulation::degradation_deriv(phase_field_value) *
                    c_trial_fun * inner(stress, full_strain);
         }
 
@@ -865,7 +876,7 @@ namespace utopia {
                                                               const Scalar &shape_prod) {
             const Scalar dcc =
                 (1.0 - params.regularization) *
-                GenericPhaseFieldFormulation<FunctionSpace, Dim,PFFormulation>::pf_formulation_.degradation_deriv2(phase_field_value);
+                PFFormulation::degradation_deriv2(phase_field_value);
             return dcc * shape_prod * elastic_energy;
         }
 
@@ -874,7 +885,7 @@ namespace utopia {
                                                                        const Scalar &phase_field_value,
                                                                        const Scalar &trace,
                                                                        const Strain &strain) {
-            return (GenericPhaseFieldFormulation<FunctionSpace, Dim,PFFormulation>::pf_formulation_.degradation_deriv(phase_field_value) *
+            return (PFFormulation::degradation_deriv(phase_field_value) *
                     (1.0 - params.regularization)) *
                    strain_energy(params, trace, strain);
         }
@@ -895,6 +906,10 @@ namespace utopia {
                                                     // u
                                                     const Scalar &trace,
                                                     const Strain &strain) {
+
+            //double frac_en = GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation>::fracture_energy(
+            //                       params, phase_field_value, phase_field_grad);
+            //std::cout << frac_en << std::endl;
             return GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation>::fracture_energy(
                        params, phase_field_value, phase_field_grad) +
                    elastic_energy(params, phase_field_value, trace, strain);
@@ -912,7 +927,7 @@ namespace utopia {
                                                             const Scalar &phase_field_value,
                                                             const Scalar &trace,
                                                             const Strain &strain) {
-            return (GenericPhaseFieldFormulation<FunctionSpace,Dim,PFFormulation>::pf_formulation_.degradation(phase_field_value) *
+            return (PFFormulation::degradation(phase_field_value) *
                         (1.0 - params.regularization) +
                     params.regularization) *
                    strain_energy(params, trace, strain);
@@ -923,7 +938,7 @@ namespace utopia {
 
             // Post-processing functions
             // And write outputs
-            //export_strain(output_path, x, time);
+            this->export_strain(output_path, x, time);
             if (mpi_world_rank() == 0 )
                 std::cout << "Saving file: " << output_path << std::endl;
 

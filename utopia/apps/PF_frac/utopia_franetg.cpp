@@ -101,8 +101,8 @@ namespace utopia {
 //        IsotropicGenericPhaseField<FunctionSpace, Dim, AT2> BrittleRock(space);
 
         MLIncrementalLoading<FunctionSpace,
-                             FractureModel<FunctionSpace>,
-                             //IsotropicGenericPhaseField<FunctionSpace,Dim,AT2>,
+                             //FractureModel<FunctionSpace>,
+                             IsotropicGenericPhaseField<FunctionSpace,Dim,AT1>,
                              UniaxialLoading2D<FunctionSpace>,
                              UniformSpacingOnLine<FunctionSpace>>
             time_stepper(space);

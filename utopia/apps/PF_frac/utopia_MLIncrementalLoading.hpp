@@ -44,7 +44,6 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::read(...)");
             IncrementalLoadingBase<FunctionSpace>::read(in);
 
-            in.get("log_output_path", log_output_path_);
             in.get("n_coarse_sub_comm", n_coarse_sub_comm_);
             in.get("n_levels", n_levels_);
             in.get("save_output", save_output_);
@@ -53,7 +52,8 @@ namespace utopia {
             in.get("block_solver", block_solver_);
             in.get("use_simd", use_simd_);
 
-            in.get("energy_csv_file_name", csv_file_name_);
+            csv_file_name_   = this->output_path_ + "_energies.csv";
+            log_output_path_ = this->output_path_ + "_log.csv";
 
             //Creates the Problem Type
             init_ml_setup();
@@ -540,18 +540,21 @@ namespace utopia {
         void export_energies_csv(bool repeat_step) {
             if (!csv_file_name_.empty()) {
                 CSVWriter writer{};
-                Scalar elastic_energy = 0.0, fracture_energy = 0.0, error_tcv = 0.0, error_cod = 0.0, residual = 0.0;
+                Scalar elastic_energy = 0.0, fracture_energy = 0.0, error_tcv = 0.0, error_cod = 0.0, residual = 0.0, iterations=0.0;
 
                 if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                     fun_finest->elastic_energy(this->solution_, elastic_energy);
                     fun_finest->fracture_energy(this->solution_, fracture_energy);
 
-                    residual = rmtr_->get_gnorm( );
+                    residual   = rmtr_->get_gnorm( );
+                    iterations = rmtr_->get_total_iterations();
                     if (FunctionSpace::Dim == 3) {
                         fun_finest->compute_tcv(this->solution_, error_tcv);
                         fun_finest->compute_cod(this->solution_, error_cod);
                     }
                 }
+
+
 
                 if (!repeat_step) this->frac_energy_old_ = fracture_energy;  // only store old value if we dont repeat
 
@@ -559,13 +562,13 @@ namespace utopia {
                     if (!writer.file_exists(csv_file_name_)) {
                         writer.open_file(csv_file_name_);
                         writer.write_table_row<std::string>(
-                            {"time step", "time", "elastic_energy", "fracture_energy", "error_tcv", "error_cod", "residual"});
+                            {"time step", "time", "elastic_energy", "fracture_energy", "residual", "iterations"});
                     } else {
                         writer.open_file(csv_file_name_);
                     }
 
                     writer.write_table_row<Scalar>(
-                        {this->time_step_counter_, this->time_, elastic_energy, fracture_energy, error_tcv, error_cod, residual});
+                        {this->time_step_counter_, this->time_, elastic_energy, fracture_energy, residual, iterations});
                     writer.close_file();
                 }
             }

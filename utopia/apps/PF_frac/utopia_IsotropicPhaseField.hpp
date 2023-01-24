@@ -54,6 +54,7 @@ namespace utopia {
         IsotropicPhaseFieldForBrittleFractures(FunctionSpace &space, const Parameters &params)
             : PhaseFieldFracBase<FunctionSpace, Dim>(space, params) {}
 
+        /*
         bool export_strain(std::string output_path , const Vector &x_const, const Scalar time) const {
             UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::strain");
 
@@ -230,6 +231,7 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::strain");
             return true;
         }
+        */
 
         bool value(const Vector &x_const, Scalar &val) const override {
             UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::value");
@@ -330,7 +332,7 @@ namespace utopia {
                                 auto c_cold = c[qp] - c_old[qp];
                                 auto c_cold_bracket = c_cold < 0.0 ? c_cold : 0.0;
                                 el_energy +=
-                                    this->params_.penalty_param / 2.0 * c_cold_bracket * c_cold_bracket * dx(qp);
+                                    this->params_.penalty_param_irreversible / 2.0 * c_cold_bracket * c_cold_bracket * dx(qp);
                             }
                         }
 
@@ -704,7 +706,7 @@ namespace utopia {
                                 if (this->params_.use_penalty_irreversibility) {
                                     auto c_cold = c[qp] - c_old[qp];
                                     auto c_cold_bracket = c_cold < 0.0 ? c_cold : 0.0;
-                                    c_el_vec(j) += this->params_.penalty_param * c_cold_bracket * shape_test * dx(qp);
+                                    c_el_vec(j) += this->params_.penalty_param_irreversible * c_cold_bracket * shape_test * dx(qp);
                                 }
                             }
                         }
@@ -899,7 +901,7 @@ namespace utopia {
                                     if (this->params_.use_penalty_irreversibility) {
                                         auto c_cold = c[qp] - c_old[qp];
                                         auto c_heaviside = c_cold <= 0.0 ? 1.0 : 0.0;
-                                        val += c_heaviside* this->params_.penalty_param * c_shape_j_l_prod * dx(qp);
+                                        val += c_heaviside* this->params_.penalty_param_irreversible * c_shape_j_l_prod * dx(qp);
                                     }
 
                                     val = (l == j) ? (0.5 * val) : val;
@@ -1103,7 +1105,7 @@ namespace utopia {
 
             // Post-processing functions
             // And write outputs
-            export_strain(output_path, x, time);
+            this->export_strain(output_path, x, time);
             if (mpi_world_rank() == 0 )
                 std::cout << "Saving file: " << output_path << std::endl;
 

@@ -142,8 +142,10 @@ namespace utopia {
             if ( mpi_world_rank() == 0){
                 utopia::out() << "-----------------------------------------------------"
                                  "----------------- \n";
-                utopia::out() << "Fracture Energy -> measured change: " << frac_energy/this->frac_energy_old_
-                              << "  prescribed change: " << this->frac_energy_max_change_;
+                utopia::out() << "Fracture Energy -> New: " << frac_energy
+                              << "\n                -> Old: " << this->frac_energy_old_
+                              << "\nmeasured change ->  " << frac_energy/this->frac_energy_old_
+                              << "\nprescribed change-> " << this->frac_energy_max_change_;
                 utopia::out() << "\n-----------------------------------------------------"
                                  "----------------- \n";
             }

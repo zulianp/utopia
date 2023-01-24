@@ -140,6 +140,11 @@ public:
       return this->memory_.gnorm[this->n_levels() - 1];
   }
 
+  //E.P Added - returns gnorm on finest level
+  Scalar get_total_iterations(){
+      return this->_it_global;
+  }
+
 private:
   void init_memory() override {
     const auto &layouts = this->local_level_layouts();
