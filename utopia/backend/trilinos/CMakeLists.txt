@@ -1,7 +1,7 @@
 # find dependencies
 find_package(Trilinos)
 
-if(TRILINOS_FOUND)
+if(Trilinos_FOUND)  
   # These lines are needed so the utopia-config.makefile will be correctly
   # built. The UtopiaTargets.cmake file is populated automatically by cmake
   # ############################################################################
@@ -67,7 +67,7 @@ else()
 endif()
 
 # set-up module
-if(TRILINOS_FOUND)
+if(Trilinos_FOUND)
   list(
     APPEND
     TRILINOS_MODULES
