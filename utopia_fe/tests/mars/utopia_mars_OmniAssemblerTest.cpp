@@ -105,7 +105,7 @@ void mars_solve_aux(Input &in) {
 
     // static int once = 0;
     // if (once++ == 1) {
-    //     utopia_test_assert(space.write("result.bp", x));
+    utopia_test_assert(space.write("result.bp", x));
     // }
 
     c.stop();
@@ -131,7 +131,7 @@ void mars_poisson_aux(int nx, int ny, int nz) {
     mars_solve_aux(params);
 }
 
-void mars_linear_elasticity() { mars_linear_elasticity_aux(20, 20, 20); }
+void mars_linear_elasticity() { mars_linear_elasticity_aux(20, 20, 0); }
 
 void mars_poisson_2D() { mars_poisson_aux(10, 11, 0); }
 
@@ -210,7 +210,7 @@ void mars_new_assembler_test() {
 UTOPIA_REGISTER_TEST_FUNCTION(mars_new_assembler_test);
 
 void mars_new_auto_assembler_test() {
-    int n = 20;
+    int n = 10;
     // int n = 120;
     bool write_output = true;
     auto params =

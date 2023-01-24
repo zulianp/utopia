@@ -464,6 +464,8 @@ namespace utopia {
         bool write(const std::string &path) const;
 
         bool is_valid(const bool verbose = false) const;
+        bool is_block() const { return false; }
+        void convert_to_scalar_matrix() {}
 
         Scalar sum() const;
         // FIXME

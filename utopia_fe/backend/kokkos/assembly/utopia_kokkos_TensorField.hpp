@@ -296,8 +296,9 @@ namespace utopia {
 
                 DetOp op(n, data);
                 ::Kokkos::parallel_for(
-                    this->fe()->cell_qp_range(),
-                    UTOPIA_LAMBDA(int cell, int qp) { result(cell, qp, 0) = op(cell, qp); });
+                    this->fe()->cell_qp_range(), UTOPIA_LAMBDA(int cell, int qp) {
+                        result(cell, qp, 0) = op(cell, qp);
+                    });
             }
 
             void eig(QPField<FE> &field) {

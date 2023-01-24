@@ -32,7 +32,8 @@ namespace utopia {
             using Scalar_t = typename Traits<FunctionSpace>::Scalar;
 
             using Material_t = utopia::Material<FunctionSpace, FE>;
-            using MaterialPtr_t = std::unique_ptr<Material_t>;
+            // using MaterialPtr_t = std::unique_ptr<Material_t>;
+            using MaterialPtr_t = std::unique_ptr<utopia::AbstractMaterial<FunctionSpace>>;
 
             MaterialPtr_t make(const int ndims, const std::string name) {
                 std::string type = name;
@@ -109,7 +110,7 @@ namespace utopia {
         };
 
         template <class FunctionSpace, class FE>
-        std::unique_ptr<utopia::Material<FunctionSpace, FE>> MaterialFactory<FunctionSpace, FE>::make(
+        std::unique_ptr<utopia::AbstractMaterial<FunctionSpace>> MaterialFactory<FunctionSpace, FE>::make(
             const int ndims,
             const std::string &name) {
             static Impl impl;

@@ -136,7 +136,8 @@ namespace utopia {
                 register_assembler<utopia::kokkos::LaplaceOperator<FunctionSpace, FE_t>>("LaplaceOperator");
                 register_assembler<utopia::kokkos::ForcingFunction<FunctionSpace, FE_t>>("ForcingFunction");
 #ifdef UTOPIA_WITH_TINY_EXPR
-                register_assembler<utopia::kokkos::IncrementalForcingFunction<FunctionSpace, FE_t>>("IncrementalForcingFunction");
+                register_assembler<utopia::kokkos::IncrementalForcingFunction<FunctionSpace, FE_t>>(
+                    "IncrementalForcingFunction");
 #endif  // UTOPIA_WITH_TINY_EXPR
                 register_assembler<utopia::kokkos::NeoHookean<FunctionSpace, FE_t>>("NeoHookean");
 
@@ -147,34 +148,48 @@ namespace utopia {
                 register_assembler_variant<utopia::kokkos::VectorLaplaceOperator<FunctionSpace, FE_t, 3, Scalar_t>>(
                     "VectorLaplaceOperator", 3);
 
-                register_assembler_variant<utopia::kokkos::LinearElasticity<FunctionSpace, FE_t, 1, Scalar_t>>("LinearElasticity", 1);
-                register_assembler_variant<utopia::kokkos::LinearElasticity<FunctionSpace, FE_t, 2, Scalar_t>>("LinearElasticity", 2);
-                register_assembler_variant<utopia::kokkos::LinearElasticity<FunctionSpace, FE_t, 3, Scalar_t>>("LinearElasticity", 3);
+                register_assembler_variant<utopia::kokkos::LinearElasticity<FunctionSpace, FE_t, 1, Scalar_t>>(
+                    "LinearElasticity", 1);
+                register_assembler_variant<utopia::kokkos::LinearElasticity<FunctionSpace, FE_t, 2, Scalar_t>>(
+                    "LinearElasticity", 2);
+                register_assembler_variant<utopia::kokkos::LinearElasticity<FunctionSpace, FE_t, 3, Scalar_t>>(
+                    "LinearElasticity", 3);
 
-                register_assembler_variant<utopia::kokkos::WeakLinearThermoElasticity<FunctionSpace, FE_t, 1, Scalar_t>>(
+                register_assembler_variant<
+                    utopia::kokkos::WeakLinearThermoElasticity<FunctionSpace, FE_t, 1, Scalar_t>>(
                     "WeakLinearThermoElasticity", 1);
-                register_assembler_variant<utopia::kokkos::WeakLinearThermoElasticity<FunctionSpace, FE_t, 2, Scalar_t>>(
+                register_assembler_variant<
+                    utopia::kokkos::WeakLinearThermoElasticity<FunctionSpace, FE_t, 2, Scalar_t>>(
                     "WeakLinearThermoElasticity", 2);
-                register_assembler_variant<utopia::kokkos::WeakLinearThermoElasticity<FunctionSpace, FE_t, 3, Scalar_t>>(
+                register_assembler_variant<
+                    utopia::kokkos::WeakLinearThermoElasticity<FunctionSpace, FE_t, 3, Scalar_t>>(
                     "WeakLinearThermoElasticity", 3);
 
-                // register_assembler_variant<utopia::kokkos::IsotropicPhaseFieldForBrittleFractures<FunctionSpace, FE_t, 1,
-                // Scalar_t>>(
+                // register_assembler_variant<utopia::kokkos::IsotropicPhaseFieldForBrittleFractures<FunctionSpace,
+                // FE_t, 1, Scalar_t>>(
                 //     "IsotropicPhaseFieldForBrittleFractures", 1);
-                register_assembler_variant<utopia::kokkos::IsotropicPhaseFieldForBrittleFractures<FunctionSpace, FE_t, 2>>(
+                register_assembler_variant<
+                    utopia::kokkos::IsotropicPhaseFieldForBrittleFractures<FunctionSpace, FE_t, 2>>(
                     "IsotropicPhaseFieldForBrittleFractures", 2);
-                register_assembler_variant<utopia::kokkos::IsotropicPhaseFieldForBrittleFractures<FunctionSpace, FE_t, 3>>(
+                register_assembler_variant<
+                    utopia::kokkos::IsotropicPhaseFieldForBrittleFractures<FunctionSpace, FE_t, 3>>(
                     "IsotropicPhaseFieldForBrittleFractures", 3);
 
                 // Auto gen materials
-                register_assembler_variant<utopia::kokkos::NeoHookeanOgden<FunctionSpace, FE_t, 2>>("NeoHookeanOgden", 2);
-                register_assembler_variant<utopia::kokkos::NeoHookeanOgden<FunctionSpace, FE_t, 3>>("NeoHookeanOgden", 3);
+                register_assembler_variant<utopia::kokkos::NeoHookeanOgden<FunctionSpace, FE_t, 2>>("NeoHookeanOgden",
+                                                                                                    2);
+                register_assembler_variant<utopia::kokkos::NeoHookeanOgden<FunctionSpace, FE_t, 3>>("NeoHookeanOgden",
+                                                                                                    3);
 
-                // register_assembler_variant<utopia::kokkos::NeoHookeanSmith<FunctionSpace, FE_t, 2>>("NeoHookeanSmith",2);
-                register_assembler_variant<utopia::kokkos::NeoHookeanSmith<FunctionSpace, FE_t, 3>>("NeoHookeanSmith", 3);
+                // register_assembler_variant<utopia::kokkos::NeoHookeanSmith<FunctionSpace, FE_t,
+                // 2>>("NeoHookeanSmith",2);
+                register_assembler_variant<utopia::kokkos::NeoHookeanSmith<FunctionSpace, FE_t, 3>>("NeoHookeanSmith",
+                                                                                                    3);
 
-                register_assembler_variant<utopia::kokkos::NeoHookeanBower<FunctionSpace, FE_t, 2>>("NeoHookeanBower", 2);
-                register_assembler_variant<utopia::kokkos::NeoHookeanBower<FunctionSpace, FE_t, 3>>("NeoHookeanBower", 3);
+                register_assembler_variant<utopia::kokkos::NeoHookeanBower<FunctionSpace, FE_t, 2>>("NeoHookeanBower",
+                                                                                                    2);
+                register_assembler_variant<utopia::kokkos::NeoHookeanBower<FunctionSpace, FE_t, 3>>("NeoHookeanBower",
+                                                                                                    3);
 
                 register_assembler_variant<utopia::kokkos::NeoHookeanWang<FunctionSpace, FE_t, 2>>("NeoHookeanWang", 2);
                 register_assembler_variant<utopia::kokkos::NeoHookeanWang<FunctionSpace, FE_t, 3>>("NeoHookeanWang", 3);
@@ -185,8 +200,10 @@ namespace utopia {
                 register_assembler_variant<utopia::kokkos::MooneyRivlin<FunctionSpace, FE_t, 2>>("MooneyRivlin", 2);
                 register_assembler_variant<utopia::kokkos::MooneyRivlin<FunctionSpace, FE_t, 3>>("MooneyRivlin", 3);
 
-                register_assembler_variant<utopia::kokkos::SaintVenantKirchoff<FunctionSpace, FE_t, 2>>("SaintVenantKirchoff", 2);
-                register_assembler_variant<utopia::kokkos::SaintVenantKirchoff<FunctionSpace, FE_t, 3>>("SaintVenantKirchoff", 3);
+                register_assembler_variant<utopia::kokkos::SaintVenantKirchoff<FunctionSpace, FE_t, 2>>(
+                    "SaintVenantKirchoff", 2);
+                register_assembler_variant<utopia::kokkos::SaintVenantKirchoff<FunctionSpace, FE_t, 3>>(
+                    "SaintVenantKirchoff", 3);
 
                 register_assembler_variant<utopia::kokkos::Yeoh<FunctionSpace, FE_t, 2>>("Yeoh", 2);
                 register_assembler_variant<utopia::kokkos::Yeoh<FunctionSpace, FE_t, 3>>("Yeoh", 3);
@@ -629,6 +646,8 @@ namespace utopia {
 
             void local_to_global_vector_domain(Vector &vec) {
                 if (domain.has_vector()) {
+                    // domain.vector_accumulator->describe(std::cout);
+
                     local_to_global(*space, domain.vector_accumulator->data(), mode, vec);
 
                     // static bool first = true;
@@ -851,7 +870,8 @@ namespace utopia {
         void OmniAssembler<FunctionSpace, FE>::read(Input &in) {
             using ForcingFunction_t = utopia::kokkos::ForcingFunction<FunctionSpace, typename Impl::FE>;
 #ifdef UTOPIA_WITH_TINY_EXPR
-            using IncrementalForcingFunction_t = utopia::kokkos::IncrementalForcingFunction<FunctionSpace, typename Impl::FE>;
+            using IncrementalForcingFunction_t =
+                utopia::kokkos::IncrementalForcingFunction<FunctionSpace, typename Impl::FE>;
 #endif  // UTOPIA_WITH_TINY_EXPR
 
             if (!impl_->domain.fe) {
