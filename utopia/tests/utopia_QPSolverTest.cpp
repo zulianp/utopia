@@ -427,6 +427,8 @@ namespace utopia {
         bool verbose = false;
     };
 
+#ifdef UTOPIA_WITH_PETSC
+
     // FIXME merge with the other once it is poperly implemented
     template <class Matrix, class Vector>
     class PQPSolverTest {
@@ -636,6 +638,8 @@ namespace utopia {
         }
     };
 
+
+#endif 
     template <class Matrix, class Vector>
     class MonotoneMGTest {
     public:

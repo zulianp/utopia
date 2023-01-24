@@ -8,6 +8,7 @@
 
 #include <initializer_list>
 #include <vector>
+#include <array>
 
 namespace utopia {
     template <class Implementation, class Derived, int Order>
