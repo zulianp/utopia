@@ -7,6 +7,8 @@
 #include "utopia_TRBase.hpp"
 #include "utopia_TRSubproblem.hpp"
 
+#include "utopia_Tracer.hpp"
+
 namespace utopia {
     template <class Matrix, class Vector = typename Traits<Matrix>::Vector>
     class TrustRegion final : public NewtonBase<Matrix, Vector>, public TrustRegionBase<Vector> {
@@ -35,6 +37,8 @@ namespace utopia {
         }
 
         bool solve(Function<Matrix, Vector> &fun, Vector &x_k) override {
+            UTOPIA_TRACE_SCOPE("TrustRegion::solve");
+
             using namespace utopia;
 
             // passing solver and parameters into subproblem
