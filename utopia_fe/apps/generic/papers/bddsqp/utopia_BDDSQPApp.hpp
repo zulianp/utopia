@@ -18,6 +18,7 @@
 #include "utopia_Material.hpp"
 #include "utopia_kokkos_MaterialFactory_impl.hpp"
 
+#include <cstdio>
 #include <memory>
 
 namespace utopia {
@@ -36,6 +37,8 @@ namespace utopia {
 
         using LinearSolver_t = utopia::LinearSolver<Matrix_t, Vector_t>;
         using OmniLinearSolver_t = utopia::OmniLinearSolver<Matrix_t, Vector_t>;
+
+        using IO_t = utopia::IO<FunctionSpace>;
 
         using NewtonBase_t = utopia::NewtonBase<Matrix_t, Vector_t>;
         using Newton_t = utopia::Newton<Matrix_t, Vector_t>;
@@ -104,11 +107,19 @@ namespace utopia {
                 });
             });
 
-            Path output = "out.e";
+            std::string output = "out.e";
             in.get("output", output);
+
+            std::shared_ptr<IO_t> io = std::make_shared<IO_t>(space);
+            io->set_output_path(output);
 
             bool debug = false;
             in.get("debug", debug);
+
+            int loading_steps = 1;
+            in.get("loading_steps", loading_steps);
+
+            Scalar_t pseudo_time_step = 1.0 / (loading_steps);
 
             ////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -145,6 +156,14 @@ namespace utopia {
             Vector_t grad;
             space.create_vector(grad);
 
+            Vector_t constraints_vec;
+            space.create_vector(constraints_vec);
+            constraints_vec.set(0.);
+
+            // Simple constraints
+            space.apply_constraints(constraints_vec);
+            constraints_vec *= pseudo_time_step;
+
             bool ok = true;
             if (zero_initial_guess) {
                 material->hessian_and_gradient(x, hessian, grad);
@@ -152,7 +171,8 @@ namespace utopia {
                 // We need the negative gradient
                 grad = -grad;
 
-                space.apply_constraints(grad);
+                // Simple constraints
+                space.copy_at_constrained_nodes(constraints_vec, grad);
 
                 ok = linear_solver->solve(hessian, grad, x);
 
@@ -161,28 +181,31 @@ namespace utopia {
                 if (debug) print_norms(hessian, grad, x);
             }
 
-            space.apply_constraints(x);
+            for (int t = 0; t < loading_steps; ++t) {
+                // Simple constraints
+                x += constraints_vec;
 
-            if (false) {
-                // Use this branch for debugging materials
-                Vector_t correction;
-                space.create_vector(correction);
-                correction.set(0.);
+                if (false) {
+                    // Use this branch for debugging materials
+                    Vector_t correction;
+                    space.create_vector(correction);
+                    correction.set(0.);
 
-                for (int i = 0; i < 4 && ok; ++i) {
-                    ok = material->hessian_and_gradient(x, hessian, grad);
-                    ok = linear_solver->solve(hessian, grad, correction);
+                    for (int i = 0; i < 4 && ok; ++i) {
+                        ok = material->hessian_and_gradient(x, hessian, grad);
+                        ok = linear_solver->solve(hessian, grad, correction);
 
-                    x -= correction;
+                        x -= correction;
 
-                    if (debug) print_norms(hessian, grad, x);
+                        if (debug) print_norms(hessian, grad, x);
+                    }
+
+                } else {
+                    ok = nonlinear_solver->solve(*material, x);
                 }
 
-            } else {
-                ok = nonlinear_solver->solve(*material, x);
+                io->write(x, t, t);
             }
-
-            space.write(output, x);
 
             if (!ok) {
                 utopia::out() << "Yo!\n";
