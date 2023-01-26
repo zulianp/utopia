@@ -150,6 +150,8 @@ namespace utopia {
                 x = input_state.data();
             }
 
+            io->write(x, 0, 0);
+
             Matrix_t hessian;
             space.create_matrix(hessian);
 
@@ -204,7 +206,7 @@ namespace utopia {
                     ok = nonlinear_solver->solve(*material, x);
                 }
 
-                io->write(x, t, t);
+                io->write(x, (t + 1), (t + 1));
             }
 
             if (!ok) {
