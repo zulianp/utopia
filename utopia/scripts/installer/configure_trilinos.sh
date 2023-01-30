@@ -19,7 +19,7 @@ cmake .. \
 -DTpetra_INST_INT_LONG:BOOL=ON \
 -DTpetra_INST_INT_LONG_LONG:BOOL=OFF \
 -DTrilinos_ALLOW_NO_PACKAGES:BOOL=OFF \
--DTrilinos_ASSERT_MISSING_PACKAGES=ON \
+-DTrilinos_ASSERT_DEFINED_DEPENDENCIES=FATAL_ERROR \
 -DTrilinos_ENABLE_ALL_OPTIONAL_PACKAGES=OFF  \
 -DTrilinos_ENABLE_Amesos2:BOOL=ON \
 -DTrilinos_ENABLE_AztecOO:BOOL=OFF \
@@ -55,10 +55,20 @@ cmake .. \
 -DTrilinos_ENABLE_Zoltan:BOOL=ON \
 -DTPL_ENABLE_SuperLU:BOOL=OFF \
 -DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON \
+-DTrilinos_ENABLE_Kokkos=ON \
+-DTPL_ENABLE_HDF5=ON \
+-DTPL_HDF5_INCLUDE_DIRS=/usr/local/Cellar/hdf5/1.12.2_2/include \
+-DTPL_HDF5_LIBRARY_DIRS=/usr/local/Cellar/hdf5/1.12.2_2/lib 
+
+
+
 
 # Enable and specify HDF5 if linkage errors. 
 # Installed it with homebrew so maybe that's the problem. 
 # Trilinos compiled no problems afterwards.
+
+#  Warning, Trilinos_ASSERT_MISSING_PACKAGES='ON' is set and is no longer
+#  supported! Please set Trilinos_ASSERT_DEFINED_DEPENDENCIES instead
 
 # -DTPL_ENABLE_SuperLU=ON \
 # -DTPL_ENABLE_Boost:BOOL=ON \

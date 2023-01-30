@@ -59,17 +59,9 @@ more information and tutorials.
 #include "utopia_cuda.hpp"
 #endif  // UTOPIA_WITH_CUDA
 
-#ifdef UTOPIA_WITH_OPENCL
-#include "utopia_opencl.hpp"
-#endif  // UTOPIA_WITH_OPENCL
-
-#ifdef UTOPIA_WITH_M3ELINSOL
-#include "utopia_m3elinsol.hpp"
-#endif  // UTOPIA_WITH_M3ELINSOL
-
 #ifdef UTOPIA_WITH_VC
 #include "utopia_Vc.hpp"
-#endif  // UTOPIA_WITH_M3ELINSOL
+#endif  // UTOPIA_WITH_VC
 
 #include "utopia_polymorphic_LinearSolver.hpp"
 

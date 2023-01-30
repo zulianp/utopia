@@ -41,8 +41,6 @@ macro(print_dependency_table)
     # but can be easily developed further\n") SET(DEP_TABLE
     # "${DEP_TABLE}opencl\t\t| ${UTOPIA_OPENCL}\t\t| prototyping\n")
     set(DEP_TABLE
-        "${DEP_TABLE}m3elinsol\t| ${UTOPIA_M3ELINSOL}\t\t| work in progress\n")
-    set(DEP_TABLE
         "${DEP_TABLE}____________________________________________________\n")
     message(STATUS ${DEP_TABLE})
 endmacro()

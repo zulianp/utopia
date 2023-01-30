@@ -17,7 +17,6 @@
 #cmakedefine UTOPIA_WITH_OPEN_BLAS
 #cmakedefine UTOPIA_WITH_PETSC_CRAY
 #cmakedefine UTOPIA_WITH_CUDA
-#cmakedefine UTOPIA_WITH_OPENCL
 #cmakedefine UTOPIA_WITH_EIGEN_3
 #cmakedefine UTOPIA_TRACE_ENABLED
 #cmakedefine UTOPIA_TRACE_EXPR_ENABLED
@@ -25,7 +24,6 @@
 #cmakedefine UTOPIA_WITH_TINY_EXPR
 #cmakedefine UTOPIA_WITH_JSON
 #cmakedefine UTOPIA_WITH_YAML_CPP
-#cmakedefine UTOPIA_WITH_M3ELINSOL
 #cmakedefine UTOPIA_WITH_CPP14
 #cmakedefine UTOPIA_WITH_CODE_COVERAGE
 #cmakedefine UTOPIA_DEPRECATED_API

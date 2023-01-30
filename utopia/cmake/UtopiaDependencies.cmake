@@ -56,17 +56,11 @@ if(UTOPIA_ENABLE_LOCK_CHECKING)
   set(UTOPIA_ENABLE_LOCK_CHECK TRUE)
 endif()
 
-if(UTOPIA_ENABLE_M3ELINSOL)
-  add_subdirectory(backend/m3elinsol)
-endif()
 
 if(UTOPIA_ENABLE_METIS)
   add_subdirectory(backend/metis)
 endif()
 
-if(UTOPIA_ENABLE_OPENCL)
-  add_subdirectory(backend/opencl)
-endif()
 
 if(UTOPIA_ENABLE_PARMETIS)
   add_subdirectory(backend/parmetis)
