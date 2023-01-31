@@ -28,6 +28,8 @@ int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_create_vector(ptrdiff_t *nlocal,
                                                               ptrdiff_t *nglobal,
                                                               plugin_scalar_t **values);
 
+int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_destroy_vector(plugin_scalar_t *values);
+
 // Optimization function
 int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_value(const plugin_scalar_t *x, plugin_scalar_t *const out);
 

@@ -562,19 +562,7 @@ namespace utopia {
             return *this;
         }
 
-        inline void destroy() {
-            if (vec_) {
-                if (owned_) {
-                    VecDestroy(&vec_);
-                }
-
-                vec_ = nullptr;
-            }
-
-            initialized_ = false;
-            owned_ = true;
-            ghost_values_.clear();
-        }
+        void destroy();
 
         inline Vec &implementation() { return vec_; }
 
@@ -879,6 +867,8 @@ namespace utopia {
         void resize(SizeType local_size, SizeType global_size);
         void resize(SizeType global_size) { resize(PETSC_DECIDE, global_size); }
 
+        std::function<void()> destroy_callback;
+
     public:
         // REVIST below
         void create_local_vector(PetscVector &out);
@@ -905,6 +895,12 @@ namespace utopia {
 
             assert(is_consistent());
         }
+
+        void wrap(MPI_Comm comm,
+                  const PetscInt nlocal,
+                  const PetscInt nglobal,
+                  const PetscScalar *array,
+                  std::function<void()> destroy_callback);
     };
 
 }  // namespace utopia

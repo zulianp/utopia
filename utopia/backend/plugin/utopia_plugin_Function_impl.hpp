@@ -21,6 +21,7 @@ namespace utopia {
                                                                  plugin_idx_t **);
 
         typedef int (*utopia_plugin_Function_create_vector_t)(ptrdiff_t *, ptrdiff_t *, plugin_scalar_t **);
+        typedef int (*utopia_plugin_Function_destroy_vector_t)(plugin_scalar_t *values);
 
         typedef int (*utopia_plugin_Function_value_t)(const plugin_scalar_t *, plugin_scalar_t *const);
 
@@ -39,7 +40,10 @@ namespace utopia {
                                                                       plugin_scalar_t *const);
 
         utopia_plugin_Function_create_crs_graph_t create_crs_graph{nullptr};
+
         utopia_plugin_Function_create_vector_t create_vector{nullptr};
+        utopia_plugin_Function_destroy_vector_t destroy_vector{nullptr};
+
         utopia_plugin_Function_value_t value{nullptr};
         utopia_plugin_Function_gradient_t gradient{nullptr};
         utopia_plugin_Function_hessian_crs_t hessian_crs{nullptr};
@@ -50,7 +54,7 @@ namespace utopia {
 
         void read(Input &in) override;
 
-        void initialize(Communicator &comm);
+        void initialize(const Communicator &comm);
 
         virtual ~PluginFunctionImpl();
 

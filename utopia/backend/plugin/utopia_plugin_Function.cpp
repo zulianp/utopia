@@ -59,6 +59,10 @@ namespace utopia {
 
         create_vector =
             (utopia_plugin_Function_create_vector_t)load_function(handle, "utopia_plugin_Function_create_vector");
+
+        destroy_vector =
+            (utopia_plugin_Function_destroy_vector_t)load_function(handle, "utopia_plugin_Function_destroy_vector");
+
         value = (utopia_plugin_Function_value_t)load_function(handle, "utopia_plugin_Function_value");
 
         gradient = (utopia_plugin_Function_gradient_t)load_function(handle, "utopia_plugin_Function_gradient");
@@ -86,5 +90,5 @@ namespace utopia {
         dlclose(handle);
     }
 
-    void PluginFunctionImpl::initialize(Communicator &comm) { this->init(comm.raw_comm(), &info); }
+    void PluginFunctionImpl::initialize(const Communicator &comm) { this->init(comm.raw_comm(), &info); }
 }  // namespace utopia

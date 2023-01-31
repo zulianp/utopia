@@ -725,4 +725,36 @@ namespace utopia {
         VecRestoreLocalVector(this->raw_type(), out.raw_type());
     }
 
+    void PetscVector::destroy() {
+        if (vec_) {
+            if (owned_) {
+                VecDestroy(&vec_);
+            }
+
+            vec_ = nullptr;
+        }
+
+        initialized_ = false;
+        owned_ = true;
+        ghost_values_.clear();
+
+        if (destroy_callback) {
+            destroy_callback();
+        }
+    }
+
+    void PetscVector::wrap(MPI_Comm comm,
+                           const PetscInt nlocal,
+                           const PetscInt nglobal,
+                           const PetscScalar *array,
+                           std::function<void()> destroy_callback) {
+        this->destroy();
+
+        VecCreateMPIWithArray(comm, 1, nlocal, nglobal, array, &this->raw_type());
+
+        this->update_mirror();
+
+        this->destroy_callback = destroy_callback;
+    }
+
 }  // namespace utopia
