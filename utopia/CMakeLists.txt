@@ -580,6 +580,7 @@ install(
 
 add_subdirectory(examples)
 add_subdirectory(backend/polymorphic)
+add_subdirectory(backend/plugin)
 
 if(UTOPIA_ENABLE_VC)
     add_subdirectory(backend/vc)
