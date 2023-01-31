@@ -4,6 +4,17 @@ if(NOT TRILINOS_FOUND)
     # git clone https://github.com/trilinos/Trilinos.git
     include(ExternalProject)
 
+
+
+
+    # Create a basic list then populate it with the right args
+    # list(BASIC_TRILINOS_CMAKE_ARGS)
+
+
+
+
+
+
     if(UTOPIA_DEPENDENCIES_DIR)
         set(TRILINOS_INSTALL_DIR ${UTOPIA_DEPENDENCIES_DIR}/Trilinos)
     else()
@@ -46,7 +57,7 @@ if(NOT TRILINOS_FOUND)
     list(
         APPEND
         TRILINOS_CMAKE_ARGS
-        "-DCMAKE_CXX_STANDARD=14"
+        "-DCMAKE_CXX_STANDARD=17"
         "-DCMAKE_INSTALL_PREFIX=${TRILINOS_INSTALL_DIR}"
         "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
         "-DCMAKE_CXX_COMPILER=${TRILINOS_CXX_COMPILER}"
@@ -54,7 +65,6 @@ if(NOT TRILINOS_FOUND)
         "-DCMAKE_CXX_FLAGS_DEBUG=${CMAKE_CXX_FLAGS_DEBUG}"
         "-DCMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}"
         "-DTPL_ENABLE_MPI=ON"
-        "-DMPI_BASE_DIR=${TRILINOS_MPI_BASE_DIR}"
         "-DTrilinos_ENABLE_Tpetra=ON"
         "-DTrilinos_ENABLE_TpetraCore=ON"
         "-DTrilinos_ENABLE_Belos=ON"

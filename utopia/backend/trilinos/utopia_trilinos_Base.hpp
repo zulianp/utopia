@@ -1,7 +1,10 @@
 #ifndef UTOPIA_TRILINOS_BASE_HPP
 #define UTOPIA_TRILINOS_BASE_HPP
 
+#if !UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE
 #include <Kokkos_DefaultNode.hpp>
+#endif
+
 #include <Tpetra_Operator.hpp>
 #include <vector>
 #include "utopia_Base.hpp"
