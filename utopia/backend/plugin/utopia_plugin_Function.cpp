@@ -52,43 +52,55 @@ namespace utopia {
             Utopia::Abort();
         }
 
-        init = (utopia_plugin_Function_init_t)load_function(handle, "utopia_plugin_Function_init");
+        init_ = (utopia_plugin_Function_init_t)load_function(handle, "utopia_plugin_Function_init");
 
-        create_crs_graph =
+        create_crs_graph_ =
             (utopia_plugin_Function_create_crs_graph_t)load_function(handle, "utopia_plugin_Function_create_crs_graph");
 
-        create_vector =
+        create_vector_ =
             (utopia_plugin_Function_create_vector_t)load_function(handle, "utopia_plugin_Function_create_vector");
 
-        destroy_vector =
+        destroy_vector_ =
             (utopia_plugin_Function_destroy_vector_t)load_function(handle, "utopia_plugin_Function_destroy_vector");
 
-        value = (utopia_plugin_Function_value_t)load_function(handle, "utopia_plugin_Function_value");
+        value_ = (utopia_plugin_Function_value_t)load_function(handle, "utopia_plugin_Function_value");
 
-        gradient = (utopia_plugin_Function_gradient_t)load_function(handle, "utopia_plugin_Function_gradient");
+        gradient_ = (utopia_plugin_Function_gradient_t)load_function(handle, "utopia_plugin_Function_gradient");
 
-        hessian_crs = (utopia_plugin_Function_hessian_crs_t)load_function(handle, "utopia_plugin_Function_hessian_crs");
-        apply = (utopia_plugin_Function_apply_t)load_function(handle, "utopia_plugin_Function_apply");
+        hessian_crs_ =
 
-        apply_constraints = (utopia_plugin_Function_apply_constraints_t)load_function(
+            (utopia_plugin_Function_hessian_crs_t)load_function(handle, "utopia_plugin_Function_hessian_crs");
+        apply_ = (utopia_plugin_Function_apply_t)load_function(handle, "utopia_plugin_Function_apply");
+
+        apply_constraints_ = (utopia_plugin_Function_apply_constraints_t)load_function(
             handle, "utopia_plugin_Function_apply_constraints");
 
-        apply_zero_constraints = (utopia_plugin_Function_apply_zero_constraints_t)load_function(
+        apply_zero_constraints_ = (utopia_plugin_Function_apply_zero_constraints_t)load_function(
             handle, "utopia_plugin_Function_apply_zero_constraints");
 
-        copy_constrained_dofs = (utopia_plugin_Function_copy_constrained_dofs_t)load_function(
+        copy_constrained_dofs_ = (utopia_plugin_Function_copy_constrained_dofs_t)load_function(
             handle, "utopia_plugin_Function_copy_constrained_dofs");
 
-        destroy = (utopia_plugin_Function_destroy_t)load_function(handle, "utopia_plugin_Function_destroy");
+        destroy_ = (utopia_plugin_Function_destroy_t)load_function(handle, "utopia_plugin_Function_destroy");
     }
 
     PluginFunctionImpl::~PluginFunctionImpl() {
-        if (this->destroy) {
-            this->destroy(&info);
+        if (this->destroy_) {
+            this->destroy_(&info);
         }
 
         dlclose(handle);
     }
 
-    void PluginFunctionImpl::initialize(const Communicator &comm) { this->init(comm.raw_comm(), &info); }
+    void PluginFunctionImpl::initialize(const Communicator &comm) {
+        info.comm = comm.raw_comm();
+        int err = this->init_(&info);
+        if (err != UTOPIA_PLUGIN_SUCCESS) {
+            if (mpi_world_rank() == 0) {
+                utopia::err() << "Plugin return error code " << err << '\n';
+            }
+
+            Utopia::Abort();
+        }
+    }
 }  // namespace utopia

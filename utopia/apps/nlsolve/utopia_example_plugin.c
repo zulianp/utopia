@@ -7,35 +7,40 @@
 // mpicc -c ../apps/nlsolve/utopia_example_plugin.c -I ../backend/plugin
 // mpicc -shared utopia_example_plugin.o -o utopia_example_plugin.dylib
 
-int UTOPIA_PLUGIN_EXPORT utopia_load_plugin(const char *path) {
-    printf("utopia_load_plugin\n");
-    return UTOPIA_PLUGIN_FAILURE;
-}
-
-int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_init(MPI_Comm comm, plugin_Function_t *info) {
-    printf("utopia_plugin_Function_init\n");
+int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_init(plugin_Function_t *info) {
     int size;
-    MPI_Comm_size(comm, &size);
-    if (size != 1)
+    MPI_Comm_size(info->comm, &size);
+    if (size != 1) {
+        // Only serial runs for this plugin!
         return UTOPIA_PLUGIN_FAILURE;
-    else
+    } else {
+        // Eventuall initialize info->user_data here
         return UTOPIA_PLUGIN_SUCCESS;
+    }
 }
 
-int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_create_crs_graph(ptrdiff_t *nlocal,
+int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_create_crs_graph(const plugin_Function_t *info,
+                                                                 ptrdiff_t *nlocal,
                                                                  ptrdiff_t *nglobal,
                                                                  ptrdiff_t *nnz,
                                                                  plugin_idx_t **rowptr,
                                                                  plugin_idx_t **colidx) {
-    printf("utopia_plugin_Function_create_crs_graph\n");
     *nlocal = 2;
     *nglobal = 2;
     *nnz = 2;
     // TODO
-    return UTOPIA_PLUGIN_FAILURE;
+    *rowptr = (plugin_idx_t *)malloc((*nlocal + 1) * sizeof(plugin_idx_t));
+    (*rowptr)[0] = 0;
+    (*rowptr)[1] = 1;
+    (*rowptr)[2] = 2;
+
+    *colidx = (plugin_idx_t *)malloc((*nnz) * sizeof(plugin_idx_t));
+
+    return UTOPIA_PLUGIN_SUCCESS;
 }
 
-int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_create_vector(ptrdiff_t *nlocal,
+int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_create_vector(const plugin_Function_t *info,
+                                                              ptrdiff_t *nlocal,
                                                               ptrdiff_t *nglobal,
                                                               plugin_scalar_t **values) {
     *values = (plugin_scalar_t *)malloc(2 * sizeof(plugin_scalar_t));
@@ -46,59 +51,65 @@ int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_create_vector(ptrdiff_t *nlocal,
     return UTOPIA_PLUGIN_SUCCESS;
 }
 
-int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_destroy_vector(plugin_scalar_t *values) {
+int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_destroy_vector(const plugin_Function_t *info, plugin_scalar_t *values) {
     free(values);
     return UTOPIA_PLUGIN_SUCCESS;
 }
 
 // Optimization function
-int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_value(const plugin_scalar_t *x, plugin_scalar_t *const out) {
+int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_value(const plugin_Function_t *info,
+                                                      const plugin_scalar_t *x,
+                                                      plugin_scalar_t *const out) {
     *out = (x[0] * x[0] + x[1] * x[1]);
     return UTOPIA_PLUGIN_SUCCESS;
 }
 
-int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_gradient(const plugin_scalar_t *const x, plugin_scalar_t *const out) {
+int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_gradient(const plugin_Function_t *info,
+                                                         const plugin_scalar_t *const x,
+                                                         plugin_scalar_t *const out) {
     out[0] = 2 * x[0];
     out[1] = 2 * x[1];
     return UTOPIA_PLUGIN_SUCCESS;
 }
 
 // We might want to have also other formats here
-int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_hessian_crs(const plugin_scalar_t *const x,
+int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_hessian_crs(const plugin_Function_t *info,
+                                                            const plugin_scalar_t *const x,
                                                             const plugin_idx_t *const rowptr,
                                                             const plugin_idx_t *const colidx,
                                                             plugin_scalar_t *const values) {
-    printf("utopia_plugin_Function_hessian_crs\n");
-
     values[0] = 2;
     values[1] = 2;
-
     return UTOPIA_PLUGIN_SUCCESS;
 }
 
 // Operator
-int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_apply(const plugin_scalar_t *const x, plugin_scalar_t *const out) {
-    printf("utopia_plugin_Function_apply\n");
+int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_apply(const plugin_Function_t *info,
+                                                      const plugin_scalar_t *const x,
+                                                      plugin_scalar_t *const out) {
     out[0] = 2 * x[0];
     out[1] = 2 * x[1];
     return UTOPIA_PLUGIN_SUCCESS;
 }
 
-int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_apply_constraints(const plugin_scalar_t *const x) {
-    printf("utopia_plugin_Function_apply_constraints\n");
-    return UTOPIA_PLUGIN_FAILURE;
+int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_apply_constraints(const plugin_Function_t *info,
+                                                                  plugin_scalar_t *const x) {
+    // No constraints for this example
+    return UTOPIA_PLUGIN_SUCCESS;
 }
-int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_apply_zero_constraints(const plugin_scalar_t *const x) {
-    printf("utopia_plugin_Function_apply_zero_constraints\n");
-    return UTOPIA_PLUGIN_FAILURE;
+int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_apply_zero_constraints(const plugin_Function_t *info,
+                                                                       plugin_scalar_t *const x) {
+    // No constraints for this example
+    return UTOPIA_PLUGIN_SUCCESS;
 }
-int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_copy_constrained_dofs(const plugin_scalar_t *const src,
+int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_copy_constrained_dofs(const plugin_Function_t *info,
+                                                                      const plugin_scalar_t *const src,
                                                                       plugin_scalar_t *const dest) {
-    printf("utopia_plugin_Function_copy_constrained_dofs\n");
-    return UTOPIA_PLUGIN_FAILURE;
+    // No constraints for this example
+    return UTOPIA_PLUGIN_SUCCESS;
 }
 
 int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_destroy(plugin_Function_t *info) {
-    printf("utopia_plugin_Function_destroy\n");
-    return UTOPIA_PLUGIN_FAILURE;
+    // No user-data for this example
+    return UTOPIA_PLUGIN_SUCCESS;
 }
