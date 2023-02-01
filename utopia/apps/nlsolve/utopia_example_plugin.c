@@ -7,6 +7,15 @@
 // mpicc -c ../apps/nlsolve/utopia_example_plugin.c -I ../backend/plugin
 // mpicc -shared utopia_example_plugin.o -o utopia_example_plugin.dylib
 
+int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_destroy_array(const plugin_Function_t *info, void *ptr) {
+    free(ptr);
+    return UTOPIA_PLUGIN_SUCCESS;
+}
+int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_create_array(const plugin_Function_t *info, size_t size, void **ptr) {
+    *ptr = malloc(size);
+    return UTOPIA_PLUGIN_SUCCESS;
+}
+
 int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_init(plugin_Function_t *info) {
     int size;
     MPI_Comm_size(info->comm, &size);
@@ -106,6 +115,12 @@ int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_copy_constrained_dofs(const plug
                                                                       const plugin_scalar_t *const src,
                                                                       plugin_scalar_t *const dest) {
     // No constraints for this example
+    return UTOPIA_PLUGIN_SUCCESS;
+}
+
+int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_report_solution(const plugin_Function_t *info,
+                                                                const plugin_scalar_t *const x) {
+    printf("%s: Result %g %g\n", __FILE__, x[0], x[1]);
     return UTOPIA_PLUGIN_SUCCESS;
 }
 

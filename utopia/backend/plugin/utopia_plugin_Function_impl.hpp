@@ -14,56 +14,54 @@ namespace utopia {
 
     class PluginFunctionImpl : public Configurable {
     private:
-        typedef int (*utopia_plugin_Function_create_crs_graph_t)(const plugin_Function_t *,
-                                                                 ptrdiff_t *,
-                                                                 ptrdiff_t *,
-                                                                 ptrdiff_t *,
-                                                                 plugin_idx_t **,
-                                                                 plugin_idx_t **);
+        typedef int (*create_crs_graph_t)(const plugin_Function_t *,
+                                          ptrdiff_t *,
+                                          ptrdiff_t *,
+                                          ptrdiff_t *,
+                                          plugin_idx_t **,
+                                          plugin_idx_t **);
 
-        typedef int (*utopia_plugin_Function_create_vector_t)(const plugin_Function_t *,
-                                                              ptrdiff_t *,
-                                                              ptrdiff_t *,
-                                                              plugin_scalar_t **);
-        typedef int (*utopia_plugin_Function_destroy_vector_t)(const plugin_Function_t *, plugin_scalar_t *values);
+        typedef int (*create_vector_t)(const plugin_Function_t *, ptrdiff_t *, ptrdiff_t *, plugin_scalar_t **);
+        typedef int (*destroy_vector_t)(const plugin_Function_t *, plugin_scalar_t *values);
 
-        typedef int (*utopia_plugin_Function_value_t)(const plugin_Function_t *,
-                                                      const plugin_scalar_t *,
-                                                      plugin_scalar_t *const);
+        typedef int (*value_t)(const plugin_Function_t *, const plugin_scalar_t *, plugin_scalar_t *const);
 
-        typedef int (*utopia_plugin_Function_gradient_t)(const plugin_Function_t *,
-                                                         const plugin_scalar_t *const,
-                                                         plugin_scalar_t *const);
+        typedef int (*gradient_t)(const plugin_Function_t *, const plugin_scalar_t *const, plugin_scalar_t *const);
 
-        typedef int (*utopia_plugin_Function_hessian_crs_t)(const plugin_Function_t *,
-                                                            const plugin_scalar_t *const,
-                                                            const plugin_idx_t *const,
-                                                            const plugin_idx_t *const,
-                                                            plugin_scalar_t *const);
+        typedef int (*hessian_crs_t)(const plugin_Function_t *,
+                                     const plugin_scalar_t *const,
+                                     const plugin_idx_t *const,
+                                     const plugin_idx_t *const,
+                                     plugin_scalar_t *const);
 
-        typedef int (*utopia_plugin_Function_apply_t)(const plugin_Function_t *,
-                                                      const plugin_scalar_t *const,
-                                                      plugin_scalar_t *const);
+        typedef int (*apply_t)(const plugin_Function_t *, const plugin_scalar_t *const, plugin_scalar_t *const);
 
-        typedef int (*utopia_plugin_Function_apply_constraints_t)(const plugin_Function_t *, plugin_scalar_t *const);
-        typedef int (*utopia_plugin_Function_apply_zero_constraints_t)(const plugin_Function_t *,
-                                                                       plugin_scalar_t *const);
-        typedef int (*utopia_plugin_Function_copy_constrained_dofs_t)(const plugin_Function_t *,
-                                                                      const plugin_scalar_t *const,
-                                                                      plugin_scalar_t *const);
+        typedef int (*apply_constraints_t)(const plugin_Function_t *, plugin_scalar_t *const);
+        typedef int (*apply_zero_constraints_t)(const plugin_Function_t *, plugin_scalar_t *const);
+        typedef int (*copy_constrained_dofs_t)(const plugin_Function_t *,
+                                               const plugin_scalar_t *const,
+                                               plugin_scalar_t *const);
 
-        utopia_plugin_Function_create_crs_graph_t create_crs_graph_{nullptr};
+        typedef int (*destroy_array_t)(const plugin_Function_t *, void *);
+        typedef int (*create_array_t)(const plugin_Function_t *, size_t size, void **);
 
-        utopia_plugin_Function_create_vector_t create_vector_{nullptr};
-        utopia_plugin_Function_destroy_vector_t destroy_vector_{nullptr};
+        typedef int (*report_solution_t)(const plugin_Function_t *, const plugin_scalar_t *const);
 
-        utopia_plugin_Function_value_t value_{nullptr};
-        utopia_plugin_Function_gradient_t gradient_{nullptr};
-        utopia_plugin_Function_hessian_crs_t hessian_crs_{nullptr};
-        utopia_plugin_Function_apply_t apply_{nullptr};
-        utopia_plugin_Function_apply_constraints_t apply_constraints_{nullptr};
-        utopia_plugin_Function_apply_zero_constraints_t apply_zero_constraints_{nullptr};
-        utopia_plugin_Function_copy_constrained_dofs_t copy_constrained_dofs_{nullptr};
+        create_crs_graph_t create_crs_graph_{nullptr};
+
+        create_vector_t create_vector_{nullptr};
+        destroy_vector_t destroy_vector_{nullptr};
+
+        value_t value_{nullptr};
+        gradient_t gradient_{nullptr};
+        hessian_crs_t hessian_crs_{nullptr};
+        apply_t apply_{nullptr};
+        apply_constraints_t apply_constraints_{nullptr};
+        apply_zero_constraints_t apply_zero_constraints_{nullptr};
+        copy_constrained_dofs_t copy_constrained_dofs_{nullptr};
+        destroy_array_t destroy_array_;
+        create_array_t create_array_;
+        report_solution_t report_solution_;
 
     public:
         inline int create_crs_graph(ptrdiff_t *nlocal,
@@ -109,16 +107,21 @@ namespace utopia {
 
         void initialize(const Communicator &comm);
 
+        inline int create_array(const size_t size, void **ptr) const { return create_array_(&info, size, ptr); }
+        inline int destroy_array(void *ptr) const { return destroy_array_(&info, ptr); }
+
+        inline int report_solution(const plugin_scalar_t *const x) const { return report_solution_(&info, x); }
+
         virtual ~PluginFunctionImpl();
 
     private:
         plugin_Function_t info;
 
-        typedef int (*utopia_plugin_Function_init_t)(plugin_Function_t *);
-        typedef int (*utopia_plugin_Function_destroy_t)(plugin_Function_t *);
+        typedef int (*init_t)(plugin_Function_t *);
+        typedef int (*destroy_t)(plugin_Function_t *);
 
-        utopia_plugin_Function_init_t init_{nullptr};
-        utopia_plugin_Function_destroy_t destroy_{nullptr};
+        init_t init_{nullptr};
+        destroy_t destroy_{nullptr};
 
         void *handle{nullptr};
     };

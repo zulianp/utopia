@@ -44,24 +44,49 @@ namespace utopia {
             auto g_view = local_view_device(g);
 
             impl_.gradient(&x_view.array()[0], &g_view.array()[0]);
-            return false;
+            return true;
         }
         bool update(const Vector_t &x) { return true; }
         bool project_onto_feasibile_region(Vector_t &x) const override { return true; }
 
         bool hessian(const Vector_t &x, Matrix_t &H) const override {
-            if (H.empty()) {
-                ptrdiff_t nlocal;
-                ptrdiff_t nglobal;
-                ptrdiff_t nnz;
-                plugin_idx_t *rowptr;
-                plugin_idx_t *colidx;
-                impl_.create_crs_graph(&nlocal, &nglobal, &nnz, &rowptr, &colidx);
-            }
+            // if (H.empty()) {
+            ptrdiff_t nlocal;
+            ptrdiff_t nglobal;
+            ptrdiff_t nnz;
+            plugin_idx_t *rowptr;
+            plugin_idx_t *colidx;
+            plugin_scalar_t *values;
 
-            return false;
+            impl_.create_crs_graph(&nlocal, &nglobal, &nnz, &rowptr, &colidx);
+            impl_.create_array(nnz * sizeof(plugin_scalar_t), (void **)&values);
+            // }
+
+            auto x_view = local_view_device(x);
+            impl_.hessian_crs(&x_view.array()[0], rowptr, colidx, values);
+
+            H.wrap(comm_.raw_comm(),
+                   nlocal,
+                   nlocal,
+                   nglobal,
+                   nglobal,
+                   rowptr,
+                   colidx,
+                   values,
+                   [this, rowptr, colidx, values]() {
+                       this->impl_.destroy_array(rowptr);
+                       this->impl_.destroy_array(colidx);
+                       this->impl_.destroy_array(values);
+                   });
+
+            return true;
         }
+
         bool hessian(const Vector_t &x, Matrix_t &H, Matrix_t &H_preconditioner) const override { return false; }
+        bool report_solution(const Vector_t &x) const {
+            auto x_view = local_view_device(x);
+            return UTOPIA_PLUGIN_SUCCESS == impl_.report_solution(&x_view.array()[0]);
+        }
 
         Comm_t comm_;
         PluginFunctionImpl impl_;
@@ -75,17 +100,35 @@ void nlsolve(utopia::Input &in) {
     Comm_t comm(Comm_t::get_default());
     fun.initialize(comm);
 
-    Vector_t x, g;
+    Vector_t x;
     fun.create_vector(x);
 
-    Scalar_t damping = 0.5;
-    in.get("damping", damping);
+    std::string solver_type = "Newton";
+    in.get("solver_type", solver_type);
 
-    utopia::GradientDescent<Vector_t> gd;
-    gd.dumping_parameter(damping);
-    gd.verbose(true);
-    gd.solve(fun, x);
-    disp(x);
+    if (solver_type == "GradientDescent") {
+        auto gd = std::make_shared<utopia::GradientDescent<Vector_t>>();
+        gd->read(in);
+        gd->solve(fun, x);
+    } else {
+        std::shared_ptr<utopia::NewtonBase<Matrix_t, Vector_t>> nlsolver;
+
+        if (solver_type == "Newton") {
+            auto newton = std::make_shared<utopia::Newton<Matrix_t>>();
+            auto cg = std::make_shared<utopia::ConjugateGradient<Matrix_t, Vector_t, utopia::HOMEMADE>>();
+            newton->set_linear_solver(cg);
+            nlsolver = newton;
+        } else {
+            auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix_t, Vector_t, utopia::HOMEMADE>>();
+            auto trust_region = std::make_shared<utopia::TrustRegion<Matrix_t>>(subproblem);
+            nlsolver = trust_region;
+        }
+
+        nlsolver->read(in);
+        nlsolver->solve(fun, x);
+    }
+
+    fun.report_solution(x);
 }
 
 // Compile example plug-in

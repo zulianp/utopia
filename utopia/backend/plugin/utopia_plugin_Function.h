@@ -15,6 +15,9 @@ typedef int plugin_idx_t;
 
 enum UtopiaPluginCode { UTOPIA_PLUGIN_SUCCESS = 0, UTOPIA_PLUGIN_NAN, UTOPIA_PLUGIN_FAILURE };
 
+int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_destroy_array(const plugin_Function_t *info, void *ptr);
+int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_create_array(const plugin_Function_t *info, size_t size, void **ptr);
+
 int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_init(plugin_Function_t *info);
 
 int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_create_crs_graph(const plugin_Function_t *info,
@@ -61,6 +64,9 @@ int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_apply_zero_constraints(const plu
 int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_copy_constrained_dofs(const plugin_Function_t *info,
                                                                       const plugin_scalar_t *const src,
                                                                       plugin_scalar_t *const dest);
+
+int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_report_solution(const plugin_Function_t *info,
+                                                                const plugin_scalar_t *const x);
 
 int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_destroy(plugin_Function_t *info);
 
