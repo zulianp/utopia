@@ -2,6 +2,8 @@
 #define UTOPIA_ARRAY_2D_HPP
 
 #include <string>
+#include <array>
+
 #include "utopia_Algorithms.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_ForwardDeclarations.hpp"

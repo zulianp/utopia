@@ -174,6 +174,7 @@ void nlsolve(utopia::Input &in) {
         cg.solve(fun, g, x);
     } else if (solver_type == "GradientDescent") {
         auto gd = std::make_shared<utopia::GradientDescent<Vector_t>>();
+        gd->damping_parameter(0.9);
         gd->read(in);
         gd->solve(fun, x);
     } else {

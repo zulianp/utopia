@@ -32,6 +32,14 @@ namespace utopia {
             AutoHyperElasticityNew(Params op = Params()) : Super(), material_(std::move(op)) {}
 
             int order() const override { return order_; }
+            void read(Input &in) override 
+            {
+                Super::read(in);
+                in.get("quadrature_order", order_);
+                // material_.read(in)
+                // printf("qorder %d\n", order_);
+
+            }
 
             inline int n_vars() const override { return Dim; }
 

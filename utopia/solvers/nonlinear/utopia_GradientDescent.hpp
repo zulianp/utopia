@@ -112,6 +112,11 @@ namespace utopia {
 
         const Scalar dumping_parameter() { return alpha_; }
 
+
+        void damping_parameter(const Scalar &alpha) { alpha_ = alpha; }
+
+        const Scalar damping_parameter() { return alpha_; }
+
     private:
         Scalar alpha_;                            /*!< Dumping parameter. */
         std::shared_ptr<LSStrategy> ls_strategy_; /*!< Strategy used in order to
