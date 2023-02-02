@@ -1684,6 +1684,32 @@ namespace utopia {
         }
     }
 
+    void PetscMatrix::wrap(MPI_Comm comm,
+                           const PetscInt rows_local,
+                           const PetscInt cols_local,
+                           const PetscInt rows_global,
+                           const PetscInt cols_global,
+                           PetscInt *rowptr,
+                           PetscInt *colidx,
+                           PetscScalar *values,
+                           std::function<void()> destroy_callback) {
+        destroy();
+
+        int size;
+        MPI_Comm_size(comm, &size);
+
+        if (size == 1) {
+            check_error(MatCreateSeqAIJWithArrays(comm, rows_global, cols_global, rowptr, colidx, values, &raw_type()));
+
+        } else {
+            check_error(MatCreateMPIAIJWithArrays(
+                comm, rows_local, cols_local, rows_global, cols_global, rowptr, colidx, values, &raw_type()));
+        }
+
+        this->destroy_callback = destroy_callback;
+        update_mirror();
+    }
+
 }  // namespace utopia
 
 // TODO(zulianp):

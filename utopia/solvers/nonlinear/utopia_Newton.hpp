@@ -8,6 +8,8 @@
 #include "utopia_NewtonBase.hpp"
 #include "utopia_NonLinearSolver.hpp"
 
+#include "utopia_Tracer.hpp"
+
 #include <iomanip>
 #include <limits>
 
@@ -44,6 +46,8 @@ namespace utopia {
             : NewtonBase<Matrix, Vector>(linear_solver), alpha_(1.0) {}
 
         bool solve(Function<Matrix, Vector> &fun, Vector &x) override {
+            UTOPIA_TRACE_SCOPE("Newton::solve");
+
             using namespace utopia;
 
             if (empty(x)) {
