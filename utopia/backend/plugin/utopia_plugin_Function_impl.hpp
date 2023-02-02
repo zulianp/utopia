@@ -4,9 +4,9 @@
 #include "utopia_Input.hpp"
 #include "utopia_Traits.hpp"
 
-extern "C" {
+// extern "C" {
 #include "utopia_plugin_Function.h"
-}
+// }
 
 namespace utopia {
 
