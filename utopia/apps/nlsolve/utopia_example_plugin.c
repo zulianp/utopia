@@ -95,9 +95,10 @@ int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_hessian_crs(const plugin_Functio
 // Operator
 int UTOPIA_PLUGIN_EXPORT utopia_plugin_Function_apply(const plugin_Function_t *info,
                                                       const plugin_scalar_t *const x,
+                                                      const plugin_scalar_t *const h,
                                                       plugin_scalar_t *const out) {
-    out[0] = 2 * x[0];
-    out[1] = 2 * x[1];
+    out[0] = 2 * h[0];
+    out[1] = 2 * h[1];
     return UTOPIA_PLUGIN_SUCCESS;
 }
 

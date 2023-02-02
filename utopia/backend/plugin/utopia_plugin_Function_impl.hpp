@@ -34,7 +34,10 @@ namespace utopia {
                                      const plugin_idx_t *const,
                                      plugin_scalar_t *const);
 
-        typedef int (*apply_t)(const plugin_Function_t *, const plugin_scalar_t *const, plugin_scalar_t *const);
+        typedef int (*apply_t)(const plugin_Function_t *,
+                               const plugin_scalar_t *const,
+                               const plugin_scalar_t *const,
+                               plugin_scalar_t *const);
 
         typedef int (*apply_constraints_t)(const plugin_Function_t *, plugin_scalar_t *const);
         typedef int (*apply_zero_constraints_t)(const plugin_Function_t *, plugin_scalar_t *const);
@@ -93,7 +96,11 @@ namespace utopia {
             return hessian_crs_(&info, x, rowptr, colidx, values);
         }
 
-        inline int apply(const plugin_scalar_t *const x, plugin_scalar_t *const y) const { return apply_(&info, x, y); }
+        inline int apply(const plugin_scalar_t *const x,
+                         const plugin_scalar_t *const h,
+                         plugin_scalar_t *const y) const {
+            return apply_(&info, x, h, y);
+        }
 
         inline int apply_constraints(plugin_scalar_t *const x) const { return apply_constraints_(&info, x); }
 

@@ -1684,6 +1684,8 @@ namespace utopia {
         }
     }
 
+    // https://petsc.org/release/docs/manualpages/Mat/MatCreateMPIAIJWithSplitArrays/
+
     void PetscMatrix::wrap(MPI_Comm comm,
                            const PetscInt rows_local,
                            const PetscInt cols_local,

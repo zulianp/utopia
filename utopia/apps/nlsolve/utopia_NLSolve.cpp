@@ -14,7 +14,7 @@ using Comm_t = utopia::Traits<Matrix_t>::Communicator;
 namespace utopia {
 
     template <>
-    class PluginFunction<Matrix_t> : public Function<Matrix_t, Vector_t> {
+    class PluginFunction<Matrix_t> : public Function<Matrix_t, Vector_t>, public Operator<Vector_t> {
     public:
         void read(Input &in) override { impl_.read(in); }
 
@@ -35,19 +35,66 @@ namespace utopia {
             x.wrap(comm_.raw_comm(), nlocal, nglobal, values, [this, values]() { this->impl_.destroy_vector(values); });
         }
 
+        bool apply(const Vector_t &input, Vector_t &output) const override {
+            if (!current_solution_) {
+                assert(false);
+                return false;
+            }
+
+            if (output.empty()) {
+                output.zeros(layout(input));
+            } else {
+                output.set(0.);
+            }
+
+            {
+                auto in_view = local_view_device(input);
+                auto out_view = local_view_device(output);
+                auto x_view = local_view_device(*current_solution_);
+
+                impl_.apply(&x_view.array()[0], &in_view.array()[0], &out_view.array()[0]);
+                impl_.copy_constrained_dofs(&in_view.array()[0], &out_view.array()[0]);
+            }
+
+            return true;
+        }
+
+        Size size() const override { return {current_solution_->size(), current_solution_->size()}; }
+        Size local_size() const override { return {current_solution_->local_size(), current_solution_->local_size()}; }
+
+        // Communicator &comm() override = 0;
+        const Communicator &comm() const override { return comm_; }
+
         bool gradient(const Vector_t &x, Vector_t &g) const override {
             if (g.empty()) {
                 g.zeros(layout(x));
+            } else {
+                g.set(0.);
             }
 
-            auto x_view = local_view_device(x);
-            auto g_view = local_view_device(g);
+            {
+                auto x_view = local_view_device(x);
+                auto g_view = local_view_device(g);
 
-            impl_.gradient(&x_view.array()[0], &g_view.array()[0]);
+                impl_.gradient(&x_view.array()[0], &g_view.array()[0]);
+                impl_.apply_zero_constraints(&g_view.array()[0]);
+            }
+
+            double norm_g = norm2(g);
+            utopia::out() << "norm_g: " << norm_g << "\n";
             return true;
         }
-        bool update(const Vector_t &x) { return true; }
-        bool project_onto_feasibile_region(Vector_t &x) const override { return true; }
+
+        bool update(const Vector_t &x) {
+            current_solution_ = utopia::make_ref(x);
+            return true;
+        }
+
+        bool project_onto_feasibile_region(Vector_t &x) const override {
+            auto x_view = local_view_device(x);
+            impl_.apply_constraints(&x_view.array()[0]);
+            return true;
+        }
 
         bool hessian(const Vector_t &x, Matrix_t &H) const override {
             // if (H.empty()) {
@@ -79,6 +126,9 @@ namespace utopia {
                        this->impl_.destroy_array(values);
                    });
 
+            double norm_H = norm2(H);
+            utopia::out() << "norm_H: " << norm_H << "\n";
+
             return true;
         }
 
@@ -90,6 +140,7 @@ namespace utopia {
 
         Comm_t comm_;
         PluginFunctionImpl impl_;
+        std::shared_ptr<const Vector_t> current_solution_;
     };
 }  // namespace utopia
 
@@ -102,11 +153,26 @@ void nlsolve(utopia::Input &in) {
 
     Vector_t x;
     fun.create_vector(x);
+    x.set(0.);
+    fun.project_onto_feasibile_region(x);
 
     std::string solver_type = "Newton";
     in.get("solver_type", solver_type);
 
-    if (solver_type == "GradientDescent") {
+    if (solver_type == "ConjugateGradient") {
+        // Linear
+
+        Vector_t g;
+        fun.create_vector(g);
+        fun.gradient(x, g);
+
+        utopia::ConjugateGradient<Matrix_t, Vector_t, utopia::HOMEMADE> cg;
+        cg.read(in);
+
+        // x is used for nonlinear material for computing the entries of the Hessian
+        fun.update(x);
+        cg.solve(fun, g, x);
+    } else if (solver_type == "GradientDescent") {
         auto gd = std::make_shared<utopia::GradientDescent<Vector_t>>();
         gd->read(in);
         gd->solve(fun, x);
@@ -115,8 +181,15 @@ void nlsolve(utopia::Input &in) {
 
         if (solver_type == "Newton") {
             auto newton = std::make_shared<utopia::Newton<Matrix_t>>();
-            auto cg = std::make_shared<utopia::ConjugateGradient<Matrix_t, Vector_t, utopia::HOMEMADE>>();
-            newton->set_linear_solver(cg);
+            // auto cg = std::make_shared<utopia::ConjugateGradient<Matrix_t, Vector_t, utopia::HOMEMADE>>();
+            // cg->verbose(true);
+
+            auto ls = std::make_shared<utopia::KSPSolver<Matrix_t, Vector_t>>();
+            ls->pc_type("hypre");
+            ls->ksp_type("cg");
+            ls->verbose(true);
+
+            newton->set_linear_solver(ls);
             nlsolver = newton;
         } else {
             auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix_t, Vector_t, utopia::HOMEMADE>>();
