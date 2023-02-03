@@ -1,6 +1,7 @@
 #ifndef UTOPIA_PLUGIN_FUNCTION_H
 #define UTOPIA_PLUGIN_FUNCTION_H
 
+#include <stddef.h>
 #include <mpi.h>
 
 typedef struct {
