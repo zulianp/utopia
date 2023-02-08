@@ -10,6 +10,7 @@ namespace utopia {
 
         {
             TestRunner test_runner;
+            test_runner.verbose(Utopia::instance().verbose());
             test_runner.run(argc, argv);
         }
 
