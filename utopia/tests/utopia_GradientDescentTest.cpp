@@ -16,7 +16,7 @@ namespace utopia {
         using Traits = utopia::Traits<Vector>;
         using Scalar = typename Vector::Scalar;
 
-        class OffsetQuadraticFunction : public Function<Matrix, Vector> {
+        class OffsetQuadraticFunction : public FunctionBase<Vector> {
         public:
             OffsetQuadraticFunction(const Scalar &a) : a_(a) {}
 
@@ -32,16 +32,11 @@ namespace utopia {
                 return true;
             }
 
-            bool hessian(const Vector & /*point*/, Matrix & /*result*/) const override {
-                assert(false && "Method not implemented");
-                return false;
-            }
-
         private:
             Scalar a_;
         };
 
-        void solve_and_verify(size_t n, Function<Matrix, Vector> &fun, Scalar val_expected) {
+        void solve_and_verify(size_t n, FunctionBase<Vector> &fun, Scalar val_expected) {
             Vector actual(layout(this->comm(), Traits::decide(), n), 1.0);
             {
                 auto a_view = local_view_device(actual);
