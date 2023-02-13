@@ -255,12 +255,13 @@ namespace utopia {
     };
 
     void sub_comm_algebra() {
+        const bool verbose = Utopia::instance().verbose();
 #ifdef UTOPIA_WITH_PETSC
-        run_parallel_test<SubCommAlgebraTest<PetscMatrix, PetscVector>>();
+        run_parallel_test<SubCommAlgebraTest<PetscMatrix, PetscVector>>(verbose);
 #endif  // UTOPIA_WITH_PETSC
 
         // #ifdef UTOPIA_WITH_TRILINOS
-        //         run_parallel_test< SubCommAlgebraTest<TpetraMatrix, TpetraVector> >();
+        //         run_parallel_test< SubCommAlgebraTest<TpetraMatrix, TpetraVector> >(verbose);
         // #endif //UTOPIA_WITH_TRILINOS
     }
 

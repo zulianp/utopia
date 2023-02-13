@@ -5,15 +5,15 @@
 
 namespace utopia {
     template <class Comm>
-    void run_parallel_test(UnitTest<Comm> &test, const Comm &comm = Comm()) {
+    void run_parallel_test(UnitTest<Comm> &test, bool verbose, const Comm &comm = Comm()) {
         test.print_backend_info();
-        SubCommunicatorTester<Comm>().run(test, comm);
+        SubCommunicatorTester<Comm>().run(test, comm, verbose);
     }
 
     template <class Test>
-    void run_parallel_test() {
+    void run_parallel_test(bool verbose = false) {
         Test test;
-        run_parallel_test(test);
+        run_parallel_test(test, verbose);
     }
 
     template <class Test>
