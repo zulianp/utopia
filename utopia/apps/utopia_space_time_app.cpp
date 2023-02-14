@@ -158,7 +158,7 @@ namespace utopia {
 
         if (ny < 2.0 * (nx - 1) * (nx - 1)) {
             space.comm().root_print(
-                "[Warning] for avoiding oscillations discretization has to satisfy ny < 2.0 * (nx-1)*(nx-1), "
+                "[Warning] for avoiding oscillations discretization has to satisfy ny > 2.0 * (nx-1)*(nx-1), "
                 "respectively dt < h^2/2");
         }
 
@@ -209,7 +209,8 @@ namespace utopia {
 
         if (nz < 2.0 * (nx - 1) * (nx - 1) || nz < 2.0 * (ny - 1) * (ny - 1)) {
             space.comm().root_print(
-                "[Warning] for avoiding oscillations discretization has to satisfy ny < 2.0 * (nx-1)*(nx-1), "
+                "[Warning] for avoiding oscillations discretization has to satisfy nz > 2.0 * (nx-1)*(nx-1) and nz > "
+                "2.0 * (ny-1)*(ny-1),, "
                 "respectively dt < h^2/2");
         }
 
