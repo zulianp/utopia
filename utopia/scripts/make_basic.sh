@@ -8,7 +8,7 @@ printf "Testing Cmake Script Basic:\n"
 # Basic build, petsc, lapack.
 _basic_build(){
 	rm CMakeCache.txt
-	cmake .. -DUTOPIA_ENABLE_TRILINOS=OFF -DUTOPIA_ENABLE_POLYMORPHIC=ON
+	cmake .. -DUTOPIA_ENABLE_TRILINOS=ON -DUTOPIA_ENABLE_POLYMORPHIC=ON
 }
 
 if [[ -d build ]]

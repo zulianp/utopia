@@ -1,4 +1,4 @@
-find_package(PARMETIS)
+find_package(ParMetis)
 
 if(NOT PARMETIS_FOUND)
   message(FATAL_ERROR "Unable to find ParMetis")

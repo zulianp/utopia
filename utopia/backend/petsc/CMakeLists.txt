@@ -20,6 +20,7 @@
 # find dependencies
 set(PETSC_TEST_RUNS TRUE)
 set(PETSC_EXECUTABLE_RUNS TRUE) # On daint we cannot run them
+
 find_package(PETSc)
 
 if(PETSC_FOUND)
@@ -69,6 +70,7 @@ if(PETSC_FOUND AND UTOPIA_ENABLE_SLEPC)
     list(APPEND UTOPIA_DEP_LIBRARIES ${SLEPC_LIBRARIES})
     message(STATUS "Slepc FOUND")
     set(UTOPIA_WITH_SLEPC TRUE)
+    set(UTOPIA_SLEPC TRUE PARENT_SCOPE)
   else()
     message(WARNING "[Warning] Slepc not found")
     set(UTOPIA_WITH_SLEPC FALSE)
