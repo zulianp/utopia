@@ -160,8 +160,6 @@ target_link_libraries(utopia_exec PRIVATE utopia)
 include(apps/apps.cmake)
 
 
-
-
 # Generate files useful for dependent build systems
 list(REVERSE UTOPIA_DEP_LIBRARIES)
 list(REMOVE_DUPLICATES UTOPIA_DEP_LIBRARIES)
