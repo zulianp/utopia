@@ -140,9 +140,8 @@ if(PETSC_FOUND)
   # target_link_libraries(utopia PUBLIC ${PETSC_LIBRARIES})
   # target_compile_definitions(utopia PUBLIC ${PETSC_DEFINITIONS})
 
-  # if(SLEPC_FOUND)
-  # target_include_directories(utopia SYSTEM PUBLIC ${SLEPC_INCLUDES})
-  # target_link_libraries(utopia PUBLIC ${SLEPC_LIBRARIES})
+  # if(SLEPC_FOUND) target_include_directories(utopia SYSTEM PUBLIC
+  # ${SLEPC_INCLUDES}) target_link_libraries(utopia PUBLIC ${SLEPC_LIBRARIES})
   # endif()
 
   # set(UTOPIA_BUILD_INCLUDES ${UTOPIA_BUILD_INCLUDES} PARENT_SCOPE)

@@ -106,7 +106,6 @@ if(UTOPIA_ENABLE_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
-
 add_definitions(${UTOPIA_DEFS})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
@@ -133,6 +132,13 @@ install(FILES ${CMAKE_BINARY_DIR}/utopia_Config.hpp DESTINATION include)
 # ##############################################################################
 # ##############################################################################
 # ##############################################################################
+# TABLE PRINT
+
+print_dependency_table()
+
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
 # SUITES
 
 # test suite
@@ -153,11 +159,13 @@ utopia_link_default_targets(utopia_exec)
 target_link_libraries(utopia_exec PRIVATE utopia)
 include(apps/apps.cmake)
 
-
-
 # ##############################################################################
 # ##############################################################################
 # ##############################################################################
 # EXTRA TARGETS
 
-
+if(UTOPIA_ENABLE_EXAMPLES)
+  add_custom_target(complete)
+  add_dependencies(complete utopia utopia_test utopia_bench utopia_exec
+                   utopia_examples)
+endif()
