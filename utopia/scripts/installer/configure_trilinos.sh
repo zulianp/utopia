@@ -1,5 +1,5 @@
 cmake .. \
--DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/Trilinos \
+-DCMAKE_INSTALL_PREFIX=/Users/dylan/Documents/Summer-Internship/Installations/Trilinos \
 -DCMAKE_BUILD_TYPE=Release \
 -DCMAKE_CXX_COMPILER=mpicxx \
 -DCMAKE_C_COMPILER=mpicc \

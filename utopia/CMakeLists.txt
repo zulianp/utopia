@@ -93,29 +93,6 @@ target_link_libraries(utopia PUBLIC ${UTOPIA_DEP_LIBRARIES})
 # ##############################################################################
 # ##############################################################################
 # ##############################################################################
-# EXECUTABLES
-
-# test suite
-add_executable(utopia_test EXCLUDE_FROM_ALL tests/test.cpp)
-utopia_link_default_targets(utopia_test)
-target_link_libraries(utopia_test PRIVATE utopia)
-include(tests/tests.cmake)
-
-# bench suite
-add_executable(utopia_bench EXCLUDE_FROM_ALL benchmarks/bench.cpp)
-utopia_link_default_targets(utopia_bench)
-target_link_libraries(utopia_bench PRIVATE utopia)
-include(benchmarks/benchmarks.cmake)
-
-# apps suite
-add_executable(utopia_exec EXCLUDE_FROM_ALL main.cpp)
-utopia_link_default_targets(utopia_exec)
-target_link_libraries(utopia_exec PRIVATE utopia)
-include(apps/apps.cmake)
-
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
 # INSTALL
 
 install(
@@ -156,4 +133,31 @@ install(FILES ${CMAKE_BINARY_DIR}/utopia_Config.hpp DESTINATION include)
 # ##############################################################################
 # ##############################################################################
 # ##############################################################################
+# SUITES
+
+# test suite
+add_executable(utopia_test EXCLUDE_FROM_ALL tests/test.cpp)
+utopia_link_default_targets(utopia_test)
+target_link_libraries(utopia_test PRIVATE utopia)
+include(tests/tests.cmake)
+
+# bench suite
+add_executable(utopia_bench EXCLUDE_FROM_ALL benchmarks/bench.cpp)
+utopia_link_default_targets(utopia_bench)
+target_link_libraries(utopia_bench PRIVATE utopia)
+include(benchmarks/benchmarks.cmake)
+
+# apps suite
+add_executable(utopia_exec EXCLUDE_FROM_ALL main.cpp)
+utopia_link_default_targets(utopia_exec)
+target_link_libraries(utopia_exec PRIVATE utopia)
+include(apps/apps.cmake)
+
+
+
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
 # EXTRA TARGETS
+
+
