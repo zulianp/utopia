@@ -21,27 +21,27 @@ endfunction()
 # ##############################################################################
 macro(print_dependency_table)
     set(DEP_TABLE
-        "\n____________________________________________________\n\n   BACKENDS and STATUS TABLE\n"
+        "\n____________________________\n\n   BACKENDS and STATUS TABLE\n"
     )
     set(DEP_TABLE
-        "${DEP_TABLE}--------------------------------------------------\n")
+        "${DEP_TABLE}------------------------\n")
     set(DEP_TABLE
-        "${DEP_TABLE}backend\t\t| active\t| developement status\n--------------------------------------------------\n"
+        "${DEP_TABLE}backend\t\t| active\n------------------------\n"
     )
-    set(DEP_TABLE "${DEP_TABLE}petsc\t\t| ${UTOPIA_PETSC}\t\t| usable\n")
-    set(DEP_TABLE "${DEP_TABLE}slepc\t\t| ${UTOPIA_SLEPC}\t\t| usable\n")
-    set(DEP_TABLE "${DEP_TABLE}blas\t\t| ${UTOPIA_BLAS}\t\t| usable\n")
+    set(DEP_TABLE "${DEP_TABLE}petsc\t\t| ${UTOPIA_PETSC}\n")
+    set(DEP_TABLE "${DEP_TABLE}slepc\t\t| ${UTOPIA_SLEPC}\n")
+    set(DEP_TABLE "${DEP_TABLE}blas\t\t| ${UTOPIA_BLAS}\n")
     set(DEP_TABLE
-        "${DEP_TABLE}trilinos\t| ${UTOPIA_TRILINOS}\t\t| basic algebra usable\n"
+        "${DEP_TABLE}trilinos\t| ${UTOPIA_TRILINOS}\n"
     )
-    # SET(DEP_TABLE "${DEP_TABLE}openblas\t| ${OPEN_BLAS_FOUND}\t\t| usable\n")
-    set(DEP_TABLE "${DEP_TABLE}lapack\t\t| ${UTOPIA_LAPACK}\t\t| usable\n")
-    set(DEP_TABLE "${DEP_TABLE}umfpack\t\t| ${UTOPIA_UMFPACK}\t\t| disabled\n")
+    # SET(DEP_TABLE "${DEP_TABLE}openblas\t| ${OPEN_BLAS_FOUND}\n")
+    set(DEP_TABLE "${DEP_TABLE}lapack\t\t| ${UTOPIA_LAPACK}\n")
+    set(DEP_TABLE "${DEP_TABLE}umfpack\t\t| ${UTOPIA_UMFPACK}\n")
     # SET(DEP_TABLE "${DEP_TABLE}cuda+thrust\t| ${UTOPIA_CUDA}\t\t| not usable
     # but can be easily developed further\n") SET(DEP_TABLE
     # "${DEP_TABLE}opencl\t\t| ${UTOPIA_OPENCL}\t\t| prototyping\n")
     set(DEP_TABLE
-        "${DEP_TABLE}____________________________________________________\n")
+        "${DEP_TABLE}____________________________\n")
     message(STATUS ${DEP_TABLE})
 endmacro()
 
