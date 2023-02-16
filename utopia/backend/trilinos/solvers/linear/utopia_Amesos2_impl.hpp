@@ -275,7 +275,7 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::read(Input &in) {
         DirectSolver<Matrix, Vector>::read(in);
-        in.get("keep-symbolic-factorization", impl_->keep_symbolic_factorization);
+        in.get("keep_symbolic_factorization", impl_->keep_symbolic_factorization);
         //  in.get("exotic", exotic); //exotic = "";
         //  if(!exotic.empty()) {
         //  }

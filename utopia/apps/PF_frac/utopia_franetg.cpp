@@ -51,6 +51,9 @@
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_RedundantQPSolver.hpp"
+#include "utopia_GenericPhaseFieldFormulation.hpp"
+#include "utopia_IsotropicGenericPhaseField.hpp"
+
 #endif  // UTOPIA_WITH_PETSC
 
 #include <chrono>
@@ -95,8 +98,52 @@ namespace utopia {
 
         stats.start();
 
+//        IsotropicGenericPhaseField<FunctionSpace, Dim, AT2> BrittleRock(space);
+
         MLIncrementalLoading<FunctionSpace,
-                             FractureModel<FunctionSpace>,
+                             //FractureModel<FunctionSpace>,
+                             IsotropicGenericPhaseField<FunctionSpace,Dim,AT1>,
+                             UniaxialLoading2D<FunctionSpace>,
+                             UniformSpacingOnLine<FunctionSpace>>
+            time_stepper(space);
+
+        time_stepper.read(in);
+        time_stepper.run();
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
+
+    UTOPIA_REGISTER_APP(franetg);
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
+    static void VolDevSplit(Input &in) {
+        static const int Dim = 2;
+        static const int NVars = Dim + 1;
+
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        // using SizeType = FunctionSpace::SizeType;
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
+
+        stats.start();
+
+        MLIncrementalLoading<FunctionSpace,
+                             utopia::PhaseFieldVolDevSplit<FunctionSpace>,
                              BiaxialLoading2D<FunctionSpace>,
                              SlantedCrack2D<FunctionSpace>>
             time_stepper(space);
@@ -111,7 +158,8 @@ namespace utopia {
         stats.describe(std::cout);
     }
 
-    UTOPIA_REGISTER_APP(franetg);
+    UTOPIA_REGISTER_APP(VolDevSplit);
+
 
 }  // namespace utopia
 
