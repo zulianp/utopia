@@ -4,7 +4,7 @@
 #include <cassert>
 #include <cmath>
 #include <vector>
-#include "utopia_Function.hpp"
+#include "utopia_TestFunctionsND.hpp"
 
 namespace utopia {
 
@@ -27,7 +27,7 @@ namespace utopia {
             x_exact_.zeros(serial_layout(2));
         }
 
-        bool value(const Vector &point, typename Vector::Scalar &result) const override {
+        bool value(const Vector &point, Scalar &result) const override {
             const Read<Vector> read(point);
 
             result = 4 * ((3.0 - 0.5 * point.get(0)) * (3.0 - 0.5 * point.get(0)) +
@@ -51,7 +51,7 @@ namespace utopia {
 
         bool hessian(const Vector & /*point*/, Matrix &result) const override {
             if (empty(result)) {
-                result.dense(serial_layout(2, 2));
+                result.identity(serial_layout(2, 2));
             } else {
                 result *= 0.0;
             }

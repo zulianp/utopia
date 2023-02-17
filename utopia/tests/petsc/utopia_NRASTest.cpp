@@ -266,8 +266,6 @@ public:
         auto ml = layout(this->comm(), nl, nxp(), nl_all, ng);
         mat->sparse(ml, 1, 1);
 
-        auto rr = row_range(*mat);
-
         int go = g_offset();
         int lo = l_offset();
 
@@ -300,14 +298,12 @@ public:
 
         auto rr = row_range(*mat);
 
-        int go = g_offset();
         int lo = l_offset();
 
         {
             Write<Matrix> w(*mat, utopia::GLOBAL_INSERT);
 
             int start = lo + (this->comm().rank() > 0) * overlap - rr.begin();
-            int size = nxp();
 
             for (int i = rr.begin(); i < rr.end(); ++i) {
                 mat->c_set(i, start + i, 1.0);

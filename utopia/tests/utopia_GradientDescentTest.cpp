@@ -16,7 +16,7 @@ namespace utopia {
         using Traits = utopia::Traits<Vector>;
         using Scalar = typename Vector::Scalar;
 
-        class OffsetQuadraticFunction : public FunctionBase<Vector> {
+        class OffsetQuadraticFunction final : public FunctionBase<Vector> {
         public:
             OffsetQuadraticFunction(const Scalar &a) : a_(a) {}
 
@@ -33,7 +33,7 @@ namespace utopia {
             }
 
         private:
-            Scalar a_;
+            const Scalar a_;
         };
 
         void solve_and_verify(size_t n, FunctionBase<Vector> &fun, Scalar val_expected) {
@@ -69,7 +69,7 @@ namespace utopia {
         }
     };
 
-    void gradient_descent() {
+    void sub_comm_gradient_descent() {
         const bool verbose = Utopia::instance().verbose();
 #ifdef UTOPIA_WITH_BLAS
         // Serial backend
@@ -85,6 +85,6 @@ namespace utopia {
 #endif  // UTOPIA_WITH_TRILINOS
     }
 
-    UTOPIA_REGISTER_TEST_FUNCTION(gradient_descent);
+    UTOPIA_REGISTER_TEST_FUNCTION(sub_comm_gradient_descent);
 
 }  // namespace utopia
