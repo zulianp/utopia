@@ -1,7 +1,7 @@
 #include "utopia.hpp"
-#include "utopia_AlgebraUnitTest.hpp"
 #include "utopia_Newton.hpp"
 #include "utopia_QPTestFunction2D.hpp"
+#include "utopia_SubCommUnitTest.hpp"
 #include "utopia_Testing.hpp"
 
 namespace utopia {
@@ -80,7 +80,7 @@ namespace utopia {
     };
 
     template <class Matrix, class Vector>
-    class GradientDescentTest : public AlgebraUnitTest<Vector> {
+    class GradientDescentTest : public SubCommUnitTest<Vector> {
     public:
         void run() {
             UTOPIA_RUN_TEST(grad_descent_solve_quadratic_ND);
@@ -120,7 +120,7 @@ namespace utopia {
     };
 
     template <class Matrix, class Vector>
-    class NewtonTest : public AlgebraUnitTest<Vector> {
+    class NewtonTest : public SubCommUnitTest<Vector> {
     public:
         void run() {
             UTOPIA_RUN_TEST(newton_solve_quadratic_2D);

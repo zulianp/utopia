@@ -4,8 +4,8 @@
 
 #include "utopia_InputParameters.hpp"
 
-#include "utopia_AlgebraUnitTest.hpp"
 #include "utopia_Bratu1D.hpp"
+#include "utopia_SubCommUnitTest.hpp"
 
 #include "utopia_NRAS_impl.hpp"
 
@@ -14,7 +14,7 @@
 using namespace utopia;
 
 template <class Matrix, class Vector>
-class NRASTest : public AlgebraUnitTest<Vector> {
+class NRASTest : public SubCommUnitTest<Vector> {
 public:
     using Traits = utopia::Traits<Vector>;
     using Scalar = typename Traits::Scalar;

@@ -1,0 +1,8 @@
+Class;Mean;Variance;Min;Max
+KSPSolver::apply;0.000336916;0;0.000336916;0.000336916
+KSPSolver::update;0.000600501;0;0.000600501;0.000600501
+Newton::solve;0.00332471;0;0.00332471;0.00332471
+PetscMatrix::write_unlock(...);8.503e-06;0;8.503e-06;8.503e-06
+PetscVector::write_unlock;1.2623e-05;0;1.2623e-05;1.2623e-05
+main;0.00430737;0;0.00430737;0.00430737
+utopia::ConjugateGradient::solve;0.000129835;0;0.000129835;0.000129835

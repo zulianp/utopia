@@ -10,7 +10,7 @@
 namespace utopia {
 
     template <class Tensor>
-    class AlgebraUnitTest : public UnitTest<typename Traits<Tensor>::Communicator> {
+    class SubCommUnitTest : public UnitTest<typename Traits<Tensor>::Communicator> {
     public:
         void print_backend_info() const override {
             if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
@@ -18,7 +18,7 @@ namespace utopia {
             }
         }
 
-        ~AlgebraUnitTest() override = default;
+        ~SubCommUnitTest() override = default;
     };
 
 }  // namespace utopia
