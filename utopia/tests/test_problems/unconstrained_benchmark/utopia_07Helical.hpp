@@ -154,8 +154,6 @@ namespace utopia {
 
         const Vector &exact_sol() const override { return x_exact_; }
 
-        Scalar min_function_value() const override { return 0; }
-
     private:
         Scalar theta(const Scalar &x1, const Scalar &x2) const {
             if (0.0 < x1)

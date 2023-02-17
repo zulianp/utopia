@@ -1,8 +1,0 @@
-Class;MPI rank;Total time spent (s);Count;Allocations;Mean time (s)
-KSPSolver::apply;0;0.000336916;22;0;1.53144e-05
-KSPSolver::update;0;0.000600501;22;0;2.72955e-05
-Newton::solve;0;0.00332471;4;0;0.000831177
-PetscMatrix::write_unlock(...);0;8.503e-06;22;0;3.865e-07
-PetscVector::write_unlock;0;1.2623e-05;25;0;5.0492e-07
-main;0;0.00430737;1;0;0.00430737
-utopia::ConjugateGradient::solve;0;0.000129835;22;0;5.90159e-06

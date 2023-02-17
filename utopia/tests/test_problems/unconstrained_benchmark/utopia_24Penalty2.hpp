@@ -217,8 +217,6 @@ namespace utopia {
 
         const Vector &exact_sol() const override { return x_exact_; }
 
-        Scalar min_function_value() const override { return 2.93660e-4; }
-
     private:
         Vector x_init_;
         Vector x_exact_;

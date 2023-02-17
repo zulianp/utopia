@@ -15,7 +15,7 @@ namespace utopia {
     public:
         // Parameter n represents the number of variables
         // Setup function f(x_0, x_1, .. x_n) = x^2 + (x - 1)^2 + ... + (x_n - n)^2
-        QuadraticOffsetFunction_ND(Comm &comm, size_t n) {
+        QuadraticOffsetFunction_ND(Comm &comm, SizeType n) : n_(n) {
             x_init_.zeros(layout(comm, Traits::decide(), n));
             x_exact_.zeros(layout(comm, Traits::decide(), n));
 
@@ -66,15 +66,14 @@ namespace utopia {
 
         const Vector &exact_sol() const override { return x_exact_; }
 
-        Scalar min_function_value() const override { return 0; }
-
         std::string name() const override { return "QuadraticOffsetFunction_ND"; }
 
-        SizeType dim() const override { return 2; }
+        SizeType dim() const override { return n_; }
 
         bool exact_sol_known() const override { return true; }
 
     private:
+        const SizeType n_;
         Vector x_init_;
         Vector x_exact_;
     };

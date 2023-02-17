@@ -67,10 +67,6 @@ namespace utopia {
 
         const Vector &exact_sol() const override { return x_exact_; }
 
-        Scalar min_function_value() const override {
-            return 1;  // TBD
-        }
-
         std::string name() const override { return "QPTestFunction_2D"; }
 
         SizeType dim() const override { return 2; }
