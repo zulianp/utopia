@@ -341,6 +341,12 @@ namespace utopia {
                     zero_matrix_accumulators();
                 }
 
+                void clear_accumulators() {
+                    matrix_accumulator = nullptr;
+                    vector_accumulator = nullptr;
+                    scalar_accumulator = nullptr;
+                }
+
                 inline bool has_matrix() const { return static_cast<bool>(matrix_accumulator); }
                 inline bool has_vector() const { return static_cast<bool>(vector_accumulator); }
                 inline bool has_scalar() const { return static_cast<bool>(scalar_accumulator); }
@@ -392,6 +398,15 @@ namespace utopia {
                 for (auto &p : boundary) {
                     auto &b = p.second;
                     b.zero_accumulators();
+                }
+            }
+
+            void clear_accumulators() {
+                domain.clear_accumulators();
+
+                for (auto &p : boundary) {
+                    auto &b = p.second;
+                    b.clear_accumulators();
                 }
             }
 
@@ -721,6 +736,11 @@ namespace utopia {
                 return ok;
             }
 
+            void cond_clear_buffers() {
+                if (clear_buffers_after_assembly_) {
+                }
+            }
+
             std::shared_ptr<FunctionSpace> space;
 
             // Volume (only one for now)
@@ -741,6 +761,7 @@ namespace utopia {
             bool fail_if_unregistered{true};
             bool debug{false};
             bool crash_on_NaN{false};
+            bool clear_buffers_after_assembly_{true};
         };
 
         template <class FunctionSpace, class FE>
@@ -776,6 +797,8 @@ namespace utopia {
             if (!impl_->assemble_material(matrix, fun)) {
                 return false;
             }
+
+            impl_->cond_clear_buffers();
 
             return impl_->gradient_is_valid(x, fun);
         }
@@ -887,6 +910,7 @@ namespace utopia {
             in.get("ensure_scalar_matrix", impl_->ensure_scalar_matrix);
             in.get("debug", impl_->debug);
             in.get("crash_on_NaN", impl_->crash_on_NaN);
+            in.get("clear_buffers_after_assembly", impl_->clear_buffers_after_assembly_);
 
             in.get("material", [this](Input &node) {
                 auto assembler = impl_->registry.make_assembler(impl_->domain.fe, node);
