@@ -37,6 +37,7 @@ macro(print_dependency_table)
     set(DEP_TABLE "${DEP_TABLE}blas\t\t| ${UTOPIA_BLAS}| ${UTOPIA_BLAS_DIR}| ${UTOPIA_BLAS_VERSION}\n")
     set(DEP_TABLE "${DEP_TABLE}lapack\t\t| ${UTOPIA_LAPACK}| ${UTOPIA_BLAS_DIR}| ${UTOPIA_BLAS_VERSION}\n")
     set(DEP_TABLE "${DEP_TABLE}umfpack\t\t| ${UTOPIA_UMFPACK}| ${UTOPIA_BLAS_DIR}| ${UTOPIA_BLAS_VERSION}\n")
+    set(DEP_TABLE "${DEP_TABLE}yaml\t\t| ${UTOPIA_YAML_CPP}| ${UTOPIA_YAML_CPP_DIR}|\n")
     # SET(DEP_TABLE "${DEP_TABLE}cuda+thrust\t| ${UTOPIA_CUDA}\t\t| not usable
     # but can be easily developed further\n") SET(DEP_TABLE
     # "${DEP_TABLE}opencl\t\t| ${UTOPIA_OPENCL}\t\t| prototyping\n")

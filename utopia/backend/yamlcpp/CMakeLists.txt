@@ -1,8 +1,11 @@
 find_package(yaml-cpp HINTS ${CMAKE_SOURCE_DIR}/../../dependencies/ ${CMAKE_SOURCE_DIR}/../../dependencies/yaml-cpp/share/cmake/yaml-cpp)
 
 if(yaml-cpp_FOUND)
-    set(UTOPIA_WITH_YAML_CPP TRUE)
-    set(UTOPIA_WITH_YAML_CPP TRUE PARENT_SCOPE)
+    set(UTOPIA_WITH_YAML_CPP ON)
+    set(UTOPIA_YAML_CPP TRUE PARENT_SCOPE)
+
+    set(UTOPIA_YAML_CPP_DIR ${yaml-cpp_DIR} PARENT_SCOPE)
+    
 
     list(
         APPEND
