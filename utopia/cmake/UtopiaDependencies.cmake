@@ -1,6 +1,5 @@
-# Cmake for checking which dependencies are enabled and if so then point to 
+# Cmake for checking which dependencies are enabled and if so then point to
 # correct cmake subdirectory.
-
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR AND NOT MSVC_IDE)
   message(
@@ -56,11 +55,9 @@ if(UTOPIA_ENABLE_LOCK_CHECKING)
   set(UTOPIA_ENABLE_LOCK_CHECK TRUE)
 endif()
 
-
 if(UTOPIA_ENABLE_METIS)
   add_subdirectory(backend/metis)
 endif()
-
 
 if(UTOPIA_ENABLE_PARMETIS)
   add_subdirectory(backend/parmetis)
@@ -138,10 +135,46 @@ if(UTOPIA_STATIC_DEPENDENCIES_ONLY)
   endif()
 endif()
 
-
-
 message(STATUS "[Status] UTOPIA_ROOT_PATH: ${UTOPIA_ROOT_PATH}")
 include(${UTOPIA_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
+
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
+
+# #################MPI######################
+find_package(MPIExtended)
+if(UTOPIA_ENABLE_MPI)
+  if(MPI_FOUND)
+
+    if(MPI_C_INCLUDE_PATH)
+      set(UTOPIA_DEP_INCLUDES "${UTOPIA_DEP_INCLUDES};${MPI_C_INCLUDE_PATH}")
+    endif()
+
+    if(MPI_CXX_INCLUDE_PATH)
+      set(UTOPIA_DEP_INCLUDES "${UTOPIA_DEP_INCLUDES};${MPI_CXX_INCLUDE_PATH}")
+    endif()
+
+    if(MPI_LIBRARIES)
+      set(UTOPIA_DEP_LIBRARIES "${UTOPIA_DEP_LIBRARIES};${MPI_LIBRARIES}")
+    endif()
+
+    if(MPI_C_LIBRARIES)
+      set(UTOPIA_DEP_LIBRARIES "${UTOPIA_DEP_LIBRARIES};${MPI_C_LIBRARIES}")
+    endif()
+
+    if(MPI_CXX_LIBRARIES)
+      set(UTOPIA_DEP_LIBRARIES "${UTOPIA_DEP_LIBRARIES};${MPI_CXX_LIBRARIES}")
+    endif()
+
+    set(UTOPIA_WITH_MPI TRUE)
+    if(!MPI_DIR)
+      set(MPI_DIR ${MPI_DIR})
+    endif()
+  endif()
+else()
+  message(WARNING "NO Proper MPI installation")
+endif()
 
 # ##############################################################################
 # ##############################################################################

@@ -206,16 +206,16 @@ list(JOIN CONFIG_CONTENT "\n" OLD_CMAKE_CONFIG_CONTENT)
 # # ##############################################################################
 # # MORE INSTALL
 
-install(FILES ${CMAKE_BINARY_DIR}/utopia-config.makefile DESTINATION config)
-install(FILES ${CMAKE_BINARY_DIR}/utopia-config.cmake DESTINATION config)
+# install(FILES ${CMAKE_BINARY_DIR}/utopia-config.makefile DESTINATION config)
+# install(FILES ${CMAKE_BINARY_DIR}/utopia-config.cmake DESTINATION config)
 
-# new style exported targets, this allows to use target_link_libraries(my_target
-# Utopia::utopia)
-install(
-  EXPORT UtopiaTargets
-  FILE UtopiaTargets.cmake
-  NAMESPACE Utopia::
-  DESTINATION lib/cmake)
+# # new style exported targets, this allows to use target_link_libraries(my_target
+# # Utopia::utopia)
+# install(
+#   EXPORT UtopiaTargets
+#   FILE UtopiaTargets.cmake
+#   NAMESPACE Utopia::
+#   DESTINATION lib/cmake)
 
 # # generate the config file that is includes the exports
 # configure_package_config_file(
@@ -284,3 +284,10 @@ if(UTOPIA_ENABLE_EXAMPLES)
   add_dependencies(complete utopia utopia_test utopia_bench utopia_exec
                    utopia_examples)
 endif()
+
+
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+foreach (_variableName ${_variableNames})
+    message(STATUS "${_variableName}=${${_variableName}}")
+endforeach()

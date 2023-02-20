@@ -28,6 +28,8 @@ macro(print_dependency_table)
     set(DEP_TABLE
         "${DEP_TABLE}backend\t\t| active\n------------------------\n"
     )
+
+    set(DEP_TABLE "${DEP_TABLE}mpi\t\t| ${MPI_DIR}\n")
     set(DEP_TABLE "${DEP_TABLE}petsc\t\t| ${UTOPIA_PETSC}\n")
     set(DEP_TABLE "${DEP_TABLE}slepc\t\t| ${UTOPIA_SLEPC}\n")
     set(DEP_TABLE "${DEP_TABLE}blas\t\t| ${UTOPIA_BLAS}\n")
