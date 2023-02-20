@@ -167,7 +167,9 @@ if(UTOPIA_ENABLE_MPI)
       set(UTOPIA_DEP_LIBRARIES "${UTOPIA_DEP_LIBRARIES};${MPI_CXX_LIBRARIES}")
     endif()
 
-    set(UTOPIA_WITH_MPI TRUE)
+    set(UTOPIA_WITH_MPI ON)
+    set(UTOPIA_MPI TRUE)
+
     if(!MPI_DIR)
       set(MPI_DIR ${MPI_DIR})
     endif()
