@@ -17,7 +17,6 @@ if(UTOPIA_PETSC)
         ls_solve
         qp_solve)
 
-    message(STATUS "HI: ${APPS_MODULES}")
 
     if(UTOPIA_ENABLE_VC)
         # Requires petsc
