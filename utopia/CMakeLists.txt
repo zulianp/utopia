@@ -201,40 +201,40 @@ file(WRITE ${CMAKE_BINARY_DIR}/utopia-config.cmake ${CONFIG_CONTENT})
 list(JOIN CONFIG_CONTENT "\n" OLD_CMAKE_CONFIG_CONTENT)
 
 
-# # ##############################################################################
-# # ##############################################################################
-# # ##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
 # # MORE INSTALL
 
-# install(FILES ${CMAKE_BINARY_DIR}/utopia-config.makefile DESTINATION config)
-# install(FILES ${CMAKE_BINARY_DIR}/utopia-config.cmake DESTINATION config)
+install(FILES ${CMAKE_BINARY_DIR}/utopia-config.makefile DESTINATION config)
+install(FILES ${CMAKE_BINARY_DIR}/utopia-config.cmake DESTINATION config)
 
-# # new style exported targets, this allows to use target_link_libraries(my_target
-# # Utopia::utopia)
+# new style exported targets, this allows to use target_link_libraries(my_target
+# Utopia::utopia)
 # install(
 #   EXPORT UtopiaTargets
 #   FILE UtopiaTargets.cmake
 #   NAMESPACE Utopia::
 #   DESTINATION lib/cmake)
 
-# # generate the config file that is includes the exports
-# configure_package_config_file(
-#   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/UtopiaConfig.cmake.in
-#   "${CMAKE_CURRENT_BINARY_DIR}/UtopiaConfig.cmake"
-#   INSTALL_DESTINATION "lib/cmake")
-# # generate the version file for the config file
-# write_basic_package_version_file(
-#   "${CMAKE_CURRENT_BINARY_DIR}/UtopiaConfigVersion.cmake"
-#   VERSION "${Utopia_VERSION_MAJOR}.${Utopia_VERSION_MINOR}"
-#   COMPATIBILITY AnyNewerVersion)
-# # install the configuration file
-# install(FILES ${CMAKE_CURRENT_BINARY_DIR}/UtopiaConfig.cmake
-#         DESTINATION lib/cmake/)
+# generate the config file that is includes the exports
+configure_package_config_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/UtopiaConfig.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/UtopiaConfig.cmake"
+  INSTALL_DESTINATION "lib/cmake")
+# generate the version file for the config file
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/UtopiaConfigVersion.cmake"
+  VERSION "${Utopia_VERSION_MAJOR}.${Utopia_VERSION_MINOR}"
+  COMPATIBILITY AnyNewerVersion)
+# install the configuration file
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/UtopiaConfig.cmake
+        DESTINATION lib/cmake/)
 
 
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
 # TABLE PRINT
 
 # print_dependency_table()
@@ -249,13 +249,13 @@ list(JOIN CONFIG_CONTENT "\n" OLD_CMAKE_CONFIG_CONTENT)
 
 #   which is prefixed in the source directory.
 
-# get_target_property(XX_LINK_DIRECTORIES utopia_exec LINK_DIRECTORIES)
-# get_target_property(XX_LINK_LIBRARIES utopia_exec LINK_INTERFACE_LIBRARIES)
-# get_target_property(XX_INCLUDE_DIRECTORIES utopia_exec
-#                     INTERFACE_INCLUDE_DIRECTORIES)
-# message(STATUS "LINK_DIRECTORIES=${XX_LINK_DIRECTORIES}")
-# message(STATUS "LINK_LIBRARIES=${XX_LINK_LIBRARIES}")
-# message(STATUS "INCLUDE_DIRECTORIES=${XX_INCLUDE_DIRECTORIES}")
+get_target_property(XX_LINK_DIRECTORIES utopia_exec LINK_DIRECTORIES)
+get_target_property(XX_LINK_LIBRARIES utopia_exec LINK_INTERFACE_LIBRARIES)
+get_target_property(XX_INCLUDE_DIRECTORIES utopia_exec
+                    INTERFACE_INCLUDE_DIRECTORIES)
+message(STATUS "LINK_DIRECTORIES=${XX_LINK_DIRECTORIES}")
+message(STATUS "LINK_LIBRARIES=${XX_LINK_LIBRARIES}")
+message(STATUS "INCLUDE_DIRECTORIES=${XX_INCLUDE_DIRECTORIES}")
 
 # ##############################################################################
 # ##############################################################################
