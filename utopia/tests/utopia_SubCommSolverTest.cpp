@@ -82,39 +82,38 @@ namespace utopia {
     class GradientDescentTest : public SubCommUnitTest<Vector> {
     public:
         void run() {
+            if (Traits::Backend == TRILINOS && this->comm().size() > 2) {
+                // 2D test case not supported on Trilinos with MPI size > 2
+                // TODO: How to avoid this check?
+            } else {
+                UTOPIA_RUN_TEST(grad_descent_solve_quadratic_2D);
+            }
             UTOPIA_RUN_TEST(grad_descent_solve_quadratic_ND);
-            UTOPIA_RUN_TEST(grad_descent_solve_quadratic_offset_ND);
         }
 
     private:
         using Traits = utopia::Traits<Vector>;
 
-        void solve_and_verify(FunctionBase<Vector> &fun, Vector &x, const Vector &expected) const {
+        void solve_and_verify(UnconstrainedTestFunction<Matrix, Vector> &fun) const {
             auto solver = GradientDescent<Vector>();
             solver.dumping_parameter(0.05);
+
+            Vector x = fun.initial_guess();
             solver.solve(fun, x);
 
-            utopia_test_assert(approxeq(expected, x));
+            utopia_assert(fun.exact_sol_known());
+            utopia_test_assert(approxeq(fun.exact_sol(), x));
+        }
+
+        void grad_descent_solve_quadratic_2D() {
+            QPTestFunction_2D<Matrix, Vector> fun(this->comm());
+            solve_and_verify(fun);
         }
 
         void grad_descent_solve_quadratic_ND() {
-            constexpr size_t n = 100;
-            SimpleQuadraticFunction<Matrix, Vector> fun(n);
-            Vector x_init(layout(this->comm(), Traits::decide(), n));
-            {
-                auto x_init_view = local_view_device(x_init);
-                parallel_for(
-                    local_range_device(x_init), UTOPIA_LAMBDA(const SizeType &i) { x_init_view.set(i, 1.0 * i); });
-            }
-            Vector expected(layout(x_init), 0.0);
-            solve_and_verify(fun, x_init, expected);
-        }
-
-        void grad_descent_solve_quadratic_offset_ND() {
-            constexpr size_t n = 100;
+            constexpr SizeType n = 100;
             QuadraticOffsetFunction_ND<Matrix, Vector> fun(this->comm(), n);
-            auto x_init = fun.initial_guess();
-            solve_and_verify(fun, x_init, fun.exact_sol());
+            solve_and_verify(fun);
         }
     };
 
@@ -122,11 +121,17 @@ namespace utopia {
     class NewtonTest : public SubCommUnitTest<Vector> {
     public:
         void run() {
-            UTOPIA_RUN_TEST(newton_solve_quadratic_2D);
-            UTOPIA_RUN_TEST(newton_solve_quadratic_offset_ND);
+            if (Traits::Backend == TRILINOS && this->comm().size() > 2) {
+                // 2D test case not supported on Trilinos with MPI size > 2
+                // TODO: How to avoid this check?
+            } else {
+                UTOPIA_RUN_TEST(newton_solve_quadratic_2D);
+            }
+            UTOPIA_RUN_TEST(newton_solve_quadratic_ND);
         }
 
     private:
+        using Traits = utopia::Traits<Vector>;
         using Solver = utopia::LinearSolver<Matrix, Vector>;
 
         void solve_and_verify(UnconstrainedTestFunction<Matrix, Vector> &fun,
@@ -134,7 +139,7 @@ namespace utopia {
             Newton<Matrix, Vector> solver(linear_solver);
 
             InputParameters in;
-            in.set("atol", 1e-5);
+            in.set("atol", 1e-6);
             in.set("rtol", 1e-11);
             in.set("stol", 1e-14);
             in.set("stol", 1e-14);
@@ -146,25 +151,22 @@ namespace utopia {
             Vector x = fun.initial_guess();
             solver.solve(fun, x);
 
-            if (fun.exact_sol_known()) {
-                utopia_test_assert(approxeq(fun.exact_sol(), x));
-            } else {
-                auto sol_status = solver.solution_status();
-                utopia_test_assert(sol_status.reason >= 0);
-            }
+            utopia_assert(fun.exact_sol_known());
+            utopia_test_assert(approxeq(fun.exact_sol(), x));
         }
 
         void newton_solve_quadratic_2D() {
-            QPTestFunction_2D<Matrix, Vector> fun;
-
+            QPTestFunction_2D<Matrix, Vector> fun(this->comm());
             const auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector>>();
             solve_and_verify(fun, linear_solver);
         }
 
-        void newton_solve_quadratic_offset_ND() {
-            constexpr size_t n = 100;
+        void newton_solve_quadratic_ND() {
+            constexpr SizeType n = 100;
+            if (Traits::Backend == TRILINOS && this->comm().size() >= n) {
+                return;
+            }
             QuadraticOffsetFunction_ND<Matrix, Vector> fun(this->comm(), n);
-
             const auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector>>();
             solve_and_verify(fun, linear_solver);
         }

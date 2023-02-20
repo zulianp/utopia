@@ -22,16 +22,31 @@ namespace utopia {
         using SizeType = typename Traits::SizeType;
         using Comm = typename Traits::Communicator;
 
-        QPTestFunction_2D() {
-            x_init_.zeros(serial_layout(2));
-            x_exact_.zeros(serial_layout(2));
+        QPTestFunction_2D(Comm &comm = Comm::get_default()) {
+            x_init_.zeros(layout(comm, Traits::decide(), 2));
+            x_exact_.zeros(layout(comm, Traits::decide(), 2));
+            {
+                Write<Vector> w(x_exact_);
+                if (range(x_exact_).inside(0)) {
+                    x_exact_.set(0, 6);
+                }
+                if (range(x_exact_).inside(1)) {
+                    x_exact_.set(1, -7);
+                }
+            }
         }
 
         bool value(const Vector &point, Scalar &result) const override {
             const Read<Vector> read(point);
-
-            result = 4 * ((3.0 - 0.5 * point.get(0)) * (3.0 - 0.5 * point.get(0)) +
-                          (point.get(1) + 7.0) * (point.get(1) + 7.0));
+            Scalar v_sum = 0;
+            if (range(point).inside(0)) {
+                v_sum += (3.0 - 0.5 * point.get(0)) * (3.0 - 0.5 * point.get(0));
+            }
+            if (range(point).inside(1)) {
+                v_sum += (point.get(1) + 7.0) * (point.get(1) + 7.0);
+            }
+            v_sum *= 4;
+            result = point.comm().sum(v_sum);
 
             return true;
         }
@@ -41,25 +56,46 @@ namespace utopia {
                 result.zeros(layout(point));
             }
 
+#if 0  // TODO: why this code would not work? result is always zeros, never updated
             const Read<Vector> read(point);
             const Write<Vector> write(result);
 
-            result.set(0, 4.0 * (0.5 * point.get(0) - 3.0));
-            result.set(1, 8.0 * (point.get(1) + 7.0));
+            if (range(point).inside(0)) {
+                result.set(0, 4.0 * (0.5 * point.get(0) - 3.0));
+            }
+            if (range(point).inside(1)) {
+                result.set(1, 8.0 * (point.get(1) + 7.0));
+            }
+#else
+            const auto i_start = range(point).begin();
+            auto p_view = const_local_view_device(point);
+            auto r_view = local_view_device(result);
+            parallel_for(
+                local_range_device(point), UTOPIA_LAMBDA(const SizeType &i) {
+                    auto global_index = i_start + i;
+                    if (global_index == 0) {
+                        r_view.set(i, 4.0 * (0.5 * p_view.get(i) - 3.0));
+                    } else if (global_index == 1) {
+                        r_view.set(i, 8.0 * (p_view.get(i) + 7.0));
+                    }
+                });
+#endif
             return true;
         }
 
-        bool hessian(const Vector & /*point*/, Matrix &result) const override {
+        bool hessian(const Vector &point, Matrix &result) const override {
             if (empty(result)) {
-                result.identity(serial_layout(2, 2));
-            } else {
-                result *= 0.0;
+                result.identity(layout(x_init_.comm(), Traits::decide(), Traits::decide(), 2, 2));
             }
 
             const Write<Matrix> write(result);
+            if (range(point).inside(0)) {
+                result.set(0, 0, 4.0);
+            }
+            if (range(point).inside(1)) {
+                result.set(1, 1, 8.0);
+            }
 
-            result.set(0, 0, 4.0);
-            result.set(1, 1, 8.0);
             return true;
         }
 
@@ -71,7 +107,7 @@ namespace utopia {
 
         SizeType dim() const override { return 2; }
 
-        bool exact_sol_known() const override { return false; }
+        bool exact_sol_known() const override { return true; }
 
     private:
         Vector x_init_;
