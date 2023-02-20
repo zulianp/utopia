@@ -82,12 +82,7 @@ namespace utopia {
     class GradientDescentTest : public SubCommUnitTest<Vector> {
     public:
         void run() {
-            if (Traits::Backend == TRILINOS && this->comm().size() > 2) {
-                // 2D test case not supported on Trilinos with MPI size > 2
-                // TODO: How to avoid this check?
-            } else {
-                UTOPIA_RUN_TEST(grad_descent_solve_quadratic_2D);
-            }
+            UTOPIA_RUN_TEST(grad_descent_solve_quadratic_2D);
             UTOPIA_RUN_TEST(grad_descent_solve_quadratic_ND);
         }
 
@@ -121,12 +116,7 @@ namespace utopia {
     class NewtonTest : public SubCommUnitTest<Vector> {
     public:
         void run() {
-            if (Traits::Backend == TRILINOS && this->comm().size() > 2) {
-                // 2D test case not supported on Trilinos with MPI size > 2
-                // TODO: How to avoid this check?
-            } else {
-                UTOPIA_RUN_TEST(newton_solve_quadratic_2D);
-            }
+            UTOPIA_RUN_TEST(newton_solve_quadratic_2D);
             UTOPIA_RUN_TEST(newton_solve_quadratic_ND);
         }
 
