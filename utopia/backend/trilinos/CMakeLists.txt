@@ -50,10 +50,13 @@ if(Trilinos_FOUND)
     endif()
   endforeach()
 
-  set(UTOPIA_WITH_TRILINOS TRUE)
+  set(UTOPIA_WITH_TRILINOS ON)
   set(UTOPIA_TRILINOS
       TRUE
       PARENT_SCOPE)
+
+  set(UTOPIA_TRILINOS_DIR ${Trilinos_DIR} PARENT_SCOPE)
+  set(UTOPIA_TRILINOS_VERSION ${Trilinos_VERSION} PARENT_SCOPE)
 
   find_package(TpetraExt)
   if(TRILINOS_TPETRAEXT_FOUND)

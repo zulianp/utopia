@@ -237,7 +237,7 @@ list(JOIN CONFIG_CONTENT "\n" OLD_CMAKE_CONFIG_CONTENT)
 # ##############################################################################
 # TABLE PRINT
 
-print_dependency_table()
+# print_dependency_table()
 
 
 
@@ -291,3 +291,6 @@ list (SORT _variableNames)
 foreach (_variableName ${_variableNames})
     message(STATUS "${_variableName}=${${_variableName}}")
 endforeach()
+
+
+print_dependency_table()

@@ -57,7 +57,12 @@ if(PETSC_FOUND)
     endif()
   endif()
 
-  set(UTOPIA_WITH_PETSC TRUE)
+  set(UTOPIA_WITH_PETSC ON)
+  set(UTOPIA_PETSC TRUE)
+
+  set(UTOPIA_PETSC_DIR ${PETSC_DIR} PARENT_SCOPE)
+  set(UTOPIA_PETSC_VERSION ${PETSC_VERSION} PARENT_SCOPE)
+
 else()
   message(WARNING "[Warning] Petsc not found")
   set(UTOPIA_WITH_PETSC FALSE)
@@ -70,7 +75,9 @@ if(PETSC_FOUND AND UTOPIA_ENABLE_SLEPC)
     list(APPEND UTOPIA_DEP_LIBRARIES ${SLEPC_LIBRARIES})
     message(STATUS "Slepc FOUND")
     set(UTOPIA_WITH_SLEPC TRUE)
-    set(UTOPIA_SLEPC TRUE PARENT_SCOPE)
+    set(UTOPIA_SLEPC
+        TRUE
+        PARENT_SCOPE)
   else()
     message(WARNING "[Warning] Slepc not found")
     set(UTOPIA_WITH_SLEPC FALSE)
@@ -84,6 +91,14 @@ if(SLEPC_FOUND)
   set(UTOPIA_SLEPC
       TRUE
       PARENT_SCOPE)
+
+  set(UTOPIA_SLEPC_DIR
+      ${SLEPC_DIR}
+      PARENT_SCOPE)
+  set(UTOPIA_SLEPC_VERSION
+      ${SLEPC_VERSION}
+      PARENT_SCOPE)
+
 endif()
 
 # set-up module

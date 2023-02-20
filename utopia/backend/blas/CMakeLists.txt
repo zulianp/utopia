@@ -7,6 +7,10 @@ if(PITZ_DORA)
         list(APPEND UTOPIA_DEFS ${BLAS_DEFINITIONS})
         set(UTOPIA_BLAS TRUE PARENT_SCOPE)
         set(UTOPIA_WITH_OPEN_BLAS ON)
+        # set(UTOPIA_BLAS_DIR ${BLAS_blas_LIBRARY} PARENT_SCOPE)
+        
+        # # BLAS_blas_LIBRARY
+        # set(UTOPIA_BLAS_DIR ${BLAS_VERSION} PARENT_SCOPE)
     else()
         message(WARNING "[Warning] blas not found")
         set(UTOPIA_WITH_BLAS OFF)
