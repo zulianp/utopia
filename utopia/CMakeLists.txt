@@ -85,8 +85,8 @@ target_include_directories(
          $<INSTALL_INTERFACE:include>)
 
 target_include_directories(utopia PUBLIC ${UTOPIA_DEP_INCLUDES})
-message("UTOPIA_DEP_INCLUDES: ${UTOPIA_DEP_INCLUDES}")
-message("UTOPIA_DEP_LIBRARIES: ${UTOPIA_DEP_LIBRARIES}")
+# message("UTOPIA_DEP_INCLUDES: ${UTOPIA_DEP_INCLUDES}")
+# message("UTOPIA_DEP_LIBRARIES: ${UTOPIA_DEP_LIBRARIES}")
 
 target_link_libraries(utopia PUBLIC ${UTOPIA_DEP_LIBRARIES})
 
@@ -286,11 +286,11 @@ if(UTOPIA_ENABLE_EXAMPLES)
 endif()
 
 
-get_cmake_property(_variableNames VARIABLES)
-list (SORT _variableNames)
-foreach (_variableName ${_variableNames})
-    message(STATUS "${_variableName}=${${_variableName}}")
-endforeach()
+# get_cmake_property(_variableNames VARIABLES)
+# list (SORT _variableNames)
+# foreach (_variableName ${_variableNames})
+#     message(STATUS "${_variableName}=${${_variableName}}")
+# endforeach()
 
 
 print_dependency_table()
