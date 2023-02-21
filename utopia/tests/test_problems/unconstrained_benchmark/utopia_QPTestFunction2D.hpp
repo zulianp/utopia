@@ -55,30 +55,14 @@ namespace utopia {
             if (empty(result)) {
                 result.zeros(layout(point));
             }
-            // TODO: why this code would not work with Trilinos backend?
-            if (Traits::Backend != TRILINOS) {
-                const Read<Vector> read(point);
-                const Write<Vector> write(result);
+            const Read<Vector> read(point);
+            const Write<Vector> write(result);
 
-                if (range(point).inside(0)) {
-                    result.set(0, 4.0 * (0.5 * point.get(0) - 3.0));
-                }
-                if (range(point).inside(1)) {
-                    result.set(1, 8.0 * (point.get(1) + 7.0));
-                }
-            } else {
-                const auto i_start = range(point).begin();
-                auto p_view = const_local_view_device(point);
-                auto r_view = local_view_device(result);
-                parallel_for(
-                    local_range_device(point), UTOPIA_LAMBDA(const SizeType &i) {
-                        auto global_index = i_start + i;
-                        if (global_index == 0) {
-                            r_view.set(i, 4.0 * (0.5 * p_view.get(i) - 3.0));
-                        } else if (global_index == 1) {
-                            r_view.set(i, 8.0 * (p_view.get(i) + 7.0));
-                        }
-                    });
+            if (range(point).inside(0)) {
+                result.set(0, 4.0 * (0.5 * point.get(0) - 3.0));
+            }
+            if (range(point).inside(1)) {
+                result.set(1, 8.0 * (point.get(1) + 7.0));
             }
             return true;
         }

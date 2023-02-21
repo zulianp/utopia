@@ -269,7 +269,7 @@ namespace utopia {
         ghosted_vec_->doImport(*y, importer, Tpetra::INSERT);
     }
 
-    TpetraVector::TpetraVector(const TpetraVector &other) { copy(other); }
+    TpetraVector::TpetraVector(const TpetraVector &other) : comm_(other.comm_) { copy(other); }
 
     void TpetraVector::copy(const TpetraVector &other) {
         if (&other == this) {
