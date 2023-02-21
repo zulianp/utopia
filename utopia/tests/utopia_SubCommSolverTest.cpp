@@ -57,8 +57,7 @@ namespace utopia {
         }
 
         bool hessian(const Vector & /*point*/, Matrix &result) const override {
-            result.identity(layout(x_init_.comm(), Traits::decide(), Traits::decide(), x_init_.size(), x_init_.size()),
-                            2.0);
+            result.identity(square_matrix_layout(layout(x_init_)), 2.0);
             return true;
         }
 
@@ -91,7 +90,7 @@ namespace utopia {
 
         void solve_and_verify(UnconstrainedTestFunction<Matrix, Vector> &fun) const {
             auto solver = GradientDescent<Vector>();
-            solver.dumping_parameter(0.05);
+            solver.damping_parameter(0.05);
 
             Vector x = fun.initial_guess();
             solver.solve(fun, x);
@@ -132,7 +131,6 @@ namespace utopia {
             in.set("atol", 1e-6);
             in.set("rtol", 1e-11);
             in.set("stol", 1e-14);
-            in.set("stol", 1e-14);
             in.set("delta_min", 1e-13);
             in.set("max_it", 100);
             in.set("verbose", false);
@@ -153,9 +151,6 @@ namespace utopia {
 
         void newton_solve_quadratic_ND() {
             constexpr SizeType n = 100;
-            if (Traits::Backend == TRILINOS && this->comm().size() >= n) {
-                return;
-            }
             QuadraticOffsetFunction_ND<Matrix, Vector> fun(this->comm(), n);
             const auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector>>();
             solve_and_verify(fun, linear_solver);
