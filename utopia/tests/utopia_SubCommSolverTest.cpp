@@ -1,82 +1,11 @@
 #include "utopia.hpp"
 #include "utopia_Newton.hpp"
 #include "utopia_QPTestFunction2D.hpp"
+#include "utopia_QPTestFunctionND.hpp"
 #include "utopia_SubCommUnitTest.hpp"
 #include "utopia_Testing.hpp"
 
 namespace utopia {
-    template <class Matrix, class Vector>
-    class QuadraticOffsetFunction_ND final : public UnconstrainedTestFunction<Matrix, Vector> {
-        using Traits = utopia::Traits<Vector>;
-        using Comm = typename Traits::Communicator;
-        using Scalar = typename Vector::Scalar;
-        using SizeType = typename Vector::SizeType;
-
-    public:
-        // Parameter n represents the number of variables
-        // Setup function f(x_0, x_1, .. x_n) = x^2 + (x - 1)^2 + ... + (x_n - n)^2
-        QuadraticOffsetFunction_ND(Comm &comm, SizeType n) : n_(n) {
-            x_init_.zeros(layout(comm, Traits::decide(), n));
-            x_exact_.zeros(layout(comm, Traits::decide(), n));
-
-            const auto i_start = range(x_exact_).begin();
-            auto x_view = local_view_device(x_exact_);
-            parallel_for(
-                local_range_device(x_exact_),
-                UTOPIA_LAMBDA(const SizeType &i) { x_view.set(i, -1.0 * (i_start + i)); });
-        }
-
-        bool value(const Vector &point, Scalar &result) const override {
-            const auto i_start = range(point).begin();
-            auto p_view = const_local_view_device(point);
-
-            Scalar v_sum = 0;
-            parallel_reduce(
-                local_range_device(point),
-                UTOPIA_LAMBDA(const SizeType &i) {
-                    return (p_view.get(i) + i_start + i) * (p_view.get(i) + i_start + i);
-                },
-                v_sum);
-
-            result = point.comm().sum(v_sum);
-            return true;
-        }
-
-        bool gradient(const Vector &point, Vector &result) const override {
-            if (empty(result)) {
-                result.zeros(layout(point));
-            }
-            const auto i_start = range(point).begin();
-            auto p_view = const_local_view_device(point);
-            auto r_view = local_view_device(result);
-            parallel_for(
-                local_range_device(point),
-                UTOPIA_LAMBDA(const SizeType &i) { r_view.set(i, 2 * (p_view.get(i) + i_start + i)); });
-
-            return true;
-        }
-
-        bool hessian(const Vector & /*point*/, Matrix &result) const override {
-            result.identity(square_matrix_layout(layout(x_init_)), 2.0);
-            return true;
-        }
-
-        Vector initial_guess() const override { return x_init_; }
-
-        const Vector &exact_sol() const override { return x_exact_; }
-
-        std::string name() const override { return "QuadraticOffsetFunction_ND"; }
-
-        SizeType dim() const override { return n_; }
-
-        bool exact_sol_known() const override { return true; }
-
-    private:
-        const SizeType n_;
-        Vector x_init_;
-        Vector x_exact_;
-    };
-
     template <class Matrix, class Vector>
     class GradientDescentTest : public SubCommUnitTest<Vector> {
     public:
@@ -144,14 +73,14 @@ namespace utopia {
 
         void newton_solve_quadratic_2D() {
             QPTestFunction_2D<Matrix, Vector> fun(this->comm());
-            const auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector>>();
+            const auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
             solve_and_verify(fun, linear_solver);
         }
 
         void newton_solve_quadratic_ND() {
             constexpr SizeType n = 100;
             QuadraticOffsetFunction_ND<Matrix, Vector> fun(this->comm(), n);
-            const auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector>>();
+            const auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
             solve_and_verify(fun, linear_solver);
         }
     };

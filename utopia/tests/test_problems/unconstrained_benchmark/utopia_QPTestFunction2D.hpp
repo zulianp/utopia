@@ -1,15 +1,12 @@
 #ifndef UTOPIA_SOLVER_TESTFUNCTION2D_HPP
 #define UTOPIA_SOLVER_TESTFUNCTION2D_HPP
 
-#include <cassert>
-#include <cmath>
-#include <vector>
 #include "utopia_TestFunctionsND.hpp"
 
 namespace utopia {
 
     /**
-     * @brief      Example of the nonlinear function. Used to test nonlinear solvers.
+     * @brief      Example of 2D nonlinear function. Used to test nonlinear solvers.
      *
      * @tparam     Matrix
      * @tparam     Vector
