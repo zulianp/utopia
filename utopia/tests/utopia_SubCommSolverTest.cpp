@@ -73,14 +73,14 @@ namespace utopia {
 
         void newton_solve_quadratic_2D() {
             QPTestFunction_2D<Matrix, Vector> fun(this->comm());
-            const auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+            const auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector>>();
             solve_and_verify(fun, linear_solver);
         }
 
         void newton_solve_quadratic_ND() {
             constexpr SizeType n = 100;
             QuadraticOffsetFunction_ND<Matrix, Vector> fun(this->comm(), n);
-            const auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+            const auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector>>();
             solve_and_verify(fun, linear_solver);
         }
     };
