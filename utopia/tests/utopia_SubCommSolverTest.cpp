@@ -89,8 +89,12 @@ namespace utopia {
         using Traits = utopia::Traits<Vector>;
 
         void solve_and_verify(UnconstrainedTestFunction<Matrix, Vector> &fun) const {
-            auto solver = GradientDescent<Vector>();
+            GradientDescent<Vector> solver;
             solver.damping_parameter(0.05);
+
+            InputParameters in;
+            in.set("atol", 1e-8);
+            solver.read(in);
 
             Vector x = fun.initial_guess();
             solver.solve(fun, x);
@@ -128,12 +132,7 @@ namespace utopia {
             Newton<Matrix, Vector> solver(linear_solver);
 
             InputParameters in;
-            in.set("atol", 1e-6);
-            in.set("rtol", 1e-11);
-            in.set("stol", 1e-14);
-            in.set("delta_min", 1e-13);
-            in.set("max_it", 100);
-            in.set("verbose", false);
+            in.set("atol", 1e-8);
             solver.read(in);
 
             Vector x = fun.initial_guess();
