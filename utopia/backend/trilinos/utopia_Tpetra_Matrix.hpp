@@ -252,7 +252,7 @@ namespace utopia {
             // in the CRS map for all MPI processes.
             const SizeType min_global_size = layout.comm().size();
             auto adjust_global_size = [min_global_size](const SizeType gsize) {
-                return gsize != INVALID_INDEX ? std::max(gsize, min_global_size) : gsize;
+                return gsize >= min_global_size ? gsize : INVALID_INDEX;
             };
             comm_ = layout.comm();
             crs_init(comm_.get(),
