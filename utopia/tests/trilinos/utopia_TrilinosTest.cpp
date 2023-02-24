@@ -1344,20 +1344,10 @@ namespace utopia {
             utopia_test_assert(approxeq(nm, std::sqrt(1. * size(m).get(0))));
         }
 
-#ifdef HAVE_BELOS_TPETRA
-
+#ifdef UTOPIA_WITH_TRILINOS_BELOS
         void trilinos_belos() {
-            {
-                m_utopia_warning(
-                    "TrilinosTest::trilinos_belos commented out because of excpetion. Fix and remove this fallback.");
-                return;
-            }
-
-            std::string xml_file = Utopia::instance().get("data_path") + "/xml/UTOPIA_belos.xml";
-
             BelosSolver<TpetraMatrixd, TpetraVectord> solver;
-            // solver.read_xml(xml_file);
-            solver.import("linear-solver", Utopia::instance().get("data_path") + "/json/belos.json");
+            solver.read_xml(Utopia::instance().get("data_path") + "/xml/UTOPIA_belos.xml");
 
             Poisson1D<TpetraMatrixd, TpetraVectord> fun(10);
             TpetraVectord x = fun.initial_guess();
@@ -1375,16 +1365,12 @@ namespace utopia {
 
             utopia_test_assert(approxeq(diff / diff0, 0., 1e-6));
         }
-
-#endif  // HAVE_BELOS_TPETRA
+#endif  // UTOPIA_WITH_TRILINOS_BELOS
 
 #ifdef UTOPIA_WITH_TRILINOS_AMESOS2
-
         void trilinos_amesos2() {
-            std::string xml_file = Utopia::instance().get("data_path") + "/xml/UTOPIA_amesos.xml";
-
             Amesos2Solver<TpetraMatrixd, TpetraVectord> solver;
-            solver.read_xml(xml_file);
+            solver.read_xml(Utopia::instance().get("data_path") + "/xml/UTOPIA_amesos.xml");
 
             Poisson1D<TpetraMatrixd, TpetraVectord> fun(10);
             TpetraMatrixd A;
@@ -1402,8 +1388,7 @@ namespace utopia {
 
             utopia_test_assert(approxeq(diff / diff0, 0., 1e-6));
         }
-
-#endif  // HAVE_AMESOS2_KOKKOS
+#endif  // UTOPIA_WITH_TRILINOS_AMESOS2
 
 #ifdef UTOPIA_WITH_PETSC
         void trilinos_transform() {

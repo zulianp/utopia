@@ -57,18 +57,7 @@ namespace utopia {
          *
          * @param[in]  in  The parameters
          */
-        void read(Input &in) override; /* {
-           Smoother<Matrix, Vector>::read(in);
-           PreconditionedSolver::read(in);
-           //TODO
-           atol_(1e-9);
-           rtol_(1e-9),;
-           stol_(1e-11);
-           max_it_(300);
-           verbose_(false);
-
-           m_utopia_warning_once("not implemented");
-         }*/
+        void read(Input &in) override;
 
         /**
          * @brief      Prints the parameters used.
@@ -76,13 +65,6 @@ namespace utopia {
          * @param[os]  os The std::ostream parameters
          */
         void print_usage(std::ostream &os = std::cout) const override;
-        /*     {
-               Smoother<Matrix, Vector>::print_usage(os);
-               PreconditionedSolver::print_usage(os);
-               //TODO
-               m_utopia_warning_once("not implemented");
-
-             }*/
 
         /**
          * @brief      Clone the object.
