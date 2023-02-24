@@ -1250,8 +1250,9 @@ namespace utopia {
             }
 
             TpetraMatrixd A;
+            const auto n_coarse_elements = std::max((SizeType)2, mpi_world_size());
             MultiLevelTestProblem1D<TpetraMatrixd, TpetraVectord, Poisson1D<TpetraMatrixd, TpetraVectord>> ml_problem(
-                10, 2);
+                10, n_coarse_elements);
             // A = *ml_problem.interpolators[0];
             auto transfer = ml_problem.get_transfer();
 
@@ -1614,9 +1615,6 @@ namespace utopia {
             if (mpi_world_size() == 1) {
                 UTOPIA_RUN_TEST(trilinos_crs_construct);
             }
-            // else {
-            //     m_utopia_warning_once("several tests left out for parallel execution");
-            // }
 
             // tests that always fail
             // UTOPIA_RUN_TEST(trilinos_diag_rect_matrix);
