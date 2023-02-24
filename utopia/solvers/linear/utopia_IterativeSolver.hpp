@@ -22,7 +22,8 @@ namespace utopia {
         using Scalar = typename utopia::Traits<Matrix>::Scalar;
         using SizeType = typename utopia::Traits<Matrix>::SizeType;
 
-        IterativeSolver() : atol_(1e-9), rtol_(1e-9), stol_(1e-11), max_it_(1000), norm_freq_(1.0) {}
+        IterativeSolver()
+            : atol_(atol_init_), rtol_(rtol_init_), stol_(stol_init_), max_it_(max_it_init_), norm_freq_(1.0) {}
 
         // IterativeSolver(const IterativeSolver &other) = default;
         IterativeSolver(IterativeSolver &&other) = default;
@@ -46,11 +47,11 @@ namespace utopia {
         void print_usage(std::ostream &os) const override {
             LinearSolver<Matrix, Vector>::print_usage(os);
 
-            this->print_param_usage(os, "atol", "real", "Absolute tolerance.", std::to_string(atol_));
-            this->print_param_usage(os, "rtol", "real", "Relative tolerance.", "1e-9");
-            this->print_param_usage(os, "stol", "real", "Minimum step-size.", "1e-11");
-            this->print_param_usage(os, "max_it", "int", "Maximum number of iterations.", "300");
-            this->print_param_usage(os, "verbose", "bool", "Turn on/off verbose.", "false");
+            this->print_param_usage(os, "atol", "real", "Absolute tolerance.", std::to_string(atol_init_));
+            this->print_param_usage(os, "rtol", "real", "Relative tolerance.", std::to_string(rtol_init_));
+            this->print_param_usage(os, "stol", "real", "Minimum step-size.", std::to_string(stol_init_));
+            this->print_param_usage(os, "max_it", "int", "Maximum number of iterations.", std::to_string(max_it_init_));
+            this->print_param_usage(os, "verbose", "bool", "Turn on/off verbose.", verbose_init_ ? "true" : "false");
         }
 
         bool apply(const Vector &rhs, Vector &sol) override { return this->solve(*this->get_operator(), rhs, sol); }
@@ -237,6 +238,12 @@ namespace utopia {
         virtual void norm_frequency(const SizeType &freq) { norm_freq_ = freq; };
 
     private:
+        static constexpr Scalar atol_init_{1e-9};
+        static constexpr Scalar rtol_init_{1e-9};
+        static constexpr Scalar stol_init_{1e-11};
+        static constexpr SizeType max_it_init_{1000};
+        static constexpr bool verbose_init_{false};
+
         // FIXME these fields should be removed and set directly in the backend state
         // variables
         // ... GENERAL Iterative SOLVER PARAMETERS ...
@@ -244,8 +251,8 @@ namespace utopia {
         Scalar rtol_; /*!< Relative tolerance. */
         Scalar stol_; /*!< Step tolerance. */
 
-        SizeType max_it_;     /*!< Maximum number of iterations. */
-        bool verbose_{false}; /*!< Verbose enable? . */
+        SizeType max_it_;             /*!< Maximum number of iterations. */
+        bool verbose_{verbose_init_}; /*!< Verbose enable? . */
 
         Chrono _time; /*!<Timing of solver. */
         SizeType norm_freq_;

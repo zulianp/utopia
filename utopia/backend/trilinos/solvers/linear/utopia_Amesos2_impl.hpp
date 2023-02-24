@@ -1,33 +1,16 @@
 #ifndef UTOPIA_AMESOS2_IMPL_HPP
 #define UTOPIA_AMESOS2_IMPL_HPP
 
-#include "utopia_Base.hpp"
-
-#ifdef UTOPIA_WITH_TRILINOS_AMESOS2
-
 #include "utopia_Amesos2_solver.hpp"
-
+#include "utopia_Base.hpp"
 #include "utopia_make_unique.hpp"
 
-#include "Amesos2.hpp"
-#include "Amesos2_Meta.hpp"
+#ifdef UTOPIA_WITH_TRILINOS_AMESOS2
+#include <Amesos2.hpp>
 
 // TODO remove from here
-#include <Teuchos_GlobalMPISession.hpp>
 #include <Teuchos_ParameterList.hpp>
-#include <Teuchos_StandardCatchMacros.hpp>
-
-////
-#include <Amesos2_Factory.hpp>
-#include <Amesos2_MultiVecAdapter.hpp>
-#include <Amesos2_Solver.hpp>
-
-#include <Teuchos_GlobalMPISession.hpp>
-#include <Teuchos_ParameterList.hpp>
-#include <Teuchos_ScalarTraits.hpp>
 #include <Teuchos_XMLParameterListCoreHelpers.hpp>
-
-#include <Kokkos_Macros.hpp>
 
 #include <Tpetra_CrsGraph.hpp>
 #include <Tpetra_CrsMatrix.hpp>
@@ -37,8 +20,8 @@
 #include <Tpetra_Version.hpp>
 
 //////
-
 #ifdef HAVE_AMESOS2_KOKKOS
+#include <Kokkos_Macros.hpp>
 
 namespace utopia {
     /**
@@ -276,13 +259,8 @@ namespace utopia {
     void Amesos2Solver<Matrix, Vector, TRILINOS>::read(Input &in) {
         DirectSolver<Matrix, Vector>::read(in);
         in.get("keep_symbolic_factorization", impl_->keep_symbolic_factorization);
-        //  in.get("exotic", exotic); //exotic = "";
-        //  if(!exotic.empty()) {
-        //  }
     }
 
-    // available parameters
-    // TODO print setted parameters??
     template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::print_usage(std::ostream &os) const {
         DirectSolver<Matrix, Vector>::print_usage(os);
@@ -291,48 +269,13 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::read_xml(const std::string &path) {
         if (!path.empty()) {
-            try {
-                Teuchos::RCP<Teuchos::ParameterList> tmp_param_list;
-                tmp_param_list = Teuchos::getParametersFromXmlFile(
-                    path);  // TODO this call should go in Param class for Trilinos together with the full param list
-
-                impl_->amesos_list_.reset(new Teuchos::ParameterList(tmp_param_list->sublist("Amesos2", true)));
-                impl_->utopia_list_.reset(new Teuchos::ParameterList(tmp_param_list->sublist("UTOPIA", true)));
-                // impl_->utopia_list_->template get<bool>("Direct Solver", "true")
-                // Amesos2::query( impl_->utopia_list_->get("Solver Type", "KLU2") ) // Amesos2::query returns true if
-                // the solver exists TODO print error
-
-                // TODO: move validation to param class
-
-                /*        Teuchos::RCP<Teuchos::ParameterList> correct_list;
-
-                 Teuchos::setStringToIntegralParameter<Amesos2::EPhase>("Direct Sol. Phase to use", "CLEAN",
-                 "Update options for Matrix A",
-                 Teuchos::tuple<std::string>("CLEAN","PREORDERING","SYMBFACT","NUMFACT","SOLVE"),
-                 Teuchos::tuple<std::string>("Start from scratch",
-                 "Keep Preordering",
-                 "Keep Symbolic Factorization",
-                 "Keep Numeric Factorization",
-                 "Keep Solution"),
-                 Teuchos::tuple<Amesos2::EPhase>(Amesos2::CLEAN,
-                 Amesos2::PREORDERING,
-                 Amesos2::SYMBFACT,
-                 Amesos2::NUMFACT,
-                 Amesos2::SOLVE),
-                 correct_list.getRawPtr());
-
-
-                 Teuchos::RCP<const Teuchos::ParameterEntryValidator> validator = correct_list->getEntry("Direct Sol.
-                 Phase to use").validator(); impl_->utopia_list_->getEntry("Direct Sol. Phase to
-                 use").setValidator(validator);*/
-
-            } catch (const std::exception &ex) {
-                std::cerr << ex.what() << std::endl;
-                assert(false);
-                Utopia::Abort();
-            }
+            const auto tmp_param_list = Teuchos::getParametersFromXmlFile(path);
+            impl_->amesos_list_.reset(new Teuchos::ParameterList(tmp_param_list->sublist("Amesos2", true)));
+            impl_->utopia_list_.reset(new Teuchos::ParameterList(tmp_param_list->sublist("UTOPIA", true)));
         } else {
-            // TODO use default paramlist
+            // use default paramlist
+            impl_->amesos_list_ = Teuchos::parameterList();
+            impl_->utopia_list_ = Teuchos::parameterList();
         }
     }
 

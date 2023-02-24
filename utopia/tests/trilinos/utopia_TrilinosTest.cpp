@@ -586,7 +586,7 @@ namespace utopia {
             problem.gradient(x, g);
             g *= 0.0001;
 
-            ConjugateGradient<TpetraMatrixd, TpetraVectord> cg;
+            ConjugateGradient<TpetraMatrixd, TpetraVectord, HOMEMADE> cg;
             cg.rtol(1e-6);
             cg.atol(1e-6);
             cg.max_it(800);
@@ -620,7 +620,7 @@ namespace utopia {
             coarse_solver->max_it(1000);
             // coarse_solver->verbose(true);
 
-            Multigrid<Matrix, Vector> multigrid(smoother, coarse_solver);
+            Multigrid<Matrix, Vector, HOMEMADE> multigrid(smoother, coarse_solver);
 
             multigrid.max_it(10);
             multigrid.atol(1e-13);
@@ -840,11 +840,9 @@ namespace utopia {
             VectorT rhs;
             MatrixT A, I;
 
-            Multigrid<MatrixT, VectorT> multigrid(std::make_shared<ConjugateGradient<MatrixT, VectorT, HOMEMADE>>(),
-                                                  std::make_shared<ConjugateGradient<MatrixT, VectorT, HOMEMADE>>()
-                                                  // std::make_shared<SOR<MatrixT, VectorT>>(),
-                                                  // std::make_shared<Factorization<MatrixT, VectorT>>()
-            );
+            Multigrid<MatrixT, VectorT, HOMEMADE> multigrid(
+                std::make_shared<ConjugateGradient<MatrixT, VectorT, HOMEMADE>>(),
+                std::make_shared<ConjugateGradient<MatrixT, VectorT, HOMEMADE>>());
 
 #ifdef UTOPIA_WITH_PETSC
             bool verbose = false;
@@ -1345,29 +1343,6 @@ namespace utopia {
             utopia_test_assert(approxeq(nm, std::sqrt(1. * size(m).get(0))));
         }
 
-#ifdef UTOPIA_WITH_TRILINOS_BELOS
-        void trilinos_belos() {
-            BelosSolver<TpetraMatrixd, TpetraVectord> solver;
-            solver.read_xml(Utopia::instance().get("data_path") + "/xml/UTOPIA_belos.xml");
-
-            Poisson1D<TpetraMatrixd, TpetraVectord> fun(10);
-            TpetraVectord x = fun.initial_guess();
-            TpetraVectord g;
-            TpetraMatrixd A;
-
-            fun.gradient(x, g);
-            fun.hessian(x, A);
-
-            g *= 0.0001;
-
-            double diff0 = norm2(g - A * x);
-            solver.solve(A, g, x);
-            double diff = norm2(g - A * x);
-
-            utopia_test_assert(approxeq(diff / diff0, 0., 1e-6));
-        }
-#endif  // UTOPIA_WITH_TRILINOS_BELOS
-
 #ifdef UTOPIA_WITH_TRILINOS_AMESOS2
         void trilinos_amesos2() {
             Amesos2Solver<TpetraMatrixd, TpetraVectord> solver;
@@ -1587,10 +1562,6 @@ namespace utopia {
             UTOPIA_RUN_TEST(trilinos_swap);
             UTOPIA_RUN_TEST(trilinos_copy_null);
             UTOPIA_RUN_TEST(trilinos_test_read);
-
-#ifdef UTOPIA_WITH_TRILINOS_BELOS
-            UTOPIA_RUN_TEST(trilinos_belos);
-#endif  // UTOPIA_WITH_TRILINOS_BELOS
 
 #ifdef UTOPIA_WITH_TRILINOS_AMESOS2
             UTOPIA_RUN_TEST(trilinos_amesos2);

@@ -21,7 +21,7 @@ namespace utopia {
     public:
         // Parameter n represents the number of variables
         // Setup function f(x_0, x_1, .. x_n) = x^2 + (x - 1)^2 + ... + (x_n - n)^2
-        QuadraticOffsetFunction_ND(Comm &comm, SizeType n) : n_(n) {
+        QuadraticOffsetFunction_ND(const Comm &comm, SizeType n) : n_(n) {
             x_init_.zeros(layout(comm, Traits::decide(), n));
             x_exact_.zeros(layout(comm, Traits::decide(), n));
 
