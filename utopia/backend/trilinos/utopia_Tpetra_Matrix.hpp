@@ -248,18 +248,12 @@ namespace utopia {
         inline void sparse(const MatrixLayout &layout,
                            const SizeType &nnz_d_block,
                            const SizeType &nnz_o_block) override {
-            // When setting up a sparse matrix, ensure that there are enough rows/cols
-            // in the CRS map for all MPI processes.
-            const SizeType min_global_size = layout.comm().size();
-            auto adjust_global_size = [min_global_size](const SizeType gsize) {
-                return gsize >= min_global_size ? gsize : INVALID_INDEX;
-            };
             comm_ = layout.comm();
             crs_init(comm_.get(),
                      layout.local_size(0),
                      layout.local_size(1),
-                     adjust_global_size(layout.size(0)),
-                     adjust_global_size(layout.size(1)),
+                     layout.size(0),
+                     layout.size(1),
                      std::max(nnz_d_block, nnz_o_block));
         }
 
