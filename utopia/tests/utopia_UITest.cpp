@@ -75,7 +75,7 @@ namespace utopia {
     void newton_ui() {
         const std::string data_path = Utopia::instance().get("data_path");
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 
         // auto cg = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE>>();
         auto cg = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector>>();
@@ -86,7 +86,7 @@ namespace utopia {
 #endif  // UTOPIA_WITH_JSON
 
         newton.import("Newton", data_path + "/xml/default.xml");
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
     }
 
     static void ui() {

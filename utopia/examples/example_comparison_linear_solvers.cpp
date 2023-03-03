@@ -164,7 +164,7 @@ int main(const int argc, char* argv[]) {
     using namespace utopia;
 
 // Checking which backend is active.
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     using MatrixT = PetscMatrix;
     using VectorT = PetscVector;
     // FIXME once the other backends are up to date with petsc
@@ -181,6 +181,6 @@ int main(const int argc, char* argv[]) {
     Utopia::Init(argc, argv);
 
     test_linear_solver<MatrixT, VectorT>();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
     return Utopia::Finalize();
 }

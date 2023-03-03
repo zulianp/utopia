@@ -50,10 +50,10 @@ more information and tutorials.
 #include "utopia_blas.hpp"
 #endif  // UTOPIA_WITH_BLAS
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc.hpp"
 #include "utopia_petsc_impl.hpp"
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 #ifdef UTOPIA_WITH_CUDA
 #include "utopia_cuda.hpp"

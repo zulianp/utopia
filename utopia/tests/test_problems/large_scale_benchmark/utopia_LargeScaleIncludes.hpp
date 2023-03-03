@@ -14,7 +14,7 @@
 
 #include "utopia_MultilevelTestProblem1D.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_PetscMultilevelTestProblem.hpp"
 #endif
 

@@ -1,7 +1,7 @@
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
@@ -163,4 +163,4 @@ namespace utopia {
     UTOPIA_REGISTER_TEST_FUNCTION(tao);
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC

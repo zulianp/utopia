@@ -341,9 +341,9 @@ public:
 };
 
 void nras() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     NRASTest<PetscMatrix, PetscVector>().run();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(nras);

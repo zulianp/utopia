@@ -1,6 +1,6 @@
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 
 #include "utopia.hpp"
 #include "utopia_AppRunner.hpp"
@@ -285,4 +285,4 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC

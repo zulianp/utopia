@@ -1,6 +1,7 @@
 #include "utopia_Instance.hpp"
 #include "utopia_Allocations.hpp"
 #include "utopia_AuthoredWork.hpp"
+#include "utopia_Banner.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_CiteUtopia.hpp"
 #include "utopia_Config.hpp"
@@ -8,7 +9,6 @@
 #include "utopia_MPI.hpp"
 #include "utopia_Tracer.hpp"
 #include "utopia_make_unique.hpp"
-#include "utopia_Banner.hpp"
 
 #include "utopia_Reporter.hpp"
 
@@ -16,9 +16,9 @@
 #include "utopia_trilinos_Library.hpp"
 #endif  // UTOPIA_WITH_TRILINOS
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc_Library.hpp"
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 #ifdef UTOPIA_WITH_MPI
 #include <mpi.h>
@@ -34,7 +34,7 @@ namespace utopia {
         instance().add_library_with_priority(utopia::make_unique<TrilinosLibrary>());
 #endif  // UTOPIA_WITH_TRILINOS
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         instance().add_library_with_priority(utopia::make_unique<PetscLibrary>());
 #endif
 
@@ -206,8 +206,7 @@ namespace utopia {
 #endif  // UTOPIA_TRACE_ENABLED
         }
 
-        if(verbose()) 
-        {
+        if (verbose()) {
             Banner::welcome();
         }
     }

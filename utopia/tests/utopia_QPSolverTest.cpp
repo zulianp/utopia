@@ -24,13 +24,13 @@
 #include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_PrimalInteriorPointSolver_impl.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc_BDDLinearSolver.hpp"
 #include "utopia_petsc_BDDOperator.hpp"
 #include "utopia_petsc_BDDQPSolver.hpp"
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 namespace utopia {
 
@@ -760,7 +760,7 @@ namespace utopia {
     };
 
     static void qp_solver() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         PQPSolverTest<PetscMatrix, PetscVector>().run();
         QPSolverTest<PetscMatrix, PetscVector>().run();
         QPSolverTest<PetscMatrix, PetscVector>().run_GS_QR();
@@ -768,7 +768,7 @@ namespace utopia {
         MonotoneMGTest<PetscMatrix, PetscVector>().run();
         // ProjectedGaussSeidelNewTest<PetscMatrix, PetscVector>().run();
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 #ifdef UTOPIA_WITH_TRILINOS
         QPSolverTest<TpetraMatrixd, TpetraVectord>().run();

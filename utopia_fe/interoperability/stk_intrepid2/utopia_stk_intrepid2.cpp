@@ -1,6 +1,6 @@
 #include "utopia_stk_intrepid2.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc_Matrix.hpp"
 #endif
 
@@ -209,7 +209,7 @@ namespace utopia {
 
     template class CreateFEOnBoundary<utopia::stk::FunctionSpace, utopia::intrepid2::FE<StkScalar_t>>;
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     template <typename Scalar>
     void LocalToGlobal<utopia::stk::FunctionSpace, StkViewDevice_t<Scalar>, PetscMatrix>::apply(
         const utopia::stk::FunctionSpace &space,

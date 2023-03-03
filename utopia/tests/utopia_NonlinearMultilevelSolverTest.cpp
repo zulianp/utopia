@@ -4,7 +4,7 @@
 
 namespace utopia {
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     class NonlinearBratuSolverTest {
     public:
         using SizeType = typename utopia::Traits<PetscVector>::SizeType;
@@ -323,10 +323,10 @@ namespace utopia {
         bool verbose_;
     };
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
     static void non_linear_multilevel() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         NonlinearBratuSolverTest(3, true, false).run();
 #endif
     }

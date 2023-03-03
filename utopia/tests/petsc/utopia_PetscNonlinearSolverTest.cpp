@@ -27,7 +27,7 @@ namespace utopia {
         }
     }
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     class PetscNonlinearSolverTest {
     public:
         using Traits = utopia::Traits<PetscVector>;
@@ -591,10 +591,10 @@ namespace utopia {
         int _n{100};
     };
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
     static void petsc_nonlinear() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         PetscNonlinearSolverTest().run();
 #endif
     }

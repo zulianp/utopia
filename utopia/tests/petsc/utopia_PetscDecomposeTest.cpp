@@ -276,9 +276,9 @@ public:
 };
 
 void petsc_decompose_test() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     DecomposeTest<PetscMatrix, PetscVector>().run();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(petsc_decompose_test);

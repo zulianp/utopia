@@ -3,7 +3,7 @@
 #include "utopia.hpp"
 #include "utopia_Version.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc_impl.hpp"
 
 using VectorType = utopia::PetscVector;
@@ -22,7 +22,7 @@ using MatrixType = utopia::BlasMatrixd;
 #define UTOPIA_NO_BACKEND
 #endif  // UTOPIA_WITH_BLAS
 #endif  // UTOPIA_WITH_TRILINOS
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 #ifndef UTOPIA_NO_BACKEND
 

@@ -75,7 +75,7 @@ public:
 int main(int argc, char **argv) {
     using namespace utopia;
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     using MatrixT = PetscMatrix;
     using VectorT = PetscVector;
 #define EXAMPLE_HAS_DENSE_ALGEBRA_BACKEND

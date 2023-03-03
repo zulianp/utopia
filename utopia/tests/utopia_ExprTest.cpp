@@ -59,7 +59,7 @@ namespace utopia {
 
         // void convert_test()
         // {
-        //     #ifdef UTOPIA_WITH_PETSC
+        //     #ifdef UTOPIA_ENABLE_PETSC
         //         if(Traits<Vector>::Backend == PETSC) {
         //             Vector ut_vec = local_zeros(10);
 
@@ -591,7 +591,7 @@ namespace utopia {
     };
 
     void expr() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         ExpressionTests<PetscMatrix, PetscVector>(PetscCommunicator(), 10).run();
 #endif
 

@@ -1,7 +1,7 @@
 #include "utopia_Base.hpp"
 
 #ifdef UTOPIA_WITH_TRILINOS
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 
 // include edsl components
 #include "utopia.hpp"
@@ -256,7 +256,7 @@ namespace utopia {
     };
 
     void ls_solve(Input &in) {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         std::string backend = "petsc";
 #else
         std::string backend = "trilinos";
@@ -279,4 +279,4 @@ namespace utopia {
 }  // namespace utopia
 
 #endif  // UTOPIA_WITH_TRILINOS
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC

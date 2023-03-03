@@ -126,7 +126,7 @@ namespace utopia {
     };
 
     static void wrapper() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         WrapperTest<PetscMatrix, PetscVector>().run();
 #endif
 

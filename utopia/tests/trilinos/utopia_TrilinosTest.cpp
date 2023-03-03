@@ -29,7 +29,7 @@
 // FIXME This is deprecated remove it
 #include "utopia_trilinos_Each_impl.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc_trilinos.hpp"
 #endif
 
@@ -504,7 +504,7 @@ namespace utopia {
 
             utopia_test_assert(R.is_valid(true));
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             // using petsc to test trilinos
 
             PetscMatrix A_petsc;
@@ -538,7 +538,7 @@ namespace utopia {
 
             utopia_test_assert(approxeq(diff_2, 0.));
             utopia_test_assert(approxeq(diff, 0.));
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
         }
 
         void test_rap(const int n, const int m) {
@@ -811,19 +811,19 @@ namespace utopia {
         }
 
         void stcg_pt_test() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             // petsc version
             st_cg_test<PetscMatrix, PetscVector>();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
             st_cg_test<TpetraMatrixd, TpetraVectord>();
         }
 
         void trilinos_mg_1D() {
             // if(mpi_world_size() > 1) return;
             // petsc version
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             test_mg<PetscMatrix, PetscVector>();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
         // trilinos version
             test_mg<TpetraMatrixd, TpetraVectord>();
         }
@@ -846,7 +846,7 @@ namespace utopia {
                                                   // std::make_shared<Factorization<MatrixT, VectorT>>()
             );
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             bool verbose = false;
             bool ok = true;
             // FIXME needs trilinos formats but for the moment lets use petsc's
@@ -915,7 +915,7 @@ namespace utopia {
             disp(diff);
             utopia_test_assert(approxeq(diff, 0., 1e-6));
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
         }
 
         void trilinos_row_view() {
@@ -1026,7 +1026,7 @@ namespace utopia {
             utopia_test_assert(ok);
         }
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         void trilinos_petsc_interop() {
             KSPSolver<TpetraMatrixd, TpetraVectord> solver;
 
@@ -1050,7 +1050,7 @@ namespace utopia {
             double diff = norm2(g - H * x);
             utopia_test_assert(approxeq(diff, 0., 1e-8));
         }
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
         void trilinos_structure() {
             auto n = 10;
@@ -1064,7 +1064,7 @@ namespace utopia {
         }
 
         void trilinos_exp() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             TpetraVectord x(layout(comm_, 10, Traits::determine()), 2.);
             PetscVector y(layout(comm_, 10, PetscTraits::determine()), 2.);
 
@@ -1073,7 +1073,7 @@ namespace utopia {
 
             utopia_test_assert(cross_backend_approxeq(ey, ex));
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
         }
 
         void trilinos_diag_ops() {
@@ -1106,7 +1106,7 @@ namespace utopia {
         }
 
         void trilinos_bratu_1D() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             int n = 10;
 
             auto fun_tpetra = std::make_shared<Bratu1D<TpetraMatrixd, TpetraVectord>>(n);
@@ -1158,7 +1158,7 @@ namespace utopia {
 
             utopia_test_assert(cross_backend_approxeq(H_petsc, H_tpetra));
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
         }
 
         template <class Matrix, class Vector>
@@ -1273,7 +1273,7 @@ namespace utopia {
             }
         }
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         void trilinos_copy_write_big() {
             PetscMatrix petsc_P;
 
@@ -1295,7 +1295,7 @@ namespace utopia {
                           [&P2](const SizeType i, const SizeType j, const double value) { P2.set(i, j, value * 2.); });
             }
         }
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
         void trilinos_ghosted() {
             const int n = mpi_world_size() * 2;
@@ -1328,10 +1328,10 @@ namespace utopia {
         }
 
         void trilinos_rmtr() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             // petsc version
             rmtr_test<PetscMatrix, PetscVector>();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
             rmtr_test<TpetraMatrixd, TpetraVectord>();
         }
@@ -1405,7 +1405,7 @@ namespace utopia {
 
 #endif  // HAVE_AMESOS2_KOKKOS
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         void trilinos_transform() {
             PetscMatrix petsc_P;
 
@@ -1435,7 +1435,7 @@ namespace utopia {
                 utopia_test_assert(j == SizeType(value));
             });
         }
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
         void trilinos_set_zeros() {
             TpetraMatrixd m;
@@ -1610,11 +1610,11 @@ namespace utopia {
             UTOPIA_RUN_TEST(trilinos_amesos2);
 #endif  // UTOPIA_WITH_TRILINOS_AMESOS2
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             UTOPIA_RUN_TEST(trilinos_transform);
             UTOPIA_RUN_TEST(trilinos_petsc_interop);
             UTOPIA_RUN_TEST(trilinos_copy_write_big);
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
             // Fails on multinode GPU
             UTOPIA_RUN_TEST(trilinos_mat_axpy);

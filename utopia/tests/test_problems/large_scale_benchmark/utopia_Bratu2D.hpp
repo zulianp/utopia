@@ -9,7 +9,7 @@ namespace utopia {
     class Bratu2D {};
 }  // namespace utopia
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 // #warning "this code should go in the petsc backend folder"
 #include <petsc/private/snesimpl.h> /* For SNES_Solve event */
 #include <petscdm.h>
@@ -229,5 +229,5 @@ namespace utopia {
     };
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 #endif

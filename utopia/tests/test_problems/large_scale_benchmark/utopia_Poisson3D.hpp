@@ -6,7 +6,7 @@ namespace utopia {
     class Poisson3D {};
 }  // namespace utopia
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include <petsc/private/snesimpl.h> /* For SNES_Solve event */
 #include <petscdm.h>
 #include <petscdmda.h>
@@ -556,4 +556,4 @@ namespace utopia {
     };
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC

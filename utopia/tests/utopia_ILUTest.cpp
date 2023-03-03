@@ -7,7 +7,7 @@
 
 using namespace utopia;
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 
 #include "utopia_ILUDecompose.hpp"
 #include "utopia_petsc_DILUAlgorithm.hpp"
@@ -186,16 +186,16 @@ void petsc_block_ilu_test() {
     utopia_test_assert(norm_r < 1e-5);
 }
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 void ilu() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     UTOPIA_RUN_TEST(petsc_ilu_test);
     UTOPIA_RUN_TEST(petsc_ilu_cg_test);
     UTOPIA_RUN_TEST(petsc_block_ilu_test);
     UTOPIA_RUN_TEST(petsc_dilu_test);
     // UTOPIA_RUN_TEST(petsc_ilu_vi_test);
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(ilu);

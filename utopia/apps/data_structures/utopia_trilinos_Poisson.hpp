@@ -591,4 +591,4 @@ namespace utopia {
     };
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC

@@ -63,9 +63,9 @@ public:
 };
 
 void petsc_comm_struct() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     CommStructTest<PetscMatrix, PetscVector>().run();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(petsc_comm_struct);

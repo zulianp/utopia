@@ -8,12 +8,12 @@
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Redundant.hpp"
 #include "utopia_petsc_RedundantQPSolver.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 namespace utopia {
 
@@ -255,9 +255,9 @@ namespace utopia {
     };
 
     void sub_comm_algebra() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         run_parallel_test<SubCommAlgebraTest<PetscMatrix, PetscVector>>();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
         // #ifdef UTOPIA_WITH_TRILINOS
         //         run_parallel_test< SubCommAlgebraTest<TpetraMatrix, TpetraVector> >();

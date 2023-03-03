@@ -350,10 +350,10 @@ namespace utopia {
             // }
         }
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         void simd_petsc_pbgs() { ProjectedBlockGaussSeidelSweep<PetscMatrix, N> pgs; }
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
         void run() {
             UTOPIA_RUN_TEST(simd_with_vec);
@@ -361,9 +361,9 @@ namespace utopia {
             UTOPIA_RUN_TEST(simd_mat_sum);
             UTOPIA_RUN_TEST(simd_mat_det);
             UTOPIA_RUN_TEST(simd_mat_eigs);
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             UTOPIA_RUN_TEST(simd_petsc_pbgs);
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
         }
     };
 

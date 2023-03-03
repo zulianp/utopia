@@ -131,9 +131,9 @@ public:
 };
 
 void patch_smoother() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     PatchSmootherTest<PetscMatrix, PetscVector>().run();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(patch_smoother);

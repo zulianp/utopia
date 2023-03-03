@@ -1,6 +1,6 @@
 #include "utopia_Main.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 using Matrix_t = utopia::PetscMatrix;
 using Vector_t = utopia::PetscVector;
 #else

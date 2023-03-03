@@ -202,9 +202,9 @@
 // #endif  // UTOPIA_WITH_BLAS
 
 //         // FIXME this test fails (but then do we really want these features?)
-//         // #ifdef UTOPIA_WITH_PETSC
+//         // #ifdef UTOPIA_ENABLE_PETSC
 //         //         AutoDiffTest<PetscMatrix, PetscVector>().run();
-//         // #endif  // UTOPIA_WITH_PETSC
+//         // #endif  // UTOPIA_ENABLE_PETSC
 //     }
 
 //     UTOPIA_REGISTER_TEST_FUNCTION(autodiff);

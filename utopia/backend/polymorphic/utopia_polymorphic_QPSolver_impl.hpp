@@ -16,7 +16,7 @@
 #include "utopia_SemismoothNewton.hpp"
 
 // PETSC
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "petsctao.h"
 #include "utopia_LogBarrierQPMultigrid.hpp"
 #include "utopia_petsc_BDDQPSolver.hpp"
@@ -33,7 +33,7 @@
 #include "utopia_petsc_RASPatchSmoother.hpp"
 #endif  // UTOPIA_WITH_BLAS
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 #include <functional>
 #include <map>
@@ -123,7 +123,7 @@ namespace utopia {
                 register_solver<HomeMadeMPRGP>("any", "mprgp");
             }
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             {
                 // Petsc
                 using PetscSemiSmoothNewton = utopia::SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL>;
@@ -141,7 +141,7 @@ namespace utopia {
                 register_solver<PetscRASPatchSmoother>("petsc", "patch_smoother");
 #endif  // UTOPIA_WITH_BLAS
             }
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
         }
     };
 
@@ -211,7 +211,7 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     OmniQPSolver<Matrix, Vector>::OmniQPSolver() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         auto tron = utopia::make_unique<TaoQPSolver<Matrix, Vector>>();
         tron->tao_type(TAOTRON);
         tron->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));

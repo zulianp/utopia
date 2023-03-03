@@ -18,7 +18,7 @@ list(APPEND TEST_MODULES deprecated)
 
 # if(TARGET utopia_blas) list(APPEND TEST_MODULES blas) endif()
 
-if(UTOPIA_PETSC)
+if(UTOPIA_ENABLE_PETSC)
     list(APPEND TEST_MODULES petsc)
 endif()
 

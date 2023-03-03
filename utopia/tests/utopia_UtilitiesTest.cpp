@@ -168,7 +168,7 @@ namespace utopia {
                 utopia_test_assert(approxeq(y == 0 ? 1.0 : 0.0, entry));
             });
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             // NOTE(eric): range assignment is NYI in Petsc backend
             if (std::is_same<Matrix, PetscMatrix>::value) {
                 return;
@@ -328,7 +328,7 @@ namespace utopia {
         UtilitiesTest<BlasMatrixd, BlasVectord>().run();
 #endif  // UTOPIA_WITH_BLAS
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         BlockTest<PetscMatrix, PetscVector>().run();
 
         UtilitiesTest<PetscMatrix, PetscVector>().run();
@@ -336,7 +336,7 @@ namespace utopia {
 
         MatrixStructureTest<PetscMatrix, PetscVector>().run();
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
         // FIXME
         if (mpi_world_size() == 1) {

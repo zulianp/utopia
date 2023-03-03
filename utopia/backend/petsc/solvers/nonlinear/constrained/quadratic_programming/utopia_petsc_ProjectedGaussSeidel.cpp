@@ -76,7 +76,7 @@ namespace utopia {
 
 #ifdef UTOPIA_WITH_VC
         // FIXME
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         bool use_simd = false;
         in.get("use_simd", use_simd);
 
@@ -84,15 +84,15 @@ namespace utopia {
             // sweeper_ = utopia::make_unique<VcProjectedBlockGaussSeidelSweep<PetscMatrix>>();
             sweeper_ = utopia::make_unique<VcProjectedBlockGaussSeidelSweepTransposed<PetscMatrix>>();
         } else
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 #endif  // UTOPIA_WITH_VC
             if (block_size == 2) {
-            sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<PetscMatrix, 2>>();
-        } else if (block_size == 3) {
-            sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<PetscMatrix, 3>>();
-        } else if (block_size == 4) {
-            sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<PetscMatrix, 4>>();
-        }
+                sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<PetscMatrix, 2>>();
+            } else if (block_size == 3) {
+                sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<PetscMatrix, 3>>();
+            } else if (block_size == 4) {
+                sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<PetscMatrix, 4>>();
+            }
 
         if (sweeper_) {
             sweeper_->read(in);

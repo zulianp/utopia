@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 
 #include "utopia_MatrixAgglomerator.hpp"
 

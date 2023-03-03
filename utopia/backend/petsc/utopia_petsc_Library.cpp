@@ -10,7 +10,7 @@
 
 namespace utopia {
     void PetscLibrary::init(int argc, char *argv[]) {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         static char help[] = "initializing utopia environment through petsc";
 
         // #ifndef NDEBUG

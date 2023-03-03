@@ -354,13 +354,13 @@
 // 		test_program<Matrixd, Vectord>("blas");
 // #endif
 
-// #ifdef UTOPIA_WITH_PETSC
+// #ifdef UTOPIA_ENABLE_PETSC
 // 		if(verbose) {
 // 			utopia::out() <<"------------------------------------\n";
 // 			utopia::out() <<"PETSC: " << std::endl;
 // 		}
 // 		test_program<PetscMatrix, PetscVector>("petsc");
-// #endif //UTOPIA_WITH_PETSC
+// #endif //UTOPIA_ENABLE_PETSC
 
 // #ifdef UTOPIA_WITH_EIGEN_3
 // 		if(verbose) {

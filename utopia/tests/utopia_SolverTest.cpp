@@ -467,7 +467,7 @@ namespace utopia {
         // MSSolverTest<Matrixd, Vectord, Matrixd, Vectord>().run();
 #endif  // UTOPIA_WITH_BLAS
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         SolverTest<PetscMatrix, PetscVector>().run();
 
 #ifdef UTOPIA_WITH_BLAS

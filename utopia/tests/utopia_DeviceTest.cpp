@@ -66,9 +66,9 @@ namespace utopia {
         DeviceTest<BlasMatrixd, BlasVectord>().run();
 #endif  // UTOPIA_WITH_BLAS
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         DeviceTest<utopia::PetscMatrix, utopia::PetscVector>::run();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 #ifdef UTOPIA_WITH_TRILINOS
         DeviceTest<utopia::TpetraMatrix, utopia::TpetraVector>::run();
