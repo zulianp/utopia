@@ -96,7 +96,7 @@ int main(const int argc, char* argv[]) {
     using MatrixT = PetscMatrix;
     using VectorT = PetscVector;
 #else
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
     using MatrixT = TpetraMatrixd;
     using VectorT = TpetraVectord;
 #else

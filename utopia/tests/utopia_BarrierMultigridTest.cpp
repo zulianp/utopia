@@ -189,9 +189,9 @@ namespace utopia {
         BarrierMultigridTest<PetscMatrix, PetscVector>().run();
 #endif  // UTOPIA_ENABLE_PETSC
 
-        // #ifdef UTOPIA_WITH_TRILINOS
+        // #ifdef UTOPIA_ENABLE_TRILINOS
         //         BarrierMultigridTest<TpetraMatrixd, TpetraVectord>().run();
-        // #endif  // UTOPIA_WITH_TRILINOS
+        // #endif  // UTOPIA_ENABLE_TRILINOS
 
         // #ifdef UTOPIA_WITH_BLAS
         //         BarrierMultigridTest<BlasMatrixd, BlasVectord>()

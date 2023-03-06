@@ -170,11 +170,11 @@ static void run_all(const int n) {
     run_access_blas(n);
 #endif  // UTOPIA_WITH_BLAS
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
     // run with trilinos types
     run<TpetraVectord>(n);
     run_access<TpetraVectord>(n);
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
 }
 
 // Run it with `./examples/example_loops -n 100000

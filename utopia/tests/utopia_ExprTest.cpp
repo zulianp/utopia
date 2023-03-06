@@ -595,7 +595,7 @@ namespace utopia {
         ExpressionTests<PetscMatrix, PetscVector>(PetscCommunicator(), 10).run();
 #endif
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
         ExpressionTests<TpetraMatrixd, TpetraVectord>(TrilinosCommunicator(), 10).run();
 #endif
     }

@@ -55,9 +55,9 @@ namespace utopia {
         run_all_benchmarks<PetscMatrix, PetscVector>("petsc");
 #endif  // UTOPIA_ENABLE_PETSC
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
         run_all_benchmarks<TpetraMatrixd, TpetraVectord>("trilinos");
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
 
         // Serial benchmarks
 #ifdef UTOPIA_WITH_BLAS

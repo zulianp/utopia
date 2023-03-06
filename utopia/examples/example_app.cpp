@@ -4,7 +4,7 @@
 using Matrix_t = utopia::PetscMatrix;
 using Vector_t = utopia::PetscVector;
 #else
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 using Matrix_t = utopia::TpetraMatrixd;
 using Vector_t = utopia::TpetraVectord;
 #else

@@ -1,7 +1,7 @@
 # find dependencies
 find_package(Trilinos)
 
-if(Trilinos_FOUND)  
+if(Trilinos_FOUND)
   # These lines are needed so the utopia-config.makefile will be correctly
   # built. The UtopiaTargets.cmake file is populated automatically by cmake
   # ############################################################################
@@ -50,13 +50,17 @@ if(Trilinos_FOUND)
     endif()
   endforeach()
 
-  set(UTOPIA_WITH_TRILINOS ON)
-  set(UTOPIA_TRILINOS
-      TRUE
-      PARENT_SCOPE)
+  # set(UTOPIA_ENABLE_TRILINOS ON)
+  # set(UTOPIA_TRILINOS
+  #     TRUE
+  #     PARENT_SCOPE)
 
-  set(UTOPIA_TRILINOS_DIR ${Trilinos_DIR} PARENT_SCOPE)
-  set(UTOPIA_TRILINOS_VERSION ${Trilinos_VERSION} PARENT_SCOPE)
+  set(UTOPIA_TRILINOS_DIR
+      ${Trilinos_DIR}
+      PARENT_SCOPE)
+  set(UTOPIA_TRILINOS_VERSION
+      ${Trilinos_VERSION}
+      PARENT_SCOPE)
 
   find_package(TpetraExt)
   if(TRILINOS_TPETRAEXT_FOUND)
@@ -64,13 +68,24 @@ if(Trilinos_FOUND)
         TRUE
         PARENT_SCOPE)
   endif()
+  # include_directories(SYSTEM ${UTOPIA_TRILINOS_DEPS})
+  # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}
+  #   ${Kokkos_CXX_FLAGS}")
+  # message(STATUS "Kokkos_CXX_FLAGS=${Kokkos_CXX_FLAGS},${CMAKE_CXX_FLAGS}")
+  # message(
+  #   STATUS
+  #     "HERE:
+  #   ${Trilinos_CXX_COMPILER_FLAGS},${Kokkos_CXX_FLAGS},${TRILINOS_DEFINITIONS},${CMAKE_CXX_STANDARD},${INTERFACE_COMPILE_FEATURES}"
+  # )
+
 else()
   message(WARNING "[Warning] Trilinos not found")
-  set(UTOPIA_WITH_TRILINOS FALSE)
+  # set(UTOPIA_ENABLE_TRILINOS FALSE)
 endif()
 
 # set-up module
 if(Trilinos_FOUND)
+
   list(
     APPEND
     TRILINOS_MODULES

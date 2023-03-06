@@ -1,11 +1,11 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 #include <algorithm>
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
-//#include "utopia_kokkos_ParallelEach.hpp"
+// #include "utopia_kokkos_ParallelEach.hpp"
 #include "utopia_trilinos.hpp"
 #include "utopia_trilinos_Each_impl.hpp"
 #include "utopia_trilinos_solvers.hpp"
@@ -199,4 +199,4 @@ namespace utopia {
     UTOPIA_REGISTER_TEST_FUNCTION(kokkos);
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS

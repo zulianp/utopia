@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 #ifdef UTOPIA_ENABLE_PETSC
 
 #include "utopia_CrossBackendLinearSolver.hpp"
@@ -65,7 +65,7 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
 #endif  // UTOPIA_ENABLE_PETSC
 
 #endif  // UTOPIA_PETSC_TRILINOS_HPP

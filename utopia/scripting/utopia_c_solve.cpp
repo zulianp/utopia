@@ -10,7 +10,7 @@ using VectorType = utopia::PetscVector;
 using MatrixType = utopia::PetscMatrix;
 
 #else
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 using VectorType = utopia::TpetraVector;
 using MatrixType = utopia::TpetraMatrix;
 #else
@@ -21,7 +21,7 @@ using MatrixType = utopia::BlasMatrixd;
 #warning "No backend available"
 #define UTOPIA_NO_BACKEND
 #endif  // UTOPIA_WITH_BLAS
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
 #endif  // UTOPIA_ENABLE_PETSC
 
 #ifndef UTOPIA_NO_BACKEND

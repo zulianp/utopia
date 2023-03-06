@@ -87,18 +87,23 @@ if(UTOPIA_ENABLE_TRILINOS)
   add_subdirectory(backend/trilinos)
 endif()
 
-if(UTOPIA_ENABLE_TRILINOS)
-  find_package(Trilinos)
-  if(Trilinos_FOUND)
-    # include_directories(SYSTEM ${Trilinos_INCLUDE_DIRS}
-    # ${Trilinos_TPL_INCLUDE_DIRS}) set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}
-    # ${Kokkos_CXX_FLAGS}") message(STATUS
-    # "Kokkos_CXX_FLAGS=${Kokkos_CXX_FLAGS},${CMAKE_CXX_FLAGS}") message(STATUS
-    # "HERE:
-    # ${Trilinos_CXX_COMPILER_FLAGS},${Kokkos_CXX_FLAGS},${TRILINOS_DEFINITIONS},${CMAKE_CXX_STANDARD},${INTERFACE_COMPILE_FEATURES}")
-    set(UTOPIA_WITH_TRILINOS ON)
-  endif()
-endif()
+# if(UTOPIA_ENABLE_TRILINOS)
+
+  # find_package(Trilinos)
+  # # if(Trilinos_FOUND)
+  # #   # include_directories(SYSTEM ${Trilinos_INCLUDE_DIRS}
+  # #   #                     ${Trilinos_TPL_INCLUDE_DIRS})
+  # #   # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}
+  # #   # ${Kokkos_CXX_FLAGS}")
+  # #   # message(STATUS "Kokkos_CXX_FLAGS=${Kokkos_CXX_FLAGS},${CMAKE_CXX_FLAGS}")
+  # #   # message(
+  # #   #   STATUS
+  # #   #     "HERE:
+  # #   # ${Trilinos_CXX_COMPILER_FLAGS},${Kokkos_CXX_FLAGS},${TRILINOS_DEFINITIONS},${CMAKE_CXX_STANDARD},${INTERFACE_COMPILE_FEATURES}"
+  # #   # )
+  # #   # set(UTOPIA_ENABLE_TRILINOS ON)
+  # # endif()
+# endif()
 
 if(UTOPIA_ENABLE_VC)
   add_subdirectory(backend/vc)

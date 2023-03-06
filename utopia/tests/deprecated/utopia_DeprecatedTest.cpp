@@ -137,9 +137,9 @@ namespace utopia {
         // DenseDeprecatedTest<PetscMatrix, PetscVector>().run();
 #endif  // UTOPIA_ENABLE_PETSC
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
         DeprecatedTest<utopia::TpetraMatrix, utopia::TpetraVector>::run();
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(deprecated);

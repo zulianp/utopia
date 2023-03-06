@@ -1,6 +1,6 @@
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 
 #include "utopia.hpp"
 #include "utopia_Assert.hpp"
@@ -1643,4 +1643,4 @@ namespace utopia {
     UTOPIA_REGISTER_TEST_FUNCTION(trilinos_specific);
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS

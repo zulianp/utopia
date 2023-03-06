@@ -546,7 +546,7 @@ namespace utopia {
 
             QuadraticExtendedFunction<PetscMatrix, PetscVector> fun_QP(H, g, x_eq, x_bc_marker, empty_rhs);
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
             Matrix H_tril;
             Vector g_tril;
             Vector x_tril, x_eq_tril, x_bc_marker_tril, empty_rhs_tril;
@@ -572,7 +572,7 @@ namespace utopia {
             tr_solver.verbose(verbose_);
             tr_solver.solve(fun_QP_tril, x_tril);
 
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
         }
 
         template <class Matrix1, class Vector1, class Matrix2, class Vector2>
@@ -886,7 +886,7 @@ namespace utopia {
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, false).run_petsc();
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, false).run_trilinos();
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
         HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
 #endif
     }

@@ -169,7 +169,7 @@ int main(const int argc, char* argv[]) {
     using VectorT = PetscVector;
     // FIXME once the other backends are up to date with petsc
     // #else
-    // #ifdef UTOPIA_WITH_TRILINOS
+    // #ifdef UTOPIA_ENABLE_TRILINOS
     //     using MatrixT = TpetraMatrixd;
     //     using VectorT = TpetraVectord;
     // #else

@@ -8,7 +8,7 @@
 #include "utopia_Operators.hpp"
 #include "utopia_ViewForwardDeclarations.hpp"
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 #include <Kokkos_ArithTraits.hpp>
 #endif
 

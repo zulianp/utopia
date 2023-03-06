@@ -560,10 +560,10 @@ namespace utopia {
         // >().run_dense();
 #endif  // UTOPIA_WITH_BLAS
 
-        // #ifdef UTOPIA_WITH_TRILINOS
+        // #ifdef UTOPIA_ENABLE_TRILINOS
         // QuasiNewtonTest<TpetraMatrixd, TpetraVectord>().print_backend_info();
         //      QuasiNewtonTest<TpetraMatrixd, TpetraVectord>().run_sparse();
-        // #endif //UTOPIA_WITH_TRILINOS
+        // #endif //UTOPIA_ENABLE_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(quasi_newton);

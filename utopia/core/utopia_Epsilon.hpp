@@ -4,9 +4,9 @@
 #include "utopia_Base.hpp"
 #include "utopia_ViewForwardDeclarations.hpp"
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 #include <Kokkos_ArithTraits.hpp>
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
 
 #include <cmath>
 #include <limits>
@@ -17,11 +17,11 @@ namespace utopia {
         template <typename T>
         class Epsilon {
         public:
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
             static KOKKOS_INLINE_FUNCTION constexpr T value() { return Kokkos::Details::ArithTraits<T>::epsilon(); }
 #else
             static inline T value() { return std::numeric_limits<T>::epsilon(); }
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
         };
 
         template <typename T>

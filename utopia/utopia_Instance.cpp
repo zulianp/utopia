@@ -12,9 +12,9 @@
 
 #include "utopia_Reporter.hpp"
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 #include "utopia_trilinos_Library.hpp"
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
 
 #ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc_Library.hpp"
@@ -30,9 +30,9 @@
 namespace utopia {
 
     void Utopia::Init(int argc, char *argv[]) {
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
         instance().add_library_with_priority(utopia::make_unique<TrilinosLibrary>());
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
 
 #ifdef UTOPIA_ENABLE_PETSC
         instance().add_library_with_priority(utopia::make_unique<PetscLibrary>());

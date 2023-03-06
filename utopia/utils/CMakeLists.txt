@@ -16,7 +16,7 @@ set(UTOPIA_SOURCES
     ${UTOPIA_SOURCES}
     PARENT_SCOPE)
 
-# if(UTOPIA_WITH_TRILINOS)
+# if(UTOPIA_ENABLE_TRILINOS)
 #   # we depend on kokkos headers, i.e. we need to pull in the kokkos target
 #   target_link_libraries(utopia PUBLIC Kokkos::kokkos)
 # endif()

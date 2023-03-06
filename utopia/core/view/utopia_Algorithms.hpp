@@ -5,7 +5,7 @@
 #include "utopia_Epsilon.hpp"
 #include "utopia_ViewForwardDeclarations.hpp"
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 #include <Kokkos_ArithTraits.hpp>
 #include <Kokkos_Atomic.hpp>
 #include <Kokkos_Core.hpp>
@@ -13,7 +13,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
 
 #ifdef UTOPIA_WITH_VC
 #include "utopia_vc_Base.hpp"
@@ -22,7 +22,7 @@
 namespace utopia {
     namespace device {
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 
         template <typename T>
         UTOPIA_INLINE_FUNCTION constexpr T isnan(const T &v) {

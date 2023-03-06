@@ -39,12 +39,12 @@ more information and tutorials.
 #include "utopia_Solvers.hpp"
 #include "utopia_Utils.hpp"
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 // Macros defined in a petsc header are conflicting with Enums defined in
 // Trilinos Trilinos inclusions should always preceed petsc inclusions
 #include "utopia_petsc_trilinos.hpp"
 #include "utopia_trilinos.hpp"
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
 
 #ifdef UTOPIA_WITH_BLAS
 #include "utopia_blas.hpp"
