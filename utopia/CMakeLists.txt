@@ -84,8 +84,10 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
          $<INSTALL_INTERFACE:include>)
 
-target_include_directories(utopia PUBLIC ${UTOPIA_DEP_INCLUDES})
-# message("UTOPIA_DEP_INCLUDES: ${UTOPIA_DEP_INCLUDES}")
+
+message(STATUS "${UTOPIA_DEP_INCLUDES}")
+target_include_directories(utopia SYSTEM PUBLIC ${UTOPIA_DEP_INCLUDES})
+message("UTOPIA_DEP_INCLUDES: ${UTOPIA_DEP_INCLUDES}")
 # message("UTOPIA_DEP_LIBRARIES: ${UTOPIA_DEP_LIBRARIES}")
 
 target_link_libraries(utopia PUBLIC ${UTOPIA_DEP_LIBRARIES})

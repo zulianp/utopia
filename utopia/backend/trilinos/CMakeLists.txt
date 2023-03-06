@@ -2,13 +2,15 @@
 find_package(Trilinos)
 
 if(Trilinos_FOUND)
+
+
+  # include_directories(SYSTEM ${Trilinos_INCLUDE_DIRS})
   # These lines are needed so the utopia-config.makefile will be correctly
   # built. The UtopiaTargets.cmake file is populated automatically by cmake
   # ############################################################################
   foreach(LIB ${Trilinos_LIBRARY_DIRS})
     list(APPEND UTOPIA_DEP_LIBRARIES -L${LIB})
   endforeach(LIB)
-
   list(APPEND UTOPIA_BUILD_INCLUDES ${Trilinos_INCLUDE_DIRS})
   # list(APPEND UTOPIA_LIBRARIES ${Trilinos_LIBRARY_DIRS})
   list(APPEND Trilinos_all_libs ${Trilinos_LIBRARIES})
@@ -62,6 +64,8 @@ if(Trilinos_FOUND)
       ${Trilinos_VERSION}
       PARENT_SCOPE)
 
+  set(Trilinos_INCLUDE_DIRS ${Trilinos_INCLUDE_DIRS} PARENT_SCOPE)
+
   find_package(TpetraExt)
   if(TRILINOS_TPETRAEXT_FOUND)
     set(UTOPIA_ENABLE_TRILINOS_TPETRAEXT
@@ -110,6 +114,11 @@ if(Trilinos_FOUND)
   set(UTOPIA_SOURCES
       ${UTOPIA_SOURCES}
       PARENT_SCOPE)
+
+  set(UTOPIA_DEP_INCLUDES ${Trilinos_INCLUDE_DIRS} PARENT_SCOPE)
+
+
+
   # utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${TRILINOS_MODULES}")
 
   # include manually thirtparty library include directories (I think this should
