@@ -37,6 +37,16 @@ if(UTOPIA_ENABLE_CXX14_FEATURES)
   set(UTOPIA_ENABLE_CPP14 TRUE)
 endif()
 
+if(UTOPIA_ENABLE_CXX17_FEATURES)
+  set(UTOPIA_ENABLE_CPP17 TRUE)
+endif()
+
+# If both enabled just use
+# if(UTOPIA_ENABLE_CXX14_FEATURES AND UTOPIA_ENABLE_CXX17_FEATURES)
+#   set(UTOPIA_ENABLE_CPP14 FALSE)
+#   set(UTOPIA_ENABLE_CPP17 TRUE)
+# endif()
+
 if(UTOPIA_ENABLE_DEPRECATED_API)
   set(UTOPIA_DEPRECATED_API ON)
 endif()
@@ -89,20 +99,13 @@ endif()
 
 # if(UTOPIA_ENABLE_TRILINOS)
 
-  # find_package(Trilinos)
-  # # if(Trilinos_FOUND)
-  # #   # include_directories(SYSTEM ${Trilinos_INCLUDE_DIRS}
-  # #   #                     ${Trilinos_TPL_INCLUDE_DIRS})
-  # #   # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}
-  # #   # ${Kokkos_CXX_FLAGS}")
-  # #   # message(STATUS "Kokkos_CXX_FLAGS=${Kokkos_CXX_FLAGS},${CMAKE_CXX_FLAGS}")
-  # #   # message(
-  # #   #   STATUS
-  # #   #     "HERE:
-  # #   # ${Trilinos_CXX_COMPILER_FLAGS},${Kokkos_CXX_FLAGS},${TRILINOS_DEFINITIONS},${CMAKE_CXX_STANDARD},${INTERFACE_COMPILE_FEATURES}"
-  # #   # )
-  # #   # set(UTOPIA_ENABLE_TRILINOS ON)
-  # # endif()
+# find_package(Trilinos) # if(Trilinos_FOUND) #   # include_directories(SYSTEM
+# ${Trilinos_INCLUDE_DIRS} #   # ${Trilinos_TPL_INCLUDE_DIRS}) #   #
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} # # ${Kokkos_CXX_FLAGS}") #   #
+# message(STATUS "Kokkos_CXX_FLAGS=${Kokkos_CXX_FLAGS},${CMAKE_CXX_FLAGS}") # #
+# message( # #   STATUS #   #     "HERE: #   #
+# ${Trilinos_CXX_COMPILER_FLAGS},${Kokkos_CXX_FLAGS},${TRILINOS_DEFINITIONS},${CMAKE_CXX_STANDARD},${INTERFACE_COMPILE_FEATURES}"
+# #   # ) #   # set(UTOPIA_ENABLE_TRILINOS ON) # endif()
 # endif()
 
 if(UTOPIA_ENABLE_VC)

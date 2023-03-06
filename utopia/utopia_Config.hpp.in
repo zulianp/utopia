@@ -25,6 +25,7 @@
 #cmakedefine UTOPIA_ENABLE_JSON
 #cmakedefine UTOPIA_ENABLE_YAML_CPP
 #cmakedefine UTOPIA_ENABLE_CPP14
+#cmakedefine UTOPIA_ENABLE_CPP17
 #cmakedefine UTOPIA_ENABLE_CODE_COVERAGE
 #cmakedefine UTOPIA_DEPRECATED_API
 #cmakedefine UTOPIA_ENABLE_VC
