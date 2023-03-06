@@ -2,9 +2,9 @@
 #define UTOPIA_TRILINOS_SOLVERS_HPP
 
 #include "utopia_PreconditionedSolver.hpp"
-//#include "utopia_trilinos_LinearSolverFactory.hpp"
+// #include "utopia_trilinos_LinearSolverFactory.hpp"
 
-#ifdef UTOPIA_WITH_TRILINOS_BELOS
+#ifdef UTOPIA_ENABLE_TRILINOS_BELOS
 #include "utopia_Belos_solver.hpp"
 #endif
 

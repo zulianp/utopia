@@ -46,22 +46,22 @@ more information and tutorials.
 #include "utopia_trilinos.hpp"
 #endif  // UTOPIA_ENABLE_TRILINOS
 
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
 #include "utopia_blas.hpp"
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
 #ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc.hpp"
 #include "utopia_petsc_impl.hpp"
 #endif  // UTOPIA_ENABLE_PETSC
 
-#ifdef UTOPIA_WITH_CUDA
+#ifdef UTOPIA_ENABLE_CUDA
 #include "utopia_cuda.hpp"
-#endif  // UTOPIA_WITH_CUDA
+#endif  // UTOPIA_ENABLE_CUDA
 
-#ifdef UTOPIA_WITH_VC
+#ifdef UTOPIA_ENABLE_VC
 #include "utopia_Vc.hpp"
-#endif  // UTOPIA_WITH_VC
+#endif  // UTOPIA_ENABLE_VC
 
 #include "utopia_polymorphic_LinearSolver.hpp"
 

@@ -1378,7 +1378,7 @@ namespace utopia {
 
 #endif  // HAVE_BELOS_TPETRA
 
-#ifdef UTOPIA_WITH_TRILINOS_AMESOS2
+#ifdef UTOPIA_ENABLE_TRILINOS_AMESOS2
 
         void trilinos_amesos2() {
             std::string xml_file = Utopia::instance().get("data_path") + "/xml/UTOPIA_amesos.xml";
@@ -1602,13 +1602,13 @@ namespace utopia {
             UTOPIA_RUN_TEST(trilinos_copy_null);
             UTOPIA_RUN_TEST(trilinos_test_read);
 
-#ifdef UTOPIA_WITH_TRILINOS_BELOS
+#ifdef UTOPIA_ENABLE_TRILINOS_BELOS
             UTOPIA_RUN_TEST(trilinos_belos);
-#endif  // UTOPIA_WITH_TRILINOS_BELOS
+#endif  // UTOPIA_ENABLE_TRILINOS_BELOS
 
-#ifdef UTOPIA_WITH_TRILINOS_AMESOS2
+#ifdef UTOPIA_ENABLE_TRILINOS_AMESOS2
             UTOPIA_RUN_TEST(trilinos_amesos2);
-#endif  // UTOPIA_WITH_TRILINOS_AMESOS2
+#endif  // UTOPIA_ENABLE_TRILINOS_AMESOS2
 
 #ifdef UTOPIA_ENABLE_PETSC
             UTOPIA_RUN_TEST(trilinos_transform);

@@ -33,7 +33,7 @@ endif()
 # ##############################################################################
 # ##############################################################################
 
-set(UTOPIA_WITH_CPP11 ON)
+set(UTOPIA_ENABLE_CPP11 ON)
 
 # ##############################################################################
 # ##############################################################################
@@ -86,7 +86,7 @@ foreach(MODULE ${UTOPIA_MODULES})
   add_subdirectory(${MODULE})
 endforeach(MODULE)
 
-# if(UTOPIA_ENABLE_KOKKOS_SIMD) set(UTOPIA_WITH_KOKKOS_SIMD TRUE)
+# if(UTOPIA_ENABLE_KOKKOS_SIMD) set(UTOPIA_ENABLE_KOKKOS_SIMD TRUE)
 
 # target_include_directories(utopia PUBLIC
 # $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/external/simd-math>) endif()

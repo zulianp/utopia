@@ -15,9 +15,9 @@
 #include <limits>
 #endif  // UTOPIA_ENABLE_TRILINOS
 
-#ifdef UTOPIA_WITH_VC
+#ifdef UTOPIA_ENABLE_VC
 #include "utopia_vc_Base.hpp"
-#endif  // UTOPIA_WITH_VC
+#endif  // UTOPIA_ENABLE_VC
 
 namespace utopia {
     namespace device {

@@ -244,7 +244,7 @@ namespace utopia {
 
             auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector>>("stcg", "lu", false);
             // #ifdef UTOPIA_ENABLE_PETSC
-            //     #ifdef UTOPIA_WITH_SLEPC
+            //     #ifdef UTOPIA_ENABLE_SLEPC
             //         auto eigen_solver = std::make_shared<SlepcSolver<Matrix, Vector,
             //         PETSC_EXPERIMENTAL> >();
             //         // TODO:: add checks if has arpack
@@ -256,7 +256,7 @@ namespace utopia {
             //         auto subproblem =
             //         std::make_shared<utopia::MoreSorensenEigen<Matrix, Vector>
             //         >(linear_solver, eigen_solver);
-            //     #endif //UTOPIA_WITH_SLEPC
+            //     #endif //UTOPIA_ENABLE_SLEPC
             // #endif //UTOPIA_ENABLE_PETSC
 
             TrustRegion<Matrix, Vector> tr_solver(subproblem);

@@ -7,7 +7,7 @@
 #include <map>
 #include <set>
 
-#ifdef UTOPIA_WITH_MATRIX_IO
+#ifdef UTOPIA_ENABLE_MATRIX_IO
 
 extern "C" {
 #include "matrixio_array.h"
@@ -346,12 +346,12 @@ namespace utopia {
     void PetscVector::convert_to(Vec &vec) const { check_error(VecCopy(raw_type(), vec)); }
 
     bool PetscVector::read(MPI_Comm comm, const std::string &path) {
-#ifdef UTOPIA_WITH_MATRIX_IO
+#ifdef UTOPIA_ENABLE_MATRIX_IO
         Path ppath = path;
         if (ppath.extension() == "raw") {
             return read_raw(comm, path);
         }
-#endif  // UTOPIA_WITH_MATRIX_IO
+#endif  // UTOPIA_ENABLE_MATRIX_IO
 
         destroy();
 
@@ -371,7 +371,7 @@ namespace utopia {
         return err;
     }
 
-#ifdef UTOPIA_WITH_MATRIX_IO
+#ifdef UTOPIA_ENABLE_MATRIX_IO
     bool PetscVector::read_raw(MPI_Comm comm, const std::string &path) {
         double *data;
         ptrdiff_t nlocal, nglobal;
@@ -410,15 +410,15 @@ namespace utopia {
         return ok;
     }
 
-#endif  // UTOPIA_WITH_MATRIX_IO
+#endif  // UTOPIA_ENABLE_MATRIX_IO
 
     bool PetscVector::write(const std::string &path) const {
-#ifdef UTOPIA_WITH_MATRIX_IO
+#ifdef UTOPIA_ENABLE_MATRIX_IO
         Path ppath = path;
         if (ppath.extension() == "raw") {
             return write_raw(path);
         }
-#endif  // UTOPIA_WITH_MATRIX_IO
+#endif  // UTOPIA_ENABLE_MATRIX_IO
 
         if (is_matlab_file(path)) {
             return write_matlab(path);

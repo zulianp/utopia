@@ -33,7 +33,7 @@ if(UTOPIA_ENABLE_TINY_EXPR)
         ${UTOPIA_SOURCES}
         PARENT_SCOPE)
 
-    set(UTOPIA_WITH_TINY_EXPR
+    set(UTOPIA_ENABLE_TINY_EXPR
         ON
         PARENT_SCOPE)
     set(UTOPIA_ADDITIONAL_COMPONENTS ";tinyexpr")
@@ -89,7 +89,7 @@ endif()
 # ${EXTERNAL_DIR}/json ${JSON_DIR} $ENV{JSON_DIR} ${INSTALL_DIR}/json
 # $ENV{INSTALL_DIR}/json PATH_SUFFIXES single_include/nlohmann) if(JSON_DIR)
 # target_include_directories(utopia SYSTEM PRIVATE ${JSON_DIR})
-# set(UTOPIA_WITH_JSON ON PARENT_SCOPE) endif() endif()
+# set(UTOPIA_ENABLE_JSON ON PARENT_SCOPE) endif() endif()
 
 set(UTOPIA_COMPONENTS
     "${UTOPIA_COMPONENTS}${UTOPIA_ADDITIONAL_COMPONENTS}"

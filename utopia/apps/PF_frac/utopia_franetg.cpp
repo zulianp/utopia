@@ -57,14 +57,14 @@
 #include <cmath>
 #include <random>
 
-#ifdef UTOPIA_WITH_VC
+#ifdef UTOPIA_ENABLE_VC
 #include "utopia_vc_IsotropicPhaseFieldForBrittleFractures.hpp"
-#endif  // UTOPIA_WITH_VC
+#endif  // UTOPIA_ENABLE_VC
 
 namespace utopia {
 
     template <class FunctionSpace>
-#ifdef UTOPIA_WITH_VC
+#ifdef UTOPIA_ENABLE_VC
     using FractureModel = utopia::VcIsotropicPhaseFieldForBrittleFractures<FunctionSpace>;
 #else
     using FractureModel = utopia::IsotropicPhaseFieldForBrittleFractures<FunctionSpace>;

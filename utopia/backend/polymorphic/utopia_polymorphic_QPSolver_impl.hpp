@@ -27,11 +27,11 @@
 #include "utopia_petsc_TaoQPSolver.hpp"
 
 //
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
 #include "utopia_blas.hpp"
 #include "utopia_blas_Array.hpp"
 #include "utopia_petsc_RASPatchSmoother.hpp"
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
 #endif  // UTOPIA_ENABLE_PETSC
 
@@ -136,10 +136,10 @@ namespace utopia {
                 register_solver<PetscBDDQPSolver>("petsc", "bdd");
                 register_solver<PetscLogBarrierQPMultigrid>("petsc", "logbarrier_mg");
 
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
                 using PetscRASPatchSmoother = utopia::RASPatchSmoother<Matrix, utopia::BlasMatrix<Scalar>>;
                 register_solver<PetscRASPatchSmoother>("petsc", "patch_smoother");
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
             }
 #endif  // UTOPIA_ENABLE_PETSC
         }

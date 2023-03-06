@@ -2,9 +2,9 @@
 #define UTOPIA_APP_BASE_HPP
 
 #include "utopia_Base.hpp"
-#ifdef UTOPIA_WITH_VC
+#ifdef UTOPIA_ENABLE_VC
 #define USE_SIMD_ASSEMBLY
-#endif  // UTOPIA_WITH_VC
+#endif  // UTOPIA_ENABLE_VC
 
 #ifdef USE_SIMD_ASSEMBLY
 // #include "utopia_simd_Assembler.hpp"

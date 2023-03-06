@@ -4,8 +4,8 @@ find_package(ParMoonolith REQUIRED)
 list(APPEND MOONOLITH_MODULES .)
 utopiafe_add_module(utopia_moonolith ${CMAKE_CURRENT_SOURCE_DIR}
                     "${MOONOLITH_MODULES}")
-set(UTOPIA_WITH_MOONOLITH TRUE)
-set(UTOPIA_WITH_MOONOLITH
+set(UTOPIA_ENABLE_MOONOLITH TRUE)
+set(UTOPIA_ENABLE_MOONOLITH
     TRUE
     PARENT_SCOPE)
 

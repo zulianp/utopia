@@ -19,7 +19,7 @@ namespace utopia {
         using Mesh = typename Traits<FunctionSpace>::Mesh;
         using NCFunctionSpace = utopia::NCFunctionSpace<FunctionSpace>;
 
-#ifdef UTOPIA_WITH_MOONOLITH
+#ifdef UTOPIA_ENABLE_MOONOLITH
         void mortar() {
             NCFunctionSpace ncspace(this->comm());
             ncspace.import("../data/testing/decomposition.yaml");
@@ -35,9 +35,9 @@ namespace utopia {
 #endif
 
         void run() override {
-#ifdef UTOPIA_WITH_MOONOLITH
+#ifdef UTOPIA_ENABLE_MOONOLITH
             UTOPIA_RUN_TEST(mortar);
-#endif  // UTOPIA_WITH_MOONOLITH
+#endif  // UTOPIA_ENABLE_MOONOLITH
         }
     };
 

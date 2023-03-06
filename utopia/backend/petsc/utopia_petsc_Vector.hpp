@@ -745,10 +745,10 @@ namespace utopia {
 
         inline bool read(const std::string &path) { return read(comm().get(), path); }
 
-#ifdef UTOPIA_WITH_MATRIX_IO
+#ifdef UTOPIA_ENABLE_MATRIX_IO
         bool read_raw(MPI_Comm comm, const std::string &path);
         bool write_raw(const std::string &path) const;
-#endif  // UTOPIA_WITH_MATRIX_IO
+#endif  // UTOPIA_ENABLE_MATRIX_IO
 
         bool read(MPI_Comm comm, const std::string &path);
 

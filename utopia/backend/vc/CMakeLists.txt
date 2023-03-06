@@ -27,7 +27,7 @@ if(UTOPIA_ENABLE_VC)
         ${UTOPIA_DEP_LIBRARIES}
         PARENT_SCOPE)
 
-    set(UTOPIA_WITH_VC TRUE)
+    set(UTOPIA_ENABLE_VC TRUE)
 
     list(APPEND VC_MODULES .)
     # utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${VC_MODULES}")
@@ -49,12 +49,12 @@ if(UTOPIA_ENABLE_VC)
 
     message(STATUS "${Vc_ARCHITECTURE_FLAGS}\n${Vc_ALL_FLAGS}")
   else()
-    set(UTOPIA_WITH_VC FALSE)
+    set(UTOPIA_ENABLE_VC FALSE)
   endif()
 else()
-  set(UTOPIA_WITH_VC FALSE)
+  set(UTOPIA_ENABLE_VC FALSE)
 endif()
 
-set(UTOPIA_WITH_VC
-    {UTOPIA_WITH_VC}
+set(UTOPIA_ENABLE_VC
+    {UTOPIA_ENABLE_VC}
     PARENT_SCOPE)

@@ -197,9 +197,9 @@
 //     };
 
 //     void autodiff() {
-// #ifdef UTOPIA_WITH_BLAS
+// #ifdef UTOPIA_ENABLE_BLAS
 //         AutoDiffTest<BlasMatrixd, BlasVectord>().run();
-// #endif  // UTOPIA_WITH_BLAS
+// #endif  // UTOPIA_ENABLE_BLAS
 
 //         // FIXME this test fails (but then do we really want these features?)
 //         // #ifdef UTOPIA_ENABLE_PETSC

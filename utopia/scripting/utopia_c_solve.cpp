@@ -14,13 +14,13 @@ using MatrixType = utopia::PetscMatrix;
 using VectorType = utopia::TpetraVector;
 using MatrixType = utopia::TpetraMatrix;
 #else
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
 using VectorType = utopia::BlasVectord;
 using MatrixType = utopia::BlasMatrixd;
 #else
 #warning "No backend available"
 #define UTOPIA_NO_BACKEND
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 #endif  // UTOPIA_ENABLE_TRILINOS
 #endif  // UTOPIA_ENABLE_PETSC
 

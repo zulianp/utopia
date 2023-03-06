@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
 
 #include <memory>
 #include "utopia_Expression.hpp"
@@ -65,6 +65,6 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_TINY_EXPR
+#endif  // UTOPIA_ENABLE_TINY_EXPR
 
 #endif  // UTOPIA_SYMBOLIC_FUNCTION_HPP

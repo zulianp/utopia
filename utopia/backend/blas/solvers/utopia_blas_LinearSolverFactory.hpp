@@ -10,13 +10,13 @@
 #include "utopia_Traits.hpp"
 #include "utopia_make_unique.hpp"
 
-#ifdef UTOPIA_WITH_LAPACK
+#ifdef UTOPIA_ENABLE_LAPACK
 #include "utopia_Lapack.hpp"
-#endif  // UTOPIA_WITH_LAPACK
+#endif  // UTOPIA_ENABLE_LAPACK
 
-#ifdef UTOPIA_WITH_UMFPACK
+#ifdef UTOPIA_ENABLE_UMFPACK
 #include "utopia_UmfpackLU.hpp"
-#endif  // UTOPIA_WITH_UMFPACK
+#endif  // UTOPIA_ENABLE_UMFPACK
 
 #include <map>
 #include <memory>
@@ -60,10 +60,10 @@ namespace utopia {
         LinearSolverFactory() { init(); }
 
         void init() {
-#ifdef UTOPIA_WITH_LAPACK
+#ifdef UTOPIA_ENABLE_LAPACK
             solvers_[Solver::direct()] = std::make_shared<LSFactoryMethod<LUDecomposition<Matrix, Vector>>>();
             solvers_[Solver::automatic()] = std::make_shared<LSFactoryMethod<LUDecomposition<Matrix, Vector>>>();
-#endif  // UTOPIA_WITH_LAPACK
+#endif  // UTOPIA_ENABLE_LAPACK
         }
     };
 }  // namespace utopia

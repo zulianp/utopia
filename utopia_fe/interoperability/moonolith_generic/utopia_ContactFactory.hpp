@@ -40,14 +40,14 @@ namespace utopia {
 
             ContactInterfacePtr obstacle;
             if (type == "implicit") {
-#ifdef UTOPIA_WITH_LIBMESH
+#ifdef UTOPIA_ENABLE_LIBMESH
                 Utopia::Abort("ImplicitObstacle not supported for this backend!");
 #else
                 obstacle = utopia::make_unique<ImplicitObstacle_t>();
                 obstacle->read(in);
 #endif
             } else if (type == "analytic") {
-#ifdef UTOPIA_WITH_LIBMESH
+#ifdef UTOPIA_ENABLE_LIBMESH
                 Utopia::Abort("AnalyticObstacle not supported for this backend!");
 #else
                 obstacle = utopia::make_unique<AnalyticObstacle_t>();

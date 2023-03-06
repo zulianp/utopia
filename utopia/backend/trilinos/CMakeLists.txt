@@ -32,13 +32,13 @@ if(Trilinos_FOUND)
   # target names
   list(APPEND Utopia_Trilinos_possible_packages Amesos2 Belos Ifpack2 MueLu)
   foreach(package ${Utopia_Trilinos_possible_packages})
-    # e.g Amesos2: UTOPIA_WITH_TRILINOS_AMESOS2=TRUE if package is found in
+    # e.g Amesos2: UTOPIA_ENABLE_TRILINOS_AMESOS2=TRUE if package is found in
     # Trilinos_PACKAGE_LIST
     string(TOUPPER ${package} packageUpper)
     string(TOLOWER ${package} packageLower)
     list(FIND Trilinos_PACKAGE_LIST ${package} PACKAGE_FOUND)
     if(NOT PACKAGE_FOUND EQUAL -1)
-      set(UTOPIA_WITH_TRILINOS_${packageUpper}
+      set(UTOPIA_ENABLE_TRILINOS_${packageUpper}
           TRUE
           PARENT_SCOPE)
       if(${package} STREQUAL "MueLu")
@@ -51,7 +51,7 @@ if(Trilinos_FOUND)
   endforeach()
 
   # set(UTOPIA_ENABLE_TRILINOS ON)
-  # set(UTOPIA_TRILINOS
+  # set(UTOPIA_ENABLE_TRILINOS
   #     TRUE
   #     PARENT_SCOPE)
 
@@ -64,7 +64,7 @@ if(Trilinos_FOUND)
 
   find_package(TpetraExt)
   if(TRILINOS_TPETRAEXT_FOUND)
-    set(UTOPIA_WITH_TRILINOS_TPETRAEXT
+    set(UTOPIA_ENABLE_TRILINOS_TPETRAEXT
         TRUE
         PARENT_SCOPE)
   endif()

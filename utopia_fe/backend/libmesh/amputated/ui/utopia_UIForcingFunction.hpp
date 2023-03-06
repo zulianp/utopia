@@ -71,7 +71,7 @@ namespace utopia {
                     return;
                 }
 
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
                 std::string value;
                 is.get("value", value);
                 auto f = symbolic(value);
@@ -79,7 +79,7 @@ namespace utopia {
                 double value = 0.;
                 is.get("value", value);
                 auto f = coeff(value);
-#endif  // UTOPIA_WITH_TINY_EXPR
+#endif  // UTOPIA_ENABLE_TINY_EXPR
 
                 if (type == "surface") {
                     int normalize_by_area = 0;
@@ -146,7 +146,7 @@ namespace utopia {
                     }
                 }
 
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
                 std::string value;
                 is.get("value", value);
                 auto f = symbolic(value);
@@ -154,7 +154,7 @@ namespace utopia {
                 double value = 0.;
                 is.get("value", value);
                 auto f = coeff(value);
-#endif  // UTOPIA_WITH_TINY_EXPR
+#endif  // UTOPIA_ENABLE_TINY_EXPR
 
                 if (type == "surface") {
                     int normalize_by_area = 0;

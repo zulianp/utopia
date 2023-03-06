@@ -122,7 +122,7 @@ namespace utopia {
                 f_summary.close();
             }
 
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
             std::vector<double> values;
             values.reserve(size);
 
@@ -159,7 +159,7 @@ namespace utopia {
 
                 f_balancing.close();
             }
-#endif  // UTOPIA_WITH_MPI
+#endif  // UTOPIA_ENABLE_MPI
         }
     }
 }  // namespace utopia

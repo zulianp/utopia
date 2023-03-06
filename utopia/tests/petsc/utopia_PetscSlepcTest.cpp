@@ -27,7 +27,7 @@ namespace utopia {
         }
     }
 
-#ifdef UTOPIA_WITH_SLEPC
+#ifdef UTOPIA_ENABLE_SLEPC
     class SlepcsSolverTest {
     public:
         using Traits = utopia::Traits<PetscVector>;
@@ -323,10 +323,10 @@ namespace utopia {
         int _n{10};
     };
 
-#endif  // UTOPIA_WITH_SLEPC
+#endif  // UTOPIA_ENABLE_SLEPC
 
     static void slepc_es() {
-#ifdef UTOPIA_WITH_SLEPC
+#ifdef UTOPIA_ENABLE_SLEPC
         SlepcsSolverTest().run();
 #endif
     }

@@ -18,7 +18,7 @@
 #include "utopia_MPI.hpp"
 #include "utopia_Path.hpp"
 
-#ifdef UTOPIA_WITH_BRANCH_PREDICTION
+#ifdef UTOPIA_ENABLE_BRANCH_PREDICTION
 #define UTOPIA_LIKELY(x) __builtin_expect((x), 1)
 #define UTOPIA_UNLIKELY(x) __builtin_expect((x), 0)
 #else

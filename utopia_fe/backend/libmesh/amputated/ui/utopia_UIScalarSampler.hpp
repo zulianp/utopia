@@ -111,7 +111,7 @@ namespace utopia {
 
                 bool fun_is_constant = true;
 
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
                 fun_is_constant = type == "constant" || type.empty();
 
                 if (!fun_is_constant) {
@@ -126,7 +126,7 @@ namespace utopia {
                 }
 #else
                 assert(fun_is_constant);
-#endif  // UTOPIA_WITH_TINY_EXPR
+#endif  // UTOPIA_ENABLE_TINY_EXPR
 
                 // const Scalar val = std::atof(expr.c_str());
 

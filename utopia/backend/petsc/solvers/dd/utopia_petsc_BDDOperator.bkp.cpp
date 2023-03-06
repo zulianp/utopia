@@ -177,7 +177,7 @@ namespace utopia {
             printf("\n");
         }
 
-#ifdef UTOPIA_WITH_METIS
+#ifdef UTOPIA_ENABLE_METIS
         void split_local_blocks_with_metis(const Matrix &mat, const int num_blocks) {
             UTOPIA_TRACE_REGION_BEGIN("BDDOperator::split_local_blocks_with_metis");
 
@@ -590,7 +590,7 @@ namespace utopia {
             }
 
             if (local_block_splitting) {
-#ifdef UTOPIA_WITH_METIS
+#ifdef UTOPIA_ENABLE_METIS
                 split_local_blocks_with_metis(A, local_block_splitting);
 #else
                 split_local_blocks(A);

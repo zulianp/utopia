@@ -23,11 +23,11 @@ public:
     using Comm = typename Traits::Communicator;
 
     void run() {
-#ifdef UTOPIA_WITH_METIS
+#ifdef UTOPIA_ENABLE_METIS
         UTOPIA_RUN_TEST(metis_decompose);
 #endif
 
-#ifdef UTOPIA_WITH_PARMETIS
+#ifdef UTOPIA_ENABLE_PARMETIS
         UTOPIA_RUN_TEST(parmetis_decompose);
         UTOPIA_RUN_TEST(parmetis_rebalance);
 #endif
@@ -36,7 +36,7 @@ public:
         UTOPIA_RUN_TEST(schur_complement);
     }
 
-#ifdef UTOPIA_WITH_METIS
+#ifdef UTOPIA_ENABLE_METIS
     void metis_decompose() {
         Matrix mat;
         mat.sparse(serial_layout(20, 20), 3, 3);
@@ -51,7 +51,7 @@ public:
     }
 #endif
 
-#ifdef UTOPIA_WITH_PARMETIS
+#ifdef UTOPIA_ENABLE_PARMETIS
     void parmetis_decompose() {
         auto &&comm = Comm::get_default();
         int mult = comm.rank() + 1;

@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_WITH_YAML_CPP
+#ifdef UTOPIA_ENABLE_YAML_CPP
 
 #include <memory>
 #include "utopia_Input.hpp"
@@ -55,5 +55,5 @@ namespace utopia {
     };
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_YAML_CPP
+#endif  // UTOPIA_ENABLE_YAML_CPP
 #endif  // UTOPIA_YAML_INPUT_HPP

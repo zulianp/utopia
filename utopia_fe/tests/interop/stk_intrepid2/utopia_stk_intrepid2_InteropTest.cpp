@@ -1,6 +1,6 @@
 #include "utopia_fe_base.hpp"
 
-#ifdef UTOPIA_WITH_INTREPID2
+#ifdef UTOPIA_ENABLE_INTREPID2
 
 #include "utopia_Testing.hpp"
 #include "utopia_ui.hpp"
@@ -173,4 +173,4 @@ void stk_new_auto_assembler_test() {
 
 UTOPIA_REGISTER_TEST_FUNCTION(stk_new_auto_assembler_test);
 
-#endif  // UTOPIA_WITH_INTREPID2
+#endif  // UTOPIA_ENABLE_INTREPID2

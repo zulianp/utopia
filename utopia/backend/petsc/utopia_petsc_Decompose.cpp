@@ -4,11 +4,11 @@
 #include "utopia_Instance.hpp"
 #include "utopia_Logger.hpp"
 
-#ifdef UTOPIA_WITH_METIS
+#ifdef UTOPIA_ENABLE_METIS
 #include "utopia_Metis.hpp"
 #endif
 
-#ifdef UTOPIA_WITH_PARMETIS
+#ifdef UTOPIA_ENABLE_PARMETIS
 #include "utopia_ParMetis.hpp"
 #endif
 
@@ -20,7 +20,7 @@
 
 namespace utopia {
 
-#ifndef UTOPIA_WITH_METIS
+#ifndef UTOPIA_ENABLE_METIS
 
     bool decompose(const PetscMatrix &, const int, int *) { return false; }
 
@@ -80,7 +80,7 @@ namespace utopia {
 
 #endif
 
-#ifndef UTOPIA_WITH_PARMETIS
+#ifndef UTOPIA_ENABLE_PARMETIS
 
     bool parallel_decompose(const PetscMatrix &, const int, int *) { return false; }
 

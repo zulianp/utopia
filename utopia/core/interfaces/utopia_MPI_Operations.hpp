@@ -3,16 +3,16 @@
 
 #include "utopia_Operators.hpp"
 
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
 #include <mpi.h>
-#endif  // UTOPIA_WITH_MPI
+#endif  // UTOPIA_ENABLE_MPI
 
 namespace utopia {
 
     template <class Op, int Backend>
     class MPIReduceOp {};
 
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
 
     template <int Backend>
     class MPIReduceOp<Plus, Backend> {
@@ -32,9 +32,9 @@ namespace utopia {
         inline static MPI_Op op() { return MPI_MAX; }
     };
 
-#else  // UTOPIA_WITH_MPI
+#else  // UTOPIA_ENABLE_MPI
 
-#endif  // UTOPIA_WITH_MPI
+#endif  // UTOPIA_ENABLE_MPI
 
 }  // namespace utopia
 

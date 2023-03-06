@@ -774,9 +774,9 @@ namespace utopia {
         QPSolverTest<TpetraMatrixd, TpetraVectord>().run();
 #endif  // UTOPIA_ENABLE_TRILINOS
 
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
         QPSolverTest<BlasMatrixd, BlasVectord>().run();  // TODO(zulianp): : because blas is missing min operation ....
-#endif                                                   // UTOPIA_WITH_BLAS
+#endif                                                   // UTOPIA_ENABLE_BLAS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(qp_solver);

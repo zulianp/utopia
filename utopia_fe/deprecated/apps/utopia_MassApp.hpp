@@ -13,11 +13,11 @@ namespace utopia {
         inline static std::string command() { return "-mass"; }
 
     private:
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
         std::shared_ptr<SymbolicFunction> fun;
 #else
         std::shared_ptr<ConstantCoefficient<double, 0> > fun;
-#endif  // UTOPIA_WITH_TINY_EXPR
+#endif  // UTOPIA_ENABLE_TINY_EXPR
 
         bool fun_is_constant;
     };

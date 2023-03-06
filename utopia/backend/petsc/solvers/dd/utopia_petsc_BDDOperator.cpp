@@ -57,7 +57,7 @@ namespace utopia {
         void extend_skeleton_selection_with_local_decomposition(const Matrix &mat) {
             if (num_blocks == 0) return;
 
-#ifdef UTOPIA_WITH_METIS
+#ifdef UTOPIA_ENABLE_METIS
             UTOPIA_TRACE_REGION_BEGIN("BDDOperator::extend_skeleton_with_local_blocks");
 
             Matrix local_block;
@@ -98,7 +98,7 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("BDDOperator::extend_skeleton_with_local_blocks");
 #else
             UTOPIA_UNUSED(mat);
-#endif  // UTOPIA_WITH_METIS
+#endif  // UTOPIA_ENABLE_METIS
         }
 
         void initialize_dof_indices(const Matrix &mat) {

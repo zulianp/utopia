@@ -11,7 +11,7 @@ if(UTOPIA_ENABLE_MARS)
 
     # target_compile_features(utopia_mars PUBLIC cxx_std_17)
 
-    set(UTOPIA_WITH_MARS
+    set(UTOPIA_ENABLE_MARS
         TRUE
         PARENT_SCOPE)
 
@@ -24,7 +24,7 @@ if(UTOPIA_ENABLE_MARS)
         if(VTK_FOUND)
             target_link_libraries(utopia_mars PUBLIC ${VTK_LIBRARIES})
 
-            set(UTOPIA_WITH_VTK
+            set(UTOPIA_ENABLE_VTK
                 TRUE
                 PARENT_SCOPE)
 

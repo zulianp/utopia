@@ -9,9 +9,9 @@
 #include "utopia_TestProblems.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
-#ifdef UTOPIA_WITH_VC
+#ifdef UTOPIA_ENABLE_VC
 #include "utopia_vc_ProjectedBlockGaussSeidelSweep.hpp"
-#endif  // UTOPIA_WITH_VC
+#endif  // UTOPIA_ENABLE_VC
 
 #include <cassert>
 #include <string>
@@ -145,7 +145,7 @@ namespace utopia {
                 });
 
                 if (Traits::Backend == PETSC) {
-#ifdef UTOPIA_WITH_VC
+#ifdef UTOPIA_ENABLE_VC
                     this->register_experiment("vc_projected_block_4_gauss_seidel_" + std::to_string(i), [=]() {
                         InputParameters params;
                         params.set("block_size", 4);
@@ -156,7 +156,7 @@ namespace utopia {
                         // run_linear_solver(comm_, 4 * (base_n / 2) * (i + 1), pg);
                         run_qp_solver(comm_, 4 * (base_n / 2) * (i + 1), pg);
                     });
-#endif  // UTOPIA_WITH_VC
+#endif  // UTOPIA_ENABLE_VC
 
                     this->register_experiment("projected_block_4_gauss_seidel_" + std::to_string(i), [=]() {
                         InputParameters params;

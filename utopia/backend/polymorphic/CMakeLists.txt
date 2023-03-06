@@ -16,7 +16,7 @@ set(UTOPIA_SOURCES
 if(UTOPIA_ENABLE_EIGEN_3)
     find_package(Eigen3)
     if(EIGEN3_FOUND)
-        set(UTOPIA_WITH_EIGEN_3 ON PARENT_SCOPE)
+        set(UTOPIA_ENABLE_EIGEN_3 ON PARENT_SCOPE)
         list(APPEND UTOPIA_BUILD_INCLUDES ${EIGEN3_INCLUDE_DIR})
         # target_include_directories(utopia PRIVATE ${EIGEN3_INCLUDE_DIR})
     endif()

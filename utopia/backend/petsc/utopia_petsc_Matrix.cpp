@@ -10,7 +10,7 @@
 #include <set>
 #include <utility>
 
-#ifdef UTOPIA_WITH_MATRIX_IO
+#ifdef UTOPIA_ENABLE_MATRIX_IO
 
 extern "C" {
 #include "matrixio_crs.h"
@@ -18,7 +18,7 @@ extern "C" {
 
 #endif
 
-#ifdef UTOPIA_WITH_YAML_CPP
+#ifdef UTOPIA_ENABLE_YAML_CPP
 #include "utopia_YAMLInput.hpp"
 #endif
 
@@ -133,10 +133,10 @@ namespace utopia {
     }
 
     bool PetscMatrix::read(MPI_Comm comm, const std::string &path) {
-#ifdef UTOPIA_WITH_MATRIX_IO
+#ifdef UTOPIA_ENABLE_MATRIX_IO
         Path ppath = path;
 
-#ifdef UTOPIA_WITH_YAML_CPP
+#ifdef UTOPIA_ENABLE_YAML_CPP
         auto ext = ppath.extension();
         if (ext == "yaml" || ext == "yml") {
             Path folder = ppath.parent();
@@ -171,7 +171,7 @@ namespace utopia {
             Path folder = ppath.parent();
             return read_raw(comm, folder / "rowptr.raw", folder / "colidx.raw", folder / "values.raw");
         }
-#endif  // UTOPIA_WITH_MATRIX_IO
+#endif  // UTOPIA_ENABLE_MATRIX_IO
 
         destroy();
 
@@ -188,7 +188,7 @@ namespace utopia {
         return err;
     }
 
-#ifdef UTOPIA_WITH_MATRIX_IO
+#ifdef UTOPIA_ENABLE_MATRIX_IO
     bool PetscMatrix::read_raw(MPI_Comm comm,
                                const std::string &rowptr_path,
                                const std::string &colidx_path,
@@ -265,7 +265,7 @@ namespace utopia {
                         TypeToString<SizeType>::get(),
                         TypeToString<Scalar>::get());
     }
-#endif  // UTOPIA_WITH_MATRIX_IO
+#endif  // UTOPIA_ENABLE_MATRIX_IO
 
     bool PetscMatrix::write(const std::string &path) const {
         if (is_matlab_file(path)) {

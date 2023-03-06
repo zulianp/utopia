@@ -43,7 +43,7 @@ namespace utopia {
             in.get("type", type);
             in.get("debug", debug_);
 
-#ifdef UTOPIA_WITH_MOONOLITH
+#ifdef UTOPIA_ENABLE_MOONOLITH
             if (type == "mortar") {
                 FETransfer<FunctionSpace> transfer;
                 in.get("mortar", transfer);
@@ -72,7 +72,7 @@ namespace utopia {
 
                 projector_ = temp;
             }
-#endif  // UTOPIA_WITH_MOONOLITH
+#endif  // UTOPIA_ENABLE_MOONOLITH
         }
 
         void restrict(const Matrix &in, Matrix &out) const {

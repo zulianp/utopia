@@ -8,10 +8,10 @@
 
 #include "utopia_ui.hpp"
 
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
 #include "utopia_blas.hpp"
 #include "utopia_blas_Array.hpp"
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
 #include "utopia_fe_Core.hpp"
 
@@ -163,8 +163,6 @@ namespace utopia {
                 Scalar_t norm_g0 = norm2(grad);
                 Scalar_t norm_x = norm2(x);
 
-
-
                 space.apply_constraints(grad);
                 material->gradient(x, grad);
                 Scalar_t norm_g = norm2(grad);
@@ -174,13 +172,13 @@ namespace utopia {
                 Scalar_t norm_h = norm2(hessian);
                 Scalar_t sum_h = sum(hessian);
 
-                if(!x.comm().rank()) {
+                if (!x.comm().rank()) {
                     utopia::out() << "norm_h0 : " << norm_h0 << "\n";
                     utopia::out() << "norm_h  : " << norm_h << "\n";
                     utopia::out() << "sum_h   : " << sum_h << "\n";
 
-                    utopia::out() << "norm_g0 : " << norm_g0  << "\n";
-                    utopia::out() << "norm_g  : " << norm_g  << "\n";
+                    utopia::out() << "norm_g0 : " << norm_g0 << "\n";
+                    utopia::out() << "norm_g  : " << norm_g << "\n";
                     utopia::out() << "norm_x  : " << norm_x << "\n";
                     utopia::out() << "sum_g   : " << sum_g << "\n";
                 }

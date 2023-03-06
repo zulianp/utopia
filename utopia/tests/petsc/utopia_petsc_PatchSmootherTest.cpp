@@ -8,9 +8,9 @@
 #include "utopia_petsc_PatchSmoother.hpp"
 #include "utopia_petsc_RASPatchSmoother.hpp"
 
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
 #include "utopia_blas_Array.hpp"
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
 #include "test_problems/utopia_QPSolverTestProblem.hpp"
 
@@ -24,13 +24,13 @@ public:
     using SizeType = typename Traits::SizeType;
     using Comm = typename Traits::Communicator;
 
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
     using PatchMatrix = utopia::BlasMatrixd;
     using PatchVector = utopia::BlasVectord;
 #else
     using PatchMatrix = Matrix;
     using PatchVector = Vector;
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
     SizeType n_dofs{40};
     bool verbose{false};

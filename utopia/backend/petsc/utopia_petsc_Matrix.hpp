@@ -727,7 +727,7 @@ namespace utopia {
 
         bool read(MPI_Comm comm, const std::string &path);
 
-#ifdef UTOPIA_WITH_MATRIX_IO
+#ifdef UTOPIA_ENABLE_MATRIX_IO
         bool read_raw(MPI_Comm comm,
                       const std::string &rowptr_path,
                       const std::string &colidx_path,
@@ -740,7 +740,7 @@ namespace utopia {
                       const std::string &rowptr_path,
                       const std::string &colidx_path,
                       const std::string &values_path);
-#endif  // UTOPIA_WITH_MATRIX_IO
+#endif  // UTOPIA_ENABLE_MATRIX_IO
 
         void copy_from(Mat mat);
         void copy_to(Mat mat) const;

@@ -9,7 +9,7 @@
 
 #include <memory>
 
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
 #include <mpi.h>
 #endif
 
@@ -25,7 +25,7 @@ namespace utopia {
 
         virtual bool same(const Communicator &other) const { return size() == other.size(); }
 
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
         virtual MPI_Comm raw_comm() const = 0;
 #endif
 
@@ -61,9 +61,9 @@ namespace utopia {
             barrier();
         }
 
-        // #ifdef UTOPIA_WITH_MPI
+        // #ifdef UTOPIA_ENABLE_MPI
         // 		virtual MPI_Comm get() const = 0;
-        // #endif //UTOPIA_WITH_MPI
+        // #endif //UTOPIA_ENABLE_MPI
     };
 
     /**
@@ -106,18 +106,18 @@ namespace utopia {
             return val;
         }
 
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
         inline MPI_Comm get() const noexcept { return MPI_COMM_SELF; }
 
         inline MPI_Comm raw_comm() const override { return MPI_COMM_SELF; }
 
-#endif  // UTOPIA_WITH_MPI
+#endif  // UTOPIA_ENABLE_MPI
     };
 
     template <typename T>
     class MPIType {};
 
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
     template <>
     class MPIType<double> {
     public:
@@ -262,7 +262,7 @@ namespace utopia {
         MPICommunicator split(const int color) const;
 
         MPICommunicator(MPI_Comm comm, const bool owned) {
-            if(owned) {
+            if (owned) {
                 own(comm);
             } else {
                 set(comm);
@@ -288,7 +288,7 @@ namespace utopia {
         static std::shared_ptr<Wrapper> make_not_owned(MPI_Comm comm) { return std::make_shared<Wrapper>(comm, false); }
     };
 
-#endif  // UTOPIA_WITH_MPI
+#endif  // UTOPIA_ENABLE_MPI
 
 }  // namespace utopia
 

@@ -130,9 +130,9 @@ namespace utopia {
         WrapperTest<PetscMatrix, PetscVector>().run();
 #endif
 
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
         WrapperTest<BlasMatrixd, BlasVectord>().run();
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(wrapper);

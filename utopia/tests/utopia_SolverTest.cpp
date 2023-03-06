@@ -461,19 +461,19 @@ namespace utopia {
     };
 
     static void solvers() {
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
         // SolverTest<BlasMatrixd, BlasVectord, double>().run();
         // FIXME this fails for some reason
         // MSSolverTest<Matrixd, Vectord, Matrixd, Vectord>().run();
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
 #ifdef UTOPIA_ENABLE_PETSC
         SolverTest<PetscMatrix, PetscVector>().run();
 
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
         // FIXME this fails for some reason
         // MSSolverTest<PetscMatrix, PetscVector, Matrixd, Vectord>().run();
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 #endif
     }
 

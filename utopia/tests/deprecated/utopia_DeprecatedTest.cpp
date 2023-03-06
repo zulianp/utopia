@@ -127,10 +127,10 @@ namespace utopia {
     };
 
     static void deprecated() {
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
         DeprecatedTest<BlasMatrixd, BlasVectord>().run();
         DenseDeprecatedTest<BlasMatrixd, BlasVectord>().run();
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
 #ifdef UTOPIA_ENABLE_PETSC
         DeprecatedTest<utopia::PetscMatrix, utopia::PetscVector>::run();

@@ -531,7 +531,7 @@ namespace utopia {
     }
 
     void petsc_to_blas() {
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
 
         PetscVector x(serial_layout(16), 0.);
 
@@ -552,7 +552,7 @@ namespace utopia {
         PetscVector expected(serial_layout(16), 2.0);
         utopia_test_assert(approxeq(expected, x));
 
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
     }
 
     void petsc_conversion() {

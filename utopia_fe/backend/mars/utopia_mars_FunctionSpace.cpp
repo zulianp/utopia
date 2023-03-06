@@ -45,7 +45,7 @@ namespace utopia {
                 };
 #else
                 write = [](const Path &, const Vector &) -> bool { return false; };
-#endif  // UTOPIA_WITH_VTK
+#endif  // UTOPIA_ENABLE_VTK
             }
 
             template <class RawType>

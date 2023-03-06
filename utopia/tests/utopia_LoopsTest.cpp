@@ -58,10 +58,10 @@ namespace utopia {
     };
 
     static void loops() {
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
         // Serial backend
         run_serial_test<Loops<BlasMatrixd, BlasVectord>>();
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
 #ifdef UTOPIA_ENABLE_PETSC
         run_parallel_test<Loops<PetscMatrix, PetscVector>>();

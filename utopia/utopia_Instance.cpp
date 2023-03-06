@@ -20,9 +20,9 @@
 #include "utopia_petsc_Library.hpp"
 #endif  // UTOPIA_ENABLE_PETSC
 
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
 #include <mpi.h>
-#endif  // UTOPIA_WITH_MPI
+#endif  // UTOPIA_ENABLE_MPI
 
 #include <cassert>
 #include <iostream>
@@ -38,7 +38,7 @@ namespace utopia {
         instance().add_library_with_priority(utopia::make_unique<PetscLibrary>());
 #endif
 
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
         if (instance().libraries_.empty()) {
             MPI_Init(&argc, &argv);
         }
@@ -86,11 +86,11 @@ namespace utopia {
             ret += (*it)->finalize();
         }
 
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
         if (instance().libraries_.empty()) {
             ret += MPI_Finalize();
         }
-#endif  // UTOPIA_WITH_MPI
+#endif  // UTOPIA_ENABLE_MPI
 
         instance().libraries_.clear();
 
@@ -129,7 +129,7 @@ namespace utopia {
 
     void Utopia::Abort() {
         int error_code = -1;
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
         MPI_Abort(MPI_COMM_WORLD, error_code);
 #else
         exit(error_code);

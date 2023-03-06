@@ -10,10 +10,10 @@
 
 #include "utopia_ProjectedBlockGaussSeidelSweep.hpp"
 
-#ifdef UTOPIA_WITH_VC
+#ifdef UTOPIA_ENABLE_VC
 #include "utopia_vc_ProjectedBlockGaussSeidelSweep.hpp"
 #include "utopia_vc_ProjectedBlockGaussSeidelSweepTransposed.hpp"
-#endif  // UTOPIA_WITH_VC
+#endif  // UTOPIA_ENABLE_VC
 
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Utils.hpp"
@@ -74,7 +74,7 @@ namespace utopia {
         int block_size = 0;
         in.get("block_size", block_size);
 
-#ifdef UTOPIA_WITH_VC
+#ifdef UTOPIA_ENABLE_VC
         // FIXME
 #ifdef UTOPIA_ENABLE_PETSC
         bool use_simd = false;
@@ -85,7 +85,7 @@ namespace utopia {
             sweeper_ = utopia::make_unique<VcProjectedBlockGaussSeidelSweepTransposed<PetscMatrix>>();
         } else
 #endif  // UTOPIA_ENABLE_PETSC
-#endif  // UTOPIA_WITH_VC
+#endif  // UTOPIA_ENABLE_VC
             if (block_size == 2) {
                 sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<PetscMatrix, 2>>();
             } else if (block_size == 3) {

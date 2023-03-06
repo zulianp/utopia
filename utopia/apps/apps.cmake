@@ -55,7 +55,7 @@ endif()
 if(UTOPIA_ENABLE_EIGEN_3)
     find_package(Eigen3)
     if(EIGEN3_FOUND)
-        set(UTOPIA_WITH_EIGEN_3 ON)
+        set(UTOPIA_ENABLE_EIGEN_3 ON)
         target_include_directories(utopia_exec PRIVATE ${EIGEN3_INCLUDE_DIR})
 
     endif()

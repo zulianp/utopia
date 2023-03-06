@@ -583,11 +583,11 @@ namespace utopia {
     };
 
     static void algebra() {
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
         DenseAlgebraTest<BlasMatrixd, BlasVectord>().run();
         SerialAlgebraTest<BlasMatrixd, BlasVectord>().run();
         SparseAlgebraTest<BlasMatrixd, BlasVectord>().run();
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
 #ifdef UTOPIA_ENABLE_PETSC
         DenseAlgebraTest<PetscMatrix, PetscVector>().run();
