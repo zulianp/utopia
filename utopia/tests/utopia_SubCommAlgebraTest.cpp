@@ -1,7 +1,7 @@
 #include "test_problems/utopia_QPSolverTestProblem.hpp"
 #include "utopia.hpp"
-#include "utopia_AlgebraUnitTest.hpp"
 #include "utopia_BlockQPSolver.hpp"
+#include "utopia_SubCommUnitTest.hpp"
 
 #include "utopia_RedundantQPSolver.hpp"
 #include "utopia_SemismoothNewton_old.hpp"
@@ -18,7 +18,7 @@
 namespace utopia {
 
     template <class Matrix, class Vector>
-    class SubCommAlgebraTest final : public AlgebraUnitTest<Vector> {
+    class SubCommAlgebraTest final : public SubCommUnitTest<Vector> {
     public:
         using Traits = utopia::Traits<Vector>;
         using Scalar = typename Traits::Scalar;

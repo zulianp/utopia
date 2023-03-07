@@ -90,12 +90,6 @@ namespace utopia {
 
         const Vector &exact_sol() const override { return exact_sol_; }
 
-        Scalar min_function_value() const override {
-            // depends on the solution to which we converged to
-            utopia::out() << "Poisson1D:: min_function_value :: wrong.... \n";
-            return -1.012;
-        }
-
         std::string name() const override { return "Poisson1D"; }
 
         SizeType dim() const override { return n_; }

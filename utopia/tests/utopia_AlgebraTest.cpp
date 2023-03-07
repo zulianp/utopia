@@ -307,7 +307,7 @@ namespace utopia {
         void transform_ijv_test() {
             Matrix M;
 
-            M.sparse(layout(world, Traits::decide(), Traits::decide(), 3, 3), 3, 3);
+            M.sparse(layout(world, Traits::decide(), Traits::decide(), n, n), 3, 3);
 
             assemble_laplacian_1D(M);
 
@@ -335,7 +335,7 @@ namespace utopia {
         void transpose_test() {
             Matrix M, M_copy;
 
-            M.sparse(layout(world, Traits::decide(), Traits::decide(), 3, 3), 3, 3);
+            M.sparse(layout(world, Traits::decide(), Traits::decide(), n, n), 3, 3);
 
             assemble_laplacian_1D(M);
             M_copy.copy(M);

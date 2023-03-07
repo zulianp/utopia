@@ -45,12 +45,13 @@ namespace utopia {
                 // each_write(x_inc_, [](const SizeType i) -> double { return i + 1; });
 
                 auto x_view = view_device(x_init_);
-                parallel_for(range_device(x_init_), UTOPIA_LAMBDA(const SizeType &i) {
-                    x_view.set(i, (n_global - i - 1.) / Scalar(n_global));
-                });
+                parallel_for(
+                    range_device(x_init_),
+                    UTOPIA_LAMBDA(const SizeType &i) { x_view.set(i, (n_global - i - 1.) / Scalar(n_global)); });
 
                 auto x_inc_view = view_device(x_inc_);
-                parallel_for(range_device(x_inc_), UTOPIA_LAMBDA(const SizeType &i) { x_inc_view.set(i, i + 1.0); });
+                parallel_for(
+                    range_device(x_inc_), UTOPIA_LAMBDA(const SizeType &i) { x_inc_view.set(i, i + 1.0); });
             }
         }
 
@@ -112,8 +113,6 @@ namespace utopia {
         Vector initial_guess() const override { return x_init_; }
 
         const Vector &exact_sol() const override { return x_exact_; }
-
-        Scalar min_function_value() const override { return 0; }
 
     private:
         SizeType n_loc_;

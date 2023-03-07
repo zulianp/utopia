@@ -315,7 +315,6 @@ namespace utopia {
 
     template <class Matrix, class Vector, int Backend>
     void ConjugateGradient<Matrix, Vector, Backend>::init_memory(const Layout &layout) {
-        assert(layout.local_size() > 0);
         OperatorBasedLinearSolver<Matrix, Vector>::init_memory(layout);
 
         // resets all buffers in case the size has changed

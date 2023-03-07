@@ -205,10 +205,6 @@ namespace utopia {
 
         const Vector &exact_sol() const override { return x_exact_; }
 
-        Scalar min_function_value() const override {
-            return 3.51687e-3;  // if n = 10
-        }
-
     private:
         void eval_polynomial(const Vector &x, Vector &fvec) const {
             if (empty(fvec)) {
