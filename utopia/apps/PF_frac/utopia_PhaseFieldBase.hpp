@@ -890,35 +890,48 @@ namespace utopia {
                         auto dx = differential_view.make(c_e);
                         auto c_shape_fun_el = c_shape_view.make(c_e);  // shape functions (scalar)
 
+                        ////////////////////////////////////////////
+                        Point centroid;
+                        c_e.centroid(centroid);
+                        non_const_params().update(centroid);
+                        ////////////////////////////////////////////
+
                         // loop over all nodes, and for each node, we integrate the strain at the int point weightwd by
                         // the distance to the node (shape function)
                         for (SizeType n = 0; n < C_NDofs; n++) {
                             strain_value.set(0.0);
+                            stress_value.set(0.0);
                             for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                                // const Scalar tr_strain_u = trace(el_strain.strain[qp]);
-
                                 auto shape = c_shape_fun_el(n, qp);  // shape function at N and Quadrature point
                                 auto weight = dx(qp);                // no need for weights! we want length instead
 
-                                auto &epsi = el_strain.strain[qp];  // strain at integration point
-                                strain_value +=
-                                    epsi * shape * weight;  // matrix of strains added to existing nodal strain (
+                                //Calculate strain at quadrature point
+                                auto &epsi = el_strain.strain[qp];
+
+                                //calculate stress at quadrature
+                                const Scalar tr_strain_u = trace(el_strain.strain[qp]);
+                                compute_stress(this->params_, tr_strain_u, el_strain.strain[qp], stress); //gets stress at quadrature point
+
+                                strain_value += epsi   * shape * weight;  // matrix of strains added to existing nodal strain (
+                                stress_value += stress * shape * weight; //Sum stress at integration point
 
                                 // getting nodal weight for normalisation
                                 weight_el_vec[n] += shape * weight;
                             }
 
                             // now we need to accumulate the matrix strain into engineering strain vector
-                            int offset = n * strain_components;
+                            int offset = C_NDofs , idx{0};
                             for (int r = 0; r < Dim; ++r) {
                                 for (int c = r; c < Dim; c++) {
-                                    strain_el_vec[offset++] = strain_value(r, c);
+                                    strain_and_stress_el_vec[idx*offset + n ] = stress_value(r, c);
+                                    //strain_and_stress_el_vec[(strain_components + idx)*offset + n ] = stress_value(r, c);
+                                    idx++;
                                 }
                             }
                         }
 
                         // now adding element contribution to global strain and weight vector
-                        S_view.add_vector(s_e, strain_el_vec, g_view);
+                        S_view.add_vector(s_e, strain_and_stress_el_vec, g_view);
                         C_view.add_vector(c_e, weight_el_vec, w_view);
                     });  // end of parallel for
 

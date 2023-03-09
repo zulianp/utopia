@@ -655,6 +655,12 @@ namespace utopia {
 
                 rmtr_->solve(this->solution_);
                 auto sol_status = rmtr_->solution_status();
+                this->total_wall_clock_time_ += rmtr_->get_time();
+                if (mpi_world_rank() == 0) {
+                    utopia::out() << "Total Wall clock time: " << this->total_wall_clock_time_ << "\n";
+                }
+
+
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////
                 update_time_step(sol_status.reason);
             }

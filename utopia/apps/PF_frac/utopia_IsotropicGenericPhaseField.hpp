@@ -158,7 +158,7 @@ namespace utopia {
                                     this->params_.penalty_param_irreversible / 2.0 * c_cold_bracket * c_cold_bracket * dx(qp);
 
                                 if ( PFFormulation::penalise_negative_phase_field_values ){
-//                                    std::cout << "Should not be here" << std::endl;
+                                    std::cout << "Should not be here" << std::endl;
                                     auto c_at_qp = c[qp];
                                     auto c_neg_bracket = c_at_qp < 0.0 ? -c_at_qp : 0.0;
                                     el_energy +=
@@ -541,7 +541,7 @@ namespace utopia {
                                     c_el_vec(j) += this->params_.penalty_param_irreversible * c_cold_bracket * shape_test * dx(qp);
 
                                     if (PFFormulation::penalise_negative_phase_field_values ){
-  //                                      std::cout << "Should not be here" << std::endl;
+                                        std::cout << "Should not be here" << std::endl;
                                         auto c_at_qp = c[qp];
                                         auto c_neg_bracket = c_at_qp < 0.0 ? -c_at_qp : 0.0;
                                         c_el_vec += this->params_.penalty_param_non_neg * c_neg_bracket * shape_test * dx(qp);
@@ -731,7 +731,7 @@ namespace utopia {
                                                  dx(qp);
 
                                     if (this->params_.use_pressure) {
-                                        val -= PFFormulation::degradation_deriv2(
+                                        val += PFFormulation::degradation_deriv2(
                                                    c[qp]) *
                                                p[qp] * tr_strain_u * c_shape_j_l_prod * dx(qp);
                                     }
@@ -744,7 +744,7 @@ namespace utopia {
 
 
                                         if (PFFormulation::penalise_negative_phase_field_values ){
-//                                            std::cout << "Should not be here" << std::endl;
+                                            std::cout << "Should not be here" << std::endl;
                                             auto c_at_qp = c[qp];
                                             auto c_neg_bracket = c_at_qp <= 0.0 ? 1.0 : 0.0;
                                             val += this->params_.penalty_param_non_neg * c_neg_bracket * c_shape_j_l_prod * dx(qp);

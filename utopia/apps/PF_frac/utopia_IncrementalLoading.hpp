@@ -76,6 +76,7 @@ namespace utopia {
               final_time_(0.0),
               time_step_counter_(0.0),
               output_path_("out"),
+              total_wall_clock_time_(0.0),
 
               shrinking_factor_(0.5),
               pressure0_(0.0),
@@ -177,6 +178,7 @@ namespace utopia {
         SizeType time_step_counter_;
         std::string output_path_;
         bool use_mprgp_{false};
+        Scalar total_wall_clock_time_;
 
         bool adjust_dt_on_failure_{true};
         Scalar shrinking_factor_;

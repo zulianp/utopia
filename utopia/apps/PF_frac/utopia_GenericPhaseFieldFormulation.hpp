@@ -32,6 +32,8 @@ public:
 
        template <typename C>
        UTOPIA_INLINE_FUNCTION static C local_dissipation(const C &c) {
+
+           //return c > 0.0 ? c : 0.0 ; //Stop returning negative phase
            return c;
        }
 
@@ -60,6 +62,8 @@ public:
            assert(p.use_penalty_irreversibility);
            typename FunctionSpace::Scalar L = (p.Length_x + p.Length_y + p.Length_z)/FunctionSpace::Dim;
            p.penalty_param_non_neg = p.fracture_toughness / p.length_scale * 9.0/64.0 * (L/p.length_scale - 2.0 )/(p.penalty_tol_non_neg);
+           if (mpi_world_rank()==0)
+             utopia::out() << "Lengthscale: " << p.length_scale << "  Penalty AT2 n_neg: " << p.penalty_param_non_neg << std::endl;
        }
 
 
