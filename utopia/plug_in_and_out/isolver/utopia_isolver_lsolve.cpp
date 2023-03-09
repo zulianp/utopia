@@ -38,11 +38,11 @@ int ISOLVER_EXPORT isolver_lsolve_init(isolver_lsolve_t *info) {
     auto solver = new Solver_t();
     info->private_data = (void *)solver;
 
-    const char *UTOPIA_SOLVER_CONFIG = 0;
-    UTOPIA_READ_ENV(UTOPIA_SOLVER_CONFIG, );
+    const char *UTOPIA_LINEAR_SOLVER_CONFIG = 0;
+    UTOPIA_READ_ENV(UTOPIA_LINEAR_SOLVER_CONFIG, );
 
-    if (UTOPIA_SOLVER_CONFIG) {
-        solver->import(UTOPIA_SOLVER_CONFIG);
+    if (UTOPIA_LINEAR_SOLVER_CONFIG) {
+        solver->import(UTOPIA_LINEAR_SOLVER_CONFIG);
     }
 
     return 0;
