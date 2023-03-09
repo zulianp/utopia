@@ -623,6 +623,12 @@ if(UTOPIA_ENABLE_PARMETIS)
     add_subdirectory(backend/parmetis)
 endif()
 
+
+include(UtopiaISolver)
+if(UTOPIA_ENABLE_ISOLVER)
+    add_subdirectory(plug_in_and_out/isolver)
+endif()
+
 # weird stuff goes here
 if(USE_SPIKE_SOLVERS)
     list(APPEND UTOPIA_MODULES spike/solvers)
