@@ -53,8 +53,6 @@ public:
            assert(p.use_penalty_irreversibility);
            typename FunctionSpace::Scalar tol2 = p.penalty_tol * p.penalty_tol;
            p.penalty_param_irreversible = p.fracture_toughness / p.length_scale * (27.0 /(64.0 * tol2) );
-           if (mpi_world_rank()==0)
-               utopia::out() << "Lengthscale: " << p.length_scale << "  Penalty AT1 Irrever: " << p.penalty_param_irreversible << " penalty tol: " << p.penalty_tol << std::endl;
        }
 
        template<class FunctionSpace>
@@ -62,8 +60,6 @@ public:
            assert(p.use_penalty_irreversibility);
            typename FunctionSpace::Scalar L = (p.Length_x + p.Length_y + p.Length_z)/FunctionSpace::Dim;
            p.penalty_param_non_neg = p.fracture_toughness / p.length_scale * 9.0/64.0 * (L/p.length_scale - 2.0 )/(p.penalty_tol_non_neg);
-           if (mpi_world_rank()==0)
-               utopia::out() << "Lengthscale: " << p.length_scale << "  Penalty AT1 n_neg: " << p.penalty_param_non_neg << " penalty tol: " << p.penalty_tol_non_neg << std::endl;
        }
 
 
@@ -81,10 +77,17 @@ public:
 
        template <typename C>
        UTOPIA_INLINE_FUNCTION static C degradation_deriv2( const C &) {
-           return -2.0; //THIS WAS CHANGED TO NEGATIVE
+           return 2.0;
        }
 
-       static const bool penalise_negative_phase_field_values = true; //AT1 models need to penalise negative phase field values
+       static const bool penalise_negative_phase_field_values = false; //NOT WORKING, but AT1 models need to penalise negative phase field values
+
+       static const bool enforce_min_crack_driving_force = false;
+
+       template<class FunctionSpace>
+       UTOPIA_INLINE_FUNCTION static double min_crack_driving_force(PFFracParameters<FunctionSpace> & p) {
+                  return 3.0/16.0 * p.fracture_toughness/p.length_scale ;
+              }
 
 
 
@@ -148,10 +151,12 @@ public:
 
        template <typename C>
        UTOPIA_INLINE_FUNCTION static C degradation_deriv2( const C &) {
-           return -2.0; //THIS WAS CHANGED TO NEGATIVE
+           return 2.0;
        }
 
        static const bool penalise_negative_phase_field_values = false; //AT2 models do not need to penalise negative phase field values
+
+       static const bool enforce_min_crack_driving_force = false;
 
    };
 
@@ -203,6 +208,8 @@ public:
 
         }
 
+        double TensileStrength(){ return std::sqrt( PFFormulation::damage_normalisation(this->params_) * this->params_.E  ) ; }
+        double CriticalDisplacement(){ return this->params_.Length_x * std::sqrt(PFFormulation::damage_normalisation(this->params_) / this->params_.E); }
 
         void read(Input &in) {
 
@@ -211,6 +218,11 @@ public:
             if (this->params_.use_penalty_irreversibility){
               PFFormulation::configure_penalty_irreversibility(this->params_);
               PFFormulation::configure_penalty_non_negative(this->params_);
+            }
+
+            if (mpi_world_rank() == 0) {
+                std::cout << "Tensile Strength:  " << TensileStrength()
+                          << "\nCrit Displacement: " << CriticalDisplacement() << std::endl;
             }
 
 

@@ -121,6 +121,98 @@ namespace utopia {
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // //
     // // // // // // // // //
+    static void HomogeneousBarPseudo1D(Input &in) {
+        static const int Dim = 2;
+        static const int NVars = Dim + 1;
+
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        // using SizeType = FunctionSpace::SizeType;
+        using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace,Dim,AT1>;
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
+
+        if (mpi_world_rank() == 0)
+            std::cout << "Starting HomogeneousBarPseudo1D Model" << std::endl;
+
+        stats.start();
+
+        MLIncrementalLoading<FunctionSpace,
+                             utopia::IsotropicGenericPhaseField<FunctionSpace,Dim,AT1>,
+                             UniaxialLoading2D<FunctionSpace>,
+                             HomogeneousBar<FunctionSpace>>
+            time_stepper(space);
+
+        time_stepper.read(in);
+        time_stepper.run();
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+
+    }
+
+    UTOPIA_REGISTER_APP(HomogeneousBarPseudo1D);
+
+
+    static void Hobbs(Input &in) {
+        static const int Dim = 2;
+        static const int NVars = Dim + 1;
+
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        // using SizeType = FunctionSpace::SizeType;
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
+
+        if (mpi_world_rank() == 0)
+            std::cout << "Starting Hobbs Model" << std::endl;
+
+        stats.start();
+
+        MLIncrementalLoading<FunctionSpace,
+                             utopia::IsotropicGenericPhaseField<FunctionSpace,Dim,AT1>,
+                             UniaxialLoading2D<FunctionSpace>,
+                             HomogeneousBar<FunctionSpace>>
+            time_stepper(space);
+
+        time_stepper.read(in);
+        time_stepper.run();
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+
+    }
+
+    UTOPIA_REGISTER_APP(Hobbs);
+
+
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
     static void VolDevSplit(Input &in) {
         static const int Dim = 2;
         static const int NVars = Dim + 1;

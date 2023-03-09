@@ -51,6 +51,9 @@ namespace utopia {
             in.get("hjsmn_smoother", hjsmn_smoother_);
             in.get("block_solver", block_solver_);
             in.get("use_simd", use_simd_);
+            in.get("nx", nx_);
+            in.get("ny", ny_);
+
 
             csv_file_name_   = this->output_path_ + "_energies.csv";
             log_output_path_ = this->output_path_ + "_log.csv";
@@ -574,6 +577,42 @@ namespace utopia {
             }
         }
 
+        void export_setup_file(){
+
+            //Saving input file as txt
+            CSVWriter writer{};
+            std::string output_path = this->output_path_ + "_Setup.txt";
+
+
+            auto *fun_finest = dynamic_cast<ProblemType *>(this->level_functions_.back().get());
+
+            double atol = rmtr_->atol();
+            double atol_suff = rmtr_->atol_suff();
+            double suff_it = rmtr_->suff_it();
+
+            //Getting material properties
+            std::vector<double> p = fun_finest->WriteParametersToVector();
+                                                    //p.nx, p.ny, this->dt_, p.Length_x, p.length_y, p.E, p.length_scale, p.fracture_toughness, p.atol, p.atol_suff
+            if (mpi_world_rank() == 0) {
+                if (writer.file_exists(output_path))
+                    writer.remove_file(output_path);
+
+                writer.open_file(output_path);
+                writer.write_table_row<std::string>(
+                         {"nx", "ny", "dt", "Length x", "Length y", "Youngs Modulus", "lengthscale", "Fracture Toughness", "atol", "atol_suff", "suff_it", "n levels","dt_min"});
+                writer.write_table_row<Scalar>(
+                    {nx_, ny_, this->dt_, p[0],p[1],p[2],p[3],p[4], atol, atol_suff, suff_it ,n_levels_, this->dt_min_});
+                writer.close_file();
+
+                std::cout << "Saving setup file: " << output_path << std::endl;
+
+            }
+
+            //Nodes not calibrated here
+            //fun_finest->export_material_params(this->output_path_);
+
+        }
+
         void run() override {
             UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::run(...)");
 
@@ -583,6 +622,9 @@ namespace utopia {
 
             // init fine level spaces
             this->init(*spaces_[n_levels_ - 1]);
+
+            //Save material properties
+            export_setup_file();
 
             this->time_step_counter_ = 0;
             while (this->time_ < this->final_time_) {
@@ -603,6 +645,7 @@ namespace utopia {
                     auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get());
                     fun_finest->set_old_solution(this->solution_);
                     fun_finest->set_dt(this->dt_);
+                    fun_finest->export_material_params(this->output_path_);
                 }
 
                 // ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -637,6 +680,9 @@ namespace utopia {
         // std::shared_ptr<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix,
         // Vector>, GALERKIN>> rmtr_; std::shared_ptr<RMTR_inf<Matrix, Vector,
         // TRGrattonBoxKornhuber<Matrix, Vector>, SECOND_ORDER>> rmtr_;
+
+        //mesh params
+        int nx_, ny_;
 
         bool save_output_;
 

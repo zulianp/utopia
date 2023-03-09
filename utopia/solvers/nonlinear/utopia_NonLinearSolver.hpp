@@ -190,6 +190,8 @@ namespace utopia {
         Scalar atol() const { return atol_; }
         Scalar rtol() const { return rtol_; }
         Scalar stol() const { return stol_; }
+        Scalar atol_suff() const {return atol_suff_;}
+        Scalar suff_it() const {return suff_it_; }
         SizeType max_it() const { return max_it_; }
         bool verbose() const { return verbose_; }
         bool time_statistics() const { return time_statistics_; }

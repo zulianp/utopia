@@ -160,7 +160,7 @@ namespace utopia {
                                 if ( PFFormulation::penalise_negative_phase_field_values ){
 //                                    std::cout << "Should not be here" << std::endl;
                                     auto c_at_qp = c[qp];
-                                    auto c_neg_bracket = c_at_qp < 0.0 ? c_at_qp : 0.0;
+                                    auto c_neg_bracket = c_at_qp < 0.0 ? -c_at_qp : 0.0;
                                     el_energy +=
                                         this->params_.penalty_param_non_neg / 2.0 * c_neg_bracket * c_neg_bracket * dx(qp);
                                 }
@@ -535,6 +535,7 @@ namespace utopia {
                                 c_el_vec(j) += (elast * shape_test + frac) * dx(qp);
 
                                 if (this->params_.use_penalty_irreversibility) {
+//                                            c_old[qp] < 0.0 ? 0 : c_old[qp];
                                     auto c_cold = c[qp] - c_old[qp];
                                     auto c_cold_bracket = c_cold < 0.0 ? c_cold : 0.0;
                                     c_el_vec(j) += this->params_.penalty_param_irreversible * c_cold_bracket * shape_test * dx(qp);
@@ -542,7 +543,7 @@ namespace utopia {
                                     if (PFFormulation::penalise_negative_phase_field_values ){
   //                                      std::cout << "Should not be here" << std::endl;
                                         auto c_at_qp = c[qp];
-                                        auto c_neg_bracket = c_at_qp < 0.0 ? c_at_qp : 0.0;
+                                        auto c_neg_bracket = c_at_qp < 0.0 ? -c_at_qp : 0.0;
                                         c_el_vec += this->params_.penalty_param_non_neg * c_neg_bracket * shape_test * dx(qp);
                                     }
                                 }
@@ -745,7 +746,7 @@ namespace utopia {
                                         if (PFFormulation::penalise_negative_phase_field_values ){
 //                                            std::cout << "Should not be here" << std::endl;
                                             auto c_at_qp = c[qp];
-                                            auto c_neg_bracket = c_at_qp < 0.0 ? 1.0 : 0.0;
+                                            auto c_neg_bracket = c_at_qp <= 0.0 ? 1.0 : 0.0;
                                             val += this->params_.penalty_param_non_neg * c_neg_bracket * c_shape_j_l_prod * dx(qp);
                                         }
                                     }
@@ -852,7 +853,7 @@ namespace utopia {
                                                          const GradShape &grad_trial,
                                                          const GradShape &grad_test) {
             return GenericPhaseFieldFormulation<FunctionSpace, Dim,PFFormulation>::diffusion_c(params, grad_trial, grad_test) +
-                   GenericPhaseFieldFormulation<FunctionSpace,Dim, PFFormulation>::reaction_c(params, phase_field_value, shape_prod) -
+                   GenericPhaseFieldFormulation<FunctionSpace,Dim, PFFormulation>::reaction_c(params, phase_field_value, shape_prod) +
                    elastic_deriv_cc(params, phase_field_value, elastic_energy, shape_prod);
         }
 
@@ -877,7 +878,12 @@ namespace utopia {
             const Scalar dcc =
                 (1.0 - params.regularization) *
                 PFFormulation::degradation_deriv2(phase_field_value);
-            return dcc * shape_prod * elastic_energy;
+
+            Scalar min_elastic_energy = elastic_energy;
+            //if (PFFormulation::enforce_min_crack_driving_force)
+            //    min_elastic_energy = PFFormulation::min_crack_driving_force > elastic_energy ? PFFormulation::min_crack_driving_force : elastic_energy;
+
+            return dcc * shape_prod * min_elastic_energy;
         }
 
         template <class Strain>
@@ -885,9 +891,12 @@ namespace utopia {
                                                                        const Scalar &phase_field_value,
                                                                        const Scalar &trace,
                                                                        const Strain &strain) {
+            Scalar strain_en = strain_energy(params, trace, strain);
+            //if (PFFormulation::enforce_min_crack_driving_force)
+            //    strain_en = PFFormulation::min_crack_driving_force > strain_en ? PFFormulation::min_crack_driving_force : strain_en;  //E.P This is added to stop negative alpha values (depends on PF model i.e AT1 or AT2)
+
             return (PFFormulation::degradation_deriv(phase_field_value) *
-                    (1.0 - params.regularization)) *
-                   strain_energy(params, trace, strain);
+                    (1.0 - params.regularization)) * strain_en;
         }
 
         template <class Strain, class Stress>
@@ -938,7 +947,7 @@ namespace utopia {
 
             // Post-processing functions
             // And write outputs
-            this->export_strain(output_path, x, time);
+            this->export_strain_and_stress(output_path, x, time);
             if (mpi_world_rank() == 0 )
                 std::cout << "Saving file: " << output_path << std::endl;
 

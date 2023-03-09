@@ -33,7 +33,6 @@
 #include "utopia_TrustRegionVariableBound.hpp"
 // #include "utopia_petsc_Slepc.hpp"
 
-#include "utopia_petsc.hpp"
 #include "utopia_petsc_DM.hpp"
 #include "utopia_petsc_DMDA_FunctionSpace.hpp"
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
@@ -137,22 +136,29 @@ namespace utopia {
             if (this->frac_energy_old_ == 0.0)
                 return false; //dont check on the first time step
 
-            bool repeat = frac_energy/this->frac_energy_old_ > this->frac_energy_max_change_;
+            if (frac_energy <= 0.0)
+                return false; //Do not reduce time step when no phase has propagated
+
+
+            // Negative Old fracture energy treated as positive
+            double frac_energy_old = this->frac_energy_old_ > 0.0 ? this->frac_energy_old_ : -this->frac_energy_old_;
+
+            bool repeat = frac_energy/frac_energy_old > this->frac_energy_max_change_;
 
             if ( mpi_world_rank() == 0){
                 utopia::out() << "-----------------------------------------------------"
                                  "----------------- \n";
                 utopia::out() << "Fracture Energy -> New: " << frac_energy
                               << "\n                -> Old: " << this->frac_energy_old_
-                              << "\nmeasured change ->  " << frac_energy/this->frac_energy_old_
+                              << "\nmeasured change ->  " << frac_energy/frac_energy_old
                               << "\nprescribed change-> " << this->frac_energy_max_change_;
                 utopia::out() << "\n-----------------------------------------------------"
                                  "----------------- \n";
             }
 
             //setting criteria for increasing time step ( a minimum increase in frac energy )
-            this->increase_next_time_step_ = (frac_energy/this->frac_energy_old_ < this->frac_energy_min_change_ &&
-                                              frac_energy/this->frac_energy_old_ > 1.0 );
+            this->increase_next_time_step_ = (frac_energy/frac_energy_old < this->frac_energy_min_change_ &&
+                                              frac_energy/frac_energy_old > 0.95 );
 
             return repeat;
         }

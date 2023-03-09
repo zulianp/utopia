@@ -17,6 +17,9 @@
 #include "utopia_Views.hpp"
 #include "utopia_petsc_NeumannBoundaryConditions.hpp"
 
+#include <cmath>
+#include <random>
+
 #define UNROLL_FACTOR 4
 #define U_MIN(a, b) ((a) < (b) ? (a) : (b))
 
@@ -50,16 +53,8 @@ namespace utopia {
             in.get("lambda", lambda);
             in.get("nu", nu);
             in.get("E", E);
-            if (nu != 0.0 && E != 0.0) {
-                initialise_Lame_parameters();
-
-                if (mpi_world_rank() == 0) {
-                    utopia::out() << "E: " << E << "  nu: " << nu << "  Gc: " << fracture_toughness
-                                  << " mu: " << mu << "  lambda: " << lambda << "  \n";
-                }
-            }
-
             in.get("fracture_toughness", fracture_toughness);
+
             in.get("l_0", l_0);
             in.get("pressure0", pressure0);
 
@@ -80,10 +75,6 @@ namespace utopia {
             in.get("z_min", xyzmin);
             in.get("z_max", xyzmax);
             Length_z = xyzmax - xyzmin;
-
-
-            //Must be done after lambda and mu
-            kappa = lambda + (2.0 * mu / Dim);
 
             std::string type;
             in.get("hetero_params", type);
@@ -122,7 +113,7 @@ namespace utopia {
                         } else {
                             mu_out = mu_in * tough_factor;              //modify middle layer to tougher
                             lambda_out = lambda_in * tough_factor;
-                            fracture_toughness_out = fracture_toughness_in ; //* tough_factor;
+                            fracture_toughness_out = fracture_toughness_in * 0.5 ; //* tough_factor;
                         }
 
                         if (boundary_protection){
@@ -132,8 +123,131 @@ namespace utopia {
                         }
 
                     };
+            } else if ( type == "HomogeneousBar"){
+
+                Scalar nx; //mesh resoultion in x
+                in.get("nx",nx);
+
+                Scalar tough_factor;
+                in.get("tough_factor", tough_factor);
+
+                Scalar xmin, xmax, ymin, ymax;
+                in.get("x_min", xmin);
+                in.get("x_max", xmax);
+                in.get("y_min", ymin);
+                in.get("y_max", ymax);
+
+
+                bool boundary_protection(false);
+                in.get("boundary_protection", boundary_protection);
+                Scalar layer_width(0);
+                in.get("layer_width",layer_width);
+
+                const Scalar fracture_toughness_in = fracture_toughness;
+
+                Scalar mesh_width=1.0;
+                in.get("mesh_width", mesh_width);
+                mesh_width *= 0.5*(xmax-xmin)/nx;
+
+                hetero_params =
+                    [fracture_toughness_in, tough_factor,xmin,xmax,ymin,ymax,boundary_protection, layer_width, mesh_width](
+                        const Point &p, Scalar &, Scalar &, Scalar &fracture_toughness_out) {
+                        if (p[0] < 0.5*(xmax-xmin) + mesh_width  && p[0] > 0.5*(xmax-xmin) - mesh_width) {
+                            fracture_toughness_out = tough_factor*fracture_toughness_in;
+                      }
+
+                        if (boundary_protection){
+                            if (p[0] < xmin + layer_width || p[0] > xmax - layer_width )
+                                fracture_toughness_out = fracture_toughness_in*2.0;
+                        }
+
+                    };
+
+            }  else if (type == "Hobbs") {
+            Scalar bottom_layer_height;
+            Scalar top_layer_height;
+            in.get("bottom_layer_height", bottom_layer_height);
+            in.get("top_layer_height", top_layer_height);
+
+            Scalar E1, E2, nu1, nu2, Gc1, Gc2;
+            in.get("E_1",  E1 );
+            in.get("E_2",  E2 );
+            in.get("nu_1", nu1 );
+            in.get("nu_2", nu2 );
+            in.get("Gc_1", Gc1 );
+            in.get("Gc_2", Gc2 );
+
+            E = E1;
+            nu = nu1;
+            fracture_toughness= Gc1;
+
+            //Random variation
+            bool random_variation{false};
+            Scalar toughness_deviation{1.0};
+            in.get("random_variation", random_variation);
+            in.get("random_standard_deviation", toughness_deviation );
+
+            double use_random = random_variation ? 1.0 : 0.0;
+            std::normal_distribution<double> distribution(0., toughness_deviation);
+            std::default_random_engine generator;
+
+            bool boundary_protection(false);
+            Scalar layer_width(0);
+            Scalar xmin, xmax, ymin, ymax;
+            in.get("boundary_protection", boundary_protection);
+            in.get("layer_width",layer_width);
+            in.get("x_min", xmin);
+            in.get("x_max", xmax);
+            in.get("y_min", ymin);
+            in.get("y_max", ymax);
+
+
+            hetero_params =
+                [E1, E2, nu1, nu2, Gc1, Gc2, bottom_layer_height, top_layer_height,
+                 boundary_protection,xmin,xmax,ymin,ymax,layer_width,
+                     use_random, distribution, generator] (
+                    const Point &p, Scalar &mu_out, Scalar &lambda_out, Scalar &fracture_toughness_out) mutable {
+                    if (p[1] < bottom_layer_height || p[1] > top_layer_height) {    //Shale (stronger and more compliant)
+                        lambda_out = E2*nu2/((1.+nu2)*(1.-2.*nu2));
+                        mu_out =  E2/(2.*(1.+nu2));
+                        fracture_toughness_out = Gc2;
+                    } else {                                                        //Dolostone (weaker and stiffer)
+                        lambda_out = E1*nu1/((1.+nu1)*(1.-2.*nu1));
+                        mu_out = E1/(2.*(1.+nu1));
+
+                        generator.seed((1e6*p[1]*p[1] + 1e6*p[0]*p[0]));
+                        double noise = distribution(generator) ;
+                        distribution.reset();
+                        fracture_toughness_out = Gc1 + use_random * noise ;
+                    }
+
+                    if (boundary_protection){
+                        if (p[0] < xmin + layer_width || p[0] > xmax - layer_width ||
+                            p[1] < ymin + layer_width || p[1] > ymax - layer_width)
+                            fracture_toughness_out = Gc2;
+                    }
+
+                };
+
             }
-        }
+
+
+            //Initialising other parameters
+            if (nu != 0.0 && E != 0.0) {
+                initialise_Lame_parameters();
+
+                if (mpi_world_rank() == 0) {
+                    utopia::out() << "E: " << E << "  nu: " << nu << "  Gc: " << fracture_toughness
+                                  << " mu: " << mu << "  lambda: " << lambda << "  \n";
+                }
+            }
+
+            //Must be done after lambda and mu
+            kappa = lambda + (2.0 * mu / Dim);
+
+
+
+        }// end of read
 
         PFFracParameters()
             : a(1.0),
@@ -177,6 +291,14 @@ namespace utopia {
             mu      = E/(2.*(1.+nu));
          }
 
+        std::pair<double,double> return_Lame_parameters(double E, double nu){
+            std::pair<double,double> lames;
+            lames.first  = E*nu/((1.+nu)*(1.-2.*nu));
+            lames.second = E/(2.*(1.+nu));
+            return lames;
+         }
+
+
         bool kroneckerDelta(const SizeType &i, const SizeType &j) { return (i == j) ? 1.0 : 0.0; }
 
         void fill_in_isotropic_elast_tensor() {
@@ -201,6 +323,8 @@ namespace utopia {
         Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda, kappa, nu, E, l_0, pressure0;
         Scalar regularization, pressure, penalty_param_irreversible, penalty_param_non_neg, crack_set_tol, penalty_tol, penalty_tol_non_neg, mobility;
         Scalar Length_x, Length_y, Length_z;
+
+        //Scalar E1, E2, nu1, nu2, Gc1, Gc2; //for hobbs three layer model
         bool use_penalty_irreversibility{false}, use_crack_set_irreversibiblity{false}, use_pressure{false};
         bool turn_off_uc_coupling{false}, turn_off_cu_coupling{false};
         bool use_mobility{false};
@@ -219,6 +343,8 @@ namespace utopia {
         using Vector = typename FunctionSpace::Vector;
         using Matrix = typename FunctionSpace::Matrix;
         using Device = typename FunctionSpace::Device;
+        using Point = typename FunctionSpace::Point;
+
 
         using USpace = typename FunctionSpace::template Subspace<Dim>;
         using CSpace = typename FunctionSpace::template Subspace<1>;
@@ -255,8 +381,8 @@ namespace utopia {
             assert(params_.use_penalty_irreversibility);
             Scalar tol2 = params_.penalty_tol * params_.penalty_tol;
             params_.penalty_param_irreversible = params_.fracture_toughness / params_.length_scale * (1.0 / tol2 - 1.0);
-            if (mpi_world_rank()==0)
-                utopia::out() << "Lengthscale: " << params_.length_scale << "  Penalty: " << params_.penalty_param_irreversible << std::endl;
+            //if (mpi_world_rank()==0)
+            //    utopia::out() << "Lengthscale: " << params_.length_scale << "  Penalty: " << params_.penalty_param_irreversible << std::endl;
         }
 
         void read(Input &in) override {
@@ -537,14 +663,127 @@ namespace utopia {
             }
         }
 
-        bool export_strain(std::string output_path , const Vector &x_const, const Scalar time) const {
+        bool export_material_params(std::string output_path){
+            UTOPIA_TRACE_REGION_BEGIN("PhaseFieldFracBase::export_mechanical_params");
+
+            static const int total_components = 6.0; //E, nu, Gc, lambda, mu
+
+            using PSpace = typename FunctionSpace::template Subspace<total_components>;
+            using SElem  = typename PSpace::ViewDevice::Elem;
+            using WSpace = typename FunctionSpace::template Subspace<1>;
+
+            Vector w;
+            Vector g;
+
+            /// Creating strain subspace
+            // cloning mesh
+            auto param_mesh = this->space_.mesh().clone(total_components);
+            assert(param_mesh->n_components() == total_components);
+            // Creating Subspace with cloned mesh
+
+            PSpace S(std::move(param_mesh));
+            WSpace C(this->space_.mesh().clone(1));
+
+
+            S.create_vector(g);
+            C.create_vector(w);
+            ///////////////////////////////////////////////////////////////////////////
+
+            {
+                ////////////////////////////////////////////////////////////////////////////
+
+
+
+                auto S_view = S.view_device();
+                auto C_view = C.view_device();
+
+                // Preparing the vector for which the parameter function space knows the dimensions (nodes*components), so
+                // that we can write on this later
+                auto g_view = S.assembly_view_device(g);
+                auto w_view = C.assembly_view_device(w);
+
+
+
+            Device::parallel_for(
+                this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                    StaticVector<Scalar, total_components * C_NDofs> material_params;
+                    StaticVector<Scalar, C_NDofs> node_count;
+                    material_params.set(.0);
+                    node_count.set(1.0);
+
+                    SElem s_e;
+                    S_view.elem(i, s_e);  // just needed for add_vector into g (and node coords)
+
+                    CElem c_e;
+                    C_view.elem(i, c_e);  // getting element for storing wieghts in CSpace
+
+                    for (SizeType n = 0; n < C_NDofs; n++) {
+
+                        ////////////////////////////////////////////
+                        Point coord;
+                        s_e.node(n, coord);
+                        non_const_params().update(coord);
+                        ////////////////////////////////////////////
+
+                        Scalar Gc = this->params_.fracture_toughness;
+                        Scalar mu = this->params_.mu ;
+                        Scalar l  = this->params_.lambda;
+                        Scalar E  = mu*(3.*l + 2.*mu)/(l+mu);
+                        Scalar nu = E/(2.0*mu) - 1.;
+                        Scalar tens_strength = std::pow(3./8. * Gc*E/this->params_.length_scale, 0.5);  //AT1 hardcoded
+
+
+                        material_params[n] = E;
+                        material_params[C_NDofs   + n] = nu;
+                        material_params[C_NDofs*2 + n] = Gc;
+                        material_params[C_NDofs*3 + n] = l;
+                        material_params[C_NDofs*4 + n] = mu;
+                        material_params[C_NDofs*5 + n] = tens_strength;
+
+                    }
+
+                    C_view.add_vector(c_e, node_count, w_view);
+                    S_view.add_vector(s_e, material_params, g_view);
+                        }); //end of parallel loop
+            }
+
+            {
+
+                auto mat_params = local_view_device(g);
+                auto node_count = local_view_device(w);
+                auto r = local_range_device(w);  // range of vector w (using primitivo di utopio)
+                parallel_for(
+                    r, UTOPIA_LAMBDA(int i) {
+                        auto wi = node_count.get(i);  // extracts vector component
+                        for (int k = 0; k < total_components; k++) {
+
+                            int nodal_offset = i * total_components;                //vector g is 2*straincomponents bigger than vector of weights w
+                            auto si = mat_params.get(nodal_offset + k);      //get k'th strain corresponding to node i with weight i
+                            mat_params.set(nodal_offset + k, si / wi);       //normalise the strain value by the weight wi
+
+                        }
+                    });
+            }  // incase backed PETSC needs synchronisation (create view in scopes and destroy them when not needed)
+
+
+            rename("E nu Gc lambda mu st", g);
+            output_path += "_params.vtr";
+            S.write(output_path, g);  // Function space knows how to write
+
+            UTOPIA_TRACE_REGION_END("PhaseFieldFracBase::export_mechanical_params");
+            return true;
+
+        }
+
+        bool export_strain_and_stress(std::string output_path , const Vector &x_const, const Scalar time) const {
             UTOPIA_TRACE_REGION_BEGIN("PhaseFieldFracBase::strain");
 
             static const int strain_components = (Dim - 1) * 3;
+            static const int total_components = strain_components*1;
 
             using WSpace = typename FunctionSpace::template Subspace<1>;
-            using SSpace = typename FunctionSpace::template Subspace<strain_components>;
-            using SElem = typename SSpace::ViewDevice::Elem;
+            using SSpace = typename FunctionSpace::template Subspace<total_components>;
+            using SElem  = typename SSpace::ViewDevice::Elem;
 
             Vector w;
             Vector g;
@@ -557,18 +796,18 @@ namespace utopia {
             /// Creating strain subspace
 
             // cloning mesh
-            auto strain_mesh = this->space_.mesh().clone(strain_components);
-            assert(strain_mesh->n_components() == strain_components);
+            auto strain_mesh = this->space_.mesh().clone(total_components);
+            assert(strain_mesh->n_components() == total_components);
             // Creating Subspace with cloned mesh
 
             SSpace S(std::move(strain_mesh));
 
-            assert(S.n_dofs() == C.n_dofs() * strain_components);
+            assert(S.n_dofs() == C.n_dofs() *total_components);
 
             S.create_vector(g);
             C.create_vector(w);
 
-            assert(g.size() == w.size() * strain_components);
+            assert(g.size() == w.size() * total_components);
 
             ///////////////////////////////////////////////////////////////////////////
 
@@ -623,19 +862,19 @@ namespace utopia {
 
                 Device::parallel_for(
                     this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                        StaticMatrix<Scalar, Dim, Dim> strain_value;  //, strain_p;
-                        StaticVector<Scalar, strain_components * C_NDofs> strain_el_vec;
+                        StaticMatrix<Scalar, Dim, Dim> strain_value, stress_value;
+                        StaticVector<Scalar, total_components * C_NDofs> strain_and_stress_el_vec;
                         StaticVector<Scalar, C_NDofs> weight_el_vec;
+                        StaticMatrix<Scalar, Dim, Dim> stress;  //, strain_p;
 
-                        strain_el_vec.set(0.0);
+                        strain_and_stress_el_vec.set(0.0);
                         weight_el_vec.set(0.0);
 
                         ////////////////////////////////////////////
 
                         UElem u_e;
                         U_view.elem(i, u_e);
-                        auto el_strain =
-                            strain_view.make(u_e);  // el_strain.strain[qp] gives matrix of strain at int point
+                        auto el_strain = strain_view.make(u_e);  // el_strain.strain[qp] gives matrix of strain at int point
 
                         SElem s_e;
                         S_view.elem(i, s_e);  // just needed for add_vector into g
@@ -692,22 +931,29 @@ namespace utopia {
                 // disp(w.size());
 
                 // viewing strain vector we just created
-                auto strain_view = local_view_device(g);
+                auto strain_and_stress_view = local_view_device(g);
                 auto weight_view = local_view_device(w);
                 auto r = local_range_device(w);  // range of vector w (using primitivo di utopio)
                 parallel_for(
                     r, UTOPIA_LAMBDA(int i) {
                         auto wi = weight_view.get(i);  // extracts vector component
                         for (int k = 0; k < strain_components; k++) {
-                            int idx = i * strain_components + k;
-                            auto si = strain_view.get(idx);
-                            strain_view.set(idx, si / wi);
+
+                            int nodal_offset = i * total_components;                //vector g is 2*straincomponents bigger than vector of weights w
+                            auto si = strain_and_stress_view.get(nodal_offset + k);      //get k'th strain corresponding to node i with weight i
+                            strain_and_stress_view.set(nodal_offset + k, si / wi);       //normalise the strain value by the weight wi
+
+                            if (strain_components != total_components){
+                                auto sig_i = strain_and_stress_view.get(nodal_offset + strain_components + k); //get stress component which is offset additionally in the g vector by the strain components
+                                strain_and_stress_view.set(nodal_offset + strain_components + k , sig_i/wi);
+                            }
+                            //assert( std::signbit(si) == std::signbit(sig_i));
                         }
                     });
             }  // incase backed PETSC needs synchronisation (create view in scopes and destroy them when not needed)
 
-            rename("strain", g);
-            output_path += "_strain_" + std::to_string(time) + ".vtr";
+            rename("strain and stress", g);
+            output_path += "_strainstress_" + std::to_string(time) + ".vtr";
             S.write(output_path, g);  // Function space knows how to write
 
             UTOPIA_TRACE_REGION_END("PhaseFieldFracBase::strain");
@@ -808,6 +1054,14 @@ namespace utopia {
         template <typename C>
         UTOPIA_INLINE_FUNCTION static C quadratic_degradation_deriv2(const PFFracParameters &, const C &) {
             return 2.0;
+        }
+
+        template <class Strain, class Stress>
+        UTOPIA_INLINE_FUNCTION static void compute_stress(const PFFracParameters &params,
+                                                          const Scalar &tr,
+                                                          const Strain &strain,
+                                                          Stress &stress) {
+            stress = (2.0 * params.mu * strain) + (params.lambda * tr * (device::identity<Scalar>()));
         }
 
         Vector &old_solution() { return x_old_; }
@@ -1039,6 +1293,11 @@ namespace utopia {
 
         virtual void write_to_file(const std::string &output_path, const Vector &x, const Scalar time) {
             space_.write(output_path + "_" + std::to_string(time) + ".vtr", x);
+        }
+
+        std::vector<double> WriteParametersToVector(){
+            std::vector<double> v{ params_.Length_x, params_.Length_y, params_.E, params_.length_scale, params_.fracture_toughness};
+            return v;
         }
 
 
