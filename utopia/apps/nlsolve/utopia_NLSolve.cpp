@@ -5,6 +5,7 @@
 
 #include "utopia.hpp"
 
+#ifdef UTOPIA_ENABLE_ISOLVER
 #ifdef UTOPIA_WITH_PETSC
 using Matrix_t = utopia::PetscMatrix;
 using Vector_t = utopia::Traits<Matrix_t>::Vector;
@@ -211,4 +212,5 @@ void nlsolve(utopia::Input &in) {
 // ./utopia_exec -app nlsolve -path utopia_example_plugin.dylib -damping 0.05
 UTOPIA_REGISTER_APP(nlsolve);
 
-#endif
+#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_ISOLVER
