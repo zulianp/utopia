@@ -147,7 +147,10 @@ namespace utopia {
                                              p[qp] * tr * dx(qp);
                             }
 
-                            el_energy += energy(this->params_, c[qp], c_grad_el[qp], tr, el_strain.strain[qp]) * dx(qp);
+                            if (PFFormulation::enforce_min_crack_driving_force){
+                                el_energy += min_energy(this->params_, c[qp], c_grad_el[qp], tr, el_strain.strain[qp]) * dx(qp);
+                            } else
+                                el_energy += energy(this->params_, c[qp], c_grad_el[qp], tr, el_strain.strain[qp]) * dx(qp);
 
                             if (this->params_.use_penalty_irreversibility) {
                                 //if (mpi_world_rank()==0) utopia::out() << "Penalty: " << this->params_.penalty_param << std::endl;
@@ -881,8 +884,9 @@ namespace utopia {
                 PFFormulation::degradation_deriv2(phase_field_value);
 
             Scalar min_strain_energy = strain_energy;
-            //if (PFFormulation::enforce_min_crack_driving_force)
-            //    min_elastic_energy = PFFormulation::min_crack_driving_force > elastic_energy ? PFFormulation::min_crack_driving_force : elastic_energy;
+            if (PFFormulation::enforce_min_crack_driving_force){
+                min_strain_energy = PFFormulation::min_crack_driving_force(params) > min_strain_energy ? PFFormulation::min_crack_driving_force(params) : min_strain_energy;
+            }
 
             return dcc * shape_prod * min_strain_energy;
         }
@@ -893,9 +897,9 @@ namespace utopia {
                                                                        const Scalar &trace,
                                                                        const Strain &strain) {
             Scalar strain_en = strain_energy(params, trace, strain);
-            //if (PFFormulation::enforce_min_crack_driving_force)
-            //    strain_en = PFFormulation::min_crack_driving_force > strain_en ? PFFormulation::min_crack_driving_force : strain_en;  //E.P This is added to stop negative alpha values (depends on PF model i.e AT1 or AT2)
-
+            if (PFFormulation::enforce_min_crack_driving_force){
+                strain_en = PFFormulation::min_crack_driving_force(params) > strain_en ? PFFormulation::min_crack_driving_force(params) : strain_en;
+            }
             return (PFFormulation::degradation_deriv(phase_field_value) *
                     (1.0 - params.regularization)) * strain_en;
         }
@@ -923,6 +927,28 @@ namespace utopia {
             return GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation>::fracture_energy(
                        params, phase_field_value, phase_field_grad) +
                    elastic_energy(params, phase_field_value, trace, strain);
+        }
+
+        template <class Grad, class Strain>
+        UTOPIA_INLINE_FUNCTION static Scalar min_energy(const Parameters &params,
+                                                    // c
+                                                    const Scalar &phase_field_value,
+                                                    const Grad &phase_field_grad,
+                                                    // u
+                                                    const Scalar &trace,
+                                                    const Strain &strain) {
+
+            //double frac_en = GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation>::fracture_energy(
+            //                       params, phase_field_value, phase_field_grad);
+            //std::cout << frac_en << std::endl;
+            double elastic_energy = (PFFormulation::degradation(phase_field_value) *
+                                    (1.0 - params.regularization) +
+                                params.regularization) *
+                               std::max(strain_energy(params, trace, strain), PFFormulation::min_crack_driving_force(params) );
+
+            return GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation>::fracture_energy(
+                       params, phase_field_value, phase_field_grad)
+                    + elastic_energy;
         }
 
         template <class Strain>

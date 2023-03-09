@@ -89,7 +89,7 @@ public:
        static const bool enforce_min_crack_driving_force = false;
 
        template<class FunctionSpace>
-       UTOPIA_INLINE_FUNCTION static double min_crack_driving_force(PFFracParameters<FunctionSpace> & p) {
+       UTOPIA_INLINE_FUNCTION static double min_crack_driving_force(const PFFracParameters<FunctionSpace> & p) {
                   return 3.0/16.0 * p.fracture_toughness/p.length_scale ;
               }
 
