@@ -709,7 +709,8 @@ namespace utopia {
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             const Scalar tr_strain_u = trace(el_strain.strain[qp]);
 
-                            const Scalar eep = elastic_energy(this->params_, c[qp], tr_strain_u, el_strain.strain[qp]);
+                            //const Scalar eep = elastic_energy(this->params_, c[qp], tr_strain_u, el_strain.strain[qp]);
+                            const Scalar eep_fix = strain_energy(this->params_, tr_strain_u, el_strain.strain[qp]);
 
                             // pragma GCCunroll(C_NDofs)
                             for (SizeType l = 0; l < C_NDofs; ++l) {
@@ -722,7 +723,7 @@ namespace utopia {
 
                                     Scalar val = bilinear_cc(this->params_,
                                                              c[qp],
-                                                             eep,
+                                                             eep_fix,
                                                              // c_shape_j,
                                                              // c_shape_l,
                                                              c_shape_j_l_prod,
@@ -846,7 +847,7 @@ namespace utopia {
         template <class GradShape>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_cc(const Parameters &params,
                                                          const Scalar &phase_field_value,
-                                                         const Scalar &elastic_energy,
+                                                         const Scalar &strain_energy,
                                                          // const Scalar &shape_trial,
                                                          // const Scalar &shape_test,
                                                          const Scalar &shape_prod,
@@ -854,7 +855,7 @@ namespace utopia {
                                                          const GradShape &grad_test) {
             return GenericPhaseFieldFormulation<FunctionSpace, Dim,PFFormulation>::diffusion_c(params, grad_trial, grad_test) +
                    GenericPhaseFieldFormulation<FunctionSpace,Dim, PFFormulation>::reaction_c(params, phase_field_value, shape_prod) +
-                   elastic_deriv_cc(params, phase_field_value, elastic_energy, shape_prod);
+                   elastic_deriv_cc(params, phase_field_value, strain_energy, shape_prod);
         }
 
 
@@ -871,7 +872,7 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION static Scalar elastic_deriv_cc(const Parameters &params,
                                                               const Scalar &phase_field_value,
-                                                              const Scalar &elastic_energy,
+                                                              const Scalar &strain_energy,
                                                               // const Scalar &trial,
                                                               // const Scalar &test
                                                               const Scalar &shape_prod) {
@@ -879,11 +880,11 @@ namespace utopia {
                 (1.0 - params.regularization) *
                 PFFormulation::degradation_deriv2(phase_field_value);
 
-            Scalar min_elastic_energy = elastic_energy;
+            Scalar min_strain_energy = strain_energy;
             //if (PFFormulation::enforce_min_crack_driving_force)
             //    min_elastic_energy = PFFormulation::min_crack_driving_force > elastic_energy ? PFFormulation::min_crack_driving_force : elastic_energy;
 
-            return dcc * shape_prod * min_elastic_energy;
+            return dcc * shape_prod * min_strain_energy;
         }
 
         template <class Strain>
