@@ -39,6 +39,7 @@ endif()
 
 if(UTOPIA_ENABLE_CXX17_FEATURES)
   set(UTOPIA_ENABLE_CPP17 TRUE)
+  set(UTOPIA_ENABLE_CPP14 TRUE)
 endif()
 
 # If both enabled just use

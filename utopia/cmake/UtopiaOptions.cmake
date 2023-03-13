@@ -6,7 +6,8 @@ option(UTOPIA_STATIC_DEPENDENCIES_ONLY
 
 
 option(UTOPIA_ENABLE_EXAMPLES "Enable utopia examples." OFF)
-
+option(UTOPIA_ENABLE_TESTS "Enable utopia tests." ON)
+option(UTOPIA_ENABLE_BENCHMARK "Enable utopia benchmarks." ON)
 option(UTOPIA_ENABLE_MPI "Enable the cuda backend" ON)
 # option(UTOPIA_ENABLE_OPENCL "Enable the opencl backend" OFF)
 option(UTOPIA_ENABLE_PETSC "Enable the petsc backend" ON)
