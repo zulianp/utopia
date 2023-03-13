@@ -39,33 +39,34 @@ LOCAL_SOURCES)
 message(STATUS "\nSOURCES:${LOCAL_SOURCES}")
 message(STATUS "\nHEADERS:${LOCAL_HEADERS}")
 
-# target_sources(
-#   utopia_exec
-#   PRIVATE ${LOCAL_SOURCES}
-#   PRIVATE ${LOCAL_HEADERS})
+target_sources(
+  utopia_exec
+  PRIVATE ${LOCAL_SOURCES}
+  PRIVATE ${LOCAL_HEADERS})
 
-utopia_link_default_targets(utopia_exec)
+# utopia_link_default_targets(utopia_exec)
 
-target_include_directories(utopia_exec PRIVATE ${UTOPIA_APPS_DIR})
-target_include_directories(utopia_exec PRIVATE .)
-# # # target_include_directories(utopia_exec PRIVATE ${UTOPIA_BUILD_INCLUDES})
+# target_include_directories(utopia_exec PRIVATE ${UTOPIA_APPS_DIR})
+# target_include_directories(utopia_exec PRIVATE .)
+# # target_include_directories(utopia_exec PRIVATE ${UTOPIA_BUILD_INCLUDES})
 
 foreach(MODULE ${APPS_MODULES})
-  target_include_directories(utopia_exec PUBLIC UTOPIA_APPS_DIR/${MODULE})
+# message(STATUS "${MODULE}")
+  target_include_directories(utopia_exec PUBLIC ${UTOPIA_APPS_DIR}/${MODULE})
 endforeach()
 
-if(Gperftools_FOUND)
-  target_link_libraries(utopia_exec PUBLIC gperftools::profiler)
-endif()
+# if(Gperftools_FOUND)
+#   target_link_libraries(utopia_exec PUBLIC gperftools::profiler)
+# endif()
 
-if(UTOPIA_ENABLE_EIGEN_3)
-  find_package(Eigen3)
-  if(EIGEN3_FOUND)
-    set(UTOPIA_ENABLE_EIGEN_3 ON)
-    target_include_directories(utopia_exec PRIVATE ${EIGEN3_INCLUDE_DIR})
+# if(UTOPIA_ENABLE_EIGEN_3)
+#   find_package(Eigen3)
+#   if(EIGEN3_FOUND)
+#     set(UTOPIA_ENABLE_EIGEN_3 ON)
+#     target_include_directories(utopia_exec PRIVATE ${EIGEN3_INCLUDE_DIR})
 
-  endif()
-endif()
+#   endif()
+# endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g ${UTOPIA_DEV_FLAGS}")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
+# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g ${UTOPIA_DEV_FLAGS}")
