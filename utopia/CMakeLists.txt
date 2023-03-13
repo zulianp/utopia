@@ -42,13 +42,15 @@ set(UTOPIA_ENABLE_CPP11 ON)
 # core modules
 set(UTOPIA_MODULES
     apps
+    benchmarks
     interoperability
     backend
     solvers
     differentiable
     core
     ui
-    utils)
+    utils
+    tests)
 
 foreach(MODULE ${UTOPIA_MODULES})
   add_subdirectory("${MODULE}")
@@ -99,10 +101,10 @@ target_link_libraries(utopia PUBLIC ${UTOPIA_DEP_LIBRARIES})
 # INSTALL
 
 # apps suite
-add_executable(utopia_exec main.cpp)
-utopia_link_default_targets(utopia_exec)
-target_link_libraries(utopia_exec PRIVATE utopia)
-include(apps/apps.cmake)
+# add_executable(utopia_exec main.cpp)
+# include(apps/apps.cmake)
+# utopia_link_default_targets(utopia_exec)
+# target_link_libraries(utopia_exec PRIVATE utopia)
 
 
 # message(STATUS "${UTOPIA_HEADERS}")
@@ -147,20 +149,21 @@ install(FILES ${CMAKE_BINARY_DIR}/utopia_Config.hpp DESTINATION include)
 # SUITES
 
 # test suite
-# if(UTOPIA_ENABLE_TESTS)
-#   add_executable(utopia_test tests/test.cpp)
-#   utopia_link_default_targets(utopia_test)
-#   target_link_libraries(utopia_test PRIVATE utopia)
-#   include(tests/tests.cmake)
-# endif()
+if(UTOPIA_ENABLE_TESTS)
+  add_executable(utopia_test tests/test.cpp)
+  # utopia_link_default_targets(utopia_test)
+  target_link_libraries(utopia_test PUBLIC utopia)
+  # include(tests/tests.cmake)
+endif()
 
 # bench suite
-# if(UTOPIA_ENABLE_BENCHMARK)
-#   add_executable(utopia_bench benchmarks/bench.cpp)
-#   utopia_link_default_targets(utopia_bench)
-#   target_link_libraries(utopia_bench PRIVATE utopia)
-#   include(benchmarks/benchmarks.cmake)
-# endif()
+# Certain bench need headers from test
+if(UTOPIA_ENABLE_BENCHMARK)
+  add_executable(utopia_bench benchmarks/bench.cpp)
+  # utopia_link_default_targets(utopia_bench)
+  target_link_libraries(utopia_bench PRIVATE utopia)
+  # include(benchmarks/benchmarks.cmake)
+endif()
 
 
 # # WHY?
