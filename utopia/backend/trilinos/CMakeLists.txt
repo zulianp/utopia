@@ -3,10 +3,9 @@ find_package(Trilinos)
 
 if(Trilinos_FOUND)
 
-
-  # include_directories(SYSTEM ${Trilinos_INCLUDE_DIRS})
-  # These lines are needed so the utopia-config.makefile will be correctly
-  # built. The UtopiaTargets.cmake file is populated automatically by cmake
+  # include_directories(SYSTEM ${Trilinos_INCLUDE_DIRS}) These lines are needed
+  # so the utopia-config.makefile will be correctly built. The
+  # UtopiaTargets.cmake file is populated automatically by cmake
   # ############################################################################
   foreach(LIB ${Trilinos_LIBRARY_DIRS})
     list(APPEND UTOPIA_DEP_LIBRARIES -L${LIB})
@@ -52,10 +51,7 @@ if(Trilinos_FOUND)
     endif()
   endforeach()
 
-  # set(UTOPIA_ENABLE_TRILINOS ON)
-  # set(UTOPIA_ENABLE_TRILINOS
-  #     TRUE
-  #     PARENT_SCOPE)
+  # set(UTOPIA_ENABLE_TRILINOS ON) set(UTOPIA_ENABLE_TRILINOS TRUE PARENT_SCOPE)
 
   set(UTOPIA_TRILINOS_DIR
       ${Trilinos_DIR}
@@ -64,7 +60,9 @@ if(Trilinos_FOUND)
       ${Trilinos_VERSION}
       PARENT_SCOPE)
 
-  set(Trilinos_INCLUDE_DIRS ${Trilinos_INCLUDE_DIRS} PARENT_SCOPE)
+  set(Trilinos_INCLUDE_DIRS
+      ${Trilinos_INCLUDE_DIRS}
+      PARENT_SCOPE)
 
   find_package(TpetraExt)
   if(TRILINOS_TPETRAEXT_FOUND)
@@ -72,14 +70,11 @@ if(Trilinos_FOUND)
         TRUE
         PARENT_SCOPE)
   endif()
-  # include_directories(SYSTEM ${UTOPIA_TRILINOS_DEPS})
-  # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}
-  #   ${Kokkos_CXX_FLAGS}")
-  # message(STATUS "Kokkos_CXX_FLAGS=${Kokkos_CXX_FLAGS},${CMAKE_CXX_FLAGS}")
-  # message(
-  #   STATUS
-  #     "HERE:
-  #   ${Trilinos_CXX_COMPILER_FLAGS},${Kokkos_CXX_FLAGS},${TRILINOS_DEFINITIONS},${CMAKE_CXX_STANDARD},${INTERFACE_COMPILE_FEATURES}"
+  # include_directories(SYSTEM ${UTOPIA_TRILINOS_DEPS}) set(CMAKE_CXX_FLAGS
+  # "${CMAKE_CXX_FLAGS} ${Kokkos_CXX_FLAGS}") message(STATUS
+  # "Kokkos_CXX_FLAGS=${Kokkos_CXX_FLAGS},${CMAKE_CXX_FLAGS}") message( STATUS
+  # "HERE:
+  # ${Trilinos_CXX_COMPILER_FLAGS},${Kokkos_CXX_FLAGS},${TRILINOS_DEFINITIONS},${CMAKE_CXX_STANDARD},${INTERFACE_COMPILE_FEATURES}"
   # )
 
 else()
@@ -115,9 +110,9 @@ if(Trilinos_FOUND)
       ${UTOPIA_SOURCES}
       PARENT_SCOPE)
 
-  set(UTOPIA_DEP_INCLUDES ${Trilinos_INCLUDE_DIRS} PARENT_SCOPE)
-
-
+  set(UTOPIA_DEP_INCLUDES
+      ${Trilinos_INCLUDE_DIRS}
+      PARENT_SCOPE)
 
   # utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${TRILINOS_MODULES}")
 

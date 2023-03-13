@@ -41,16 +41,13 @@ set(UTOPIA_ENABLE_CPP11 ON)
 
 # core modules
 set(UTOPIA_MODULES
-    apps
-    benchmarks
     interoperability
     backend
     solvers
     differentiable
     core
     ui
-    utils
-    tests)
+    utils)
 
 foreach(MODULE ${UTOPIA_MODULES})
   add_subdirectory("${MODULE}")
@@ -88,12 +85,12 @@ target_include_directories(
          $<INSTALL_INTERFACE:include>)
 
 
-message(STATUS "${UTOPIA_DEP_INCLUDES}")
+# message(STATUS "${UTOPIA_DEP_INCLUDES}")
 target_include_directories(utopia SYSTEM PUBLIC ${UTOPIA_DEP_INCLUDES})
-message("UTOPIA_DEP_INCLUDES: ${UTOPIA_DEP_INCLUDES}")
+target_link_libraries(utopia PUBLIC ${UTOPIA_DEP_LIBRARIES})
+# message("UTOPIA_DEP_INCLUDES: ${UTOPIA_DEP_INCLUDES}")
 # message("UTOPIA_DEP_LIBRARIES: ${UTOPIA_DEP_LIBRARIES}")
 
-target_link_libraries(utopia PUBLIC ${UTOPIA_DEP_LIBRARIES})
 
 # ##############################################################################
 # ##############################################################################
@@ -101,10 +98,10 @@ target_link_libraries(utopia PUBLIC ${UTOPIA_DEP_LIBRARIES})
 # INSTALL
 
 # apps suite
-add_executable(utopia_exec main.cpp)
-include(apps/apps.cmake)
-# utopia_link_default_targets(utopia_exec)
-target_link_libraries(utopia_exec PUBLIC utopia)
+# add_executable(utopia_exec main.cpp)
+# # utopia_link_default_targets(utopia_exec)
+# target_link_libraries(utopia_exec utopia)
+# include(apps/apps.cmake)
 
 
 # message(STATUS "${UTOPIA_HEADERS}")
