@@ -1343,6 +1343,35 @@ namespace utopia {
             utopia_test_assert(approxeq(nm, std::sqrt(1. * size(m).get(0))));
         }
 
+#ifdef UTOPIA_WITH_TRILINOS_BELOS
+        void trilinos_belos() {
+            BelosSolver<TpetraMatrixd, TpetraVectord> solver("GMRES");
+            solver.set_preconditioner("CHEBYSHEV");
+
+            InputParameters in;
+            in.set("rtol", 1e-6);
+            in.set("max_it", 500);
+            in.set("verbose", false);
+            solver.read(in);
+
+            Poisson1D<TpetraMatrixd, TpetraVectord> fun(10);
+            TpetraVectord x = fun.initial_guess();
+            TpetraVectord g;
+            TpetraMatrixd A;
+
+            fun.gradient(x, g);
+            fun.hessian(x, A);
+
+            g *= 0.0001;
+
+            double diff0 = norm2(g - A * x);
+            solver.solve(A, g, x);
+            double diff = norm2(g - A * x);
+
+            utopia_test_assert(approxeq(diff / diff0, 0., 1e-6));
+        }
+#endif  // UTOPIA_WITH_TRILINOS_BELOS
+
 #ifdef UTOPIA_WITH_TRILINOS_AMESOS2
         void trilinos_amesos2() {
             Amesos2Solver<TpetraMatrixd, TpetraVectord> solver;
@@ -1562,6 +1591,10 @@ namespace utopia {
             UTOPIA_RUN_TEST(trilinos_swap);
             UTOPIA_RUN_TEST(trilinos_copy_null);
             UTOPIA_RUN_TEST(trilinos_test_read);
+
+#ifdef UTOPIA_WITH_TRILINOS_BELOS
+            UTOPIA_RUN_TEST(trilinos_belos);
+#endif  // UTOPIA_WITH_TRILINOS_BELOS
 
 #ifdef UTOPIA_WITH_TRILINOS_AMESOS2
             UTOPIA_RUN_TEST(trilinos_amesos2);

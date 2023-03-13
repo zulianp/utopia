@@ -1,6 +1,7 @@
 #ifndef UTOPIA_PETSC_KSP_HPP
 #define UTOPIA_PETSC_KSP_HPP
 
+#include "utopia_BackendPreconditionedSolver.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_Input.hpp"
 #include "utopia_PreconditionedSolver.hpp"
@@ -43,7 +44,11 @@ namespace utopia {
     class Traits<KSPSolver<Matrix, Vector, Backend>> : public Traits<Matrix> {};
 
     template <typename Matrix, typename Vector>
-    class KSPSolver<Matrix, Vector, PETSC> : public PreconditionedSolver<Matrix, Vector> {
+    class KSPSolver<Matrix, Vector, PETSC> : public PreconditionedSolver<Matrix, Vector>,
+                                             public BackendPreconditionedSolver {
+        using PreconditionerSide = BackendPreconditionedSolver::PreconditionerSide;
+        using PreconditionerType = BackendPreconditionedSolver::PreconditionerType;
+
     public:
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
@@ -56,8 +61,6 @@ namespace utopia {
         class Impl;
 
         KSPSolver();
-
-        KSPSolver(std::unique_ptr<Impl> &&w);
 
         void wrap(KSP &ksp);
 
@@ -186,6 +189,9 @@ namespace utopia {
         void print_usage(std::ostream &os = std::cout) const override;
 
         void factor_set_pivot_in_blocks(const bool val);
+
+        void set_preconditioner(PreconditionerType pc_type,
+                                PreconditionerSide pc_side = PreconditionerSide::INVALID) override;
 
     protected:
         std::unique_ptr<Impl> ksp_;

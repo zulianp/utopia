@@ -89,6 +89,8 @@ namespace utopia {
         }
 
         PreconditionedSolver() : PreconditionedSolverInterface(), IterativeSolver() {}
+
+        PreconditionedSolver(PreconditionedSolver &&other) = delete;
     };
 }  // namespace utopia
 

@@ -60,15 +60,21 @@ namespace utopia {
 
     template <typename Matrix, typename Vector>
     BelosSolver<Matrix, Vector, TRILINOS>::BelosSolver(const BelosSolver &other)
-        : PreconditionedSolverInterface<Vector>(other),
-          PreconditionedSolver(other),
+        : PreconditionedSolver(other),
+          BackendPreconditionedSolver(other),
           solver_type_(other.solver_type_),
           solver_params_(other.solver_params_),
           impl_(utopia::make_unique<Impl>(*other.impl_)) {}
 
     template <typename Matrix, typename Vector>
     BelosSolver<Matrix, Vector, TRILINOS>::BelosSolver(const std::string &type, std::initializer_list<ParamKey> params)
-        : solver_type_(type), solver_params_(params), impl_(utopia::make_unique<Impl>()) {}
+        : BackendPreconditionedSolver({{PreconditionerType::CHEBYSHEV, "Chebyshev"},
+                                       {PreconditionerType::ILUT, "ILUT"},
+                                       {PreconditionerType::JACOBI, "Jacobi"},
+                                       {PreconditionerType::MULTIGRID, "MueLu"}}),
+          solver_type_(type),
+          solver_params_(params),
+          impl_(utopia::make_unique<Impl>()) {}
 
     template <typename Matrix, typename Vector>
     BelosSolver<Matrix, Vector, TRILINOS>::~BelosSolver() {}
@@ -107,6 +113,11 @@ namespace utopia {
             this->print_param_usage(
                 os, params_[param].name, params_[param].type, params_[param].description, params_[param].default_value);
         }
+    }
+
+    template <typename Matrix, typename Vector>
+    BelosSolver<Matrix, Vector, TRILINOS> *BelosSolver<Matrix, Vector, TRILINOS>::clone() const {
+        return new BelosSolver(*this);
     }
 
     template <typename Matrix, typename Vector>
@@ -169,24 +180,19 @@ namespace utopia {
     }
 
     template <typename Matrix, typename Vector>
-    void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner(const std::string &pc_type,
-                                                                   const std::string &pc_side) {
-        if (pc_type.empty()) {
+    void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner(PreconditionerType pc_type,
+                                                                   PreconditionerSide pc_side) {
+        if (pc_type == PreconditionerType::NONE) {
             enable_pc_ = false;
             enable_direct_pc_ = false;
+        } else if (pc_type == PreconditionerType::MULTIGRID) {
+            enable_direct_pc_ = false;
         } else {
-            std::string pc_type_lc(pc_type);
-            std::transform(
-                pc_type.begin(), pc_type.end(), pc_type_lc.begin(), [](unsigned char c) { return std::tolower(c); });
-            if (pc_type_lc == "muelu") {
-                enable_direct_pc_ = false;
-            } else {
-                direct_pc_type_ = pc_type;
-                enable_direct_pc_ = true;
-            }
-            pc_side_ = pc_side;
-            enable_pc_ = true;
+            direct_pc_type_ = pc_type;
+            enable_direct_pc_ = true;
         }
+        pc_side_ = pc_side;
+        enable_pc_ = true;
     }
 
     template <typename Matrix, typename Vector>
@@ -194,11 +200,12 @@ namespace utopia {
         auto pc = Teuchos::RCP<typename Impl::OperatorType>();
         if (enable_direct_pc_) {
 #ifdef UTOPIA_WITH_TRILINOS_IFPACK2
+            const auto pc_type = get_backend_preconditioner_name(direct_pc_type_);
             const int solver_verbosity = impl_->param_list->get("Verbosity", Belos::Errors + Belos::Warnings);
-            auto pc_params = Teuchos::sublist(impl_->param_list, direct_pc_type_, false);
+            auto pc_params = Teuchos::sublist(impl_->param_list, pc_type, false);
             pc_params->set("Verbosity", solver_verbosity);
             Teuchos::RCP<typename Impl::IfPack2PrecType> direct_pc =
-                Ifpack2::Factory::create<typename Impl::CrsMatrixType>(direct_pc_type_, raw_type(*op));
+                Ifpack2::Factory::create<typename Impl::CrsMatrixType>(pc_type, raw_type(*op));
             direct_pc->setParameters(*pc_params);
             direct_pc->initialize();
             direct_pc->compute();
@@ -222,10 +229,7 @@ namespace utopia {
 #endif  // UTOPIA_WITH_TRILINOS_MUELU
         }
         if (!pc.is_null()) {
-            std::string pc_side_lc(pc_side_);
-            std::transform(
-                pc_side_.begin(), pc_side_.end(), pc_side_lc.begin(), [](unsigned char c) { return std::tolower(c); });
-            if (pc_side_lc == "left") {
+            if (pc_side_ == PreconditionerSide::LEFT) {
                 impl_->linear_problem->setLeftPrec(pc);
             } else {
                 impl_->linear_problem->setRightPrec(pc);
