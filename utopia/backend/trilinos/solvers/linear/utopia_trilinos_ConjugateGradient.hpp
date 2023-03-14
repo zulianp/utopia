@@ -35,7 +35,9 @@ namespace utopia {
         static constexpr char solver_type[] = "Block CG";
         static constexpr std::initializer_list<ParamKey> solver_params_ = {ParamKey::BLOCK_SIZE,
                                                                            ParamKey::USE_SINGLE_RED,
-                                                                           ParamKey::ORTHOGONALIZATION};
+                                                                           ParamKey::ORTHOGONALIZATION,
+                                                                           ParamKey::PC_SIDE,
+                                                                           ParamKey::PC_TYPE};
     };
 }  // namespace utopia
 

@@ -784,7 +784,14 @@ namespace utopia {
     // FIXME defaults to PETSC_COMM_WORLD
     template <typename Matrix, typename Vector>
     KSPSolver<Matrix, Vector, PETSC>::KSPSolver()
-        : BackendPreconditionedSolver({{PreconditionerType::JACOBI, "Jacobi"}}),
+        : BackendPreconditionedSolver({{PreconditionerType::ASM, PCASM},
+                                       {PreconditionerType::BJACOBI, PCBJACOBI},
+                                       {PreconditionerType::HYPRE, PCHYPRE},
+                                       {PreconditionerType::ILU, PCILU},
+                                       {PreconditionerType::JACOBI, PCJACOBI},
+                                       {PreconditionerType::LU, PCLU},
+                                       {PreconditionerType::REDUNDANT, PCREDUNDANT},
+                                       {PreconditionerType::SOR, PCSOR}}),
           ksp_(utopia::make_unique<Impl>(PETSC_COMM_WORLD)) {
         ksp_type(KSPBCGS);
         pc_type(PCJACOBI);
@@ -1132,10 +1139,16 @@ namespace utopia {
     }
 
     template <typename Matrix, typename Vector>
+    std::string KSPSolver<Matrix, Vector, PETSC>::get_preconditioner_name() const {
+        assert(false && "Not implemented");
+        return "";
+    }
+
+    template <typename Matrix, typename Vector>
     void KSPSolver<Matrix, Vector, PETSC>::set_preconditioner(PreconditionerType pc_type, PreconditionerSide pc_side) {
         assert(pc_side == PreconditionerSide::INVALID);  // argument not supported
         const auto &petsc_pc_type = get_backend_preconditioner_name(pc_type);
-        this->pc_type(petsc_pc_type);
+        ksp_->pc_type(petsc_pc_type);
     }
 }  // namespace utopia
 

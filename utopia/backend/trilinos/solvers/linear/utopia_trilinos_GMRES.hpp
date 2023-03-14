@@ -34,7 +34,9 @@ namespace utopia {
         static constexpr std::initializer_list<ParamKey> solver_params_ = {ParamKey::BLOCK_SIZE,
                                                                            ParamKey::MAX_RESTARTS,
                                                                            ParamKey::NUM_BLOCKS,
-                                                                           ParamKey::ORTHOGONALIZATION};
+                                                                           ParamKey::ORTHOGONALIZATION,
+                                                                           ParamKey::PC_SIDE,
+                                                                           ParamKey::PC_TYPE};
     };
 }  // namespace utopia
 

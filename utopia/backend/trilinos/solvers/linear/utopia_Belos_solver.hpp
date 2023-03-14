@@ -36,6 +36,8 @@ namespace utopia {
                 NUM_BLOCKS,
                 OUTPUT_FREQ,
                 ORTHOGONALIZATION,
+                PC_SIDE,
+                PC_TYPE,
                 USE_SINGLE_RED,
                 NUM_PARAMS
             };
@@ -64,6 +66,7 @@ namespace utopia {
         BelosSolver *clone() const override;
 
         void read(Input &in) override;
+        std::string get_preconditioner_name() const override;
         void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) override;
         void set_preconditioner(PreconditionerType pc_type, PreconditionerSide pc_side) override;
         void set_preconditioner(const std::string &pc_type, const std::string &pc_side = "right") {
@@ -93,6 +96,8 @@ namespace utopia {
              "string",
              "The desired orthogonalization: DGKS ,ICGS, and IMGS",
              default_orthogonalization_},
+            {"pc_side", "-", "string", "Apply preconditioner to left or right side", "-"},
+            {"pc_type", "-", "string", "Configure type of preconditioner to use with solver", "-"},
             {"use_single_red",
              "Use Single Reduction",
              "bool",
