@@ -375,7 +375,7 @@ namespace utopia {
     bool PetscVector::read_raw(MPI_Comm comm, const std::string &path) {
         double *data;
         ptrdiff_t nlocal, nglobal;
-        if (array_read(comm, path.c_str(), MPI_DOUBLE, (void **)&data, &nlocal, &nglobal)) {
+        if (array_create_from_file(comm, path.c_str(), MPI_DOUBLE, (void **)&data, &nlocal, &nglobal)) {
             return false;
         }
 

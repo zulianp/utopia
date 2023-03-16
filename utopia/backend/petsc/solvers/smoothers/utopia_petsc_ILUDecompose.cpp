@@ -156,7 +156,8 @@ namespace utopia {
         CRSMatrix<ScalarView, IndexView, 1> crs(row_ptr, colidx, values, n);
         convert_split_diag_update(crs, out, diag);
     }
-
+    template void crs_block_matrix<1>(const PetscMatrix &,
+                                      CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 1> &);
     template void crs_block_matrix<2>(const PetscMatrix &,
                                       CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 2> &);
     template void crs_block_matrix<3>(const PetscMatrix &,

@@ -1,9 +1,15 @@
 #include "utopia_Base.hpp"
+#include "utopia_InputParameters.hpp"
+#include "utopia_polymorphic_LinearSolver.hpp"
 
 #ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc.hpp"
+#include "utopia_petsc_BDDLinearSolver.hpp"
+#include "utopia_petsc_LinearSolverFactory.hpp"
+
 using Matrix_t = utopia::PetscMatrix;
 using Solver_t = utopia::KSPSolver<utopia::PetscMatrix, utopia::PetscVector>;
+// using Solver_t = utopia::BDDLinearSolver<utopia::PetscMatrix, utopia::PetscVector>;
 #else
 #ifdef UTOPIA_WITH_TRILINOS
 using Matrix_t = utopia::TpetraMatrixd;
@@ -35,6 +41,10 @@ extern "C" {
 #include "isolver_lsolve.h"
 
 int ISOLVER_EXPORT isolver_lsolve_init(isolver_lsolve_t *info) {
+#ifdef UTOPIA_WITH_PETSC
+    PetscInitializeNoArguments();
+#endif  // UTOPIA_WITH_PETSC
+
     auto solver = new Solver_t();
     info->private_data = (void *)solver;
 
@@ -42,8 +52,12 @@ int ISOLVER_EXPORT isolver_lsolve_init(isolver_lsolve_t *info) {
     UTOPIA_READ_ENV(UTOPIA_LINEAR_SOLVER_CONFIG, );
 
     if (UTOPIA_LINEAR_SOLVER_CONFIG) {
+        printf("UTOPIA_LINEAR_SOLVER_CONFIG=%s\n", UTOPIA_LINEAR_SOLVER_CONFIG);
         solver->import(UTOPIA_LINEAR_SOLVER_CONFIG);
     }
+    // else {
+    //     utopia::param_list(utopia::param("type", "bdd"), utopia::param("num_blocks", 8));
+    // }
 
     return 0;
 }
@@ -99,31 +113,44 @@ int ISOLVER_EXPORT isolver_lsolve_apply(const isolver_lsolve_t *info,
 
 int ISOLVER_EXPORT isolver_lsolve_set_max_iterations(const isolver_lsolve_t *info, const int max_it) {
     auto solver = (Solver_t *)info->private_data;
-    solver->max_it(max_it);
+
+    auto p = utopia::param_list(utopia::param("max_it", max_it));
+    // solver->max_it(max_it);
+    solver->read(p);
     return 0;
 }
 
 int ISOLVER_EXPORT isolver_lsolve_set_atol(const isolver_lsolve_t *info, const isolver_scalar_t atol) {
     auto solver = (Solver_t *)info->private_data;
-    solver->atol(atol);
+    // solver->atol(atol);
+    auto p = utopia::param_list(utopia::param("atol", atol));
+    // solver->max_it(max_it);
+    solver->read(p);
     return 0;
 }
 
 int ISOLVER_EXPORT isolver_lsolve_set_stol(const isolver_lsolve_t *info, const isolver_scalar_t stol) {
     auto solver = (Solver_t *)info->private_data;
-    solver->stol(stol);
+    auto p = utopia::param_list(utopia::param("stol", stol));
+    // solver->stol(stol);
+    solver->read(p);
     return 0;
 }
 
 int ISOLVER_EXPORT isolver_lsolve_set_rtol(const isolver_lsolve_t *info, const isolver_scalar_t rtol) {
     auto solver = (Solver_t *)info->private_data;
-    solver->rtol(rtol);
+    auto p = utopia::param_list(utopia::param("rtol", rtol));
+    // solver->rtol(rtol);
+    solver->read(p);
     return 0;
 }
 
 int ISOLVER_EXPORT isolver_lsolve_set_verbosity(const isolver_lsolve_t *info, const int verbosity_level) {
     auto solver = (Solver_t *)info->private_data;
-    solver->verbose(verbosity_level);
+
+    auto p = utopia::param_list(utopia::param("verbose", verbosity_level > 0));
+    // solver->verbose(verbosity_level);
+    solver->read(p);
     return 0;
 }
 
@@ -131,6 +158,10 @@ int ISOLVER_EXPORT isolver_lsolve_destroy(isolver_lsolve_t *info) {
     auto solver = (Solver_t *)info->private_data;
     delete solver;
     info->private_data = nullptr;
+
+#ifdef UTOPIA_WITH_PETSC
+    PetscFinalize();
+#endif  // UTOPIA_WITH_PETSC
     return 0;
 }
 }
