@@ -14,6 +14,15 @@ namespace utopia {
     template <class FunctionSpace>
     class Field;
 
+    template <class FunctionSpace>
+    class FEFunctionFactory;
+
+    template <class FunctionSpace>
+    class ContactFactory;
+
+    template <class FunctionSpace>
+    class Environment;
+
 }  // namespace utopia
 
 #endif  // UTOPIA_FE_CORE_FORWARD_DECLARATIONS_HPP

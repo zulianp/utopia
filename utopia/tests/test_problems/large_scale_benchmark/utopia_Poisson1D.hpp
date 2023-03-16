@@ -15,6 +15,8 @@ namespace utopia {
         using SizeType = typename Traits::SizeType;
         using Comm = typename Traits::Communicator;
 
+        bool is_hessian_constant() const override { return true; }
+
         Poisson1D(const SizeType &n, const SizeType &problem_type = 2)
             : pi_(3.14159265358979323846), problem_type_(problem_type), n_(n) {
             if (problem_type_ == 1) {
@@ -87,12 +89,6 @@ namespace utopia {
         Vector initial_guess() const override { return x0_; }
 
         const Vector &exact_sol() const override { return exact_sol_; }
-
-        Scalar min_function_value() const override {
-            // depends on the solution to which we converged to
-            utopia::out() << "Poisson1D:: min_function_value :: wrong.... \n";
-            return -1.012;
-        }
 
         std::string name() const override { return "Poisson1D"; }
 

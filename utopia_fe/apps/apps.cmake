@@ -6,24 +6,27 @@ set(APPS_MODULES "")
 
 set(UTOPIA_APPS_DIR ${CMAKE_SOURCE_DIR}/apps)
 
-list(APPEND APPS_MODULES generic)
+list(APPEND APPS_MODULES generic generic/papers/bddsqp)
 
-if(UTOPIA_ENABLE_LIBMESH)
+if(UTOPIA_ENABLE_LIBMESH AND UTOPIA_ENABLE_KOKKOS AND UTOPIA_ENABLE_LIBMESH_KOKKOS)
     list(APPEND APPS_MODULES libmesh utopia_fe)
 endif()
 
 if(UTOPIA_ENABLE_STK AND UTOPIA_ENABLE_INTREPID2)
-    list(APPEND APPS_MODULES stk intrepid2)
+    list(APPEND APPS_MODULES stk intrepid2 stk/papers/bddsqp)
 endif()
 
 if(UTOPIA_ENABLE_MARS)
-    list(APPEND APPS_MODULES mars)
+    list(APPEND APPS_MODULES mars mars/papers/bddsqp)
 endif()
 
 if(UTOPIA_ENABLE_PETSC)
     list(APPEND APPS_MODULES petsc)
 endif()
 
+if(UTOPIA_ENABLE_KOKKOS)
+    list(APPEND APPS_MODULES kokkos)
+endif()
 
 find_project_files(${UTOPIA_APPS_DIR} "${APPS_MODULES}" LOCAL_HEADERS
                    LOCAL_SOURCES)

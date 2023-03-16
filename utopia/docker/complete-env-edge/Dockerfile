@@ -50,6 +50,7 @@ ENV PETSC_DIR $UTOPIA_DEPENDENCIES_DIR/petsc
 ############################## TRILINOS #####################################
 #############################################################################
 
+RUN apk add netcdf-dev
 RUN cd /utopia_cloned/utopia/bin && make trilinos VERBOSE=1
 ENV TRILINOS_DIR $UTOPIA_DEPENDENCIES_DIR/trilinos
 

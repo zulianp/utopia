@@ -1,32 +1,53 @@
+#include "utopia_Main.hpp"
 
-#include <iostream>
-#include <memory>
-#include "utopia_fe.hpp"
+#include "utopia.hpp"
 
-#include "utopia_libmesh_old.hpp"
+#include "utopia_SimpleNewton.hpp"
 
-int main(int argc, char *argv[]) {
-    using namespace libMesh;
-    using namespace std;
-    using namespace utopia;
+#include "utopia_ImplicitEulerIntegrator.hpp"
+#include "utopia_NewmarkIntegrator.hpp"
+#include "utopia_SemiGeometricMultigridNew.hpp"
 
-    LibMeshInit init(argc, argv);
+#include "utopia_libmesh.hpp"
+// #include "utopia_libmesh_OmniAssembler.hpp"
 
-    const int n_master = 10;
-    const int n_slave = 20;
+#include "utopia_moonolith_libmesh_Contact.hpp"
+#include "utopia_moonolith_libmesh_FETransfer.hpp"
+#include "utopia_moonolith_libmesh_Obstacle.hpp"
 
-    auto mesh_master = make_shared<DistributedMesh>(init.comm());
-    MeshTools::Generation::build_square(*mesh_master, n_master, n_master, 0, 1, 0, 1, QUAD8);
+#include "utopia_Main.hpp"
 
-    //////////////////////////////////////////////////
-    //////////////////////////////////////////////////
+#include "utopia_libmesh_Library.hpp"
 
-    auto mesh_slave = make_shared<DistributedMesh>(init.comm());
-    MeshTools::Generation::build_square(*mesh_slave, n_slave, n_slave, 0.3, 0.8, 0.3, 0.8, QUAD8);
+#include "utopia_ConjugateGradient.hpp"
 
-    UVector d = local_zeros(10);
+#include "../apps/generic/utopia_NLSolveApp.hpp"
 
-    disp(d);
+namespace utopia {
+    template class NewmarkIntegrator<utopia::libmesh::FunctionSpace>;
+    template class ImplicitEulerIntegrator<utopia::libmesh::FunctionSpace>;
+}  // namespace utopia
 
-    return EXIT_SUCCESS;
+void libmesh_nlsolve(utopia::Input &in) {
+    using Matrix_t = utopia::Traits<utopia::libmesh::FunctionSpace>::Matrix;
+    using Vector_t = utopia::Traits<utopia::libmesh::FunctionSpace>::Vector;
+
+    // utopia::NLSolveApp<utopia::libmesh::FunctionSpace> app;
+    // app.read(in);
+
+    // if (app.valid()) {
+    //     app.run();
+    // } else {
+    //     utopia::err() << "libmesh_nlsolve: invalid app setup\n";
+    // }
+
+    utopia::ConjugateGradient<Matrix_t, Vector_t> cg;
+    cg.import("ciao.yaml");
+}
+
+UTOPIA_REGISTER_APP(libmesh_nlsolve);
+
+int main(const int argc, char *argv[]) {
+    utopia::Utopia::instance().add_library(utopia::make_unique<utopia::LibMeshLibrary>());
+    return UTOPIA_MAIN(argc, argv);
 }

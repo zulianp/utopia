@@ -1,9 +1,9 @@
 #ifndef UTOPIA_ANALYTIC_OBSTACLE_HPP
 #define UTOPIA_ANALYTIC_OBSTACLE_HPP
 
+#include "utopia_ContactInterface.hpp"
 #include "utopia_Field.hpp"
 #include "utopia_GradientField.hpp"
-#include "utopia_IObstacle.hpp"
 #include "utopia_Transfer.hpp"
 
 #include <memory>
@@ -11,9 +11,9 @@
 namespace utopia {
 
     template <class FunctionSpace>
-    class AnalyticObstacle : public IObstacle<FunctionSpace> {
+    class AnalyticObstacle : public ContactInterface<FunctionSpace> {
     public:
-        using Super = utopia::IObstacle<FunctionSpace>;
+        using Super = utopia::ContactInterface<FunctionSpace>;
         using Vector = typename Traits<FunctionSpace>::Vector;
         using Matrix = typename Traits<FunctionSpace>::Matrix;
         using Scalar = typename Traits<FunctionSpace>::Scalar;
@@ -32,6 +32,8 @@ namespace utopia {
         void transform(const Matrix &in, Matrix &out) override;
         void transform(const Vector &in, Vector &out) override;
         void inverse_transform(const Vector &in, Vector &out) override;
+
+        std::shared_ptr<Matrix> orthogonal_transformation() override;
 
         const Vector &gap() const override;
         const Vector &is_contact() const override;

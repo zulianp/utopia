@@ -11,7 +11,6 @@
 #include "utopia_Backtracking.hpp"
 #include "utopia_BratuFE.hpp"
 #include "utopia_ConjugateGradient.hpp"
-#include "utopia_Core.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_GradInterpolate.hpp"
@@ -81,7 +80,8 @@ namespace utopia {
 
               shrinking_factor_(0.5),
               pressure0_(0.0),
-              pressure_increase_factor_(0.0)
+              pressure_increase_factor_(0.0),
+              increase_factor_(2.0)
 
         {}
 
@@ -99,6 +99,14 @@ namespace utopia {
             in.get("pressure_increase_factor", pressure_increase_factor_);
             in.get("use_pressure", use_pressure_);
             in.get("use_constant_pressure", use_constant_pressure_);
+
+            // E.P dynamic time stepping with fracture energy
+            in.get("frac_energy_max_change", frac_energy_max_change_);
+            in.get("frac_energy_min_change", frac_energy_min_change_);
+            in.get("dt_min", dt_min_);
+            in.get("dt_max", dt_max_);
+            in.get("increase_factor", increase_factor_);
+
         }
 
         virtual void run() = 0;
@@ -123,6 +131,33 @@ namespace utopia {
             }
         }
 
+        //calculates global fracture energy, and compares it to the previous time step. Only returns true if max change ,
+        virtual bool must_reduce_time_step(Scalar &frac_energy) {
+
+            if (this->frac_energy_old_ == 0.0)
+                return false; //dont check on the first time step
+
+            bool repeat = frac_energy/this->frac_energy_old_ > this->frac_energy_max_change_;
+
+            if ( mpi_world_rank() == 0){
+                utopia::out() << "-----------------------------------------------------"
+                                 "----------------- \n";
+                utopia::out() << "Fracture Energy -> New: " << frac_energy
+                              << "\n                -> Old: " << this->frac_energy_old_
+                              << "\nmeasured change ->  " << frac_energy/this->frac_energy_old_
+                              << "\nprescribed change-> " << this->frac_energy_max_change_;
+                utopia::out() << "\n-----------------------------------------------------"
+                                 "----------------- \n";
+            }
+
+            //setting criteria for increasing time step ( a minimum increase in frac energy )
+            this->increase_next_time_step_ = (frac_energy/this->frac_energy_old_ < this->frac_energy_min_change_ &&
+                                              frac_energy/this->frac_energy_old_ > 1.0 );
+
+            return repeat;
+        }
+
+
     protected:
         virtual void write_to_file(FunctionSpace &space, const Scalar &time) {
             space.write(output_path_ + "_" + std::to_string(time) + ".vtr", solution_);
@@ -144,8 +179,15 @@ namespace utopia {
         bool use_pressure_{true};
         bool use_constant_pressure_{false};
 
+        Scalar frac_energy_old_{0.0};
+        Scalar frac_energy_max_change_{1e10};
+        Scalar dt_min_{0}, dt_max_{1e3};
+        Scalar frac_energy_min_change_{1e10};
+        bool   increase_next_time_step_{false};
+        Scalar increase_factor_;
+
         Vector solution_;
-        Vector lb_;  // this is quite particular for PF-frac
+        Vector lb_;  // this is quite particular for PF-frac        E.P Question: What is this?
         Vector ub_;  // this is quite particular for PF-frac
     };
 

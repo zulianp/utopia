@@ -28,6 +28,8 @@ namespace utopia {
             auto offset = range(v).begin();
             Kokkos::parallel_for(
                 name, k_v.extent(0), KOKKOS_LAMBDA(const int i) { k_v(i, 0) = fun(offset + i); });
+
+            Kokkos::fence();
         }
 
         template <class Fun>
@@ -38,6 +40,8 @@ namespace utopia {
             auto offset = range(v).begin();
             Kokkos::parallel_for(
                 name, k_v.extent(0), KOKKOS_LAMBDA(const int i) { fun(offset + i, k_v(i, 0)); });
+
+            Kokkos::fence();
         }
 
         template <class Fun>
@@ -48,6 +52,8 @@ namespace utopia {
             auto offset = range(v).begin();
             Kokkos::parallel_for(
                 name, k_v.extent(0), KOKKOS_LAMBDA(const int i) { k_v(i, 0) = fun(offset + i, k_v(i, 0)); });
+
+            Kokkos::fence();
         }
     };
 
@@ -85,6 +91,8 @@ namespace utopia {
                         val = fun(row_map.getGlobalElement(row_ind), col_map.getGlobalElement(col_ind));
                     });
                 });
+
+            Kokkos::fence();
         }
 
         template <class Fun>
@@ -118,6 +126,8 @@ namespace utopia {
                         fun(row_map.getGlobalElement(row_ind), col_map.getGlobalElement(col_ind), val);
                     });
                 });
+
+            Kokkos::fence();
         }
 
         template <class Fun>
@@ -151,6 +161,8 @@ namespace utopia {
                         val = fun(row_map.getGlobalElement(row_ind), col_map.getGlobalElement(col_ind), val);
                     });
                 });
+
+            Kokkos::fence();
         }
     };
 
@@ -181,6 +193,8 @@ namespace utopia {
                     val = fun(val);
                 });
             });
+
+        Kokkos::fence();
     }
 
 }  // namespace utopia

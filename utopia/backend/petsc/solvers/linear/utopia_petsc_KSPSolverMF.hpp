@@ -17,6 +17,8 @@ namespace utopia {
     class KSP_MF<Matrix, Vector, PETSC> : public OperatorBasedLinearSolver<Matrix, Vector> {
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
+        using Super = utopia::OperatorBasedLinearSolver<Matrix, Vector>;
+        using Super::solve;
 
         typedef utopia::OperatorBasedLinearSolver<Matrix, Vector> OperatorBasedLinearSolver;
 
@@ -27,7 +29,7 @@ namespace utopia {
 
     public:
         KSP_MF() : OperatorBasedLinearSolver() {
-            ksp_.pc_type("none");
+            ksp_.pc_type("bjacobi");
             ksp_.verbose(true);
             KSPSetComputeSingularValues(ksp_.implementation(), PETSC_TRUE);
         }
@@ -38,18 +40,12 @@ namespace utopia {
             ksp_.read(in);
         }
 
-        bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) {
+        bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override {
             update(A);
             return apply(b, x);
         }
 
-        Scalar get_condition_number() {
-            PetscReal emax, emin;
-            KSPComputeExtremeSingularValues(ksp_.implementation(), &emax, &emin);
-            return emax / emin;
-        }
-
-        void update(const Operator<Vector> &A) {
+        void update(const Operator<Vector> &A) override {
             ksp_.handle_reset(A.comm());
             ksp_.set_monitor_options(ksp_.implementation());
 
@@ -59,8 +55,8 @@ namespace utopia {
             MatCreateShell(A.comm().get(),
                            A.local_size().get(0),
                            A.local_size().get(1),
-                           PETSC_DECIDE,
-                           PETSC_DECIDE,
+                           A.size().get(0),
+                           A.size().get(1),
                            A_nonconst_ref,
                            &op_mat);
 
@@ -79,6 +75,12 @@ namespace utopia {
             return flg;
         }
 
+        Scalar get_condition_number() {
+            PetscReal emax, emin;
+            KSPComputeExtremeSingularValues(ksp_.implementation(), &emax, &emin);
+            return emax / emin;
+        }
+
         void print_usage(std::ostream &os) const override {
             OperatorBasedLinearSolver::print_usage(os);
             ksp_.print_usage();
@@ -88,7 +90,9 @@ namespace utopia {
 
         void update(const std::shared_ptr<const Matrix> &op) override { ksp_.update(op); }
 
-        void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) { ksp_.set_preconditioner(precond); }
+        void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) override {
+            ksp_.set_preconditioner(precond);
+        }
 
         // necessary, as ksp_ is resetting options with every apply...
         void atol(const Scalar &atol_in) override { ksp_.atol(atol_in); }
@@ -100,7 +104,7 @@ namespace utopia {
         void pc_type(const std::string &pc_type_flg) { ksp_.pc_type(pc_type_flg); }
         void ksp_type(const std::string &ksp_type_flg) { ksp_.ksp_type(ksp_type_flg); }
         void solver_package(const std::string &package_flg) { ksp_.solver_package(package_flg); }
-        bool smooth(const Vector &rhs, Vector &x) { return ksp_.smooth(rhs, x); }
+        bool smooth(const Vector &rhs, Vector &x) override { return ksp_.smooth(rhs, x); }
         void set_monitor_options(KSP &ksp) const { ksp_.set_monitor_options(ksp); }
 
     private:

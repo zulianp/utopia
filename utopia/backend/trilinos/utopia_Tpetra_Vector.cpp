@@ -9,6 +9,12 @@
 #include <MatrixMarket_Tpetra.hpp>
 #include <Tpetra_CrsMatrix_decl.hpp>
 
+#include <Trilinos_version.h>
+
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+#include <Tpetra_Access.hpp>
+#endif
+
 #include <Kokkos_Core.hpp>
 
 #include <cmath>
@@ -263,7 +269,7 @@ namespace utopia {
         ghosted_vec_->doImport(*y, importer, Tpetra::INSERT);
     }
 
-    TpetraVector::TpetraVector(const TpetraVector &other) { copy(other); }
+    TpetraVector::TpetraVector(const TpetraVector &other) : comm_(other.comm_) { copy(other); }
 
     void TpetraVector::copy(const TpetraVector &other) {
         if (&other == this) {
@@ -345,6 +351,11 @@ namespace utopia {
         // write_data_ = Teuchos::ArrayRCP<Scalar>();
         free_view();
     }
+
+    // void TpetraVector::axpy(const Scalar &alpha, const Scalar &x) {
+    //     const Scalar shift_value = alpha * x;
+    //     transform_values(UTOPIA_LAMBDA(Scalar v)->Scalar { return v + shift_value; });
+    // }
 
     bool TpetraVector::equals(const TpetraVector &other, const Scalar &tol) const {
         TpetraVector diff = *this;
@@ -464,10 +475,41 @@ namespace utopia {
     }
 
     void TpetraVector::shift(const Scalar &x) {
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+        auto k_res = this->implementation().template getLocalView<ExecutionSpace>(Tpetra::Access::ReadWrite);
+#else
         auto k_res = this->implementation().template getLocalView<ExecutionSpace>();
+#endif
         assert(k_res.extent(0) > 0);
         Kokkos::parallel_for(
             k_res.extent(0), KOKKOS_LAMBDA(const int i) { k_res(i, 0) += x; });
+
+        Kokkos::fence();
+    }
+
+    void TpetraVector::make_view() {
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+        if (!view_ptr_) {
+            if (has_ghosts()) {
+                view_ptr_ = utopia::make_unique<View>(ghosted_vec_->getLocalViewHost(Tpetra::Access::ReadWrite),
+                                                      ghosted_vec_->getMap()->getLocalMap());
+
+            } else {
+                view_ptr_ = utopia::make_unique<View>(vec_->getLocalViewHost(Tpetra::Access::ReadWrite),
+                                                      vec_->getMap()->getLocalMap());
+            }
+        }
+#else
+        if (!view_ptr_) {
+            if (has_ghosts()) {
+                view_ptr_ =
+                    utopia::make_unique<View>(ghosted_vec_->getLocalViewHost(), ghosted_vec_->getMap()->getLocalMap());
+
+            } else {
+                view_ptr_ = utopia::make_unique<View>(vec_->getLocalViewHost(), vec_->getMap()->getLocalMap());
+            }
+        }
+#endif  // (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
     }
 
 }  // namespace utopia

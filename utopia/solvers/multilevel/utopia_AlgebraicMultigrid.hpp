@@ -75,7 +75,7 @@ namespace utopia {
         AlgebraicMultigrid *clone() const override { return new AlgebraicMultigrid(*this); }
 
         AlgebraicMultigrid(const AlgebraicMultigrid &other)
-            : algorithm_(other.algorithm_),
+            : IterativeSolver(other), algorithm_(other.algorithm_),
               agglomerator_(std::shared_ptr<MatrixAgglomerator<Matrix>>(other.agglomerator_->clone())),
               n_levels_(other.n_levels_) {}
 
@@ -150,6 +150,10 @@ namespace utopia {
         void max_it(const SizeType &max_it_in) override {
             Super::max_it(max_it_in);
             algorithm_.max_it(max_it_in);
+        }
+
+        void set_agglomerator(const std::shared_ptr<MatrixAgglomerator<Matrix>> &agglomerator) {
+            agglomerator_ = agglomerator;
         }
 
         AlgebraicMultigrid(const std::shared_ptr<Smoother> &smoother = std::make_shared<ILU>(),

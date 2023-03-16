@@ -17,7 +17,7 @@ if(NOT CYGWIN)
 
         set(PETSC_MPI_BASE_DIR $ENV{MPI_DIR})
         set(MAKE_COMMAND "make")
-
+        
         set(PETSC_CONFIG_ARGS $ENV{PETSC_CONFIG_ARGS})
         set(PETSC_CONFIG_ARGS
             ${PETSC_CONFIG_ARGS}
@@ -36,16 +36,29 @@ if(NOT CYGWIN)
             )
         endif()
 
-        if(BLAS_LIBRARIES)
-            set(PETSC_CONFIG_ARGS
-                ${PETSC_CONFIG_ARGS}
-                --with-blas-lib=${BLAS_LIBRARIES})
-        endif()
 
-        if(LAPACK_LIBRARIES)
-            set(PETSC_CONFIG_ARGS
-                ${PETSC_CONFIG_ARGS}
-                --with-lapack-lib=${LAPACK_LIBRARIES})
+
+        if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin" 
+            AND CMAKE_HOST_SYSTEM_VERSION VERSION_GREATER_EQUAL 20)
+            set(APPLE_GREATER_OR_EQUAL_THAN_BIG_SUR TRUE)
+        endif ()
+
+        if(NOT APPLE_GREATER_OR_EQUAL_THAN_BIG_SUR)
+            if(BLAS_LIBRARIES)
+                message(STATUS "[InstallPetsc.cmake] BLAS_LIBRARIES=${BLAS_LIBRARIES}")
+                set(PETSC_CONFIG_ARGS
+                    ${PETSC_CONFIG_ARGS}
+                    --with-blas-lib=${BLAS_LIBRARIES})
+            endif()
+
+            if(LAPACK_LIBRARIES)
+                message(STATUS "[InstallPetsc.cmake] LAPACK_LIBRARIES=${LAPACK_LIBRARIES}")
+                set(PETSC_CONFIG_ARGS
+                    ${PETSC_CONFIG_ARGS}
+                    --with-lapack-lib=${LAPACK_LIBRARIES})
+            endif()
+        else()
+            message(STATUS "Running on MacOS >= Big Sur, Skipping blas and lapack pointers for PetscInstall.cmake")
         endif()
         # ######################################################################
 

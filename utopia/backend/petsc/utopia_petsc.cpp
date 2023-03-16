@@ -16,7 +16,9 @@
 #include "utopia_SaddlePoint.hpp"
 #include "utopia_SemismoothNewton_impl.hpp"
 #include "utopia_TRBoundsGratton.hpp"
+
 #include "utopia_petsc_Matrix_impl.hpp"
+#include "utopia_petsc_Vector_impl.hpp"
 #include "utopia_petsc_impl.hpp"
 
 #include "utopia_ILU_impl.hpp"

@@ -37,8 +37,10 @@ namespace utopia {
             in.get("atol", atol_);
             in.get("rtol", rtol_);
             in.get("stol", stol_);
-            in.get("max-it", max_it_);
             in.get("verbose", verbose_);
+
+            in.get("max_it", max_it_);
+            in.get_deprecated("max-it", "max_it", max_it_);
         }
 
         void print_usage(std::ostream &os) const override {
@@ -47,7 +49,7 @@ namespace utopia {
             this->print_param_usage(os, "atol", "real", "Absolute tolerance.", std::to_string(atol_));
             this->print_param_usage(os, "rtol", "real", "Relative tolerance.", "1e-9");
             this->print_param_usage(os, "stol", "real", "Minimum step-size.", "1e-11");
-            this->print_param_usage(os, "max-it", "int", "Maximum number of iterations.", "300");
+            this->print_param_usage(os, "max_it", "int", "Maximum number of iterations.", "300");
             this->print_param_usage(os, "verbose", "bool", "Turn on/off verbose.", "false");
         }
 

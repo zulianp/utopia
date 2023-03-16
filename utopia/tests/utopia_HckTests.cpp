@@ -11,6 +11,8 @@
 #include "utopia_For.hpp"
 #include "utopia_Testing.hpp"
 
+#include "utopia_Multilevel.hpp"
+
 namespace utopia {
 
     template <typename Matrix, typename Vector>
@@ -29,7 +31,7 @@ namespace utopia {
             input_params_.set("rtol", 1e-10);
             input_params_.set("stol", 1e-10);
             input_params_.set("verbose", verbose_);
-            input_params_.set("max-it", 50);
+            input_params_.set("max_it", 50);
 
             // RMTR specific parameters
             input_params_.set("max_coarse_it", 2);
@@ -180,7 +182,9 @@ namespace utopia {
             }
 
             auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector>>("stcg", "lu", false);
-            // subproblem->pc_type("bjacobi");
+
+            if (x.comm().size() != 1) subproblem->pc_type("bjacobi");
+
             subproblem->atol(1e-14);
             subproblem->max_it(1000);
 
@@ -879,8 +883,8 @@ namespace utopia {
         auto coarse_dofs = 10;
         auto verbose = false;
 
-        HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
-        HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
+        HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, false).run_petsc();
+        HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, false).run_trilinos();
 
 #ifdef UTOPIA_WITH_TRILINOS
         HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();

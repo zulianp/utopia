@@ -4,6 +4,7 @@
 #include "utopia_FactoryMethod.hpp"
 #include "utopia_LinearSolver.hpp"
 #include "utopia_LinearSolverFactory.hpp"
+#include "utopia_MatrixFreeLinearSolverFactory.hpp"
 #include "utopia_Traits.hpp"
 
 #include "utopia_trilinos_Types.hpp"
@@ -13,6 +14,10 @@
 #include <string>
 
 namespace utopia {
+
+    template <>
+    class MatrixFreeLinearSolverFactory<TpetraVector, TRILINOS>
+        : public BasicMatrixFreeLinearSolverFactory<TpetraVector> {};
 
     template <>
     class LinearSolverFactory<TpetraMatrix, TpetraVector, TRILINOS> {

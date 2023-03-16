@@ -1,24 +1,37 @@
 find_package(LIBMESH)
 
 if(LIBMESH_FOUND)
-
     list(
         APPEND
         UTOPIA_LIBMESH_MODULES
         .
-        old
-        old/multiphysics
-        old/fractures
-        old/wear
-        old/ui
-        old/multigrid
-        old/transfer
-        old/visualization
-        backend/libmesh
-        old/intersection
-        old/contact
-        old/materials
-        old/functions)
+       )
+
+    if(UTOPIA_ENABLE_LIBMESH_LEGACY)
+        list(
+            APPEND
+            UTOPIA_LIBMESH_MODULES
+            legacy
+           )
+    endif()
+
+    if(UTOPIA_ENABLE_LIBMESH_DEPRECATED)
+        list(
+            APPEND
+            UTOPIA_LIBMESH_MODULES
+            deprecated
+            deprecated/multiphysics
+            deprecated/fractures
+            deprecated/wear
+            deprecated/ui
+            deprecated/multigrid
+            deprecated/transfer
+            deprecated/visualization
+            deprecated/intersection
+            deprecated/contact
+            deprecated/materials
+            deprecated/functions)
+    endif()
 
     utopiafe_add_module(utopia_libmesh ${CMAKE_CURRENT_SOURCE_DIR}
                         "${UTOPIA_LIBMESH_MODULES}")
@@ -39,7 +52,7 @@ if(LIBMESH_FOUND)
 
     target_include_directories(
         utopia_libmesh
-        PRIVATE ${PROJECT_SOURCE_DIR}/backend/libmesh/old/rapidxml)
+        PRIVATE ${PROJECT_SOURCE_DIR}/backend/libmesh/deprecated/rapidxml)
 
     set(LIBMESH_INCLUDE_DIRS
         ${LIBMESH_INCLUDE_DIRS}
@@ -52,4 +65,9 @@ if(LIBMESH_FOUND)
     set(UTOPIA_WITH_LIBMESH
         TRUE
         PARENT_SCOPE)
+
+    set(UTOPIA_FE_LIBRARIES
+        ${UTOPIA_FE_LIBRARIES}
+        PARENT_SCOPE)
+
 endif()

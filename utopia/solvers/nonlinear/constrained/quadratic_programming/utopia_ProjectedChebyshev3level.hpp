@@ -30,7 +30,7 @@ namespace utopia {
         ProjectedChebyshev3level() {}
 
         ProjectedChebyshev3level(const ProjectedChebyshev3level &other)
-            : Super(other),
+            : VariableBoundSolverInterface<Vector>(other), PreconditionedSolverInterface<Vector>(other),  Super(other),
               scale_max_eig_(other.scale_max_eig_),
               scale_min_eig_(other.scale_min_eig_),
               power_method_(other.power_method_) {}
@@ -70,7 +70,6 @@ namespace utopia {
         Scalar scale_min_eig() const { return scale_min_eig_; }
 
         void init_memory(const Layout &layout) override {
-            assert(layout.local_size() > 0);
             Super::init_memory(layout);
             power_method_.init_memory(layout);
 

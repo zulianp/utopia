@@ -84,12 +84,12 @@ namespace utopia {
 
             //////////////////////////////////////
 
-            // ConjugateGradient<Matrix_t, Vector_t, HOMEMADE> cg;
-            // cg.apply_gradient_descent_step(true);
+            ConjugateGradient<Matrix_t, Vector_t, HOMEMADE> cg;
+            cg.apply_gradient_descent_step(true);
 
             //////////////////////////////////////
 
-            BiCGStab<Matrix_t, Vector_t, HOMEMADE> cg;
+            // BiCGStab<Matrix_t, Vector_t, HOMEMADE> cg;
 
             //////////////////////////////////////
 
@@ -186,6 +186,32 @@ namespace utopia {
         }
 
         bool solve() {
+            if (!solution_) {
+                solution_ = std::make_shared<Field<FunctionSpace>>("x", function_->space());
+                solution_->zero();
+                // function_->space()->create_field(*solution_); // FIXME
+            }
+
+            // {
+            //     Matrix_t hessian;
+            //     Vector_t grad;
+            //     Vector_t x0;
+
+            //     function_->space()->create_matrix(hessian);
+            //     function_->space()->create_vector(grad);
+            //     function_->space()->create_vector(x0);
+
+            //     function_->space()->apply_constraints(x0);
+
+            //     function_->hessian_and_gradient(x0, hessian, grad);
+
+            //     rename("expected_hessian", hessian);
+            //     rename("expected_grad", grad);
+
+            //     write("load_He.m", hessian);
+            //     write("load_ge.m", grad);
+            // }
+
             if (function_->is_linear() && !function_->is_time_dependent()) {
                 // Tivial problem, lets keep it simple
                 if (use_pseudo_newton_) {
@@ -194,8 +220,7 @@ namespace utopia {
                     return solve_trivial();
                 }
             } else {
-                Vector_t x;
-                function_->create_solution_vector(x);
+                Vector_t &x = solution_->data();
 
                 function_->setup_IVP(x);
 
@@ -207,6 +232,20 @@ namespace utopia {
                     this->status("Timestep: " + std::to_string(n_time_steps++));
 
                     function_->space()->apply_constraints_update(x);
+
+                    {  // If we have a newton solver we can add ad-hoc line-search strategies to it
+                        auto newton = std::dynamic_pointer_cast<Newton_t>(solver_);
+
+                        if (newton) {
+                            auto ls = function_->line_search();
+
+                            if (ls) {
+                                newton->set_line_search_strategy(ls);
+                            }
+                        }
+                    }
+
+                    function_->initial_guess_for_solver(x);
                     if (!solver_->solve(*function_, x)) {
                         error("Solver failed to solve");
                         return false;
@@ -245,12 +284,14 @@ namespace utopia {
         }
 
         void set_matrix_free(const bool val) { matrix_free_ = val; }
+        void set_solution(const std::shared_ptr<Field<FunctionSpace>> &solution) { solution_ = solution; }
 
     private:
         Communicator_t comm_;
         std::shared_ptr<Environment_t> environment_;
         std::shared_ptr<FEFunctionInterface_t> function_;
         std::shared_ptr<NewtonBase_t> solver_;
+        std::shared_ptr<Field<FunctionSpace>> solution_;
         bool verbose_{true};
         bool use_pseudo_newton_{false};
         bool export_rhs_{false};

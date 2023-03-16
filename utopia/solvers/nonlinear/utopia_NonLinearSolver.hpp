@@ -32,9 +32,22 @@ namespace utopia {
             in.get("rtol", rtol_);
             in.get("stol", stol_);
 
-            in.get("max-it", max_it_);
             in.get("verbose", verbose_);
             in.get("time-statistics", time_statistics_);
+
+            in.get("max_it", max_it_);
+            in.get_deprecated("max-it", "max_it", max_it_);
+
+            //E.P Added
+            atol_suff_ = atol_/10.0;                //default initialisation if not defined in yaml file
+            suff_it_   = max_it_ + 1;               //default ...
+            in.get("suff_it", suff_it_);            //actual initilisation if params defined
+            in.get("atol_suff", atol_suff_);
+
+            if (mpi_world_rank() == 0){
+                std::cout << "atol: " << atol_ << "\tmax_it: " << max_it_ << std::endl;
+                std::cout << "suff_tol: " << atol_suff_ << "\tsuff_it: " << suff_it_ << std::endl;
+            }
         }
 
         void print_usage(std::ostream &os) const override {
@@ -154,6 +167,14 @@ namespace utopia {
                 converged = true;
             }
 
+            // E.P Additional Criteria for typical cases when Phase field not propagating
+            // Check sufficiently accurate solution with non-excessive iterations
+            else if ( g_norm < atol_suff_ && it > suff_it_ ){
+                exit_solver(it, ConvergenceReason::CONVERGED_FNORM_ABS);
+                this->solution_status_.reason = ConvergenceReason::CONVERGED_FNORM_ABS;
+                converged = true;
+            }
+
             if (converged) {
                 this->solution_status_.iterates = it;
                 this->solution_status_.gradient_norm = g_norm;
@@ -187,6 +208,10 @@ namespace utopia {
         Scalar atol_; /*!< Absolute tolerance. */
         Scalar rtol_; /*!< Relative tolerance. */
         Scalar stol_; /*!< Step tolerance. */
+
+        //E.P added
+        Scalar   atol_suff_;        /*!< tolerance accepted if we have reached suff_it (converged at an acceptible accuracy). */
+        SizeType suff_it_;         /*!< Number of iterations required if we are to accept absolute error atol_suff_. */
 
         SizeType max_it_;          /*!< Maximum number of iterations. */
         bool verbose_{false};      /*!< Verobse enable? . */

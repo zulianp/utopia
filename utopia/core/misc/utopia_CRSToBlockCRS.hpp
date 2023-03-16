@@ -32,25 +32,16 @@ namespace utopia {
         using DefaultBlockAssignment = utopia::BlockCRSDefaultBlockAssignment<SizeType, BlockSize>;
 
         static void apply(const CRSMatrix<ScalarView, IndexView, 1> &in,
-                          CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out,
-                          const bool sort_columns = true) {
-            apply(in.rows(), in.row_ptr(), in.colidx(), in.values(), out, sort_columns);
+                          CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out) {
+            apply(in.rows(), in.row_ptr(), in.colidx(), in.values(), out);
         }
 
         template <typename RowBlockAssignemnt, typename ColBlockAssignemnt>
         static void apply(const CRSMatrix<ScalarView, IndexView, 1> &in,
                           const RowBlockAssignemnt &row_block_assignement,
                           const ColBlockAssignemnt &col_block_assignement,
-                          CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out,
-                          const bool sort_columns = true) {
-            apply(in.rows(),
-                  in.row_ptr(),
-                  in.colidx(),
-                  in.values(),
-                  row_block_assignement,
-                  col_block_assignement,
-                  out,
-                  sort_columns);
+                          CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out) {
+            apply(in.rows(), in.row_ptr(), in.colidx(), in.values(), row_block_assignement, col_block_assignement, out);
         }
 
         template <typename IA, typename JA, typename Array>
@@ -58,9 +49,8 @@ namespace utopia {
                           const IA &ia,
                           const JA &ja,
                           const Array &array,
-                          CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out,
-                          const bool sort_columns = true) {
-            apply(n, ia, ja, array, DefaultBlockAssignment(), DefaultBlockAssignment(), out, sort_columns);
+                          CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out) {
+            apply(n, ia, ja, array, DefaultBlockAssignment(), DefaultBlockAssignment(), out);
         }
 
         template <typename IA, typename JA, typename Array, typename RowBlockAssignemnt, typename ColBlockAssignemnt>
@@ -70,8 +60,7 @@ namespace utopia {
                           const Array &array,
                           const RowBlockAssignemnt &row_block_assignement,
                           const ColBlockAssignemnt &col_block_assignement,
-                          CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out,
-                          const bool sort_columns = true) {
+                          CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out) {
             static const int BlockSize_2 = BlockSize * BlockSize;
             auto n_blocks = row_block_assignement[n - 1] + 1;
 

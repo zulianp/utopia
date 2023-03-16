@@ -110,13 +110,13 @@ namespace utopia {
 
         bool parse(Input &in, std::ostream &os = std::cout) {
             bool help = false;
+            bool show = false;
             in.get("help", help);
+            in.get("show", show);
 
-            if (!help) {
-                in.get("show", help);
-            }
-
-            if (help) {
+            if (show) {
+                describe(os);
+            } else if (help) {
                 describe(os);
                 return false;
             } else {

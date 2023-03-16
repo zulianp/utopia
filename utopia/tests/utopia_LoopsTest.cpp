@@ -1,7 +1,7 @@
 #include "utopia.hpp"
-#include "utopia_AlgebraUnitTest.hpp"
 #include "utopia_Algorithms.hpp"
 #include "utopia_Assert.hpp"
+#include "utopia_SubCommUnitTest.hpp"
 #include "utopia_Testing.hpp"
 
 #include "utopia_assemble_laplacian_1D.hpp"
@@ -9,7 +9,7 @@
 namespace utopia {
 
     template <class Matrix, class Vector>
-    class Loops final : public AlgebraUnitTest<Vector> {
+    class Loops final : public SubCommUnitTest<Vector> {
     private:
         using Traits = utopia::Traits<Vector>;
         using Scalar = typename Traits::Scalar;

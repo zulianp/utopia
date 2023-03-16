@@ -12,22 +12,142 @@
 #include <limits>
 
 namespace utopia {
+
     template <class Matrix, class Vector>
-    class BoundedLogBarrierFunction : public LogBarrierFunctionBase<Matrix, Vector> {
+    class BoundedLogBarrier : public LogBarrierBase<Matrix, Vector> {
     public:
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Function = utopia::Function<Matrix, Vector>;
         using BoxConstraints = utopia::BoxConstraints<Vector>;
-        using Super = utopia::LogBarrierFunctionBase<Matrix, Vector>;
+        using Super = utopia::LogBarrierBase<Matrix, Vector>;
 
-        BoundedLogBarrierFunction() {}
+        class BarrierIPC {
+        public:
+            UTOPIA_INLINE_FUNCTION Scalar value(const Scalar d) const {
+                return -(d < d_hat) * ((d - d_hat) * (d - d_hat) * device::log(d / d_hat));
+            }
 
-        BoundedLogBarrierFunction(const std::shared_ptr<Function> &unconstrained,
-                                  const std::shared_ptr<BoxConstraints> &box)
-            : Super(unconstrained, box) {}
+            UTOPIA_INLINE_FUNCTION Scalar gradient(const Scalar d) const {
+                return -(d < d_hat) * ((d - d_hat) * ((d - d_hat) + 2 * d * device::log(d / d_hat)) / d);
+            }
 
-        inline std::string function_type() const override { return "BoundedLogBarrierFunction"; }
+            UTOPIA_INLINE_FUNCTION Scalar hessian(const Scalar d) const {
+                return -(d < d_hat) * (-(d_hat * d_hat) / (d * d) - 2 * d_hat / d + 2 * device::log(d / d_hat) + 3);
+            }
+
+            Scalar d_hat{0.1};
+        };
+
+        class BarrierMine {
+        public:
+            UTOPIA_INLINE_FUNCTION Scalar value(const Scalar d) const {
+                auto temp = ((d - d_hat) / d_hat);
+                return -(d < d_hat) * (temp * temp * log(d / d_hat));
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar gradient(const Scalar d) const {
+                return -(d < d_hat) *
+                       ((d - d_hat) * ((d - d_hat) + 2 * d * device::log(d / d_hat)) / (d * d_hat * d_hat));
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar hessian(const Scalar d) const {
+                auto d2 = d * d;
+                auto d_hat2 = d_hat * d_hat;
+                return -(d < d_hat) * (2 * d2 * device::log(d / d_hat) + 3 * d2 - 2 * d * d_hat - d_hat2) /
+                       (d2 * d_hat2);
+            }
+
+            Scalar d_hat{0.1};
+        };
+
+        // class PolynomialBarrier {
+        // public:
+        //     UTOPIA_INLINE_FUNCTION Scalar value(const Scalar d) const {
+        //         auto param = (d - d_hat) / d_hat;
+        //         return (d < d_hat) * 0.5 * (param * param);
+        //     }
+
+        //     UTOPIA_INLINE_FUNCTION Scalar gradient(const Scalar d) const {
+        //         auto param = (d - d_hat) / d_hat;
+        //         return (d < d_hat) * (param);
+        //     }
+
+        //     UTOPIA_INLINE_FUNCTION Scalar hessian(const Scalar d) const { return (d < d_hat); }
+
+        //     Scalar d_hat{0.1};
+        // };
+
+        class PolynomialBarrier {
+        public:
+            UTOPIA_INLINE_FUNCTION Scalar value(const Scalar d) const {
+                auto param = (d - d_hat) / d_hat;
+                return (d < d_hat) * 0.5 * (param * param);
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar gradient(const Scalar d) const {
+                return (d < d_hat) * (d - d_hat) / (d_hat * d_hat);
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar hessian(const Scalar d) const { return (d < d_hat) / (d_hat * d_hat); }
+
+            Scalar d_hat{0.1};
+        };
+
+        class CompositePolynomialBarrier {
+        public:
+            UTOPIA_INLINE_FUNCTION Scalar value(const Scalar d) const {
+                return factor1 * barrier1.value(d) + factor2 * barrier2.value(d);
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar gradient(const Scalar d) const {
+                return factor1 * barrier1.gradient(d) + factor2 * barrier2.gradient(d);
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar hessian(const Scalar d) const {
+                return factor1 * barrier1.hessian(d) + factor2 * barrier2.hessian(d);
+            }
+
+            UTOPIA_INLINE_FUNCTION CompositePolynomialBarrier(const Scalar barrier_thickness1,
+                                                              const Scalar barrier_thickness2 = 1e-16) {
+                barrier1.d_hat = barrier_thickness1;
+                barrier2.d_hat = barrier_thickness2;
+            }
+
+            PolynomialBarrier barrier1;
+            PolynomialBarrier barrier2;
+            Scalar factor1{1};
+            Scalar factor2{1};
+        };
+
+        class HighOrderPolynomialBarrier {
+        public:
+            UTOPIA_INLINE_FUNCTION Scalar value(const Scalar d) const {
+                auto param = (d - d_hat) / d_hat;
+                return (d < d_hat) * (1.0 / 4.0) * param * param * param * param;
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar gradient(const Scalar d) const {
+                auto dmdhat = d - d_hat;
+                return (d < d_hat) * dmdhat * dmdhat * dmdhat / (d_hat * d_hat * d_hat * d_hat);
+            }
+
+            UTOPIA_INLINE_FUNCTION Scalar hessian(const Scalar d) const {
+                auto dmdhat = d - d_hat;
+
+                return (d < d_hat) * 3 * dmdhat * dmdhat / (d_hat * d_hat * d_hat * d_hat);
+            }
+
+            Scalar d_hat{0.1};
+        };
+
+        // using DefaultBarrier = BarrierIPC;
+        using DefaultBarrier = BarrierMine;
+
+        BoundedLogBarrier() = default;
+        explicit BoundedLogBarrier(const std::shared_ptr<BoxConstraints> &box) : Super(box) {}
+
+        void reset() override { Super::reset(); }
 
         void read(Input &in) override {
             Super::read(in);
@@ -36,229 +156,204 @@ namespace utopia {
                                  barrier_thickness_,
                                  "see: Technical Supplement to Incremental Potential Contact: Intersection- and "
                                  "Inversion-free, Large-Deformation Dynamics.")
+                     .add_option("barrier_subtype", barrier_subtype_, "{default|polynomial}")
                      .parse(in)) {
                 return;
             }
+
+            if (mpi_world_rank() == 0) {
+                describe(utopia::out().stream());
+            }
         }
 
-        void add_barrier_gradient(const Vector &diff, Vector &g) const {
-            auto diff_view = local_view_device(diff);
-            auto g_view = local_view_device(g);
+        void describe(std::ostream &os) const {
+            os << "-----------------------------------------\n";
+            os << "utopia::BoundedLogBarrier\n";
+            os << "-----------------------------------------\n";
+            os << "barrier_thickness: " << barrier_thickness_ << "\n";
+            os << "barrier_subtype: " << barrier_subtype_ << "\n";
+            os << "-----------------------------------------\n";
+        }
 
-            auto d_hat = barrier_thickness_;
+        inline std::string function_type() const override { return "BoundedLogBarrier"; }
 
-            // Currently it is not adaptive like in the paper
-            auto stiffness = barrier_stiffness();
-            const Scalar sign = -1;
+        bool barrier_hessian(const Vector &x, Vector &h) const override {
+            if (barrier_subtype_ == "polynomial") {
+                PolynomialBarrier b{barrier_thickness_};
+                return barrier_hessian_aux(b, x, h);
+            } else if (barrier_subtype_ == "polynomial4") {
+                HighOrderPolynomialBarrier b{barrier_thickness_};
+                return barrier_hessian_aux(b, x, h);
+            } else if (barrier_subtype_ == "composite_polynomial") {
+                CompositePolynomialBarrier b(barrier_thickness_);
+                return barrier_hessian_aux(b, x, h);
+            } else {
+                DefaultBarrier b{barrier_thickness_};
+                return barrier_hessian_aux(b, x, h);
+            }
+        }
 
-            // diff = u - x
+        bool barrier_gradient(const Vector &x, Vector &g) const override {
+            if (barrier_subtype_ == "polynomial") {
+                PolynomialBarrier b{barrier_thickness_};
+                return barrier_gradient_aux(b, x, g);
+            } else if (barrier_subtype_ == "polynomial4") {
+                HighOrderPolynomialBarrier b{barrier_thickness_};
+                return barrier_gradient_aux(b, x, g);
+            } else if (barrier_subtype_ == "composite_polynomial") {
+                CompositePolynomialBarrier b(barrier_thickness_);
+                return barrier_gradient_aux(b, x, g);
+            } else {
+                DefaultBarrier b{barrier_thickness_};
+                return barrier_gradient_aux(b, x, g);
+            }
+        }
+
+        bool barrier_value(const Vector &x, Vector &value) const override {
+            if (barrier_subtype_ == "polynomial") {
+                PolynomialBarrier b{barrier_thickness_};
+                return barrier_value_aux(b, x, value);
+            } else if (barrier_subtype_ == "polynomial4") {
+                HighOrderPolynomialBarrier b{barrier_thickness_};
+                return barrier_value_aux(b, x, value);
+            } else if (barrier_subtype_ == "composite_polynomial") {
+                CompositePolynomialBarrier b(barrier_thickness_);
+                return barrier_value_aux(b, x, value);
+            } else {
+                DefaultBarrier b{barrier_thickness_};
+                return barrier_value_aux(b, x, value);
+            }
+        }
+
+        UTOPIA_NVCC_PRIVATE
+        Scalar barrier_thickness_{0.01};
+        std::string barrier_subtype_{"default"};
+
+        //////////////////////// Helper methods ////////////////////////
+
+        template <class Barrier>
+        void in_place_barrier_value(Vector &diff_in_value_out, Barrier b) const {
+            auto view = local_view_device(diff_in_value_out);
 
             parallel_for(
-                local_range_device(diff), UTOPIA_LAMBDA(const SizeType i) {
-                    auto d_i = diff_view.get(i);
-                    auto d_m_d_hat = d_i - d_hat;
+                local_range_device(diff_in_value_out), UTOPIA_LAMBDA(const SizeType i) {
+                    auto d_i = view.get(i);
+                    auto b_v = b.value(d_i);
 
-                    // ((u - x) - d_hat) * (- 2 * (u - x) * log((u-x)/d_hat) + d_hat - (u - x))/(u - x)
-                    // (d - d_hat) * (-2 * d * log(d/d_hat) + d_hat - d)/d
-                    // d_m_d_hat * (-2 d * log(d_div_d_hat) -  d_m_d_hat)/d
+                    assert(b_v == b_v);  // NaN check
 
-                    if (d_m_d_hat < 0) {
-                        // Inside the thickness of the barrier
-                        auto d_div_d_hat = d_i / d_hat;
-                        // auto d_hat_div_d = d_hat / d_i;
-                        auto b_g = d_m_d_hat * (-2 * device::log(d_div_d_hat) - d_m_d_hat);
-                        b_g *= sign * stiffness / d_i;
-
-                        assert(b_g == b_g);
-
-                        auto g_i = g_view.get(i);
-                        g_view.set(i, g_i + b_g);
-                    }
+                    view.set(i, b_v);
                 });
-
-            // static int iter = 0;
-            // rename("g", g);
-            // write("G" + std::to_string(iter++) + ".m", g);
         }
 
-        // !!! diff is modified inside !!!
-        void add_barrier_hessian(Vector &diff, Matrix &hessian) const {
-            {
-                auto diff_view = local_view_device(diff);
-                auto d_hat = barrier_thickness_;
+        template <class Barrier>
+        void in_place_barrier_gradient(Vector &diff_in_gradient_out, Barrier b) const {
+            auto view = local_view_device(diff_in_gradient_out);
 
-                // Currently it is not adaptive like in the paper
-                auto stiffness = barrier_stiffness();
-                const Scalar sign = -1;
+            parallel_for(
+                local_range_device(diff_in_gradient_out), UTOPIA_LAMBDA(const SizeType i) {
+                    auto d_i = view.get(i);
+                    auto b_g = b.gradient(d_i);
 
-                parallel_for(
-                    local_range_device(diff), UTOPIA_LAMBDA(const SizeType i) {
-                        auto d_i = diff_view.get(i);
-                        auto d_m_d_hat = d_i - d_hat;
+                    assert(b_g == b_g);  // NaN check
 
-                        // diff = u - x
-                        // - d_hat*d_hat/(d_i*d_i) - 2*d_hat/d_i + 2*log(d_i/d_hat) + 3
-                        //
-
-                        if (d_m_d_hat < 0) {
-                            // Inside the thickness of the barrier
-                            auto b_H = -sign * stiffness * (d_hat * d_hat) / (d_i * d_i) - 2.0 * d_hat / d_i +
-                                       2 * device::log(d_i / d_hat) + 3;
-
-                            assert(b_H == b_H);
-
-                            diff_view.set(i, b_H);
-                        } else {
-                            diff_view.set(i, 0.);
-                        }
-                    });
-            }
-
-            hessian.shift_diag(diff);
+                    view.set(i, -b_g);
+                });
         }
 
-        void extend_hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const override {
-            Vector diff;
+        template <class Barrier>
+        void in_place_barrier_hessian(Vector &diff_in_hessian_out, Barrier b) const {
+            auto view = local_view_device(diff_in_hessian_out);
+
+            parallel_for(
+                local_range_device(diff_in_hessian_out), UTOPIA_LAMBDA(const SizeType i) {
+                    auto d_i = view.get(i);
+                    auto b_H = b.hessian(d_i);
+
+                    assert(b_H == b_H);  // NaN check
+
+                    view.set(i, b_H);
+                });
+        }
+
+        /////////////////////////////////////////
+
+        template <class Barrier>
+        bool barrier_hessian_aux(Barrier b, const Vector &x, Vector &h) const {
+            Vector work;
 
             if (this->box_->has_upper_bound()) {
-                this->compute_diff_upper_bound(x, diff);
-                add_barrier_gradient(diff, g);
-                add_barrier_hessian(diff, H);
+                this->compute_diff_upper_bound(x, work);
+
+                in_place_barrier_hessian(work, b);
+
+                if (h.empty()) {
+                    h.zeros(layout(work));
+                }
+
+                h += work;
             }
 
             if (this->box_->has_lower_bound()) {
-                this->compute_diff_lower_bound(x, diff);
-                add_barrier_gradient(diff, g);
-                add_barrier_hessian(diff, H);
-            }
-        }
+                this->compute_diff_lower_bound(x, work);
 
-        void extend_hessian(const Vector &x, Matrix &H) const override {
-            Vector diff;
+                in_place_barrier_hessian(work, b);
 
-            if (this->box_->has_upper_bound()) {
-                this->compute_diff_upper_bound(x, diff);
-                add_barrier_hessian(diff, H);
-            }
+                if (h.empty()) {
+                    h.zeros(layout(work));
+                }
 
-            if (this->box_->has_lower_bound()) {
-                this->compute_diff_lower_bound(x, diff);
-                add_barrier_hessian(diff, H);
-            }
-        }
-
-        void extend_gradient(const Vector &x, Vector &g) const override {
-            Vector diff;
-
-            if (this->box_->has_upper_bound()) {
-                this->compute_diff_upper_bound(x, diff);
-                add_barrier_gradient(diff, g);
-            }
-
-            if (this->box_->has_lower_bound()) {
-                this->compute_diff_lower_bound(x, diff);
-                add_barrier_gradient(diff, g);
-            }
-        }
-
-        void add_barrier_value(const Vector &diff, Scalar &val) const {
-            auto diff_view = local_view_device(diff);
-
-            auto d_hat = barrier_thickness_;
-
-            // Currently it is not adaptive like in the paper
-            auto stiffness = barrier_stiffness();
-            const Scalar sign = -1;
-
-            Scalar b_val = 0.;
-            parallel_reduce(
-                local_range_device(diff),
-                UTOPIA_LAMBDA(const SizeType i) {
-                    auto d_i = diff_view.get(i);
-                    auto d_m_d_hat = d_i - d_hat;
-
-                    if (d_m_d_hat < 0) {
-                        auto d_div_d_hat = d_i / d_hat;
-                        // Inside the thickness of the barrier
-                        return sign * stiffness * d_m_d_hat * d_m_d_hat * device::log(d_div_d_hat);
-                    } else {
-                        return 0.0;
-                    }
-                },
-                b_val);
-
-            val += b_val;
-        }
-
-        void extend_value(const Vector &x, Scalar &value) const override {
-            bool must_all_reduce = false;
-
-            Vector diff;
-
-            Scalar ub_value = 0.0;
-            if (this->box_->has_upper_bound()) {
-                must_all_reduce = true;
-                diff = *this->box_->upper_bound() - x;
-                add_barrier_value(diff, ub_value);
-            }
-
-            Scalar lb_value = 0.0;
-            if (this->box_->has_lower_bound()) {
-                must_all_reduce = true;
-                diff = x - *this->box_->lower_bound();
-                add_barrier_value(diff, lb_value);
-            }
-
-            if (must_all_reduce) {
-                auto global_value = x.comm().sum(lb_value + ub_value);
-                value += global_value;
-            }
-        }
-
-        bool project_onto_feasibile_region(Vector &x) const override {
-            // bool verbose = verbose_;
-            if (this->box_->has_upper_bound()) {
-                auto ub_view = local_view_device(*this->box_->upper_bound());
-                auto x_view = local_view_device(x);
-
-                Scalar soft_boundary = this->soft_boundary_;
-                parallel_for(
-                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                        auto xi = x_view.get(i);
-                        auto ubi = ub_view.get(i);
-
-                        if (xi > ubi) {
-                            x_view.set(i, ubi - soft_boundary);
-                        }
-                    });
-            }
-
-            if (this->box_->has_lower_bound()) {
-                auto lb_view = local_view_device(*this->box_->lower_bound());
-                auto x_view = local_view_device(x);
-
-                Scalar soft_boundary = this->soft_boundary_;
-                parallel_for(
-                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                        auto xi = x_view.get(i);
-                        auto lbi = lb_view.get(i);
-
-                        if (xi < lbi) {
-                            x_view.set(i, lbi + soft_boundary);
-                        }
-                    });
+                h += work;
             }
 
             return true;
         }
 
-        inline Scalar barrier_stiffness() const {
-            return this->current_barrier_parameter_;
-            // return 1;
+        template <class Barrier>
+        bool barrier_gradient_aux(Barrier b, const Vector &x, Vector &g) const {
+            Vector work;
+
+            if (this->box_->has_upper_bound()) {
+                this->compute_diff_upper_bound(x, work);
+
+                in_place_barrier_gradient(work, b);
+
+                g += work;
+            }
+
+            if (this->box_->has_lower_bound()) {
+                this->compute_diff_lower_bound(x, work);
+
+                in_place_barrier_gradient(work, b);
+
+                g -= work;
+            }
+
+            return true;
         }
 
-    private:
-        Scalar barrier_thickness_{1e-4};
+        template <class Barrier>
+        bool barrier_value_aux(Barrier b, const Vector &x, Vector &value) const {
+            Vector work;
+
+            if (this->box_->has_upper_bound()) {
+                work = *this->box_->upper_bound() - x;
+
+                in_place_barrier_value(work, b);
+
+                value += work;
+            }
+
+            if (this->box_->has_lower_bound()) {
+                work = x - *this->box_->lower_bound();
+
+                in_place_barrier_value(work, b);
+
+                value += work;
+            }
+
+            return true;
+        }
     };
 
 }  // namespace utopia

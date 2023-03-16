@@ -1,7 +1,7 @@
 #include "test_problems/utopia_QPSolverTestProblem.hpp"
 #include "utopia.hpp"
-#include "utopia_AlgebraUnitTest.hpp"
 #include "utopia_BlockQPSolver.hpp"
+#include "utopia_SubCommUnitTest.hpp"
 
 #include "utopia_RedundantQPSolver.hpp"
 #include "utopia_SemismoothNewton_old.hpp"
@@ -18,7 +18,7 @@
 namespace utopia {
 
     template <class Matrix, class Vector>
-    class SubCommAlgebraTest final : public AlgebraUnitTest<Vector> {
+    class SubCommAlgebraTest final : public SubCommUnitTest<Vector> {
     public:
         using Traits = utopia::Traits<Vector>;
         using Scalar = typename Traits::Scalar;
@@ -255,12 +255,13 @@ namespace utopia {
     };
 
     void sub_comm_algebra() {
+        const bool verbose = Utopia::instance().verbose();
 #ifdef UTOPIA_WITH_PETSC
-        run_parallel_test<SubCommAlgebraTest<PetscMatrix, PetscVector>>();
+        run_parallel_test<SubCommAlgebraTest<PetscMatrix, PetscVector>>(verbose);
 #endif  // UTOPIA_WITH_PETSC
 
         // #ifdef UTOPIA_WITH_TRILINOS
-        //         run_parallel_test< SubCommAlgebraTest<TpetraMatrix, TpetraVector> >();
+        //         run_parallel_test< SubCommAlgebraTest<TpetraMatrix, TpetraVector> >(verbose);
         // #endif //UTOPIA_WITH_TRILINOS
     }
 

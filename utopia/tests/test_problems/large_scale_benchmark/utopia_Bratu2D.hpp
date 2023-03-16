@@ -150,11 +150,6 @@ namespace utopia {
 
         const Vector &exact_sol() const override { return exact_sol_; }
 
-        Scalar min_function_value() const override {
-            // depends on the solution to which we converged to
-            return -1.012;
-        }
-
         std::string name() const override { return "Bratu2D"; }
 
         SizeType dim() const override { return n_ * n_; }

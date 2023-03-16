@@ -65,8 +65,6 @@ namespace utopia {
 
         const Vector &exact_sol() const override { return unconstrained_.exact_sol(); }
 
-        Scalar min_function_value() const override { return 0.29442600e-3; }
-
     private:
         PenaltyII24<Matrix, Vector> unconstrained_;
     };

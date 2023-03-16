@@ -11,12 +11,12 @@
 
 #include "utopia_moonolith_stk_FETransfer.hpp"
 #include "utopia_stk.hpp"
+
+#include "utopia_stk_intrepid2.hpp"
 #include "utopia_stk_intrepid2_OmniAssembler.hpp"
 
-namespace utopia {
-    template class NewmarkIntegrator<utopia::stk::FunctionSpace>;
-    template class ImplicitEulerIntegrator<utopia::stk::FunctionSpace>;
-}  // namespace utopia
+#include "utopia_moonolith_stk_Contact.hpp"
+#include "utopia_moonolith_stk_Obstacle.hpp"
 
 void stk_nlsolve(utopia::Input &in) {
     utopia::NLSolveApp<utopia::stk::FunctionSpace> app;

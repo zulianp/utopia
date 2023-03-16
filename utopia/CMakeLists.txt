@@ -1,6 +1,15 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(utopia)
+
+project(
+  utopia
+  VERSION 0.2.0
+  LANGUAGES "CXX" "C"
+  HOMEPAGE_URL "https://bitbucket.org/zulianp/utopia/src/master/"
+  DESCRIPTION
+    "Utopia is an open-source nonlinear algenra library"
+)
+
 cmake_policy(SET "CMP0079" NEW)
 
 set(UTOPIA_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
@@ -57,7 +66,9 @@ option(UTOPIA_STATIC_DEPENDENCIES_ONLY
 option(UTOPIA_ENABLE_MPI "Enable the cuda backend" ON)
 # option(UTOPIA_ENABLE_OPENCL "Enable the opencl backend" OFF)
 option(UTOPIA_ENABLE_PETSC "Enable the petsc backend" ON)
-option(UTOPIA_ENABLE_SLEPC "Enable the slepc backend" ON)
+option(UTOPIA_ENABLE_SLEPC "Enable the slepc backend" OFF)
+option(UTOPIA_ENABLE_METIS "Enable the Metis backend" OFF)
+option(UTOPIA_ENABLE_PARMETIS "Enable the ParMetis backend" OFF)
 option(UTOPIA_ENABLE_TRILINOS "Enable the Trilinos backend" ON)
 # option(UTOPIA_ENABLE_KOKKOS_SIMD "Enable kokkos intriniscs wrapper" OFF)
 option(UTOPIA_ENABLE_BLAS "Enable the blas backend" ON)
@@ -74,12 +85,16 @@ option(UTOPIA_ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 # option(UTOPIA_ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers
 # developed in the PASSO library" OFF)
 option(UTOPIA_ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
+option(UTOPIA_ENABLE_CXX17_FEATURES "Enable usage of cxx17 standard" ON)
+
 option(UTOPIA_ENABLE_MOOSE_ENV_MODE
        "Allows to use the moose installation compilers" OFF)
 option(UTOPIA_ENABLE_DEPRECATED_API
        "Decprecated functionality that will be removed in the future" ON)
 option(UTOPIA_ENABLE_TINY_EXPR "String expressions support" ON)
-option(UTOPIA_ENABLE_YAML_CPP "Enable YAML support" OFF)
+option(UTOPIA_ENABLE_RAPIDJSON "Enable support for JSON input files" ON)
+option(UTOPIA_ENABLE_MATRIX_IO "Enable support for reading matrices with matrix.io" ON)
+option(UTOPIA_ENABLE_YAML_CPP "Enable YAML support" ON)
 
 option(UTOPIA_ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
 option(
@@ -107,6 +122,14 @@ option(
 option(UTOPIA_SPACK_MODE "Spack env hacks" OFF)
 
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
+option(UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE "Removed trilinos deprecated code" OFF)
+
+option(UTOPIA_ENABLE_FLUYA_MODE "Create utopia configuration required by Fluya" OFF)
+
+
+if(UTOPIA_ENABLE_FLUYA_MODE)
+include(EnableFluyaMode)
+endif()
 
 # set(UTOPIA_DEFAULT_TARGETS)
 include(CodeCoverage)
@@ -349,6 +372,61 @@ endfunction()
 
 # ##############################################################################
 
+function(utopia_add_external_library libraryRootDir subDirs)
+    set(THIS_MODULE_SOURCES "")
+    set(THIS_MODULE_HEADERS "")
+    find_project_files(${libraryRootDir} "${subDirs}" THIS_MODULE_HEADERS
+                       THIS_MODULE_SOURCES)
+
+    message(STATUS "THIS_MODULE_SOURCES=${THIS_MODULE_SOURCES}")
+    target_sources(
+        utopia
+        PRIVATE ${THIS_MODULE_SOURCES}
+        PRIVATE ${THIS_MODULE_HEADERS})
+
+    install(FILES ${THIS_MODULE_HEADERS} DESTINATION include)
+    foreach(MODULE ${subDirs})
+        target_include_directories(
+            utopia BEFORE PUBLIC $<BUILD_INTERFACE:${libraryRootDir}/${MODULE}>)
+    endforeach(MODULE)
+endfunction()
+
+# ##############################################################################
+
+# function(find_external_files rootPath dirPaths headers sources)
+#     set(verbose TRUE)
+
+#     set(theaders ${${headers}})
+#     set(tsources ${${sources}})
+
+#     foreach(INCLUDE_PATH ${dirPaths})
+#         # INCLUDE_DIRECTORIES(${rootPath}/${INCLUDE_PATH})
+
+#         file(GLOB TEMP_HPPSRC CONFIGURE_DEPENDS
+#              "${rootPath}/${INCLUDE_PATH}/*.cpp")
+#         file(GLOB TEMP_SRC CONFIGURE_DEPENDS "${rootPath}/${INCLUDE_PATH}/*.c")
+#         file(GLOB TEMP_HPPDR CONFIGURE_DEPENDS
+#              "${rootPath}/${INCLUDE_PATH}/*.hpp")
+#         file(GLOB TEMP_HDR CONFIGURE_DEPENDS "${rootPath}/${INCLUDE_PATH}/*.h")
+
+#         source_group(
+#             ${INCLUDE_PATH} FILES ${TEMP_HPPDR}; ${TEMP_HDR}; ${TEMP_HPPSRC};
+#                                   ${TEMP_SRC}; ${TEMP_UI})
+
+#         set(tsources ${tsources}; ${TEMP_SRC}; ${TEMP_HPPSRC})
+#         set(theaders ${theaders}; ${TEMP_HDR}; ${TEMP_HPPDR})
+#     endforeach(INCLUDE_PATH)
+
+#     set(${headers}
+#         ${theaders}
+#         PARENT_SCOPE)
+#     set(${sources}
+#         ${tsources}
+#         PARENT_SCOPE)
+# endfunction()
+
+# ##############################################################################
+
 function(append_list_to_string_for_makefile OUTPUT_STRING PRE_LIST POST_LIST
          ITEM_PREFIX LIST_OF_STRINGS)
     # http://stackoverflow.com/questions/5248749/passing-a-list-to-a-cmake-macro
@@ -444,6 +522,7 @@ if(UTOPIA_INSTALL_PETSC_DEBUG)
     include(InstallPetscDebug)
 endif()
 
+
 # using this to defining UTOPIA_LAMBDA correctly
 if(UTOPIA_ENABLE_TRILINOS)
     find_package(Trilinos)
@@ -463,6 +542,20 @@ list(APPEND UTOPIA_HEADERS utopia.hpp utopia_Base.hpp utopia_Instance.hpp
 
 list(APPEND UTOPIA_SOURCES utopia.cpp utopia_Instance.cpp utopia_Base.cpp)
 add_library(utopia ${UTOPIA_SOURCES})
+
+if(UTOPIA_ENABLE_MATRIX_IO)
+    find_path(
+        MATRIX_IO_DIR
+        NAMES  matrixio_crs.h
+        HINTS ${MATRIX_IO_DIR} $ENV{MATRIX_IO_DIR}/matrix.io ${CMAKE_CURRENT_SOURCE_DIR}/external/matrix.io
+    )
+    
+    if(MATRIX_IO_DIR)
+        utopia_add_external_library(${MATRIX_IO_DIR} ".")
+        set(UTOPIA_WITH_MATRIX_IO ON)
+    endif()
+
+endif()
 
 # if(UTOPIA_ENABLE_KOKKOS_SIMD) set(UTOPIA_WITH_KOKKOS_SIMD TRUE)
 
@@ -519,6 +612,20 @@ endif()
 
 if(UTOPIA_ENABLE_YAML_CPP)
     add_subdirectory(backend/yamlcpp)
+endif()
+
+if(UTOPIA_ENABLE_METIS)
+    add_subdirectory(backend/metis)
+endif()
+
+if(UTOPIA_ENABLE_PARMETIS)
+    add_subdirectory(backend/parmetis)
+endif()
+
+
+include(UtopiaISolver)
+if(UTOPIA_ENABLE_ISOLVER)
+    add_subdirectory(plug_in_and_out/isolver)
 endif()
 
 # weird stuff goes here
@@ -703,3 +810,13 @@ add_dependencies(complete utopia utopia_test utopia_bench utopia_exec
 # ##############################################################################
 target_format_setup("utopia;utopia_test;utopia_bench;utopia_exec")
 # ##############################################################################
+
+# During the cmake step some test programs can crash and leave a core-dump file behind
+# This file has unfortunately the same name as the module `core`. Therefore at the end
+# when CMake tries to generate the output directories (which happens after the whole CMakeLists.txt
+# has been parsed), we must make sure that there is no such file with the name `core`.
+# One program that is known to crash on Piz Daint is the PETSc test run, because MPI
+# cannot be initialised when it is not running under an srun environment (i.e. you are compiling on a login node).
+if(EXISTS ${CMAKE_BINARY_DIR}/core AND NOT IS_DIRECTORY ${CMAKE_BINARY_DIR}/core)
+    file(REMOVE ${CMAKE_BINARY_DIR}/core)
+endif()

@@ -18,6 +18,9 @@
 #include "utopia_FEFunctionFactory.hpp"
 #include "utopia_NewmarkIntegrator.hpp"
 #include "utopia_ObstacleFEFunction.hpp"
+#include "utopia_moonolith_ObstacleFEFunctionFactory.hpp"
+
+#include "utopia_MeshTransform.hpp"
 
 #include <memory>
 
@@ -62,6 +65,18 @@ namespace utopia {
                 }
             });
 
+            in.get("displace", [&](Input &in) {
+                MeshTransform<FunctionSpace> transform;
+                transform.read(in);
+                transform.generate_displacement_field(space, deformation);
+
+                const Scalar_t norm_deformation = norm2(deformation.data());
+
+                if (mpi_world_rank() == 0) {
+                    utopia::out() << "displace (norm_deformation): " << norm_deformation << std::endl;
+                }
+            });
+
             if (space.empty()) {
                 Utopia::Abort("Space is empty!");
                 return;
@@ -81,7 +96,7 @@ namespace utopia {
                 }
 
             } else {
-                fun = FEFunctionFactory<FunctionSpace>::make_time_integrator(fun, integrator);
+                fun = ObstacleFEFunctionFactory<FunctionSpace>::make_time_integrator(fun, integrator);
             }
 
             auto obs_fun = std::make_shared<ObstacleFEFunction_t>(fun);
@@ -106,6 +121,15 @@ namespace utopia {
                 if (deformation.empty() || !fun->set_initial_condition(deformation.data())) {
                     Utopia::Abort("Called set_initial_condition on function that does not support it!");
                 }
+            }
+
+            bool skip_solve = false;
+            in.get("skip_solve", skip_solve);
+
+            if (skip_solve) {
+                fun->update_IVP(x);
+                obs_fun->report_solution(x);
+                return;
             }
 
             do {

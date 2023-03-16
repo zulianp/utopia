@@ -61,7 +61,7 @@ namespace utopia {
             using Vector_t = Traits<FunctionSpace>::Vector;
             using Scalar_t = Traits<FunctionSpace>::Scalar;
 
-            inline static void tensorize(const Matrix_t &T_x, const SizeType n_var, Matrix_t &T) {
+            static void tensorize(const Matrix_t &T_x, const SizeType n_var, Matrix_t &T) {
                 auto max_nnz = utopia::max_row_nnz(T_x);
                 T.sparse(layout(T_x), max_nnz, max_nnz);
 
@@ -176,11 +176,6 @@ namespace utopia {
                 }
 
                 rename("transfer_matrix", *data.transfer_matrix);
-
-                if (opts.export_tensors_) {
-                    write("load_transfer_matrix.m", *data.transfer_matrix);
-                }
-
                 UTOPIA_TRACE_REGION_END("FETransferPrepareData::apply");
                 return ok;
             }
@@ -454,39 +449,53 @@ namespace utopia {
                 }
             }
 
+            if (has_intersection) {
+                // FIXME
+                has_intersection = static_cast<bool>(impl_->data.transfer_matrix);
+            }
+
             if (impl_->opts.verbose) {
-                auto &T = *impl_->data.transfer_matrix;
-                auto &&comm = T.comm();
+                if (has_intersection) {
+                    auto &T = *impl_->data.transfer_matrix;
+                    auto &&comm = T.comm();
 
-                Scalar n_coupled_dofs = sum(T);
-                std::stringstream root_ss;
-                root_ss << "n_coupled_dofs in to_space:\t" << SizeType(n_coupled_dofs) << "\n";
-                root_ss << "global_nnz:\t" << T.global_nnz() << "\n";
+                    Scalar n_coupled_dofs = sum(T);
+                    std::stringstream root_ss;
+                    root_ss << "n_coupled_dofs in to_space:\t" << SizeType(n_coupled_dofs) << "\n";
+                    root_ss << "global_nnz:\t" << T.global_nnz() << "\n";
 
-                if (impl_->opts.print_operator_imbalance) {
-                    Matrix T_transpose = transpose(T);
-                    std::vector<SizeType> balancing(comm.size(), 0);
-                    balancing[comm.rank()] = T_transpose.local_nnz();
+                    if (impl_->opts.print_operator_imbalance) {
+                        Matrix T_transpose = transpose(T);
+                        std::vector<SizeType> balancing(comm.size(), 0);
+                        balancing[comm.rank()] = T_transpose.local_nnz();
 
-                    comm.sum(comm.size(), &balancing[0]);
+                        comm.sum(comm.size(), &balancing[0]);
 
-                    if (comm.is_root()) {
-                        root_ss << "Operator imbalance:\n";
+                        if (comm.is_root()) {
+                            root_ss << "Operator imbalance:\n";
 
-                        for (int i = 0; i < comm.size(); ++i) {
-                            if (balancing[i] > 0) {
-                                root_ss << "[" << i << " " << balancing[i] << "] ";
+                            for (int i = 0; i < comm.size(); ++i) {
+                                if (balancing[i] > 0) {
+                                    root_ss << "[" << i << " " << balancing[i] << "] ";
+                                }
                             }
+
+                            root_ss << "\n";
                         }
-
-                        root_ss << "\n";
                     }
-                }
 
-                comm.root_print(root_ss.str(), utopia::out().stream());
+                    comm.root_print(root_ss.str(), utopia::out().stream());
+                } else {
+                    from->comm().root_print("NO INTERSECTION");
+                }
             }
 
             UTOPIA_TRACE_REGION_END("FETransfer::init");
+
+            if (impl_->opts.export_tensors) {
+                ::utopia::write("load_transfer_matrix.m", *transfer_matrix());
+            }
+
             return has_intersection;
         }
 
@@ -540,12 +549,16 @@ namespace utopia {
 
         std::shared_ptr<FETransfer::Matrix> FETransfer::transfer_matrix() const { return impl_->data.transfer_matrix; }
 
-        bool FETransfer::apply(const Matrix &to_matrix, Matrix &matrix_in_from_space) const {
+        bool FETransfer::apply(const Matrix &to_matrix, Matrix &from_matrix, const bool reuse_matrix) const {
             if (!empty()) {
                 assert(!utopia::empty(*impl_->data.transfer_matrix));
                 assert(!utopia::empty(to_matrix));
-                matrix_in_from_space =
-                    transpose(*impl_->data.transfer_matrix) * to_matrix * (*impl_->data.transfer_matrix);
+
+                if (!utopia::empty(from_matrix) && reuse_matrix) {
+                    ptap_reuse_matrix(to_matrix, *impl_->data.transfer_matrix, from_matrix);
+                } else {
+                    from_matrix = transpose(*impl_->data.transfer_matrix) * to_matrix * (*impl_->data.transfer_matrix);
+                }
                 return true;
             } else {
                 return false;
@@ -606,6 +619,20 @@ namespace utopia {
         void FETransfer::set_constraint_matrix_to(const std::shared_ptr<Matrix> &constraint_matrix) {
             impl_->data.constraint_matrix_to = constraint_matrix;
         }
+
+        // void count_transpose_operator_imbalance(const Matrix &mat, IndexArray &array) {
+        // auto &&comm = mat.comm();
+        // array.resize(comm.size());
+
+        //
+        // }
+
+        // void FETransfer::rebalance_the_from_system() {
+        //     // TODO
+        //     // Redistribute transfer matrix columns
+        //     // Generate index set OR ranges for external routines
+        //     // std::vector<long>
+        // }
 
     }  // namespace moonolith
 

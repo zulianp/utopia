@@ -215,8 +215,8 @@ namespace utopia {
         auto &&comm = PetscCommunicator::get_default();
         const PetscInt n = 10 * comm.size();
 
-        const PetscInt m = 10; 
-        const PetscInt mn = 2; 
+        const PetscInt m = 10;
+        const PetscInt mn = 2;
 
         auto ml = layout(comm, m, PetscTraits::decide(), n, mn);
 
@@ -249,8 +249,8 @@ namespace utopia {
         auto &&comm = PetscCommunicator::get_default();
         const PetscInt n = 10 * comm.size();
 
-        const PetscInt m = 10; 
-        const PetscInt mn = 10; 
+        const PetscInt m = 10;
+        const PetscInt mn = 10;
 
         auto ml = layout(comm, m, PetscTraits::decide(), n, mn);
 
@@ -702,6 +702,33 @@ namespace utopia {
         utopia_test_assert(approxeq(expected, ABC));
     }
 
+    void petsc_test_ptap_reuse_matrix() {
+        auto &&comm = PetscCommunicator::get_default();
+        const int n = comm.size() * 3;
+
+        PetscMatrix P;
+        P.identity(layout(comm, 3, 3, n, n), 1.0);
+        PetscMatrix A;
+        A.identity(layout(P), 1.0);
+        PetscMatrix C;
+        C.identity(layout(P), 1.0);
+        PetscMatrix PtAP, ABC, PAPt;
+
+        // The next line is equivalent to this:  PtAP = ptap(P, A); since it is pattern matched
+        PtAP = transpose(P) * A * P;
+        PtAP *= 0.;
+        ptap_reuse_matrix(A, P, PtAP);
+
+        // MatPtAP(raw_type(A), raw_type(P), MAT_REUSE_MATRIX, 1., &raw_type(PtAP));
+
+        ABC = A * P * C;
+
+        PetscMatrix expected;
+        expected.identity(layout(P), 1.0);
+        utopia_test_assert(approxeq(expected, PtAP));
+        utopia_test_assert(approxeq(expected, ABC));
+    }
+
     void petsc_test_rart() {
         auto &&comm = PetscCommunicator::get_default();
         const int n = comm.size() * 4;
@@ -1137,7 +1164,7 @@ namespace utopia {
             return;
         }
 
-        std::size_t n = local_to_global.size();
+        PetscInt n = local_to_global.size();
         block.resize(n);
 
         PetscInt min_block = local_to_global[0] / block_size;
@@ -1172,7 +1199,7 @@ namespace utopia {
 
         if (comm.size() > 1) return;
 
-        PetscInt rows = 4;
+        // PetscInt rows = 4;
         PetscInt cols = 8;
 
         PetscMatrix mat;
@@ -1205,7 +1232,7 @@ namespace utopia {
         // disp_connectivity(temp_crs);
         // disp_connectivity(block_crs);
 
-        disp(block_crs);
+        // disp(block_crs);
     }
 
     void petsc_rectangular_block_mat() {
@@ -1223,7 +1250,7 @@ namespace utopia {
         mat.sparse(serial_layout(rows, cols), 3, 3);
         {
             Write<PetscMatrix> w(mat);
-            auto rr = row_range(mat);
+            // auto rr = row_range(mat);
 
             mat.set(0, 0, 0.0);
             mat.set(0, 1, 0.01);
@@ -1235,7 +1262,7 @@ namespace utopia {
             mat.set(3, 6, 6.0);
         }
 
-        disp(mat);
+        // disp(mat);
 
         PetscCrsView crs(mat.raw_type());
 
@@ -1249,7 +1276,7 @@ namespace utopia {
 
         // disp(temp_crs);
 
-        disp(block_crs);
+        // disp(block_crs);
     }
 
     void petsc_block_mat() {
@@ -1536,7 +1563,7 @@ namespace utopia {
         PetscMatrix A;
         A.crs(serial_layout(n_rows, n_cols), row_ptr, columns, values);
 
-        disp(A);
+        // disp(A);
     }
 
     void petsc_block_matrix() {
@@ -1596,6 +1623,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_each_sparse_matrix);
         UTOPIA_RUN_TEST(petsc_matrix_composition);
         UTOPIA_RUN_TEST(petsc_test_ptap);
+        UTOPIA_RUN_TEST(petsc_test_ptap_reuse_matrix);
         UTOPIA_RUN_TEST(petsc_test_rart);
         UTOPIA_RUN_TEST(petsc_new_eval);
         UTOPIA_RUN_TEST(petsc_tensor_reduction);

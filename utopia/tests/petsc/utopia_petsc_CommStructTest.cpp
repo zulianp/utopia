@@ -25,9 +25,10 @@ public:
         mat.sparse(square_matrix_layout(layout(comm, 4, 4 * comm.size())), 3, 3);
         assemble_laplacian_1D(mat);
 
-        disp(mat);
+        // disp(mat);
 
 #if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 15, 3)
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3, 16, 0)
 
         Vec lvec;
         PetscInt *colmap;
@@ -38,19 +39,20 @@ public:
 
         VecScatterView(scatt, PETSC_VIEWER_STDOUT_WORLD);
 #endif  // UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN
+#endif  // UTOPIA_PETSC_VERSION_LESS_THAN
 
         // MatGetGhosts
         PetscInt nghosts;
         const PetscInt *ghosts;
         MatGetGhosts(mat.raw_type(), &nghosts, &ghosts);
 
-        std::stringstream ss;
-        ss << "nghosts: " << nghosts << "\n";
-        for (SizeType i = 0; i < nghosts; ++i) {
-            ss << ghosts[i] << " ";
-        }
+        // std::stringstream ss;
+        // ss << "nghosts: " << nghosts << "\n";
+        // for (SizeType i = 0; i < nghosts; ++i) {
+        //     ss << ghosts[i] << " ";
+        // }
 
-        mat.comm().synched_print(ss.str());
+        // mat.comm().synched_print(ss.str());
 
         // PetscErrorCode MatGetOwnershipRanges(Mat mat,const PetscInt **ranges)
 

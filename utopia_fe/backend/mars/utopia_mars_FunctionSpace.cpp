@@ -7,6 +7,8 @@
 
 #include "utopia_mars_MeshIO.hpp"
 
+#include "utopia_mars_Discretization.hpp"
+
 namespace utopia {
     namespace mars {
         class FunctionSpace::Impl {
@@ -30,12 +32,16 @@ namespace utopia {
                 handler = handler_impl;
 
 #ifdef MARS_WITH_WITH_IO
-                write = [handler_impl](const Path &path, const Vector &x) -> bool {
-                    MarsIOImpl<typename FEHandler::DofHandler, typename FEHandler::FEDofMap> w(
-                        handler_impl->get_dof_handler(), handler_impl->get_fe_dof_map());
+                write = [handler_impl, this](const Path &path, const Vector &x) -> bool {
+                    MarsIOImpl<typename FEHandler::FEDofMap> w(handler_impl->get_fe_dof_map());
+
+                    // auto x_kokkos = x.raw_type()->getLocalViewHost();
+                    // return w.write_tpetra(path.to_string(), x_kokkos);
 
                     auto x_kokkos = x.raw_type()->getLocalViewHost();
-                    return w.write(path.to_string(), x_kokkos);
+                    w.add_field_tpetra("U", this->n_var, x_kokkos);
+                    w.set_output_path(path);
+                    return w.write();
                 };
 #else
                 write = [](const Path &, const Vector &) -> bool { return false; };
@@ -178,6 +184,8 @@ namespace utopia {
 
             using MapType = Matrix::MapType;
 
+            handler()->ensure_sparsity_pattern();
+
             SizeType n_global = this->n_dofs();
             SizeType n_local = this->n_local_dofs();
 
@@ -219,7 +227,13 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("FunctionSpace::apply_constraints(v)");
 
             for (auto &bc : impl_->dirichlet_boundary) {
-                handler()->vector_apply_constraints(v, bc->value(), bc->name, bc->component);
+                auto u_bc = std::dynamic_pointer_cast<DirichletBoundary::UniformCondition>(bc);
+
+                if (u_bc) {
+                    handler()->vector_apply_constraints(v, u_bc->value(), u_bc->name, u_bc->component);
+                } else {
+                    assert(false);
+                }
             }
 
             UTOPIA_TRACE_REGION_END("FunctionSpace::apply_constraints(v)");
@@ -229,8 +243,14 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("FunctionSpace::apply_constraints(m, v)");
 
             for (auto &bc : impl_->dirichlet_boundary) {
-                handler()->matrix_apply_constraints(m, 1.0, bc->name, bc->component);
-                handler()->vector_apply_constraints(v, bc->value(), bc->name, bc->component);
+                auto u_bc = std::dynamic_pointer_cast<DirichletBoundary::UniformCondition>(bc);
+
+                if (u_bc) {
+                    handler()->matrix_apply_constraints(m, 1.0, u_bc->name, u_bc->component);
+                    handler()->vector_apply_constraints(v, u_bc->value(), u_bc->name, u_bc->component);
+                } else {
+                    assert(false);
+                }
             }
 
             UTOPIA_TRACE_REGION_END("FunctionSpace::apply_constraints(m, v)");
@@ -239,7 +259,7 @@ namespace utopia {
         void FunctionSpace::apply_zero_constraints(Vector &vec) const {
             UTOPIA_TRACE_REGION_BEGIN("FunctionSpace::apply_zero_constraints(vec)");
             for (auto &bc : impl_->dirichlet_boundary) {
-                handler()->vector_apply_constraints(vec, bc->value(), bc->name, bc->component);
+                handler()->vector_apply_constraints(vec, 0., bc->name, bc->component);
             }
             UTOPIA_TRACE_REGION_END("FunctionSpace::apply_zero_constraints(vec)");
         }

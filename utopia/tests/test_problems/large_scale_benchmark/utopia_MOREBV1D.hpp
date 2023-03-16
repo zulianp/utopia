@@ -241,8 +241,6 @@ namespace utopia {
 
         const Vector &exact_sol() const override { return exact_sol_; }
 
-        Scalar min_function_value() const override { return 0.0; }
-
         std::string name() const override { return "Morebv1D"; }
 
         SizeType dim() const override { return n_; }

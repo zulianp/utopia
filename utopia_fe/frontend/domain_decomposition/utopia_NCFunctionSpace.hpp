@@ -63,7 +63,12 @@ namespace utopia {
                     }
                 });
 
-                temp->I_ptr()->shift_diag(1.0);
+                // Petsc does not like new allocations and petsc MatShift will make new alloactions inefficiently
+                Matrix Id;
+                Id.identity(layout(*temp->I_ptr()), 1.);
+                (*temp->I_ptr()) += Id;
+
+                // temp->I_ptr()->shift_diag(1.0);
 
                 projector_ = temp;
             }

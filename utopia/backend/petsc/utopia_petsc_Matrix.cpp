@@ -2,13 +2,25 @@
 #include "utopia_Instance.hpp"
 #include "utopia_Logger.hpp"
 #include "utopia_Operators.hpp"
-#include "utopia_petsc_Vector.hpp"
-
+#include "utopia_TypeToString.hpp"
 #include "utopia_petsc_Matrix_impl.hpp"
+#include "utopia_petsc_Vector.hpp"
 
 #include <algorithm>
 #include <set>
 #include <utility>
+
+#ifdef UTOPIA_WITH_MATRIX_IO
+
+extern "C" {
+#include "matrixio_crs.h"
+}
+
+#endif
+
+#ifdef UTOPIA_WITH_YAML_CPP
+#include "utopia_YAMLInput.hpp"
+#endif
 
 // PetscObjectTypeCompare((PetscObject)mat,newtype,&sametype);
 // Experts: Mark Hoemmen, Chris Siefert
@@ -121,6 +133,46 @@ namespace utopia {
     }
 
     bool PetscMatrix::read(MPI_Comm comm, const std::string &path) {
+#ifdef UTOPIA_WITH_MATRIX_IO
+        Path ppath = path;
+
+#ifdef UTOPIA_WITH_YAML_CPP
+        auto ext = ppath.extension();
+        if (ext == "yaml" || ext == "yml") {
+            Path folder = ppath.parent();
+            Path rowptr_path = folder / "rowptr.raw";
+            Path colidx_path = folder / "colidx.raw";
+            Path values_path = folder / "values.raw";
+
+            std::string rowptr_type = TypeToString<SizeType>::get();
+            std::string colidx_type = TypeToString<SizeType>::get();
+            std::string values_type = TypeToString<Scalar>::get();
+
+            YAMLInput yaml;
+            if (yaml.open(path)) {
+                return false;
+            }
+
+            // Read paths from file
+            yaml.get("rowptr_path", rowptr_path);
+            yaml.get("colidx_path", colidx_path);
+            yaml.get("values_path", values_path);
+
+            // Read type information from file
+            yaml.get("rowptr_type", rowptr_type);
+            yaml.get("colidx_type", colidx_type);
+            yaml.get("values_type", values_type);
+
+            return read_raw(comm, rowptr_path, colidx_path, values_path, rowptr_type, colidx_type, values_type);
+        }
+#endif
+
+        if (ppath.extension() == "raw") {
+            Path folder = ppath.parent();
+            return read_raw(comm, folder / "rowptr.raw", folder / "colidx.raw", folder / "values.raw");
+        }
+#endif  // UTOPIA_WITH_MATRIX_IO
+
         destroy();
 
         PetscViewer fd;
@@ -135,6 +187,85 @@ namespace utopia {
         UTOPIA_REPORT_ALLOC("PetscMatrix::read");
         return err;
     }
+
+#ifdef UTOPIA_WITH_MATRIX_IO
+    bool PetscMatrix::read_raw(MPI_Comm comm,
+                               const std::string &rowptr_path,
+                               const std::string &colidx_path,
+                               const std::string &values_path,
+                               const std::string &rowptr_type,
+                               const std::string &colidx_type,
+                               const std::string &values_type) {
+        crs_t crs;
+        if (crs_read_str(comm,
+                         rowptr_path.c_str(),
+                         colidx_path.c_str(),
+                         values_path.c_str(),
+                         rowptr_type.c_str(),
+                         colidx_type.c_str(),
+                         values_type.c_str(),
+                         &crs)) {
+            return false;
+        }
+
+        // if()
+
+        PetscInt *rowptr = (PetscInt *)crs.rowptr;
+        PetscInt firstrow = rowptr[0];
+
+        // Remove global indexing
+        for (ptrdiff_t i = 0; i <= crs.lrows; ++i) {
+            rowptr[i] -= firstrow;
+        }
+
+        // FIXME add workaround
+        // assert(crs.values_type_size == sizeof(Scalar));
+        // assert(crs.rowptr_type_size == sizeof(SizeType));
+        // assert(crs.colidx_type_size == sizeof(SizeType));
+
+        destroy();
+
+        int size;
+        MPI_Comm_size(comm, &size);
+
+        if (size == 1) {
+            check_error(MatCreateSeqAIJWithArrays(
+                comm, crs.grows, crs.grows, rowptr, (PetscInt *)crs.colidx, (Scalar *)crs.values, &raw_type()));
+
+        } else {
+            check_error(MatCreateMPIAIJWithArrays(comm,
+                                                  crs.lrows,
+                                                  crs.lrows,
+                                                  crs.grows,
+                                                  crs.grows,
+                                                  (PetscInt *)crs.rowptr,
+                                                  (PetscInt *)crs.colidx,
+                                                  (Scalar *)crs.values,
+                                                  &raw_type()));
+        }
+
+        destroy_callback = [crs]() {
+            crs_t crs_copy = crs;
+            crs_free(&crs_copy);
+        };
+
+        UTOPIA_REPORT_ALLOC("PetscMatrix::read_raw");
+        return true;
+    }
+
+    bool PetscMatrix::read_raw(MPI_Comm comm,
+                               const std::string &rowptr_path,
+                               const std::string &colidx_path,
+                               const std::string &values_path) {
+        return read_raw(comm,
+                        rowptr_path,
+                        colidx_path,
+                        values_path,
+                        TypeToString<SizeType>::get(),
+                        TypeToString<SizeType>::get(),
+                        TypeToString<Scalar>::get());
+    }
+#endif  // UTOPIA_WITH_MATRIX_IO
 
     bool PetscMatrix::write(const std::string &path) const {
         if (is_matlab_file(path)) {
@@ -784,15 +915,21 @@ namespace utopia {
         check_error(MatSetSizes(raw_type(), rows_local, cols_local, rows_global, cols_global));
 
         check_error(MatSetType(raw_type(), type));
+
+        // MatSetLocalToGlobalMapping HERE (row map and col map)
+
         check_error(MatSeqAIJSetPreallocation(raw_type(), PetscMax(d_nnz, 1), PETSC_NULL));
         check_error(
             MatMPIAIJSetPreallocation(raw_type(), PetscMax(d_nnz, 1), PETSC_NULL, PetscMax(o_nnz, 1), PETSC_NULL));
+
+        // check_error(
+        //     MatISSetPreallocation(raw_type(), PetscMax(d_nnz, 1), PETSC_NULL, PetscMax(o_nnz, 1), PETSC_NULL));
 
         check_error(MatSetOption(raw_type(), MAT_NEW_NONZERO_LOCATIONS, PETSC_TRUE));
         check_error(MatSetOption(raw_type(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE));
         check_error(MatSetOption(raw_type(), MAT_NO_OFF_PROC_ENTRIES, PETSC_FALSE));
 
-        check_error(MatZeroEntries(raw_type()));
+        check_error(MatZeroEntries(raw_type()));  // TODO not necessary!
 
         UTOPIA_REPORT_ALLOC("PetscMatrix::matij_init");
     }
@@ -1297,8 +1434,14 @@ namespace utopia {
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    void PetscMatrix::axpy(const Scalar &alpha, const PetscMatrix &x) {
-        check_error(MatAXPY(raw_type(), alpha, x.raw_type(), DIFFERENT_NONZERO_PATTERN));
+    void PetscMatrix::axpy(const Scalar &a, const PetscMatrix &x) {
+        UTOPIA_TRACE_SCOPE("PetscMatrix::axpy");
+        check_error(MatAXPY(raw_type(), a, x.raw_type(), DIFFERENT_NONZERO_PATTERN));
+    }
+
+    void PetscMatrix::axpy_subset(const Scalar &a, const PetscMatrix &x) {
+        UTOPIA_TRACE_SCOPE("PetscMatrix::axpy_subset");
+        check_error(MatAXPY(raw_type(), a, x.raw_type(), SUBSET_NONZERO_PATTERN));
     }
 
     void PetscMatrix::convert_to_mat_baij(const PetscInt block_size, PetscMatrix &output) {
@@ -1502,6 +1645,10 @@ namespace utopia {
         check_error(MatDiagonalSet(raw_type(), d.raw_type(), ADD_VALUES));
     }
 
+    void PetscMatrix::set_diag(const PetscVector &d) {
+        check_error(MatDiagonalSet(raw_type(), d.raw_type(), INSERT_VALUES));
+    }
+
     void PetscMatrix::set(const Scalar &val) {
         if (val == 0.0) {
             scale(0.0);
@@ -1535,6 +1682,34 @@ namespace utopia {
         } else {
             scalar_matrix = *this;
         }
+    }
+
+    // https://petsc.org/release/docs/manualpages/Mat/MatCreateMPIAIJWithSplitArrays/
+
+    void PetscMatrix::wrap(MPI_Comm comm,
+                           const PetscInt rows_local,
+                           const PetscInt cols_local,
+                           const PetscInt rows_global,
+                           const PetscInt cols_global,
+                           PetscInt *rowptr,
+                           PetscInt *colidx,
+                           PetscScalar *values,
+                           std::function<void()> destroy_callback) {
+        destroy();
+
+        int size;
+        MPI_Comm_size(comm, &size);
+
+        if (size == 1) {
+            check_error(MatCreateSeqAIJWithArrays(comm, rows_global, cols_global, rowptr, colidx, values, &raw_type()));
+
+        } else {
+            check_error(MatCreateMPIAIJWithArrays(
+                comm, rows_local, cols_local, rows_global, cols_global, rowptr, colidx, values, &raw_type()));
+        }
+
+        this->destroy_callback = destroy_callback;
+        update_mirror();
     }
 
 }  // namespace utopia

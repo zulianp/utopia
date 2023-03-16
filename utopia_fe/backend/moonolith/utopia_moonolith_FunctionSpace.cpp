@@ -111,6 +111,8 @@ namespace utopia {
             init(mesh);
         }
 
+        void FunctionSpace::create_vector(Vector &v) const { v.zeros(layout(comm(), n_local_dofs(), n_dofs())); }
+
         void FunctionSpace::describe(std::ostream &os) const { impl_->describe(os); }
 
         std::shared_ptr<Mesh> FunctionSpace::mesh_ptr() const { return impl_->mesh; }

@@ -146,6 +146,10 @@ namespace utopia {
 
     class Input;
 
+    class Path;
+
+    class Configurable;
+
     template <class Vector, int Backend>
     class EvalDots;
 

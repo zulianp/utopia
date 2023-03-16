@@ -1,5 +1,5 @@
 find_package(Trilinos NO_MODULE NO_CMAKE_ENVIRONMENT_PATH
-             NO_SYSTEM_ENVIRONMENT_PATH HINTS $ENV{TRILINOS_DIR})
+             NO_SYSTEM_ENVIRONMENT_PATH HINTS $ENV{TRILINOS_DIR} $ENV{TRILINOS_DIR}/lib/cmake/Trilinos REQUIRED)
 
 if(Trilinos_FOUND)
     utopiafe_add_module(utopia_stk ${CMAKE_CURRENT_SOURCE_DIR} ".")
@@ -52,6 +52,10 @@ if(Trilinos_FOUND)
     set(UTOPIA_WITH_STK TRUE)
     set(UTOPIA_WITH_STK
         TRUE
+        PARENT_SCOPE)
+
+    set(UTOPIA_FE_LIBRARIES
+        ${UTOPIA_FE_LIBRARIES}
         PARENT_SCOPE)
 
 else()

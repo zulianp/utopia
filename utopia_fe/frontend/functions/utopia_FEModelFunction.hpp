@@ -5,6 +5,8 @@
 #include "utopia_InputParameters.hpp"
 #include "utopia_ui.hpp"
 
+#include "utopia_LS_Strategy.hpp"
+
 #include "utopia_Field.hpp"
 #include "utopia_fe_Core.hpp"
 #include "utopia_fe_Environment.hpp"
@@ -63,6 +65,10 @@ namespace utopia {
         virtual const std::shared_ptr<Matrix_t> &mass_matrix() const = 0;
         virtual bool assemble_mass_matrix() = 0;
         virtual bool assemble_mass_matrix(Matrix_t &mass_matrix) = 0;
+        virtual void set_mass_matrix(const std::shared_ptr<Matrix_t> &) {
+            assert(false);
+            Utopia::Abort("Implement me!");
+        }
 
         virtual const std::shared_ptr<FunctionSpace> &space() const = 0;
 
@@ -76,6 +82,8 @@ namespace utopia {
 
         virtual void must_apply_constraints_to_assembled(const bool) {}
         virtual bool report_solution(const Vector_t &) { return true; }
+
+        virtual void initial_guess_for_solver(Vector_t &) {}
 
         virtual bool update_IVP(const Vector_t &) { return false; }
         virtual bool setup_IVP(Vector_t &) { return false; }
@@ -93,6 +101,8 @@ namespace utopia {
         }
 
         virtual void set_time(const std::shared_ptr<SimulationTime> &time) = 0;
+
+        virtual std::shared_ptr<LSStrategy<Vector_t>> line_search() { return nullptr; }
     };
 
     template <class FunctionSpace>
@@ -116,6 +126,7 @@ namespace utopia {
         virtual ~FEModelFunction() = default;
 
         bool is_linear() const override { return assembler()->is_linear(); }
+        bool is_hessian_constant() const override { return is_linear(); }
 
         inline Communicator_t &comm() override { return space_->mesh().comm(); }
         inline const Communicator_t &comm() const override { return space_->mesh().comm(); }
@@ -176,6 +187,8 @@ namespace utopia {
         inline const std::shared_ptr<Matrix_t> &mass_matrix() const override { return mass_matrix_; }
 
         bool assemble_mass_matrix() override { return assemble_mass_matrix(*mass_matrix()); }
+
+        void set_mass_matrix(const std::shared_ptr<Matrix_t> &mass_matrix) override { mass_matrix_ = mass_matrix; }
 
         virtual bool apply(const Vector_t &x, Vector_t &hessian_times_x) const override {
             if (empty(hessian_times_x)) {
@@ -458,6 +471,10 @@ namespace utopia {
 
         bool assemble_mass_matrix() override { return fe_function_->assemble_mass_matrix(); }
 
+        void set_mass_matrix(const std::shared_ptr<Matrix_t> &mass_matrix) override {
+            fe_function_->set_mass_matrix(mass_matrix);
+        }
+
         bool assemble_mass_matrix(Matrix_t &mass_matrix) override {
             return fe_function_->assemble_mass_matrix(mass_matrix);
         }
@@ -500,6 +517,7 @@ namespace utopia {
         inline const std::shared_ptr<FunctionSpace> &space() const override { return fe_function_->space(); }
 
         inline const std::shared_ptr<FEFunctionInterface_t> function() const { return fe_function_; }
+        inline void set_function(const std::shared_ptr<FEFunctionInterface_t> &function) { fe_function_ = function; }
 
         bool is_linear() const override { return function()->is_linear(); }
 

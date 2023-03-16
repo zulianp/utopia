@@ -12,13 +12,20 @@
 
 namespace utopia {
 
+    template <class Traits>
     class DirichletBoundary : public Configurable, public Describable {
     public:
+        using Scalar = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Vector = typename Traits::Vector;
+
         class Condition : public Configurable, public Describable {
         public:
             virtual ~Condition() = default;
             virtual void update(const SimulationTime<double> &) {}
-            virtual double value() const = 0;
+            // virtual double value() const = 0;
+
+            virtual bool is_uniform() const = 0;
 
             Condition() = default;
             Condition(std::string name, const int component) : name(std::move(name)), component(component) {}
@@ -47,10 +54,13 @@ namespace utopia {
         class UniformCondition : public Condition {
         public:
             using Super = Condition;
+            static constexpr const char *class_name() { return "UniformCondition"; }
 
             double value_;
 
-            inline double value() const override { return value_; }
+            // inline double value() const override { return value_; }
+            virtual double value() const { return value_; }
+            bool is_uniform() const override { return true; }
 
             UniformCondition() = default;
             UniformCondition(std::string name, double value, const int component)
@@ -67,17 +77,21 @@ namespace utopia {
             }
         };
 
-        class TimeDependentCondition : public Condition {
+#ifdef UTOPIA_WITH_TINY_EXPR
+        class TimeDependentCondition : public UniformCondition {
         public:
-            using Super = Condition;
-            static constexpr const char *name() { return "TimeDependentCondition"; }
+            using Super = UniformCondition;
+            static constexpr const char *class_name() { return "TimeDependentCondition"; }
 
             std::unique_ptr<utopia::SymbolicFunction> expr_;
             double t_{0};
 
-            inline double value() const override { return expr_->eval(0, 0, 0, t_); }
+            void update(const SimulationTime<double> &t) override {
+                t_ = t.get();
+                this->value_ = expr_->eval(0, 0, 0, t_);
+            }
 
-            TimeDependentCondition() : Condition(), expr_(utopia::make_unique<SymbolicFunction>("0")) {}
+            TimeDependentCondition() : Super(), expr_(utopia::make_unique<SymbolicFunction>("0")) {}
 
             TimeDependentCondition(std::string name, std::string expr, const int component)
                 : Condition(std::move(name), component),
@@ -97,6 +111,23 @@ namespace utopia {
                 Super::describe(os);
                 os << "value:\t" << expr_->to_string() << '\n';
             }
+        };
+#endif //UTOPIA_WITH_TINY_EXPR
+
+        class OverwriteCondition : public Condition {
+        public:
+            using Super = Condition;
+
+            static constexpr const char *class_name() { return "OverwriteCondition"; }
+
+            void read(Input &in) override { Super::read(in); }
+
+            void describe(std::ostream &os) const override { Super::describe(os); }
+
+            bool is_uniform() const override { return false; }
+
+            OverwriteCondition(const std::shared_ptr<Vector> &vector) : vector(vector) {}
+            std::shared_ptr<Vector> vector;
         };
 
         template <class Mapper>
@@ -123,10 +154,41 @@ namespace utopia {
                 in.get("type", type);
 
                 std::shared_ptr<Condition> c;
-                if (type == TimeDependentCondition::name()) {
+#ifdef UTOPIA_WITH_TINY_EXPR
+                if (type == TimeDependentCondition::class_name()) {
                     c = std::make_shared<TimeDependentCondition>();
-                } else {
+                } else 
+#endif //UTOPIA_WITH_TINY_EXPR
+                if (type.empty() || type == UniformCondition::class_name()) {
                     c = std::make_shared<UniformCondition>();
+                } else if (type == OverwriteCondition::class_name()) {
+                    c = std::make_shared<OverwriteCondition>(nullptr);
+                } else {
+                    return;
+                }
+
+                c->read(in);
+                this->add(c);
+            });
+        }
+
+        void read_with_state(const std::shared_ptr<Vector> &v, Input &in) {
+            in.get_all([this, &v](Input &in) {
+                std::string type;
+                in.get("type", type);
+
+                std::shared_ptr<Condition> c;
+#ifdef UTOPIA_WITH_TINY_EXPR
+                if (type == TimeDependentCondition::class_name()) {
+                    c = std::make_shared<TimeDependentCondition>();
+                } else 
+#endif //UTOPIA_WITH_TINY_EXPR
+                if (type.empty() || type == UniformCondition::class_name()) {
+                    c = std::make_shared<UniformCondition>();
+                } else if (type == OverwriteCondition::class_name()) {
+                    c = std::make_shared<OverwriteCondition>(v);
+                } else {
+                    return;
                 }
 
                 c->read(in);
@@ -141,7 +203,7 @@ namespace utopia {
             }
         }
 
-        using ConstIterator = std::vector<std::shared_ptr<Condition>>::const_iterator;
+        using ConstIterator = typename std::vector<std::shared_ptr<Condition>>::const_iterator;
 
         inline ConstIterator begin() const { return conditions.cbegin(); }
         inline ConstIterator end() const { return conditions.cend(); }

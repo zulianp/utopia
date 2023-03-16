@@ -1,5 +1,30 @@
+# include(FeatureSummary)
+# include(CheckSymbolExists)
+# find_package(PkgConfig REQUIRED) # https://cmake.org/cmake/help/latest/module/FindPkgConfig.html
+
+# # Check for PETSc
+# set(ENV{PKG_CONFIG_PATH} "$ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib/pkgconfig:$ENV{PETSC_DIR}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+# pkg_search_module(PETSC REQUIRED IMPORTED_TARGET PETSc>=3.11 petsc>=3.11)
+
+# set(CMAKE_REQUIRED_INCLUDES ${PETSC_INCLUDE_DIRS})
+# check_symbol_exists(PETSC_USE_COMPLEX petscsystypes.h HAVE_PETSC_SCALAR_COMPLEX)
+
+# # Setting for FeatureSummary
+# if(PETSC_FOUND)
+#   set_property(GLOBAL APPEND PROPERTY PACKAGES_FOUND PETSc)
+# else()
+#   set_property(GLOBAL APPEND PROPERTY PACKAGES_NOT_FOUND PETSc)
+# endif()
+
+# set_package_properties(PETSc PROPERTIES TYPE REQUIRED
+#   DESCRIPTION "Portable, Extensible Toolkit for Scientific Computation (PETSc)"
+#   URL "https://www.mcs.anl.gov/petsc/"
+#   PURPOSE "PETSc linear algebra backend")
+
+
 # find dependencies
 set(PETSC_TEST_RUNS TRUE)
+set(PETSC_EXECUTABLE_RUNS TRUE) # On daint we cannot run them
 find_package(Petsc)
 
 if(PETSC_FOUND)
@@ -78,6 +103,7 @@ if(PETSC_FOUND)
         PETSC_MODULES
         .
         eval
+        operators
         solvers
         solvers/linear
         solvers/multilevel
@@ -100,13 +126,13 @@ if(PETSC_FOUND)
 
     utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${PETSC_MODULES}")
     target_include_directories(utopia SYSTEM PUBLIC ${PETSC_INCLUDES})
+    # target_link_libraries(utopia PUBLIC ${PETSC_LINK_LIBRARIES})
     target_link_libraries(utopia PUBLIC ${PETSC_LIBRARIES})
     target_compile_definitions(utopia PUBLIC ${PETSC_DEFINITIONS})
 
     if(SLEPC_FOUND)
         target_include_directories(utopia SYSTEM PUBLIC ${SLEPC_INCLUDES})
         target_link_libraries(utopia PUBLIC ${SLEPC_LIBRARIES})
-        target_compile_definitions(utopia PUBLIC ${SLEPC_LIB_SLEPC})
     endif()
 
     set(UTOPIA_THIRDPARTY_INCLUDES

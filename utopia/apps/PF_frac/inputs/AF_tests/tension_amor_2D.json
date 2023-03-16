@@ -18,12 +18,12 @@
     "block_solver" : false,
     "solver" : {
         "verbose" : true,
-        "max-it" : 200,
+        "max_it" : 200,
         "atol": 1e-6,
         "linear-solver" : {
             "verbose" : false,
             "atol": 1e-9,
-            "max-it": 1000
+            "max_it": 1000
         }
     }
 }

@@ -22,7 +22,7 @@ namespace utopia {
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
 
         template <class... Args>
-        VelocityNewmarkIntegrator(Args &&... args) : Super(std::forward<Args>(args)...) {}
+        VelocityNewmarkIntegrator(Args &&...args) : Super(std::forward<Args>(args)...) {}
 
         const Vector_t &solution() const override { return this->x_old(); }
 
@@ -43,9 +43,6 @@ namespace utopia {
         bool gradient(const Vector_t &velocity, Vector_t &g) const override {
             Vector_t x;
             update_x(velocity, x);
-            // if (!TimeDependentFunction::gradient(x, g)) {
-            //     return false;
-            // }
 
             if (!this->function()->gradient(x, g)) {
                 return false;
@@ -74,16 +71,7 @@ namespace utopia {
 
         bool setup_IVP(Vector_t &x) override { return Super::setup_IVP(x); }
 
-        void integrate_gradient(const Vector_t &, Vector_t &) const override {
-            // void integrate_gradient(const Vector_t &x, Vector_t &g) const override {
-            // Skip and do later
-            // UTOPIA_TRACE_REGION_BEGIN("VelocityNewmarkIntegrator::integrate_gradient");
-
-            // Super::integrate_gradient(x, g);
-            // g *= 2. / this->delta_time();
-
-            // UTOPIA_TRACE_REGION_END("VelocityNewmarkIntegrator::integrate_gradient");
-        }
+        void integrate_gradient(const Vector_t &, Vector_t &) const override {}
 
         void integrate_hessian(const Vector_t &x, Matrix_t &H) const override {
             UTOPIA_TRACE_REGION_BEGIN("VelocityNewmarkIntegrator::integrate_hessian");
@@ -92,11 +80,18 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("VelocityNewmarkIntegrator::integrate_hessian");
         }
 
+        void hessian_from_velocity_to_displacement(Matrix_t &H) const { H *= (2 / this->delta_time()); }
+        void hessian_from_displacement_to_velocity(Matrix_t &H) const { H *= (this->delta_time() / 2); }
+
         bool time_derivative(const Vector_t &x, Vector_t &dfdt) const override {
             return Super::time_derivative(x, dfdt);
         }
 
         bool report_solution(const Vector_t &) override { return Super::report_solution(solution()); }
+
+        void initial_guess_for_solver(Vector_t &velocity) override { velocity.set(0.); }
+
+        void displacement(const Vector_t &velocity, Vector_t &result) const { update_x(velocity, result); }
 
     private:
         void update_x(const Vector_t &velocity, Vector_t &x) const {

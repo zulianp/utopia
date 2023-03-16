@@ -6,6 +6,12 @@
 #include <iostream>
 #include "utopia_kokkos_Operations.hpp"
 
+#include <Trilinos_version.h>
+
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+#include <Tpetra_Access.hpp>
+#endif
+
 namespace utopia {
     template <class Vector, class Op>
     class KokkosEvalBinary {
@@ -24,13 +30,21 @@ namespace utopia {
                 result.init(rhs.implementation().getMap());
             }
 
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+            auto k_lhs = lhs.implementation().template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
+            auto k_rhs = rhs.implementation().template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
+            auto k_res = result.implementation().template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadWrite);
+#else
             auto k_lhs = lhs.implementation().template getLocalView<ExecutionSpaceT>();
             auto k_rhs = rhs.implementation().template getLocalView<ExecutionSpaceT>();
             auto k_res = result.implementation().template getLocalView<ExecutionSpaceT>();
+#endif
 
             KokkosOp<Scalar, Op> k_op;
             Kokkos::parallel_for(
                 k_lhs.extent(0), KOKKOS_LAMBDA(const int i) { k_res(i, 0) = k_op.apply(k_lhs(i, 0), k_rhs(i, 0)); });
+
+            Kokkos::fence();
         }
 
         inline static void eval(const Vector &lhs, const Op &, const Scalar &rhs, Vector &result) {
@@ -42,12 +56,19 @@ namespace utopia {
                 result.init(lhs.implementation().getMap());
             }
 
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+            auto k_lhs = lhs.implementation().template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
+            auto k_res = result.implementation().template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadWrite);
+#else
             auto k_lhs = lhs.implementation().template getLocalView<ExecutionSpaceT>();
             auto k_res = result.implementation().template getLocalView<ExecutionSpaceT>();
+#endif
 
             KokkosOp<Scalar, Op> k_op;
             Kokkos::parallel_for(
                 k_lhs.extent(0), KOKKOS_LAMBDA(const int i) { k_res(i, 0) = k_op.apply(k_lhs(i, 0), rhs); });
+
+            Kokkos::fence();
         }
     };
 }  // namespace utopia

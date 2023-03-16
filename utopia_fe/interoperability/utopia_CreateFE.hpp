@@ -1,6 +1,8 @@
 #ifndef UTOPIA_CREATE_FE_HPP
 #define UTOPIA_CREATE_FE_HPP
 
+#include <string>
+
 namespace utopia {
     template <class FunctionSpace, class FE>
     class CreateFE {};

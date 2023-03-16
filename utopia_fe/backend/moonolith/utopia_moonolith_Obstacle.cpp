@@ -31,6 +31,12 @@ namespace utopia {
             in.get("gap_positive_bound", gap_positive_bound);
             in.get("invert_face_orientation", invert_face_orientation);
             in.get("debug", debug);
+            in.get("snap_to_canonical_vectors", snap_to_canonical_vectors);
+            in.get("extend_contact_surface", extend_contact_surface);
+            in.get("skip_dir", skip_dir);
+            in.get("skip_dir_tol", skip_dir_tol);
+            in.get("verbose", verbose);
+            in.get("margin", margin);
 
             in.get("surfaces", [this](Input &in) {
                 in.get_all([this](Input &in) {
@@ -41,6 +47,31 @@ namespace utopia {
                     }
                 });
             });
+
+            bool print_params = false;
+            in.get("print_params", print_params);
+
+            if (print_params || verbose) {
+                int rank;
+                MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+                if (rank == 0) {
+                    describe(utopia::out().stream());
+                }
+            }
+        }
+
+        void Obstacle::Params::describe(std::ostream &os) const {
+            os << "variable_number: \t" << variable_number << "\n";
+            os << "gap_negative_bound: \t" << gap_negative_bound << "\n";
+            os << "gap_positive_bound: \t" << gap_positive_bound << "\n";
+            os << "invert_face_orientation: \t" << invert_face_orientation << "\n";
+            os << "debug: \t" << debug << "\n";
+            os << "snap_to_canonical_vectors: \t" << snap_to_canonical_vectors << "\n";
+            os << "skip_dir: \t" << skip_dir << "\n";
+            os << "skip_dir_tol: \t" << skip_dir_tol << "\n";
+            os << "margin: \t" << margin << "\n";
+            os << "extend_contact_surface: \t" << extend_contact_surface << "\n";
         }
 
         class Obstacle::Output {
@@ -48,6 +79,7 @@ namespace utopia {
             Vector gap;
             Vector normals;
             Matrix orthogonal_trafo;
+            Matrix mass_matrix;
 
             Matrix basis_trafo;
             Vector mass_vector;
@@ -128,10 +160,14 @@ namespace utopia {
                 out.gap = e_mul(out.inverse_mass_vector, gap_x);
                 out.normals = e_mul(out.inverse_mass_vector, out.normals);
 
+                process_banned_nodes(out.is_contact, out.normals);
+
                 normalize(out.normals);
 
                 build_orthogonal_transformation(out.is_contact, out.normals, out.orthogonal_trafo);
                 replace_zeros(out.is_contact, out.gap);
+
+                out.mass_matrix = diag(mass_vector);
             }
 
             void replace_zeros(const Vector &is_contact, Vector &gap) {
@@ -144,8 +180,13 @@ namespace utopia {
                     if (is_contact.get(i) == 0.0) {
                         gap.set(i, 1e8);
                     }
+                    // else {
+                    //     gap.add(i, -margin);
+                    // }
                 }
             }
+
+            virtual void process_banned_nodes(Vector &is_contact, Vector &normals) const = 0;
 
             virtual bool init(const Params &params, const Mesh &mesh) = 0;
             virtual bool assemble(const FunctionSpace &space, const Params &params, Output &output) = 0;
@@ -153,6 +194,8 @@ namespace utopia {
             virtual void build_orthogonal_transformation(const Vector &is_contact,
                                                          const Vector &normal,
                                                          Matrix &trafo) = 0;
+
+            std::shared_ptr<IndexArray> banned_nodes;
         };
 
         template <int Dim>
@@ -182,6 +225,30 @@ namespace utopia {
                         normal.set(i + d, n[d]);
                     }
                 }
+            }
+
+            void process_banned_nodes(Vector &is_contact, Vector &normals) const override {
+                if (!banned_nodes) return;
+
+                auto ic_view = local_view_device(is_contact);
+                auto n_view = local_view_device(normals);
+
+                // FIXME
+                auto &&bn_view = *banned_nodes;
+
+                auto r = range(is_contact);
+
+                RangeDevice<Vector> rd(0, bn_view.size());
+
+                parallel_for(
+                    rd, UTOPIA_LAMBDA(const SizeType i) {
+                        auto local_node_i = bn_view[i] * Dim - r.begin();
+                        ic_view.set(local_node_i, 0);
+
+                        for (int d = 0; d < Dim; ++d) {
+                            n_view.set(local_node_i + d, 0);
+                        }
+                    });
             }
 
             void build_orthogonal_transformation(const Vector &is_contact,
@@ -240,10 +307,19 @@ namespace utopia {
                     return false;
                 }
 
+                obstacle->snap_to_canonical_vectors(params.snap_to_canonical_vectors);
                 obstacle->set_gap_bounds(params.gap_negative_bound, params.gap_positive_bound);
+                obstacle->skip_dir(params.skip_dir);
+                obstacle->skip_dir_tol(params.skip_dir_tol);
+                obstacle->extend_contact_surface(params.extend_contact_surface);
                 obstacle->assemble(params.tags, *space_d);
 
                 this->finalize_tensors(Dim, obstacle->buffers(), output);
+
+                if (params.margin != 0.) {
+                    output.gap.shift(-params.margin);
+                }
+
                 return true;
             }
 
@@ -307,7 +383,7 @@ namespace utopia {
 
         void Obstacle::set_params(const Params &params) { *this->params_ = params; }
 
-        bool Obstacle::assemble(const FunctionSpace &space) {
+        bool Obstacle::assemble(FunctionSpace &space) {
             UTOPIA_TRACE_REGION_BEGIN("moonolith::Obstacle::assemble");
 
             assert(impl_);
@@ -325,6 +401,10 @@ namespace utopia {
             out = transpose(output().orthogonal_trafo) * in * output().orthogonal_trafo;
         }
 
+        std::shared_ptr<Obstacle::Matrix> Obstacle::orthogonal_transformation() {
+            return make_ref(output().orthogonal_trafo);
+        }
+
         void Obstacle::transform(const Vector &in, Vector &out) { out = transpose(output().orthogonal_trafo) * in; }
 
         void Obstacle::inverse_transform(const Vector &in, Vector &out) { out = output().orthogonal_trafo * in; }
@@ -335,6 +415,14 @@ namespace utopia {
 
         const Obstacle::Vector &Obstacle::normals() const { return output().normals; }
 
+        Obstacle::Vector &Obstacle::gap() { return output().gap; }
+
+        Obstacle::Vector &Obstacle::is_contact() { return output().is_contact; }
+
+        Obstacle::Vector &Obstacle::normals() { return output().normals; }
+
+        std::shared_ptr<Obstacle::Matrix> Obstacle::mass_matrix() { return make_ref(output().mass_matrix); }
+
         Obstacle::Output &Obstacle::output() {
             assert(output_);
             return *output_;
@@ -342,6 +430,10 @@ namespace utopia {
         const Obstacle::Output &Obstacle::output() const {
             assert(output_);
             return *output_;
+        }
+
+        void Obstacle::set_banned_nodes(const std::shared_ptr<IndexArray> &banned_nodes) {
+            impl_->banned_nodes = banned_nodes;
         }
 
     }  // namespace moonolith

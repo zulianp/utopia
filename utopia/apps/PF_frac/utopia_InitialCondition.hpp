@@ -424,6 +424,246 @@ namespace utopia {
         Scalar pressure0_;
     };
 
+
+
+
+    template <class FunctionSpace>
+    class SlantedCrack2D : public InitialCondition<FunctionSpace> {
+    public:
+        // using Comm           = typename FunctionSpace::Comm;
+        using Mesh = typename FunctionSpace::Mesh;
+        using Elem = typename FunctionSpace::Shape;
+        using ElemView = typename FunctionSpace::ViewDevice::Elem;
+        using SizeType = typename FunctionSpace::SizeType;
+        using Scalar = typename FunctionSpace::Scalar;
+        using Dev = typename FunctionSpace::Device;
+        using Point = typename FunctionSpace::Point;
+        using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+        static const int NNodes = Elem::NNodes;
+
+        SlantedCrack2D(FunctionSpace &space, const SizeType &PF_component)
+            : InitialCondition<FunctionSpace>(space), PF_component_(PF_component){}
+
+        void init(PetscVector &x) override {
+            using CoeffVector = utopia::StaticVector<Scalar, NNodes>;
+            // un-hard-code
+            auto C = this->space_.subspace(PF_component_);
+
+            auto width = 3.0 * this->space_.mesh().min_spacing();
+
+            auto xyz_min = this->space_.mesh().box_min();
+
+            // auto width = 0.2;
+
+            if (mpi_world_rank() == 0) {
+                utopia::out() << "width: " << width << "  \n";
+            }
+
+            std::vector<Rectangle<Scalar>> rectangles;
+
+            Point2D<Scalar> A{};
+            A.x = 12.00;
+            A.y = 21.50;
+            rectangles.push_back(Rectangle<Scalar>(A, -3.5355, width, 45));
+
+            Point2D<Scalar> B{};
+            B.x = 15;
+            B.y = 20.00;
+            //rectangles.push_back(Rectangle<Scalar>(B, 5.000, width, 0.0));
+
+            auto sampler = utopia::sampler(C, [&rectangles](const Point &x) -> Scalar {
+                for (std::size_t r = 0; r < rectangles.size(); r++) {
+                    if (rectangles[r].belongs_to_rectangle(x[0], x[1])) return 1.0;
+                }
+                return 0.0;
+            });
+
+            {
+                auto C_view = C.view_device();
+                auto sampler_view = sampler.view_device();
+                auto x_view = this->space_.assembly_view_device(x);
+
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
+
+                        CoeffVector s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
+            }
+        }
+
+    private:
+        SizeType PF_component_;
+    };
+
+
+
+
+    template <class FunctionSpace>
+    class RandomlyDistributed : public InitialCondition<FunctionSpace> {
+    public:
+        // using Comm           = typename FunctionSpace::Comm;
+        using Mesh = typename FunctionSpace::Mesh;
+        using Elem = typename FunctionSpace::Shape;
+        using ElemView = typename FunctionSpace::ViewDevice::Elem;
+        using SizeType = typename FunctionSpace::SizeType;
+        using Scalar = typename FunctionSpace::Scalar;
+        using Dev = typename FunctionSpace::Device;
+        using Point = typename FunctionSpace::Point;
+        using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+        static const int NNodes = Elem::NNodes;
+
+        RandomlyDistributed(FunctionSpace &space, const SizeType &PF_component)
+            : InitialCondition<FunctionSpace>(space), PF_component_(PF_component){}
+
+        void init(PetscVector &x) override {
+            using CoeffVector = utopia::StaticVector<Scalar, NNodes>;
+            // un-hard-code
+            auto C = this->space_.subspace(PF_component_);
+            int  total_nodes = this->space_.mesh().n_nodes();
+            auto min_elem = this->space_.mesh().min_spacing();
+
+            auto xyz_min = this->space_.mesh().box_min();
+            auto xyz_max = this->space_.mesh().box_max();
+
+            auto height = xyz_max(1) - xyz_min(1);
+            auto width  = xyz_max(0) - xyz_min(0);
+
+            double width_x = width / 6.0;
+            double height_min = 4.0*height/10.0 + xyz_min(1) + 3.0 ;
+            double height_max = 5.0*height/10.0 + xyz_min(1) - 3.0;
+            double damage_threshold = 1.0;
+
+            std::default_random_engine generator;
+            std::poisson_distribution<int> distribution(4);
+
+            if (mpi_world_rank() == 0) {
+                utopia::out() << "rand: " << double(rand())/RAND_MAX << "  \n";
+            }
+
+            std::vector<Rectangle<Scalar>> rectangles;
+
+            int seed = mpi_world_rank()*total_nodes;
+            generator.seed(seed);
+
+            auto sampler = utopia::sampler(C, [&generator, &distribution, xyz_min, xyz_max, width_x, height_min, height_max, total_nodes, damage_threshold](const Point &x) -> Scalar {
+                if ( x(1) < height_max && x(1) > height_min &&
+                     x(0) > xyz_min(0) + width_x && x(0) < xyz_max(0) - width_x ) {
+                    double random_damage = double(distribution(generator))/10.0;
+                    if (random_damage >= damage_threshold) return 1.0;
+                    else return 0.0;
+                } else return 0.0;
+                });
+
+            {
+                auto C_view = C.view_device();
+                auto sampler_view = sampler.view_device();
+                auto x_view = this->space_.assembly_view_device(x);
+
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
+
+                        CoeffVector s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
+            }
+        }
+
+    private:
+        SizeType PF_component_;
+    };
+
+
+    template <class FunctionSpace>
+    class UniformSpacingOnLine: public InitialCondition<FunctionSpace> {
+    public:
+        // using Comm           = typename FunctionSpace::Comm;
+        using Mesh = typename FunctionSpace::Mesh;
+        using Elem = typename FunctionSpace::Shape;
+        using ElemView = typename FunctionSpace::ViewDevice::Elem;
+        using SizeType = typename FunctionSpace::SizeType;
+        using Scalar = typename FunctionSpace::Scalar;
+        using Dev = typename FunctionSpace::Device;
+        using Point = typename FunctionSpace::Point;
+        using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+        static const int NNodes = Elem::NNodes;
+
+        UniformSpacingOnLine(FunctionSpace &space, const SizeType &PF_component)
+            : InitialCondition<FunctionSpace>(space), PF_component_(PF_component){}
+
+        void read(Input & in) override {
+            in.get("IC_number", number_);
+            in.get("IC_ycoord", ycoord_);
+        }
+
+        void init(PetscVector &x) override {
+            using CoeffVector = utopia::StaticVector<Scalar, NNodes>;
+            // un-hard-code
+            auto C = this->space_.subspace(PF_component_);
+            int  total_nodes = this->space_.mesh().n_nodes();
+            auto min_elem_x = this->space_.mesh().min_spacing_x();
+            auto min_elem_y = this->space_.mesh().min_spacing_y();
+
+            auto xyz_min = this->space_.mesh().box_min();
+            auto xyz_max = this->space_.mesh().box_max();
+
+            double height = xyz_max(1) - xyz_min(1);
+            double width  = xyz_max(0) - xyz_min(0);
+            double width_x = width / 9.0;
+
+            double ycoord = ycoord_;
+            double number = number_;
+
+            if (mpi_world_rank() == 0){
+                std::cout << "min_elem_x" << "   min_elem_y   min_spacing" << std::endl;
+                std::cout << min_elem_x << "   " << min_elem_y << "    " <<  this->space_.mesh().min_spacing() << std::endl;
+            }
+
+            auto sampler = utopia::sampler(C, [width, ycoord, min_elem_x, min_elem_y, number, xyz_min, xyz_max, width_x ](const Point &x) -> Scalar {
+                if ( x(1) <= ycoord + min_elem_y/2.0 && x(1) >= ycoord - min_elem_y/2.0 &&
+                     x(0) > xyz_min(0) + width_x && x(0) < xyz_max(0) - width_x &&
+                     fmod( x(0) , width/number) <= 0.5*width/number + 0.501*min_elem_x &&
+                     fmod( x(0) , width/number) >= 0.5*width/number - 0.501*min_elem_x  ){
+                    std::cout << x(0) << "  " << x(1) << std::endl;
+                    return 1.0;
+                }
+                else return 0.0;
+
+                });
+
+            {
+                auto C_view = C.view_device();
+                auto sampler_view = sampler.view_device();
+                auto x_view = this->space_.assembly_view_device(x);
+
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
+
+                        CoeffVector s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
+            }
+        }
+
+    private:
+        SizeType PF_component_;
+        double number_;
+        double ycoord_;
+    };
+
+
+
+
+
     template <class FunctionSpace>
     class FracPlateIC : public InitialCondition<FunctionSpace> {
     public:

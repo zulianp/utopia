@@ -8,6 +8,7 @@
 #include "utopia_MPI.hpp"
 #include "utopia_Tracer.hpp"
 #include "utopia_make_unique.hpp"
+#include "utopia_Banner.hpp"
 
 #include "utopia_Reporter.hpp"
 
@@ -57,6 +58,7 @@ namespace utopia {
         // }
 
         CitationsDB::instance().cite(Cite<Utopia2016Git>::bibtex());
+        CitationsDB::instance().cite(Cite<Utopia2021>::bibtex());
     }
 
     int Utopia::Finalize() {
@@ -76,8 +78,12 @@ namespace utopia {
 
         int ret = 0;
 
-        for (const auto &l : instance().libraries_) {
-            ret += l->finalize();
+        // for (const auto &l : instance().libraries_) {
+        //     ret += l->finalize();
+        // }
+
+        for (auto it = instance().libraries_.rbegin(); it != instance().libraries_.rend(); ++it) {
+            ret += (*it)->finalize();
         }
 
 #ifdef UTOPIA_WITH_MPI
@@ -193,7 +199,16 @@ namespace utopia {
             if (str == "--full_trace") {
                 Tracer::instance().full_trace(true);
             }
+
+            if (str == "--trace_log_regions") {
+                Tracer::instance().log_regions(true);
+            }
 #endif  // UTOPIA_TRACE_ENABLED
+        }
+
+        if(verbose()) 
+        {
+            Banner::welcome();
         }
     }
 

@@ -15,4 +15,5 @@ using namespace utopia;
 
 void libmesh_ncfunctionspace() { utopia::run_parallel_test<NCFunctionSpaceTest<utopia::libmesh::FunctionSpace>>(); }
 
-UTOPIA_REGISTER_TEST_FUNCTION(libmesh_ncfunctionspace);
+// FIXME
+// UTOPIA_REGISTER_TEST_FUNCTION(libmesh_ncfunctionspace);

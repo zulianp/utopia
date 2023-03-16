@@ -26,6 +26,7 @@ namespace utopia {
             using DofHandler = typename FEHandler::DofHandler;
             using FEDofMap = typename FEHandler::FEDofMap;
             using SPattern = typename FEHandler::SPattern;
+            using SparseMatrixBuilder = ::mars::SparsityMatrix<SPattern>;
 
             static const ::mars::Integer Type = SPattern::DofHandler::ElemType;
             using UniformFE = utopia::kokkos::UniformFE<Scalar>;
@@ -33,6 +34,10 @@ namespace utopia {
             // using FE = utopia::mars::FE<Scalar, SPattern, FEDofMap>;
             using FE = UniformFE;
             using FEAssembler::assemble;
+
+            static const int INTERIOR = 0;
+            static const int GHOSTS = 1;
+            static const int ALL = 2;
 
             ConcreteFEAssembler() = default;
             virtual ~ConcreteFEAssembler() = default;
@@ -50,20 +55,14 @@ namespace utopia {
                 auto handler = this->handler();
                 auto sp = handler->get_sparsity_pattern();
 
-                if (!add_offsetted_scalar_op_to_matrix(0, 0, op, sp)) {
+                SparseMatrixBuilder matrix_builder(sp, hessian.raw_type()->getLocalMatrixDevice());
+
+                assert(!hessian.empty());
+
+                if (!add_offsetted_scalar_op_to_matrix(0, 0, op, matrix_builder)) {
                     return false;
                 }
 
-                UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::scalar_op_assemble_matrix::TpetraCrsMatrix()");
-
-                // FIXME Bad it should not do this
-                auto mat_impl =
-                    Teuchos::rcp(new Matrix::CrsMatrixType(this->handler()->get_sparsity_pattern().get_matrix(),
-                                                           hessian.raw_type()->getRowMap(),
-                                                           hessian.raw_type()->getColMap()));
-                hessian.wrap(mat_impl, false);
-
-                UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::scalar_op_assemble_matrix::TpetraCrsMatrix()");
                 UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::scalar_op_assemble_matrix");
                 return true;
             }
@@ -81,9 +80,8 @@ namespace utopia {
                 }
 
                 auto handler = this->handler();
-                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -106,9 +104,8 @@ namespace utopia {
                 ensure_fe();
 
                 auto handler = this->handler();
-                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -142,9 +139,8 @@ namespace utopia {
                 UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::collect_ghost_layer");
 
                 auto handler = this->handler();
-                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 auto x_view = local_view_device(in).raw_type();  // Rank 2 tensor N x 1
                 if (out.extent(0) != dof_handler.get_dof_size()) {
@@ -154,8 +150,32 @@ namespace utopia {
                 ::mars::ViewVectorType<Scalar> x_view_rank1(::Kokkos::subview(x_view, ::Kokkos::ALL, 0));
                 ::mars::set_locally_owned_data(dof_handler, out, x_view_rank1);
                 ::mars::gather_ghost_data(dof_handler, out);
+                Kokkos::fence();
 
                 UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::collect_ghost_layer");
+            }
+
+            template <class Callback>
+            void collect_ghost_layer_with_callback(const Vector &in,
+                                                   ::mars::ViewVectorType<Scalar> &out,
+                                                   Callback callback) {
+                UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::collect_ghost_layer_with_callback");
+
+                auto handler = this->handler();
+                auto fe_dof_map = handler->get_fe_dof_map();
+                auto dof_handler = handler->get_dof_handler();
+
+                auto x_view = local_view_device(in).raw_type();  // Rank 2 tensor N x 1
+                if (out.extent(0) != dof_handler.get_dof_size()) {
+                    out = ::mars::ViewVectorType<Scalar>("x_local", dof_handler.get_dof_size());  // Rank 1 tensor
+                }
+
+                ::mars::ViewVectorType<Scalar> x_view_rank1(::Kokkos::subview(x_view, ::Kokkos::ALL, 0));
+                ::mars::set_locally_owned_data(dof_handler, out, x_view_rank1);
+                ::mars::gather_ghost_data(dof_handler, out, callback);
+                Kokkos::fence();
+
+                UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::collect_ghost_layer_with_callback");
             }
 
             ////////////////////////
@@ -169,14 +189,18 @@ namespace utopia {
                 auto handler = this->handler();
                 auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
+
+                SparseMatrixBuilder matrix_builder(sp, hessian.raw_type()->getLocalMatrixDevice());
 
                 auto matrix = hessian.raw_type()->getLocalMatrix();
-                //TODO: Add execution space for the Range policy
+                // TODO: Add execution space for the Range policy
                 Kokkos::parallel_for(
                     "Reset values to 0", Kokkos::RangePolicy<>(0, matrix.values.extent(0)), UTOPIA_LAMBDA(const int i) {
                         matrix.values(i) = 0.0;
                     });
+
+                Kokkos::fence();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -189,7 +213,7 @@ namespace utopia {
 
                 assert(block_size == dof_handler.get_block());
 
-                fe_dof_map.iterate(MARS_LAMBDA(const ::mars::Integer elem_index) {
+                auto kernel = MARS_LAMBDA(const ::mars::Integer elem_index) {
                     for (int i = 0; i < n_fun; i++) {
                         for (int sub_i = 0; sub_i < block_size; ++sub_i) {
                             auto offset_i = dof_handler.compute_block_index(i, sub_i);
@@ -204,13 +228,16 @@ namespace utopia {
                                         const Scalar val = op(elem_index, i, j, sub_i, sub_j);
 
                                         assert(val == val);
-                                        sp.atomic_add_value(local_dof_i, local_dof_j, val, matrix);
+                                        matrix_builder.atomic_add_value(local_dof_i, local_dof_j, val, matrix);
                                     }
                                 }
                             }
                         }
                     }
-                });
+                };
+
+                fe_dof_map.iterate(kernel);
+                Kokkos::fence();
 
                 UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_assemble_matrix");
                 return true;
@@ -230,9 +257,8 @@ namespace utopia {
                 }
 
                 auto handler = this->handler();
-                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -241,16 +267,32 @@ namespace utopia {
                 auto y_view = local_view_device(y).raw_type();
 
                 // kokkos_view_owned = local_view_device(x).raw_type(); // Rank 2 tensor N x 1
+                bool ok = false;
+                if (compute_communicate_overlap_) {
+                    collect_ghost_layer_with_callback(x, x_current_local_view, [&]() {
+                        UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::block_op_apply(INTERIOR)");
+                        ok = add_offsetted_block_op_to_vector(INTERIOR, 0, 0, op, x_current_local_view, y_view);
+                        UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_apply(INTERIOR)");
+                    });
 
-                collect_ghost_layer(x, x_current_local_view);
-                bool ok = add_offsetted_block_op_to_vector(0, 0, op, x_current_local_view, y_view);
+                    UTOPIA_TRACE_REGION_BEGIN("mars::ConcreteFEAssember::block_op_apply(GHOSTS)");
+                    ok = ok && add_offsetted_block_op_to_vector(GHOSTS, 0, 0, op, x_current_local_view, y_view);
+                    UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_apply(GHOSTS)");
+
+                } else {
+                    collect_ghost_layer(x, x_current_local_view);
+                    ok = add_offsetted_block_op_to_vector(0, 0, op, x_current_local_view, y_view);
+                }
+
+                Kokkos::fence();
 
                 UTOPIA_TRACE_REGION_END("mars::ConcreteFEAssember::block_op_apply");
                 return ok;
             }
 
             template <class Op, class TpetraVectorView>
-            bool add_offsetted_block_op_to_vector(const int b_offset_i,
+            bool add_offsetted_block_op_to_vector(int iterate_over,
+                                                  const int b_offset_i,
                                                   const int b_offset_j,
                                                   Op op,
                                                   const ::mars::ViewVectorType<Scalar> &x,
@@ -258,9 +300,8 @@ namespace utopia {
                 ensure_fe();
 
                 auto handler = this->handler();
-                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -268,7 +309,7 @@ namespace utopia {
                 int block_size = op.dim();
                 assert(block_size <= dof_handler.get_block());
 
-                fe_dof_map.iterate(MARS_LAMBDA(const ::mars::Integer elem_index) {
+                auto kernel = MARS_LAMBDA(const ::mars::Integer elem_index) {
                     for (int i = 0; i < n_fun; i++) {
                         for (int sub_i = 0; sub_i < block_size; ++sub_i) {
                             auto offset_i = dof_handler.compute_block_index(i, sub_i + b_offset_i);
@@ -291,9 +332,38 @@ namespace utopia {
                             Kokkos::atomic_fetch_add(&y(owned_dof_i, 0), val);
                         }
                     }
-                });
+                };
+
+                switch (iterate_over) {
+                    case ALL: {
+                        fe_dof_map.iterate(kernel);
+                        break;
+                    }
+                    case INTERIOR: {
+                        fe_dof_map.owned_dof_element_iterate(kernel);
+                        break;
+                    }
+                    case GHOSTS: {
+                        fe_dof_map.ghost_dof_element_iterate(kernel);
+                        break;
+                    }
+                    default: {
+                        assert(false);
+                        Utopia::Abort("Invalid iterate_over!");
+                        break;
+                    }
+                }
 
                 return true;
+            }
+
+            template <class Op, class TpetraVectorView>
+            bool add_offsetted_block_op_to_vector(const int b_offset_i,
+                                                  const int b_offset_j,
+                                                  Op op,
+                                                  const ::mars::ViewVectorType<Scalar> &x,
+                                                  TpetraVectorView &y) {
+                return add_offsetted_block_op_to_vector(ALL, b_offset_i, b_offset_j, op, x, y);
             }
 
             template <class Op, class TpetraVectorView>
@@ -305,9 +375,8 @@ namespace utopia {
                 ensure_fe();
 
                 auto handler = this->handler();
-                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -340,6 +409,7 @@ namespace utopia {
                     }
                 });
 
+                Kokkos::fence();
                 return true;
             }
 
@@ -353,9 +423,11 @@ namespace utopia {
                 ensure_fe();
 
                 auto handler = this->handler();
+                // auto fe_dof_map = handler->get_fe_dof_map();
+                auto dof_handler = handler->get_dof_handler();
+
                 auto sp = handler->get_sparsity_pattern();
-                auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                SparseMatrixBuilder matrix_builder(sp, hessian.raw_type()->getLocalMatrixDevice());
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -363,18 +435,12 @@ namespace utopia {
                 int block_size = vec_op.dim();
                 assert(block_size <= dof_handler.get_block());
 
-                bool ok = add_offsetted_block_op_to_matrix(vector_var, vector_var, vec_op, sp) &&
-                          add_offsetted_scalar_op_to_matrix(scalar_var, scalar_var, scalar_op, sp) &&
-                          add_offsetted_block_x_scalar_op_to_matrix(vector_var, scalar_var, couple_vec_scalar_op, sp);
+                bool ok = add_offsetted_block_op_to_matrix(vector_var, vector_var, vec_op, matrix_builder) &&
+                          add_offsetted_scalar_op_to_matrix(scalar_var, scalar_var, scalar_op, matrix_builder) &&
+                          add_offsetted_block_x_scalar_op_to_matrix(
+                              vector_var, scalar_var, couple_vec_scalar_op, matrix_builder);
 
                 if (!ok) return false;
-
-                // // FIXME Bad it should not do this
-                auto mat_impl =
-                    Teuchos::rcp(new Matrix::CrsMatrixType(this->handler()->get_sparsity_pattern().get_matrix(),
-                                                           hessian.raw_type()->getRowMap(),
-                                                           hessian.raw_type()->getColMap()));
-                hessian.wrap(mat_impl, false);
                 return true;
             }
 
@@ -395,9 +461,10 @@ namespace utopia {
                 }
 
                 auto handler = this->handler();
-                auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                // auto sp = handler->get_sparsity_pattern();
+                // auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -419,12 +486,15 @@ namespace utopia {
             ////////////////////
 
             template <class Op>
-            bool add_offsetted_scalar_op_to_matrix(const int s_offset_i, const int s_offset_j, Op op, SPattern &sp) {
+            bool add_offsetted_scalar_op_to_matrix(const int s_offset_i,
+                                                   const int s_offset_j,
+                                                   Op op,
+                                                   SparseMatrixBuilder matrix_builder) {
                 ensure_fe();
 
                 auto handler = this->handler();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -442,7 +512,7 @@ namespace utopia {
                                 Scalar val = op(elem_index, i, j);
 
                                 assert(val == val);
-                                sp.atomic_add_value(local_dof_i, local_dof_j, val);
+                                matrix_builder.atomic_add_value(local_dof_i, local_dof_j, val);
                             }
                         }
                     }
@@ -454,12 +524,16 @@ namespace utopia {
             ////////////////////
 
             template <class Op>
-            bool add_offsetted_block_op_to_matrix(const int b_offset_i, const int b_offset_j, Op op, SPattern &sp) {
+            bool add_offsetted_block_op_to_matrix(const int b_offset_i,
+                                                  const int b_offset_j,
+                                                  Op op,
+                                                  SparseMatrixBuilder matrix_builder) {
                 ensure_fe();
 
                 auto handler = this->handler();
+                // auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -487,7 +561,7 @@ namespace utopia {
                                         const Scalar val = op(elem_index, i, j, sub_i, sub_j);
 
                                         assert(val == val);
-                                        sp.atomic_add_value(local_dof_i, local_dof_j, val);
+                                        matrix_builder.atomic_add_value(local_dof_i, local_dof_j, val);
                                     }
                                 }
                             }
@@ -504,12 +578,13 @@ namespace utopia {
             bool add_offsetted_block_x_scalar_op_to_matrix(const int b_offset_i,
                                                            const int s_offset_j,
                                                            Op op,
-                                                           SPattern &sp) {
+                                                           SparseMatrixBuilder matrix_builder) {
                 ensure_fe();
 
                 auto handler = this->handler();
+                // auto sp = handler->get_sparsity_pattern();
                 auto fe_dof_map = handler->get_fe_dof_map();
-                auto dof_handler = sp.get_dof_handler();
+                auto dof_handler = handler->get_dof_handler();
 
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
@@ -536,7 +611,7 @@ namespace utopia {
                                     const Scalar val = op(elem_index, i, j, sub_i);
 
                                     assert(val == val);
-                                    sp.atomic_add_value(local_dof_i, local_dof_j, val);
+                                    matrix_builder.atomic_add_value(local_dof_i, local_dof_j, val);
                                 }
                             }
                         }
@@ -546,7 +621,7 @@ namespace utopia {
                 return true;
             }
 
-            void read(Input &in) override {}
+            void read(Input &in) override { in.get("compute_communicate_overlap", compute_communicate_overlap_); }
 
             void set_environment(const std::shared_ptr<Environment> &) override {
                 // assert(false);
@@ -608,6 +683,7 @@ namespace utopia {
             std::unique_ptr<UniformFE> fe_;
 
             ::mars::ViewVectorType<Scalar> x_current_local_view;
+            bool compute_communicate_overlap_{true};
 
             void init() {
                 if (!fe_) {

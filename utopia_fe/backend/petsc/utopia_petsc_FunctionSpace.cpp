@@ -52,6 +52,12 @@ namespace utopia {
 
         void FunctionSpace::read(Input &in) { impl_->read(in); }
 
+        bool FunctionSpace::read_with_state(Input &in, Field<FunctionSpace> &val) {
+            assert(false);
+            Utopia::Abort("IMPLEMENT ME!");
+            return false;
+        }
+
         const FunctionSpace::Mesh &FunctionSpace::mesh() const {
             assert(impl_->mesh);
             return *impl_->mesh;
@@ -144,14 +150,19 @@ namespace utopia {
 
             assert(local_size == n_local_dofs);
             assert(n_local_nodes * n_var == n_local_dofs);
+            for (auto &c : db) {
+                auto u_bc = std::dynamic_pointer_cast<DirichletBoundary::UniformCondition>(c);
 
-            for (auto i = 0; i < n_local_nodes; ++i) {
-                for (auto &c : db) {
-                    if (mesh_view.is_node_on_boundary(i, c->side)) {
-                        const SizeType dof = i * n_var + c->component;
-                        const Scalar v = c->value();
-                        v_view.set(dof, v);
+                if (u_bc) {
+                    for (auto i = 0; i < n_local_nodes; ++i) {
+                        if (mesh_view.is_node_on_boundary(i, u_bc->side)) {
+                            const SizeType dof = i * n_var + u_bc->component;
+                            const Scalar v = u_bc->value();
+                            v_view.set(dof, v);
+                        }
                     }
+                } else {
+                    assert(false);
                 }
             }
         }
@@ -177,15 +188,21 @@ namespace utopia {
             IndexSet constrains;
             constrains.reserve(n_local_dofs);
 
-            for (auto i = 0; i < n_local_nodes; ++i) {
-                for (auto &c : db) {
-                    if (mesh_view.is_node_on_boundary(i, c->side)) {
-                        const SizeType dof = i * n_var + c->component;
-                        const Scalar v = c->value();
-                        v_view.set(dof, v);
+            for (auto &c : db) {
+                auto u_bc = std::dynamic_pointer_cast<DirichletBoundary::UniformCondition>(c);
 
-                        constrains.push_back(dof + r.begin());
+                if (u_bc) {
+                    for (auto i = 0; i < n_local_nodes; ++i) {
+                        if (mesh_view.is_node_on_boundary(i, u_bc->side)) {
+                            const SizeType dof = i * n_var + u_bc->component;
+                            const Scalar v = u_bc->value();
+                            v_view.set(dof, v);
+
+                            constrains.push_back(dof + r.begin());
+                        }
                     }
+                } else {
+                    assert(false);
                 }
             }
 
