@@ -677,19 +677,19 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/utopia_compiler_features.hpp
 # test suite
 add_executable(utopia_test EXCLUDE_FROM_ALL test.cpp)
 utopia_link_default_targets(utopia_test)
-target_link_libraries(utopia_test PRIVATE utopia)
+target_link_libraries(utopia_test PRIVATE utopia  ${CMAKE_DL_LIBS})
 include(tests/tests.cmake)
 
 # bench suite
 add_executable(utopia_bench EXCLUDE_FROM_ALL bench.cpp)
 utopia_link_default_targets(utopia_bench)
-target_link_libraries(utopia_bench PRIVATE utopia)
+target_link_libraries(utopia_bench PRIVATE utopia  ${CMAKE_DL_LIBS})
 include(benchmarks/benchmarks.cmake)
 
 # apps suite
 add_executable(utopia_exec EXCLUDE_FROM_ALL main.cpp)
 utopia_link_default_targets(utopia_exec)
-target_link_libraries(utopia_exec PRIVATE utopia)
+target_link_libraries(utopia_exec PRIVATE utopia  ${CMAKE_DL_LIBS})
 include(apps/apps.cmake)
 
 install(FILES ${UTOPIA_ROOT_PATH}/utopia.hpp DESTINATION include)
