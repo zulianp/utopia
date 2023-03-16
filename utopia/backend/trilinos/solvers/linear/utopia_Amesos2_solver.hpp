@@ -19,19 +19,18 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     class Amesos2Solver<Matrix, Vector, TRILINOS> final : public DirectSolver<Matrix, Vector> {
     public:
-        typedef UTOPIA_SCALAR(Vector) Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
-
-        Amesos2Solver();
         Amesos2Solver(const Amesos2Solver &other);
+        Amesos2Solver() = delete;
+        Amesos2Solver(const std::string &solver_type);
         ~Amesos2Solver() override;
 
         void update(const std::shared_ptr<const Matrix> &op) override;
         bool apply(const Vector &rhs, Vector &lhs) override;
 
-        void read(Input &is) override;
         void print_usage(std::ostream &os) const override;
+        void read(Input &is) override;
+
+        Amesos2Solver *clone() const override;
 
         int get_nnzLU() const;
         int get_num_preorder() const;
@@ -42,21 +41,11 @@ namespace utopia {
         bool get_sym_factorization_done() const;
         bool get_num_factorization_done() const;
 
-        /**
-         * @brief      Reads the xml file based on different layout than read
-         *
-         * @param[in]  path  location of the xml file
-         */
-        void read_xml(const std::string &path);
-
-        /**
-         * @brief      Sets the parameters.
-         */
-        void check_parameters();  // override;
-
-        Amesos2Solver *clone() const override;
-
     private:
+        bool keep_symbolic_factorization{false};
+
+        const std::string solver_type_;
+
         class Impl;
         std::unique_ptr<Impl> impl_;
 
@@ -67,5 +56,5 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif  // UTOPIA_AMESOS2_SOLVERS_HPP
 #endif  // UTOPIA_WITH_TRILINOS_AMESOS2
+#endif  // UTOPIA_AMESOS2_SOLVERS_HPP

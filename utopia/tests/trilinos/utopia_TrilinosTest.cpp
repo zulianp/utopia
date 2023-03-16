@@ -1374,8 +1374,11 @@ namespace utopia {
 
 #ifdef UTOPIA_WITH_TRILINOS_AMESOS2
         void trilinos_amesos2() {
-            Amesos2Solver<TpetraMatrixd, TpetraVectord> solver;
-            solver.read_xml(Utopia::instance().get("data_path") + "/xml/UTOPIA_amesos.xml");
+            Amesos2Solver<TpetraMatrixd, TpetraVectord> solver("KLU2");
+
+            InputParameters in;
+            in.set("keep_symbolic_factorization", false);
+            solver.read(in);
 
             Poisson1D<TpetraMatrixd, TpetraVectord> fun(10);
             TpetraMatrixd A;
