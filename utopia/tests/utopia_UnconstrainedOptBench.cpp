@@ -64,7 +64,7 @@ namespace utopia {
 
             this->register_experiment("TR_STCG", [this]() {
                 auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>();
-                // subproblem->pc_type("none");
+                // subproblem->pc_type(PCNONE);
                 TrustRegion<Matrix, Vector> solver(subproblem);
                 run_tr(this->test_functions_, solver, "TR_STCG", this->verbose_);
             });

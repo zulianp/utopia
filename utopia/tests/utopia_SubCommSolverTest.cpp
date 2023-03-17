@@ -53,15 +53,17 @@ namespace utopia {
         }
 
     private:
-        using Traits = utopia::Traits<Vector>;
         using Solver = utopia::LinearSolver<Matrix, Vector>;
 
+        static constexpr SizeType N = 100;
+
         void solve_and_verify(UnconstrainedTestFunction<Matrix, Vector> &fun,
-                              const std::shared_ptr<Solver> &linear_solver) {
+                              const std::shared_ptr<Solver> &linear_solver) const {
             Newton<Matrix, Vector> solver(linear_solver);
 
             InputParameters in;
             in.set("atol", 1e-8);
+            in.set("verbose", false);
             solver.read(in);
 
             Vector x = fun.initial_guess();
@@ -71,17 +73,16 @@ namespace utopia {
             utopia_test_assert(approxeq(fun.exact_sol(), x));
         }
 
-        void newton_solve_quadratic_2D() {
+        void newton_solve_quadratic_2D() const {
             QPTestFunction_2D<Matrix, Vector> fun(this->comm());
-            const auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector>>();
-            solve_and_verify(fun, linear_solver);
+            solve_and_verify(fun, std::make_shared<ConjugateGradient<Matrix, Vector>>());
+            solve_and_verify(fun, std::make_shared<GMRES<Matrix, Vector>>());
         }
 
-        void newton_solve_quadratic_ND() {
-            constexpr SizeType n = 100;
-            QuadraticOffsetFunction_ND<Matrix, Vector> fun(this->comm(), n);
-            const auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector>>();
-            solve_and_verify(fun, linear_solver);
+        void newton_solve_quadratic_ND() const {
+            QuadraticOffsetFunction_ND<Matrix, Vector> fun(this->comm(), N);
+            solve_and_verify(fun, std::make_shared<ConjugateGradient<Matrix, Vector>>());
+            solve_and_verify(fun, std::make_shared<GMRES<Matrix, Vector>>());
         }
     };
 
@@ -90,7 +91,8 @@ namespace utopia {
 #ifdef UTOPIA_WITH_BLAS
         // Serial backend
         run_serial_test<GradientDescentTest<BlasMatrixd, BlasVectord>>();
-        run_serial_test<NewtonTest<BlasMatrixd, BlasVectord>>();
+        // Disable NewtonTest beacuse Blas backend does not support GMRES linear solver.
+        // run_serial_test<NewtonTest<BlasMatrixd, BlasVectord>>();
 #endif  // UTOPIA_WITH_BLAS
 
 #ifdef UTOPIA_WITH_PETSC

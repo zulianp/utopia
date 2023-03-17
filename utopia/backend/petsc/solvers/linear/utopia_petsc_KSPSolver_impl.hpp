@@ -784,8 +784,8 @@ namespace utopia {
     // FIXME defaults to PETSC_COMM_WORLD
     template <typename Matrix, typename Vector>
     KSPSolver<Matrix, Vector, PETSC>::KSPSolver() : ksp_(utopia::make_unique<Impl>(PETSC_COMM_WORLD)) {
-        ksp_type("bcgs");
-        pc_type("jacobi");
+        ksp_type(KSPBCGS);
+        pc_type(PCJACOBI);
         ksp_->set_from_options();
         ksp_->set_initial_guess_non_zero(true);
     }
@@ -950,7 +950,7 @@ namespace utopia {
             if (ksp_->has_shell_pc()) {
                 m_utopia_warning_once(
                     "set_preconditioner sets jacobi if a delegate precond has been set and type is matshell");
-                ksp_->pc_type("jacobi");
+                ksp_->pc_type(PCJACOBI);
             }
 
         } else if (this->get_preconditioner()) {

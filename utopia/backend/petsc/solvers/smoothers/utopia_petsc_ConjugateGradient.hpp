@@ -19,9 +19,9 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     class ConjugateGradient<Matrix, Vector, PETSC> : public KSPSolver<Matrix, Vector, PETSC> {
     public:
-        ConjugateGradient(const std::string &preconditioner = "jacobi") : KSPSolver<Matrix, Vector, PETSC>() {
+        ConjugateGradient(const std::string &preconditioner = PCJACOBI) : KSPSolver<Matrix, Vector, PETSC>() {
             this->pc_type(preconditioner);
-            this->ksp_type("cg");
+            this->ksp_type(KSPCG);
         }
     };
 }  // namespace utopia

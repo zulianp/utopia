@@ -210,7 +210,7 @@ namespace utopia {
             }
 
             // auto ls = std::make_shared<GMRES<Matrix, Vector>>();
-            // ls->pc_type("bjacobi");
+            // ls->pc_type(PCBJACOBI);
             // tr_strategy_coarse = std::make_shared<utopia::SemismoothNewton<Matrix,
             // Vector>>(ls);
 

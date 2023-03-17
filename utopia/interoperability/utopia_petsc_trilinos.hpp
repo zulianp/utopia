@@ -54,15 +54,6 @@ namespace utopia {
                                                      PetscVector,
                                                      GaussSeidel<PetscMatrix, PetscVector, PETSC> > {};
 
-    // FIXME remove me once the belos solver works
-    template <typename Matrix, typename Vector>
-    class GMRES<Matrix, Vector, TRILINOS>
-        : public CrossBackendLinearSolverAndSmoother<Matrix,
-                                                     Vector,
-                                                     PetscMatrix,
-                                                     PetscVector,
-                                                     GMRES<PetscMatrix, PetscVector, PETSC> > {};
-
 }  // namespace utopia
 
 #endif  // UTOPIA_WITH_TRILINOS

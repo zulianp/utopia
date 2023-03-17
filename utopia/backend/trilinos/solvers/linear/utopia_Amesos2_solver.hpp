@@ -2,15 +2,10 @@
 #define UTOPIA_AMESOS2_SOLVERS_HPP
 
 #include "utopia_Base.hpp"
-#ifdef UTOPIA_WITH_TRILINOS_AMESOS2
-
-#include "Amesos2_config.h"
-
-#ifdef HAVE_AMESOS2_KOKKOS
-
 #include "utopia_DirectSolver.hpp"
-#include "utopia_PreconditionedSolver.hpp"
-#include "utopia_trilinos_LinearSolverFactory.hpp"
+
+#ifdef UTOPIA_WITH_TRILINOS_AMESOS2
+#include "Amesos2_config.h"
 
 namespace utopia {
     /**@ingroup     Linear
@@ -65,8 +60,6 @@ namespace utopia {
         class Impl;
         std::unique_ptr<Impl> impl_;
 
-        // bool set_problem();
-        // bool set_problem(Matrix &A);
         bool preordering();
         bool num_factorization();
         bool sym_factorization();
@@ -74,6 +67,5 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif  // HAVE_AMESOS2_KOKKOS
 #endif  // UTOPIA_AMESOS2_SOLVERS_HPP
 #endif  // UTOPIA_WITH_TRILINOS_AMESOS2

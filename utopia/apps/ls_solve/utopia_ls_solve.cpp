@@ -151,8 +151,8 @@ namespace utopia {
 
                 if (use_ksp_smoother) {
                     auto ksp = std::make_shared<KSPSolver<Matrix, Vector>>();
-                    ksp->pc_type("ilu");
-                    ksp->ksp_type("richardson");
+                    ksp->pc_type(PCILU);
+                    ksp->ksp_type(KSPRICHARDSON);
                     smoother = ksp;
                 } else {
                     smoother = std::make_shared<ILU<Matrix, Vector>>();

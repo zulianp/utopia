@@ -187,8 +187,8 @@ void nlsolve(utopia::Input &in) {
             // cg->verbose(true);
 
             auto ls = std::make_shared<utopia::KSPSolver<Matrix_t, Vector_t>>();
-            ls->pc_type("hypre");
-            ls->ksp_type("cg");
+            ls->pc_type(PCHYPRE);
+            ls->ksp_type(KSPCG);
             ls->verbose(true);
 
             newton->set_linear_solver(ls);

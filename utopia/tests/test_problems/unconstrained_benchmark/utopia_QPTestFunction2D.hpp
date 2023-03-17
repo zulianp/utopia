@@ -19,7 +19,7 @@ namespace utopia {
         using SizeType = typename Traits::SizeType;
         using Comm = typename Traits::Communicator;
 
-        QPTestFunction_2D(Comm &comm = Comm::get_default()) {
+        QPTestFunction_2D(const Comm &comm = Comm::get_default()) {
             x_init_.zeros(layout(comm, Traits::decide(), 2));
             x_exact_.zeros(layout(comm, Traits::decide(), 2));
             {

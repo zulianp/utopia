@@ -119,7 +119,7 @@ namespace utopia {
             }
 
             auto subproblem = std::make_shared<utopia::KSP_TR<PetscMatrix, PetscVector>>();
-            subproblem->ksp_type("gltr");
+            subproblem->ksp_type(KSPGLTR);
             subproblem->atol(1e-10);
             subproblem->rtol(1e-10);
 

@@ -48,9 +48,9 @@
 
 //         //test mat-residual
 //         KSPSolver<Matrix, Vector> ksp;
-//         // ksp.pc_type("sor");
-//         ksp.pc_type("jacobi");
-//         ksp.ksp_type("cg");
+//         // ksp.pc_type(PCSOR);
+//         ksp.pc_type(PCJACOBI);
+//         ksp.ksp_type(KSPCG);
 //         ksp.max_it(n);
 //         ksp.solve(m, b, x);
 

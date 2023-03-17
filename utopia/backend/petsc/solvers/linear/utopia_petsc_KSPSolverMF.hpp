@@ -29,7 +29,7 @@ namespace utopia {
 
     public:
         KSP_MF() : OperatorBasedLinearSolver() {
-            ksp_.pc_type("bjacobi");
+            ksp_.pc_type(PCBJACOBI);
             ksp_.verbose(true);
             KSPSetComputeSingularValues(ksp_.implementation(), PETSC_TRUE);
         }

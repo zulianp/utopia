@@ -2,6 +2,7 @@
 
 #include "utopia_BiCGStab_impl.hpp"
 #include "utopia_ConjugateGradient_impl.hpp"
+#include "utopia_Multigrid.hpp"
 #include "utopia_Wrapper.hpp"
 
 #include "utopia_Tpetra_Matrix.hpp"
@@ -17,5 +18,7 @@ namespace utopia {
     template class BiCGStab<TpetraMatrixd, TpetraVectord, HOMEMADE>;
     template class ConjugateGradient<TpetraMatrixd, TpetraVectord>;
     template class ConjugateGradient<TpetraMatrixd, TpetraVectord, HOMEMADE>;
+    template class Multigrid<TpetraMatrixd, TpetraVectord>;
+    template class Multigrid<TpetraMatrixd, TpetraVectord, HOMEMADE>;
 
 }  // namespace utopia

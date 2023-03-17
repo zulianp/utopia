@@ -234,7 +234,7 @@ namespace utopia {
             //     // auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
             //     auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
             //     linear_solver->max_it(200);
-            //     linear_solver->pc_type("bjacobi");
+            //     linear_solver->pc_type(PCBJACOBI);
             //     qp_solver = std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector>>(linear_solver);
             // }
 
@@ -242,7 +242,7 @@ namespace utopia {
 
             auto qp_solver = std::make_shared<utopia::Lanczos<PetscMatrix, PetscVector>>();
             // auto qp_solver = std::make_shared<utopia::SteihaugToint<PetscMatrix, PetscVector>>();
-            // qp_solver->pc_type("bjacobi");
+            // qp_solver->pc_type(PCBJACOBI);
             tr_solver_ = std::make_shared<TrustRegion<PetscMatrix, PetscVector>>(qp_solver);
 
             UTOPIA_TRACE_REGION_END("IncrementalLoading::init_solver(...)");
@@ -384,7 +384,7 @@ namespace utopia {
                 // auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
                 // linear_solver->atol(1e-14);
                 // linear_solver->max_it(10000);
-                // linear_solver->pc_type("ilu");
+                // linear_solver->pc_type(PCILU);
 
                 // // AffineSimilarity<PetscMatrix, PetscVector> solver(linear_solver);
                 // ASTRUM<PetscMatrix, PetscVector> solver(linear_solver);
