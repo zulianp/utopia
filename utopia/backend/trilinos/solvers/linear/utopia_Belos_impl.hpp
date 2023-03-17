@@ -154,17 +154,6 @@ namespace utopia {
             in.get(params_[ParamKey::USE_SINGLE_RED].name, use_single_red_);
             solver_params->set(params_[ParamKey::USE_SINGLE_RED].belos_name, use_single_red_);
         }
-
-        // Make it possible to configure the preconditioner from parameters
-        if (solver_params_.find(ParamKey::PC_TYPE) != solver_params_.end()) {
-            std::string pc_type;  // default empty string, preconditioner not set
-            in.get(params_[ParamKey::PC_TYPE].name, pc_type);
-            if (!pc_type.empty()) {
-                std::string pc_side("right");  // default right, if preconditioner specified
-                in.get(params_[ParamKey::PC_SIDE].name, pc_side);
-                set_preconditioner(pc_type, pc_side);
-            }
-        }
     }
 
     template <typename Matrix, typename Vector>
@@ -191,32 +180,19 @@ namespace utopia {
     }
 
     template <typename Matrix, typename Vector>
-    std::string BelosSolver<Matrix, Vector, TRILINOS>::get_preconditioner_name() const {
-        if (enable_direct_pc_) {
-            return BackendPreconditionedSolver::get_preconditioner_name(direct_pc_type_);
-        } else if (enable_pc_) {
-            return BackendPreconditionedSolver::get_preconditioner_name(PreconditionerType::MULTIGRID);
-        } else {
-            return UTOPIA_PCNONE;
-        }
-    }
-
-    template <typename Matrix, typename Vector>
     void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner(PreconditionerType pc_type,
                                                                    PreconditionerSide pc_side) {
         if (pc_type == PreconditionerType::NONE) {
             enable_pc_ = false;
             enable_direct_pc_ = false;
+        } else if (pc_type == PreconditionerType::MULTIGRID) {
+            enable_direct_pc_ = false;
         } else {
-            if (pc_type == PreconditionerType::MULTIGRID) {
-                enable_direct_pc_ = false;
-            } else {
-                direct_pc_type_ = pc_type;
-                enable_direct_pc_ = true;
-            }
-            pc_side_ = pc_side;
-            enable_pc_ = true;
+            direct_pc_type_ = pc_type;
+            enable_direct_pc_ = true;
         }
+        pc_side_ = pc_side;
+        enable_pc_ = true;
     }
 
     template <typename Matrix, typename Vector>
@@ -224,19 +200,19 @@ namespace utopia {
         auto pc = Teuchos::RCP<typename Impl::OperatorType>();
         if (enable_direct_pc_) {
 #ifdef UTOPIA_WITH_TRILINOS_IFPACK2
-            const auto &trilinos_pc_type = get_backend_preconditioner_name(direct_pc_type_);
+            const auto pc_type = get_backend_preconditioner_name(direct_pc_type_);
             const int solver_verbosity = impl_->param_list->get("Verbosity", Belos::Errors + Belos::Warnings);
-            auto pc_params = Teuchos::sublist(impl_->param_list, trilinos_pc_type, false);
+            auto pc_params = Teuchos::sublist(impl_->param_list, pc_type, false);
             pc_params->set("Verbosity", solver_verbosity);
             Teuchos::RCP<typename Impl::IfPack2PrecType> direct_pc =
-                Ifpack2::Factory::create<typename Impl::CrsMatrixType>(trilinos_pc_type, raw_type(*op));
+                Ifpack2::Factory::create<typename Impl::CrsMatrixType>(pc_type, raw_type(*op));
             direct_pc->setParameters(*pc_params);
             direct_pc->initialize();
             direct_pc->compute();
             pc = direct_pc;
 #else   // UTOPIA_WITH_TRILINOS_IFPACK2
             m_utopia_error(
-                "Cannot use Direct Preconditioner with BelosSolver since Trilinos was built without Ifpack2 support");
+                "Cannot use Direct Preconditioner with BelosSolver, since Trilinos was built without Ifpack2 support");
 #endif  // UTOPIA_WITH_TRILINOS_IFPACK2
         } else if (enable_pc_) {
 #ifdef UTOPIA_WITH_TRILINOS_MUELU
@@ -249,7 +225,7 @@ namespace utopia {
             pc = muelu_pc;
 #else
             m_utopia_error(
-                "Cannot use MueLu as preconditioner with BelosSolver since Trilinos was built without MueLu support");
+                "Cannot use MueLu as preconditioner with BelosSolver, since Trilinos was built without MueLu support");
 #endif  // UTOPIA_WITH_TRILINOS_MUELU
         }
         if (!pc.is_null()) {

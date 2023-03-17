@@ -31,9 +31,7 @@ namespace utopia {
 
     private:
         static constexpr char solver_type[] = "MINRES";
-        static constexpr std::initializer_list<ParamKey> solver_params_ = {ParamKey::BLOCK_SIZE,
-                                                                           ParamKey::PC_SIDE,
-                                                                           ParamKey::PC_TYPE};
+        static constexpr std::initializer_list<ParamKey> solver_params_ = {ParamKey::BLOCK_SIZE};
     };
 }  // namespace utopia
 

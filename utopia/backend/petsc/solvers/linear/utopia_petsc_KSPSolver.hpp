@@ -190,8 +190,6 @@ namespace utopia {
 
         void factor_set_pivot_in_blocks(const bool val);
 
-        std::string get_preconditioner_name() const override;
-
         void set_preconditioner(PreconditionerType pc_type,
                                 PreconditionerSide pc_side = PreconditionerSide::INVALID) override;
 

@@ -28,13 +28,7 @@ namespace utopia {
 
         static constexpr SizeType N = 1000;
 
-        void belos_solver_test(std::shared_ptr<BelosSolver<Matrix, Vector>> solver, const std::string &precond) {
-            if (precond.empty()) {
-                utopia_test_assert(solver->get_preconditioner_name().compare(UTOPIA_PCNONE) == 0);
-            } else {
-                utopia_test_assert(solver->get_preconditioner_name().compare(precond) == 0);
-            }
-
+        void belos_solver_test(std::shared_ptr<BelosSolver<Matrix, Vector>> solver) {
             Poisson1D<Matrix, Vector> fun(N, 2);
             Vector x = fun.initial_guess();
             Vector rhs;
@@ -51,10 +45,8 @@ namespace utopia {
         }
 
         void trilinos_cg(const std::string precond = "") {
+            auto solver = std::make_shared<ConjugateGradient<Matrix, Vector>>(precond);
             {
-                // 1st test case: specify preconditioner in solver constructor
-                auto solver = std::make_shared<ConjugateGradient<Matrix, Vector>>(precond);
-
                 InputParameters in;
                 in.set("block_size", 1);
                 in.set("rtol", 1e-6);
@@ -62,31 +54,13 @@ namespace utopia {
                 in.set("orthogonalization", "ICGS");
                 in.set("verbose", false);
                 solver->read(in);
-
-                belos_solver_test(solver, precond);
             }
-            {
-                // 2nd test case: specify preconditioner as config parameter
-                auto solver = std::make_shared<ConjugateGradient<Matrix, Vector>>();
-
-                InputParameters in;
-                in.set("block_size", 1);
-                in.set("rtol", 1e-6);
-                in.set("max_it", 500);
-                in.set("orthogonalization", "ICGS");
-                in.set("verbose", false);
-                in.set("pc_type", precond);
-                solver->read(in);
-
-                belos_solver_test(solver, precond);
-            }
+            belos_solver_test(solver);
         }
 
         void trilinos_gmres(const std::string precond = "") {
+            auto solver = std::make_shared<GMRES<Matrix, Vector>>(precond);
             {
-                // 1st test case: specify preconditioner in solver constructor
-                auto solver = std::make_shared<GMRES<Matrix, Vector>>(precond);
-
                 InputParameters in;
                 in.set("block_size", 1);
                 in.set("rtol", 1e-6);
@@ -95,67 +69,33 @@ namespace utopia {
                 in.set("orthogonalization", "ICGS");
                 in.set("verbose", false);
                 solver->read(in);
-
-                belos_solver_test(solver, precond);
             }
-            {
-                // 2nd test case: specify preconditioner as config parameter
-                auto solver = std::make_shared<GMRES<Matrix, Vector>>();
-
-                InputParameters in;
-                in.set("block_size", 1);
-                in.set("rtol", 1e-6);
-                in.set("max_it", 500);
-                in.set("max_restarts", 20);
-                in.set("orthogonalization", "ICGS");
-                in.set("verbose", false);
-                in.set("pc_type", precond);
-                solver->read(in);
-
-                belos_solver_test(solver, precond);
-            }
+            belos_solver_test(solver);
         }
 
         void trilinos_minres(const std::string precond = "") {
+            auto solver = std::make_shared<MINRES<Matrix, Vector>>(precond);
             {
-                // 1st test case: specify preconditioner in solver constructor
-                auto solver = std::make_shared<MINRES<Matrix, Vector>>(precond);
-
                 InputParameters in;
                 in.set("block_size", 1);
                 in.set("rtol", 1e-6);
                 in.set("max_it", 500);
                 in.set("verbose", false);
                 solver->read(in);
-
-                belos_solver_test(solver, precond);
             }
-            {
-                // 2nd test case: specify preconditioner as config parameter
-                auto solver = std::make_shared<MINRES<Matrix, Vector>>();
-
-                InputParameters in;
-                in.set("block_size", 1);
-                in.set("rtol", 1e-6);
-                in.set("max_it", 500);
-                in.set("verbose", false);
-                in.set("pc_type", precond);
-                solver->read(in);
-
-                belos_solver_test(solver, precond);
-            }
+            belos_solver_test(solver);
         }
 
 #ifdef UTOPIA_WITH_TRILINOS_IFPACK2
-        void trilinos_cg_ilut() { trilinos_cg(UTOPIA_PCILUT); }
-        void trilinos_gmres_ilut() { trilinos_gmres(UTOPIA_PCILUT); }
-        void trilinos_minres_ilut() { trilinos_minres(UTOPIA_PCILUT); }
+        void trilinos_cg_ilut() { trilinos_cg("ILUT"); }
+        void trilinos_gmres_ilut() { trilinos_gmres("ILUT"); }
+        void trilinos_minres_ilut() { trilinos_minres("ILUT"); }
 #endif  // UTOPIA_WITH_TRILINOS_IFPACK2
 
 #ifdef UTOPIA_WITH_TRILINOS_MUELU
-        void trilinos_cg_mg() { trilinos_cg(UTOPIA_PCMULTIGRID); }
-        void trilinos_gmres_mg() { trilinos_gmres(UTOPIA_PCMULTIGRID); }
-        void trilinos_minres_mg() { trilinos_minres(UTOPIA_PCMULTIGRID); }
+        void trilinos_cg_mg() { trilinos_cg("multigrid"); }
+        void trilinos_gmres_mg() { trilinos_gmres("multigrid"); }
+        void trilinos_minres_mg() { trilinos_minres("multigrid"); }
 #endif  // UTOPIA_WITH_TRILINOS_MUELU
     };
 
