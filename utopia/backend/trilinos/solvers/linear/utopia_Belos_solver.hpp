@@ -62,10 +62,10 @@ namespace utopia {
         bool apply(const Vector &rhs, Vector &lhs) override;
 
         void print_usage(std::ostream &os = std::cout) const override;
-        void read(Input &in) override;
 
         BelosSolver *clone() const override;
 
+        void read(Input &in) override;
         std::string get_preconditioner_name() const override;
         void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) override;
         void set_preconditioner(PreconditionerType pc_type, PreconditionerSide pc_side) override;
