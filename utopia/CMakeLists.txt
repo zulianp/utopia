@@ -39,6 +39,8 @@ set(UTOPIA_ENABLE_CPP11 ON)
 # ##############################################################################
 # LIBRARY
 
+
+# Could take out backend.
 # core modules
 set(UTOPIA_MODULES
     interoperability
@@ -98,16 +100,16 @@ target_link_libraries(utopia PUBLIC ${UTOPIA_DEP_LIBRARIES})
 # INSTALL
 
 # apps suite
-add_executable(utopia_exec main.cpp)
-target_link_libraries(utopia_exec PRIVATE utopia)
-include(apps/apps.cmake)
-utopia_link_default_targets(utopia_exec)
+# add_executable(utopia_exec main.cpp)
+# target_link_libraries(utopia_exec PRIVATE utopia)
+# include(apps/apps.cmake)
+# utopia_link_default_targets(utopia_exec)
 
 
 # message(STATUS "${UTOPIA_HEADERS}")
 
 install(
-  TARGETS utopia utopia_exec
+  TARGETS utopia
   EXPORT UtopiaTargets
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
