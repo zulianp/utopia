@@ -67,7 +67,7 @@ solver:
   max_sucessful_smoothing_it: 1
   max_QP_smoothing_it: 40
   max_QP_coarse_it: 1000
-  linear-solver:
+  linear_solver:
     verbose: false
     atol: 1.0e-07
     max_it: 1000

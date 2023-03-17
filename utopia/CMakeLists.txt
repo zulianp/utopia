@@ -580,7 +580,6 @@ install(
 
 add_subdirectory(examples)
 add_subdirectory(backend/polymorphic)
-add_subdirectory(backend/plugin)
 
 if(UTOPIA_ENABLE_VC)
     add_subdirectory(backend/vc)
@@ -621,6 +620,12 @@ endif()
 
 if(UTOPIA_ENABLE_PARMETIS)
     add_subdirectory(backend/parmetis)
+endif()
+
+
+include(UtopiaISolver)
+if(UTOPIA_ENABLE_ISOLVER)
+    add_subdirectory(plug_in_and_out/isolver)
 endif()
 
 # weird stuff goes here

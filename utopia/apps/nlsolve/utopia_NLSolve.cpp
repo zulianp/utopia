@@ -5,6 +5,7 @@
 
 #include "utopia.hpp"
 
+#ifdef UTOPIA_ENABLE_ISOLVER
 #ifdef UTOPIA_WITH_PETSC
 using Matrix_t = utopia::PetscMatrix;
 using Vector_t = utopia::Traits<Matrix_t>::Vector;
@@ -28,7 +29,7 @@ namespace utopia {
         void create_vector(Vector_t &x) {
             ptrdiff_t nlocal = 0;
             ptrdiff_t nglobal = 0;
-            plugin_scalar_t *values = 0;
+            isolver_scalar_t *values = 0;
 
             impl_.create_vector(&nlocal, &nglobal, &values);
 
@@ -101,12 +102,12 @@ namespace utopia {
             ptrdiff_t nlocal;
             ptrdiff_t nglobal;
             ptrdiff_t nnz;
-            plugin_idx_t *rowptr;
-            plugin_idx_t *colidx;
-            plugin_scalar_t *values;
+            isolver_idx_t *rowptr;
+            isolver_idx_t *colidx;
+            isolver_scalar_t *values;
 
             impl_.create_crs_graph(&nlocal, &nglobal, &nnz, &rowptr, &colidx);
-            impl_.create_array(nnz * sizeof(plugin_scalar_t), (void **)&values);
+            impl_.create_array(nnz * sizeof(isolver_scalar_t), (void **)&values);
             // }
 
             auto x_view = local_view_device(x);
@@ -135,7 +136,7 @@ namespace utopia {
         bool hessian(const Vector_t &x, Matrix_t &H, Matrix_t &H_preconditioner) const override { return false; }
         bool report_solution(const Vector_t &x) const {
             auto x_view = local_view_device(x);
-            return UTOPIA_PLUGIN_SUCCESS == impl_.report_solution(&x_view.array()[0]);
+            return ISOLVER_FUNCTION_SUCCESS == impl_.report_solution(&x_view.array()[0]);
         }
 
         Comm_t comm_;
@@ -211,4 +212,5 @@ void nlsolve(utopia::Input &in) {
 // ./utopia_exec -app nlsolve -path utopia_example_plugin.dylib -damping 0.05
 UTOPIA_REGISTER_APP(nlsolve);
 
-#endif
+#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_ISOLVER
