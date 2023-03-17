@@ -93,9 +93,9 @@ namespace utopia {
 #endif  // UTOPIA_WITH_TRILINOS_IFPACK2
 
 #ifdef UTOPIA_WITH_TRILINOS_MUELU
-        void trilinos_cg_mg() { trilinos_cg("multigrid"); }
-        void trilinos_gmres_mg() { trilinos_gmres("multigrid"); }
-        void trilinos_minres_mg() { trilinos_minres("multigrid"); }
+        void trilinos_cg_mg() { trilinos_cg("MueLu"); }
+        void trilinos_gmres_mg() { trilinos_gmres("MueLu"); }
+        void trilinos_minres_mg() { trilinos_minres("MueLu"); }
 #endif  // UTOPIA_WITH_TRILINOS_MUELU
     };
 

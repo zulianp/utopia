@@ -1,7 +1,6 @@
 #ifndef UTOPIA_BELOS_SOLVERS_HPP
 #define UTOPIA_BELOS_SOLVERS_HPP
 
-#include "utopia_BackendPreconditionedSolver.hpp"
 #include "utopia_Config.hpp"
 #include "utopia_PreconditionedSolver.hpp"
 
@@ -17,11 +16,7 @@ namespace utopia {
     class BelosSolver {};
 
     template <typename Matrix, typename Vector>
-    class BelosSolver<Matrix, Vector, TRILINOS> : public PreconditionedSolver<Matrix, Vector>,
-                                                  public BackendPreconditionedSolver {
-        using PreconditionerSide = BackendPreconditionedSolver::PreconditionerSide;
-        using PreconditionerType = BackendPreconditionedSolver::PreconditionerType;
-
+    class BelosSolver<Matrix, Vector, TRILINOS> : public PreconditionedSolver<Matrix, Vector> {
     public:
         typedef UTOPIA_SCALAR(Vector) Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -51,8 +46,7 @@ namespace utopia {
 
         BelosSolver() = delete;
         BelosSolver(const BelosSolver &other);
-        BelosSolver(const std::string &solver_type, std::initializer_list<ParamKey> solver_params = {});
-        BelosSolver(BelosSolver &&other) = delete;
+        BelosSolver(const std::string &solver_type, std::initializer_list<ParamKey> solver_params);
         ~BelosSolver() override;
 
         void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec) override;
@@ -61,14 +55,9 @@ namespace utopia {
 
         void print_usage(std::ostream &os = std::cout) const override;
 
-        BelosSolver *clone() const override;
-
         void read(Input &in) override;
         void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) override;
-        void set_preconditioner(PreconditionerType pc_type, PreconditionerSide pc_side) override;
-        void set_preconditioner(const std::string &pc_type, const std::string &pc_side = "right") {
-            BackendPreconditionedSolver::set_preconditioner(pc_type, pc_side);
-        }
+        void set_preconditioner(const std::string &direct_pc_type, const std::string &pc_side);
 
     private:
         const Param params_[ParamKey::NUM_PARAMS] = {
@@ -126,8 +115,8 @@ namespace utopia {
 
         bool enable_pc_{false};
         bool enable_direct_pc_{false};
-        PreconditionerType direct_pc_type_;
-        PreconditionerSide pc_side_;
+        std::string direct_pc_type_;
+        std::string pc_side_;
 
         class Impl;
         std::unique_ptr<Impl> impl_;

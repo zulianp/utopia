@@ -76,6 +76,7 @@ if(Trilinos_FOUND)
         eval
         solvers
         solvers/linear
+        solvers/multilevel
         solvers/nonlinear
         kokkos)
     utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${TRILINOS_MODULES}")

@@ -783,14 +783,17 @@ namespace utopia {
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     // FIXME defaults to PETSC_COMM_WORLD
     template <typename Matrix, typename Vector>
-    KSPSolver<Matrix, Vector, PETSC>::KSPSolver()
-        : BackendPreconditionedSolver({{PreconditionerType::JACOBI, "Jacobi"}}),
-          ksp_(utopia::make_unique<Impl>(PETSC_COMM_WORLD)) {
+    KSPSolver<Matrix, Vector, PETSC>::KSPSolver() : ksp_(utopia::make_unique<Impl>(PETSC_COMM_WORLD)) {
         ksp_type(KSPBCGS);
         pc_type(PCJACOBI);
         ksp_->set_from_options();
         ksp_->set_initial_guess_non_zero(true);
     }
+
+    template <typename Matrix, typename Vector>
+    KSPSolver<Matrix, Vector, PETSC>::KSPSolver(
+        std::unique_ptr<typename utopia::KSPSolver<Matrix, Vector, PETSC>::Impl> &&w)
+        : ksp_(std::move(w)) {}
 
     template <typename Matrix, typename Vector>
     void KSPSolver<Matrix, Vector, PETSC>::wrap(KSP &ksp) {
@@ -1067,15 +1070,15 @@ namespace utopia {
 
     template <typename Matrix, typename Vector>
     KSPSolver<Matrix, Vector, PETSC>::KSPSolver(const KSPSolver<Matrix, Vector, PETSC> &other)
-        : PreconditionedSolver(other),
-          BackendPreconditionedSolver(other),
+        : PreconditionedSolverInterface<Vector>(other),
+          PreconditionedSolver(other),
           ksp_(utopia::make_unique<Impl>(other.ksp_->communicator())) {
         ksp_->copy_settings_from(*other.ksp_);
     }
 
     template <typename Matrix, typename Vector>
     KSPSolver<Matrix, Vector, PETSC>::KSPSolver(KSPSolver<Matrix, Vector, PETSC> &&other)
-        : PreconditionedSolver(other), BackendPreconditionedSolver(other), ksp_(std::move(other.ksp_)) {}
+        : PreconditionedSolver(std::move(other)), ksp_(std::move(other.ksp_)) {}
 
     template <typename Matrix, typename Vector>
     KSPSolver<Matrix, Vector, PETSC> *KSPSolver<Matrix, Vector, PETSC>::clone() const {
@@ -1129,13 +1132,6 @@ namespace utopia {
         this->print_param_usage(os, "ksp_type", "string", "Type of KSP solver.", "bcgs");
         this->print_param_usage(os, "pc_type", "string", "Type of preconditoner.", "jacobi");
         this->print_param_usage(os, "solver_package", "string", "Type of solver package.", " ");
-    }
-
-    template <typename Matrix, typename Vector>
-    void KSPSolver<Matrix, Vector, PETSC>::set_preconditioner(PreconditionerType pc_type, PreconditionerSide pc_side) {
-        assert(pc_side == PreconditionerSide::INVALID);  // argument not supported
-        const auto &petsc_pc_type = get_backend_preconditioner_name(pc_type);
-        this->pc_type(petsc_pc_type);
     }
 }  // namespace utopia
 
