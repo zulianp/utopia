@@ -27,6 +27,46 @@ if(USE_SPIKE_SOLVERS)
   list(APPEND UTOPIA_MODULES spike/solvers)
 endif()
 
+# #################  BACKENDS  ######################
+
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
+
+# #################MPI######################
+find_package(MPIExtended)
+if(UTOPIA_ENABLE_MPI)
+  if(MPI_FOUND)
+
+    if(MPI_C_INCLUDE_PATH)
+      set(UTOPIA_DEP_INCLUDES "${UTOPIA_DEP_INCLUDES};${MPI_C_INCLUDE_PATH}")
+    endif()
+
+    if(MPI_CXX_INCLUDE_PATH)
+      set(UTOPIA_DEP_INCLUDES "${UTOPIA_DEP_INCLUDES};${MPI_CXX_INCLUDE_PATH}")
+    endif()
+
+    if(MPI_LIBRARIES)
+      set(UTOPIA_DEP_LIBRARIES "${UTOPIA_DEP_LIBRARIES};${MPI_LIBRARIES}")
+    endif()
+
+    if(MPI_C_LIBRARIES)
+      set(UTOPIA_DEP_LIBRARIES "${UTOPIA_DEP_LIBRARIES};${MPI_C_LIBRARIES}")
+    endif()
+
+    if(MPI_CXX_LIBRARIES)
+      set(UTOPIA_DEP_LIBRARIES "${UTOPIA_DEP_LIBRARIES};${MPI_CXX_LIBRARIES}")
+    endif()
+
+    set(UTOPIA_ENABLE_MPI ON)
+    set(UTOPIA_ENABLE_MPI TRUE)
+
+    set(UTOPIA_MPI_DIR ${MPI_LIBRARIES})
+    set(UTOPIA_MPI_VERSION ${MPI_C_VERSION})
+  endif()
+else()
+  message(WARNING "NO Proper MPI installation")
+endif()
 
 # ##############################################################################
 # ##############################################################################
@@ -37,20 +77,17 @@ endif()
 if(UTOPIA_ENABLE_BLAS)
   # find dependencies ###################################################
   if(PITZ_DORA)
-    find_package(OpenBLAS)
+    find_package(OpenBLAS REQUIRED)
     if(OPEN_BLAS_FOUND)
       list(APPEND UTOPIA_BUILD_INCLUDES ${BLAS_INCLUDE_DIR})
       list(APPEND UTOPIA_DEP_LIBRARIES ${BLAS_LIBRARIES})
       list(APPEND UTOPIA_DEFS ${BLAS_DEFINITIONS})
-      set(UTOPIA_ENABLE_BLAS
-          TRUE)
-      # set(UTOPIA_ENABLE_OPEN_BLAS ON)
-      # set(UTOPIA_BLAS_DIR ${BLAS_blas_LIBRARY} PARENT_SCOPE)
-
-      # # BLAS_blas_LIBRARY set(UTOPIA_BLAS_DIR ${BLAS_VERSION} PARENT_SCOPE)
+      set(UTOPIA_ENABLE_BLAS TRUE)
+      # set(UTOPIA_ENABLE_OPEN_BLAS ON) set(UTOPIA_BLAS_DIR ${BLAS_blas_LIBRARY}
+      # PARENT_SCOPE) # BLAS_blas_LIBRARY set(UTOPIA_BLAS_DIR ${BLAS_VERSION}
+      # PARENT_SCOPE)
     else()
-      message(WARNING "[Warning] blas not found")
-      # set(UTOPIA_ENABLE_BLAS OFF)
+      message(WARNING "[Warning] open-blas not found")
     endif()
   else()
     set(OPEN_BLAS_FOUND FALSE)
@@ -59,10 +96,9 @@ if(UTOPIA_ENABLE_BLAS)
       list(APPEND UTOPIA_BUILD_INCLUDES ${BLAS_INCLUDE_DIR})
       list(APPEND UTOPIA_DEP_LIBRARIES ${BLAS_LIBRARIES})
       list(APPEND UTOPIA_DEFS ${BLAS_DEFINITIONS})
-      set(UTOPIA_ENABLE_BLAS ON)
-      set(UTOPIA_ENABLE_BLAS
-          TRUE)
+      set(UTOPIA_ENABLE_BLAS TRUE)
     else()
+      message(WARNING "[Warning] blas not found")
       # set(BLAS_FOUND FALSE)
     endif()
   endif()
@@ -72,9 +108,7 @@ if(UTOPIA_ENABLE_BLAS)
     list(APPEND UTOPIA_BUILD_INCLUDES ${LAPACK_INCLUDE_DIR})
     list(APPEND UTOPIA_DEP_LIBRARIES ${LAPACK_LIBRARIES})
     list(APPEND UTOPIA_DEFS ${LAPACK_DEFINITIONS})
-    # set(UTOPIA_ENABLE_LAPACK ON)
-    # set(UTOPIA_ENABLE_LAPACK
-    #     TRUE)
+    # set(UTOPIA_ENABLE_LAPACK ON) set(UTOPIA_ENABLE_LAPACK TRUE)
   else()
     message(WARNING "[Warning] lapack not found")
     # set(UTOPIA_ENABLE_LAPACK OFF)
@@ -84,10 +118,7 @@ if(UTOPIA_ENABLE_BLAS)
   if(UMFPACK_FOUND)
     list(APPEND UTOPIA_BUILD_INCLUDES ${UMFPACK_INCLUDES})
     list(APPEND UTOPIA_DEP_LIBRARIES ${UMFPACK_LIBRARIES})
-    # set(UTOPIA_ENABLE_UMFPACK ON)
-    # set(UTOPIA_ENABLE_UMFPACK
-    #     TRUE
-    #     PARENT_SCOPE)
+    # set(UTOPIA_ENABLE_UMFPACK ON) set(UTOPIA_ENABLE_UMFPACK TRUE PARENT_SCOPE)
   else()
     message(WARNING "[Warning] Umfpack not found")
     # set(UTOPIA_ENABLE_UMFPACK OFF)
@@ -95,40 +126,6 @@ if(UTOPIA_ENABLE_BLAS)
 
   add_subdirectory(backend/blas)
 endif()
-
-# if(UTOPIA_ENABLE_PASSO_EXTENSIONS) set(WITH_PASSO_EXTENSIONS TRUE) endif()
-
-if(UTOPIA_ENABLE_CXX14_FEATURES)
-  set(UTOPIA_ENABLE_CPP14 TRUE)
-endif()
-
-if(UTOPIA_ENABLE_CXX17_FEATURES)
-  set(UTOPIA_ENABLE_CPP17 TRUE)
-  set(UTOPIA_ENABLE_CPP14 TRUE)
-endif()
-
-# If both enabled just use if(UTOPIA_ENABLE_CXX14_FEATURES AND
-# UTOPIA_ENABLE_CXX17_FEATURES) set(UTOPIA_ENABLE_CPP14 FALSE)
-# set(UTOPIA_ENABLE_CPP17 TRUE) endif()
-
-if(UTOPIA_ENABLE_DEPRECATED_API)
-  set(UTOPIA_DEPRECATED_API ON)
-endif()
-
-if(UTOPIA_ENABLE_GPERFTOOLS)
-  find_package(Gperftools)
-
-  if(Gperftools_FOUND)
-    link_libraries(gperftools::profiler)
-  else()
-    message(WARNING "GPERFTOOLS NOT FOUND")
-  endif()
-endif()
-
-if(UTOPIA_ENABLE_LOCK_CHECKING)
-  set(UTOPIA_ENABLE_LOCK_CHECK TRUE)
-endif()
-
 
 # ##############################################################################
 # ##############################################################################
@@ -141,10 +138,12 @@ if(UTOPIA_ENABLE_METIS)
   if(METIS_FOUND)
     list(APPEND UTOPIA_BUILD_INCLUDES ${METIS_INCLUDES})
     list(APPEND UTOPIA_DEP_LIBRARIES ${METIS_LIBRARIES})
+
+  else()
+    message(WARNING "[Warning] Metis not found")
   endif()
   add_subdirectory(backend/metis)
 endif()
-
 
 # ##############################################################################
 # ##############################################################################
@@ -243,42 +242,21 @@ if(UTOPIA_ENABLE_PETSC)
   endif()
 
   if(PETSC_FOUND AND UTOPIA_ENABLE_SLEPC)
-    find_package(SLEPC)
+    find_package(SLEPC REQUIRED)
     if(SLEPC_FOUND)
       list(APPEND UTOPIA_BUILD_INCLUDES ${SLEPC_INCLUDES})
       list(APPEND UTOPIA_DEP_LIBRARIES ${SLEPC_LIBRARIES})
       message(STATUS "Slepc FOUND")
+
+      set(UTOPIA_SLEPC_DIR ${SLEPC_DIR})
+      set(UTOPIA_SLEPC_VERSION ${SLEPC_VERSION})
       # set(UTOPIA_ENABLE_SLEPC TRUE PARENT_SCOPE)
     else()
       message(WARNING "[Warning] Slepc not found")
       # set(UTOPIA_ENABLE_SLEPC FALSE)
     endif()
   endif()
-
-  if(SLEPC_FOUND)
-    # set(UTOPIA_ENABLE_SLEPC ON PARENT_SCOPE) set(UTOPIA_ENABLE_SLEPC TRUE
-    # PARENT_SCOPE)
-
-    set(UTOPIA_SLEPC_DIR ${SLEPC_DIR})
-    set(UTOPIA_SLEPC_VERSION ${SLEPC_VERSION})
-
-  endif()
   add_subdirectory(backend/petsc)
-endif()
-
-if(UTOPIA_ENABLE_SCRIPTING)
-  add_subdirectory(scripting)
-endif()
-
-# backend modules
-if(UTOPIA_ENABLE_TRACE)
-  set(UTOPIA_TRACE_ENABLED ON)
-endif()
-
-if(UTOPIA_ENABLE_TRACE_EXPR)
-  set(UTOPIA_ENABLE_TRACE ON)
-  set(UTOPIA_TRACE_EXPR_ENABLED ON)
-  set(UTOPIA_TRACE_ENABLED ON)
 endif()
 
 # ##############################################################################
@@ -357,12 +335,67 @@ endif()
 # ${Trilinos_CXX_COMPILER_FLAGS},${Kokkos_CXX_FLAGS},${TRILINOS_DEFINITIONS},${CMAKE_CXX_STANDARD},${INTERFACE_COMPILE_FEATURES}"
 # #   # ) #   # set(UTOPIA_ENABLE_TRILINOS ON) # endif() endif()
 
-if(UTOPIA_ENABLE_VC)
-  add_subdirectory(backend/vc)
-endif()
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
+
+# #################YAML######################
 
 if(UTOPIA_ENABLE_YAML_CPP)
+  find_package(
+    yaml-cpp HINTS ${CMAKE_SOURCE_DIR}/../../dependencies/
+    ${CMAKE_SOURCE_DIR}/../../dependencies/yaml-cpp/share/cmake/yaml-cpp)
+
+  if(yaml-cpp_FOUND)
+    set(UTOPIA_ENABLE_YAML_CPP ON)
+    set(UTOPIA_ENABLE_YAML_CPP TRUE)
+
+    set(UTOPIA_YAML_CPP_DIR ${yaml-cpp_DIR})
+
+    list(APPEND YAMLCPP_MODULES .)
+
+    # utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${YAMLCPP_MODULES}")
+
+    get_target_property(YAML_CPP_INCLUDE_DIR yaml-cpp
+                        INTERFACE_INCLUDE_DIRECTORIES)
+
+    get_target_property(YAML_CPP_LIBRARIES yaml-cpp IMPORTED_LOCATION)
+
+    if(NOT YAML_CPP_LIBRARIES)
+      get_target_property(YAML_CPP_LIBRARIES yaml-cpp IMPORTED_LOCATION_RELEASE)
+    endif()
+    if(NOT YAML_CPP_LIBRARIES)
+      get_target_property(YAML_CPP_LIBRARIES yaml-cpp IMPORTED_LOCATION_DEBUG)
+    endif()
+    if(NOT YAML_CPP_LIBRARIES)
+      get_target_property(YAML_CPP_LIBRARIES yaml-cpp
+                          IMPORTED_LOCATION_NOCONFIG)
+    endif()
+
+    message(
+      STATUS
+        "yaml-cpp found! Includes: ${YAML_CPP_INCLUDE_DIR}\nLibrary: ${YAML_CPP_LIBRARIES}\n"
+    )
+
+    # target_link_libraries(utopia PUBLIC yaml-cpp)
+    # target_include_directories(utopia PUBLIC ${YAML_CPP_INCLUDE_DIR})
+    # target_link_libraries(utopia PUBLIC ${YAML_CPP_LIBRARIES})
+
+    list(APPEND UTOPIA_BUILD_INCLUDES ${YAML_CPP_INCLUDE_DIR})
+    list(APPEND UTOPIA_DEP_LIBRARIES ${YAML_CPP_LIBRARIES})
+
+    set(UTOPIA_BUILD_INCLUDES ${UTOPIA_BUILD_INCLUDES})
+
+    set(UTOPIA_DEP_LIBRARIES ${UTOPIA_DEP_LIBRARIES})
+
+  else()
+    include(../../cmake/InstallYAMLCPP.cmake)
+  endif()
   add_subdirectory(backend/yamlcpp)
+endif()
+
+if(UTOPIA_ENABLE_VC)
+  add_subdirectory(backend/vc)
 endif()
 
 if(UTOPIA_INSTALL_PETSC AND UTOPIA_ENABLE_CYGWIN)
@@ -383,6 +416,39 @@ if(UTOPIA_INSTALL_TRILINOS)
   include(InstallTrilinos)
 endif()
 
+# if(UTOPIA_ENABLE_PASSO_EXTENSIONS) set(WITH_PASSO_EXTENSIONS TRUE) endif()
+
+if(UTOPIA_ENABLE_CXX14_FEATURES)
+  set(UTOPIA_ENABLE_CPP14 TRUE)
+endif()
+
+if(UTOPIA_ENABLE_CXX17_FEATURES)
+  set(UTOPIA_ENABLE_CPP17 TRUE)
+  set(UTOPIA_ENABLE_CPP14 TRUE)
+endif()
+
+# If both enabled just use if(UTOPIA_ENABLE_CXX14_FEATURES AND
+# UTOPIA_ENABLE_CXX17_FEATURES) set(UTOPIA_ENABLE_CPP14 FALSE)
+# set(UTOPIA_ENABLE_CPP17 TRUE) endif()
+
+if(UTOPIA_ENABLE_DEPRECATED_API)
+  set(UTOPIA_DEPRECATED_API ON)
+endif()
+
+if(UTOPIA_ENABLE_GPERFTOOLS)
+  find_package(Gperftools)
+
+  if(Gperftools_FOUND)
+    link_libraries(gperftools::profiler)
+  else()
+    message(WARNING "GPERFTOOLS NOT FOUND")
+  endif()
+endif()
+
+if(UTOPIA_ENABLE_LOCK_CHECKING)
+  set(UTOPIA_ENABLE_LOCK_CHECK TRUE)
+endif()
+
 # weird stuff goes here
 if(UTOPIA_STATIC_DEPENDENCIES_ONLY)
   if(WIN32)
@@ -392,47 +458,23 @@ if(UTOPIA_STATIC_DEPENDENCIES_ONLY)
   endif()
 endif()
 
+if(UTOPIA_ENABLE_SCRIPTING)
+  add_subdirectory(scripting)
+endif()
+
+# backend modules
+if(UTOPIA_ENABLE_TRACE)
+  set(UTOPIA_TRACE_ENABLED ON)
+endif()
+
+if(UTOPIA_ENABLE_TRACE_EXPR)
+  set(UTOPIA_ENABLE_TRACE ON)
+  set(UTOPIA_TRACE_EXPR_ENABLED ON)
+  set(UTOPIA_TRACE_ENABLED ON)
+endif()
+
 message(STATUS "[Status] UTOPIA_ROOT_PATH: ${UTOPIA_ROOT_PATH}")
 include(${UTOPIA_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
-
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
-
-# #################MPI######################
-find_package(MPIExtended)
-if(UTOPIA_ENABLE_MPI)
-  if(MPI_FOUND)
-
-    if(MPI_C_INCLUDE_PATH)
-      set(UTOPIA_DEP_INCLUDES "${UTOPIA_DEP_INCLUDES};${MPI_C_INCLUDE_PATH}")
-    endif()
-
-    if(MPI_CXX_INCLUDE_PATH)
-      set(UTOPIA_DEP_INCLUDES "${UTOPIA_DEP_INCLUDES};${MPI_CXX_INCLUDE_PATH}")
-    endif()
-
-    if(MPI_LIBRARIES)
-      set(UTOPIA_DEP_LIBRARIES "${UTOPIA_DEP_LIBRARIES};${MPI_LIBRARIES}")
-    endif()
-
-    if(MPI_C_LIBRARIES)
-      set(UTOPIA_DEP_LIBRARIES "${UTOPIA_DEP_LIBRARIES};${MPI_C_LIBRARIES}")
-    endif()
-
-    if(MPI_CXX_LIBRARIES)
-      set(UTOPIA_DEP_LIBRARIES "${UTOPIA_DEP_LIBRARIES};${MPI_CXX_LIBRARIES}")
-    endif()
-
-    set(UTOPIA_ENABLE_MPI ON)
-    set(UTOPIA_ENABLE_MPI TRUE)
-
-    set(UTOPIA_MPI_DIR ${MPI_LIBRARIES})
-    set(UTOPIA_MPI_VERSION ${MPI_C_VERSION})
-  endif()
-else()
-  message(WARNING "NO Proper MPI installation")
-endif()
 
 # ##############################################################################
 # ##############################################################################
