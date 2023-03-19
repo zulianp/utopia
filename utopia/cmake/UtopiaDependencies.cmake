@@ -305,19 +305,23 @@ if(UTOPIA_ENABLE_TRILINOS)
       string(TOLOWER ${package} packageLower)
       list(FIND Trilinos_PACKAGE_LIST ${package} PACKAGE_FOUND)
       if(NOT PACKAGE_FOUND EQUAL -1)
-        set(UTOPIA_WITH_TRILINOS_${packageUpper} TRUE)
-        if(${package} STREQUAL "MueLu")
-          # ugly hack, but we need to link with muelu-adapters also I cannot
-          # wait until Trilinos finally supports cmake targets correctly
-          list(APPEND UTOPIA_TRILINOS_DEPS "muelu-adapters")
-        endif()
-        list(APPEND UTOPIA_TRILINOS_DEPS ${packageLower})
+      #   # set(UTOPIA_WITH_TRILINOS_${packageUpper} TRUE)
+      #   if(${package} STREQUAL "MueLu")
+      #     # ugly hack, but we need to link with muelu-adapters also I cannot
+      #     # wait until Trilinos finally supports cmake targets correctly
+      #     list(APPEND UTOPIA_TRILINOS_DEPS ${MueLu_LIBRARIES})
+      #   endif()
+      # message(STATUS "${package}")
+      list(APPEND UTOPIA_TRILINOS_DEPS ${${package}_LIBRARIES})
       endif()
     endforeach()
 
+    list(APPEND UTOPIA_DEP_INCLUDES ${Trilinos_INCLUDE_DIRS})
+    list(APPEND UTOPIA_DEP_LIBRARIES ${UTOPIA_TRILINOS_DEPS})
+
     find_package(TpetraExt)
     if(TRILINOS_TPETRAEXT_FOUND)
-      set(UTOPIA_WITH_TRILINOS_TPETRAEXT TRUE)
+      set(UTOPIA_ENABLE_TRILINOS_TPETRAEXT TRUE)
     endif()
   else()
     message(WARNING "[Warning] Trilinos not found")
