@@ -1,6 +1,5 @@
 #include <iostream>
-
-int main(int argc, const char *argv[]) {
+void stdCheck() {
     if (__cplusplus == 201703L)
         std::cout << "C++17\n";
     else if (__cplusplus == 201402L)

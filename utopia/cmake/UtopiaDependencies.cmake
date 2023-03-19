@@ -316,6 +316,8 @@ if(UTOPIA_ENABLE_TRILINOS)
       endif()
     endforeach()
 
+    # CHECK UTOPIA_THIRDPART_LIBRARIES: it is used in the makefile lines in main cmake.
+
     list(APPEND UTOPIA_DEP_INCLUDES ${Trilinos_INCLUDE_DIRS})
     list(APPEND UTOPIA_DEP_LIBRARIES ${UTOPIA_TRILINOS_DEPS})
 
