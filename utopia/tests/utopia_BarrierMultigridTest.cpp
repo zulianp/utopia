@@ -11,9 +11,9 @@
 #include "utopia_ElementWisePseudoInverse.hpp"
 
 #include "utopia_BarrierMultigrid.hpp"
-#include "utopia_LogBarrierQPMultigrid.hpp"
 
 #ifdef UTOPIA_ENABLE_PETSC
+#include "utopia_LogBarrierQPMultigrid.hpp"
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
 #endif  // UTOPIA_ENABLE_PETSC
@@ -130,6 +130,7 @@ namespace utopia {
             // }
         }
 
+#ifdef UTOPIA_ENABLE_PETSC
         void test_qp_problem() {
             //////////////////////////////////////////////////////////////////////////////////////////
             // Problem set-up
@@ -176,11 +177,14 @@ namespace utopia {
                 write("X_qp.m", x);
             }
         }
+#endif  // UTOPIA_ENABLE_PETSC
 
         void run() {
             print_backend_info();
             UTOPIA_RUN_TEST(test_ml_problem);
+#ifdef UTOPIA_ENABLE_PETSC
             UTOPIA_RUN_TEST(test_qp_problem);
+#endif
         }
     };
 

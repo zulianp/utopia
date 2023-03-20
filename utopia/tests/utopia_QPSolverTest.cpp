@@ -522,6 +522,8 @@ namespace utopia {
 
             ///////////////////////////////////////////////////////////////
 
+#ifdef UTOPIA_ENABLE_PETSC
+
             BDDLinearSolver<Matrix, Vector> solver;
             solver.read(params);
             solver.update(make_ref(A));
@@ -599,6 +601,8 @@ namespace utopia {
             if (verbose) {
                 x.comm().root_print(c_ss.str());
             }
+
+#endif  // UTOPIA_ENABLE_PETSC
 
             ///////////////////////////////////////////////////////////////
 

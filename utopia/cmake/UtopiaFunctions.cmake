@@ -36,7 +36,7 @@ macro(print_dependency_table)
     set(DEP_TABLE "${DEP_TABLE}blas\t\t| ${UTOPIA_ENABLE_BLAS}| ${UTOPIA_BLAS_DIR}| ${UTOPIA_BLAS_VERSION}\n")
     set(DEP_TABLE "${DEP_TABLE}lapack\t\t| ${UTOPIA_ENABLE_LAPACK}| ${UTOPIA_LAPACK_DIR}| ${UTOPIA_LAPACK_VERSION}\n")
     set(DEP_TABLE "${DEP_TABLE}umfpack\t\t| ${UTOPIA_ENABLE_UMFPACK}| ${UTOPIA_UMFPACK_DIR}| ${UTOPIA_UMFPACK_VERSION}\n")
-    set(DEP_TABLE "${DEP_TABLE}yaml\t\t| ${UTOPIA_ENABLE_YAML_CPP}| ${UTOPIA_YAML_CPP_DIR}|\n")
+    set(DEP_TABLE "${DEP_TABLE}yaml\t\t| ${UTOPIA_ENABLE_YAML_CPP}| ${UTOPIA_YAML_CPP_DIR}| ${UTOPIA_YAML_CPP_VERSION}\n")
     set(DEP_TABLE
         "${DEP_TABLE}__________________________________________________________\n")
     message(STATUS ${DEP_TABLE})
