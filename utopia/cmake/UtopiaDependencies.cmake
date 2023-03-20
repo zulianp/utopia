@@ -84,9 +84,8 @@ if(UTOPIA_ENABLE_BLAS)
       list(APPEND UTOPIA_DEFS ${BLAS_DEFINITIONS})
       set(UTOPIA_ENABLE_BLAS TRUE)
 
-
       set(UTOPIA_BLAS_DIR ${BLAS_DIR})
-    set(UTOPIA_BLAS_VERSION ${BLAS_VERSION})
+      set(UTOPIA_BLAS_VERSION ${BLAS_VERSION})
       # set(UTOPIA_ENABLE_OPEN_BLAS ON) set(UTOPIA_BLAS_DIR ${BLAS_blas_LIBRARY}
       # PARENT_SCOPE) # BLAS_blas_LIBRARY set(UTOPIA_BLAS_DIR ${BLAS_VERSION}
       # PARENT_SCOPE)
@@ -309,18 +308,17 @@ if(UTOPIA_ENABLE_TRILINOS)
       string(TOLOWER ${package} packageLower)
       list(FIND Trilinos_PACKAGE_LIST ${package} PACKAGE_FOUND)
       if(NOT PACKAGE_FOUND EQUAL -1)
-      #   # set(UTOPIA_WITH_TRILINOS_${packageUpper} TRUE)
-      #   if(${package} STREQUAL "MueLu")
-      #     # ugly hack, but we need to link with muelu-adapters also I cannot
-      #     # wait until Trilinos finally supports cmake targets correctly
-      #     list(APPEND UTOPIA_TRILINOS_DEPS ${MueLu_LIBRARIES})
-      #   endif()
-      # message(STATUS "${package}")
-      list(APPEND UTOPIA_TRILINOS_DEPS ${${package}_LIBRARIES})
+        # # set(UTOPIA_WITH_TRILINOS_${packageUpper} TRUE) if(${package}
+        # STREQUAL "MueLu") # ugly hack, but we need to link with muelu-adapters
+        # also I cannot # wait until Trilinos finally supports cmake targets
+        # correctly list(APPEND UTOPIA_TRILINOS_DEPS ${MueLu_LIBRARIES}) endif()
+        # message(STATUS "${package}")
+        list(APPEND UTOPIA_TRILINOS_DEPS ${${package}_LIBRARIES})
       endif()
     endforeach()
 
-    # CHECK UTOPIA_THIRDPART_LIBRARIES: it is used in the makefile lines in main cmake.
+    # CHECK UTOPIA_THIRDPART_LIBRARIES: it is used in the makefile lines in main
+    # cmake.
 
     list(APPEND UTOPIA_DEP_INCLUDES ${Trilinos_INCLUDE_DIRS})
     list(APPEND UTOPIA_DEP_LIBRARIES ${UTOPIA_TRILINOS_DEPS})
@@ -329,7 +327,6 @@ if(UTOPIA_ENABLE_TRILINOS)
     if(TRILINOS_TPETRAEXT_FOUND)
       set(UTOPIA_ENABLE_TRILINOS_TPETRAEXT TRUE)
     endif()
-
 
     set(UTOPIA_TRILINOS_DIR ${Trilinos_DIR})
     set(UTOPIA_TRILINOS_VERSION ${Trilinos_VERSION})
@@ -474,9 +471,6 @@ if(UTOPIA_STATIC_DEPENDENCIES_ONLY)
   endif()
 endif()
 
-if(UTOPIA_ENABLE_SCRIPTING)
-  add_subdirectory(scripting)
-endif()
 
 # backend modules
 if(UTOPIA_ENABLE_TRACE)
@@ -515,3 +509,56 @@ add_custom_target(
   SOURCES ${CMAKE_BINARY_DIR}/Doxyfile.txt)
 # IF you do NOT want the documentation to be generated EVERY time you build the
 # project then leave out the 'ALL' keyword from the above command.
+
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
+
+# #################SWIG######################
+if(UTOPIA_ENABLE_SCRIPTING)
+  find_package(SWIG REQUIRED)
+
+  if(SWIG_FOUND)
+    include(${SWIG_USE_FILE})
+
+    find_package(
+      Python3
+      COMPONENTS Development NumPy
+      REQUIRED)
+
+    if(Python3_FOUND)
+      set_property(SOURCE utopia.i PROPERTY CPLUSPLUS ON)
+      set_source_files_properties(utopia.i PROPERTIES SWIG_FLAGS "-includeall")
+
+      set_source_files_properties(SOURCE utopia.i PROPERTY
+                                  SWIG_USE_TARGET_INCLUDE_DIRECTORIES TRUE)
+
+      message(STATUS "Found python libraries: ${Python_LIBRARIES}")
+      swig_add_library(
+        utopya
+        TYPE SHARED
+        LANGUAGE python
+        SOURCES scripting/utopia.i scripting/utopia_script.hpp scripting/utopia_script.cpp)
+
+      # swig_link_libraries(utopya PUBLIC Python3::Python Python3::NumPy utopia)
+      swig_link_libraries(utopya PUBLIC Python3::Module utopia)
+      set_target_properties(utopya PROPERTIES SUFFIX ".so")
+
+      set_property(TARGET utopya PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES
+                                          TRUE)
+
+      install(FILES ${CMAKE_CURRENT_BINARY_DIR}/utopia.py DESTINATION lib)
+
+      install(TARGETS ${SWIG_MODULE_utopya_REAL_NAME} LIBRARY DESTINATION lib)
+
+      # find_package(NumPy REQUIRED)
+      message(STATUS "PYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}")
+
+    else()
+      message(WARNING "Could not find Python - Disabling scripting support")
+    endif()
+    add_subdirectory(scripting/)
+  else()
+    message(WARNING "Could not find SWIG - Disabling scripting support")
+  endif()
+endif()
