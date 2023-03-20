@@ -30,6 +30,7 @@ namespace utopia {
             in.get("eig_comp_tol", eps_eig_est_);
             in.get("power_method_max_it", power_method_max_it_);
             in.get("hardik_variant", hardik_variant_);
+            in.get("use_right_preconditioner", use_right_preconditioner_);
         }
 
         void print_usage(std::ostream &os) const override {
@@ -69,11 +70,13 @@ namespace utopia {
 
             this->update(A);
 
+            auto preconditioner = this->get_preconditioner();
+
             // as it is not clear ATM, how to apply preconditioner, we use it at least
             // to obtain initial guess
-            if (precond_) {
+            if (preconditioner && !use_right_preconditioner_) {
                 // this is unconstrained step
-                precond_->apply(rhs, x);
+                preconditioner->apply(rhs, x);
                 // projection to feasible set
                 this->make_iterate_feasible(x);
             }
@@ -99,6 +102,13 @@ namespace utopia {
             assert(ub);
 
             this->project(*lb, *ub, x);
+
+            const bool rprecond = preconditioner && use_right_preconditioner_;
+
+            if (rprecond) {
+                // Preconditioning 1)
+                preconditioner->apply(rhs, x);
+            }
 
             A.apply(x, Ax);
             g = Ax - rhs;
@@ -128,8 +138,18 @@ namespace utopia {
                     if (hardik_variant_) {
                         x -= alpha_cg * p;
 
+                        if (rprecond) {
+                            // Preconditioning 2a)
+                            preconditioner->apply(rhs, x);
+                        }
+
                         if (alpha_cg <= alpha_f) {
-                            g -= alpha_cg * Ap;
+                            if (rprecond) {
+                                A.apply(x, g);
+                                g -= rhs;
+                            } else {
+                                g -= alpha_cg * Ap;
+                            }
 
                             this->get_fi(x, g, *lb, *ub, fi);
                             beta_sc = dot(fi, Ap) / pAp;
@@ -147,17 +167,39 @@ namespace utopia {
 
                         if (alpha_cg <= alpha_f) {
                             x = y;
-                            g = g - alpha_cg * Ap;
+                            if (rprecond) {
+                                // Preconditioning 2b)
+                                preconditioner->apply(rhs, x);
+                                A.apply(x, g);
+                                g -= rhs;
+                            } else {
+                                g = g - alpha_cg * Ap;
+                            }
+
                             this->get_fi(x, g, *lb, *ub, fi);
                             beta_sc = dot(fi, Ap) / pAp;
                             p = fi - beta_sc * p;
                         } else {
                             x = x - alpha_f * p;
+
+                            // if (rprecond) {
+                            //     // Preconditioning 2c)
+                            //     preconditioner->apply(rhs, x);
+                            //     A.apply(x, g);
+                            //     g -= rhs;
+                            // } else {
                             g = g - alpha_f * Ap;
+                            // }
+
                             this->get_fi(x, g, *lb, *ub, fi);
 
                             help_f1 = x - (alpha_bar * fi);
                             this->project(help_f1, *lb, *ub, x);
+
+                            if (rprecond) {
+                                // Preconditioning 2.1c)
+                                preconditioner->apply(rhs, x);
+                            }
 
                             A.apply(x, Ax);
                             g = Ax - rhs;
@@ -179,7 +221,15 @@ namespace utopia {
 
                     alpha_cg = g_betta / beta_Abeta;
                     x = x - alpha_cg * beta;
-                    g = g - alpha_cg * Abeta;
+
+                    if (rprecond) {
+                        // Preconditioning 3)
+                        preconditioner->apply(rhs, x);
+                        A.apply(x, g);
+                        g -= rhs;
+                    } else {
+                        g = g - alpha_cg * Abeta;
+                    }
 
                     this->get_fi(x, g, *lb, *ub, p);
                 }
@@ -348,10 +398,6 @@ namespace utopia {
             layout_ = layout;
         }
 
-        void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond) override {
-            precond_ = precond;
-        }
-
     private:
         Vector fi, beta, gp, p, y, Ap, Abeta, Ax, g, help_f1, help_f2;
 
@@ -361,8 +407,8 @@ namespace utopia {
         bool initialized_{false};
         Layout layout_;
 
-        std::shared_ptr<Preconditioner<Vector> > precond_;
         bool hardik_variant_{false};
+        bool use_right_preconditioner_{true};
     };
 }  // namespace utopia
 
