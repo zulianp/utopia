@@ -225,8 +225,11 @@ public:
             }
 
             if (mpi_world_rank() == 0) {
+                double disp_x;
+                in.get("disp_x", disp_x);
                 std::cout << "Tensile Strength:  " << TensileStrength()
-                          << "\nCrit Displacement: " << CriticalDisplacement() << std::endl;
+                          << "\nCrit Displacement: " << CriticalDisplacement()
+                          << "\nTime at failure: " << CriticalDisplacement()/disp_x  << std::endl;
             }
 
 

@@ -1,0 +1,83 @@
+---
+app: HomogeneousBarPseudo1D
+# Output 
+output-path: Output/HomogeneousBar1D
+save_output: true
+# Mesh specification -----------------------------------------
+nx: 60
+ny: 40
+#nz: 2
+x_min: 0
+x_max: 60  
+y_min: 0
+y_max: 40
+n_levels: 2
+# Problem specification ------------------------------------------
+# Boundary Conditions
+disp_y: 0.0
+disp_x: 0.1
+#Initial Condition
+# Phase field formulation
+length_scale: 4
+with_damage: true
+use_penalty_irreversibility: true
+penalty_tol: 0.01
+penalty_tol_non_neg: 1e9  			#Large number means no penalty term applied
+use_crack_set_irreversibiblity: true
+crack_set_tol: 0.96
+mobility: 1.0e-06
+## Material paramteters -------------------------------------------------
+#mu: 16e9 					#Grimsel granite
+#lambda: 11e9
+E: 30e9
+nu: 0.25					#Grimsel granite
+fracture_toughness: 100				#Grimsel granite
+boundary_protection: false			#increase frac toughness in a layer around the boundary
+layer_width: 10
+# Heterogeneous variations
+hetero_params: HomogeneousBar
+mesh_width: 1
+tough_factor: 0.98
+## Time stepping -------------------------------------------------------
+dt: 0.001
+final_time: 0.02  
+# dynamic time stepping with fracture energy
+frac_energy_max_change: 3.0
+frac_energy_min_change: 1.0
+dt_min: 0.0004
+dt_max: 0.002
+increase_factor: 2
+shrinking_factor: 0.5
+## Pressure handling ---------------------------------------------------------
+use_pressure: false
+use_constant_pressure: false
+pressure0: 0
+pressure_increase_factor: 0
+# Solver specific options
+use_dense_hessian: false
+check_derivatives: false
+block_solver: true
+hjsmn_smoother: false
+diff_controller:
+  spacing: 1.0e-06
+  hessian_from_grad: false
+solver:
+  verbose: true
+  max_it: 900
+  atol: 4e-02
+  atol_suff: 0.2
+  suff_it: 50
+  max_coarse_it: 2
+  max_sucessful_coarse_it: 1
+  pre_smoothing_steps: 2
+  post_smoothing_steps: 2
+  deltaH_lagging: false
+  Hpost_lagging: false
+  grad_smoothess_termination: 1.0e-06
+  max_sucessful_smoothing_it: 1
+  max_QP_smoothing_it: 60
+  max_QP_coarse_it: 1000
+  linear-solver:
+    verbose: false
+    atol: 1.0e-7
+    max_it: 1000
