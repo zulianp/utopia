@@ -63,7 +63,7 @@ diff_controller:
   hessian_from_grad: false
 solver:
   verbose: true
-  max_it: 900
+  max_it: 200
   atol: 4e-02
   atol_suff: 0.2
   suff_it: 50
