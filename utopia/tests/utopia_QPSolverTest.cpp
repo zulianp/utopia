@@ -602,8 +602,6 @@ namespace utopia {
                 x.comm().root_print(c_ss.str());
             }
 
-#endif  // UTOPIA_ENABLE_PETSC
-
             ///////////////////////////////////////////////////////////////
 
             if (!empty(oracle)) {
@@ -621,6 +619,7 @@ namespace utopia {
 
                 utopia_test_assert(diff < 1e-6);
             }
+#endif  // UTOPIA_ENABLE_PETSC
         }
 
         void poly_qp() {
