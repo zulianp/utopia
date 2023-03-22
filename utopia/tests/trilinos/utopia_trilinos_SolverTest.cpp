@@ -24,7 +24,7 @@ namespace utopia {
     private:
         using Matrix = TpetraMatrix;
         using Vector = TpetraVector;
-        using Traits = Traits<Vector>;
+        using Traits = utopia::Traits<Vector>;
 
         static constexpr SizeType N = 1000;
 
