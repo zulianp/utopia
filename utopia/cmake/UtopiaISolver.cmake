@@ -1,6 +1,6 @@
 # UtopiaISolver.cmake
 
-option(UTOPIA_ENABLE_ISOLVER "Enable plug-out interface for isolver" ON)
+option(UTOPIA_ENABLE_ISOLVER "Enable plug-out interface for isolver" OFF)
 
 if(UTOPIA_ENABLE_ISOLVER)
     find_path(

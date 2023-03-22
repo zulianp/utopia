@@ -93,7 +93,7 @@ option(UTOPIA_ENABLE_DEPRECATED_API
        "Decprecated functionality that will be removed in the future" ON)
 option(UTOPIA_ENABLE_TINY_EXPR "String expressions support" ON)
 option(UTOPIA_ENABLE_RAPIDJSON "Enable support for JSON input files" ON)
-option(UTOPIA_ENABLE_MATRIX_IO "Enable support for reading matrices with matrix.io" ON)
+option(UTOPIA_ENABLE_MATRIX_IO "Enable support for reading matrices with matrix.io" OFF)
 option(UTOPIA_ENABLE_YAML_CPP "Enable YAML support" ON)
 
 option(UTOPIA_ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
