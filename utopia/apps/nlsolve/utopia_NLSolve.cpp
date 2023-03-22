@@ -1,12 +1,12 @@
 
 #include "utopia_AppRunner.hpp"
 
-#include "utopia_plugin_Function_impl.hpp"
-
 #include "utopia.hpp"
 
 #ifdef UTOPIA_ENABLE_ISOLVER
 #ifdef UTOPIA_WITH_PETSC
+
+#include "utopia_plugin_Function_impl.hpp"
 using Matrix_t = utopia::PetscMatrix;
 using Vector_t = utopia::Traits<Matrix_t>::Vector;
 using Scalar_t = utopia::Traits<Vector_t>::Scalar;
