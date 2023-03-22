@@ -1248,7 +1248,7 @@ namespace utopia {
             }
 
             TpetraMatrixd A;
-            const auto n_coarse_elements = std::max((SizeType)2, mpi_world_size());
+            const auto n_coarse_elements = std::max(2, mpi_world_size());
             MultiLevelTestProblem1D<TpetraMatrixd, TpetraVectord, Poisson1D<TpetraMatrixd, TpetraVectord>> ml_problem(
                 10, n_coarse_elements);
             // A = *ml_problem.interpolators[0];
