@@ -271,10 +271,15 @@ namespace utopia {
         ///////////////////////////////////////////////////////////////////////////
 
         inline void c_set(const SizeType &i, const Scalar &value) override {
+            assert(i < size());
+            assert(i >= 0);
             check_error(VecSetValues(implementation(), 1, &i, &value, INSERT_VALUES));
         }
 
         inline void c_add(const SizeType &i, const Scalar &value) override {
+            assert(i < size());
+            assert(i >= 0);
+
             check_error(VecSetValues(implementation(), 1, &i, &value, ADD_VALUES));
         }
 
