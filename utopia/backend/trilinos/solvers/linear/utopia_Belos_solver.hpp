@@ -21,8 +21,8 @@ namespace utopia {
         typedef UTOPIA_SCALAR(Vector) Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        typedef Preconditioner<Vector> Preconditioner;
-        typedef PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
+        typedef utopia::Preconditioner<Vector> Preconditioner;
+        typedef utopia::PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
 
         struct Param {
             enum Key {
