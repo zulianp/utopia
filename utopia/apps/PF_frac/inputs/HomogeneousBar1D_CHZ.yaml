@@ -1,7 +1,7 @@
 ---
-app: HomogeneousBarPseudo1D
+app: HomogeneousBarPseudo1D_CHZ
 # Output 
-output-path: Output/HomogeneousBar1D_Test
+output-path: Output/HomogeneousBar1D_CHZ
 save_output: true
 # Mesh specification -----------------------------------------
 nx: 100
