@@ -106,7 +106,6 @@ namespace utopia {
             in.get("dt_min", dt_min_);
             in.get("dt_max", dt_max_);
             in.get("increase_factor", increase_factor_);
-
         }
 
         virtual void run() = 0;
@@ -131,39 +130,35 @@ namespace utopia {
             }
         }
 
-        //calculates global fracture energy, and compares it to the previous time step. Only returns true if max change ,
+        // calculates global fracture energy, and compares it to the previous time step. Only returns true if max change
+        // ,
         virtual bool must_reduce_time_step(Scalar &frac_energy) {
+            if (this->frac_energy_old_ == 0.0) return false;  // dont check on the first time step
 
-            if (this->frac_energy_old_ == 0.0)
-                return false; //dont check on the first time step
-
-            if (frac_energy <= 0.0)
-                return false; //Do not reduce time step when no phase has propagated
-
+            if (frac_energy <= 0.0) return false;  // Do not reduce time step when no phase has propagated
 
             // Negative Old fracture energy treated as positive
             double frac_energy_old = this->frac_energy_old_ > 0.0 ? this->frac_energy_old_ : -this->frac_energy_old_;
 
-            bool repeat = frac_energy/frac_energy_old > this->frac_energy_max_change_;
+            bool repeat = frac_energy / frac_energy_old > this->frac_energy_max_change_;
 
-            if ( mpi_world_rank() == 0){
+            if (mpi_world_rank() == 0) {
                 utopia::out() << "-----------------------------------------------------"
                                  "----------------- \n";
                 utopia::out() << "Fracture Energy -> New: " << frac_energy
-                              << "\n                -> Old: " << this->frac_energy_old_
-                              << "\nmeasured change ->  " << frac_energy/frac_energy_old
-                              << "\nprescribed change-> " << this->frac_energy_max_change_;
+                              << "\n                -> Old: " << this->frac_energy_old_ << "\nmeasured change ->  "
+                              << frac_energy / frac_energy_old << "\nprescribed change-> "
+                              << this->frac_energy_max_change_;
                 utopia::out() << "\n-----------------------------------------------------"
                                  "----------------- \n";
             }
 
-            //setting criteria for increasing time step ( a minimum increase in frac energy )
-            this->increase_next_time_step_ = (frac_energy/frac_energy_old < this->frac_energy_min_change_ &&
-                                              frac_energy/frac_energy_old > 0.95 );
+            // setting criteria for increasing time step ( a minimum increase in frac energy )
+            this->increase_next_time_step_ =
+                (frac_energy / frac_energy_old < this->frac_energy_min_change_ && frac_energy / frac_energy_old > 0.95);
 
             return repeat;
         }
-
 
     protected:
         virtual void write_to_file(FunctionSpace &space, const Scalar &time) {
@@ -191,7 +186,7 @@ namespace utopia {
         Scalar frac_energy_max_change_{1e10};
         Scalar dt_min_{0}, dt_max_{1e3};
         Scalar frac_energy_min_change_{1e10};
-        bool   increase_next_time_step_{false};
+        bool increase_next_time_step_{false};
         Scalar increase_factor_;
 
         Vector solution_;
@@ -223,35 +218,47 @@ namespace utopia {
 
             fe_problem_->read(in);
 
+            in.get("use_box_constraints", use_box_constraints_);
+
             init_solver();
 
-            in.get("solver", *tr_solver_);
+            if (use_box_constraints_ == false) in.get("solver", *tr_solver_);
+
+            if (use_box_constraints_ == true) in.get("solver", *tr_solver_box_);
         }
 
         void init_solver() {
-            if (tr_solver_) return;
+            // if (tr_solver_) return;
+            // if (tr_solver_box_) return;
 
             UTOPIA_TRACE_REGION_BEGIN("IncrementalLoading::init_solver(...)");
 
-            // std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> qp_solver;
-            // if (this->use_mprgp_) {
-            //     // MPRGP sucks as a solver, as it can not be preconditioned easily ...
-            //     qp_solver = std::make_shared<utopia::MPRGP<PetscMatrix, PetscVector>>();
-            // } else {
-            //     // tao seems to be faster until it stalls ...
-            //     // auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
-            //     auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
-            //     linear_solver->max_it(200);
-            //     linear_solver->pc_type("bjacobi");
-            //     qp_solver = std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector>>(linear_solver);
-            // }
+            std::cout << "incremental loading ..... \n";
 
-            // tr_solver_ = std::make_shared<TrustRegionVariableBound<PetscMatrix, PetscVector>>(qp_solver);
+            // exit(0);
 
-            auto qp_solver = std::make_shared<utopia::Lanczos<PetscMatrix, PetscVector>>();
-            // auto qp_solver = std::make_shared<utopia::SteihaugToint<PetscMatrix, PetscVector>>();
-            // qp_solver->pc_type("bjacobi");
-            tr_solver_ = std::make_shared<TrustRegion<PetscMatrix, PetscVector>>(qp_solver);
+            if (use_box_constraints_) {
+                std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> qp_solver;
+
+                if (this->use_mprgp_) {
+                    // MPRGP sucks as a solver, as it can not be preconditioned easily ...
+                    qp_solver = std::make_shared<utopia::MPRGP<PetscMatrix, PetscVector>>();
+                } else {
+                    // tao seems to be faster until it stalls ...
+                    // auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
+                    // auto linear_solver = std::make_shared<SteihaugToint<PetscMatrix, PetscVector>>();
+                    auto linear_solver = std::make_shared<Lanczos<PetscMatrix, PetscVector>>();
+                    linear_solver->pc_type("bjacobi");
+                    qp_solver = std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector>>(linear_solver);
+                }
+
+                tr_solver_box_ = std::make_shared<TrustRegionVariableBound<PetscMatrix, PetscVector>>(qp_solver);
+            } else {
+                auto qp_solver = std::make_shared<utopia::Lanczos<PetscMatrix, PetscVector>>();
+                // auto qp_solver = std::make_shared<utopia::SteihaugToint<PetscMatrix, PetscVector>>();
+                qp_solver->pc_type("bjacobi");
+                tr_solver_ = std::make_shared<TrustRegion<PetscMatrix, PetscVector>>(qp_solver);
+            }
 
             UTOPIA_TRACE_REGION_END("IncrementalLoading::init_solver(...)");
         }
@@ -345,29 +352,42 @@ namespace utopia {
                     utopia::out() << "Time-step: " << t << "  time:  " << this->time_ << "  dt:  " << this->dt_
                                   << " \n";
                     utopia::out() << "###################################################################### \n";
+                    utopia::out() << "use_box_constraints_  " << use_box_constraints_ << "  \n";
                 }
 
                 // fe problem is missing
                 prepare_for_solve();
+
                 if (t == 1) {
                     fe_problem_->set_old_solution(this->solution_);
                     fe_problem_->set_dt(this->dt_);
                 }
 
                 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-                // auto box = make_lower_bound_constraints(make_ref(this->lb_));
-                // PetscVector ub = 0.0 * this->lb_;
-                // ub.set(1.0);
-                // auto box = make_box_constaints(make_ref(this->lb_), make_ref(ub));
-                // tr_solver_->set_box_constraints(box);
-                // tr_solver_->atol(1e-6);
-                // tr_solver_->max_it(200);
+                SizeType conv_reason;
 
-                // disp(this->solution_, "this->solution_");
+                if (use_box_constraints_) {
+                    // auto box = make_lower_bound_constraints(make_ref(this->lb_));
 
-                tr_solver_->solve(*fe_problem_, this->solution_);
-                auto sol_status = tr_solver_->solution_status();
-                const auto conv_reason = sol_status.reason;
+                    PetscVector ub = 0.0 * this->lb_;
+                    ub.set(1.0);
+
+                    auto box = make_box_constaints(make_ref(this->lb_), make_ref(ub));
+                    tr_solver_box_->set_box_constraints(box);
+                    // tr_solver_->atol(1e-6);
+                    // tr_solver_->max_it(200);
+
+                    tr_solver_box_->solve(*fe_problem_, this->solution_);
+
+                    auto sol_status = tr_solver_box_->solution_status();
+                    conv_reason = sol_status.reason;
+                } else {
+                    // disp(this->solution_, "this->solution_");
+
+                    tr_solver_->solve(*fe_problem_, this->solution_);
+                    auto sol_status = tr_solver_->solution_status();
+                    conv_reason = sol_status.reason;
+                }
                 // ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
                 // auto hess_approx = std::make_shared<JFNK<utopia::PetscVector>>(*fe_problem_);
@@ -432,8 +452,10 @@ namespace utopia {
         InitialCondition<FunctionSpace> &IC_;
         BCSetup<FunctionSpace> &BC_;
 
+        bool use_box_constraints_;
+
         std::shared_ptr<ProblemType> fe_problem_;
-        // std::shared_ptr<TrustRegionVariableBound<Matrix, Vector>> tr_solver_;
+        std::shared_ptr<TrustRegionVariableBound<Matrix, Vector>> tr_solver_box_;
         std::shared_ptr<TrustRegion<Matrix, Vector>> tr_solver_;
     };
 

@@ -44,6 +44,8 @@
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
 
+#include "utopia_GenericPhaseFieldFormulation.hpp"
+#include "utopia_IsotropicGenericPhaseField.hpp"
 #include "utopia_petsc.hpp"
 #include "utopia_petsc_DM.hpp"
 #include "utopia_petsc_DMDA.hpp"
@@ -51,8 +53,6 @@
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_RedundantQPSolver.hpp"
-#include "utopia_GenericPhaseFieldFormulation.hpp"
-#include "utopia_IsotropicGenericPhaseField.hpp"
 
 #endif  // UTOPIA_WITH_PETSC
 
@@ -98,11 +98,11 @@ namespace utopia {
 
         stats.start();
 
-//        IsotropicGenericPhaseField<FunctionSpace, Dim, AT2> BrittleRock(space);
+        //        IsotropicGenericPhaseField<FunctionSpace, Dim, AT2> BrittleRock(space);
 
         MLIncrementalLoading<FunctionSpace,
-                             //FractureModel<FunctionSpace>,
-                             IsotropicGenericPhaseField<FunctionSpace,Dim,AT1>,
+                             // FractureModel<FunctionSpace>,
+                             IsotropicGenericPhaseField<FunctionSpace, Dim, AT1>,
                              UniaxialLoading2D<FunctionSpace>,
                              UniformSpacingOnLine<FunctionSpace>>
             time_stepper(space);
@@ -130,7 +130,7 @@ namespace utopia {
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
-        using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace,Dim,AT1>;
+        using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT1>;
 
         Comm world;
 
@@ -141,13 +141,12 @@ namespace utopia {
         space.read(in);
         stats.stop_and_collect("space-creation");
 
-        if (mpi_world_rank() == 0)
-            std::cout << "Starting HomogeneousBarPseudo1D Model" << std::endl;
+        if (mpi_world_rank() == 0) std::cout << "Starting HomogeneousBarPseudo1D Model" << std::endl;
 
         stats.start();
 
         MLIncrementalLoading<FunctionSpace,
-                             utopia::IsotropicGenericPhaseField<FunctionSpace,Dim,AT1>,
+                             utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT1>,
                              UniaxialLoading2D<FunctionSpace>,
                              HomogeneousBar<FunctionSpace>>
             time_stepper(space);
@@ -160,11 +159,52 @@ namespace utopia {
         space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
         stats.stop_and_collect("output");
         stats.describe(std::cout);
-
     }
 
     UTOPIA_REGISTER_APP(HomogeneousBarPseudo1D);
 
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
+    static void HomogeneousBarPseudo1DSingleLevel(Input &in) {
+        static const int Dim = 2;
+        static const int NVars = Dim + 1;
+
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        // using SizeType = FunctionSpace::SizeType;
+        using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT1>;
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
+
+        if (mpi_world_rank() == 0) std::cout << "Starting HomogeneousBarPseudo1DSingleLevel Model" << std::endl;
+
+        stats.start();
+
+        HomogeneousBar<FunctionSpace> IC_setup(space, 0.0);
+        UniaxialLoading2D<FunctionSpace> BC_setup(space, 0.0);
+
+        IncrementalLoading<FunctionSpace, ProblemType> time_stepper(space, IC_setup, BC_setup);
+
+        time_stepper.read(in);
+        time_stepper.run();
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
+
+    UTOPIA_REGISTER_APP(HomogeneousBarPseudo1DSingleLevel);
 
     static void Hobbs(Input &in) {
         static const int Dim = 2;
@@ -185,13 +225,12 @@ namespace utopia {
         space.read(in);
         stats.stop_and_collect("space-creation");
 
-        if (mpi_world_rank() == 0)
-            std::cout << "Starting Hobbs Model" << std::endl;
+        if (mpi_world_rank() == 0) std::cout << "Starting Hobbs Model" << std::endl;
 
         stats.start();
 
         MLIncrementalLoading<FunctionSpace,
-                             utopia::IsotropicGenericPhaseField<FunctionSpace,Dim,AT1>,
+                             utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT1>,
                              UniaxialLoading2D<FunctionSpace>,
                              HomogeneousBar<FunctionSpace>>
             time_stepper(space);
@@ -204,12 +243,9 @@ namespace utopia {
         space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
         stats.stop_and_collect("output");
         stats.describe(std::cout);
-
     }
 
     UTOPIA_REGISTER_APP(Hobbs);
-
-
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // //
     // // // // // // // // //
@@ -251,7 +287,6 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_APP(VolDevSplit);
-
 
 }  // namespace utopia
 
