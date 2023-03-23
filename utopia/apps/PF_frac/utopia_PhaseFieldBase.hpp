@@ -54,6 +54,7 @@ namespace utopia {
             in.get("nu", nu);
             in.get("E", E);
             in.get("fracture_toughness", fracture_toughness);
+            in.get("tensile_strength", tensile_strength);
 
             in.get("l_0", l_0);
             in.get("pressure0", pressure0);
@@ -235,12 +236,14 @@ namespace utopia {
             //Initialising other parameters
             if (nu != 0.0 && E != 0.0) {
                 initialise_Lame_parameters();
-
-                if (mpi_world_rank() == 0) {
-                    utopia::out() << "E: " << E << "  nu: " << nu << "  Gc: " << fracture_toughness
-                                  << " mu: " << mu << "  lambda: " << lambda << "  \n";
-                }
+            } else {
+                 initialise_Young_Poisson_parameters();
             }
+            if (mpi_world_rank() == 0) {
+                utopia::out() << "E: " << E << "  nu: " << nu << "  Gc: " << fracture_toughness
+                              << " mu: " << mu << "  lambda: " << lambda << " f_t: " << tensile_strength << "\n";
+            }
+
 
             //Must be done after lambda and mu
             kappa = lambda + (2.0 * mu / Dim);
@@ -264,6 +267,7 @@ namespace utopia {
               E(0.0),
               l_0(1.0),
               pressure0(1e-3),
+              tensile_strength(0.0),
               regularization(1e-10),
               pressure(0.0),
               penalty_param_irreversible(0.0),
@@ -289,6 +293,11 @@ namespace utopia {
         void initialise_Lame_parameters(){
             lambda  = E*nu/((1.+nu)*(1.-2.*nu));
             mu      = E/(2.*(1.+nu));
+         }
+
+        void initialise_Young_Poisson_parameters(){
+            E  = mu*(3.0*lambda + 2.0*mu)/( lambda + mu ) ;
+            nu = lambda/(2.0*(lambda+mu));
          }
 
         std::pair<double,double> return_Lame_parameters(double E, double nu){
@@ -320,7 +329,7 @@ namespace utopia {
         }
 
 
-        Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda, kappa, nu, E, l_0, pressure0;
+        Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda, kappa, nu, E, l_0, pressure0, tensile_strength;
         Scalar regularization, pressure, penalty_param_irreversible, penalty_param_non_neg, crack_set_tol, penalty_tol, penalty_tol_non_neg, mobility;
         Scalar Length_x, Length_y, Length_z;
 
@@ -666,7 +675,7 @@ namespace utopia {
         bool export_material_params(std::string output_path){
             UTOPIA_TRACE_REGION_BEGIN("PhaseFieldFracBase::export_mechanical_params");
 
-            static const int total_components = 6.0; //E, nu, Gc, lambda, mu
+            static const int total_components = 6.0; //E, nu, Gc, lambda, mu, tensile_strength
 
             using PSpace = typename FunctionSpace::template Subspace<total_components>;
             using SElem  = typename PSpace::ViewDevice::Elem;

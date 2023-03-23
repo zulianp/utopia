@@ -143,7 +143,7 @@ namespace utopia {
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             Scalar tr = trace(el_strain.strain[qp]);
                             if (this->params_.use_pressure) {
-                                el_energy += PFFormulation::degradation(c[qp]) *
+                                el_energy += PFFormulation::degradation(c[qp], this->params_) *
                                              p[qp] * tr * dx(qp);
                             }
 
@@ -161,7 +161,7 @@ namespace utopia {
                                     this->params_.penalty_param_irreversible / 2.0 * c_cold_bracket * c_cold_bracket * dx(qp);
 
                                 if ( PFFormulation::penalise_negative_phase_field_values ){
-                                    std::cout << "Should not be here" << std::endl;
+                                    //std::cout << "Should not be here" << std::endl;
                                     auto c_at_qp = c[qp];
                                     auto c_neg_bracket = c_at_qp < 0.0 ? -c_at_qp : 0.0;
                                     el_energy +=
@@ -506,7 +506,7 @@ namespace utopia {
                             const Scalar tr_strain_u = trace(el_strain.strain[qp]);
 
                             compute_stress(this->params_, tr_strain_u, el_strain.strain[qp], stress);
-                            Scalar gc_qp =PFFormulation::degradation(c[qp]);
+                            Scalar gc_qp = PFFormulation::degradation(c[qp], this->params_);
                             stress =
                                 (gc_qp * (1.0 - this->params_.regularization) + this->params_.regularization) * stress;
 
@@ -530,7 +530,7 @@ namespace utopia {
 
                                 if (this->params_.use_pressure) {
                                     const Scalar der_c_pres = PFFormulation::degradation_deriv(
-                                            c[qp]) *
+                                            c[qp], this->params_) *
                                         p[qp] * tr_strain_u * shape_test;
                                     c_el_vec(j) += der_c_pres * dx(qp);
                                 }
@@ -542,12 +542,14 @@ namespace utopia {
                                     auto c_cold = c[qp] - c_old[qp];
                                     auto c_cold_bracket = c_cold < 0.0 ? c_cold : 0.0;
                                     c_el_vec(j) += this->params_.penalty_param_irreversible * c_cold_bracket * shape_test * dx(qp);
+                                            //std::cout << "pen: " << this->params_.penalty_param_irreversible << std::endl;
 
                                     if (PFFormulation::penalise_negative_phase_field_values ){
-                                        std::cout << "Should not be here" << std::endl;
+                                        //std::cout << "Should not be here" << std::endl;
                                         auto c_at_qp = c[qp];
                                         auto c_neg_bracket = c_at_qp < 0.0 ? -c_at_qp : 0.0;
-                                        c_el_vec += this->params_.penalty_param_non_neg * c_neg_bracket * shape_test * dx(qp);
+                                        c_el_vec(j) += this->params_.penalty_param_non_neg * c_neg_bracket * shape_test * dx(qp);
+                                                //std::cout << "pen: " << this->params_.penalty_param_non_neg << std::endl;
                                     }
                                 }
                             }
@@ -736,7 +738,7 @@ namespace utopia {
 
                                     if (this->params_.use_pressure) {
                                         val += PFFormulation::degradation_deriv2(
-                                                   c[qp]) *
+                                                   c[qp], this->params_) *
                                                p[qp] * tr_strain_u * c_shape_j_l_prod * dx(qp);
                                     }
 
@@ -748,7 +750,7 @@ namespace utopia {
 
 
                                         if (PFFormulation::penalise_negative_phase_field_values ){
-                                            std::cout << "Should not be here" << std::endl;
+                                            //std::cout << "Should not be here" << std::endl;
                                             auto c_at_qp = c[qp];
                                             auto c_neg_bracket = c_at_qp <= 0.0 ? 1.0 : 0.0;
                                             val += this->params_.penalty_param_non_neg * c_neg_bracket * c_shape_j_l_prod * dx(qp);
@@ -806,8 +808,8 @@ namespace utopia {
 
                                         if (this->params_.use_pressure) {
                                             const Scalar tr_strain_shape = sum(diag(strain_shape));
-                                            val += PFFormulation::degradation_deriv(
-                                                       c[qp]) *
+                                            val += PFFormulation::degradation_deriv(            //SHOULD THIS BE deriv2 !!?? BUG? Check
+                                                       c[qp], this->params_) *
                                                    p[qp] * tr_strain_shape * c_shape_i * dx(qp);
                                         }
 
@@ -868,7 +870,7 @@ namespace utopia {
                                                          const Stress &stress,
                                                          const FullStrain &full_strain,
                                                          const Scalar &c_trial_fun) {
-            return PFFormulation::degradation_deriv(phase_field_value) *
+            return PFFormulation::degradation_deriv(phase_field_value, params) *
                    c_trial_fun * inner(stress, full_strain);
         }
 
@@ -881,7 +883,7 @@ namespace utopia {
                                                               const Scalar &shape_prod) {
             const Scalar dcc =
                 (1.0 - params.regularization) *
-                PFFormulation::degradation_deriv2(phase_field_value);
+                PFFormulation::degradation_deriv2(phase_field_value, params);
 
             Scalar min_strain_energy = strain_energy;
             if (PFFormulation::enforce_min_crack_driving_force){
@@ -900,7 +902,7 @@ namespace utopia {
             if (PFFormulation::enforce_min_crack_driving_force){
                 strain_en = PFFormulation::min_crack_driving_force(params) > strain_en ? PFFormulation::min_crack_driving_force(params) : strain_en;
             }
-            return (PFFormulation::degradation_deriv(phase_field_value) *
+            return (PFFormulation::degradation_deriv(phase_field_value, params) *
                     (1.0 - params.regularization)) * strain_en;
         }
 
@@ -941,7 +943,7 @@ namespace utopia {
             //double frac_en = GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation>::fracture_energy(
             //                       params, phase_field_value, phase_field_grad);
             //std::cout << frac_en << std::endl;
-            double elastic_energy = (PFFormulation::degradation(phase_field_value) *
+            double elastic_energy = (PFFormulation::degradation(phase_field_value, params) *
                                     (1.0 - params.regularization) +
                                 params.regularization) *
                                std::max(strain_energy(params, trace, strain), PFFormulation::min_crack_driving_force(params) );
@@ -963,7 +965,7 @@ namespace utopia {
                                                             const Scalar &phase_field_value,
                                                             const Scalar &trace,
                                                             const Strain &strain) {
-            return (PFFormulation::degradation(phase_field_value) *
+            return (PFFormulation::degradation(phase_field_value, params) *
                         (1.0 - params.regularization) +
                     params.regularization) *
                    strain_energy(params, trace, strain);

@@ -395,7 +395,7 @@ namespace utopia {
 
 
             this->space_.emplace_dirichlet_condition(
-                SideSet::bottom(),
+                SideSet::left(),
                 UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
                 2  // disp_y
             );
@@ -420,17 +420,17 @@ namespace utopia {
 
             //Fixing left and right boundary to no have any damage on them
             if ( fix_phase_field_){
-            this->space_.emplace_dirichlet_condition(
-                SideSet::left(),
-                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
-                0  // alpha
-            );
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::left(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
 
-            this->space_.emplace_dirichlet_condition(
-                SideSet::right(),
-                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
-                0  // alpha
-            );
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::right(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
             }
 
         }
