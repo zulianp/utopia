@@ -278,6 +278,8 @@ namespace utopia {
 
             space_.apply_constraints(this->solution_);
             fe_problem_->set_old_solution(this->solution_);
+            fe_problem_->write_to_file(this->output_path_, this->solution_, this->time_); //outputting initial stress file
+
 
             UTOPIA_TRACE_REGION_END("IncrementalLoading::init_solution(...)");
         }
@@ -328,6 +330,9 @@ namespace utopia {
 
                 fe_problem_->set_old_solution(this->solution_);
 
+                //Writing strain stress solution to file
+                fe_problem_->write_to_file(this->output_path_, this->solution_, this->time_);
+
                 // increment time step
                 this->time_ += this->dt_;
             }
@@ -361,6 +366,7 @@ namespace utopia {
                 if (t == 1) {
                     fe_problem_->set_old_solution(this->solution_);
                     fe_problem_->set_dt(this->dt_);
+                    fe_problem_->export_material_params(this->output_path_);
                 }
 
                 ////////////////////////////////////////////////////////////////////////////////////////////////////////

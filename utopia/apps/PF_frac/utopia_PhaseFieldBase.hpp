@@ -346,7 +346,7 @@ namespace utopia {
             kappa = lambda + (2.0 * mu / Dim);
         }
 
-        Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda, kappa, nu, E, l_0, pressure0;
+        Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda, kappa, nu, E, l_0, pressure0, tensile_strength;
         Scalar regularization, pressure, penalty_param_irreversible, penalty_param_non_neg, crack_set_tol, penalty_tol,
             penalty_tol_non_neg, mobility;
         Scalar Length_x, Length_y, Length_z;

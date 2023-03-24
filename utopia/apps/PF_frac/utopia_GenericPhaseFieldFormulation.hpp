@@ -296,20 +296,11 @@ namespace utopia {
         GenericPhaseFieldFormulation(FunctionSpace &space, const Parameters &params)
             : PhaseFieldFracBase<FunctionSpace, Dim>(space, params) {}
 
-        double TensileStrength() {
-            return std::sqrt(PFFormulation::damage_normalisation(this->params_) * this->params_.E);
-        }
-        double CriticalDisplacement() {
-            return this->params_.Length_x *
-                   std::sqrt(PFFormulation::damage_normalisation(this->params_) / this->params_.E);
-        }
-
         //Tensile strength (for models with elastic phase AT1 and CHZ )
         double CriticalStress(){
             // sigma_c = Eo * Uc / L
             return this->params_.E * CriticalDisplacement() / this->params_.Length_x;
         }
-
 
         //For a 1D homogeneous Bar
         double CriticalDisplacement(){
@@ -392,7 +383,7 @@ namespace utopia {
                                                                   const StressShape &stress,
                                                                   const Grad &strain_test) {
             const auto gc =
-                ((1.0 - params.regularization) * PFFormulation::degradation(phase_field_value) + params.regularization);
+                ((1.0 - params.regularization) * PFFormulation::degradation(phase_field_value, params) + params.regularization);
             return inner(gc * stress, strain_test);
         }
 

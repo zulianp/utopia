@@ -33,6 +33,7 @@ namespace utopia {
             in.get("stol", stol_);
 
             in.get("verbose", verbose_);
+            in.get("mini_verbose", mini_verbose_);
             in.get("time-statistics", time_statistics_);
 
             in.get("max_it", max_it_);
@@ -217,6 +218,7 @@ namespace utopia {
 
         SizeType max_it_;          /*!< Maximum number of iterations. */
         bool verbose_{false};      /*!< Verobse enable? . */
+        bool mini_verbose_{false};      /*!< Verobse enable? . */
         SizeType time_statistics_; /*!< Perform time stats or not? */
 
         Chrono _time; /*!<Timing of solver. */

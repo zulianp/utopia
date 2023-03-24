@@ -124,6 +124,10 @@ namespace utopia {
         InitialCondidtionPFTension(FunctionSpace &space, const SizeType &PF_component)
             : InitialCondition<FunctionSpace>(space), PF_component_(PF_component) {}
 
+        void read(Input & in) override {
+            in.get("initial_crack_width", initial_crack_width_);
+        }
+
         void init(PetscVector &x) override {
             // un-hard-code
             auto C = this->space_.subspace(PF_component_);
@@ -137,8 +141,8 @@ namespace utopia {
             auto sampler = utopia::sampler(
                 C, UTOPIA_LAMBDA(const Point &x)->Scalar {
                     Scalar f = 0.0;
-                    if (x[1] > (y_mid - this->space_.mesh().min_spacing()) &&
-                        x[1] < (y_mid + this->space_.mesh().min_spacing()) && x[0] < 0.25) {
+                    if (x[1] > (y_mid - 2.0*this->space_.mesh().min_spacing()) &&
+                        x[1] < (y_mid + 2.0*this->space_.mesh().min_spacing()) && x[0] < y_mid) {
                         // if (x[0] <= 0.5 && x[1] <= 0.5) {
                         // f = 1.0;
                         f = 1.0;
@@ -169,6 +173,7 @@ namespace utopia {
 
     private:
         SizeType PF_component_;
+        double initial_crack_width_;
     };
 
     template <class FunctionSpace>
