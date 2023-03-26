@@ -527,10 +527,10 @@ if(UTOPIA_ENABLE_SCRIPTING)
       REQUIRED)
 
     if(Python3_FOUND)
-      set_property(SOURCE utopia.i PROPERTY CPLUSPLUS ON)
-      set_source_files_properties(utopia.i PROPERTIES SWIG_FLAGS "-includeall")
+      set_property(SOURCE scripting/utopia.i PROPERTY CPLUSPLUS ON)
+      set_source_files_properties(scripting/utopia.i PROPERTIES SWIG_FLAGS "-includeall")
 
-      set_source_files_properties(SOURCE utopia.i PROPERTY
+      set_source_files_properties(SOURCE scripting/utopia.i PROPERTY
                                   SWIG_USE_TARGET_INCLUDE_DIRECTORIES TRUE)
 
       message(STATUS "Found python libraries: ${Python_LIBRARIES}")
