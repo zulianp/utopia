@@ -54,7 +54,6 @@ namespace utopia {
             in.get("nx", nx_);
             in.get("ny", ny_);
 
-            csv_file_name_ = this->output_path_ + "_energies.csv";
             log_output_path_ = this->output_path_ + "_log.csv";
 
             // Creates the Problem Type
@@ -421,7 +420,8 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("MLIncrementalLoading::prepare_for_solve(...)");
         }
 
-        void update_time_step(const SizeType &conv_reason) override {
+        //NO ALTERNATIVE FOR Fracture_energy_monitoring=false
+        void update_time_step(const SizeType &conv_reason, bool ) override {
             UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::update_time_step(...)");
 
             bool repeat_step = this->adjust_dt_on_failure_ && conv_reason < 0;
@@ -542,7 +542,7 @@ namespace utopia {
         }
 
         void export_energies_csv(bool repeat_step) {
-            if (!csv_file_name_.empty()) {
+            if (!this->csv_file_name_.empty()) {
                 CSVWriter writer{};
                 Scalar elastic_energy = 0.0, fracture_energy = 0.0, error_tcv = 0.0, error_cod = 0.0, residual = 0.0,
                        iterations = 0.0;
@@ -562,12 +562,12 @@ namespace utopia {
                 if (!repeat_step) this->frac_energy_old_ = fracture_energy;  // only store old value if we dont repeat
 
                 if (mpi_world_rank() == 0) {
-                    if (!writer.file_exists(csv_file_name_)) {
-                        writer.open_file(csv_file_name_);
+                    if (!writer.file_exists(this->csv_file_name_)) {
+                        writer.open_file(this->csv_file_name_);
                         writer.write_table_row<std::string>(
                             {"time step", "time", "elastic_energy", "fracture_energy", "residual", "iterations"});
                     } else {
-                        writer.open_file(csv_file_name_);
+                        writer.open_file(this->csv_file_name_);
                     }
 
                     writer.write_table_row<Scalar>({Scalar(this->time_step_counter_),
@@ -683,7 +683,7 @@ namespace utopia {
                 }
 
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////
-                update_time_step(sol_status.reason);
+                update_time_step(sol_status.reason, true); //ML Incremenet only does frac energy monitoring
             }
 
             UTOPIA_TRACE_REGION_END("MLIncrementalLoading::run(...)");
@@ -719,8 +719,6 @@ namespace utopia {
         bool hjsmn_smoother_;
         bool block_solver_{true};
         bool use_simd_{false};
-
-        std::string csv_file_name_;
     };
 
 }  // namespace utopia

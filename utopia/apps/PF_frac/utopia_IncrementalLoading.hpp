@@ -81,7 +81,8 @@ namespace utopia {
               shrinking_factor_(0.5),
               pressure0_(0.0),
               pressure_increase_factor_(0.0),
-              increase_factor_(2.0)
+              increase_factor_(2.0),
+              fracture_energy_time_stepping_(false)
 
         {}
 
@@ -99,6 +100,7 @@ namespace utopia {
             in.get("pressure_increase_factor", pressure_increase_factor_);
             in.get("use_pressure", use_pressure_);
             in.get("use_constant_pressure", use_constant_pressure_);
+            in.get("fracture_energy_time_stepping", fracture_energy_time_stepping_);
 
             // E.P dynamic time stepping with fracture energy
             in.get("frac_energy_max_change", frac_energy_max_change_);
@@ -106,12 +108,15 @@ namespace utopia {
             in.get("dt_min", dt_min_);
             in.get("dt_max", dt_max_);
             in.get("increase_factor", increase_factor_);
+
+            csv_file_name_ = this->output_path_ + "_energies.csv";
+
         }
 
         virtual void run() = 0;
         virtual void init_solution() = 0;
         virtual void prepare_for_solve() = 0;
-        virtual void update_time_step(const SizeType &conv_reason) = 0;
+        virtual void update_time_step(const SizeType &conv_reason, bool fracture_energy_monitoring) = 0;
 
         void init(FunctionSpace &space) {
             init_solution();
@@ -192,6 +197,10 @@ namespace utopia {
         Vector solution_;
         Vector lb_;  // this is quite particular for PF-frac        E.P Question: What is this?
         Vector ub_;  // this is quite particular for PF-frac
+
+        //E.P For Exporting energy file and iterations
+        std::string csv_file_name_;
+        bool fracture_energy_time_stepping_ = false;
     };
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -309,36 +318,107 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("IncrementalLoading::prepare_for_solve(...)");
         }
 
-        void update_time_step(const SizeType &conv_reason) override {
+        void update_time_step(const SizeType &conv_reason, bool fracture_energy_monitoring = false) override {
             UTOPIA_TRACE_REGION_BEGIN("IncrementalLoading::update_time_step(...)");
 
-            if (this->adjust_dt_on_failure_ && conv_reason < 0) {
-                // reset solution
-                fe_problem_->get_old_solution(this->solution_);
+            if (!fracture_energy_monitoring){
+                if (this->adjust_dt_on_failure_ && conv_reason < 0) {
+                    // reset solution
+                    fe_problem_->get_old_solution(this->solution_);
 
-                this->time_ -= this->dt_;
-                this->dt_ = this->dt_ * this->shrinking_factor_;
-                this->time_ += this->dt_;
-            } else {
-                rename("X", this->solution_);
-
-                if (this->pressure0_ != 0.0) {
-                    this->write_to_file(space_, 1e-5 * this->time_);
+                    this->time_ -= this->dt_;
+                    this->dt_ = this->dt_ * this->shrinking_factor_;
+                    this->time_ += this->dt_;
                 } else {
-                    this->write_to_file(space_, this->time_);
+                    rename("X", this->solution_);
+
+                    if (this->pressure0_ != 0.0) {
+                        this->write_to_file(space_, 1e-5 * this->time_);
+                    } else {
+                        this->write_to_file(space_, this->time_);
+                    }
+
+                    fe_problem_->set_old_solution(this->solution_);
+
+                    //Writing strain stress solution to file
+                    fe_problem_->write_to_file(this->output_path_, this->solution_, this->time_);
+
+                    // increment time step
+                    this->time_ += this->dt_;
+                }
+            } else {
+                Scalar trial_fracture_energy{0.0};
+                bool repeat_step = this->adjust_dt_on_failure_ && conv_reason < 0;
+                if (!repeat_step) {
+                    // E.P Calc frac energy at new solution
+                    // And repeat if larger than a certain tolerance
+                    fe_problem_->fracture_energy(this->solution_, trial_fracture_energy);
+                    repeat_step = this->must_reduce_time_step(
+                        trial_fracture_energy);  // this also checks if frac energy change is too small
+
+                    // if we are at the minimum time step, do not shrink
+                    if (repeat_step == true && this->dt_ * this->shrinking_factor_ < this->dt_min_) {
+                        repeat_step = false;
+                        if (mpi_world_rank() == 0) {
+                            utopia::out() << "time step " << this->dt_ << " too close to minumum " << this->dt_min_
+                                          << " not reducing\n";
+                        }
+                    }
+                } // repeat step calibrated
+
+                if (repeat_step) { //repeat time step
+                    if (mpi_world_rank() == 0) {
+                        utopia::out() << "------- Repeating time step\n";
+                    }
+                    this->time_ -= this->dt_;
+                    this->dt_ = this->dt_ * this->shrinking_factor_;
+                    this->time_ += this->dt_;
+
+                    fe_problem_->get_old_solution(this->solution_);
+                    fe_problem_->set_dt(this->dt_);
+
+
+                } else { //Advance time step
+
+                    fe_problem_->set_old_solution(this->solution_);
+                    fe_problem_->set_dt(this->dt_);
+
+                    if (this->pressure0_ != 0.0) {
+                        this->write_to_file(space_, 1e-5 * this->time_);
+                    } else {
+                        this->write_to_file(space_, this->time_);
+                    }
+
+                    // Advance time step
+                    this->time_step_counter_ += 1;
+
+                    // Choosing time step
+                    if (this->increase_next_time_step_ && this->dt_ * this->increase_factor_ < this->dt_max_) {
+                        this->dt_ *= this->increase_factor_;     // E.P Increasing time step if decided earlier by
+                                                                 // IncrementalLoadingBase
+                        this->increase_next_time_step_ = false;  // reset to zero for next time step
+                        if (mpi_world_rank() == 0) {
+                            utopia::out() << "------- Increasing next time step:  " << this->dt_ << "\n";
+                        }
+                    }
+
+                    // E.P this also updates the fracture energy at old time step
+                    // Need to call for dynamic time stepping strategy that uses fracture energy
+                    this->frac_energy_old_ = trial_fracture_energy;  // only store old value if we dont repeat
+
+                    //Writing strain stress solution to file
+                    fe_problem_->write_to_file(this->output_path_, this->solution_, this->time_);
+
+                    // Advancing time step (no Second Phase - E.P Taken away )
+                    this->time_ += this->dt_;  // increment time step
                 }
 
-                fe_problem_->set_old_solution(this->solution_);
-
-                //Writing strain stress solution to file
-                fe_problem_->write_to_file(this->output_path_, this->solution_, this->time_);
-
-                // increment time step
-                this->time_ += this->dt_;
             }
 
             UTOPIA_TRACE_REGION_END("IncrementalLoading::update_time_step(...)");
         }
+
+
 
         // allow passing solver
         void run() override {
@@ -351,10 +431,10 @@ namespace utopia {
 
             this->init(space_);
 
-            for (auto t = 1; t < this->num_time_steps_; t++) {
+            while (this->time_ < this->final_time_) {
                 if (mpi_world_rank() == 0) {
                     utopia::out() << "###################################################################### \n";
-                    utopia::out() << "Time-step: " << t << "  time:  " << this->time_ << "  dt:  " << this->dt_
+                    utopia::out() << "Time-step: " << this->time_step_counter_ << "  time:  " << this->time_ << "  dt:  " << this->dt_
                                   << " \n";
                     utopia::out() << "###################################################################### \n";
                     utopia::out() << "use_box_constraints_  " << use_box_constraints_ << "  \n";
@@ -363,7 +443,7 @@ namespace utopia {
                 // fe problem is missing
                 prepare_for_solve();
 
-                if (t == 1) {
+                if (this->time_step_counter_ == 1) {
                     fe_problem_->set_old_solution(this->solution_);
                     fe_problem_->set_dt(this->dt_);
                     fe_problem_->export_material_params(this->output_path_);
@@ -444,7 +524,7 @@ namespace utopia {
                 // const auto conv_reason = 1;
                 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-                update_time_step(conv_reason);
+                update_time_step(conv_reason, this->fracture_energy_time_stepping_);
             }
 
             UTOPIA_TRACE_REGION_END("IncrementalLoading::run(...)");

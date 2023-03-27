@@ -141,8 +141,8 @@ namespace utopia {
             auto sampler = utopia::sampler(
                 C, UTOPIA_LAMBDA(const Point &x)->Scalar {
                     Scalar f = 0.0;
-                    if (x[1] > (y_mid - 2.0*this->space_.mesh().min_spacing()) &&
-                        x[1] < (y_mid + 2.0*this->space_.mesh().min_spacing()) && x[0] < y_mid) {
+                    if (x[1] > (y_mid - 1.5*this->space_.mesh().min_spacing()) &&
+                        x[1] < (y_mid + 1.5*this->space_.mesh().min_spacing()) && x[0] < y_mid) {
                         // if (x[0] <= 0.5 && x[1] <= 0.5) {
                         // f = 1.0;
                         f = 1.0;

@@ -1,7 +1,7 @@
 ---
 app: HomogeneousBarPseudo1DSingleLevel
 # Output 
-output-path: Output/HomogeneousBar1DSin_CHZ_penalty_l4
+output-path: Output/HomogeneousBar1D_AT1_p001_t5_m1
 save_output: true
 # Mesh specification -----------------------------------------
 nx: 100
@@ -18,13 +18,13 @@ disp_y: 0.0
 disp_x: 0.1
 #Initial Condition
 # Phase field formulation
-length_scale: 4
+length_scale: 4.5
 with_damage: true
 use_penalty_irreversibility: true
-penalty_tol: 0.01       	#0.01 = Adequate Pen (De Lorenzis Paper)
+penalty_tol: 0.001       	#0.01 = Adequate Pen (De Lorenzis Paper)
 penalty_tol_non_neg: 1e9        #1e9 = NO Pen,  0.1-0.01 = Adequate Pen (De Lorenzis paper)
 use_crack_set_irreversibiblity: true
-crack_set_tol: 0.96
+crack_set_tol: 0.97
 ## Material paramteters -------------------------------------------------
 #mu: 16e9           
 #lambda: 11e9
@@ -41,14 +41,15 @@ mesh_width: 1
 tough_factor: 1         #introduces a small decrease in fracture toughness in middle of domain (1 = no change in frac tough)
 ## Time stepping -------------------------------------------------------
 dt: 0.001
-final_time: 0.04  
+final_time: 0.025
 # dynamic time stepping with fracture energy
+fracture_energy_time_stepping: true
 frac_energy_max_change: 3.0     #Maximum allowable change in fracture energy (otherwise time step is cut)
-frac_energy_min_change: 1.0     #minimum allowable change in fracture energy (otherwise time step is increased)
-dt_min: 0.0004
+frac_energy_min_change: 1.001     #minimum allowable change in fracture energy (otherwise time step is increased)
+dt_min: 0.00001
 dt_max: 0.002
-increase_factor: 2
-shrinking_factor: 0.5
+increase_factor: 4
+shrinking_factor: 0.25
 adjust_dt_on_failure: false
 ## Pressure handling ---------------------------------------------------------
 use_pressure: false
@@ -68,6 +69,7 @@ use_box_constraints: false  # TR method with penalty, run up to 5 cores
 # use_box_constraints: true # TR method with constraints, run up to 5 cores
 solver:
   verbose: false
+  mini_verbose: false
   max_it: 1000
   atol: 1e-7
   atol_suff: 1e-7
