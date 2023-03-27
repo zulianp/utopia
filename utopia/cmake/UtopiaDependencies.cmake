@@ -487,7 +487,7 @@ include(${UTOPIA_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
 # #################TIN-EXPR######################
 
 if(UTOPIA_ENABLE_TINY_EXPR)
-  set(EXTERNAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../external)
+  set(EXTERNAL_DIR external)
 
   find_path(
     TINY_EXPR_DIR
@@ -497,6 +497,7 @@ if(UTOPIA_ENABLE_TINY_EXPR)
 
   if(TINY_EXPR_DIR)
     # tinyexpr add_library(tinyexpr ${TINY_EXPR_DIR}/tinyexpr.c)
+    # message(STATUS "${TINY_EXPR_DIR} ")
 
     # Add headers and sources to global variables.
     scan_directories(${TINY_EXPR_DIR} "." UTOPIA_BUILD_INCLUDES UTOPIA_HEADERS
