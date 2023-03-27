@@ -471,11 +471,7 @@ if(UTOPIA_STATIC_DEPENDENCIES_ONLY)
   endif()
 endif()
 
-
-# backend modules
-# if(UTOPIA_ENABLE_TRACE)
-#   set(UTOPIA_ENABLE_TRACE ON)
-# endif()
+# backend modules if(UTOPIA_ENABLE_TRACE) set(UTOPIA_ENABLE_TRACE ON) endif()
 
 if(UTOPIA_ENABLE_TRACE_EXPR)
   set(UTOPIA_ENABLE_TRACE ON)
@@ -483,6 +479,42 @@ endif()
 
 message(STATUS "[Status] UTOPIA_ROOT_PATH: ${UTOPIA_ROOT_PATH}")
 include(${UTOPIA_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
+
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
+
+# #################TIN-EXPR######################
+
+if(UTOPIA_ENABLE_TINY_EXPR)
+  set(EXTERNAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../external)
+
+  find_path(
+    TINY_EXPR_DIR
+    NAMES tinyexpr.h
+    HINTS ${EXTERNAL_DIR}/tinyexpr ${TINY_EXPR_DIR} $ENV{TINY_EXPR_DIR}
+          ${INSTALL_DIR}/tinyexpr $ENV{INSTALL_DIR}/tinyexpr)
+
+  if(TINY_EXPR_DIR)
+    # tinyexpr add_library(tinyexpr ${TINY_EXPR_DIR}/tinyexpr.c)
+
+    # Add headers and sources to global variables.
+    scan_directories(${TINY_EXPR_DIR} "." UTOPIA_BUILD_INCLUDES UTOPIA_HEADERS
+                     UTOPIA_SOURCES)
+    set(UTOPIA_BUILD_INCLUDES
+        ${UTOPIA_BUILD_INCLUDES})
+
+    set(UTOPIA_HEADERS
+        ${UTOPIA_HEADERS})
+
+    set(UTOPIA_SOURCES
+        ${UTOPIA_SOURCES})
+
+    set(UTOPIA_ENABLE_TINY_EXPR
+        ON)
+    set(UTOPIA_ADDITIONAL_COMPONENTS ";tinyexpr")
+  endif()
+endif()
 
 # ##############################################################################
 # ##############################################################################
@@ -526,7 +558,8 @@ if(UTOPIA_ENABLE_SCRIPTING)
 
     if(Python3_FOUND)
       set_property(SOURCE scripting/utopia.i PROPERTY CPLUSPLUS ON)
-      set_source_files_properties(scripting/utopia.i PROPERTIES SWIG_FLAGS "-includeall")
+      set_source_files_properties(scripting/utopia.i PROPERTIES SWIG_FLAGS
+                                                                "-includeall")
 
       set_source_files_properties(SOURCE scripting/utopia.i PROPERTY
                                   SWIG_USE_TARGET_INCLUDE_DIRECTORIES TRUE)
@@ -536,7 +569,8 @@ if(UTOPIA_ENABLE_SCRIPTING)
         utopya
         TYPE SHARED
         LANGUAGE python
-        SOURCES scripting/utopia.i scripting/utopia_script.hpp scripting/utopia_script.cpp)
+        SOURCES scripting/utopia.i scripting/utopia_script.hpp
+                scripting/utopia_script.cpp)
 
       # swig_link_libraries(utopya PUBLIC Python3::Python Python3::NumPy utopia)
       swig_link_libraries(utopya PUBLIC Python3::Module utopia)

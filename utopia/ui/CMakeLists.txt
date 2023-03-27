@@ -3,49 +3,49 @@ set(EXTERNAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../external)
 # ##############################################################################
 # TINYEXPR
 
-if(UTOPIA_ENABLE_TINY_EXPR)
+# if(UTOPIA_ENABLE_TINY_EXPR)
 
-  find_path(
-    TINY_EXPR_DIR
-    NAMES tinyexpr.h
-    HINTS ${EXTERNAL_DIR}/tinyexpr ${TINY_EXPR_DIR} $ENV{TINY_EXPR_DIR}
-          ${INSTALL_DIR}/tinyexpr $ENV{INSTALL_DIR}/tinyexpr)
+#   find_path(
+#     TINY_EXPR_DIR
+#     NAMES tinyexpr.h
+#     HINTS ${EXTERNAL_DIR}/tinyexpr ${TINY_EXPR_DIR} $ENV{TINY_EXPR_DIR}
+#           ${INSTALL_DIR}/tinyexpr $ENV{INSTALL_DIR}/tinyexpr)
 
-  if(TINY_EXPR_DIR)
-    # tinyexpr
-    add_library(tinyexpr ${TINY_EXPR_DIR}/tinyexpr.c)
-    target_include_directories(tinyexpr
-                               PUBLIC $<BUILD_INTERFACE:${TINY_EXPR_DIR}>)
+#   if(TINY_EXPR_DIR)
+#     # tinyexpr
+#     add_library(tinyexpr ${TINY_EXPR_DIR}/tinyexpr.c)
+#     target_include_directories(tinyexpr
+#                                PUBLIC $<BUILD_INTERFACE:${TINY_EXPR_DIR}>)
 
 
-    # Add headers and sources to global variables.
-    scan_directories(${TINY_EXPR_DIR} "." UTOPIA_BUILD_INCLUDES UTOPIA_HEADERS
-                     UTOPIA_SOURCES)
-    set(UTOPIA_BUILD_INCLUDES
-        ${UTOPIA_BUILD_INCLUDES}
-        PARENT_SCOPE)
+#     # Add headers and sources to global variables.
+#     scan_directories(${TINY_EXPR_DIR} "." UTOPIA_BUILD_INCLUDES UTOPIA_HEADERS
+#                      UTOPIA_SOURCES)
+#     set(UTOPIA_BUILD_INCLUDES
+#         ${UTOPIA_BUILD_INCLUDES}
+#         PARENT_SCOPE)
 
-    set(UTOPIA_HEADERS
-        ${UTOPIA_HEADERS}
-        PARENT_SCOPE)
+#     set(UTOPIA_HEADERS
+#         ${UTOPIA_HEADERS}
+#         PARENT_SCOPE)
 
-    set(UTOPIA_SOURCES
-        ${UTOPIA_SOURCES}
-        PARENT_SCOPE)
+#     set(UTOPIA_SOURCES
+#         ${UTOPIA_SOURCES}
+#         PARENT_SCOPE)
 
-    set(UTOPIA_ENABLE_TINY_EXPR
-        ON
-        PARENT_SCOPE)
-    set(UTOPIA_ADDITIONAL_COMPONENTS ";tinyexpr")
+#     set(UTOPIA_ENABLE_TINY_EXPR
+#         ON
+#         PARENT_SCOPE)
+#     set(UTOPIA_ADDITIONAL_COMPONENTS ";tinyexpr")
 
-    install(
-      TARGETS tinyexpr
-      EXPORT UtopiaTargets
-      RUNTIME DESTINATION bin
-      LIBRARY DESTINATION lib
-      ARCHIVE DESTINATION lib)
-  endif()
-endif()
+#     install(
+#       TARGETS tinyexpr
+#       EXPORT UtopiaTargets
+#       RUNTIME DESTINATION bin
+#       LIBRARY DESTINATION lib
+#       ARCHIVE DESTINATION lib)
+#   endif()
+# endif()
 
 
 
