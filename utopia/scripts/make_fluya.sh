@@ -15,6 +15,7 @@ _fluya_mode(){
 if [[ -d build_fluya ]]
 then
 	cd build_fluya
+	rm -rf *
 	_fluya_mode
 fi
 
@@ -22,5 +23,6 @@ if [[ ! -d build_fluya ]]
 then
 	mkdir build_fluya
 	cd build_fluya
+	rm -rf *
 	_fluya_mode
 fi

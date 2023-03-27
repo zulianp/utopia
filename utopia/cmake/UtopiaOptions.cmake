@@ -4,7 +4,6 @@ option(UTOPIA_ENABLE_VC "SIMD wrapper" OFF)
 option(UTOPIA_STATIC_DEPENDENCIES_ONLY
        "Allows to restrict the linking to static libraries" OFF)
 
-
 option(UTOPIA_ENABLE_EXAMPLES "Enable utopia examples." OFF)
 option(UTOPIA_ENABLE_TESTS "Enable utopia tests." ON)
 option(UTOPIA_ENABLE_BENCHMARK "Enable utopia benchmarks." ON)
@@ -20,8 +19,8 @@ option(UTOPIA_ENABLE_TRILINOS "Enable the Trilinos backend" ON)
 option(UTOPIA_ENABLE_BLAS "Enable the blas backend" ON)
 
 option(UTOPIA_ENABLE_TRACE "enables utopia tracing facilities for regions" OFF)
-option(UTOPIA_ENABLE_TRACE_EXPR
-       "enables utopia tracing facilities for every expression" OFF)
+option(UTOPIA_ENABLE_TRACE_EXPR "enables utopia tracing facilities for every
+expression" OFF)
 
 option(UTOPIA_ENABLE_NO_ALLOC_REGIONS"enables utopia alloc-check facilities"
        OFF)
@@ -66,16 +65,13 @@ option(UTOPIA_SPACK_MODE "Spack env hacks" OFF)
 
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
 
-# Setting this to be on, otherwise will not compile since Kokkos_DefaultNode.hpp does not exist
-# anymore.
+# Setting this to be on, otherwise will not compile since Kokkos_DefaultNode.hpp
+# does not exist anymore.
 option(UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE
-       "Removed trilinos deprecated code" ON)
+       "Removed trilinos deprecated code" TRUE)
 
 option(UTOPIA_ENABLE_FLUYA_MODE "Create utopia configuration required by Fluya"
        OFF)
-
-
-
 
 set(UTOPIA_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_ROOT_PATH}/cmake")
@@ -91,7 +87,6 @@ set(CMAKE_CXX_FLAGS_ASAN
           "Flags used by the C++ compiler during AddressSanitizer builds."
           FORCE)
 
-
 # ##############################################################################
 # ######################## UTOPIA VERSION INFORMATION
 # ##############################################################################
@@ -105,12 +100,12 @@ set(UTOPIA_VERSION
 # ##############################################################################
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE
-        "Release"
-        CACHE STRING "Choose the type of build, options are: Debug Release
+  set(CMAKE_BUILD_TYPE
+      "Release"
+      CACHE STRING "Choose the type of build, options are: Debug Release
 RelWithDebInfo MinSizeRel." FORCE)
 
-    message(STATUS "[Status] CMAKE_BUILD_TYPE=Release")
+  message(STATUS "[Status] CMAKE_BUILD_TYPE=Release")
 endif(NOT CMAKE_BUILD_TYPE)
 
 # To kill the policy warning  (maybe not a good idea yet)

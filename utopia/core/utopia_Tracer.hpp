@@ -16,7 +16,7 @@
 #include "utopia_MPI.hpp"
 #include "utopia_Utils.hpp"
 
-#ifdef UTOPIA_TRACE_ENABLED
+#ifdef UTOPIA_ENABLE_TRACE
 
 namespace utopia {
 
@@ -225,7 +225,7 @@ namespace utopia {
 
 }  // namespace utopia
 
-#ifdef UTOPIA_TRACE_EXPR_ENABLED
+#ifdef UTOPIA_ENABLE_TRACE_EXPR
 #define UTOPIA_TRACE_BEGIN(macro_expr_) utopia::Tracer::instance().apply_begin(macro_expr_)
 #define UTOPIA_TRACE_END(macro_expr_) utopia::Tracer::instance().apply_end()
 #define UTOPIA_TRACE_BEGIN_SPECIALIZED(macro_expr_) utopia::Tracer::instance().apply_begin_specialized(macro_expr_)
@@ -244,7 +244,7 @@ namespace utopia {
 #define UTOPIA_TRACE_REGION_BEGIN(macro_region_name_) \
     utopia::Tracer::instance().region_begin(macro_region_name_);  //, __FILE__, __LINE__)
 #define UTOPIA_TRACE_REGION_END(macro_region_name_) utopia::Tracer::instance().region_end()
-#else  // UTOPIA_TRACE_ENABLED
+#else  // UTOPIA_ENABLE_TRACE
 
 #define UTOPIA_TRACE_SCOPE(macro_expr_) ((void)0)
 #define UTOPIA_TRACE_BEGIN(...) ((void)0)
@@ -256,6 +256,6 @@ namespace utopia {
 #define UTOPIA_TRACE_BEGIN_SPECIALIZED(...) ((void)0)
 #define UTOPIA_TRACE_END_SPECIALIZED(...) ((void)0)
 
-#endif  // UTOPIA_TRACE_ENABLED
+#endif  // UTOPIA_ENABLE_TRACE_EXPR
 
 #endif  // UTOPIA_TRACER_HPP
