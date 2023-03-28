@@ -408,15 +408,54 @@ namespace utopia {
 
                     //Writing strain stress solution to file
                     fe_problem_->write_to_file(this->output_path_, this->solution_, this->time_);
+                    export_energies_csv(trial_fracture_energy);
 
                     // Advancing time step (no Second Phase - E.P Taken away )
                     this->time_ += this->dt_;  // increment time step
+
                 }
 
             }
 
             UTOPIA_TRACE_REGION_END("IncrementalLoading::update_time_step(...)");
         }
+
+
+        void export_energies_csv(Scalar fracture_energy) {
+            if (!this->csv_file_name_.empty()) {
+                CSVWriter writer{};
+                Scalar elastic_energy = 0.0, error_tcv = 0.0, error_cod = 0.0, residual = 0.0,
+                       iterations = 0.0;
+
+                fe_problem_->elastic_energy(this->solution_, elastic_energy);
+                //fe_problem_->fracture_energy(this->solution_, fracture_energy); already passed in as input
+
+                //residual = rmtr_->get_gnorm();
+                //iterations = rmtr_->get_total_iterations();
+                if (FunctionSpace::Dim == 3) {
+                    fe_problem_->compute_tcv(this->solution_, error_tcv);
+                    fe_problem_->compute_cod(this->solution_, error_cod);
+                }
+
+                if (mpi_world_rank() == 0) {
+                    if (!writer.file_exists(this->csv_file_name_)) {
+                        writer.open_file(this->csv_file_name_);
+                        writer.write_table_row<std::string>(
+                            {"time step", "time", "elastic_energy", "fracture_energy"});
+                    } else {
+                        writer.open_file(this->csv_file_name_);
+                    }
+
+                    writer.write_table_row<Scalar>({Scalar(this->time_step_counter_),
+                                                    this->time_,
+                                                    elastic_energy,
+                                                    fracture_energy,
+                                                    });
+                    writer.close_file();
+                }
+            }
+        }
+
 
 
 
