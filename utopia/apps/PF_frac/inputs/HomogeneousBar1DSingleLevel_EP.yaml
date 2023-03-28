@@ -1,16 +1,16 @@
 ---
 app: HomogeneousBarPseudo1DSingleLevel
 # Output 
-output-path: Output/HomogeneousBar1D_AT1_p001_t5_m1
+output-path: Output/HomogeneousBar1D_AT1_p001_t5_m1_L10_l4.5_nu1
 save_output: true
 # Mesh specification -----------------------------------------
 nx: 100
-ny: 15
+ny: 10
 #nz: 2
 x_min: 0
 x_max: 100  
 y_min: 0
-y_max: 15
+y_max: 10
 n_levels: 1
 # Problem specification ------------------------------------------
 # Boundary Conditions
@@ -29,7 +29,7 @@ crack_set_tol: 0.97
 #mu: 16e9           
 #lambda: 11e9
 E: 30e9
-nu: 0.25          
+nu: 0.1          
 fracture_toughness: 100       
 tensile_strength: 0.5e6       	#Only used with Cohesive Zone Model (CHZ)
 boundary_protection: false      #increase frac toughness in a layer around the boundary
