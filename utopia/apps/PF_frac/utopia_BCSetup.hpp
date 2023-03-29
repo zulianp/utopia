@@ -241,6 +241,9 @@ namespace utopia {
             this->space_.emplace_dirichlet_condition(
                 SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return disp_y_ * time; }, 2);
 
+            this->space_.emplace_dirichlet_condition(
+                SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1); // fix x displacement
+
             //Fixing top and bottom boundary to no have any damage on them
             if ( fix_phase_field_){
                 this->space_.emplace_dirichlet_condition(
@@ -270,7 +273,11 @@ namespace utopia {
         PFFracShear2D(FunctionSpace &space, const Scalar &disp_x = 1.0)
             : BCSetup<FunctionSpace>(space), disp_x_(disp_x) {}
 
-        void read(Input &in) override { in.get("disp_x", disp_x_); }
+        void read(Input &in) override {
+            in.get("disp_x", disp_x_);
+            in.get("fix_phase_field_on_sides", fix_phase_field_);
+        }
+
 
         void emplace_time_dependent_BC(const Scalar &time) override {
             // static const int Dim = FunctionSpace::Dim;
@@ -278,21 +285,39 @@ namespace utopia {
             using Point = typename FunctionSpace::Point;
             this->space_.reset_bc();
 
-            this->space_.emplace_dirichlet_condition(
-                SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2);
 
             this->space_.emplace_dirichlet_condition(
-                SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_ * time; }, 2);
+                SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1); // fix x
 
             this->space_.emplace_dirichlet_condition(
-                SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
+                SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2); // fix y
 
             this->space_.emplace_dirichlet_condition(
-                SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
+                SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_ * time; }, 1); //shear x
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2); // fix y
+
+            //Fixing top and bottom boundary to no have any damage on them
+            if ( fix_phase_field_){
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::bottom(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::top(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
+            }
         }
 
     private:
         Scalar disp_x_;
+        bool   fix_phase_field_;
+
+
     };
 
     template <class FunctionSpace>

@@ -1,7 +1,7 @@
 ---
 app: TensionTestSingleLevel
 # Output 
-output-path: Output/TensionTest_AT1_Ambati_p01_t00005_l4_m2
+output-path: Output/TensionTest_AT1_Ambati_p01_t00001_l4_m2
 save_output: true
 # Mesh specification -----------------------------------------
 nx: 200
@@ -27,8 +27,8 @@ use_crack_set_irreversibiblity: true
 crack_set_tol: 0.96
 mobility: 1.0e-06
 ## Material paramteters -------------------------------------------------
-mu: 121.15 					#Grimsel granite
-lambda: 80.77
+lambda: 121.15 					#Grimsel granite
+mu: 80.77
 #E: 210e9
 #nu: 0.3					#Grimsel granite
 fracture_toughness: 2.7e-3				#Grimsel granite
@@ -41,14 +41,14 @@ mesh_width: 1
 tough_factor: 1					#introduces a small decrease in fracture toughness in middle of domain (1 = no change in frac tough)
 fix_phase_field_on_sides: true
 ## Time stepping -------------------------------------------------------
-dt: 0.001
+dt: 0.0005
 final_time: 0.01  
 # dynamic time stepping with fracture energy
 fracture_energy_time_stepping: true
 frac_energy_max_change: 1.1			#Maximum allowable change in fracture energy (otherwise time step is cut)
 frac_energy_min_change: 1.0			#minimum allowable change in fracture energy (otherwise time step is increased)
-dt_min: 0.00005
-dt_max: 0.002
+dt_min: 0.00001
+dt_max: 0.001
 increase_factor: 4
 shrinking_factor: 0.25
 adjust_dt_on_failure: false

@@ -983,8 +983,6 @@ namespace utopia {
             // And write outputs
             this->export_strain_and_stress(output_path, x, time);
             if (mpi_world_rank() == 0 ) std::cout << "Saving file: " << output_path << std::endl;
-
-
         }
     };
 

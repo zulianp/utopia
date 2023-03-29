@@ -880,6 +880,15 @@ namespace utopia {
             energy_positive =
                 (0.5 * params.kappa * tr_positive * tr_positive) + (params.mu * inner(strain_dev, strain_dev));
         }
+
+        void write_to_file(const std::string &output_path, const Vector &x, const Scalar time) override {
+            PhaseFieldFracBase<FunctionSpace, Dim>::write_to_file(output_path, x, time);
+
+            // Post-processing functions
+            // And write outputs
+            this->export_strain_and_stress(output_path, x, time);
+            if (mpi_world_rank() == 0 ) std::cout << "Saving file: " << output_path << std::endl;
+        }
     };
 
 }  // namespace utopia
