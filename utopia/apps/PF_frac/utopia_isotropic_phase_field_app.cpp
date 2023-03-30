@@ -97,7 +97,7 @@ namespace utopia {
         stats.start();
 
         InitialCondidtionPFTension<FunctionSpace> IC_setup(space, 0.0);
-        PFFracTension2D<FunctionSpace> BC_setup(space);
+        PFFracTension<FunctionSpace> BC_setup(space);
 
         IncrementalLoading<FunctionSpace, FractureModel<FunctionSpace>> time_stepper(space, IC_setup, BC_setup);
 
@@ -135,7 +135,7 @@ namespace utopia {
         stats.start();
 
         InitialCondidtionPFTension<FunctionSpace> IC_setup(space, 0.0);
-        PFFracTension2D<FunctionSpace> BC_setup(space);
+        PFFracTension<FunctionSpace> BC_setup(space);
 
         // IncrementalLoading<FunctionSpace, FractureModel<FunctionSpace>> time_stepper(space, IC_setup, BC_setup);
 
@@ -346,7 +346,7 @@ namespace utopia {
         MLIncrementalLoading<FunctionSpace,
                              FractureModel<FunctionSpace>,
                              // PhaseFieldVolDevSplit<FunctionSpace>,
-                             PFFracTension2D<FunctionSpace>,
+                             PFFracTension<FunctionSpace>,
                              InitialCondidtionPFTension<FunctionSpace>>
             time_stepper(space);
 
@@ -551,7 +551,7 @@ namespace utopia {
 
         MLIncrementalLoading<FunctionSpace,
                              FractureModel<FunctionSpace>,
-                             PFFracTension2D<FunctionSpace>,
+                             PFFracTension<FunctionSpace>,
                              InitialCondidtionPFTension<FunctionSpace>>
             time_stepper(space);
 

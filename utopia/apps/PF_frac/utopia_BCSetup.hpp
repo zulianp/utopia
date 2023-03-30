@@ -213,12 +213,12 @@ namespace utopia {
     };
 
     template <class FunctionSpace>
-    class PFFracTension2D : public BCSetup<FunctionSpace> {
+    class PFFracTension : public BCSetup<FunctionSpace> {
     public:
         using Scalar = typename FunctionSpace::Scalar;
         using Vector = typename FunctionSpace::Vector;
 
-        PFFracTension2D(FunctionSpace &space, const Scalar &disp_y = 1.0)
+        PFFracTension(FunctionSpace &space, const Scalar &disp_y = 1.0)
             : BCSetup<FunctionSpace>(space), disp_y_(disp_y) {}
 
         void read(Input &in) override {
@@ -263,6 +263,8 @@ namespace utopia {
         Scalar disp_y_;
         bool   fix_phase_field_;
     };
+
+
 
     template <class FunctionSpace>
     class PFFracShear2D : public BCSetup<FunctionSpace> {
