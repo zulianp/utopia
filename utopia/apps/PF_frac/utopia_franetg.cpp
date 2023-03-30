@@ -46,6 +46,7 @@
 
 #include "utopia_GenericPhaseFieldFormulation.hpp"
 #include "utopia_IsotropicGenericPhaseField.hpp"
+#include "utopia_VolDevGenericPhaseField.hpp"
 #include "utopia_petsc.hpp"
 #include "utopia_petsc_DM.hpp"
 #include "utopia_petsc_DMDA.hpp"
@@ -442,7 +443,7 @@ namespace utopia {
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
-        using ProblemType = utopia::PhaseFieldVolDevSplit<FunctionSpace, Dim>;
+        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1>;
 
         Comm world;
 

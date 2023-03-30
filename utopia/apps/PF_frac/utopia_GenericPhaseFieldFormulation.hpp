@@ -444,9 +444,10 @@ namespace utopia {
                     for (SizeType n = 0; n < C_NDofs; n++) {
 
                         ////////////////////////////////////////////
+                        bool update_elast_tensor = false;
                         Point coord;
                         s_e.node(n, coord);
-                        this->non_const_params().update(coord);
+                        this->non_const_params().update(coord, update_elast_tensor);
                         ////////////////////////////////////////////
 
                         Scalar Gc = this->params_.fracture_toughness;

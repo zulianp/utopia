@@ -303,9 +303,11 @@ namespace utopia {
             kappa = lambda + (2.0 * mu / Dim);
         }
 
-        void update(const Point &p) {
+        void update(const Point &p, bool update_elastic_tensor) {
             if (hetero_params) {
                 hetero_params(p, mu, lambda, fracture_toughness);
+                if (update_elastic_tensor)
+                    fill_in_isotropic_elast_tensor();
             }
         }
 
@@ -735,9 +737,10 @@ namespace utopia {
 
                         for (SizeType n = 0; n < C_NDofs; n++) {
                             ////////////////////////////////////////////
+                            bool update_elast_tensor = false;
                             Point coord;
                             s_e.node(n, coord);
-                            non_const_params().update(coord);
+                            non_const_params().update(coord, update_elast_tensor);
                             ////////////////////////////////////////////
 
                             Scalar Gc = this->params_.fracture_toughness;
@@ -903,9 +906,10 @@ namespace utopia {
                         auto c_shape_fun_el = c_shape_view.make(c_e);  // shape functions (scalar)
 
                         ////////////////////////////////////////////
+                        bool update_elast_tensor = false;
                         Point centroid;
                         c_e.centroid(centroid);
-                        non_const_params().update(centroid);
+                        non_const_params().update(centroid, update_elast_tensor);
                         ////////////////////////////////////////////
 
                         // loop over all nodes, and for each node, we integrate the strain at the int point weightwd by

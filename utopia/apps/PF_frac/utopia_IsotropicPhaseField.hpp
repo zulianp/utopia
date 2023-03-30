@@ -3,7 +3,6 @@
 
 #include "utopia_CoefStrainView.hpp"
 #include "utopia_DeviceTensorContraction.hpp"
-#include "utopia_DeviceTensorProduct.hpp"
 #include "utopia_DiffController.hpp"
 #include "utopia_ExtendedFunction.hpp"
 #include "utopia_FEFunction.hpp"
@@ -310,9 +309,10 @@ namespace utopia {
                         auto dx = differential_view.make(c_e);
 
                         ////////////////////////////////////////////
+                        bool update_elast_tensor = false;
                         Point centroid;
                         c_e.centroid(centroid);
-                        this->non_const_params().update(centroid);
+                        this->non_const_params().update(centroid, update_elast_tensor);
                         ////////////////////////////////////////////
 
                         Scalar el_energy = 0.0;
@@ -431,9 +431,10 @@ namespace utopia {
                         auto dx = differential_view.make(c_e);
 
                         ////////////////////////////////////////////
+                        bool update_elast_tensor = false;
                         Point centroid;
                         c_e.centroid(centroid);
-                        this->non_const_params().update(centroid);
+                        this->non_const_params().update(centroid, false);
                         ////////////////////////////////////////////
 
                         Scalar el_energy = 0.0;
@@ -528,9 +529,10 @@ namespace utopia {
                         auto dx = differential_view.make(c_e);
 
                         ////////////////////////////////////////////
+                        bool update_elast_tensor = false;
                         Point centroid;
                         c_e.centroid(centroid);
-                        this->non_const_params().update(centroid);
+                        this->non_const_params().update(centroid, update_elast_tensor);
                         ////////////////////////////////////////////
 
                         Scalar el_energy = 0.0;
@@ -662,9 +664,10 @@ namespace utopia {
                         auto c_shape_fun_el = c_shape_view.make(c_e);
 
                         ////////////////////////////////////////////
+                        bool update_elast_tensor = false;
                         Point centroid;
                         c_e.centroid(centroid);
-                        this->non_const_params().update(centroid);
+                        this->non_const_params().update(centroid, update_elast_tensor);
                         ////////////////////////////////////////////
 
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
@@ -859,9 +862,10 @@ namespace utopia {
                         auto c_shape_fun_el = c_shape_view.make(c_e);
 
                         ////////////////////////////////////////////
+                        bool update_elast_tensor = false;
                         Point centroid;
                         c_e.centroid(centroid);
-                        this->non_const_params().update(centroid);
+                        this->non_const_params().update(centroid, update_elast_tensor);
                         //Getting new material parameter values
                         const Scalar mu = this->params_.mu;
                         const Scalar lambda = this->params_.lambda;
