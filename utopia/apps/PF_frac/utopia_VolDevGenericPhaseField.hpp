@@ -10,7 +10,6 @@
 #include "utopia_GenericPhaseFieldFormulation.hpp"
 #include "utopia_GradInterpolate.hpp"
 #include "utopia_LinearElasticityView.hpp"
-#include "utopia_PhaseFieldBase.hpp"
 #include "utopia_StrainView.hpp"
 #include "utopia_TensorView4.hpp"
 #include "utopia_Tracer.hpp"
@@ -187,7 +186,7 @@ namespace utopia {
                 val += dot(x_const, this->force_field_);
             }
 
-            // this->add_pf_constraints(x_const);   //TAKEN AWAY BUT STILL ACTIVE IN VOL DEV SPLIT -- CHECK
+            this->add_pf_constraints(x_const);   //TAKEN AWAY BUT STILL ACTIVE IN VOL DEV SPLIT -- CHECK
 
             UTOPIA_TRACE_REGION_END("VolDevGenericPhaseField::value");
             return true;
