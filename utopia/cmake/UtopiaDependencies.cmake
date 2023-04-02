@@ -76,58 +76,61 @@ endif()
 
 if(UTOPIA_ENABLE_BLAS)
   # find dependencies ###################################################
-  if(PITZ_DORA)
-    find_package(OpenBLAS REQUIRED)
-    if(OPEN_BLAS_FOUND)
-      list(APPEND UTOPIA_BUILD_INCLUDES ${BLAS_INCLUDE_DIR})
-      list(APPEND UTOPIA_DEP_LIBRARIES ${BLAS_LIBRARIES})
-      list(APPEND UTOPIA_DEFS ${BLAS_DEFINITIONS})
-      set(UTOPIA_ENABLE_BLAS TRUE)
+  # if(PITZ_DORA) find_package(OpenBLAS REQUIRED) if(OPEN_BLAS_FOUND)
+  # list(APPEND UTOPIA_BUILD_INCLUDES ${BLAS_INCLUDE_DIR}) list(APPEND
+  # UTOPIA_DEP_LIBRARIES ${BLAS_LIBRARIES}) list(APPEND UTOPIA_DEFS
+  # ${BLAS_DEFINITIONS}) set(UTOPIA_ENABLE_BLAS TRUE)
 
-      set(UTOPIA_BLAS_DIR ${BLAS_DIR})
-      set(UTOPIA_BLAS_VERSION ${BLAS_VERSION})
-      # set(UTOPIA_ENABLE_OPEN_BLAS ON) set(UTOPIA_BLAS_DIR ${BLAS_blas_LIBRARY}
-      # PARENT_SCOPE) # BLAS_blas_LIBRARY set(UTOPIA_BLAS_DIR ${BLAS_VERSION}
-      # PARENT_SCOPE)
-    else()
-      message(WARNING "[Warning] open-blas not found")
-    endif()
+  # message(STATUS "openblas${BLAS_LIBRARIES}")
+
+  # # set(UTOPIA_BLAS_DIR ../${BLAS_INCLUDE_DIR})
+
+  # set(UTOPIA_BLAS_VERSION ${BLAS_VERSION}) else() message(WARNING "[Warning]
+  # open-blas not found") endif() else()
+  find_package(BLAS REQUIRED)
+  if(BLAS_FOUND)
+    list(APPEND UTOPIA_BUILD_INCLUDES ${BLAS_INCLUDE_DIR})
+    list(APPEND UTOPIA_DEP_LIBRARIES ${BLAS_LIBRARIES})
+    list(APPEND UTOPIA_DEFS ${BLAS_DEFINITIONS})
+    set(UTOPIA_ENABLE_BLAS TRUE)
+
+    message(STATUS "BLAS${BLAS_INCLUDE_DIR}")
+    # set(UTOPIA_BLAS_DIR ${BLAS_INCLUDE_DIR})
+
+    # message(STATUS "HELLO${BLAS_INCLUDE_DIR}")
   else()
-    set(OPEN_BLAS_FOUND FALSE)
-    find_package(BLAS REQUIRED)
-    if(BLAS_FOUND)
-      list(APPEND UTOPIA_BUILD_INCLUDES ${BLAS_INCLUDE_DIR})
-      list(APPEND UTOPIA_DEP_LIBRARIES ${BLAS_LIBRARIES})
-      list(APPEND UTOPIA_DEFS ${BLAS_DEFINITIONS})
-      set(UTOPIA_ENABLE_BLAS TRUE)
-    else()
-      message(WARNING "[Warning] blas not found")
-      # set(BLAS_FOUND FALSE)
-    endif()
+    message(WARNING "[Warning] blas not found")
+    # set(BLAS_FOUND FALSE)
   endif()
 
-  find_package(LAPACK)
-  if(LAPACK_FOUND)
-    list(APPEND UTOPIA_BUILD_INCLUDES ${LAPACK_INCLUDE_DIR})
-    list(APPEND UTOPIA_DEP_LIBRARIES ${LAPACK_LIBRARIES})
-    list(APPEND UTOPIA_DEFS ${LAPACK_DEFINITIONS})
-    # set(UTOPIA_ENABLE_LAPACK ON) set(UTOPIA_ENABLE_LAPACK TRUE)
-  else()
-    message(WARNING "[Warning] lapack not found")
-    # set(UTOPIA_ENABLE_LAPACK OFF)
-  endif()
+find_package(LAPACK)
+if(LAPACK_FOUND)
+  list(APPEND UTOPIA_BUILD_INCLUDES ${LAPACK_INCLUDE_DIR})
+  list(APPEND UTOPIA_DEP_LIBRARIES ${LAPACK_LIBRARIES})
+  list(APPEND UTOPIA_DEFS ${LAPACK_DEFINITIONS})
+  # set(UTOPIA_ENABLE_LAPACK ON) set(UTOPIA_ENABLE_LAPACK TRUE)
 
-  find_package(UMFPACK)
-  if(UMFPACK_FOUND)
-    list(APPEND UTOPIA_BUILD_INCLUDES ${UMFPACK_INCLUDES})
-    list(APPEND UTOPIA_DEP_LIBRARIES ${UMFPACK_LIBRARIES})
-    # set(UTOPIA_ENABLE_UMFPACK ON) set(UTOPIA_ENABLE_UMFPACK TRUE PARENT_SCOPE)
-  else()
-    message(WARNING "[Warning] Umfpack not found")
-    # set(UTOPIA_ENABLE_UMFPACK OFF)
-  endif()
+  message(STATUS "lapack${LAPACK_LIBRARIES}")
+  message(STATUS "lapack${LAPACK_INCLUDE_DIR}")
+else()
+  message(WARNING "[Warning] lapack not found")
+  # set(UTOPIA_ENABLE_LAPACK OFF)
+endif()
 
-  add_subdirectory(backend/blas)
+find_package(UMFPACK)
+if(UMFPACK_FOUND)
+  list(APPEND UTOPIA_BUILD_INCLUDES ${UMFPACK_INCLUDES})
+  list(APPEND UTOPIA_DEP_LIBRARIES ${UMFPACK_LIBRARIES})
+
+  message(STATUS "umfpack ${UMFPACK_LIBRARIES}")
+  message(STATUS "umfpack ${UMFPACK_INCLUDES}")
+  # set(UTOPIA_ENABLE_UMFPACK ON) set(UTOPIA_ENABLE_UMFPACK TRUE PARENT_SCOPE)
+else()
+  message(WARNING "[Warning] Umfpack not found")
+  # set(UTOPIA_ENABLE_UMFPACK OFF)
+endif()
+
+add_subdirectory(backend/blas)
 endif()
 
 # ##############################################################################
@@ -141,7 +144,7 @@ if(UTOPIA_ENABLE_METIS)
   if(METIS_FOUND)
     list(APPEND UTOPIA_BUILD_INCLUDES ${METIS_INCLUDES})
     list(APPEND UTOPIA_DEP_LIBRARIES ${METIS_LIBRARIES})
-
+    set(UTOPIA_ENABLE_METIS ON)
   else()
     message(WARNING "[Warning] Metis not found")
   endif()
@@ -496,23 +499,19 @@ if(UTOPIA_ENABLE_TINY_EXPR)
           ${INSTALL_DIR}/tinyexpr $ENV{INSTALL_DIR}/tinyexpr)
 
   if(TINY_EXPR_DIR)
-    # tinyexpr add_library(tinyexpr ${TINY_EXPR_DIR}/tinyexpr.c)
-    # message(STATUS "${TINY_EXPR_DIR} ")
+    # tinyexpr add_library(tinyexpr ${TINY_EXPR_DIR}/tinyexpr.c) message(STATUS
+    # "${TINY_EXPR_DIR} ")
 
     # Add headers and sources to global variables.
     scan_directories(${TINY_EXPR_DIR} "." UTOPIA_BUILD_INCLUDES UTOPIA_HEADERS
                      UTOPIA_SOURCES)
-    set(UTOPIA_BUILD_INCLUDES
-        ${UTOPIA_BUILD_INCLUDES})
+    set(UTOPIA_BUILD_INCLUDES ${UTOPIA_BUILD_INCLUDES})
 
-    set(UTOPIA_HEADERS
-        ${UTOPIA_HEADERS})
+    set(UTOPIA_HEADERS ${UTOPIA_HEADERS})
 
-    set(UTOPIA_SOURCES
-        ${UTOPIA_SOURCES})
+    set(UTOPIA_SOURCES ${UTOPIA_SOURCES})
 
-    set(UTOPIA_ENABLE_TINY_EXPR
-        ON)
+    set(UTOPIA_ENABLE_TINY_EXPR ON)
     set(UTOPIA_ADDITIONAL_COMPONENTS ";tinyexpr")
   endif()
 endif()

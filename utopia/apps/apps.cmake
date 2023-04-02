@@ -34,22 +34,15 @@ set(LOCAL_HEADERS "")
 set(LOCAL_SOURCES "")
 
 find_project_files(${UTOPIA_APPS_DIR} "${APPS_MODULES}" LOCAL_HEADERS
-LOCAL_SOURCES)
+                   LOCAL_SOURCES)
 
 target_sources(
   utopia_exec
   PRIVATE ${LOCAL_SOURCES}
   PRIVATE ${LOCAL_HEADERS})
 
-# utopia_link_default_targets(utopia_exec)
-
-# target_include_directories(utopia_exec PRIVATE ${UTOPIA_APPS_DIR})
-# target_include_directories(utopia_exec PRIVATE .)
-# # target_include_directories(utopia_exec PRIVATE ${UTOPIA_BUILD_INCLUDES})
-
 foreach(MODULE ${APPS_MODULES})
-# message(STATUS "${MODULE}")
-  target_include_directories(utopia_exec PUBLIC ${UTOPIA_APPS_DIR}/${MODULE})
+  target_include_directories(utopia_exec PRIVATE ${UTOPIA_APPS_DIR}/${MODULE})
 endforeach()
 
 if(Gperftools_FOUND)
