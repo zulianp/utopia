@@ -234,15 +234,18 @@ install(
   DESTINATION lib/cmake)
 
 # generate the config file that is includes the exports
-# configure_package_config_file(
-# ${CMAKE_CURRENT_SOURCE_DIR}/cmake/UtopiaConfig.cmake.in
-# "${CMAKE_CURRENT_BINARY_DIR}/UtopiaConfig.cmake" INSTALL_DESTINATION
-# "lib/cmake") # generate the version file for the config file
-# write_basic_package_version_file(
-# "${CMAKE_CURRENT_BINARY_DIR}/UtopiaConfigVersion.cmake" VERSION
-# "${Utopia_VERSION_MAJOR}.${Utopia_VERSION_MINOR}" COMPATIBILITY
-# AnyNewerVersion) # install the configuration file install(FILES
-# ${CMAKE_CURRENT_BINARY_DIR}/UtopiaConfig.cmake DESTINATION lib/cmake/)
+configure_package_config_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/UtopiaConfig.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/UtopiaConfig.cmake"
+  INSTALL_DESTINATION "lib/cmake")
+# generate the version file for the config file
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/UtopiaConfigVersion.cmake"
+  VERSION "${Utopia_VERSION_MAJOR}.${Utopia_VERSION_MINOR}"
+  COMPATIBILITY AnyNewerVersion)
+# install the configuration file
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/UtopiaConfig.cmake
+        DESTINATION lib/cmake/)
 
 # ##############################################################################
 # ##############################################################################
@@ -258,13 +261,13 @@ install(
 
 # which is prefixed in the source directory.
 
-# get_target_property(XX_LINK_DIRECTORIES utopia_exec LINK_DIRECTORIES)
-# get_target_property(XX_LINK_LIBRARIES utopia_exec LINK_INTERFACE_LIBRARIES)
-# get_target_property(XX_INCLUDE_DIRECTORIES utopia_exec
-# INTERFACE_INCLUDE_DIRECTORIES) message(STATUS
-# "LINK_DIRECTORIES=${XX_LINK_DIRECTORIES}") message(STATUS
-# "LINK_LIBRARIES=${XX_LINK_LIBRARIES}") message(STATUS
-# "INCLUDE_DIRECTORIES=${XX_INCLUDE_DIRECTORIES}")
+get_target_property(XX_LINK_DIRECTORIES utopia_exec LINK_DIRECTORIES)
+get_target_property(XX_LINK_LIBRARIES utopia_exec LINK_INTERFACE_LIBRARIES)
+get_target_property(XX_INCLUDE_DIRECTORIES utopia_exec
+                    INTERFACE_INCLUDE_DIRECTORIES)
+message(STATUS "LINK_DIRECTORIES=${XX_LINK_DIRECTORIES}")
+message(STATUS "LINK_LIBRARIES=${XX_LINK_LIBRARIES}")
+message(STATUS "INCLUDE_DIRECTORIES=${XX_INCLUDE_DIRECTORIES}")
 
 # ##############################################################################
 # ##############################################################################
@@ -288,10 +291,8 @@ if(UTOPIA_ENABLE_EXAMPLES
                    utopia_examples)
 endif()
 
-get_cmake_property(_variableNames VARIABLES)
-list(SORT _variableNames)
-foreach(_variableName ${_variableNames})
-  message(STATUS "${_variableName}=${${_variableName}}")
-endforeach()
+# get_cmake_property(_variableNames VARIABLES) list(SORT _variableNames)
+# foreach(_variableName ${_variableNames}) message(STATUS
+# "${_variableName}=${${_variableName}}") endforeach()
 
 print_dependency_table()
