@@ -22,6 +22,8 @@ option(UTOPIA_ENABLE_TRACE "enables utopia tracing facilities for regions" OFF)
 option(UTOPIA_ENABLE_TRACE_EXPR "enables utopia tracing facilities for every
 expression" OFF)
 
+option(UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL "Sets utopia to use current project installs of petsc and trilinos" OFF)
+
 option(UTOPIA_ENABLE_NO_ALLOC_REGIONS"enables utopia alloc-check facilities"
        OFF)
 option(UTOPIA_ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)

@@ -169,8 +169,13 @@ endif()
 # ##############################################################################
 # ##############################################################################
 
+if(MPI_CXX_COMPILER)
+      set(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
+      set(CMAKE_CXX_COMPILER_DEBUG ${MPI_CXX_COMPILER})
+endif()
+
 # #################PETSC######################
-if(UTOPIA_ENABLE_PETSC)
+if(UTOPIA_ENABLE_PETSC AND NOT UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
 
   set(PETSC_TEST_RUNS TRUE)
   set(PETSC_EXECUTABLE_RUNS TRUE) # On daint we cannot run them
@@ -188,10 +193,7 @@ if(UTOPIA_ENABLE_PETSC)
       message(STATUS "compiler ${MPI_CXX_COMPILER}")
     endif()
 
-    if(MPI_CXX_COMPILER)
-      set(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
-      set(CMAKE_CXX_COMPILER_DEBUG ${MPI_CXX_COMPILER})
-    else()
+    if(NOT MPI_CXX_COMPILER)
       execute_process(COMMAND mpicxx -v RESULT_VARIABLE MPICXX_FAILED)
 
       if(MPICXX_FAILED)
@@ -245,7 +247,7 @@ endif()
 
 # #################TRILINOS######################
 
-if(UTOPIA_ENABLE_TRILINOS)
+if(UTOPIA_ENABLE_TRILINOS AND NOT UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
   # find dependencies
   find_package(Trilinos REQUIRED)
   if(Trilinos_FOUND)
@@ -388,11 +390,11 @@ if(UTOPIA_ENABLE_VC)
   add_subdirectory(backend/vc)
 endif()
 
-if(UTOPIA_INSTALL_PETSC AND NOT CYGWIN)
+if(UTOPIA_INSTALL_PETSC AND NOT CYGWIN AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
   include(InstallPetsc)
 endif()
 
-if(UTOPIA_INSTALL_PETSC_DEBUG)
+if(UTOPIA_INSTALL_PETSC_DEBUG AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
   include(InstallPetscDebug)
 endif()
 
@@ -400,7 +402,7 @@ if(UTOPIA_ENABLE_POLYMORPHIC)
   add_subdirectory(backend/polymorphic)
 endif()
 
-if(UTOPIA_INSTALL_TRILINOS)
+if(UTOPIA_INSTALL_TRILINOS AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
   include(InstallTrilinos)
 endif()
 
@@ -452,7 +454,7 @@ if(UTOPIA_ENABLE_TRACE_EXPR)
   set(UTOPIA_ENABLE_TRACE ON)
 endif()
 
-# message(STATUS "[Status] UTOPIA_ROOT_PATH: ${UTOPIA_ROOT_PATH}")
+# message(STATUS "[Status] UTOPIA_ROOT_PATH: ${UTOPIA_ROOT_PATH}")q
 include(${UTOPIA_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
 
 # ##############################################################################

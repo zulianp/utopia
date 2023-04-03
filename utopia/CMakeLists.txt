@@ -40,13 +40,7 @@ set(UTOPIA_ENABLE_CPP11 ON)
 # LIBRARY
 
 # Could take out backend. core modules
-set(UTOPIA_MODULES
-    interoperability
-    solvers
-    differentiable
-    core
-    ui
-    utils)
+set(UTOPIA_MODULES interoperability solvers differentiable core ui utils)
 
 foreach(MODULE ${UTOPIA_MODULES})
   add_subdirectory("${MODULE}")
@@ -290,8 +284,10 @@ if(UTOPIA_ENABLE_EXAMPLES
                    utopia_examples)
 endif()
 
-# get_cmake_property(_variableNames VARIABLES) list(SORT _variableNames)
-# foreach(_variableName ${_variableNames}) message(STATUS
-# "${_variableName}=${${_variableName}}") endforeach()
+# get_cmake_property(_variableNames VARIABLES)
+# list(SORT _variableNames)
+# foreach(_variableName ${_variableNames})
+#   message(STATUS "${_variableName}=${${_variableName}}")
+# endforeach()
 
 print_dependency_table()
