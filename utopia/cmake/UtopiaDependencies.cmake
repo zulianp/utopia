@@ -75,62 +75,36 @@ endif()
 # #################BLAS, LAPACK, UMFPACK######################
 
 if(UTOPIA_ENABLE_BLAS)
-  # find dependencies ###################################################
-  # if(PITZ_DORA) find_package(OpenBLAS REQUIRED) if(OPEN_BLAS_FOUND)
-  # list(APPEND UTOPIA_BUILD_INCLUDES ${BLAS_INCLUDE_DIR}) list(APPEND
-  # UTOPIA_DEP_LIBRARIES ${BLAS_LIBRARIES}) list(APPEND UTOPIA_DEFS
-  # ${BLAS_DEFINITIONS}) set(UTOPIA_ENABLE_BLAS TRUE)
-
-  # message(STATUS "openblas${BLAS_LIBRARIES}")
-
-  # # set(UTOPIA_BLAS_DIR ../${BLAS_INCLUDE_DIR})
-
-  # set(UTOPIA_BLAS_VERSION ${BLAS_VERSION}) else() message(WARNING "[Warning]
-  # open-blas not found") endif() else()
   find_package(BLAS REQUIRED)
   if(BLAS_FOUND)
     list(APPEND UTOPIA_BUILD_INCLUDES ${BLAS_INCLUDE_DIR})
     list(APPEND UTOPIA_DEP_LIBRARIES ${BLAS_LIBRARIES})
     list(APPEND UTOPIA_DEFS ${BLAS_DEFINITIONS})
+
     set(UTOPIA_ENABLE_BLAS TRUE)
 
-    message(STATUS "BLAS${BLAS_INCLUDE_DIR}")
-    # set(UTOPIA_BLAS_DIR ${BLAS_INCLUDE_DIR})
-
-    # message(STATUS "HELLO${BLAS_INCLUDE_DIR}")
   else()
     message(WARNING "[Warning] blas not found")
-    # set(BLAS_FOUND FALSE)
   endif()
 
-find_package(LAPACK)
-if(LAPACK_FOUND)
-  list(APPEND UTOPIA_BUILD_INCLUDES ${LAPACK_INCLUDE_DIR})
-  list(APPEND UTOPIA_DEP_LIBRARIES ${LAPACK_LIBRARIES})
-  list(APPEND UTOPIA_DEFS ${LAPACK_DEFINITIONS})
-  # set(UTOPIA_ENABLE_LAPACK ON) set(UTOPIA_ENABLE_LAPACK TRUE)
+  find_package(LAPACK)
+  if(LAPACK_FOUND)
+    list(APPEND UTOPIA_BUILD_INCLUDES ${LAPACK_INCLUDE_DIR})
+    list(APPEND UTOPIA_DEP_LIBRARIES ${LAPACK_LIBRARIES})
+    list(APPEND UTOPIA_DEFS ${LAPACK_DEFINITIONS})
+  else()
+    message(WARNING "[Warning] lapack not found")
+  endif()
 
-  message(STATUS "lapack${LAPACK_LIBRARIES}")
-  message(STATUS "lapack${LAPACK_INCLUDE_DIR}")
-else()
-  message(WARNING "[Warning] lapack not found")
-  # set(UTOPIA_ENABLE_LAPACK OFF)
-endif()
+  find_package(UMFPACK)
+  if(UMFPACK_FOUND)
+    list(APPEND UTOPIA_BUILD_INCLUDES ${UMFPACK_INCLUDES})
+    list(APPEND UTOPIA_DEP_LIBRARIES ${UMFPACK_LIBRARIES})
+  else()
+    message(WARNING "[Warning] Umfpack not found")
+  endif()
 
-find_package(UMFPACK)
-if(UMFPACK_FOUND)
-  list(APPEND UTOPIA_BUILD_INCLUDES ${UMFPACK_INCLUDES})
-  list(APPEND UTOPIA_DEP_LIBRARIES ${UMFPACK_LIBRARIES})
-
-  message(STATUS "umfpack ${UMFPACK_LIBRARIES}")
-  message(STATUS "umfpack ${UMFPACK_INCLUDES}")
-  # set(UTOPIA_ENABLE_UMFPACK ON) set(UTOPIA_ENABLE_UMFPACK TRUE PARENT_SCOPE)
-else()
-  message(WARNING "[Warning] Umfpack not found")
-  # set(UTOPIA_ENABLE_UMFPACK OFF)
-endif()
-
-add_subdirectory(backend/blas)
+  add_subdirectory(backend/blas)
 endif()
 
 # ##############################################################################
@@ -414,10 +388,7 @@ if(UTOPIA_ENABLE_VC)
   add_subdirectory(backend/vc)
 endif()
 
-if(UTOPIA_INSTALL_PETSC AND UTOPIA_ENABLE_CYGWIN)
-  include(InstallPetsc)
-
-else()
+if(UTOPIA_INSTALL_PETSC AND NOT CYGWIN)
   include(InstallPetsc)
 endif()
 
@@ -428,6 +399,7 @@ endif()
 if(UTOPIA_ENABLE_POLYMORPHIC)
   add_subdirectory(backend/polymorphic)
 endif()
+
 if(UTOPIA_INSTALL_TRILINOS)
   include(InstallTrilinos)
 endif()
@@ -480,14 +452,14 @@ if(UTOPIA_ENABLE_TRACE_EXPR)
   set(UTOPIA_ENABLE_TRACE ON)
 endif()
 
-message(STATUS "[Status] UTOPIA_ROOT_PATH: ${UTOPIA_ROOT_PATH}")
+# message(STATUS "[Status] UTOPIA_ROOT_PATH: ${UTOPIA_ROOT_PATH}")
 include(${UTOPIA_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
 
 # ##############################################################################
 # ##############################################################################
 # ##############################################################################
 
-# #################TIN-EXPR######################
+# #################TINY-EXPR######################
 
 if(UTOPIA_ENABLE_TINY_EXPR)
   set(EXTERNAL_DIR external)

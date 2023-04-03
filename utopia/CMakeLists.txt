@@ -42,7 +42,6 @@ set(UTOPIA_ENABLE_CPP11 ON)
 # Could take out backend. core modules
 set(UTOPIA_MODULES
     interoperability
-    backend
     solvers
     differentiable
     core
