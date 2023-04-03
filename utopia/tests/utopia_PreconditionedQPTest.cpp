@@ -1,10 +1,13 @@
 
 #include "utopia.hpp"
+#ifdef UTOPIA_WITH_PETSC
+
 #include "utopia_Newton.hpp"
 #include "utopia_SubCommUnitTest.hpp"
 #include "utopia_Testing.hpp"
 
 #include "test_problems/utopia_QPSolverTestProblem.hpp"
+#include "utopia_petsc_PMPRGP.hpp"
 
 namespace utopia {
     template <class Matrix, class Vector>
@@ -37,18 +40,28 @@ namespace utopia {
         }
 
         void preconditioned_mprgp() {
+            // QPSolverTestProblem<Matrix, Vector> fun;
+            // MPRGP<Matrix, Vector> mprgp;
+            // auto pgs = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+            // pgs->max_it(1);
+            // pgs->n_local_sweeps(2);
+            // // pgs->verbose(true);
+
+            // mprgp.set_preconditioner(pgs);
+            // mprgp.rtol(1e-14);
+            // mprgp.stol(1e-14);
+            // mprgp.atol(1e-14);
+
+            // solve_and_verify(mprgp, fun);
+
+
             QPSolverTestProblem<Matrix, Vector> fun;
-            MPRGP<Matrix, Vector> mprgp;
-            auto pgs = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
-            pgs->max_it(1);
-            // pgs->verbose(true);
+            PMPRGP<Matrix, Vector> pmprgp;
+            pmprgp.rtol(1e-14);
+            pmprgp.stol(1e-14);
+            pmprgp.atol(1e-14);
 
-            mprgp.set_preconditioner(pgs);
-            mprgp.rtol(1e-14);
-            mprgp.stol(1e-14);
-            mprgp.atol(1e-14);
-
-            solve_and_verify(mprgp, fun);
+            solve_and_verify(pmprgp, fun);
         }
     };
 
@@ -71,3 +84,5 @@ namespace utopia {
     UTOPIA_REGISTER_TEST_FUNCTION(psqp_test);
 
 }  // namespace utopia
+
+#endif  // UTOPIA_WITH_PETSC

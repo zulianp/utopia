@@ -12,7 +12,7 @@
 namespace utopia {
 
     template <class Matrix, class Vector>
-    class MPRGP final : public OperatorBasedQPSolver<Matrix, Vector> {
+    class MPRGP : public OperatorBasedQPSolver<Matrix, Vector> {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
@@ -23,6 +23,7 @@ namespace utopia {
         using Super::solve;
         using Super::update;
 
+        virtual ~MPRGP() = default;
         MPRGP() : eps_eig_est_(1e-1), power_method_max_it_(10) {}
 
         void read(Input &in) override {

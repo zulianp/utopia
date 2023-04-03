@@ -29,7 +29,7 @@ namespace utopia {
     ProjectedGaussSeidel<PetscMatrix, PetscVector, PETSC>::~ProjectedGaussSeidel() = default;
 
     ProjectedGaussSeidel<PetscMatrix, PetscVector, PETSC>::ProjectedGaussSeidel()
-        : n_local_sweeps_(3), check_s_norm_each_(1) {}
+        : n_local_sweeps_(1), check_s_norm_each_(10) {}
 
     // FIXME copy constructor creates weird behaviour
     ProjectedGaussSeidel<PetscMatrix, PetscVector, PETSC>::ProjectedGaussSeidel(const ProjectedGaussSeidel &other)
@@ -87,12 +87,12 @@ namespace utopia {
 #endif  // UTOPIA_WITH_PETSC
 #endif  // UTOPIA_WITH_VC
             if (block_size == 2) {
-            sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<PetscMatrix, 2>>();
-        } else if (block_size == 3) {
-            sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<PetscMatrix, 3>>();
-        } else if (block_size == 4) {
-            sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<PetscMatrix, 4>>();
-        }
+                sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<PetscMatrix, 2>>();
+            } else if (block_size == 3) {
+                sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<PetscMatrix, 3>>();
+            } else if (block_size == 4) {
+                sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<PetscMatrix, 4>>();
+            }
 
         if (sweeper_) {
             sweeper_->read(in);
