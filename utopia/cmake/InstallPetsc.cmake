@@ -7,7 +7,7 @@ if(NOT CYGWIN)
         if(UTOPIA_DEPENDENCIES_DIR)
             set(PETSC_INSTALL_DIR ${UTOPIA_DEPENDENCIES_DIR}/petsc)
         else()
-            set(PETSC_INSTALL_DIR ${CMAKE_SOURCE_DIR}/../../external/petsc)
+            set(PETSC_INSTALL_DIR ${CMAKE_SOURCE_DIR}/../external/petsc)
         endif()
 
         set(STAGE_DIR "${CMAKE_BINARY_DIR}/stage")
@@ -18,23 +18,23 @@ if(NOT CYGWIN)
         set(PETSC_MPI_BASE_DIR $ENV{MPI_DIR})
         set(MAKE_COMMAND "make")
         
-        set(PETSC_CONFIG_ARGS $ENV{PETSC_CONFIG_ARGS})
-        set(PETSC_CONFIG_ARGS
-            ${PETSC_CONFIG_ARGS}
-            --with-mpi=1
-            --download-scalapack=yes
-            --download-hypre=yes
-            --with-cxx-dialect=C++11
-            --download-mumps=yes
-            --with-debugging=0)
+        # set(PETSC_CONFIG_ARGS $ENV{PETSC_CONFIG_ARGS})
+        # set(PETSC_CONFIG_ARGS
+        #     ${PETSC_CONFIG_ARGS}
+        #     --with-mpi=1
+        #     --download-scalapack=yes
+        #     --download-hypre=yes
+        #     --with-cxx-dialect=C++11
+        #     --download-mumps=yes
+        #     --with-debugging=0)
 
-        if(UTOPIA_PETSC_ENABLE_SUPERLU)
-            set(PETSC_CONFIG_ARGS
-                ${PETSC_CONFIG_ARGS}
-                --download-superlu_dist=yes
-                --download-superlu=yes
-            )
-        endif()
+        # if(UTOPIA_PETSC_ENABLE_SUPERLU)
+        #     set(PETSC_CONFIG_ARGS
+        #         ${PETSC_CONFIG_ARGS}
+        #         --download-superlu_dist=yes
+        #         --download-superlu=yes
+        #     )
+        # endif()
 
 
 
@@ -108,7 +108,7 @@ if(NOT CYGWIN)
         )
 
         set_target_properties(petsc PROPERTIES EXCLUDE_FROM_ALL TRUE)
+        set(PETSC_DIR ${PETSC_INSTALL_DIR})
 
-        # set(PETSC_DIR ${PETSC_INSTALL_DIR})
     endif()
 endif()

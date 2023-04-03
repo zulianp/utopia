@@ -170,17 +170,35 @@ endif()
 # ##############################################################################
 
 if(MPI_CXX_COMPILER)
-      set(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
-      set(CMAKE_CXX_COMPILER_DEBUG ${MPI_CXX_COMPILER})
+  set(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
+  set(CMAKE_CXX_COMPILER_DEBUG ${MPI_CXX_COMPILER})
+endif()
+
+if(UTOPIA_INSTALL_PETSC
+   AND NOT CYGWIN
+   AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
+  include(InstallPetsc)
+endif()
+
+if(UTOPIA_INSTALL_PETSC_DEBUG AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
+  include(InstallPetscDebug)
+endif()
+
+if(UTOPIA_INSTALL_TRILINOS AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
+  include(InstallTrilinos)
 endif()
 
 # #################PETSC######################
-if(UTOPIA_ENABLE_PETSC AND NOT UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
+if(UTOPIA_ENABLE_PETSC)
 
   set(PETSC_TEST_RUNS TRUE)
   set(PETSC_EXECUTABLE_RUNS TRUE) # On daint we cannot run them
 
-  find_package(PETSc REQUIRED)
+  if(NOT UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
+    find_package(PETSc REQUIRED)
+  else()
+    find_package(PETSc REQUIRED PATHS ${PETSC_DIR} NO_DEFAULT_PATH)
+  endif()
 
   if(PETSC_FOUND)
     list(APPEND UTOPIA_BUILD_INCLUDES ${PETSC_INCLUDES})
@@ -247,9 +265,13 @@ endif()
 
 # #################TRILINOS######################
 
-if(UTOPIA_ENABLE_TRILINOS AND NOT UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
+if(UTOPIA_ENABLE_TRILINOS)
   # find dependencies
-  find_package(Trilinos REQUIRED)
+  if(NOT UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
+    find_package(Trilinos REQUIRED)
+  else()
+    find_package(Trilinos REQUIRED PATHS ${Trilinos_DIR} NO_DEFAULT_PATH)
+  endif()
   if(Trilinos_FOUND)
     # These lines are needed so the utopia-config.makefile will be correctly
     # built. The UtopiaTargets.cmake file is populated automatically by cmake
@@ -390,20 +412,8 @@ if(UTOPIA_ENABLE_VC)
   add_subdirectory(backend/vc)
 endif()
 
-if(UTOPIA_INSTALL_PETSC AND NOT CYGWIN AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
-  include(InstallPetsc)
-endif()
-
-if(UTOPIA_INSTALL_PETSC_DEBUG AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
-  include(InstallPetscDebug)
-endif()
-
 if(UTOPIA_ENABLE_POLYMORPHIC)
   add_subdirectory(backend/polymorphic)
-endif()
-
-if(UTOPIA_INSTALL_TRILINOS AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
-  include(InstallTrilinos)
 endif()
 
 # if(UTOPIA_ENABLE_PASSO_EXTENSIONS) set(WITH_PASSO_EXTENSIONS TRUE) endif()

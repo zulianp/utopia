@@ -142,6 +142,9 @@ if(NOT Trilinos_FOUND)
   set_target_properties(trilinos PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
   set(Trilinos_DIR ${TRILINOS_INSTALL_DIR})
+  # list(APPEND UTOPIA_DEP_INCLUDES PRIVATE "${Trilinos_DIR}/include")
+
+  # list(APPEND UTOPIA_DEP_LIBRARIES ${UTOPIA_TRILINOS_DEPS})
   # set(Trilinos_DIR
   #     ${TRILINOS_INSTALL_DIR}
   #     PARENT_SCOPE)
