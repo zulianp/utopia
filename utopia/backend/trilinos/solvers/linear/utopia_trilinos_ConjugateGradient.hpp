@@ -29,6 +29,9 @@ namespace utopia {
             this->set_preconditioner(precond, precond_side);
         }
 
+        // FIXME
+        inline void apply_gradient_descent_step(const bool val) { UTOPIA_UNUSED(val); }
+
         ConjugateGradient *clone() const override { return new ConjugateGradient(*this); }
 
     private:
