@@ -31,6 +31,10 @@ if(yaml-cpp_FOUND)
                             IMPORTED_LOCATION_NOCONFIG)
     endif()
 
+    if(NOT YAML_CPP_LIBRARIES)
+        SET(YAML_CPP_LIBRARIES "yaml-cpp")
+    endif()
+
     message(STATUS "yaml-cpp found! Includes: ${YAML_CPP_INCLUDE_DIR}\nLibrary: ${YAML_CPP_LIBRARIES}\n")
 
     # target_link_libraries(utopia PUBLIC yaml-cpp)
