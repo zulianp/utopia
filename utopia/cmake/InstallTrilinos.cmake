@@ -52,62 +52,67 @@ if(NOT Trilinos_FOUND)
     "-DCMAKE_CXX_STANDARD=17"
     "-DCMAKE_INSTALL_PREFIX=${TRILINOS_INSTALL_DIR}"
     "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-    "-DCMAKE_CXX_COMPILER=${TRILINOS_CXX_COMPILER}"
-    "-DCMAKE_C_COMPILER=${TRILINOS_C_COMPILER}"
+    # "-DCMAKE_CXX_COMPILER=${TRILINOS_CXX_COMPILER}"
+    # "-DCMAKE_C_COMPILER=${TRILINOS_C_COMPILER}"
     "-DCMAKE_CXX_FLAGS_DEBUG=${CMAKE_CXX_FLAGS_DEBUG}"
     "-DCMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}"
-    "-DTPL_ENABLE_MPI=ON"
-    "-DTrilinos_ENABLE_Tpetra=ON"
-    "-DTrilinos_ENABLE_TpetraCore=ON"
-    "-DTrilinos_ENABLE_Belos=ON"
-    "-DTrilinos_ENABLE_Amesos2=ON"
-    "-DTrilinos_ENABLE_Ifpack2=ON"
-    "-DTrilinos_ENABLE_MueLu=ON"
-    "-DTrilinos_ENABLE_NOX=ON "
-    "-DTrilinos_ENABLE_EXPLICIT_INSTANTIATION:BOOL=ON"
-    "-DTpetra_INST_DOUBLE:BOOL=ON"
-    "-DTpetra_INST_INT_LONG:BOOL=ON"
-    "-DTpetra_INST_INT_LONG_LONG:BOOL=OFF"
-    "-DTpetra_INST_COMPLEX_DOUBLE=OFF"
-    "-DTrilinos_ENABLE_TESTS:BOOL=OFF"
-    "-DTrilinos_ENABLE_ALL_OPTIONAL_PACKAGES=OFF "
+    "-DBUILD_SHARED_LIBS=OFF"
+    "-DTrilinos_SET_GROUP_AND_PERMISSIONS_ON_INSTALL_BASE_DIR=${TRILINOS_INSTALL_DIR}"
     "-DAmesos2_ENABLE_EXPLICIT_INSTANTIATION=ON"
     "-DIfpack2_ENABLE_EXPLICIT_INSTANTIATION=ON"
     "-DMueLu_ENABLE_EXPLICIT_INSTANTIATION=ON"
-    "-DRTOp_ENABLE_EXPLICIT_INSTANTIATION=ON"
-    "-DStratimikos_ENABLE_EXPLICIT_INSTANTIATION=ON"
+    "-DTPL_ENABLE_MPI=ON"
+    "-DTPL_ENABLE_Netcdf:BOOL=ON"
+    "-DTPL_ENABLE_Pnetcdf=OFF"
     "-DTeuchos_ENABLE_EXPLICIT_INSTANTIATION=ON"
-    "-DThyra_ENABLE_EXPLICIT_INSTANTIATION=ON"
     "-DTpetraCore_ENABLE_EXPLICIT_INSTANTIATION=ON"
     "-DTpetra_ENABLE_EXPLICIT_INSTANTIATION=ON"
-    "-DTrilinos_ENABLE_EXPLICIT_INSTANTIATION=ON"
+    "-DTpetra_INST_COMPLEX_DOUBLE=OFF"
+    "-DTpetra_INST_DOUBLE:BOOL=ON"
+    "-DTpetra_INST_INT_LONG:BOOL=ON"
+    "-DTpetra_INST_INT_LONG_LONG:BOOL=OFF"
+    "-DTrilinos_ALLOW_NO_PACKAGES:BOOL=OFF"
+    "-DTrilinos_ASSERT_DEFINED_DEPENDENCIES=FATAL_ERROR"
+    "-DTrilinos_ENABLE_ALL_OPTIONAL_PACKAGES=OFF "
+    "-DTrilinos_ENABLE_Amesos2:BOOL=ON"
+    "-DTrilinos_ENABLE_AztecOO:BOOL=OFF"
+    "-DTrilinos_ENABLE_Belos:BOOL=ON"
+    "-DTrilinos_ENABLE_EXPLICIT_INSTANTIATION:BOOL=ON"
+    "-DTrilinos_ENABLE_Epetra:BOOL=OFF"
+    "-DTrilinos_ENABLE_EpetraExt:BOOL=OFF"
+    "-DTrilinos_ENABLE_Gtest:BOOL=OFF"
+    "-DTrilinos_ENABLE_Ifpack2:BOOL=ON"
+    "-DTrilinos_ENABLE_Intrepid2:BOOL=ON"
+    "-DTrilinos_ENABLE_MueLu:BOOL=ON"
+    "-DTrilinos_ENABLE_NOX=ON "
+    "-DTrilinos_ENABLE_SEACASEpu:BOOL=ON"
+    "-DTrilinos_ENABLE_SEACASExodiff:BOOL=ON"
+    "-DTrilinos_ENABLE_SEACASExodus:BOOL=ON"
+    "-DTrilinos_ENABLE_SEACASIoss:BOOL=ON"
+    "-DTrilinos_ENABLE_SEACASNemslice:BOOL=ON"
+    "-DTrilinos_ENABLE_SEACASNemspread:BOOL=ON"
+    "-DTrilinos_ENABLE_STKBalance:BOOL=OFF"
+    "-DTrilinos_ENABLE_STKIO:BOOL=ON"
+    "-DTrilinos_ENABLE_STKMesh:BOOL=ON"
+    "-DTrilinos_ENABLE_STKSearch:BOOL=ON"
+    "-DTrilinos_ENABLE_STKSimd:BOOL=ON"
+    "-DTrilinos_ENABLE_STKTopology:BOOL=ON"
+    "-DTrilinos_ENABLE_STKTransfer:BOOL=ON"
+    "-DTrilinos_ENABLE_STKUnit_test_utils:BOOL=OFF"
+    "-DTrilinos_ENABLE_STKUnit_tests:BOOL=OFF"
+    "-DTrilinos_ENABLE_STKUtil:BOOL=ON"
+    "-DTrilinos_ENABLE_TESTS:BOOL=OFF"
+    "-DTrilinos_ENABLE_Tpetra:BOOL=ON"
+    "-DTrilinos_ENABLE_TpetraCore=ON"
+    "-DTrilinos_ENABLE_Zoltan2:BOOL=ON"
+    "-DTrilinos_ENABLE_Zoltan:BOOL=ON"
+    "-DTPL_ENABLE_SuperLU:BOOL=OFF"
     "-DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON"
+    "-DTrilinos_ENABLE_Kokkos=ON"
     "-DTPL_ENABLE_HDF5=ON"
     "-DTPL_HDF5_INCLUDE_DIRS=/usr/local/Cellar/hdf5/1.12.2_2/include"
     "-DTPL_HDF5_LIBRARY_DIRS=/usr/local/Cellar/hdf5/1.12.2_2/lib")
 
-  list(
-    APPEND
-    TRILINOS_CMAKE_ARGS
-    "-DTrilinos_ENABLE_STKMesh:BOOL=ON"
-    "-DTrilinos_ENABLE_STKSimd:BOOL=ON"
-    "-DTrilinos_ENABLE_STKIO:BOOL=ON"
-    "-DTrilinos_ENABLE_STKTransfer:BOOL=ON"
-    "-DTrilinos_ENABLE_STKSearch:BOOL=ON"
-    "-DTrilinos_ENABLE_STKUtil:BOOL=ON"
-    "-DTrilinos_ENABLE_STKTopology:BOOL=ON"
-    "-DTrilinos_ENABLE_STKBalance:BOOL=OFF"
-    "-DTrilinos_ENABLE_STKUnit_tests:BOOL=OFF"
-    "-DTrilinos_ENABLE_STKUnit_test_utils:BOOL=OFF"
-    "-DTrilinos_ENABLE_Gtest:BOOL=ON"
-    "-DTrilinos_ENABLE_SEACASExodus:BOOL=ON"
-    "-DTrilinos_ENABLE_SEACASEpu:BOOL=ON"
-    "-DTrilinos_ENABLE_SEACASExodiff:BOOL=ON"
-    "-DTrilinos_ENABLE_SEACASNemspread:BOOL=ON"
-    "-DTrilinos_ENABLE_SEACASNemslice:BOOL=ON"
-    "-DTrilinos_ENABLE_SEACASIoss:BOOL=ON")
-
-  list(APPEND TRILINOS_CMAKE_ARGS "-DTrilinos_ENABLE_Intrepid2:BOOL=ON")
 
   # For cuda
   if(UTOPIA_ENABLE_CUDA)
@@ -129,6 +134,7 @@ if(NOT Trilinos_FOUND)
     UPDATE_COMMAND "" # FIXME
     PREFIX ${STAGE_DIR}
     GIT_REPOSITORY ${TRILINOS_URL}
+    GIT_TAG "trilinos-release-13-4-1"
     DOWNLOAD_DIR ${STAGE_DIR}
     INSTALL_DIR ${TRILINOS_INSTALL_DIR}
     # BINARY_DIR                      ${TRILINOS_SOURCE_DIR}
@@ -148,6 +154,4 @@ if(NOT Trilinos_FOUND)
   # set(Trilinos_DIR
   #     ${TRILINOS_INSTALL_DIR}
   #     PARENT_SCOPE)
-  set(Trilinos_FOUND TRUE)
-
 endif()

@@ -269,8 +269,10 @@ endif()
 if(UTOPIA_ENABLE_TRILINOS)
   # find dependencies
   if(NOT UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
-    find_package(Trilinos REQUIRED)
+    set(Trilinos_FOUND FALSE)
+    find_package(Trilinos PATHS ${Trilinos_DIR} REQUIRED)
   else()
+    set(Trilinos_FOUND FALSE)
     find_package(Trilinos PATHS ${Trilinos_DIR} NO_DEFAULT_PATH)
   endif()
   if(Trilinos_FOUND)
@@ -324,6 +326,8 @@ if(UTOPIA_ENABLE_TRILINOS)
 
     list(APPEND UTOPIA_DEP_INCLUDES ${Trilinos_INCLUDE_DIRS})
     list(APPEND UTOPIA_DEP_LIBRARIES ${UTOPIA_TRILINOS_DEPS})
+
+    message(STATUS "UTOPIA_DEP_INCLUDES${UTOPIA_DEP_LIBRARIES}")
 
     find_package(TpetraExt)
     if(TRILINOS_TPETRAEXT_FOUND)
