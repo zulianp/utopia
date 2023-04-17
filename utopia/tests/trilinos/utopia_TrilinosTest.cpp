@@ -26,9 +26,6 @@
 #include "utopia_trilinos_Utils.hpp"
 #include "utopia_trilinos_solvers.hpp"
 
-// FIXME This is deprecated remove it
-#include "utopia_trilinos_Each_impl.hpp"
-
 #ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_trilinos.hpp"
 #endif
