@@ -15,9 +15,9 @@ namespace utopia {
     class QPTestFunction_2D final : public UnconstrainedTestFunction<Matrix, Vector> {
     public:
         using Traits = utopia::Traits<Vector>;
+        using Comm = typename Traits::Communicator;
         using Scalar = typename Traits::Scalar;
         using SizeType = typename Traits::SizeType;
-        using Comm = typename Traits::Communicator;
 
         QPTestFunction_2D(const Comm &comm = Comm::get_default()) {
             x_init_.zeros(layout(comm, Traits::decide(), 2));

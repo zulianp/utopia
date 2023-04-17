@@ -15,21 +15,22 @@ namespace utopia {
     class QuadraticOffsetFunction_ND final : public UnconstrainedTestFunction<Matrix, Vector> {
         using Traits = utopia::Traits<Vector>;
         using Comm = typename Traits::Communicator;
-        using Scalar = typename Vector::Scalar;
-        using SizeType = typename Vector::SizeType;
+        using Scalar = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
 
     public:
         // Parameter n represents the number of variables
-        // Setup function f(x_0, x_1, .. x_n) = x^2 + (x - 1)^2 + ... + (x_n - n)^2
+        // Setup function f(x_0, x_1, .. x_n) = x^2 + (x + 1)^2 + ... + (x_n + n)^2
         QuadraticOffsetFunction_ND(const Comm &comm, SizeType n) : n_(n) {
             x_init_.zeros(layout(comm, Traits::decide(), n));
             x_exact_.zeros(layout(comm, Traits::decide(), n));
 
             const auto i_start = range(x_exact_).begin();
+            const auto x_range_local = local_range_device(x_exact_);
             auto x_view = local_view_device(x_exact_);
-            parallel_for(
-                local_range_device(x_exact_),
-                UTOPIA_LAMBDA(const SizeType &i) { x_view.set(i, -1.0 * (i_start + i)); });
+            for (auto i = x_range_local.begin(); i != x_range_local.end(); i++) {
+                x_view.set(i, -1.0 * (i_start + i));
+            }
         }
 
         bool value(const Vector &point, Scalar &result) const override {
