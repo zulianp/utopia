@@ -1,0 +1,63 @@
+include:
+  - remote: 'https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.ci-ext.yml'
+
+stages:
+  - build_base
+  - build # build stage is running on the Kubernetes cluster
+  - test # test stage is running on PizDaint (on 1 node)
+
+variables:
+  PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/utopia_gpu:$CI_COMMIT_SHA
+  UTOPIA_RUN_OPTS: '-data_path /utopia.src/utopia/data --verbose'
+
+build-utopia-baseimage:
+  extends: .container-builder
+  stage: build_base
+  before_script:
+    - DOCKERFILE_TAG=`sha256sum $DOCKERFILE | head -c 16`
+    - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/baseimage/utopia_base:$DOCKERFILE_TAG
+    - echo "BASE_IMAGE=$PERSIST_IMAGE_NAME" >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
+  variables:
+    DOCKERFILE: utopia/ci/cscs/gpu/docker/Dockerfile.base
+
+build-utopia:
+  extends: .container-builder
+  stage: build
+  variables:
+    DOCKERFILE: utopia/ci/cscs/gpu/docker/Dockerfile
+    DOCKER_BUILD_ARGS: '["BASE_IMAGE=$BASE_IMAGE"]'
+    GIT_SUBMODULE_STRATEGY: recursive
+
+run-utopia-test:
+  extends: .container-runner-daint-gpu
+  image: $PERSIST_IMAGE_NAME
+  variables:
+    SLURM_NTASKS: 1
+    SLURM_TIMELIMIT: "00:10:00"
+    USE_MPI: "NO"
+  script:
+    # the tests are not installed, so we need to run them from the build directory
+    - cd /utopia.src/build
+    # run all tests
+    - ./utopia_test $UTOPIA_RUN_OPTS
+  # FIXME remove line below when tests are passing
+  allow_failure: true
+
+run-utopia-benchmark:
+  extends: .container-runner-daint-gpu
+  image: $PERSIST_IMAGE_NAME
+  variables:
+    SLURM_JOB_NUM_NODES: 4
+    SLURM_NTASKS: 1
+    SLURM_PARTITION: normal
+    SLURM_TIMELIMIT: "00:10:00"
+    USE_MPI: "YES"
+  script:
+    # the tests are not installed, so we need to run them from the build directory
+    - cd /utopia.src/build
+    - ./utopia_bench $UTOPIA_RUN_OPTS
+  # FIXME remove line below when tests are passing
+  allow_failure: true
