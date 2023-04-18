@@ -24,13 +24,22 @@ namespace utopia {
         QuadraticOffsetFunction_ND(const Comm &comm, SizeType n) : n_(n) {
             x_init_.zeros(layout(comm, Traits::decide(), n));
             x_exact_.zeros(layout(comm, Traits::decide(), n));
+            /* init implemented as separate function to be able to exploit parallel region:
+             * embedding it in constructor would cause compile error with cuda backend;
+             * defining it as private method, would also cause compile error with cuda backend.
+             */
+            init_exact_solution();
+        }
 
+        void init_exact_solution() {
             const auto i_start = range(x_exact_).begin();
-            const auto x_range_local = local_range_device(x_exact_);
             auto x_view = local_view_device(x_exact_);
-            for (auto i = x_range_local.begin(); i != x_range_local.end(); i++) {
-                x_view.set(i, -1.0 * (i_start + i));
-            }
+            parallel_for(
+                local_range_device(x_exact_),
+                UTOPIA_LAMBDA(const SizeType &i) {
+                    x_view.set(i, -1.0 * (i_start + i));
+                }
+            );
         }
 
         bool value(const Vector &point, Scalar &result) const override {
