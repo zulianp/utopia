@@ -36,10 +36,7 @@ namespace utopia {
             auto x_view = local_view_device(x_exact_);
             parallel_for(
                 local_range_device(x_exact_),
-                UTOPIA_LAMBDA(const SizeType &i) {
-                    x_view.set(i, -1.0 * (i_start + i));
-                }
-            );
+                UTOPIA_LAMBDA(const SizeType &i) { x_view.set(i, -1.0 * (i_start + i)); });
         }
 
         bool value(const Vector &point, Scalar &result) const override {
