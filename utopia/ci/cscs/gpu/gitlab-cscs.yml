@@ -51,7 +51,7 @@ run-utopia-benchmark:
   image: $PERSIST_IMAGE_NAME
   variables:
     SLURM_JOB_NUM_NODES: 4
-    SLURM_NTASKS: 1
+    SLURM_NTASKS_PER_NODE: 1
     SLURM_PARTITION: normal
     SLURM_TIMELIMIT: "00:10:00"
     USE_MPI: "YES"
@@ -59,5 +59,3 @@ run-utopia-benchmark:
     # the tests are not installed, so we need to run them from the build directory
     - cd /utopia.src/build
     - ./utopia_bench $UTOPIA_RUN_OPTS
-  # FIXME remove line below when tests are passing
-  allow_failure: true
