@@ -4,7 +4,7 @@ include:
 stages:
   - build_base
   - build # build stage is running on the Kubernetes cluster
-  - test # test stage is running on PizDaint (on 1 node)
+  - test # test stage is running on a slurm cluster
 
 variables:
   PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/utopia_gpu:$CI_COMMIT_SHA
