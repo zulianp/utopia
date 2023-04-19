@@ -15,16 +15,23 @@ namespace utopia {
     class QuadraticOffsetFunction_ND final : public UnconstrainedTestFunction<Matrix, Vector> {
         using Traits = utopia::Traits<Vector>;
         using Comm = typename Traits::Communicator;
-        using Scalar = typename Vector::Scalar;
-        using SizeType = typename Vector::SizeType;
+        using Scalar = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
 
     public:
         // Parameter n represents the number of variables
-        // Setup function f(x_0, x_1, .. x_n) = x^2 + (x - 1)^2 + ... + (x_n - n)^2
+        // Setup function f(x_0, x_1, .. x_n) = x^2 + (x + 1)^2 + ... + (x_n + n)^2
         QuadraticOffsetFunction_ND(const Comm &comm, SizeType n) : n_(n) {
             x_init_.zeros(layout(comm, Traits::decide(), n));
             x_exact_.zeros(layout(comm, Traits::decide(), n));
+            /* init implemented as separate function to be able to exploit parallel region:
+             * embedding it in constructor would cause compile error with cuda backend;
+             * defining it as private method, would also cause compile error with cuda backend.
+             */
+            init_exact_solution();
+        }
 
+        void init_exact_solution() {
             const auto i_start = range(x_exact_).begin();
             auto x_view = local_view_device(x_exact_);
             parallel_for(
