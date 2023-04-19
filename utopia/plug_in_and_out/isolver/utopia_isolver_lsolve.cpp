@@ -46,6 +46,11 @@ int ISOLVER_EXPORT isolver_lsolve_init(isolver_lsolve_t *info) {
 #endif  // UTOPIA_WITH_PETSC
 
     auto solver = new Solver_t();
+#ifdef UTOPIA_WITH_PETSC
+    solver->pc_type("hypre");
+    solver->ksp_type("gmres");
+#endif  // UTOPIA_WITH_PETSC
+
     info->private_data = (void *)solver;
 
     const char *UTOPIA_LINEAR_SOLVER_CONFIG = 0;
@@ -84,6 +89,49 @@ int ISOLVER_EXPORT isolver_lsolve_update_crs(const isolver_lsolve_t *info,
 
     auto solver = (Solver_t *)info->private_data;
     solver->update(mat);
+    return 0;
+}
+
+int ISOLVER_EXPORT isolver_lsolve_update_with_preconditioner_crs(const isolver_lsolve_t *info,
+                                                                 const ptrdiff_t n_local,
+                                                                 const ptrdiff_t n_global,
+                                                                 const isolver_idx_t *const rowptr,
+                                                                 const isolver_idx_t *const colidx,
+                                                                 const isolver_scalar_t *const values,
+                                                                 const isolver_idx_t *const prec_rowptr,
+                                                                 const isolver_idx_t *const prec_colidx,
+                                                                 const isolver_scalar_t *const prec_values) {
+    auto mat = std::make_shared<Matrix_t>();
+
+    mat->wrap(info->comm,
+              n_local,
+              n_local,
+              n_global,
+              n_global,
+              (isolver_idx_t *)rowptr,
+              (isolver_idx_t *)colidx,
+              (isolver_scalar_t *)values,
+              []() {
+                  // Resources are freed outside!
+              });
+
+    auto prec = std::make_shared<Matrix_t>();
+
+    prec->wrap(info->comm,
+               n_local,
+               n_local,
+               n_global,
+               n_global,
+               (isolver_idx_t *)prec_rowptr,
+               (isolver_idx_t *)prec_colidx,
+               (isolver_scalar_t *)prec_values,
+               []() {
+                   // Resources are freed outside!
+               });
+
+    auto solver = (Solver_t *)info->private_data;
+    solver->update(mat, prec);
+
     return 0;
 }
 

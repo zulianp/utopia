@@ -238,9 +238,18 @@ namespace utopia {
         impl_->linear_problem->setProblem();
 
         auto solver_params = Teuchos::sublist(impl_->param_list, solver_type_, false);
-        impl_->belos_solver = impl_->belos_factory.create(solver_type_, solver_params);
-        impl_->belos_solver->setProblem(impl_->linear_problem);
-        impl_->belos_solver->setParameters(solver_params);
+        try {
+            if (impl_->belos_solver.is_null()) {
+                impl_->belos_solver = impl_->belos_factory.create(solver_type_, solver_params);
+            } else {
+                impl_->belos_solver->setParameters(solver_params);
+            }
+            impl_->belos_solver->setProblem(impl_->linear_problem);
+        } catch (const std::exception &ex) {
+            std::cerr << ex.what() << std::endl;
+            assert(0);
+        }
+
         if (this->verbose()) {
             std::cout << std::endl;
             std::cout << "Parameter list for '" << solver_type_ << "' solver:" << std::endl;

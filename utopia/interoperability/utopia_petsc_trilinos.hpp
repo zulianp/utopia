@@ -29,24 +29,6 @@ namespace utopia {
 
     // FIXME remove me once the belos solver works
     template <typename Matrix, typename Vector>
-    class Factorization<Matrix, Vector, TRILINOS>
-        : public CrossBackendLinearSolver<Matrix,
-                                          Vector,
-                                          PetscMatrix,
-                                          PetscVector,
-                                          Factorization<PetscMatrix, PetscVector, PETSC> > {};
-
-    // FIXME remove me once the belos solver works
-    template <typename Matrix, typename Vector>
-    class BiCGStab<Matrix, Vector, TRILINOS>
-        : public CrossBackendLinearSolverAndSmoother<Matrix,
-                                                     Vector,
-                                                     PetscMatrix,
-                                                     PetscVector,
-                                                     BiCGStab<PetscMatrix, PetscVector, PETSC> > {};
-
-    // FIXME remove me once the belos solver works
-    template <typename Matrix, typename Vector>
     class GaussSeidel<Matrix, Vector, TRILINOS>
         : public CrossBackendLinearSolverAndSmoother<Matrix,
                                                      Vector,

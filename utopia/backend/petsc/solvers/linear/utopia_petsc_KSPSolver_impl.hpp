@@ -364,6 +364,7 @@ namespace utopia {
         }
 
         void update(const Matrix &mat) {
+            UTOPIA_TRACE_SCOPE("KSPSolver::Impl::smooth(mat)");
             PetscErrorCode ierr;
             UTOPIA_UNUSED(ierr);
 
@@ -375,6 +376,7 @@ namespace utopia {
         }
 
         void update(const Matrix &mat, const Matrix &prec) {
+            UTOPIA_TRACE_SCOPE("KSPSolver::Impl::smooth(mat,prec)");
             PetscErrorCode ierr;
             UTOPIA_UNUSED(ierr);
 
@@ -386,6 +388,8 @@ namespace utopia {
         }
 
         bool smooth(const SizeType sweeps, const Vector &rhs, Vector &x) {
+            UTOPIA_TRACE_SCOPE("KSPSolver::Impl::smooth");
+
             PetscErrorCode ierr;
             UTOPIA_UNUSED(ierr);
             KSPNormType normtype;
@@ -475,6 +479,8 @@ namespace utopia {
         }
 
         void overlap(const PetscInt &n_overlap) {
+            UTOPIA_TRACE_SCOPE("KSPSolver::Impl::overlap");
+
             PetscErrorCode ierr;
             PC pc;
             PCType pc_type;
