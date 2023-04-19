@@ -25,7 +25,6 @@
 #include "utopia_Tpetra_Matrix_impl.hpp"
 #include "utopia_Tpetra_Vector_impl.hpp"
 #include "utopia_trilinos_DiffController.hpp"
-#include "utopia_trilinos_Eval_Chop.hpp"
 #include "utopia_trilinos_LinearSolverFactory.hpp"
 #include "utopia_trilinos_MaxRowNNZ.hpp"
 // FIXME re-introduce later
