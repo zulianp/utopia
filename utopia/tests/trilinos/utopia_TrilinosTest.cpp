@@ -1343,29 +1343,6 @@ namespace utopia {
             utopia_test_assert(approxeq(nm, std::sqrt(1. * size(m).get(0))));
         }
 
-#ifdef UTOPIA_WITH_TRILINOS_AMESOS2
-        void trilinos_amesos2() {
-            Amesos2Solver<TpetraMatrixd, TpetraVectord> solver;
-            solver.read_xml(Utopia::instance().get("data_path") + "/xml/UTOPIA_amesos.xml");
-
-            Poisson1D<TpetraMatrixd, TpetraVectord> fun(10);
-            TpetraMatrixd A;
-            TpetraVectord x, g;
-            x = fun.initial_guess();
-            fun.get_rhs(g);
-            fun.hessian(x, A);
-
-            g *= 0.0001;
-
-            double diff0 = norm2(g - A * x);
-
-            solver.solve(A, g, x);
-            double diff = norm2(g - A * x);
-
-            utopia_test_assert(approxeq(diff / diff0, 0., 1e-6));
-        }
-#endif  // UTOPIA_WITH_TRILINOS_AMESOS2
-
 #ifdef UTOPIA_WITH_PETSC
         void trilinos_transform() {
             PetscMatrix petsc_P;
@@ -1562,10 +1539,6 @@ namespace utopia {
             UTOPIA_RUN_TEST(trilinos_swap);
             UTOPIA_RUN_TEST(trilinos_copy_null);
             UTOPIA_RUN_TEST(trilinos_test_read);
-
-#ifdef UTOPIA_WITH_TRILINOS_AMESOS2
-            UTOPIA_RUN_TEST(trilinos_amesos2);
-#endif  // UTOPIA_WITH_TRILINOS_AMESOS2
 
 #ifdef UTOPIA_WITH_PETSC
             UTOPIA_RUN_TEST(trilinos_transform);

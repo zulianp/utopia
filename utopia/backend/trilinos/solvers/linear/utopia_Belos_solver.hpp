@@ -46,7 +46,7 @@ namespace utopia {
 
         BelosSolver() = delete;
         BelosSolver(const BelosSolver &other);
-        BelosSolver(const std::string &solver_type, std::initializer_list<ParamKey> solver_params);
+        BelosSolver(const std::string &solver_type, std::initializer_list<ParamKey> solver_params = {});
         ~BelosSolver() override;
 
         void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec) override;
@@ -54,10 +54,10 @@ namespace utopia {
         bool apply(const Vector &rhs, Vector &lhs) override;
 
         void print_usage(std::ostream &os = std::cout) const override;
-
         void read(Input &in) override;
+
         void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) override;
-        void set_preconditioner(const std::string &direct_pc_type, const std::string &pc_side);
+        void set_preconditioner(const std::string &direct_pc_type, const std::string &pc_side = "right");
 
     private:
         const Param params_[ParamKey::NUM_PARAMS] = {
