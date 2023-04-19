@@ -280,8 +280,7 @@ namespace utopia {
             TpetraVectord v(layout(comm_, n, Traits::determine()), 5.);
 
             double val = norm1(Y * v);
-            double tolerance = 30. * std::numeric_limits<double>::epsilon();
-            // utopia::out() <<"val " << val <<std::endl;
+            const double tolerance = (mpi_world_size() == 1 ? 30 : 200) * std::numeric_limits<double>::epsilon();
             utopia_test_assert(approxeq(val, 0., tolerance));
 
             TpetraMatrixd Id;

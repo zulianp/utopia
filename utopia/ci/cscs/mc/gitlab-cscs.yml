@@ -60,8 +60,6 @@ run-utopia-test-multitask:
     - ./utopia_test $UTOPIA_RUN_OPTS -test trilinos_interop_petsc
 #   - ./utopia_test $UTOPIA_RUN_OPTS -test trilinos_solver
     - ./utopia_test $UTOPIA_RUN_OPTS -test trilinos_specific
-  # FIXME remove line below when tests are passing
-  allow_failure: true
 
 run-utopia-benchmark:
   extends: .container-runner-daint-mc
