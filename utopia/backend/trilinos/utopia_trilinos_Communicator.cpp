@@ -40,9 +40,6 @@ namespace utopia {
         return TrilinosCommunicator(Teuchos::rcp(new Teuchos::SerialComm<int>()));
     }
 
-    TrilinosCommunicator TrilinosCommunicator::world() {
-        // FIXME
-        return TrilinosCommunicator(Teuchos::rcp(new Teuchos::MpiComm<int>(MPI_COMM_WORLD)));
-    }
+    TrilinosCommunicator TrilinosCommunicator::world() { return TrilinosCommunicator(Tpetra::getDefaultComm()); }
 #endif
 }  // namespace utopia

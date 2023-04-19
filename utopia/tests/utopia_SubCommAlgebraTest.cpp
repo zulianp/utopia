@@ -23,10 +23,6 @@ namespace utopia {
         using Traits = utopia::Traits<Vector>;
         using Scalar = typename Traits::Scalar;
         using SizeType = typename Traits::SizeType;
-        using IndexSet = typename Traits::IndexSet;
-        using Comm = typename Traits::Communicator;
-        using Layout = typename Traits::Layout;
-        using MatrixLayout = typename Traits::MatrixLayout;
 
         void sum_vectors() {
             Vector v1(layout(this->comm(), 2, this->comm().size() * 2), 1.0);

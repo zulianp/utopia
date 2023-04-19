@@ -13,7 +13,7 @@ namespace utopia {
     template <class Matrix, class Vector>
     class PreconditionedQPTest : public SubCommUnitTest<Vector> {
     public:
-        void run() {
+        void run() override {
             UTOPIA_RUN_TEST(mprgp);
             UTOPIA_RUN_TEST(pgs);
             UTOPIA_RUN_TEST(preconditioned_mprgp);
