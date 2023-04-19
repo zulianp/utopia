@@ -1,13 +1,15 @@
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_WITH_TRILINOS
 #ifdef UTOPIA_WITH_PETSC
 
 // include edsl components
 #include "utopia.hpp"
 #include "utopia_AppRunner.hpp"
+
+#ifdef UTOPIA_WITH_TRILINOS
 #include "utopia_petsc_trilinos.hpp"
 #include "utopia_trilinos.hpp"
+#endif  // UTOPIA_WITH_TRILINOS
 
 #include "utopia_petsc_CrsView.hpp"
 
@@ -26,6 +28,7 @@
 
 namespace utopia {
 
+#ifdef UTOPIA_WITH_TRILINOS
     void convert_mm_matrix_to_petsc_bin(Input &in) {
         std::string path_in, path_out;
         in.get("in", path_in);
@@ -56,6 +59,8 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(convert_mm_vector_to_petsc_bin);
 
+#endif  // UTOPIA_WITH_TRILINOS
+
     template <class Matrix, class Vector>
     class LSSolveApp : public Configurable {
     public:
@@ -65,7 +70,7 @@ namespace utopia {
             Chrono tts;
             tts.start();
 
-            Matrix A;
+            Matrix A, P;
             Vector x, b, oracle;
 
             MPITimeStatistics stats(x.comm());
@@ -73,7 +78,7 @@ namespace utopia {
             //////////////////////////////////////////
             stats.start();
 
-            std::string path_A, path_b, path_oracle, path_output = "out.mm";
+            std::string path_A, path_b, path_mat_for_preconditioner, path_oracle, path_output = "out.mm";
             bool use_amg = true;
             int block_size = 1;
             bool write_matlab = false;
@@ -85,6 +90,7 @@ namespace utopia {
 
             in.require("A", path_A);
             in.require("b", path_b);
+            in.get("P", path_mat_for_preconditioner);
             in.get("oracle", path_oracle);
             in.get("out", path_output);
             in.get("use_amg", use_amg);
@@ -112,6 +118,10 @@ namespace utopia {
                 b.values(row_layout(A), 1.0);
             } else {
                 utopia::read(path_b, b);
+            }
+
+            if (!path_mat_for_preconditioner.empty()) {
+                utopia::read(path_mat_for_preconditioner, P);
             }
 
             if (!path_oracle.empty()) {
@@ -232,7 +242,18 @@ namespace utopia {
                 utopia::out() << "ndofs " << x.size() << std::endl;
             }
 
-            solver->solve(A, b, x);
+            auto psolver = std::dynamic_pointer_cast<PreconditionedSolver<Matrix, Vector>>(solver);
+            if (psolver && !empty(P)) {
+                if (!mpi_world_rank()) {
+                    utopia::out() << "Using preconditioner with matrix: " << path_mat_for_preconditioner << "\n";
+                }
+
+                psolver->update(make_ref(A), make_ref(P));
+            } else {
+                solver->update(A);
+            }
+
+            solver->apply(b, x);
 
             stats.stop_collect_and_restart("solve");
 
@@ -278,5 +299,4 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_TRILINOS
 #endif  // UTOPIA_WITH_PETSC
