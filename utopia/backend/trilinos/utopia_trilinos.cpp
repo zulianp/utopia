@@ -15,10 +15,11 @@
 namespace utopia {
 
     template class RowView<TpetraMatrixd>;
+    template class BiCGStab<TpetraMatrixd, TpetraVectord>;
     template class BiCGStab<TpetraMatrixd, TpetraVectord, HOMEMADE>;
     template class ConjugateGradient<TpetraMatrixd, TpetraVectord>;
     template class ConjugateGradient<TpetraMatrixd, TpetraVectord, HOMEMADE>;
-    template class Multigrid<TpetraMatrixd, TpetraVectord>;
+    template class Factorization<TpetraMatrixd, TpetraVectord>;
     template class Multigrid<TpetraMatrixd, TpetraVectord, HOMEMADE>;
 
 }  // namespace utopia
