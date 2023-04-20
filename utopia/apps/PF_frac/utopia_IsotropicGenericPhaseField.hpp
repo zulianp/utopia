@@ -150,10 +150,10 @@ namespace utopia {
                             }
 
                             if (PFFormulation::enforce_min_crack_driving_force){
-                                el_energy += 
+                                el_energy +=
                                     min_energy(this->params_, c[qp], c_grad_el[qp], tr, el_strain.strain[qp]) * dx(qp);
                             } else
-                                el_energy += 
+                                el_energy +=
                                     energy(this->params_, c[qp], c_grad_el[qp], tr, el_strain.strain[qp]) * dx(qp);
 
                             if (this->params_.use_penalty_irreversibility) {
@@ -895,8 +895,8 @@ namespace utopia {
 
             Scalar min_strain_energy = strain_energy;
             if (PFFormulation::enforce_min_crack_driving_force){
-                min_strain_energy = PFFormulation::min_crack_driving_force(params) > min_strain_energy 
-                                        ? PFFormulation::min_crack_driving_force(params) 
+                min_strain_energy = PFFormulation::min_crack_driving_force(params) > min_strain_energy
+                                        ? PFFormulation::min_crack_driving_force(params)
                                         : min_strain_energy;
             }
 
@@ -910,8 +910,8 @@ namespace utopia {
                                                                        const Strain &strain) {
             Scalar strain_en = strain_energy(params, trace, strain);
             if (PFFormulation::enforce_min_crack_driving_force){
-                strain_en = PFFormulation::min_crack_driving_force(params) > strain_en 
-                                ? PFFormulation::min_crack_driving_force(params)   
+                strain_en = PFFormulation::min_crack_driving_force(params) > strain_en
+                                ? PFFormulation::min_crack_driving_force(params)
                                 : strain_en;
             }
             return (PFFormulation::degradation_deriv(phase_field_value, params) * (1.0 - params.regularization)) * strain_en;
@@ -959,7 +959,7 @@ namespace utopia {
                                std::max(strain_energy(params, trace, strain), PFFormulation::min_crack_driving_force(params) );
 
             return GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation>::fracture_energy(
-                        params, phase_field_value, phase_field_grad) + 
+                        params, phase_field_value, phase_field_grad) +
                     elastic_energy;
         }
 

@@ -80,9 +80,10 @@ namespace utopia {
             }
             else if (this->mini_verbose_){
                 this->init_solver("TRUST_REGION_BASE",
-                                  {" it. ",
-                                   "|| g ||"});
-                PrintInfo::print_iter_status(it, {g_norm});
+                                  { " it. ",
+                                   "|| g ||",
+                                    "J_k" });
+                PrintInfo::print_iter_status(it, {g_norm, E_k });
             }
 
 #else
@@ -182,7 +183,7 @@ namespace utopia {
                     PrintInfo::print_iter_status(it,
                                                  {g_norm, r_norm, product, E_k, E_k1, ared, pred, rho, delta, s_norm});
                 else if (this->mini_verbose_)
-                    PrintInfo::print_iter_status(it, {g_norm});
+                    PrintInfo::print_iter_status(it, {g_norm, E_k});
 #else
                 if (this->verbose_) PrintInfo::print_iter_status(it, {g_norm, r_norm, E_k, E_k1, rho, delta, s_norm});
 #endif

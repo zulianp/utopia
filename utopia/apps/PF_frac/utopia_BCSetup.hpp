@@ -485,6 +485,70 @@ namespace utopia {
     };
 
     template <class FunctionSpace>
+    class SedimentaryLayers : public BCSetup<FunctionSpace> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
+
+        SedimentaryLayers(FunctionSpace &space, const Scalar &Top_disp_y = 1.0, const Scalar &Right_disp_x = 1.0)
+            : BCSetup<FunctionSpace>(space), disp_y_(Top_disp_y), disp_x_(Right_disp_x) {}
+
+        void read(Input &in) override {
+            in.get("disp_y", disp_y_);
+            in.get("disp_x", disp_x_);
+            in.get("fix_phase_field_on_sides", fix_phase_field_);
+        }
+
+        void emplace_time_dependent_BC(const Scalar &time) override {
+            // static const int Dim = FunctionSpace::Dim;
+
+            using Point = typename FunctionSpace::Point;
+            this->space_.reset_bc();
+
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::left(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                1  // disp_x
+            );
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::bottom(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                2  // disp_y
+            );
+
+             this->space_.emplace_dirichlet_condition(
+                 SideSet::right(),
+                 UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_ * time; },
+                 1  // disp_x
+             );
+
+            //Fixing left and right boundary to no have any damage on them
+            if ( fix_phase_field_){
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::left(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::right(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
+            }
+
+        }
+
+    private:
+        Scalar disp_y_;
+        Scalar disp_x_;
+        bool   fix_phase_field_{false};
+    };
+
+
+    template <class FunctionSpace>
     class PFMixed2D : public BCSetup<FunctionSpace> {
     public:
         using Scalar = typename FunctionSpace::Scalar;

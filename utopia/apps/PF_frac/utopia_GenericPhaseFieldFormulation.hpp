@@ -120,18 +120,19 @@ namespace utopia {
 
         template <typename C>
         UTOPIA_INLINE_FUNCTION static C local_dissipation(const C &c) {
-            // return c > 0.0 ? c : 0.0 ; //Stop returning negative phase
-            return c;
+            return c < 0.0 ? -c : c ; //Stop returning negative phase
+            //return c;
         }
 
         template <typename C>
-        UTOPIA_INLINE_FUNCTION static C local_dissipation_deriv(const C &c) {
-            return 1.0;
+        UTOPIA_INLINE_FUNCTION static C local_dissipation_deriv(const C & c) {
+            return c < 0.0 ? -1.0 : 1.0; //returning negative gradient at negative c
+//            return 1.0;
         }
 
         template <typename C>
-        UTOPIA_INLINE_FUNCTION static C local_dissipation_deriv2(const C &c) {
-            return 0.;
+        UTOPIA_INLINE_FUNCTION static C local_dissipation_deriv2(const C &) {
+            return 0.; //in all cases (negative or positive c) the hessian is zero
         }
 
         // E.P: Penalty for AT1 Model
@@ -142,6 +143,9 @@ namespace utopia {
             assert(p.use_penalty_irreversibility);
             typename FunctionSpace::Scalar tol2 = p.penalty_tol * p.penalty_tol;
             p.penalty_param_irreversible = p.fracture_toughness / p.length_scale * (27.0 / (64.0 * tol2));
+            if (mpi_world_rank() == 0)
+                utopia::out() << "Lengthscale: " << p.length_scale
+                              << "  Penalty AT1 Irrev: " << p.penalty_param_irreversible << std::endl;
         }
 
         template <class FunctionSpace>
@@ -151,7 +155,7 @@ namespace utopia {
             p.penalty_param_non_neg = p.fracture_toughness / p.length_scale * 9.0 / 64.0 * (L / p.length_scale - 2.0) /
                                       (p.penalty_tol_non_neg);
             if (mpi_world_rank() == 0)
-                utopia::out() << "Lengthscale: " << p.length_scale << "  Penalty AT2 n_neg: " << p.penalty_param_non_neg
+                utopia::out() << "Lengthscale: " << p.length_scale << "  Penalty AT1 n_neg: " << p.penalty_param_non_neg
                               << std::endl;
         }
 
@@ -173,7 +177,7 @@ namespace utopia {
        }
 
         static const bool penalise_negative_phase_field_values =
-            false;  // NOT WORKING, but AT1 models need to penalise negative phase field values
+            true;  // NOT WORKING, but AT1 models need to penalise negative phase field values
         
         static const bool enforce_min_crack_driving_force = false;
 
@@ -253,6 +257,11 @@ namespace utopia {
             false;  // AT2 models do not need to penalise negative phase field values
 
         static const bool enforce_min_crack_driving_force = false;
+
+        template <class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static double min_crack_driving_force(const PFFracParameters<FunctionSpace> &p) {
+            return 3.0 / 16.0 * p.fracture_toughness / p.length_scale;
+        }
       
         //Value of phase field when damage localises in 1D bar (disregarding the stability of the bar)
         static double CriticalDamage() {return 0.25 ; } //elastic phase

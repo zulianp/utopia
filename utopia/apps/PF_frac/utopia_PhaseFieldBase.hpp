@@ -1245,7 +1245,7 @@ namespace utopia {
                 parallel_for(
                     range_device(val), UTOPIA_LAMBDA(const SizeType &i) {
                         if (i % (Dim + 1) == 0) {
-                            if (d_x_old.get(i) > params_.crack_set_tol) {
+                            if (d_x_old.get(i) >= params_.crack_set_tol) {
                                 val_view.set(i, d_x_old.get(i));
                             }
                         }
@@ -1255,7 +1255,7 @@ namespace utopia {
                 parallel_for(
                     range_device(flg), UTOPIA_LAMBDA(const SizeType &i) {
                         if (i % (Dim + 1) == 0) {
-                            if (d_x_old.get(i) > params_.crack_set_tol) {
+                            if (d_x_old.get(i) >= params_.crack_set_tol) {
                                 flg_view.set(i, 1.0);
                             }
                         }

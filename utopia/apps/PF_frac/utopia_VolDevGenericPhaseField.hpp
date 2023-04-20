@@ -571,7 +571,7 @@ namespace utopia {
 
             this->space_.apply_zero_constraints(g);
 
-            // fully broken case is treated as Dirichlet BC
+//             fully broken case is treated as Dirichlet BC
             if (this->params_.use_crack_set_irreversibiblity) {
                 this->apply_zero_constraints_irreversibiblity(g, x_const);
             }

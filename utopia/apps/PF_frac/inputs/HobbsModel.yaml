@@ -1,12 +1,12 @@
 ---
 app: Hobbs
 # Output 
-#output-path: Output/DoloShaleR_d1_G10_E5_Tss_Wsss_TRIAL_SERIAL2
-output-path: Output/BaseFix_DoloShale_H_d2_G10_E5_T
+output-path: Output/Hobb/HOBBS_Iso_AT2_d2_G800_E56_dt001_W4_l4_m6_p01_pn100_Fx1
+#output-path: Output/BaseFix_DoloShale_H_d2_G10_E5_T
 save_output: true
 # Mesh specification -----------------------------------------
-nx: 200
-ny: 100
+nx: 600
+ny: 300
 #nz: 2
 x_min: 0
 x_max: 4
@@ -17,16 +17,16 @@ n_levels: 2
 # Boundary Conditions
 disp_y: 0.0
 disp_x: 0.01
-fix_phase_field_on_sides: false
+fix_phase_field_on_sides: true
 #Initial Condition
 # Phase field formulation
 length_scale: 0.04
 with_damage: true
 use_penalty_irreversibility: true
 penalty_tol: 0.01
-penalty_tol_non_neg: 1e9
+penalty_tol_non_neg: 10
 use_crack_set_irreversibiblity: true
-crack_set_tol: 0.96
+crack_set_tol: 0.99999999
 mobility: 1.0e-06
 ## Material paramteters -------------------------------------------------
 hetero_params: Hobbs
@@ -37,20 +37,21 @@ E_2: 16e9			#Shale
 nu_1: 0.26			#Dolostone
 nu_2: 0.14 			#Shale 	
 Gc_1: 48 			#Dolostone
-Gc_2: 100		 	#Shale
+Gc_2: 800		 	#Shale
 random_variation: false		
 random_standard_deviation: 1
 boundary_protection: false	#increase fracture in a layer around the boundary
 layer_width: 0.1
 ## Time stepping -------------------------------------------------------
-dt: 0.005
+dt: 0.001
 final_time: 0.15
 # dynamic time stepping with fracture energy
-frac_energy_max_change: 1.6
+fracture_energy_time_stepping: true
+frac_energy_max_change: 1.3
 frac_energy_min_change: 1.01
-dt_min: 0.001
+dt_min: 0.0004
 dt_max: 0.01
-increase_factor: 2
+increase_factor: 4
 adjust_dt_on_failure: false
 shrinking_factor: 0.25
 ## Pressure handling ---------------------------------------------------------
@@ -66,12 +67,19 @@ hjsmn_smoother: false
 diff_controller:
   spacing: 1.0e-06
   hessian_from_grad: false
+use_mprgp: true  
+use_box_constraints: false  # TR method with penalty, run up to 5 cores
 solver:
-  verbose: true
-  max_it: 30
-  atol: 4e-02
-  atol_suff: 0.2
-  suff_it: 50
+  verbose: false
+  mini_verbose: true
+  max_it: 1500
+  atol: 1e-8
+  atol_suff: 1e-16
+  rtol: 1e-16
+  rtol_suff: 1e-16
+  stol: 1e-16
+  stol_suff: 1e-16  
+  suff_it: 500
   max_coarse_it: 2
   max_sucessful_coarse_it: 1
   pre_smoothing_steps: 2
@@ -82,7 +90,7 @@ solver:
   max_sucessful_smoothing_it: 1
   max_QP_smoothing_it: 60
   max_QP_coarse_it: 1000
-  linear-solver:
+  linear_solver:
     verbose: false
-    atol: 1.0e-7
-    max_it: 1000
+    atol: 1.0e-8
+    max_it: 1200
