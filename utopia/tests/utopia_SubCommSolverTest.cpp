@@ -9,14 +9,12 @@ namespace utopia {
     template <class Matrix, class Vector>
     class GradientDescentTest : public SubCommUnitTest<Vector> {
     public:
-        void run() {
+        void run() override {
             UTOPIA_RUN_TEST(grad_descent_solve_quadratic_2D);
             UTOPIA_RUN_TEST(grad_descent_solve_quadratic_ND);
         }
 
     private:
-        using Traits = utopia::Traits<Vector>;
-
         void solve_and_verify(UnconstrainedTestFunction<Matrix, Vector> &fun) const {
             GradientDescent<Vector> solver;
             solver.damping_parameter(0.05);
