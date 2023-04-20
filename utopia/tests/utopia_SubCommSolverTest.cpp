@@ -74,13 +74,25 @@ namespace utopia {
         void newton_solve_quadratic_2D() const {
             QPTestFunction_2D<Matrix, Vector> fun(this->comm());
             solve_and_verify(fun, std::make_shared<ConjugateGradient<Matrix, Vector>>());
-            solve_and_verify(fun, std::make_shared<GMRES<Matrix, Vector>>());
+            {
+                InputParameters in;
+                in.set("num_blocks", 2);  // limited by 2-dimension problem
+                const auto gmres_solver = std::make_shared<GMRES<Matrix, Vector>>();
+                gmres_solver->read(in);
+                solve_and_verify(fun, gmres_solver);
+            }
         }
 
         void newton_solve_quadratic_ND() const {
             QuadraticOffsetFunction_ND<Matrix, Vector> fun(this->comm(), N);
             solve_and_verify(fun, std::make_shared<ConjugateGradient<Matrix, Vector>>());
-            solve_and_verify(fun, std::make_shared<GMRES<Matrix, Vector>>());
+            {
+                InputParameters in;
+                in.set("num_blocks", N);  // limited by N-dimension problem
+                const auto gmres_solver = std::make_shared<GMRES<Matrix, Vector>>();
+                gmres_solver->read(in);
+                solve_and_verify(fun, gmres_solver);
+            }
         }
     };
 
