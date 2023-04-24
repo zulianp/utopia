@@ -4,10 +4,11 @@ include:
 stages:
   - build_base
   - build # build stage is running on the Kubernetes cluster
-  - test # test stage is running on PizDaint (on 1 node)
+  - test # test stage is running on a slurm cluster
 
 variables:
-  PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/utopia:$CI_COMMIT_SHA
+  PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/utopia_mc:$CI_COMMIT_SHA
+  UTOPIA_RUN_OPTS: '-data_path /utopia.src/utopia/data --verbose'
 
 build-utopia-baseimage:
   extends: .container-builder
@@ -20,20 +21,36 @@ build-utopia-baseimage:
     reports:
       dotenv: build.env
   variables:
-    DOCKERFILE: utopia/docker/cscs_ci/Dockerfile.base
+    DOCKERFILE: utopia/ci/cscs/mc/docker/Dockerfile.base
 
 build-utopia:
   extends: .container-builder
   stage: build
   variables:
-    DOCKERFILE: utopia/docker/cscs_ci/Dockerfile
+    DOCKERFILE: utopia/ci/cscs/mc/docker/Dockerfile
     DOCKER_BUILD_ARGS: '["BASE_IMAGE=$BASE_IMAGE"]'
     GIT_SUBMODULE_STRATEGY: recursive
 
-run-utopia-test:
+run-utopia-test-singletask:
   extends: .container-runner-daint-mc
   image: $PERSIST_IMAGE_NAME
+  variables:
+    SLURM_NTASKS: 1
+    SLURM_TIMELIMIT: "00:10:00"
+    USE_MPI: "NO"
   script:
     # the tests are not installed, so we need to run them from the build directory
     - cd /utopia.src/build
-    - ./utopia_bench -verbose
+    # run all tests
+    - ./utopia_test $UTOPIA_RUN_OPTS
+
+run-utopia-benchmark:
+  extends: .container-runner-daint-mc
+  image: $PERSIST_IMAGE_NAME
+  variables:
+    SLURM_TIMELIMIT: "00:10:00"
+    USE_MPI: "YES"
+  script:
+    # the tests are not installed, so we need to run them from the build directory
+    - cd /utopia.src/build
+    - ./utopia_bench $UTOPIA_RUN_OPTS
