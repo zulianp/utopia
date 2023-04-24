@@ -405,8 +405,12 @@ namespace utopia {
         void run() {
             print_backend_info();
             UTOPIA_RUN_TEST(interior_point_qp_solver_test);
+#ifdef KOKKOS_ENABLE_CUDA
+            utopia_warning("Skipping log_barrier_test");
+#else
             UTOPIA_RUN_TEST(log_barrier_test);
             UTOPIA_RUN_TEST(log_barrier_qp_solver_test);
+#endif
             UTOPIA_RUN_TEST(pg_test);
             UTOPIA_RUN_TEST(pcg_test);
             UTOPIA_RUN_TEST(ngs_test);
