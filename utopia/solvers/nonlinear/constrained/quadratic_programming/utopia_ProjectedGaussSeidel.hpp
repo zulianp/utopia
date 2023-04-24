@@ -345,7 +345,6 @@ namespace utopia {
             d = diag(A);
 
             if (l1_) {
-                Write<Vector> w(d);
                 auto d_view = view_device(d);
                 A.read(UTOPIA_LAMBDA(const SizeType &i, const SizeType &, const Scalar &value) {
                     d_view.add(i, device::abs(value));
