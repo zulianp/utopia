@@ -1,18 +1,18 @@
 ---
 app: Hobbs
 # Output 
-output-path: Output/Hobb/HOBBS_Iso_AT2_d2_G800_E56_dt001_W4_l4_m6_p01_pn100_Fx1
-#output-path: Output/BaseFix_DoloShale_H_d2_G10_E5_T
+#output-path: Output/Hobb/HOBBS_Iso_AT2_d2_G800_E56_dt001_W4_l4_m6_p01_pn100_Fx1
+output-path: Output/HOBBS_VD_AT1_d2_G800_E56_dt0004_W3_l4_m1_p01_Corrected
 save_output: true
 # Mesh specification -----------------------------------------
-nx: 600
-ny: 300
+nx: 300
+ny: 100
 #nz: 2
 x_min: 0
-x_max: 4
+x_max: 3
 y_min: 0
-y_max: 2
-n_levels: 2
+y_max: 1
+n_levels: 1
 # Problem specification ------------------------------------------
 # Boundary Conditions
 disp_y: 0.0
@@ -24,36 +24,36 @@ length_scale: 0.04
 with_damage: true
 use_penalty_irreversibility: true
 penalty_tol: 0.01
-penalty_tol_non_neg: 10
+penalty_tol_non_neg: 1e9
 use_crack_set_irreversibiblity: true
-crack_set_tol: 0.99999999
-mobility: 1.0e-06
+crack_set_tol: 0.9999999
 ## Material paramteters -------------------------------------------------
 hetero_params: Hobbs
-bottom_layer_height: 0.9
-top_layer_height: 1.1
+bottom_layer_height: 0.4
+top_layer_height: 0.6
 E_1: 56e9	        	#Dolostone
 E_2: 16e9			#Shale
 nu_1: 0.26			#Dolostone
 nu_2: 0.14 			#Shale 	
-Gc_1: 48 			#Dolostone
+Gc_1: 48 			#Dolostone 48
 Gc_2: 800		 	#Shale
 random_variation: false		
 random_standard_deviation: 1
 boundary_protection: false	#increase fracture in a layer around the boundary
 layer_width: 0.1
+tensile_strength: 4e6
 ## Time stepping -------------------------------------------------------
 dt: 0.001
 final_time: 0.15
 # dynamic time stepping with fracture energy
 fracture_energy_time_stepping: true
-frac_energy_max_change: 1.3
+frac_energy_max_change: 1.15
 frac_energy_min_change: 1.01
 dt_min: 0.0004
-dt_max: 0.01
-increase_factor: 4
+dt_max: 0.001
+increase_factor: 2
 adjust_dt_on_failure: false
-shrinking_factor: 0.25
+shrinking_factor: 0.5
 ## Pressure handling ---------------------------------------------------------
 use_pressure: false
 use_constant_pressure: false
