@@ -424,16 +424,18 @@ namespace utopia {
         void export_energies_csv(Scalar fracture_energy) {
             if (!this->csv_file_name_.empty()) {
                 CSVWriter writer{};
-                Scalar elastic_energy = 0.0, error_tcv = 0.0, error_cod = 0.0, residual = 0.0,
+                Scalar elastic_energy = 0.0, ela_en_mid = 0.0, fra_en_mid=0.0, tcv = 0.0, error_cod = 0.0, residual = 0.0,
                        iterations = 0.0;
 
                 fe_problem_->elastic_energy(this->solution_, elastic_energy);
-                //fe_problem_->fracture_energy(this->solution_, fracture_energy); already passed in as input
+                fe_problem_->elastic_energy_in_middle_layer(this->solution_, ela_en_mid);
+                fe_problem_->fracture_energy_in_middle_layer(this->solution_, fra_en_mid);
+
+                fe_problem_->compute_tcv(this->solution_, tcv);
 
                 //residual = rmtr_->get_gnorm();
                 //iterations = rmtr_->get_total_iterations();
                 if (FunctionSpace::Dim == 3) {
-                    fe_problem_->compute_tcv(this->solution_, error_tcv);
                     fe_problem_->compute_cod(this->solution_, error_cod);
                 }
 
@@ -441,7 +443,7 @@ namespace utopia {
                     if (!writer.file_exists(this->csv_file_name_)) {
                         writer.open_file(this->csv_file_name_);
                         writer.write_table_row<std::string>(
-                            {"time step", "time", "elastic_energy", "fracture_energy"});
+                            {"time step", "time", "elastic_energy", "fracture_energy", "elast_en_mid_layer","frac_en_mid_layer", "total_crack_vol"});
                     } else {
                         writer.open_file(this->csv_file_name_);
                     }
@@ -450,6 +452,9 @@ namespace utopia {
                                                     this->time_,
                                                     elastic_energy,
                                                     fracture_energy,
+                                                    ela_en_mid,
+                                                    fra_en_mid,
+                                                    tcv
                                                     });
                     writer.close_file();
                 }

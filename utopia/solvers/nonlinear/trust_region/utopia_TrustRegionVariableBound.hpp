@@ -80,6 +80,12 @@ namespace utopia {
                     "TRUST_REGION_BASE",
                     {" it. ", "||P_c(x-g)-x||", "J_k", "J_{k+1}", "ared", "pred", "rho", "delta_k", "|| p_k || "});
                 PrintInfo::print_iter_status(it, {g_norm});
+            } else if (this->mini_verbose_){
+                this->init_solver("TRUST_REGION_BASE",
+                                  { " it. ",
+                                   "|| g ||",
+                                    "J_k" });
+                PrintInfo::print_iter_status(it, {g_norm, E_new });
             }
 
             it++;
@@ -165,6 +171,8 @@ namespace utopia {
 
                 if (this->verbose_)
                     PrintInfo::print_iter_status(it, {g_norm, E_old, E_new, ared, pred, rho, delta, s_norm});
+                else if (this->mini_verbose_)
+                    PrintInfo::print_iter_status(it, {g_norm, E_new});
 
                 converged =
                     TrustRegionBase::check_convergence(*this, tol, this->max_it(), it, g_norm, r_norm, s_norm, delta);

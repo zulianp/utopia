@@ -760,7 +760,7 @@ namespace utopia {
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
-        using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT1>;
+        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1>;
 //        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1>;
 
 

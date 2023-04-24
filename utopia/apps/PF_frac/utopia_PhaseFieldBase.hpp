@@ -175,10 +175,12 @@ namespace utopia {
                 };
 
             } else if (type == "Hobbs") {
-                Scalar bottom_layer_height;
-                Scalar top_layer_height;
-                in.get("bottom_layer_height", bottom_layer_height);
-                in.get("top_layer_height", top_layer_height);
+                Scalar bottom_layer_height_;
+                Scalar top_layer_height_;
+                in.get("bottom_layer_height", bottom_layer_height_);
+                in.get("top_layer_height", top_layer_height_);
+                bottom_layer_height = bottom_layer_height_;
+                top_layer_height = top_layer_height_;
 
                 Scalar E1, E2, nu1, nu2, Gc1, Gc2;
                 in.get("E_1", E1);
@@ -218,8 +220,8 @@ namespace utopia {
                                  nu2,
                                  Gc1,
                                  Gc2,
-                                 bottom_layer_height,
-                                 top_layer_height,
+                                 bottom_layer_height_,
+                                 top_layer_height_,
                                  boundary_protection,
                                  xmin,
                                  xmax,
@@ -232,7 +234,7 @@ namespace utopia {
                                             Scalar &mu_out,
                                             Scalar &lambda_out,
                                             Scalar &fracture_toughness_out) mutable {
-                    if (p[1] < bottom_layer_height || p[1] > top_layer_height) {  // Shale (stronger and more compliant)
+                    if (p[1] < bottom_layer_height_ || p[1] > top_layer_height_) {  // Shale (stronger and more compliant)
                         lambda_out = E2 * nu2 / ((1. + nu2) * (1. - 2. * nu2));
                         mu_out = E2 / (2. * (1. + nu2));
                         fracture_toughness_out = Gc2;
@@ -297,7 +299,9 @@ namespace utopia {
               mobility(1e-6),
               Length_x(0),
               Length_y(0),
-              Length_z(0)
+              Length_z(0),
+              top_layer_height(0),
+              bottom_layer_height(0)
 
         {
             kappa = lambda + (2.0 * mu / Dim);
@@ -352,6 +356,7 @@ namespace utopia {
         Scalar regularization, pressure, penalty_param_irreversible, penalty_param_non_neg, crack_set_tol, penalty_tol,
             penalty_tol_non_neg, mobility;
         Scalar Length_x, Length_y, Length_z;
+        Scalar top_layer_height, bottom_layer_height;
 
         // Scalar E1, E2, nu1, nu2, Gc1, Gc2; //for hobbs three layer model
         bool use_penalty_irreversibility{false}, use_crack_set_irreversibiblity{false}, use_pressure{false};
@@ -513,13 +518,26 @@ namespace utopia {
         virtual bool fracture_energy(const Vector & /*x_const*/, Scalar & /*val*/) const = 0;
         virtual bool elastic_energy(const Vector & /*x_const*/, Scalar & /*val*/) const = 0;
 
+        //elastic energy specified by inherited class
+        virtual bool elastic_energy_in_middle_layer(const Vector &/*x_const*/, Scalar &/*val*/) const {
+            std::cout << "GenericPhaseFieldFormulation::elastic_energy_in_middle_layer(), Please define method in derived class!" << std::endl;
+            exit(1);
+        }
+
+        //elastic energy specified by inherited class
+        virtual bool fracture_energy_in_middle_layer(const Vector &/*x_const*/, Scalar &/*val*/) const {
+            std::cout << "GenericPhaseFieldFormulation::fracture_energy_in_middle_layer(), Please define method in derived class!" << std::endl;
+            exit(1);
+        }
+
         // compute total crack volume (TCV), so we can compare to exact solution
-        virtual bool compute_tcv(const Vector &x_const, Scalar &error) const {
+        // !!! E.P Changed: USED TO RETURN error INSTEAD OF THE TOTAL CRACK VOLUME
+        virtual bool compute_tcv(const Vector &x_const, Scalar &computed_tcv) const {
             UTOPIA_TRACE_REGION_BEGIN("PFBase::compute_tcv");
             const Scalar PI = 3.141592653589793238463;
 
             Scalar tcv_exact = 0.0;
-            Scalar computed_tcv = 0.0;
+            computed_tcv = 0.0;
 
             USpace U;
             this->space_.subspace(1, U);
@@ -610,12 +628,14 @@ namespace utopia {
 
                         // TCV = \int_\Omega u \cdot \nabla \phi
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                            if (Dim == 2) {
-                                tcv_mine += ((u1[qp] * c_grad_el[qp](0)) + (u2[qp] * c_grad_el[qp](1))) * dx(qp);
-                            } else {
-                                tcv_mine += ((u1[qp] * c_grad_el[qp](0)) + (u2[qp] * c_grad_el[qp](1)) +
-                                             (u3[qp] * c_grad_el[qp](2))) *
-                                            dx(qp);
+                            if (c[qp] > 0.0 ){// E.P Zero gives correct answer! Added to catch only aperture of fully cracked fracture
+                                if (Dim == 2) {
+                                    tcv_mine -=  ((u1[qp] * c_grad_el[qp](0)) + (u2[qp] * c_grad_el[qp](1))) * dx(qp);
+                                } else {
+                                    tcv_mine -=  ((u1[qp] * c_grad_el[qp](0)) + (u2[qp] * c_grad_el[qp](1)) +
+                                                 (u3[qp] * c_grad_el[qp](2))) *
+                                                dx(qp);
+                                }
                             }
                         }
 
@@ -637,11 +657,11 @@ namespace utopia {
                             (1.0 - this->params_.nu * this->params_.nu) / this->params_.E / 3.0;
             }
 
-            error = device::abs(computed_tcv - tcv_exact);
-            if (mpi_world_rank() == 0) {
-                std::cout << "computed_tcv: " << computed_tcv << "  exact: " << tcv_exact << "  error: " << error
-                          << "\n ";
-            }
+            //error = device::abs(computed_tcv - tcv_exact);
+//            if (mpi_world_rank() == 0) {
+//                std::cout << "computed_tcv: " << computed_tcv << "  exact: " << tcv_exact << "  error: " << error
+//                          << "\n ";
+//            }
 
             UTOPIA_TRACE_REGION_END("PFBase::compute_tcv");
             return true;
@@ -789,14 +809,14 @@ namespace utopia {
             return true;
         }
 
-        bool export_strain_and_stress(std::string output_path, const Vector &x_const, const Scalar time) const {
+        virtual bool export_strain_and_stress(std::string output_path, const Vector &x_const, const Scalar time) const {
             UTOPIA_TRACE_REGION_BEGIN("PhaseFieldFracBase::strain");
 
             static const int strain_components = (Dim - 1) * 3;
-            static const int total_components = strain_components * 1;
+            static const int Total_components = strain_components * 2;
 
             using WSpace = typename FunctionSpace::template Subspace<1>;
-            using SSpace = typename FunctionSpace::template Subspace<total_components>;
+            using SSpace = typename FunctionSpace::template Subspace<Total_components>;
             using SElem = typename SSpace::ViewDevice::Elem;
 
             Vector w;
@@ -810,18 +830,18 @@ namespace utopia {
             /// Creating strain subspace
 
             // cloning mesh
-            auto strain_mesh = this->space_.mesh().clone(total_components);
-            assert(strain_mesh->n_components() == total_components);
+            auto strain_mesh = this->space_.mesh().clone(Total_components);
+            assert(strain_mesh->n_components() == Total_components);
             // Creating Subspace with cloned mesh
 
             SSpace S(std::move(strain_mesh));
 
-            assert(S.n_dofs() == C.n_dofs() * total_components);
+            assert(S.n_dofs() == C.n_dofs() * Total_components);
 
             S.create_vector(g);
             C.create_vector(w);
 
-            assert(g.size() == w.size() * total_components);
+            assert(g.size() == w.size() * Total_components);
 
             ///////////////////////////////////////////////////////////////////////////
 
@@ -877,7 +897,7 @@ namespace utopia {
                 Device::parallel_for(
                     this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
                         StaticMatrix<Scalar, Dim, Dim> strain_value, stress_value;
-                        StaticVector<Scalar, total_components * C_NDofs> strain_and_stress_el_vec;
+                        StaticVector<Scalar, Total_components * C_NDofs> strain_and_stress_el_vec;
                         StaticVector<Scalar, C_NDofs> weight_el_vec;
                         StaticMatrix<Scalar, Dim, Dim> stress;  //, strain_p;
 
@@ -944,8 +964,8 @@ namespace utopia {
                             for (int r = 0; r < Dim; ++r) {
                                 for (int c = r; c < Dim; c++) {
                                     strain_and_stress_el_vec[idx * offset + n] = stress_value(r, c);
-                                    // strain_and_stress_el_vec[(strain_components + idx)*offset + n ] = stress_value(r,
-                                    // c);
+                                    if (strain_components<Total_components)
+                                        strain_and_stress_el_vec[(strain_components + idx)*offset + n ] = strain_value(r,c);
                                     idx++;
                                 }
                             }
@@ -971,27 +991,27 @@ namespace utopia {
                 parallel_for(
                     r, UTOPIA_LAMBDA(int i) {
                         auto wi = weight_view.get(i);  // extracts vector component
-                        for (int k = 0; k < strain_components; k++) {
+                        for (int k = 0; k < Total_components; k++) {
                             int nodal_offset =
-                                i * total_components;  // vector g is 2*straincomponents bigger than vector of weights w
+                                i * Total_components;  // vector g is 2*straincomponents bigger than vector of weights w
                             auto si = strain_and_stress_view.get(
                                 nodal_offset + k);  // get k'th strain corresponding to node i with weight i
                             strain_and_stress_view.set(nodal_offset + k,
                                                        si / wi);  // normalise the strain value by the weight wi
 
-                            if (strain_components != total_components) {
-                                auto sig_i =
-                                    strain_and_stress_view.get(nodal_offset + strain_components +
-                                                               k);  // get stress component which is offset additionally
-                                                                    // in the g vector by the strain components
-                                strain_and_stress_view.set(nodal_offset + strain_components + k, sig_i / wi);
-                            }
+//                            if (strain_components != total_components) {
+//                                auto sig_i =
+//                                    strain_and_stress_view.get(nodal_offset + strain_components +
+//                                                               k);  // get stress component which is offset additionally
+//                                                                    // in the g vector by the strain components
+//                                strain_and_stress_view.set(nodal_offset + strain_components + k, sig_i / wi);
+//                            }
                             // assert( std::signbit(si) == std::signbit(sig_i));
                         }
                     });
             }  // incase backed PETSC needs synchronisation (create view in scopes and destroy them when not needed)
 
-            rename("strain and stress", g);
+            rename("stress and strain", g);
             output_path += "_strainstress_" + std::to_string(time) + ".vtr";
             S.write(output_path, g);  // Function space knows how to write
 
