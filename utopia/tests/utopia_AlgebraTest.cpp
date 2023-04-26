@@ -346,7 +346,7 @@ namespace utopia {
         }
 
         void run() {
-            // FIXME this test causes Segmentation Violation when utopia is built with gpu support
+            // FIXME(zulianp) this test causes Segmentation Violation when utopia is built with gpu support
             if constexpr (Traits::Backend == PETSC) {
 #ifdef PETSC_HAVE_CUDA
                 utopia_warning("Skipping sparse_chop_test");
@@ -588,7 +588,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(trace_test);
             UTOPIA_RUN_TEST(in_place_test);
 
-            // FIXME this test causes Segmentation Violation when utopia is built with gpu support
+            // FIXME(zulianp) this test causes Segmentation Violation when utopia is built with gpu support
             if constexpr (Traits::Backend == PETSC) {
 #ifdef PETSC_HAVE_CUDA
                 utopia_warning("Skipping chop_test");

@@ -43,8 +43,6 @@ run-utopia-test:
     - cd /utopia.src/build
     # run all tests
     - ./utopia_test $UTOPIA_RUN_OPTS
-  # FIXME remove line below when tests are passing
-  allow_failure: true
 
 run-utopia-benchmark:
   extends: .container-runner-daint-gpu
