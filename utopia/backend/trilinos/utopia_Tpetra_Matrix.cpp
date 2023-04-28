@@ -583,7 +583,7 @@ namespace utopia {
         auto row_map = impl.getRowMap()->getLocalMap();
 
 #if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
-        auto local_mat = raw_type()->getLocalMatrixDevice();
+        auto local_mat = raw_type()->getLocalMatrixHost();
 #else
         auto local_mat = raw_type()->getLocalMatrix();
 #endif

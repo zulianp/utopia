@@ -788,8 +788,10 @@ namespace utopia {
 #ifdef UTOPIA_WITH_PETSC
             test_mg<PetscMatrix, PetscVector>();
 #endif  // UTOPIA_WITH_PETSC
-        // trilinos version
+#ifndef KOKKOS_ENABLE_CUDA
+            // trilinos version
             test_mg<TpetraMatrixd, TpetraVectord>();
+#endif  // KOKKOS_ENABLE_CUDA
         }
 
         void trilinos_mg() {
@@ -1120,6 +1122,7 @@ namespace utopia {
             const auto n_coarse_elements = std::max(2, (int)mpi_world_size());
             MultiLevelTestProblem1D<TpetraMatrixd, TpetraVectord, Poisson1D<TpetraMatrixd, TpetraVectord>> ml_problem(
                 10, n_coarse_elements);
+
             // A = *ml_problem.interpolators[0];
             auto transfer = ml_problem.get_transfer();
 
@@ -1176,8 +1179,9 @@ namespace utopia {
             // petsc version
             rmtr_test<PetscMatrix, PetscVector>();
 #endif  // UTOPIA_WITH_PETSC
-
+#ifndef KOKKOS_ENABLE_CUDA
             rmtr_test<TpetraMatrixd, TpetraVectord>();
+#endif  // KOKKOS_ENABLE_CUDA
         }
 
         void trilinos_matrix_norm() {
