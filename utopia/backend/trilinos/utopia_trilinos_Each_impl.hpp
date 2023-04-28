@@ -108,17 +108,15 @@ namespace utopia {
 
     template <class Fun>
     void TpetraVectorEach::apply_read(const TpetraVector &v, Fun fun) {
-        using ExecutionSpaceT = TpetraVector::ExecutionSpace;
-
         auto impl = raw_type(v);
 
         auto map = impl->getMap()->getLocalMap();
 
 #if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
 
-        auto view = impl->template getLocalView<ExecutionSpaceT>(Tpetra::Access::ReadOnly);
+        auto view = impl->getLocalViewHost(Tpetra::Access::ReadOnly);
 #else
-        auto view = impl->getLocalView<ExecutionSpaceT>();
+        auto view = impl->getLocalViewHost();
 #endif
 
         const auto r = range(v);
@@ -129,15 +127,13 @@ namespace utopia {
 
     template <class Fun>
     void TpetraVectorEach::apply_write(TpetraVector &v, Fun fun) {
-        using ExecutionSpaceT = TpetraVector::ExecutionSpace;
-
         auto impl = raw_type(v);
         auto map = impl->getMap()->getLocalMap();
 
 #if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
-        auto view = impl->template getLocalView<ExecutionSpaceT>(Tpetra::Access::OverwriteAll);
+        auto view = impl->getLocalViewHost(Tpetra::Access::OverwriteAll);
 #else
-        auto view = impl->getLocalView<ExecutionSpaceT>();
+        auto view = impl->getLocalViewHost();
 #endif
 
         const auto r = range(v);

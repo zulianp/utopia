@@ -789,12 +789,7 @@ namespace utopia {
             test_mg<PetscMatrix, PetscVector>();
 #endif  // UTOPIA_WITH_PETSC
         // trilinos version
-#ifdef KOKKOS_ENABLE_CUDA
-            // FIXME Fails with error(cudaErrorIllegalAddress): an illegal memory access was encountered
-            utopia_warning("Skipping trilinos_mg_1D");
-#else
             test_mg<TpetraMatrixd, TpetraVectord>();
-#endif
         }
 
         void trilinos_mg() {
@@ -1181,9 +1176,8 @@ namespace utopia {
             // petsc version
             rmtr_test<PetscMatrix, PetscVector>();
 #endif  // UTOPIA_WITH_PETSC
-#ifndef KOKKOS_ENABLE_CUDA
+
             rmtr_test<TpetraMatrixd, TpetraVectord>();
-#endif  // KOKKOS_ENABLE_CUDA
         }
 
         void trilinos_matrix_norm() {
@@ -1314,6 +1308,8 @@ namespace utopia {
 
             UTOPIA_RUN_TEST(trilinos_rect_matrix);
             UTOPIA_RUN_TEST(trilinos_e_mul);
+            UTOPIA_RUN_TEST(trilinos_row_view);
+            UTOPIA_RUN_TEST(trilinos_apply_transpose);
             UTOPIA_RUN_TEST(trilinos_set);
             UTOPIA_RUN_TEST(trilinos_residual);
 
@@ -1325,13 +1321,27 @@ namespace utopia {
 
             // FIXME This tests fails when using adress sanitizer inside trilinos (CMAKE_BUILD_TYPE=ASAN)
             UTOPIA_RUN_TEST(trilinos_transpose);
+
+            UTOPIA_RUN_TEST(trilinos_apply_transpose_explicit);
             UTOPIA_RUN_TEST(trilinos_each_read_transpose);
             UTOPIA_RUN_TEST(trilinos_local_row_view);
+            UTOPIA_RUN_TEST(trilinos_ptap_square_mat);
 
             UTOPIA_RUN_TEST(trilinos_range);
             UTOPIA_RUN_TEST(trilinos_mg_1D);
             UTOPIA_RUN_TEST(trilinos_replace_value);
             UTOPIA_RUN_TEST(trilinos_ghosted);
+            UTOPIA_RUN_TEST(trilinos_set_zeros);
+
+            // FIXME fails from mpi_world_size() > 3
+            UTOPIA_RUN_TEST(trilinos_copy_write);
+
+            UTOPIA_RUN_TEST(trilinos_mg);
+            UTOPIA_RUN_TEST(trilinos_cg);
+            // FIXME fails with Floating Point Exception on PizDaint with more than 1 task
+            if (mpi_world_size() == 1) {
+                UTOPIA_RUN_TEST(trilinos_ptap);
+            }
 
             UTOPIA_RUN_TEST(trilinos_rap);
             UTOPIA_RUN_TEST(trilinos_rap_square_mat);
@@ -1345,6 +1355,11 @@ namespace utopia {
             UTOPIA_RUN_TEST(trilinos_mat_axpy);
             ////////////////////////////////////////////
 
+            if (mpi_world_size() <= 3) {
+                // working up to 3 processes
+                UTOPIA_RUN_TEST(trilinos_row_view_and_loops);
+            }
+
             // tests that fail in parallel
             if (mpi_world_size() == 1) {
                 UTOPIA_RUN_TEST(trilinos_crs_construct);
@@ -1352,30 +1367,6 @@ namespace utopia {
 
             // tests that always fail
             // UTOPIA_RUN_TEST(trilinos_diag_rect_matrix);
-
-            // FIXME several tests assume that host and device use the same memory space
-            // Runtime failure:
-            // Kokkos::View ERROR: attempt to access inaccessible memory space
-            // Compile waring:
-            // calling a __host__ function from a __host__ __device__ function is not allowed
-#ifndef KOKKOS_ENABLE_CUDA
-            UTOPIA_RUN_TEST(trilinos_row_view);
-            UTOPIA_RUN_TEST(trilinos_apply_transpose);
-            UTOPIA_RUN_TEST(trilinos_apply_transpose_explicit);
-            UTOPIA_RUN_TEST(trilinos_ptap_square_mat);
-            UTOPIA_RUN_TEST(trilinos_set_zeros);
-            UTOPIA_RUN_TEST(trilinos_copy_write);
-            UTOPIA_RUN_TEST(trilinos_mg);
-            UTOPIA_RUN_TEST(trilinos_cg);
-            // FIXME fails with Floating Point Exception on PizDaint with more than 1 task
-            if (mpi_world_size() == 1) {
-                UTOPIA_RUN_TEST(trilinos_ptap);
-            }
-            // working up to 3 processes
-            if (mpi_world_size() <= 3) {
-                UTOPIA_RUN_TEST(trilinos_row_view_and_loops);
-            }
-#endif  // KOKKOS_ENABLE_CUDA
         }
     };
 

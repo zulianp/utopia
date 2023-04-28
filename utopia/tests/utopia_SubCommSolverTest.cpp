@@ -47,16 +47,7 @@ namespace utopia {
     public:
         void run() {
             UTOPIA_RUN_TEST(newton_solve_quadratic_2D);
-            if constexpr (Traits<Matrix>::Backend == TRILINOS) {
-#ifdef KOKKOS_ENABLE_CUDA
-                // FIXME several tests assume that host and device use the same memory space
-                utopia_warning("Skipping newton_solve_quadratic_ND");
-#else
-                UTOPIA_RUN_TEST(newton_solve_quadratic_ND);
-#endif
-            } else {
-                UTOPIA_RUN_TEST(newton_solve_quadratic_ND);
-            }
+            UTOPIA_RUN_TEST(newton_solve_quadratic_ND);
         }
 
     private:
