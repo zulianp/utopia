@@ -17,8 +17,7 @@ namespace utopia {
 
         bool is_hessian_constant() const override { return true; }
 
-        Poisson1D(const SizeType &n, const SizeType &problem_type = 2)
-            : pi_(3.14159265358979323846), problem_type_(problem_type), n_(n) {
+        Poisson1D(const SizeType &n, const SizeType &problem_type = 2) : problem_type_(problem_type), n_(n) {
             if (problem_type_ == 1) {
                 assembly_problem_type1();
             } else if (problem_type_ == 2) {
@@ -99,7 +98,7 @@ namespace utopia {
         bool parallel() const override { return true; }
 
     private:
-        void assemble_laplacian_1D(Matrix &M) {
+        void assemble_laplacian_1D(Matrix &M, Scalar h) {
             {
                 // n x n matrix with maximum 3 entries x row
                 Write<Matrix> w(M);
@@ -123,10 +122,10 @@ namespace utopia {
                 }
             }
 
-            M *= 1. / h_;
+            M *= 1. / h;
         }
 
-        void init_memory() {
+        void init_memory(Scalar h) {
             // FIXME pass from outside?
             Comm comm;
             rhs_.values(layout(comm, Traits::decide(), n_), 0.0);
@@ -137,38 +136,41 @@ namespace utopia {
             A_help_ = make_unique<Vector>(v_lo, 0.0);
 
             H_.sparse(square_matrix_layout(v_lo), 3, 2);
-            assemble_laplacian_1D(H_);
+            assemble_laplacian_1D(H_, h);
         }
 
     public:  // made public because of nvcc
         void assembly_problem_type1() {
-            a_ = 0.0;
-            b_ = 2.0 * pi_;
+            const Scalar a = 0.0;
+            const Scalar b = 2.0 * pi_;
 
-            L_ = b_ - a_;
-            h_ = L_ / (n_ - 1);
+            const Scalar L = b - a;
+            const Scalar h = L / (n_ - 1);
 
-            init_memory();
+            // capture by value in lambda function, to avoid referencing this
+            const Scalar n = this->n_;
+
+            init_memory(h);
 
             {
                 auto rhs_view = view_device(rhs_);
                 parallel_for(
                     range_device(rhs_), UTOPIA_LAMBDA(const SizeType i) {
-                        Scalar xi = (h_ * i);
+                        Scalar xi = (h * i);
                         if (i == 0) {
                             rhs_view.set(i, xi * device::cos(xi));
-                        } else if (i == n_ - 1) {
+                        } else if (i == n - 1) {
                             rhs_view.set(i, xi * device::cos(xi));
                         } else {
                             // rhs_view.set(i,  (2.0* device::sin(xi)) + (xi*device::cos(xi)));
-                            rhs_view.set(i, h_ * (2.0 * device::sin(xi)) + (xi * device::cos(xi)));
+                            rhs_view.set(i, h * (2.0 * device::sin(xi)) + (xi * device::cos(xi)));
                         }
                     });
 
                 auto exact_sol_view = view_device(exact_sol_);
                 parallel_for(
                     range_device(exact_sol_), UTOPIA_LAMBDA(const SizeType i) {
-                        Scalar xi = (h_ * i);
+                        Scalar xi = (h * i);
                         // return xi * device::cos(xi);
                         exact_sol_view.set(i, xi * device::cos(xi));
                     });
@@ -176,10 +178,10 @@ namespace utopia {
                 auto x0_view = view_device(x0_);
                 parallel_for(
                     range_device(x0_), UTOPIA_LAMBDA(const SizeType i) {
-                        Scalar xi = (h_ * i);
+                        Scalar xi = (h * i);
                         if (i == 0) {
                             xi = xi * device::cos(xi);
-                        } else if (i == n_ - 1) {
+                        } else if (i == n - 1) {
                             xi = xi * device::cos(xi);
                         } else {
                             xi = 0.0;
@@ -214,42 +216,45 @@ namespace utopia {
         }
 
         void assembly_problem_type2() {
-            a_ = 0.0;
-            b_ = 1.0;
+            const Scalar a = 0.0;
+            const Scalar b = 1.0;
 
-            L_ = b_ - a_;
-            h_ = L_ / (n_ - 1);
+            const Scalar L = b - a;
+            const Scalar h = L / (n_ - 1);
 
-            init_memory();
+            // capture by value in lambda function, to avoid referencing this
+            const Scalar n = this->n_;
+
+            init_memory(h);
 
             {
                 auto rhs_view = view_device(rhs_);
                 parallel_for(
                     range_device(rhs_), UTOPIA_LAMBDA(const SizeType i) {
-                        // Scalar xi = (h_ * i);
+                        // Scalar xi = (h * i);
                         if (i == 0) {
                             rhs_view.set(i, 0.0);
-                        } else if (i == n_ - 1) {
+                        } else if (i == n - 1) {
                             rhs_view.set(i, 0.0);
                         } else {
-                            rhs_view.set(i, h_ * 10.0);
+                            rhs_view.set(i, h * 10.0);
                         }
                     });
 
                 auto exact_sol_view = view_device(exact_sol_);
                 parallel_for(
                     range_device(exact_sol_), UTOPIA_LAMBDA(const SizeType i) {
-                        Scalar xi = (h_ * i);
+                        Scalar xi = (h * i);
                         exact_sol_view.set(i, 5.0 * xi * (xi - 1.0));
                     });
 
                 auto x0_view = view_device(x0_);
                 parallel_for(
                     range_device(x0_), UTOPIA_LAMBDA(const SizeType i) {
-                        Scalar xi = (h_ * i);
+                        Scalar xi = (h * i);
                         if (i == 0) {
                             x0_view.set(i, 5.0 * xi * (xi - 1.0));
-                        } else if (i == n_ - 1) {
+                        } else if (i == n - 1) {
                             x0_view.set(i, 5.0 * xi * (xi - 1.0));
                         } else {
                             x0_view.set(i, 0.0);
@@ -280,7 +285,7 @@ namespace utopia {
 
                 parallel_for(
                     range_device(upper_bound), UTOPIA_LAMBDA(const SizeType i) {
-                        Scalar xi = (h_ * i);
+                        Scalar xi = (h * i);
                         upper_bound_view.set(i, 0.5 + ((xi - 0.5) * (xi - 0.5)));
                     });
             }
@@ -289,34 +294,37 @@ namespace utopia {
         }
 
         void assembly_problem_type3() {
-            a_ = 0.0;
-            b_ = 1.0;
+            const Scalar a = 0.0;
+            const Scalar b = 1.0;
 
-            L_ = b_ - a_;
-            h_ = L_ / (n_ - 1);
+            const Scalar L = b - a;
+            const Scalar h = L / (n_ - 1);
 
-            init_memory();
+            // capture by value in lambda function, to avoid referencing this
+            const Scalar n = this->n_;
+
+            init_memory(h);
 
             {
                 auto rhs_view = view_device(rhs_);
                 parallel_for(
                     range_device(rhs_), UTOPIA_LAMBDA(const SizeType i) {
-                        Scalar xi = (h_ * i);
+                        Scalar xi = (h * i);
                         if (i == 0) {
                             rhs_view.set(i, 0.0);
-                        } else if (i == n_ - 1) {
+                        } else if (i == n - 1) {
                             rhs_view.set(i, 0.0);
                         } else {
                             rhs_view.set(i,
-                                         h_ * (9.0 * pi_ * pi_ * std::cos(3.0 * pi_ * xi)) +
-                                             (16.0 * pi_ * pi_ * std::sin(4.0 * pi_ * xi)));
+                                         h * (9.0 * pi_ * pi_ * device::cos(3.0 * pi_ * xi)) +
+                                             (16.0 * pi_ * pi_ * device::sin(4.0 * pi_ * xi)));
                         }
                     });
 
                 auto exact_sol_view = view_device(exact_sol_);
                 parallel_for(
                     range_device(exact_sol_), UTOPIA_LAMBDA(const SizeType i) {
-                        Scalar xi = (h_ * i);
+                        Scalar xi = (h * i);
                         // return xi * device::cos(xi);
                         return exact_sol_view.set(i, (device::sin(4.0 * pi_ * xi) + device::cos(xi * pi_ * 3.0)));
                     });
@@ -324,10 +332,10 @@ namespace utopia {
                 auto x0_view = view_device(x0_);
                 parallel_for(
                     range_device(x0_), UTOPIA_LAMBDA(const SizeType i) {
-                        Scalar xi = (h_ * i);
+                        Scalar xi = (h * i);
                         if (i == 0) {
                             x0_view.set(i, (device::sin(4.0 * pi_ * xi) + device::cos(xi * pi_ * 3.0)));
-                        } else if (i == n_ - 1) {
+                        } else if (i == n - 1) {
                             x0_view.set(i, (device::sin(4.0 * pi_ * xi) + device::cos(xi * pi_ * 3.0)));
                         } else {
                             x0_view.set(i, 0.0);
@@ -358,7 +366,7 @@ namespace utopia {
                 auto upper_bound_view = view_device(upper_bound);
                 parallel_for(
                     range_device(upper_bound), UTOPIA_LAMBDA(const SizeType i) {
-                        Scalar xi = (h_ * i);
+                        Scalar xi = (h * i);
                         Scalar periods = 4.0;
                         Scalar c = 2.0 * 3.14 * periods * (2.0 * xi - 1.0) / 2.0;
                         // device::cos
@@ -370,28 +378,31 @@ namespace utopia {
         }
 
         void assembly_problem_type4() {
-            a_ = 0.0;
-            b_ = 1.0;
+            const Scalar a = 0.0;
+            const Scalar b = 1.0;
 
-            L_ = b_ - a_;
-            h_ = L_ / (n_ - 1);
+            const Scalar L = b - a;
+            const Scalar h = L / (n_ - 1);
 
-            init_memory();
+            // capture by value in lambda function, to avoid referencing this
+            const Scalar n = this->n_;
+
+            init_memory(h);
 
             {
                 auto rhs_view = view_device(rhs_);
                 parallel_for(
                     range_device(rhs_), UTOPIA_LAMBDA(const SizeType i) {
-                        // Scalar xi = (h_ * i);
+                        // Scalar xi = (h * i);
                         if (i == 0) {
                             rhs_view.set(i, 0.0);
-                        } else if (i == n_ - 1) {
+                        } else if (i == n - 1) {
                             rhs_view.set(i, 0.0);
                         } else {
-                            if (i < n_ / 2.0) {
-                                rhs_view.set(i, h_ * 50.0);
+                            if (i < n / 2.0) {
+                                rhs_view.set(i, h * 50.0);
                             } else {
-                                rhs_view.set(i, h_ * -50.0);
+                                rhs_view.set(i, h * -50.0);
                             }
                         }
                     });
@@ -425,11 +436,10 @@ namespace utopia {
         }
 
     private:
-        const Scalar pi_;
-        const SizeType problem_type_;
+        static constexpr Scalar pi_{3.14159265358979323846};
 
-        Scalar a_, b_;
-        Scalar n_, L_, h_;
+        const SizeType problem_type_;
+        const Scalar n_;
 
         std::vector<SizeType> bc_indices_;
 
