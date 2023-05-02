@@ -289,7 +289,8 @@ namespace utopia {
             TpetraVectord v(layout(comm_, rows, Traits::determine()), 1.);
             TpetraVectord At_v = transpose(A) * v;
 
-            // each_read(At_v, [](const SizeType &, const double val) { utopia_test_assert(val <= 2. + 1e-16); });
+            each_read(At_v, [](const SizeType &, const double val) { utopia_test_assert(val <= 2. + 1e-16); });
+
             double s_At_v = At_v.norm1();
             utopia_test_assert(approxeq(s_At_v, size(A).get(0) * 2.));
         }
