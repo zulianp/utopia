@@ -37,6 +37,8 @@
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_impl.hpp"
 
+#include "utopia_petsc_Constraints.hpp"
+
 #include <chrono>
 #include <cmath>
 #include <random>
@@ -333,7 +335,7 @@ namespace utopia {
 
         void read(Input &in) override {
             in.get("disp_y", disp_y_);
-            in.get("disp_x", disp_x_);  
+            in.get("disp_x", disp_x_);
         }
 
         void emplace_time_dependent_BC(const Scalar &time) override {
@@ -360,11 +362,11 @@ namespace utopia {
                 2  // disp_y
             );
 
-             this->space_.emplace_dirichlet_condition(
-                 SideSet::right(),
-                 UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_ * time; },
-                 1  // disp_x
-             );
+            this->space_.emplace_dirichlet_condition(
+                SideSet::right(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_ * time; },
+                1  // disp_x
+            );
         }
 
     private:
@@ -404,17 +406,17 @@ namespace utopia {
                 1  // disp_x
             );
 
-//            this->space_.emplace_dirichlet_condition(
-//                SideSet::top(),
-//                UTOPIA_LAMBDA(const Point &)->Scalar { return disp_y_ * time; },
-//                2  // disp_y
-//            );
+            //            this->space_.emplace_dirichlet_condition(
+            //                SideSet::top(),
+            //                UTOPIA_LAMBDA(const Point &)->Scalar { return disp_y_ * time; },
+            //                2  // disp_y
+            //            );
 
-             this->space_.emplace_dirichlet_condition(
-                 SideSet::right(),
-                 UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_ * time; },
-                 1  // disp_x
-             );
+            this->space_.emplace_dirichlet_condition(
+                SideSet::right(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_ * time; },
+                1  // disp_x
+            );
         }
 
     private:
@@ -543,6 +545,69 @@ namespace utopia {
     private:
         Scalar disp_x_;
         Scalar disp_y_;
+    };
+
+    template <class FunctionSpace>
+    class FixedSubdomain2D : public BCSetup<FunctionSpace> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
+
+        FixedSubdomain2D(FunctionSpace &space,
+                         const Scalar &x_min = 0,
+                         const Scalar &y_min = 0,
+                         const Scalar &x_max = 1,
+                         const Scalar &y_max = 1,
+                         const Scalar &val = 0)
+            : BCSetup<FunctionSpace>(space), x_min_(x_min), y_min_(y_min), x_max_(x_max), y_max_(y_max), val_(val) {}
+
+        void read(Input &in) override {
+            in.get("fixed_x_min", x_min_);
+            in.get("fixed_y_min", y_min_);
+            in.get("fixed_x_max", x_max_);
+            in.get("fixed_y_max", y_max_);
+        }
+
+        void emplace_time_dependent_BC(const Scalar &) override {
+            using Point = typename FunctionSpace::Point;
+            this->space_.reset_constraints();
+
+            this->space_.emplace_constraint(
+                UTOPIA_LAMBDA(const Point &p)->bool {
+                    return p(0) >= x_min_ && p(1) >= y_min_ && p(0) <= x_max_ && p(1) <= y_max_;
+                },
+                UTOPIA_LAMBDA(const Point &)->Scalar { return val_; },
+                0);
+        }
+
+    private:
+        Scalar x_min_, y_min_;
+        Scalar x_max_, y_max_;
+        Scalar val_;
+    };
+
+    template <class FunctionSpace, class DirichletBC, class Constraints>
+    class DirichletAndVolConstraints : public BCSetup<FunctionSpace> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
+
+        DirichletAndVolConstraints(FunctionSpace &space)
+            : BCSetup<FunctionSpace>(space), bc_(space), constraints_(space) {}
+
+        void read(Input &in) override {
+            bc_.read(in);
+            constraints_.read(in);
+        }
+
+        void emplace_time_dependent_BC(const Scalar &t) override {
+            bc_.emplace_time_dependent_BC(t);
+            constraints_.emplace_time_dependent_BC(t);
+        }
+
+    private:
+        DirichletBC bc_;
+        Constraints constraints_;
     };
 
 }  // namespace utopia

@@ -6,6 +6,7 @@
 #include "utopia_Base.hpp"
 #include "utopia_Layout.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_ViewHost.hpp"
 
 #include "utopia_Function.hpp"
 
