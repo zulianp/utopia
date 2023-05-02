@@ -308,8 +308,8 @@ namespace utopia {
                             rhs_view.set(i, 0.0);
                         } else {
                             rhs_view.set(i,
-                                         h_ * (9.0 * pi_ * pi_ * std::cos(3.0 * pi_ * xi)) +
-                                             (16.0 * pi_ * pi_ * std::sin(4.0 * pi_ * xi)));
+                                         h_ * (9.0 * pi_ * pi_ * device::cos(3.0 * pi_ * xi)) +
+                                             (16.0 * pi_ * pi_ * device::sin(4.0 * pi_ * xi)));
                         }
                     });
 
