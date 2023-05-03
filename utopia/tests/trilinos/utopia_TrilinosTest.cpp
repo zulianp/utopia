@@ -787,10 +787,8 @@ namespace utopia {
 #ifdef UTOPIA_WITH_PETSC
             test_mg<PetscMatrix, PetscVector>();
 #endif  // UTOPIA_WITH_PETSC
-#ifndef KOKKOS_ENABLE_CUDA
             // trilinos version
             test_mg<TpetraMatrixd, TpetraVectord>();
-#endif  // KOKKOS_ENABLE_CUDA
         }
 
         void trilinos_mg() {
@@ -1178,9 +1176,7 @@ namespace utopia {
             // petsc version
             rmtr_test<PetscMatrix, PetscVector>();
 #endif  // UTOPIA_WITH_PETSC
-#ifndef KOKKOS_ENABLE_CUDA
             rmtr_test<TpetraMatrixd, TpetraVectord>();
-#endif  // KOKKOS_ENABLE_CUDA
         }
 
         void trilinos_matrix_norm() {
@@ -1533,10 +1529,8 @@ namespace utopia {
 
     void trilinos_interop_petsc() { TrilinosInteropPetscTest().run(); }
 
-#ifndef KOKKOS_ENABLE_CUDA
     // Implementation of ConvertTensor not compatible with mixed host/device memory space
     UTOPIA_REGISTER_TEST_FUNCTION(trilinos_interop_petsc);
-#endif  // KOKKOS_ENABLE_CUDA
 #endif  // UTOPIA_WITH_PETSC
 }  // namespace utopia
 
