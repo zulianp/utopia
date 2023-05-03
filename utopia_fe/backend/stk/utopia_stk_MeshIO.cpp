@@ -119,7 +119,7 @@ namespace utopia {
                     read_purpose = ::stk::io::READ_RESTART;
                 }
                 /////////////////////////////////////////////
-                bool auto_aura = false;
+                bool auto_aura = true;
                 in.get("auto_aura", auto_aura);
                 if (auto_aura) {
                     auto_aura_option = BulkData::AUTO_AURA;

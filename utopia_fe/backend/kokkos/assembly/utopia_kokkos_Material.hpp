@@ -66,6 +66,10 @@ namespace utopia {
                 bool ok = const_cast<Material *>(this)->apply_assemble(*sol, mode_);
                 assembler()->vector_assembly_end(y, mode_);
 
+                if (must_apply_constraints_) {
+                    assembler()->discretization()->space()->copy_at_constrained_nodes(x, y);
+                }
+
                 UTOPIA_TRACE_REGION_END("utopia::kokkos::Material::apply");
                 return ok;
             }
@@ -77,6 +81,9 @@ namespace utopia {
                 }
 
                 UTOPIA_TRACE_REGION_BEGIN("utopia::kokkos::Material::value");
+
+                // if (OVERWRITE_MODE == mode_)
+                // value = 0;
 
                 assembler()->scalar_assembly_begin(value, mode_);
 
@@ -113,6 +120,10 @@ namespace utopia {
 
                 assembler()->vector_assembly_end(g, mode_);
 
+                if (must_apply_constraints_) {
+                    assembler()->discretization()->space()->apply_zero_constraints(g);
+                }
+
                 UTOPIA_TRACE_REGION_END("utopia::kokkos::Material::gradient");
                 return ok;
             }
@@ -133,6 +144,10 @@ namespace utopia {
                 bool ok = const_cast<Material *>(this)->hessian_assemble(mode_);
 
                 assembler()->matrix_assembly_end(H, mode_);
+
+                if (must_apply_constraints_) {
+                    assembler()->discretization()->space()->apply_constraints(H);
+                }
 
                 UTOPIA_TRACE_REGION_END("utopia::kokkos::Material::hessian");
                 return ok;
@@ -161,8 +176,9 @@ namespace utopia {
                 environment_ = environment;
             }
 
-            std::vector<std::shared_ptr<Field>> field(const std::string &name,
-                                                      const typename Discretization::Part part = Discretization::all) {
+            std::vector<std::shared_ptr<Field>> field(
+                const std::string &name,
+                const typename Discretization::Part part = Discretization::all()) {
                 auto it = fields_.find(name);
                 if (it != fields_.end()) return it->second;
 
@@ -187,10 +203,14 @@ namespace utopia {
                     Utopia::Abort();
                 }
 
-                auto f = environment_->find_field(name, space);
+                auto f = environment_->find_field(*space, name);
+
+                if (!f) {
+                    return {};
+                }
 
                 auto &fef = fields_[name];
-                discretization->convert_field(f, fef, part);
+                discretization->convert_field(*f, fef, part);
 
                 UTOPIA_TRACE_REGION_END("utopia::kokkos::Material::field");
                 return fef;
@@ -202,11 +222,24 @@ namespace utopia {
                 // TODO
             }
 
+            // virtual void initialize(const std::shared_ptr<FunctionSpace> &space) = 0;
+
+            // virtual void initialize_boundary(const std::shared_ptr<FunctionSpace> &space,
+            //                                  const std::string &boundary_name) {
+            //     Utopia::Abort();
+            // }
+
+            // virtual void initialize_block(const std::shared_ptr<FunctionSpace> &space, const std::string &block_name)
+            // {
+            //     Utopia::Abort();
+            // }
+
         private:
             AssemblyMode mode_{OVERWRITE_MODE};
             std::shared_ptr<Assembler> assembler_;
             std::shared_ptr<Environment> environment_;
             std::map<std::string, std::vector<std::shared_ptr<Field>>> fields_;
+            bool must_apply_constraints_{true};
         };
     }  // namespace kokkos
 }  // namespace utopia

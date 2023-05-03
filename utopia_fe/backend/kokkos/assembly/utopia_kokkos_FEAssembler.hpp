@@ -611,6 +611,53 @@ namespace utopia {
             }
 
             template <class Op>
+            bool assemble_apply_ei_block(const std::string &name,
+                                         AssemblyMode mode,
+                                         Op op,
+                                         const Field<FE> &field,
+                                         const Part part = Discretization::all()) {
+                UTOPIA_TRACE_REGION_BEGIN("utopia::kokkos::FEAssembler::assemble_apply_ei_block");
+
+                ensure_vector_accumulator();
+
+                auto data = this->vector_data();
+                auto x = field.data();
+
+                const Scalar a = OVERWRITE_MODE == mode ? 0 : 1;
+                const Scalar b = SUBTRACT_MODE == mode ? -1 : 1;
+
+                const int n_shape_functions = this->fe().n_shape_functions();
+
+                this->loop_cell_test(
+                    name, UTOPIA_LAMBDA(const int cell, const int i) {
+                        StaticMatrix<Scalar, Op::NComponentsTest, Op::NComponentsTrial> block;
+                        block.set(0.);
+
+                        auto ixn = op.offset_test() + i * Op::NComponentsTest;
+
+                        // Evaluate block operator
+                        for (int j = 0; j < n_shape_functions; ++j) {
+                            auto jxn = op.offset_trial() + j * Op::NComponentsTrial;
+
+                            op(cell, i, j, block);
+
+                            for (int di = 0; di < Op::NComponentsTest; ++di) {
+                                Scalar val = 0;
+                                for (int dj = 0; dj < Op::NComponentsTrial; ++dj) {
+                                    val += block(di, dj) * x(jxn + dj);
+                                }
+
+                                auto &v = data(cell, ixn + di);
+                                v = a * v + b * val;
+                            }
+                        }
+                    });
+
+                UTOPIA_TRACE_REGION_END("utopia::kokkos::FEAssembler::assemble_apply_ei_block");
+                return true;
+            }
+
+            template <class Op>
             bool assemble_vector_ei_block(const std::string &name,
                                           AssemblyMode mode,
                                           Op op,
@@ -662,6 +709,7 @@ namespace utopia {
                         const Scalar val = op(cell, i);
                         auto &v = data(cell, i);
                         v = a * v + b * val;
+                        // printf("%d %d %g\n", cell, i, v);
                     });
 
                 UTOPIA_TRACE_REGION_END("utopia::kokkos::FEAssembler::assemble_vector_ei");
@@ -682,10 +730,10 @@ namespace utopia {
                 const Scalar a = OVERWRITE_MODE == mode ? 0 : 1;
                 const Scalar b = SUBTRACT_MODE == mode ? -1 : 1;
 
-                this->loop_cell_test(
+                this->loop_cell(
                     name, UTOPIA_LAMBDA(const int &cell) {
                         const Scalar val = op(cell);
-                        auto &v = data(cell);
+                        auto &v = data(cell, 0);
                         v = a * v + b * val;
                     });
 
@@ -748,26 +796,93 @@ namespace utopia {
                 return true;
             }
 
-            void matrix_assembly_begin(Matrix &, AssemblyMode) {}
+            void matrix_assembly_begin(Matrix &matrix, AssemblyMode mode) {
+                if (mode == OVERWRITE_MODE && (!matrix.empty() && matrix.is_assembled())) {
+                    matrix *= 0.0;
+                } else if (matrix.empty()) {
+                    this->discretization()->space()->create_matrix(matrix);
+                }
+
+                ensure_matrix_accumulator();
+                matrix_accumulator()->zero();
+            }
 
             void matrix_assembly_end(Matrix &matrix, AssemblyMode mode) {
                 this->discretization()->local_to_global({this->matrix_data()}, mode, matrix);
+
+                if (ensure_scalar_matrix) {
+                    if (matrix.is_block()) {
+                        matrix.convert_to_scalar_matrix();
+                    }
+                }
             }
 
-            void vector_assembly_begin(Vector &, AssemblyMode) {}
+            void vector_assembly_begin(Vector &vector, AssemblyMode mode) {
+                if (vector.empty()) {
+                    this->discretization()->space()->create_vector(vector);
+                }
+
+                if (mode == OVERWRITE_MODE) {
+                    vector.set(0);
+                }
+
+                ensure_vector_accumulator();
+                vector_accumulator()->zero();
+            }
 
             void vector_assembly_end(Vector &vector, AssemblyMode mode) {
-                // this->discretization()->local_to_global(this->vector_data(), mode, vector);
+                this->discretization()->local_to_global({this->vector_data()}, mode, vector);
             }
 
             void scalar_assembly_begin(Scalar &scalar, AssemblyMode mode) {
-                assert(false);
-                Utopia::Abort();
+                ensure_scalar_accumulator();
+                scalar_accumulator()->zero();
+
+                if (mode == OVERWRITE_MODE) {
+                    scalar = 0.0;
+                }
             }
 
             void scalar_assembly_end(Scalar &scalar, AssemblyMode mode) {
-                assert(false);
-                Utopia::Abort();
+                auto space = this->discretization()->space();
+
+                auto data = this->scalar_data();
+
+                std::vector<Scalar> scalars(1, 0);
+                this->discretization()->local_to_global({data}, scalars);
+                Scalar temp = scalars[0];
+
+                // Scalar temp = 0;
+                // Kokkos::parallel_reduce(
+                //     "scalar_assembly_end",
+                //     cell_range(),
+                //     UTOPIA_LAMBDA(const int i, Scalar &acc) { acc += data(i, 0); },
+                //     temp);
+
+                // assert(temp == temp);
+
+                // temp = space->comm().sum(temp);
+
+                // assert(temp == temp);
+
+                switch (mode) {
+                    case SUBTRACT_MODE: {
+                        scalar -= temp;
+                        break;
+                    }
+                    case OVERWRITE_MODE: {
+                        scalar = temp;
+                        break;
+                    }
+                    case ADD_MODE: {
+                        scalar += temp;
+                        break;
+                    }
+
+                    default: {
+                        break;
+                    }
+                }
             }
 
         private:
@@ -777,6 +892,8 @@ namespace utopia {
             std::shared_ptr<ScalarAccumulator> scalar_accumulator_;
             std::shared_ptr<Field<FE>> current_solution_;
             int n_vars_{1};
+
+            bool ensure_scalar_matrix{true};
         };
 
     }  // namespace kokkos

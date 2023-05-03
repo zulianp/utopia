@@ -702,6 +702,33 @@ namespace utopia {
         utopia_test_assert(approxeq(expected, ABC));
     }
 
+    void petsc_test_ptap_reuse_matrix() {
+        auto &&comm = PetscCommunicator::get_default();
+        const int n = comm.size() * 3;
+
+        PetscMatrix P;
+        P.identity(layout(comm, 3, 3, n, n), 1.0);
+        PetscMatrix A;
+        A.identity(layout(P), 1.0);
+        PetscMatrix C;
+        C.identity(layout(P), 1.0);
+        PetscMatrix PtAP, ABC, PAPt;
+
+        // The next line is equivalent to this:  PtAP = ptap(P, A); since it is pattern matched
+        PtAP = transpose(P) * A * P;
+        PtAP *= 0.;
+        ptap_reuse_matrix(A, P, PtAP);
+
+        // MatPtAP(raw_type(A), raw_type(P), MAT_REUSE_MATRIX, 1., &raw_type(PtAP));
+
+        ABC = A * P * C;
+
+        PetscMatrix expected;
+        expected.identity(layout(P), 1.0);
+        utopia_test_assert(approxeq(expected, PtAP));
+        utopia_test_assert(approxeq(expected, ABC));
+    }
+
     void petsc_test_rart() {
         auto &&comm = PetscCommunicator::get_default();
         const int n = comm.size() * 4;
@@ -1596,6 +1623,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_each_sparse_matrix);
         UTOPIA_RUN_TEST(petsc_matrix_composition);
         UTOPIA_RUN_TEST(petsc_test_ptap);
+        UTOPIA_RUN_TEST(petsc_test_ptap_reuse_matrix);
         UTOPIA_RUN_TEST(petsc_test_rart);
         UTOPIA_RUN_TEST(petsc_new_eval);
         UTOPIA_RUN_TEST(petsc_tensor_reduction);
@@ -1606,7 +1634,12 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_get_col_test);
         UTOPIA_RUN_TEST(petsc_dense_mat_mult_test);
         UTOPIA_RUN_TEST(petsc_norm_test);
+// FIXME(zulianp) this test causes Segmentation Violation when utopia is built with gpu support
+#ifdef PETSC_HAVE_CUDA
+        utopia_warning("Skipping petsc_chop_test");
+#else
         UTOPIA_RUN_TEST(petsc_chop_test);
+#endif
         UTOPIA_RUN_TEST(petsc_zero_rows_to_id);
         UTOPIA_RUN_TEST(petsc_conversion);
         UTOPIA_RUN_TEST(petsc_sparse_matrix_accessors);

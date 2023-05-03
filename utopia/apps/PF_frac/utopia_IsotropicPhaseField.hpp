@@ -327,12 +327,13 @@ namespace utopia {
                             el_energy += energy(this->params_, c[qp], c_grad_el[qp], tr, el_strain.strain[qp]) * dx(qp);
 
                             if (this->params_.use_penalty_irreversibility) {
-                                //if (mpi_world_rank()==0) utopia::out() << "Penalty: " << this->params_.penalty_param << std::endl;
+                                // if (mpi_world_rank()==0) utopia::out() << "Penalty: " << this->params_.penalty_param
+                                // << std::endl;
 
                                 auto c_cold = c[qp] - c_old[qp];
                                 auto c_cold_bracket = c_cold < 0.0 ? c_cold : 0.0;
-                                el_energy +=
-                                    this->params_.penalty_param_irreversible / 2.0 * c_cold_bracket * c_cold_bracket * dx(qp);
+                                el_energy += this->params_.penalty_param_irreversible / 2.0 * c_cold_bracket *
+                                             c_cold_bracket * dx(qp);
                             }
                         }
 
@@ -709,7 +710,8 @@ namespace utopia {
                                 if (this->params_.use_penalty_irreversibility) {
                                     auto c_cold = c[qp] - c_old[qp];
                                     auto c_cold_bracket = c_cold < 0.0 ? c_cold : 0.0;
-                                    c_el_vec(j) += this->params_.penalty_param_irreversible * c_cold_bracket * shape_test * dx(qp);
+                                    c_el_vec(j) +=
+                                        this->params_.penalty_param_irreversible * c_cold_bracket * shape_test * dx(qp);
                                 }
                             }
                         }
@@ -785,7 +787,7 @@ namespace utopia {
             Quadrature q;
 
             auto c_val = c_fun.value(q);
-            auto c_old = c_old_fun.value(q);  //E.P Added old value of damage at quadrature
+            auto c_old = c_old_fun.value(q);  // E.P Added old value of damage at quadrature
             auto p_val = press_fun.value(q);
 
             auto c_grad = c_fun.gradient(q);
@@ -811,7 +813,7 @@ namespace utopia {
                 auto space_view = this->space_.view_device();
 
                 auto c_view = c_val.view_device();
-                auto c_old_view = c_old.view_device();      //E.P getting view device of old damage within scope
+                auto c_old_view = c_old.view_device();  // E.P getting view device of old damage within scope
                 auto p_view = p_val.view_device();
 
                 auto c_grad_view = c_grad.view_device();
@@ -854,7 +856,7 @@ namespace utopia {
                         c_view.get(c_e, c);
                         p_view.get(c_e, p);
 
-                        StaticVector<Scalar, NQuadPoints> c_old;    //E.P Added c_old vector for penalty irreversability
+                        StaticVector<Scalar, NQuadPoints> c_old;  // E.P Added c_old vector for penalty irreversability
                         c_old_view.get(c_e, c_old);
 
                         auto dx = differential_view.make(c_e);
@@ -865,10 +867,13 @@ namespace utopia {
                         bool update_elast_tensor = false;
                         Point centroid;
                         c_e.centroid(centroid);
+
                         this->non_const_params().update(centroid, update_elast_tensor);
-                        //Getting new material parameter values
+
+                        // Getting new material parameter values
                         const Scalar mu = this->params_.mu;
                         const Scalar lambda = this->params_.lambda;
+
                         ////////////////////////////////////////////
 
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
@@ -901,11 +906,11 @@ namespace utopia {
                                                p[qp] * tr_strain_u * c_shape_j_l_prod * dx(qp);
                                     }
 
-
                                     if (this->params_.use_penalty_irreversibility) {
                                         auto c_cold = c[qp] - c_old[qp];
                                         auto c_heaviside = c_cold <= 0.0 ? 1.0 : 0.0;
-                                        val += c_heaviside* this->params_.penalty_param_irreversible * c_shape_j_l_prod * dx(qp);
+                                        val += c_heaviside * this->params_.penalty_param_irreversible *
+                                               c_shape_j_l_prod * dx(qp);
                                     }
 
                                     val = (l == j) ? (0.5 * val) : val;
@@ -919,16 +924,17 @@ namespace utopia {
                                 auto &&u_strain_shape_l = u_strain_shape_el(l, qp);
 
                                 for (SizeType j = l; j < U_NDofs; ++j) {
-                                // Varying stress tensor
-                                auto element_stress = 2.0 * mu * u_strain_shape_el(j, qp) +
-                                                    lambda * trace(u_strain_shape_el(j, qp)) * (device::identity<Scalar>());
-                                    Scalar val =
-                                        PhaseFieldFracBase<FunctionSpace, Dim>::bilinear_uu(
-                                            this->params_, c[qp], 
-                                            //p_stress_view.stress(j, qp),       //constant material props  
-                                            element_stress,                      //hetero material props
-                                            u_strain_shape_l) *
-                                        dx(qp);
+                                    // Varying stress tensor
+                                    auto element_stress =
+                                        2.0 * mu * u_strain_shape_el(j, qp) +
+                                        lambda * trace(u_strain_shape_el(j, qp)) * (device::identity<Scalar>());
+                                    Scalar val = PhaseFieldFracBase<FunctionSpace, Dim>::bilinear_uu(
+                                                     this->params_,
+                                                     c[qp],
+                                                     // p_stress_view.stress(j, qp),       //constant material props
+                                                     element_stress,  // hetero material props
+                                                     u_strain_shape_l) *
+                                                 dx(qp);
 
                                     val = (l == j) ? (0.5 * val) : val;
                                     el_mat(C_NDofs + l, C_NDofs + j) += val;
@@ -1110,10 +1116,7 @@ namespace utopia {
             // Post-processing functions
             // And write outputs
             this->export_strain_and_stress(output_path, x, time);
-            if (mpi_world_rank() == 0 )
-                std::cout << "Saving file: " << output_path << std::endl;
-
-
+            if (mpi_world_rank() == 0) std::cout << "Saving file: " << output_path << std::endl;
         }
     };
 

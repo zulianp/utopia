@@ -70,7 +70,6 @@ namespace utopia {
             if (dg >= 0.0) {
                 if (mpi_world_rank() == 0) {
                     std::cerr << "utopia::LS::backtracking:: d is not descent direction \n";
-                    return false;
                 }
 
                 alpha = 0.0;

@@ -76,6 +76,11 @@ namespace utopia {
                                          AssemblyMode mode,
                                          Vector &vec,
                                          const Part &part = Super::all()) override;
+
+        void local_to_global(const std::vector<ScalarAccumulator> &acc,
+                             std::vector<Scalar> &scalars,
+                             const Part &part = Super::all()) override;
+
         class Impl;
 
     private:

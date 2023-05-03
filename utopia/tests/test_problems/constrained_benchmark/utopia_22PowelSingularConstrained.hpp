@@ -54,8 +54,6 @@ namespace utopia {
 
         const Vector &exact_sol() const override { return unconstrained_.exact_sol(); }
 
-        Scalar min_function_value() const override { return 0.1878196e-3; }
-
     private:
         ExtendedPowell22<Matrix, Vector> unconstrained_;
     };

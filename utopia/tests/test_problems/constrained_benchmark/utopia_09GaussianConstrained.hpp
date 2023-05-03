@@ -51,8 +51,6 @@ namespace utopia {
 
         const Vector &exact_sol() const override { return unconstrained_.exact_sol(); }
 
-        Scalar min_function_value() const override { return 0.11279300 - 7; }
-
     private:
         Gaussian09<Matrix, Vector> unconstrained_;
     };

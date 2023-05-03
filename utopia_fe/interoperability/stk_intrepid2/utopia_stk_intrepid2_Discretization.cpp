@@ -117,4 +117,28 @@ namespace utopia {
         utopia::side_local_to_global(*this->space(), acc[0], mode, vec, part.name);
     }
 
+    void Discretization<stk_FS_t, stk_FE_t>::local_to_global(const std::vector<ScalarAccumulator> &acc,
+                                                             std::vector<Scalar> &scalars,
+                                                             const Part &part) {
+
+        auto n_elems = this->space()->mesh().n_local_elements();
+
+        Scalar summed = 0;
+        for (auto &a : acc) {
+            // auto data = a.data();
+
+            Scalar temp = 0;
+            Kokkos::parallel_reduce(
+                "scalar_local_to_global",
+                stk_FE_t::CellRange(0, n_elems),
+                UTOPIA_LAMBDA(const int i, Scalar &acc) { acc += a(i, 0); },
+                temp);
+
+            summed += temp;
+        }
+
+        summed = this->space()->comm().sum(summed);
+        scalars[0] = summed;
+    }
+
 }  // namespace utopia

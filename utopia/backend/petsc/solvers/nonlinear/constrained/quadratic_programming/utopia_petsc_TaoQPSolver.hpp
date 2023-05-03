@@ -32,6 +32,7 @@ namespace utopia {
         void set_linear_solver(const std::shared_ptr<LinearSolver> &linear_solver);
         void tao_type(const std::string &type);
         void read(Input &in) override;
+        std::shared_ptr<LinearSolver> linear_solver() const;
 
         Scalar atol() const override;
         Scalar rtol() const override;

@@ -42,8 +42,8 @@ namespace utopia {
             : TRSubproblem(),
               redundant_solve_flg_(redundant_flg)  //,{"stcg", "nash", "cgne", "gltr", "qcg"})
         {
-            this->ksp_type("stcg");
-            this->pc_type("jacobi");
+            this->ksp_type(KSPSTCG);
+            this->pc_type(PCJACOBI);
         }
 
         KSP_TR(const std::string &t, const std::string &pc_t = "jacobi", const bool redundant_flg = false)
@@ -72,8 +72,8 @@ namespace utopia {
             if (!redundant_solve_flg_) {
                 ksp_.ksp_type(ksp_type_name);
             } else {
-                ksp_.ksp_type("preonly");
-                ksp_.pc_type("redundant");
+                ksp_.ksp_type(KSPPREONLY);
+                ksp_.pc_type(PCREDUNDANT);
 
                 // setting up inner solver
                 PC pc_redundant;
@@ -89,8 +89,8 @@ namespace utopia {
             if (!redundant_solve_flg_) {
                 ksp_.pc_type(pc_type_name);
             } else {
-                ksp_.ksp_type("preonly");
-                ksp_.pc_type("redundant");
+                ksp_.ksp_type(KSPPREONLY);
+                ksp_.pc_type(PCREDUNDANT);
 
                 // setting up inner solver
                 PC pc_redundant;
@@ -123,8 +123,8 @@ namespace utopia {
                     PCSetType(pc_redundant, PCREDUNDANT);
                     PCRedundantSetNumber(pc_redundant, number);
 
-                    this->ksp_type("stcg");
-                    this->pc_type("jacobi");
+                    this->ksp_type(KSPSTCG);
+                    this->pc_type(PCJACOBI);
                 } else {
                     PCRedundantSetNumber(pc_redundant, number);
                 }
@@ -286,9 +286,9 @@ namespace utopia {
         static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
 
     public:
-        SteihaugToint(const std::string &preconditioner = "jacobi") : KSP_TR<Matrix, Vector, PETSC>() {
+        SteihaugToint(const std::string &preconditioner = PCJACOBI) : KSP_TR<Matrix, Vector, PETSC>() {
             this->ksp_.pc_type(preconditioner);
-            this->ksp_.ksp_type("stcg");
+            this->ksp_.ksp_type(KSPSTCG);
         }
 
         SteihaugToint<Matrix, Vector, PETSC> *clone() const override {
@@ -304,9 +304,9 @@ namespace utopia {
         static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
 
     public:
-        Nash(const std::string &preconditioner = "jacobi") : KSP_TR<Matrix, Vector, PETSC>() {
+        Nash(const std::string &preconditioner = PCJACOBI) : KSP_TR<Matrix, Vector, PETSC>() {
             this->ksp_.pc_type(preconditioner);
-            this->ksp_.ksp_type("nash");
+            this->ksp_.ksp_type(KSPNASH);
         }
 
         Nash<Matrix, Vector, PETSC> *clone() const override { return new Nash<Matrix, Vector, PETSC>(*this); }
@@ -320,9 +320,9 @@ namespace utopia {
         static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
 
     public:
-        Lanczos(const std::string &preconditioner = "jacobi") : KSP_TR<Matrix, Vector, PETSC>() {
+        Lanczos(const std::string &preconditioner = PCJACOBI) : KSP_TR<Matrix, Vector, PETSC>() {
             this->ksp_.pc_type(preconditioner);
-            this->ksp_.ksp_type("gltr");
+            this->ksp_.ksp_type(KSPGLTR);
         }
 
         Lanczos<Matrix, Vector, PETSC> *clone() const override { return new Lanczos<Matrix, Vector, PETSC>(*this); }
@@ -336,9 +336,9 @@ namespace utopia {
         static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
 
     public:
-        CGNE(const std::string &preconditioner = "jacobi") : KSP_TR<Matrix, Vector, PETSC>() {
+        CGNE(const std::string &preconditioner = PCJACOBI) : KSP_TR<Matrix, Vector, PETSC>() {
             this->ksp_.pc_type(preconditioner);
-            this->ksp_.ksp_type("cgne");
+            this->ksp_.ksp_type(KSPCGNE);
         }
 
         CGNE<Matrix, Vector, PETSC> *clone() const override { return new CGNE<Matrix, Vector, PETSC>(*this); }

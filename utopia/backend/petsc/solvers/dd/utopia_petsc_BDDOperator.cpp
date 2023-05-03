@@ -212,8 +212,9 @@ namespace utopia {
                 n_selected_after = comm.sum(n_selected_after);
 
                 std::stringstream ss;
-                ss << "n_selected_before:\t" << n_selected_before << "/" << mat.rows() << "\n";
-                ss << "n_selected_after:\t" << n_selected_after << "/" << mat.rows() << "\n";
+                ss << "Skeleton (before -> after): " << n_selected_before << " -> " << n_selected_after << " / "
+                   << mat.rows() << " dofs\n";
+
                 comm.root_print(ss.str());
             }
         }
@@ -349,8 +350,8 @@ namespace utopia {
             if (impl_->verbose) comm().root_print("Using amg(A_GG) preconditioner");
 
             auto solver = std::make_shared<KSPSolver<Matrix, Vector>>();
-            solver->ksp_type("preonly");
-            solver->pc_type("hypre");
+            solver->ksp_type(KSPPREONLY);
+            solver->pc_type(PCHYPRE);
             solver->update(reduced_matrix());
             solver->max_it(1);
             return solver;

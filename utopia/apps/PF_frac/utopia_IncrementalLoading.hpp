@@ -81,7 +81,7 @@ namespace utopia {
               shrinking_factor_(0.5),
               pressure0_(0.0),
               pressure_increase_factor_(0.0),
-              increase_factor_(2.0),
+              increase_factor_(1.0),
               fracture_energy_time_stepping_(false)
 
         {}
@@ -110,7 +110,6 @@ namespace utopia {
             in.get("increase_factor", increase_factor_);
 
             csv_file_name_ = this->output_path_ + "_energies.csv";
-
         }
 
         virtual void run() = 0;
@@ -192,13 +191,14 @@ namespace utopia {
         Scalar dt_min_{0}, dt_max_{1e3};
         Scalar frac_energy_min_change_{1e10};
         bool increase_next_time_step_{false};
-        Scalar increase_factor_;
+
+        Scalar increase_factor_{1};
 
         Vector solution_;
         Vector lb_;  // this is quite particular for PF-frac        E.P Question: What is this?
         Vector ub_;  // this is quite particular for PF-frac
 
-        //E.P For Exporting energy file and iterations
+        // E.P For Exporting energy file and iterations
         std::string csv_file_name_;
         bool fracture_energy_time_stepping_ = false;
     };
@@ -287,8 +287,8 @@ namespace utopia {
 
             space_.apply_constraints(this->solution_);
             fe_problem_->set_old_solution(this->solution_);
-            fe_problem_->write_to_file(this->output_path_, this->solution_, this->time_); //outputting initial stress file
-
+            fe_problem_->write_to_file(
+                this->output_path_, this->solution_, this->time_);  // outputting initial stress file
 
             UTOPIA_TRACE_REGION_END("IncrementalLoading::init_solution(...)");
         }
@@ -321,7 +321,7 @@ namespace utopia {
         void update_time_step(const SizeType &conv_reason, bool fracture_energy_monitoring = false) override {
             UTOPIA_TRACE_REGION_BEGIN("IncrementalLoading::update_time_step(...)");
 
-            if (!fracture_energy_monitoring){
+            if (!fracture_energy_monitoring) {
                 if (this->adjust_dt_on_failure_ && conv_reason < 0) {
                     // reset solution
                     fe_problem_->get_old_solution(this->solution_);
@@ -340,7 +340,7 @@ namespace utopia {
 
                     fe_problem_->set_old_solution(this->solution_);
 
-                    //Writing strain stress solution to file
+                    // Writing strain stress solution to file
                     fe_problem_->write_to_file(this->output_path_, this->solution_, this->time_);
 
                     // increment time step
@@ -364,9 +364,9 @@ namespace utopia {
                                           << " not reducing\n";
                         }
                     }
-                } // repeat step calibrated
+                }  // repeat step calibrated
 
-                if (repeat_step) { //repeat time step
+                if (repeat_step) {  // repeat time step
                     if (mpi_world_rank() == 0) {
                         utopia::out() << "------- Repeating time step\n";
                     }
@@ -377,8 +377,7 @@ namespace utopia {
                     fe_problem_->get_old_solution(this->solution_);
                     fe_problem_->set_dt(this->dt_);
 
-
-                } else { //Advance time step
+                } else {  // Advance time step
 
                     fe_problem_->set_old_solution(this->solution_);
                     fe_problem_->set_dt(this->dt_);
@@ -406,26 +405,23 @@ namespace utopia {
                     // Need to call for dynamic time stepping strategy that uses fracture energy
                     this->frac_energy_old_ = trial_fracture_energy;  // only store old value if we dont repeat
 
-                    //Writing strain stress solution to file
+                    // Writing strain stress solution to file
                     fe_problem_->write_to_file(this->output_path_, this->solution_, this->time_);
                     export_energies_csv(trial_fracture_energy);
 
                     // Advancing time step (no Second Phase - E.P Taken away )
                     this->time_ += this->dt_;  // increment time step
-
                 }
-
             }
 
             UTOPIA_TRACE_REGION_END("IncrementalLoading::update_time_step(...)");
         }
 
-
         void export_energies_csv(Scalar fracture_energy) {
             if (!this->csv_file_name_.empty()) {
                 CSVWriter writer{};
-                Scalar elastic_energy = 0.0, ela_en_mid = 0.0, fra_en_mid=0.0, tcv = 0.0, error_cod = 0.0, residual = 0.0,
-                       iterations = 0.0;
+                Scalar elastic_energy = 0.0, ela_en_mid = 0.0, fra_en_mid = 0.0, tcv = 0.0, error_cod = 0.0,
+                       residual = 0.0, iterations = 0.0;
 
                 fe_problem_->elastic_energy(this->solution_, elastic_energy);
                 fe_problem_->elastic_energy_in_middle_layer(this->solution_, ela_en_mid);
@@ -433,8 +429,8 @@ namespace utopia {
 
                 fe_problem_->compute_tcv(this->solution_, tcv);
 
-                //residual = rmtr_->get_gnorm();
-                //iterations = rmtr_->get_total_iterations();
+                // residual = rmtr_->get_gnorm();
+                // iterations = rmtr_->get_total_iterations();
                 if (FunctionSpace::Dim == 3) {
                     fe_problem_->compute_cod(this->solution_, error_cod);
                 }
@@ -442,8 +438,13 @@ namespace utopia {
                 if (mpi_world_rank() == 0) {
                     if (!writer.file_exists(this->csv_file_name_)) {
                         writer.open_file(this->csv_file_name_);
-                        writer.write_table_row<std::string>(
-                            {"time step", "time", "elastic_energy", "fracture_energy", "elast_en_mid_layer","frac_en_mid_layer", "total_crack_vol"});
+                        writer.write_table_row<std::string>({"time step",
+                                                             "time",
+                                                             "elastic_energy",
+                                                             "fracture_energy",
+                                                             "elast_en_mid_layer",
+                                                             "frac_en_mid_layer",
+                                                             "total_crack_vol"});
                     } else {
                         writer.open_file(this->csv_file_name_);
                     }
@@ -454,15 +455,11 @@ namespace utopia {
                                                     fracture_energy,
                                                     ela_en_mid,
                                                     fra_en_mid,
-                                                    tcv
-                                                    });
+                                                    tcv});
                     writer.close_file();
                 }
             }
         }
-
-
-
 
         // allow passing solver
         void run() override {
@@ -478,8 +475,8 @@ namespace utopia {
             while (this->time_ < this->final_time_) {
                 if (mpi_world_rank() == 0) {
                     utopia::out() << "###################################################################### \n";
-                    utopia::out() << "Time-step: " << this->time_step_counter_ << "  time:  " << this->time_ << "  dt:  " << this->dt_
-                                  << " \n";
+                    utopia::out() << "Time-step: " << this->time_step_counter_ << "  time:  " << this->time_
+                                  << "  dt:  " << this->dt_ << " \n";
                     utopia::out() << "###################################################################### \n";
                     utopia::out() << "use_box_constraints_  " << use_box_constraints_ << "  \n";
                 }
@@ -542,7 +539,7 @@ namespace utopia {
                 // auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
                 // linear_solver->atol(1e-14);
                 // linear_solver->max_it(10000);
-                // linear_solver->pc_type("ilu");
+                // linear_solver->pc_type(PCILU);
 
                 // // AffineSimilarity<PetscMatrix, PetscVector> solver(linear_solver);
                 // ASTRUM<PetscMatrix, PetscVector> solver(linear_solver);
@@ -582,7 +579,7 @@ namespace utopia {
         InitialCondition<FunctionSpace> &IC_;
         BCSetup<FunctionSpace> &BC_;
 
-        bool use_box_constraints_;
+        bool use_box_constraints_{false};
 
         std::shared_ptr<ProblemType> fe_problem_;
         std::shared_ptr<TrustRegionVariableBound<Matrix, Vector>> tr_solver_box_;

@@ -32,6 +32,8 @@
 #cmakedefine UTOPIA_WITH_VC
 #cmakedefine UTOPIA_WITH_METIS
 #cmakedefine UTOPIA_WITH_PARMETIS
+#cmakedefine UTOPIA_WITH_MATRIX_IO
+#cmakedefine UTOPIA_ENABLE_ISOLVER
 // #cmakedefine UTOPIA_WITH_KOKKOS_SIMD
 
 #cmakedefine UTOPIA_PETSC_VERSION_MAJOR

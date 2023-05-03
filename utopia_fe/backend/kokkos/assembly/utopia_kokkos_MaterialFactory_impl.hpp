@@ -3,7 +3,9 @@
 
 #include "utopia_kokkos_MaterialFactory.hpp"
 
+#include "utopia_kokkos_ForcingFunction_new.hpp"
 #include "utopia_kokkos_LaplaceOperator_new.hpp"
+#include "utopia_kokkos_Mass_new.hpp"
 
 #include "utopia_hyperelasticity_NeoHookeanOgden_2.hpp"
 #include "utopia_hyperelasticity_NeoHookeanOgden_3.hpp"
@@ -30,7 +32,8 @@ namespace utopia {
             using Scalar_t = typename Traits<FunctionSpace>::Scalar;
 
             using Material_t = utopia::Material<FunctionSpace, FE>;
-            using MaterialPtr_t = std::unique_ptr<Material_t>;
+            // using MaterialPtr_t = std::unique_ptr<Material_t>;
+            using MaterialPtr_t = std::unique_ptr<utopia::AbstractMaterial<FunctionSpace>>;
 
             MaterialPtr_t make(const int ndims, const std::string name) {
                 std::string type = name;
@@ -50,8 +53,13 @@ namespace utopia {
                 return mat;
             }
 
+            void register_rhs_materials() {
+                register_material<ForcingFunctionNew<FunctionSpace, FE>>("ForcingFunction");
+            }
+
             void register_materials() {
                 register_material<LaplaceOperatorNew<FunctionSpace, FE>>("LaplaceOperator");
+                register_material<MassNew<FunctionSpace, FE>>("Mass");
                 register_porous_media_materials();
                 register_hyperelastic_materials();
             }
@@ -102,7 +110,7 @@ namespace utopia {
         };
 
         template <class FunctionSpace, class FE>
-        std::unique_ptr<utopia::Material<FunctionSpace, FE>> MaterialFactory<FunctionSpace, FE>::make(
+        std::unique_ptr<utopia::AbstractMaterial<FunctionSpace>> MaterialFactory<FunctionSpace, FE>::make(
             const int ndims,
             const std::string &name) {
             static Impl impl;

@@ -481,7 +481,7 @@ namespace utopia {
                     this->~ObstacleStabilizedVelocityNewmark();
                     g.comm().barrier();
                     assert(false);
-                    Utopia::Abort("barrier_gradient: NaN detected!");
+                    Utopia::Abort("ObstacleStabilizedVelocityNewmark::barrier_gradient: NaN detected!");
                 }
             }
         }

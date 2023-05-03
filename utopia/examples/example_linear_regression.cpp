@@ -169,11 +169,12 @@ namespace utopia {
                 auto h_view = const_local_view_device(*h_);
                 auto y_view = const_local_view_device(y_);
 
-                parallel_for(local_range_device(*errors_), UTOPIA_LAMBDA(const SizeType &i) {
-                    const auto yi = y_view.get(i);
-                    const auto hi = h_view.get(i);
-                    squared_errors_view.set(i, (hi - yi) * (hi - yi));
-                });
+                parallel_for(
+                    local_range_device(*errors_), UTOPIA_LAMBDA(const SizeType &i) {
+                        const auto yi = y_view.get(i);
+                        const auto hi = h_view.get(i);
+                        squared_errors_view.set(i, (hi - yi) * (hi - yi));
+                    });
             }
 
             /**
@@ -295,7 +296,7 @@ void test() {
     auto precond = hess_approx->build_Hinv_precond();
     lsolver->set_preconditioner(precond);
 
-    QuasiNewton<Vector> solverQN(hess_approx, lsolver);
+    QuasiNewton<Matrix, Vector> solverQN(hess_approx, lsolver);
     /** Constructing the initial guess */
     /** solverQN.verbose(true); */
     solverQN.solve(newLinearRegression, x);

@@ -526,6 +526,7 @@ namespace utopia {
 
         ///< Scalar>AXPY - y = a*x + y
         void axpy(const Scalar &a, const PetscMatrix &x) override;
+        void axpy_subset(const Scalar &a, const PetscMatrix &x);
 
         ///< Scalar>DOT - dot product
         Scalar dot(const PetscMatrix & /*other*/) const override {
@@ -646,6 +647,16 @@ namespace utopia {
             update_mirror();
         }
 
+        void wrap(MPI_Comm comm,
+                  const PetscInt rows_local,
+                  const PetscInt cols_local,
+                  const PetscInt rows_global,
+                  const PetscInt cols_global,
+                  PetscInt *rowptr,
+                  PetscInt *colidx,
+                  PetscScalar *values,
+                  std::function<void()> destroy_callback);
+
         void own(Mat &mat) {
             wrapper_ = std::make_shared<PetscMatrixMemory>(mat, true);
             update_mirror();
@@ -725,6 +736,22 @@ namespace utopia {
         inline bool read(const std::string &path) { return read(comm().get(), path); }
 
         bool read(MPI_Comm comm, const std::string &path);
+
+#ifdef UTOPIA_WITH_MATRIX_IO
+        bool read_raw(MPI_Comm comm,
+                      const std::string &rowptr_path,
+                      const std::string &colidx_path,
+                      const std::string &values_path,
+                      const std::string &rowptr_type,
+                      const std::string &colidx_type,
+                      const std::string &values_type);
+
+        bool read_raw(MPI_Comm comm,
+                      const std::string &rowptr_path,
+                      const std::string &colidx_path,
+                      const std::string &values_path);
+#endif  // UTOPIA_WITH_MATRIX_IO
+
         void copy_from(Mat mat);
         void copy_to(Mat mat) const;
         void copy_to(Mat *mat) const;
@@ -876,7 +903,10 @@ namespace utopia {
         //  	SizeType o_nnz
         // );
 
-        inline void destroy() { wrapper_->destroy(); }
+        inline void destroy() {
+            wrapper_->destroy();
+            if (destroy_callback) destroy_callback();
+        }
 
         void inverse(PetscMatrix &result) const;
 
@@ -929,6 +959,7 @@ namespace utopia {
     private:
         PetscCommunicator comm_;
         std::shared_ptr<PetscMatrixMemory> wrapper_;
+        std::function<void()> destroy_callback;
 
         inline static bool check_error(const SizeType err) { return PetscErrorHandler::Check(err); }
 

@@ -29,6 +29,5 @@
 // TODO::make them follow interface
 #include "utopia_QPTestFunction2D.hpp"
 #include "utopia_RastriginTestFunction.hpp"
-#include "utopia_TestFunctionsND.hpp"
 
 #endif  // UTOPIA_UNCONSTRAINED_TEST_SET_INCLUDES
