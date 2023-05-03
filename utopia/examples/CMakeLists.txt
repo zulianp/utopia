@@ -3,6 +3,11 @@ add_executable(example_hello_world EXCLUDE_FROM_ALL example_hello_world.cpp)
 utopia_link_default_targets(example_hello_world)
 target_link_libraries(example_hello_world PRIVATE utopia)
 
+# GradientDescent and QuasiNewton comparision
+add_executable(example_linear_regression EXCLUDE_FROM_ALL example_linear_regression.cpp)
+utopia_link_default_targets(example_linear_regression)
+target_link_libraries(example_linear_regression PRIVATE utopia)
+
 # Assemble and solve a linear system
 add_executable(example_solve_PDE_1D EXCLUDE_FROM_ALL example_solve_PDE_1D.cpp)
 utopia_link_default_targets(example_solve_PDE_1D)
@@ -53,6 +58,7 @@ add_custom_target(utopia_examples)
 add_dependencies(
     utopia_examples
     example_hello_world
+    example_linear_regression
     example_solve_PDE_1D
     example_loops
     example_nonlinear_solve

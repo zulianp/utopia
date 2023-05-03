@@ -49,7 +49,6 @@ namespace utopia {
         }
 
         void init_memory(const Layout &layout) override {
-            assert(layout.local_size() > 0);
             OperatorBasedLinearSolver<Matrix, Vector>::init_memory(layout);
 
             // resets all buffers in case the size has changed

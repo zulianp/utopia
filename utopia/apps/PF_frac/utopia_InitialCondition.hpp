@@ -677,6 +677,91 @@ namespace utopia {
 
 
     template <class FunctionSpace>
+    class DamagedSedimentaryLayers: public InitialCondition<FunctionSpace> {
+    public:
+        // using Comm           = typename FunctionSpace::Comm;
+        using Mesh = typename FunctionSpace::Mesh;
+        using Elem = typename FunctionSpace::Shape;
+        using ElemView = typename FunctionSpace::ViewDevice::Elem;
+        using SizeType = typename FunctionSpace::SizeType;
+        using Scalar = typename FunctionSpace::Scalar;
+        using Dev = typename FunctionSpace::Device;
+        using Point = typename FunctionSpace::Point;
+        using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+        static const int NNodes = Elem::NNodes;
+
+        DamagedSedimentaryLayers(FunctionSpace &space, const SizeType &PF_component)
+            : InitialCondition<FunctionSpace>(space), PF_component_(PF_component){}
+
+        void read(Input & in) override {
+            in.get("top_layer_height", ymax_);
+            in.get("bottom_layer_height", ymin_);
+        }
+
+        void init(PetscVector &x) override {
+            using CoeffVector = utopia::StaticVector<Scalar, NNodes>;
+            // un-hard-code
+            auto C = this->space_.subspace(PF_component_);
+            int  total_nodes = this->space_.mesh().n_nodes();
+            auto min_elem = this->space_.mesh().min_spacing();
+
+            auto xyz_min = this->space_.mesh().box_min();
+            auto xyz_max = this->space_.mesh().box_max();
+
+            auto height = xyz_max(1) - xyz_min(1);
+            auto width  = xyz_max(0) - xyz_min(0);
+
+            double width_x = width / 10.0;
+            double height_min = ymin_;
+            double height_max = ymax_;
+            double damage_threshold = 1.;
+
+            std::default_random_engine generator;
+            std::poisson_distribution<int> distribution(4);
+
+            if (mpi_world_rank() == 0) {
+                utopia::out() << "rand: " << double(rand())/RAND_MAX << "  \n";
+            }
+
+            std::vector<Rectangle<Scalar>> rectangles;
+
+            int seed = mpi_world_rank()*total_nodes;
+            generator.seed(seed);
+
+            auto sampler = utopia::sampler(C, [&generator, &distribution, xyz_min, xyz_max, width_x, height_min, height_max, total_nodes, damage_threshold](const Point &x) -> Scalar {
+                if ( x(1) < height_max && x(1) > height_min &&
+                     x(0) > xyz_min(0) + width_x && x(0) < xyz_max(0) - width_x ) {
+                    double random_damage = double(distribution(generator))/10.0;
+                    if (random_damage >= damage_threshold) return 1.0;
+                    else return 0.0;
+                } else return 0.0;
+                });
+
+            {
+                auto C_view = C.view_device();
+                auto sampler_view = sampler.view_device();
+                auto x_view = this->space_.assembly_view_device(x);
+
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
+
+                        CoeffVector s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
+            }
+        }
+
+    private:
+        SizeType PF_component_;
+        Scalar ymin_, ymax_;
+    };
+
+
+
+    template <class FunctionSpace>
     class HomogeneousBar: public InitialCondition<FunctionSpace> {
     public:
         // using Comm           = typename FunctionSpace::Comm;

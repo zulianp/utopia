@@ -12,7 +12,10 @@ namespace utopia {
         template <class FunctionSpace, class FE>
         class MaterialFactory {
         public:
-            static std::unique_ptr<utopia::Material<FunctionSpace, FE>> make(const int ndims, const std::string &name);
+            // static std::unique_ptr<utopia::Material<FunctionSpace, FE>> make(const int ndims, const std::string
+            // &name);
+            static std::unique_ptr<utopia::AbstractMaterial<FunctionSpace>> make(const int ndims,
+                                                                                 const std::string &name);
             class Impl;
         };
 

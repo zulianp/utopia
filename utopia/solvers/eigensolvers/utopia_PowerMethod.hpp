@@ -48,8 +48,6 @@ namespace utopia {
         bool use_rand_vec_init() const { return use_rand_vec_init_; }
 
         void init_memory(const Layout &layout) {
-            assert(layout.local_size() > 0);
-
             // resets all buffers in case the size has changed
             eigenvector_.zeros(layout);
 

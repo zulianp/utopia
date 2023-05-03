@@ -1,6 +1,15 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(utopia)
+
+project(
+  utopia
+  VERSION 0.2.0
+  LANGUAGES "CXX" "C"
+  HOMEPAGE_URL "https://bitbucket.org/zulianp/utopia/src/master/"
+  DESCRIPTION
+    "Utopia is an open-source nonlinear algenra library"
+)
+
 cmake_policy(SET "CMP0079" NEW)
 
 set(UTOPIA_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
@@ -84,6 +93,7 @@ option(UTOPIA_ENABLE_DEPRECATED_API
        "Decprecated functionality that will be removed in the future" ON)
 option(UTOPIA_ENABLE_TINY_EXPR "String expressions support" ON)
 option(UTOPIA_ENABLE_RAPIDJSON "Enable support for JSON input files" ON)
+option(UTOPIA_ENABLE_MATRIX_IO "Enable support for reading matrices with matrix.io" OFF)
 option(UTOPIA_ENABLE_YAML_CPP "Enable YAML support" ON)
 
 option(UTOPIA_ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
@@ -362,6 +372,61 @@ endfunction()
 
 # ##############################################################################
 
+function(utopia_add_external_library libraryRootDir subDirs)
+    set(THIS_MODULE_SOURCES "")
+    set(THIS_MODULE_HEADERS "")
+    find_project_files(${libraryRootDir} "${subDirs}" THIS_MODULE_HEADERS
+                       THIS_MODULE_SOURCES)
+
+    message(STATUS "THIS_MODULE_SOURCES=${THIS_MODULE_SOURCES}")
+    target_sources(
+        utopia
+        PRIVATE ${THIS_MODULE_SOURCES}
+        PRIVATE ${THIS_MODULE_HEADERS})
+
+    install(FILES ${THIS_MODULE_HEADERS} DESTINATION include)
+    foreach(MODULE ${subDirs})
+        target_include_directories(
+            utopia BEFORE PUBLIC $<BUILD_INTERFACE:${libraryRootDir}/${MODULE}>)
+    endforeach(MODULE)
+endfunction()
+
+# ##############################################################################
+
+# function(find_external_files rootPath dirPaths headers sources)
+#     set(verbose TRUE)
+
+#     set(theaders ${${headers}})
+#     set(tsources ${${sources}})
+
+#     foreach(INCLUDE_PATH ${dirPaths})
+#         # INCLUDE_DIRECTORIES(${rootPath}/${INCLUDE_PATH})
+
+#         file(GLOB TEMP_HPPSRC CONFIGURE_DEPENDS
+#              "${rootPath}/${INCLUDE_PATH}/*.cpp")
+#         file(GLOB TEMP_SRC CONFIGURE_DEPENDS "${rootPath}/${INCLUDE_PATH}/*.c")
+#         file(GLOB TEMP_HPPDR CONFIGURE_DEPENDS
+#              "${rootPath}/${INCLUDE_PATH}/*.hpp")
+#         file(GLOB TEMP_HDR CONFIGURE_DEPENDS "${rootPath}/${INCLUDE_PATH}/*.h")
+
+#         source_group(
+#             ${INCLUDE_PATH} FILES ${TEMP_HPPDR}; ${TEMP_HDR}; ${TEMP_HPPSRC};
+#                                   ${TEMP_SRC}; ${TEMP_UI})
+
+#         set(tsources ${tsources}; ${TEMP_SRC}; ${TEMP_HPPSRC})
+#         set(theaders ${theaders}; ${TEMP_HDR}; ${TEMP_HPPDR})
+#     endforeach(INCLUDE_PATH)
+
+#     set(${headers}
+#         ${theaders}
+#         PARENT_SCOPE)
+#     set(${sources}
+#         ${tsources}
+#         PARENT_SCOPE)
+# endfunction()
+
+# ##############################################################################
+
 function(append_list_to_string_for_makefile OUTPUT_STRING PRE_LIST POST_LIST
          ITEM_PREFIX LIST_OF_STRINGS)
     # http://stackoverflow.com/questions/5248749/passing-a-list-to-a-cmake-macro
@@ -457,6 +522,7 @@ if(UTOPIA_INSTALL_PETSC_DEBUG)
     include(InstallPetscDebug)
 endif()
 
+
 # using this to defining UTOPIA_LAMBDA correctly
 if(UTOPIA_ENABLE_TRILINOS)
     find_package(Trilinos)
@@ -476,6 +542,20 @@ list(APPEND UTOPIA_HEADERS utopia.hpp utopia_Base.hpp utopia_Instance.hpp
 
 list(APPEND UTOPIA_SOURCES utopia.cpp utopia_Instance.cpp utopia_Base.cpp)
 add_library(utopia ${UTOPIA_SOURCES})
+
+if(UTOPIA_ENABLE_MATRIX_IO)
+    find_path(
+        MATRIX_IO_DIR
+        NAMES  matrixio_crs.h
+        HINTS ${MATRIX_IO_DIR} $ENV{MATRIX_IO_DIR}/matrix.io ${CMAKE_CURRENT_SOURCE_DIR}/external/matrix.io
+    )
+    
+    if(MATRIX_IO_DIR)
+        utopia_add_external_library(${MATRIX_IO_DIR} ".")
+        set(UTOPIA_WITH_MATRIX_IO ON)
+    endif()
+
+endif()
 
 # if(UTOPIA_ENABLE_KOKKOS_SIMD) set(UTOPIA_WITH_KOKKOS_SIMD TRUE)
 
@@ -542,6 +622,12 @@ if(UTOPIA_ENABLE_PARMETIS)
     add_subdirectory(backend/parmetis)
 endif()
 
+
+include(UtopiaISolver)
+if(UTOPIA_ENABLE_ISOLVER)
+    add_subdirectory(plug_in_and_out/isolver)
+endif()
+
 # weird stuff goes here
 if(USE_SPIKE_SOLVERS)
     list(APPEND UTOPIA_MODULES spike/solvers)
@@ -591,19 +677,19 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/utopia_compiler_features.hpp
 # test suite
 add_executable(utopia_test EXCLUDE_FROM_ALL test.cpp)
 utopia_link_default_targets(utopia_test)
-target_link_libraries(utopia_test PRIVATE utopia)
+target_link_libraries(utopia_test PRIVATE utopia  ${CMAKE_DL_LIBS})
 include(tests/tests.cmake)
 
 # bench suite
 add_executable(utopia_bench EXCLUDE_FROM_ALL bench.cpp)
 utopia_link_default_targets(utopia_bench)
-target_link_libraries(utopia_bench PRIVATE utopia)
+target_link_libraries(utopia_bench PRIVATE utopia  ${CMAKE_DL_LIBS})
 include(benchmarks/benchmarks.cmake)
 
 # apps suite
 add_executable(utopia_exec EXCLUDE_FROM_ALL main.cpp)
 utopia_link_default_targets(utopia_exec)
-target_link_libraries(utopia_exec PRIVATE utopia)
+target_link_libraries(utopia_exec PRIVATE utopia  ${CMAKE_DL_LIBS})
 include(apps/apps.cmake)
 
 install(FILES ${UTOPIA_ROOT_PATH}/utopia.hpp DESTINATION include)

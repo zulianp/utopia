@@ -74,4 +74,10 @@ namespace utopia {
         this->space()->handler()->local_to_global_on_boundary(acc, mode, vec, part);
     }
 
+    void Discretization<mars_FS_t, mars_FE_t>::local_to_global(const std::vector<ScalarAccumulator> &acc,
+                                                               std::vector<Scalar> &scalars,
+                                                               const Part &part) {
+        this->space()->handler()->local_to_global(this->space()->comm(), acc, scalars, part);
+    }
+
 }  // namespace utopia

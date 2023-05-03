@@ -211,7 +211,7 @@ namespace utopia {
             }
 
             // auto ls = std::make_shared<GMRES<Matrix, Vector>>();
-            // ls->pc_type("bjacobi");
+            // ls->pc_type(PCBJACOBI);
             // tr_strategy_coarse = std::make_shared<utopia::SemismoothNewton<Matrix,
             // Vector>>(ls);
 
@@ -420,8 +420,8 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("MLIncrementalLoading::prepare_for_solve(...)");
         }
 
-        //NO ALTERNATIVE FOR Fracture_energy_monitoring=false
-        void update_time_step(const SizeType &conv_reason, bool ) override {
+        // NO ALTERNATIVE FOR Fracture_energy_monitoring=false
+        void update_time_step(const SizeType &conv_reason, bool) override {
             UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::update_time_step(...)");
 
             bool repeat_step = this->adjust_dt_on_failure_ && conv_reason < 0;
@@ -570,12 +570,13 @@ namespace utopia {
                         writer.open_file(this->csv_file_name_);
                     }
 
-                    writer.write_table_row<Scalar>({Scalar(this->time_step_counter_),
+                    writer.write_table_row<Scalar>({static_cast<Scalar>(this->time_step_counter_),
                                                     this->time_,
                                                     elastic_energy,
                                                     fracture_energy,
                                                     residual,
                                                     iterations});
+
                     writer.close_file();
                 }
             }
@@ -683,7 +684,7 @@ namespace utopia {
                 }
 
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////
-                update_time_step(sol_status.reason, true); //ML Incremenet only does frac energy monitoring
+                update_time_step(sol_status.reason, true);  // ML Incremenet only does frac energy monitoring
             }
 
             UTOPIA_TRACE_REGION_END("MLIncrementalLoading::run(...)");

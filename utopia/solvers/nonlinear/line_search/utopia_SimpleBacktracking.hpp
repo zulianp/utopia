@@ -53,7 +53,6 @@ namespace utopia {
 
             if (g_p > 0) {
                 utopia::out() << (" p_k is not descent direction   \n");
-                return false;
             }
 
             E_k1 = E_k;

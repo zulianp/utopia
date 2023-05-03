@@ -11,7 +11,7 @@ namespace utopia {
      * @tparam     Matrix
      * @tparam     Vector
      */
-    template <class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
+    template <class Matrix, class Vector = typename Traits<Matrix>::Vector, int Backend = Traits<Vector>::Backend>
     class ConjugateGradient final : public OperatorBasedLinearSolver<Matrix, Vector> {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;

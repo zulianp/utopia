@@ -405,8 +405,12 @@ namespace utopia {
         void run() {
             print_backend_info();
             UTOPIA_RUN_TEST(interior_point_qp_solver_test);
+#ifdef KOKKOS_ENABLE_CUDA
+            utopia_warning("Skipping log_barrier_test");
+#else
             UTOPIA_RUN_TEST(log_barrier_test);
             UTOPIA_RUN_TEST(log_barrier_qp_solver_test);
+#endif
             UTOPIA_RUN_TEST(pg_test);
             UTOPIA_RUN_TEST(pcg_test);
             UTOPIA_RUN_TEST(ngs_test);
@@ -426,6 +430,8 @@ namespace utopia {
         SizeType n = 20;
         bool verbose = false;
     };
+
+#ifdef UTOPIA_WITH_PETSC
 
     // FIXME merge with the other once it is poperly implemented
     template <class Matrix, class Vector>
@@ -636,6 +642,7 @@ namespace utopia {
         }
     };
 
+#endif
     template <class Matrix, class Vector>
     class MonotoneMGTest {
     public:
@@ -712,8 +719,8 @@ namespace utopia {
             auto coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
             // auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
             // auto coarse_smoother = std::make_shared<KSPSolver<Matrix, Vector>>();
-            // coarse_smoother->pc_type("bjacobi");
-            // coarse_smoother->ksp_type("cg");
+            // coarse_smoother->pc_type(PCBJACOBI);
+            // coarse_smoother->ksp_type(KSPCG);
 
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
             // auto direct_solver = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();

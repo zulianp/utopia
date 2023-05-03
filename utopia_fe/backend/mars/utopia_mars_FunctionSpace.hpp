@@ -110,6 +110,11 @@ namespace utopia {
                                          Vector &vec,
                                          const KokkosDiscretization::Part &part = KokkosDiscretization::all()) = 0;
 
+            virtual void local_to_global(const Comm &comm,
+                                         const std::vector<KokkosDiscretization::ScalarAccumulator> &acc,
+                                         std::vector<Scalar> &scalars,
+                                         const Part &part = KokkosDiscretization::all()) = 0;
+
             virtual void local_to_global_on_boundary(
                 const std::vector<KokkosDiscretization::VectorAccumulator> &acc,
                 AssemblyMode mode,

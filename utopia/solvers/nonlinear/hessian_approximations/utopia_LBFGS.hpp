@@ -295,9 +295,10 @@ namespace utopia {
             std::vector<Scalar> alpha_inv(current_memory_size);
             q = g;
 
-            for (auto i = current_memory_size - 1; i >= 0; i--) {
-                alpha_inv[i] = rho_[i] * dot(S_[i], q);
-                q -= alpha_inv[i] * Y_[i];
+            for (auto i = current_memory_size; i > 0; i--) {
+                const auto iprev = i - 1;
+                alpha_inv[iprev] = rho_[iprev] * dot(S_[iprev], q);
+                q -= alpha_inv[iprev] * Y_[iprev];
             }
 
             help1_ = q;

@@ -19,8 +19,6 @@ namespace utopia {
         template <class Fun>
         static void apply_transform(TpetraMatrix &mat, Fun fun);
 
-        static void apply_read(const TpetraMatrix &mat, std::function<void(const Scalar &)> &fun);
-
         template <class Fun>
         static void apply_read(const TpetraMatrix &mat, Fun fun);
     };
@@ -29,8 +27,6 @@ namespace utopia {
     public:
         using SizeType = typename Traits<TpetraVector>::SizeType;
         using Scalar = typename Traits<TpetraVector>::Scalar;
-
-        static void apply_read(const TpetraVector &v, std::function<void(const Scalar &)> &fun);
 
         template <class Fun>
         static void apply_read(const TpetraVector &v, Fun fun);
@@ -48,10 +44,6 @@ namespace utopia {
     template <int FILL_TYPE>
     class Each<TpetraVector, 1, FILL_TYPE> : public TpetraVectorEach {};
 
-    template <class Fun>
-    inline void each_transform(TpetraVector &in_out, Fun fun) {
-        each_transform(in_out, in_out, fun);
-    }
 }  // namespace utopia
 
 #endif  // UTOPIA_TRILINOS_EACH_HPP

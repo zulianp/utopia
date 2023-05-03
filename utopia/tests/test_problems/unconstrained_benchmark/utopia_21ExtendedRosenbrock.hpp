@@ -196,8 +196,6 @@ namespace utopia {
 
         const Vector &exact_sol() const override { return x_exact_; }
 
-        Scalar min_function_value() const override { return 0; }
-
     private:
         SizeType n_loc_;
         Matrix perm_;

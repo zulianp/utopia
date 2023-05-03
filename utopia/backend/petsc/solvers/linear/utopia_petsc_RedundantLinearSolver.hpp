@@ -12,8 +12,8 @@ namespace utopia {
 
     public:
         RedundantLinearSolver(const std::string &sub_preconditioner = "lu") : KSPSolver<Matrix, Vector, PETSC>() {
-            KSPSolver<Matrix, Vector, PETSC>::pc_type("redundant");
-            KSPSolver<Matrix, Vector, PETSC>::ksp_type("preonly");
+            KSPSolver<Matrix, Vector, PETSC>::pc_type(PCREDUNDANT);
+            KSPSolver<Matrix, Vector, PETSC>::ksp_type(KSPPREONLY);
 
             this->pc_type(sub_preconditioner);
         }

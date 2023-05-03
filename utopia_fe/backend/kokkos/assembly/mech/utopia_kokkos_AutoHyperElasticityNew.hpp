@@ -31,13 +31,21 @@ namespace utopia {
 
             AutoHyperElasticityNew(Params op = Params()) : Super(), material_(std::move(op)) {}
 
-            int order() const override { return 6; }
+            int order() const override { return order_; }
+            void read(Input &in) override 
+            {
+                Super::read(in);
+                in.get("quadrature_order", order_);
+                // material_.read(in)
+                // printf("qorder %d\n", order_);
+
+            }
 
             inline int n_vars() const override { return Dim; }
 
             inline bool has_hessian() const override { return true; }
             inline bool has_gradient() const override { return true; }
-            inline bool has_value() const override { return false; }
+            inline bool has_value() const override { return true; }
             inline bool is_operator() const override { return false; }
             inline bool is_linear() const override { return false; }
 
@@ -63,8 +71,71 @@ namespace utopia {
                 return deformation_gradient;
             }
 
-            bool value_assemble(AssemblyMode mode) override { return false; }
             bool apply_assemble(utopia::kokkos::Field<FE> &field, AssemblyMode mode) override { return false; }
+
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // Value
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            template <class Measure>
+            class ValueKernel {
+            public:
+                UTOPIA_INLINE_FUNCTION ValueKernel(const Measure &measure,
+                                                   const Material &material,
+                                                   const DynRankView &deformation_gradient,
+                                                   int n_qp)
+                    : measure(measure), material(material), deformation_gradient(deformation_gradient), n_qp(n_qp) {}
+
+                UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell) const {
+                    StaticMatrix<Scalar, Dim, Dim> F;
+
+                    Scalar ret = 0;
+                    for (int qp = 0; qp < n_qp; ++qp) {
+                        const Scalar dx = measure(cell, qp);
+
+                        for (int d1 = 0; d1 < Dim; ++d1) {
+                            for (int d2 = 0; d2 < Dim; ++d2) {
+                                F(d1, d2) = deformation_gradient(cell, qp, d1 * Dim + d2);
+                            }
+                        }
+
+                        Scalar val = 0;
+                        material.value(&F.raw_type()[0], dx, val);
+                        ret += val;
+                    }
+
+                    return ret;
+                }
+
+                Measure measure;
+                Material material;
+                DynRankView deformation_gradient;
+                int n_qp;
+            };
+
+            template <class Measure>
+            inline ValueKernel<Measure> value_kernel(const Measure &measure,
+                                                     const Material &material,
+                                                     const DynRankView &deformation_gradient,
+                                                     int n_qp) {
+                return ValueKernel<Measure>(measure, material, deformation_gradient, n_qp);
+            }
+
+            bool value_assemble(AssemblyMode mode) override {
+                UTOPIA_TRACE_REGION_BEGIN(name() + "::value_assemble");
+
+                auto &&assembler = this->assembler();
+                assert(assembler);
+                auto &&fe = assembler->fe();
+
+                auto deformation_gradient = this->compute_deformation_gradient();
+
+                auto k = value_kernel(fe.measure(), material_, deformation_gradient->data(), fe.n_quad_points());
+
+                assembler->assemble_scalar_e(name() + "::value", mode, k);
+
+                UTOPIA_TRACE_REGION_END(name() + "::value_assemble");
+                return true;
+            }
 
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // Hessian
@@ -147,6 +218,19 @@ namespace utopia {
 
                 assembler->assemble_matrix_eij_block(name() + "::hessian", mode, k);
 
+                // std::cout << "------------------------------------------------\n";
+                // std::cout << "------------------------------------------------\n";
+                // const SizeType e0 = assembler->matrix_accumulator()->data().extent(0);
+                // const SizeType e1 = assembler->matrix_accumulator()->data().extent(1);
+                // const SizeType e2 = assembler->matrix_accumulator()->data().extent(2);
+                // const SizeType e3 = assembler->matrix_accumulator()->data().extent(2);
+
+                // std::cout << "H: " << e0 << " " << e1 << " " << e2 << " " << e3 << "\n";
+
+                // assembler->matrix_accumulator()->describe(std::cout);
+
+                // std::cout << "------------------------------------------------\n";
+
                 UTOPIA_TRACE_REGION_END(name() + "::hessian_assemble");
                 return true;
             }
@@ -221,10 +305,34 @@ namespace utopia {
 
                 auto deformation_gradient = this->compute_deformation_gradient();
 
+                // std::cout << "------------------------------------------------\n";
+                // std::cout << "------------------------------------------------\n";
+                // const SizeType e0 = deformation_gradient->data().extent(0);
+                // const SizeType e1 = deformation_gradient->data().extent(1);
+                // const SizeType e2 = deformation_gradient->data().extent(2);
+
+                // std::cout << "F: " << e0 << " " << e1 << " " << e2 << "\n";
+
+                // deformation_gradient->describe(std::cout);
+
+                // std::cout << "------------------------------------------------\n";
+
                 auto k = gradient_kernel(
                     fe.grad(), fe.measure(), material_, deformation_gradient->data(), fe.n_quad_points());
 
                 assembler->assemble_vector_ei_block(name() + "::gradient", mode, k);
+
+                // std::cout << "------------------------------------------------\n";
+                // std::cout << "------------------------------------------------\n";
+                // const SizeType e0 = assembler->vector_accumulator()->data().extent(0);
+                // const SizeType e1 = assembler->vector_accumulator()->data().extent(1);
+                // const SizeType e2 = assembler->vector_accumulator()->data().extent(2);
+
+                // std::cout << "G: " << e0 << " " << e1 << " " << e2 << "\n";
+
+                // assembler->vector_accumulator()->describe(std::cout);
+
+                // std::cout << "------------------------------------------------\n";
 
                 UTOPIA_TRACE_REGION_END(name() + "::gradient_assemble");
                 return true;
@@ -234,6 +342,7 @@ namespace utopia {
 
             // NVCC_PRIVATE :
             Material material_;
+            int order_{6};
         };
     }  // namespace kokkos
 }  // namespace utopia

@@ -66,7 +66,7 @@ namespace utopia {
         solvers_[Solver::bicgstab()] = utopia::make_unique<LSFactoryMethod<BiCGStab<PetscMatrix, PetscVector>>>();
         solvers_[Solver::ksp()] = utopia::make_unique<LSFactoryMethod<KSPSolver<PetscMatrix, PetscVector>>>();
         solvers_[Solver::direct()] = utopia::make_unique<LSFactoryMethod<Factorization<PetscMatrix, PetscVector>>>();
-        solvers_["gmres"] = utopia::make_unique<LSFactoryMethod<GMRES<PetscMatrix, PetscVector>>>();
+        solvers_[Solver::gmres()] = utopia::make_unique<LSFactoryMethod<GMRES<PetscMatrix, PetscVector>>>();
         solvers_["amg"] = utopia::make_unique<LSFactoryMethod<AlgebraicMultigrid<PetscMatrix, PetscVector>>>();
         solvers_["bdd"] = utopia::make_unique<LSFactoryMethod<BDDLinearSolver<PetscMatrix, PetscVector>>>();
     }

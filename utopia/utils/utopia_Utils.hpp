@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -26,6 +27,11 @@
 #endif
 
 namespace utopia {
+    inline bool file_exists(const std::string &file_name) {
+        struct stat buffer {};
+        return (stat(file_name.c_str(), &buffer) == 0);
+    }
+
     bool is_matlab_file(const std::string &path);
 
     inline std::string str(const char *char_array) { return std::string(char_array); }
@@ -101,6 +107,15 @@ namespace utopia {
     std::shared_ptr<const T> make_ref(const T &obj) {
         return std::shared_ptr<const T>(&obj, EmptyDeleter<const T>());
     }
+
+    class ExitScopeCallback {
+    public:
+        ExitScopeCallback(std::function<void()> callback) : callback(callback) {}
+
+        ~ExitScopeCallback() { callback(); }
+
+        std::function<void()> callback;
+    };
 
     enum ColorCode {
         FG_RED = 31,

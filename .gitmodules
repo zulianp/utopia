@@ -7,3 +7,9 @@
 [submodule "utopia/external/ParMETIS"]
 	path = utopia/external/ParMETIS
 	url = https://github.com/KarypisLab/ParMETIS
+[submodule "utopia/external/matrix.io"]
+	path = utopia/external/matrix.io
+	url = https://zulianp@bitbucket.org/zulianp/matrix.io.git
+[submodule "utopia/external/isolver"]
+	path = utopia/external/isolver
+	url = https://zulianp@bitbucket.org/zulianp/isolver.git
