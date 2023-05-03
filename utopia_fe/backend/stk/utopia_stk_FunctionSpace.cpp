@@ -352,6 +352,108 @@ namespace utopia {
             }
         };
 
+        void FunctionSpace::create_node_to_element_matrix(Matrix &matrix) const {
+            using Bucket_t = ::stk::mesh::Bucket;
+            using BucketVector_t = ::stk::mesh::BucketVector;
+            using Entity_t = ::stk::mesh::Entity;
+            using Scalar_t = Traits<utopia::stk::Mesh>::Scalar;
+            using Size_t = Traits<utopia::stk::Mesh>::SizeType;
+            using MetaData_t = ::stk::mesh::MetaData;
+            using BulkData_t = ::stk::mesh::BulkData;
+
+            //
+            if (impl_->dof_map->empty()) {
+                impl_->dof_map->init(*this->mesh_ptr(), impl_->print_map);
+            }
+
+            auto &bulk_data = this->mesh().bulk_data();
+            auto &elem_buckets = utopia::stk::local_elements(bulk_data);
+
+            SizeType num_nodes_x_element = 0;
+            {
+                for (const auto &ib : elem_buckets) {
+                    const Bucket_t &b = *ib;
+                    const Bucket_t::size_type length = b.size();
+
+                    for (Bucket_t::size_type k = 0; k < length; ++k) {
+                        Entity_t elem = b[k];
+                        num_nodes_x_element = bulk_data.num_nodes(elem);
+                        break;
+                    }
+
+                    if (length) {
+                        break;
+                    }
+                }
+            }
+
+            auto nodal_layout = layout(comm(), n_local_dofs(), n_dofs());
+            auto elemental_layout = layout(comm(),
+                                           this->mesh().n_local_elements() * num_nodes_x_element,
+                                           this->mesh().n_elements() * num_nodes_x_element);
+
+            auto ml = matrix_layout(elemental_layout, nodal_layout);
+
+            utopia::out() << "create_node_to_element_matrix\n";
+            utopia::out() << ml.size(0) << ", " << ml.size(1) << "\n";
+
+            matrix.sparse(ml, num_nodes_x_element, num_nodes_x_element);
+
+            Write<PetscMatrix> w(matrix, utopia::GLOBAL_ADD);
+
+            const SizeType n_dofs = this->n_dofs();
+            const SizeType nn = n_dofs / this->n_var();
+
+            auto &&local_to_global = this->dof_map().local_to_global();
+
+            IndexArray row_idx(num_nodes_x_element, -1);
+            IndexArray col_idx(nn, -1);
+            ScalarArray val(num_nodes_x_element * nn, 1.0);
+
+            const bool is_block = matrix.is_block();
+
+            Size_t elem_idx = 0;
+            for (const auto &ib : elem_buckets) {
+                const Bucket_t &b = *ib;
+                const Bucket_t::size_type length = b.size();
+
+                for (Bucket_t::size_type k = 0; k < length; ++k) {
+                    // get the current node entity and extract the id to fill it into the field
+                    Entity_t elem = b[k];
+                    // const Size_t elem_idx = utopia::stk::convert_entity_to_index(elem) - n_local_nodes;
+
+                    for (int i = 0; i < num_nodes_x_element; i++) {
+                        row_idx[i] = utopia::stk::convert_entity_to_index(elem) * num_nodes_x_element + i;
+                    }
+
+                    const Size_t n_nodes = bulk_data.num_nodes(elem);
+                    UTOPIA_UNUSED(n_nodes);
+
+                    assert(nn == n_nodes);
+
+                    auto node_ids = bulk_data.begin_nodes(elem);
+
+                    if (local_to_global.empty()) {
+                        for (Size_t i = 0; i < nn; ++i) {
+                            col_idx[i] = utopia::stk::convert_entity_to_index(node_ids[i]);
+                            assert(col_idx[i] < space.n_dofs());
+                            assert(col_idx[i] >= 0);
+                        }
+                    } else {
+                        for (Size_t i = 0; i < nn; ++i) {
+                            col_idx[i] = local_to_global.block(utopia::stk::convert_entity_to_index(node_ids[i]));
+                            assert(col_idx[i] < space.n_dofs());
+                            assert(col_idx[i] >= 0);
+                        }
+                    }
+
+                    matrix.set_matrix(row_idx, col_idx, val);
+
+                    ++elem_idx;
+                }
+            }
+        }
+
         FunctionSpace::FunctionSpace(const Comm &comm) : impl_(utopia::make_unique<Impl>()) {
             impl_->mesh = std::make_shared<Mesh>(comm);
             impl_->dof_map = std::make_shared<DofMap>();

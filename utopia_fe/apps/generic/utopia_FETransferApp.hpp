@@ -84,6 +84,8 @@ namespace utopia {
             in.get("transfer", transfer);
             in.get("output_path", output_path);
             in.get("export_from_function", export_from_function);
+            in.get("export_operator_imbalance", export_operator_imbalance);
+            in.get("rescale_imbalance", rescale_imbalance);
 
             if (verbose) {
                 from_space.comm().root_print("Exiting read!\n", utopia::out().stream());
@@ -99,6 +101,9 @@ namespace utopia {
                 }
             }
 
+            Matrix_t n2e;
+            from_space.create_node_to_element_matrix(n2e);
+
             if (!transfer.init(make_ref(from_space), make_ref(to_space))) {
                 return;
             }
@@ -112,6 +117,56 @@ namespace utopia {
 
             transfer.apply(field.data(), to_field.data());
             to_space.write(output_path, to_field.data());
+
+            if (export_operator_imbalance) {
+                auto mat = transfer.transfer_matrix();
+                Matrix_t T_t = transpose(*mat);
+
+                T_t.transform(UTOPIA_LAMBDA(const Size_t &, const Size_t &, const Scalar_t &v)->Scalar_t { return 1; });
+
+                Vector_t ones(col_layout(T_t), 1);
+                Vector_t imbalance = T_t * ones;
+
+                imbalance *= rescale_imbalance;
+                imbalance.shift(1.0);
+
+                from_space.write("imbalance.e", imbalance);
+
+                Matrix_t n2e;
+                from_space.create_node_to_element_matrix(n2e);
+
+                // Vector_t en_vec = n2e * imbalance;
+
+                // auto enl = layout(en_vec);
+
+                // int nnodexelement = enl.size() / from_space.mesh().n_elements();
+
+                // Vector_t e_vec(
+                //     layout(enl.comm(), from_space.mesh().n_local_elements(), from_space.mesh().n_elements()));
+
+                // {
+                //     auto en_view = const_local_view_device(en_vec);
+                //     auto e_view = local_view_device(e_vec);
+
+                //     parallel_for(
+                //         local_range_device(e_vec), UTOPIA_LAMBDA(const Size_t i) {
+                //             //
+                //             Scalar_t val = 0;
+                //             for (int d = 0; d < nnodexelement; d++) {
+                //                 val += en_view.get(i * nnodexelement + d);
+                //             }
+
+                //             e_view.set(i, val);
+                //         });
+                // }
+
+                // Field<FunctionSpace> elemental_field("cost", make_ref(from_space), make_ref(e_vec));
+                // from_space.backend_set_elemental_field(elemental_field);
+
+                // IO<FunctionSpace> io(from_space);
+                // io.set_output_path("cost.e");
+                // io.write(0, 0);
+            }
 
             // std::vector<Scalar_t> from_norms, to_norms;
 
@@ -137,6 +192,8 @@ namespace utopia {
         Path output_path{"./out.e"};
         bool export_from_function{false};
         bool verbose{true};
+        bool export_operator_imbalance{false};
+        Scalar_t rescale_imbalance{1};
     };
 
 }  // namespace utopia

@@ -53,7 +53,7 @@ namespace utopia {
             bool converged = false, accepted = true;
             NumericalTollerance<Scalar> tol(this->atol(), this->rtol(), this->stol());
 
-            Scalar delta, ared, pred, rho, E_old, E_new;
+            Scalar delta{0}, ared{0}, pred{0}, rho{0}, E_old{0}, E_new{0};
 
             SizeType it = 0;
             SizeType it_successful = 0;
@@ -80,12 +80,9 @@ namespace utopia {
                     "TRUST_REGION_BASE",
                     {" it. ", "||P_c(x-g)-x||", "J_k", "J_{k+1}", "ared", "pred", "rho", "delta_k", "|| p_k || "});
                 PrintInfo::print_iter_status(it, {g_norm});
-            } else if (this->mini_verbose_){
-                this->init_solver("TRUST_REGION_BASE",
-                                  { " it. ",
-                                   "|| g ||",
-                                    "J_k" });
-                PrintInfo::print_iter_status(it, {g_norm, E_new });
+            } else if (this->mini_verbose_) {
+                this->init_solver("TRUST_REGION_BASE", {" it. ", "|| g ||", "J_k"});
+                PrintInfo::print_iter_status(it, {g_norm, E_new});
             }
 
             it++;

@@ -69,7 +69,7 @@ namespace utopia {
         const Comm &comm() const { return comm_; }
 
         template <typename... Args>
-        Layout(Comm comm, Args &&... args) : comm_(std::move(comm)) {
+        Layout(Comm comm, Args &&...args) : comm_(std::move(comm)) {
             init(std::forward<Args>(args)...);
         }
 
@@ -178,7 +178,7 @@ namespace utopia {
         const Communicator &comm() const { return comm_; }
 
         template <typename... Args>
-        Layout(const Communicator &comm, Args &&... args) : comm_(comm) {
+        Layout(const Communicator &comm, Args &&...args) : comm_(comm) {
             init(std::forward<Args>(args)...);
         }
 
@@ -332,6 +332,20 @@ namespace utopia {
         LocalSizeType ls[2] = {in.local_size(), in.local_size()};
         SizeType gs[2] = {in.size(), in.size()};
         return Layout<Comm, 2, LocalSizeType, SizeType>(in.comm(), ls, gs);
+    }
+
+    template <typename RowLocalSizeType,
+              typename RowSizeType,
+              class RowComm,
+              typename ColLocalSizeType,
+              typename ColSizeType,
+              class ColComm>
+    inline Layout<RowComm, 2, RowLocalSizeType, RowSizeType> matrix_layout(
+        const Layout<RowComm, 1, RowLocalSizeType, RowSizeType> &rl,
+        const Layout<ColComm, 1, ColLocalSizeType, ColSizeType> &cl) {
+        RowLocalSizeType ls[2] = {rl.local_size(), cl.local_size()};
+        RowSizeType gs[2] = {rl.size(), cl.size()};
+        return Layout<RowComm, 2, RowLocalSizeType, RowSizeType>(rl.comm(), ls, gs);
     }
 
 }  // namespace utopia
