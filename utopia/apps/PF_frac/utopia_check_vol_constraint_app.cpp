@@ -103,11 +103,10 @@ namespace utopia {
         //     DirichletAndVolConstraints<FunctionSpace, AsphaltTension2D<FunctionSpace>,
         //     FixedSubdomain2D<FunctionSpace>>, AsphaltTension<FunctionSpace>> time_stepper(space);
 
-        // DirichletAndVolConstraints<FunctionSpace, AsphaltTension2D<FunctionSpace>, FixedSubdomain2D<FunctionSpace>>
-        // bc(
-        //     space);
-        // AsphaltTension<FunctionSpace> iv(space, 0);
-        // IncrementalLoading<FunctionSpace, FractureModel<FunctionSpace>> time_stepper(space, iv, bc);
+        DirichletAndVolConstraints<FunctionSpace, AsphaltTension2D<FunctionSpace>, FixedSubdomain2D<FunctionSpace>> bc(
+            space);
+        AsphaltTension<FunctionSpace> iv(space, 0);
+        IncrementalLoading<FunctionSpace, FractureModel<FunctionSpace>> time_stepper(space, iv, bc);
 
         time_stepper.read(in);
         time_stepper.run();
