@@ -136,8 +136,7 @@ namespace utopia {
         run_parallel_test<TrilinosLinearSolverTest>(verbose);
     }
 
-#ifndef KOKKOS_ENABLE_CUDA  // FIXME(edopao)
     UTOPIA_REGISTER_TEST_FUNCTION(trilinos_solver);
-#endif  // KOKKOS_ENABLE_CUDA
+
 #endif  // UTOPIA_WITH_TRILINOS
 }  // namespace utopia

@@ -161,14 +161,17 @@ namespace utopia {
                 auto correction_view = local_view_device(correction);
                 auto buff_view = local_view_device(buff_);
 
+                // capture by value in lambda function, to avoid referencing this
+                const auto reach = this->reach_;
+
                 parallel_for(
                     local_range_device(correction), UTOPIA_LAMBDA(const SizeType i) {
                         auto xi = buff_view.get(i);
                         auto dxi = correction_view.get(i);
 
-                        // if (xi + dxi < (1 - reach_) * xi) {
-                        if ((xi - dxi) < ((1 - reach_) * xi)) {
-                            auto val = (xi * reach_) / dxi;
+                        // if (xi + dxi < (1 - reach) * xi) {
+                        if ((xi - dxi) < ((1 - reach) * xi)) {
+                            auto val = (xi * reach) / dxi;
                             buff_view.set(i, val);
                         } else {
                             buff_view.set(i, 1);
@@ -186,14 +189,17 @@ namespace utopia {
                 auto correction_view = local_view_device(correction);
                 auto buff_view = local_view_device(buff_);
 
+                // capture by value in lambda function, to avoid referencing this
+                const auto reach = this->reach_;
+
                 parallel_for(
                     local_range_device(correction), UTOPIA_LAMBDA(const SizeType i) {
                         auto xi = buff_view.get(i);
                         auto dxi = correction_view.get(i);
 
-                        // if (xi + dxi < (1 - reach_) * xi) {
-                        if ((xi + dxi) < ((1 - reach_) * xi)) {
-                            auto val = -(xi * reach_) / dxi;
+                        // if (xi + dxi < (1 - reach) * xi) {
+                        if ((xi + dxi) < ((1 - reach) * xi)) {
+                            auto val = -(xi * reach) / dxi;
                             buff_view.set(i, val);
                         } else {
                             buff_view.set(i, 1);
