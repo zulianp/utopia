@@ -9,6 +9,7 @@
 
 #include "utopia_DeviceView.hpp"
 #include "utopia_RowView.hpp"
+#include "utopia_ViewHost.hpp"
 #include "utopia_petsc_RowView.hpp"
 
 namespace utopia {

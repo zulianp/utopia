@@ -12,6 +12,7 @@
 #include "utopia_trilinos_RowView.hpp"
 #include "utopia_trilinos_Traits.hpp"
 #include "utopia_trilinos_Types.hpp"
+#include "utopia_trilinos_ViewHost.hpp"
 #include "utopia_trilinos_solvers.hpp"
 
 // optimizations

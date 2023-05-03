@@ -1,0 +1,63 @@
+---
+app: check_vol_constraint
+output-path: output/x
+energy_csv_file_name: output/energies.csv
+log_output_path: output/rmtr_log.csv
+nx: 20
+ny: 40
+nz: 2
+x_min: 0
+x_max: 20
+y_min: 0
+y_max: 40
+
+fixed_x_min: 0
+fixed_x_max: 20
+fixed_y_min: 0
+fixed_y_max: 10
+
+disp_y: 3
+with_damage: true
+use_dense_hessian: false
+check_derivatives: false
+block_solver: true
+final_time: 1
+mobility: 1.0e-06
+dt: 0.01
+second_phase_ts:
+  dt: 0.0001
+  start_time: 0.78
+adjust_dt_on_failure: false
+shrinking_factor: 0.5
+use_pressure: false
+use_constant_pressure: false
+mu: 2.2308
+lambda: 3.3462
+n_levels: 2
+fracture_toughness: 0.368
+pressure0: 0
+pressure_increase_factor: 0
+increase_factor: 1
+hjsmn_smoother: false
+save_output: true
+diff_controller:
+  spacing: 1.0e-06
+  hessian_from_grad: false
+solver:
+  verbose: true
+  max_it: 500
+  atol: 1.0e-05
+  max_coarse_it: 2
+  max_sucessful_coarse_it: 1
+  pre_smoothing_steps: 2
+  post_smoothing_steps: 2
+  deltaH_lagging: false
+  Hpost_lagging: false
+  grad_smoothess_termination: 1.0e-06
+  max_sucessful_smoothing_it: 1
+  max_QP_smoothing_it: 40
+  max_QP_coarse_it: 1000
+  linear-solver:
+    verbose: false
+    atol: 1.0e-07
+    max_it: 1000

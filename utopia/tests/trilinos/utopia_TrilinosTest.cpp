@@ -291,7 +291,7 @@ namespace utopia {
 
             each_read(At_v, [](const SizeType &, const double val) { utopia_test_assert(val <= 2. + 1e-16); });
 
-            double s_At_v = sum(At_v);
+            double s_At_v = At_v.norm1();
             utopia_test_assert(approxeq(s_At_v, size(A).get(0) * 2.));
         }
 
@@ -557,7 +557,6 @@ namespace utopia {
             cg.solve(H, g, x);
 
             double diff = norm2(g - H * x);
-            ;
             utopia_test_assert(approxeq(diff, 0., 1e-6));
         }
 
