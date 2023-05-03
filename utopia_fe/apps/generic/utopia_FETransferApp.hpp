@@ -101,8 +101,8 @@ namespace utopia {
                 }
             }
 
-            Matrix_t n2e;
-            from_space.create_node_to_element_matrix(n2e);
+            // Matrix_t n2e;
+            // from_space.create_node_to_element_matrix(n2e);
 
             if (!transfer.init(make_ref(from_space), make_ref(to_space))) {
                 return;
@@ -135,37 +135,38 @@ namespace utopia {
                 Matrix_t n2e;
                 from_space.create_node_to_element_matrix(n2e);
 
-                // Vector_t en_vec = n2e * imbalance;
+                Vector_t en_vec = n2e * imbalance;
 
-                // auto enl = layout(en_vec);
+                auto enl = layout(en_vec);
 
-                // int nnodexelement = enl.size() / from_space.mesh().n_elements();
+                int nnodexelement = enl.size() / from_space.mesh().n_elements();
 
-                // Vector_t e_vec(
-                //     layout(enl.comm(), from_space.mesh().n_local_elements(), from_space.mesh().n_elements()));
+                Vector_t e_vec(
+                    layout(enl.comm(), from_space.mesh().n_local_elements(), from_space.mesh().n_elements()));
 
-                // {
-                //     auto en_view = const_local_view_device(en_vec);
-                //     auto e_view = local_view_device(e_vec);
+                {
+                    auto en_view = const_local_view_device(en_vec);
+                    auto e_view = local_view_device(e_vec);
 
-                //     parallel_for(
-                //         local_range_device(e_vec), UTOPIA_LAMBDA(const Size_t i) {
-                //             //
-                //             Scalar_t val = 0;
-                //             for (int d = 0; d < nnodexelement; d++) {
-                //                 val += en_view.get(i * nnodexelement + d);
-                //             }
+                    parallel_for(
+                        local_range_device(e_vec), UTOPIA_LAMBDA(const Size_t i) {
+                            //
+                            Scalar_t val = 0;
+                            for (int d = 0; d < nnodexelement; d++) {
+                                val += en_view.get(i * nnodexelement + d);
+                            }
 
-                //             e_view.set(i, val);
-                //         });
-                // }
+                            e_view.set(i, val);
+                        });
+                }
 
-                // Field<FunctionSpace> elemental_field("cost", make_ref(from_space), make_ref(e_vec));
-                // from_space.backend_set_elemental_field(elemental_field);
+                Field<FunctionSpace> elemental_field("cost", make_ref(from_space), make_ref(e_vec));
+                from_space.backend_set_elemental_field(elemental_field);
 
-                // IO<FunctionSpace> io(from_space);
-                // io.set_output_path("cost.e");
-                // io.write(0, 0);
+                IO<FunctionSpace> io(from_space);
+                io.set_output_path("cost.e");
+                io.register_output_field("cost");
+                io.write(1, 1);
             }
 
             // std::vector<Scalar_t> from_norms, to_norms;

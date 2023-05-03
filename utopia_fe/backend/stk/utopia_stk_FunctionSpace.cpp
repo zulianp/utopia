@@ -402,13 +402,13 @@ namespace utopia {
             Write<PetscMatrix> w(matrix, utopia::GLOBAL_ADD);
 
             const SizeType n_dofs = this->n_dofs();
-            const SizeType nn = n_dofs / this->n_var();
+            // const SizeType nn = n_dofs / this->n_var();
 
             auto &&local_to_global = this->dof_map().local_to_global();
 
             IndexArray row_idx(num_nodes_x_element, -1);
-            IndexArray col_idx(nn, -1);
-            ScalarArray val(num_nodes_x_element * nn, 1.0);
+            IndexArray col_idx(num_nodes_x_element, -1);
+            ScalarArray val(num_nodes_x_element * num_nodes_x_element, 1.0);
 
             const bool is_block = matrix.is_block();
 
@@ -422,27 +422,29 @@ namespace utopia {
                     Entity_t elem = b[k];
                     // const Size_t elem_idx = utopia::stk::convert_entity_to_index(elem) - n_local_nodes;
 
+                    auto g_eid = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(elem));
+                    ;
                     for (int i = 0; i < num_nodes_x_element; i++) {
-                        row_idx[i] = utopia::stk::convert_entity_to_index(elem) * num_nodes_x_element + i;
+                        row_idx[i] = g_eid * num_nodes_x_element + i;
                     }
 
                     const Size_t n_nodes = bulk_data.num_nodes(elem);
                     UTOPIA_UNUSED(n_nodes);
 
-                    assert(nn == n_nodes);
+                    assert(num_nodes_x_element == n_nodes);
 
                     auto node_ids = bulk_data.begin_nodes(elem);
 
                     if (local_to_global.empty()) {
-                        for (Size_t i = 0; i < nn; ++i) {
+                        for (Size_t i = 0; i < num_nodes_x_element; ++i) {
                             col_idx[i] = utopia::stk::convert_entity_to_index(node_ids[i]);
-                            assert(col_idx[i] < space.n_dofs());
+                            assert(col_idx[i] < this->n_dofs());
                             assert(col_idx[i] >= 0);
                         }
                     } else {
-                        for (Size_t i = 0; i < nn; ++i) {
+                        for (Size_t i = 0; i < num_nodes_x_element; ++i) {
                             col_idx[i] = local_to_global.block(utopia::stk::convert_entity_to_index(node_ids[i]));
-                            assert(col_idx[i] < space.n_dofs());
+                            assert(col_idx[i] < this->n_dofs());
                             assert(col_idx[i] >= 0);
                         }
                     }
