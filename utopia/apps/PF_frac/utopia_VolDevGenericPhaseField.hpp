@@ -1103,7 +1103,7 @@ namespace utopia {
         bool export_elast_frac_energies(std::string output_path, const Vector &x_const, const Scalar time) const {
             UTOPIA_TRACE_REGION_BEGIN("VolDevGeneric::export_elast_frac_energies");
 
-            static const int total_components = 2; //elastic energy, fracture energy
+            static const int total_components = 3; //elastic energy, fracture energy
 
             using WSpace = typename FunctionSpace::template Subspace<1>;
             using SSpace = typename FunctionSpace::template Subspace<total_components>;
@@ -1194,9 +1194,10 @@ namespace utopia {
 
                 Device::parallel_for(
                     this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                        Scalar elastic_value, fracture_value;
+                        Scalar elastic_value, fracture_value, elastic_pos, elastic_neg;
                         StaticVector<Scalar, total_components * C_NDofs> energies_vec;
                         StaticVector<Scalar, C_NDofs> weight_el_vec;
+                        StaticMatrix<Scalar, Dim, Dim> stress;  //, strain_p;
 
                         energies_vec.set(0.0);
                         weight_el_vec.set(0.0);
@@ -1239,6 +1240,7 @@ namespace utopia {
                         // the distance to the node (shape function)
                         for (SizeType n = 0; n < C_NDofs; n++) {
                             elastic_value = 0.0;
+                            elastic_pos   = 0.0;
                             fracture_value = 0.0;
                             for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                                 auto shape = c_shape_fun_el(n, qp);  // shape function at N and Quadrature point
@@ -1246,8 +1248,8 @@ namespace utopia {
 
                                 // Calculate strain at quadrature point
                                 auto &epsi = el_strain.strain[qp];
-                                Scalar tr = trace(el_strain.strain[qp]);
-
+                                Scalar tr = trace(el_strain.strain[qp]), elastic_pos_qp;
+                                compute_positive_quantities(this->params_, epsi, stress, tr, elastic_pos_qp );
 
                                  fracture_value += shape * weight *
                                        GenericPhaseFieldFormulation<FunctionSpace, Dim,PFFormulation>::fracture_energy(
@@ -1256,14 +1258,18 @@ namespace utopia {
                                 elastic_value += shape * weight *
                                         elastic_energy(this->params_, c[qp], tr, el_strain.strain[qp]) ;
 
+
+                                elastic_pos += shape * weight * PFFormulation::degradation(c[qp], this->params_)*elastic_pos_qp;
+
                                 // getting nodal weight for normalisation
                                 weight_el_vec[n] += shape * weight;
                             }
 
                             // now we need to accumulate the matrix strain into engineering strain vector
                             int offset = C_NDofs;
-                            energies_vec[         n ] = elastic_value;
-                            energies_vec[offset + n ] = fracture_value;
+                            energies_vec[           n ] = elastic_value;
+                            energies_vec[offset   + n ] = fracture_value;
+                            energies_vec[2*offset + n ] = elastic_pos;
                         }
 
                         // now adding element contribution to global strain and weight vector

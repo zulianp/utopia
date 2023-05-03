@@ -497,6 +497,7 @@ namespace utopia {
             in.get("disp_y", disp_y_);
             in.get("disp_x", disp_x_);
             in.get("fix_phase_field_on_sides", fix_phase_field_);
+            in.get("set_damage_to_zero_in_softer_layers", set_damage_to_zero_in_softer_layers_ );
         }
 
         void emplace_time_dependent_BC(const Scalar &time) override {
@@ -545,6 +546,7 @@ namespace utopia {
         Scalar disp_y_;
         Scalar disp_x_;
         bool   fix_phase_field_{false};
+        bool   set_damage_to_zero_in_softer_layers_{false};
     };
 
 

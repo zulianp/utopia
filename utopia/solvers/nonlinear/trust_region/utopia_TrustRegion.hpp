@@ -200,6 +200,9 @@ namespace utopia {
             // some benchmarking
             TrustRegionBase::print_statistics(it, it_successful);
 
+            //E.P: setting solver metrics for later printing
+            gnorm_ = g_norm;
+
             return true;
         }
 
@@ -213,12 +216,15 @@ namespace utopia {
                 "set_trust_region_strateg... \n");
         }
 
+        Scalar get_gnorm(){return gnorm_;}
+
     private:
         Scalar get_pred(const Vector &g_minus, const Matrix &B, const Vector &p_k) {
             return (dot(g_minus, p_k) - 0.5 * dot(B * p_k, p_k));
         }
 
         Vector g_minus_;
+        Scalar gnorm_;
     };
 
 }  // namespace utopia

@@ -30,7 +30,7 @@ namespace utopia {
     public:
         using Point = typename FunctionSpace::Point;
         using Scalar = typename FunctionSpace::Scalar;
-        using HeteroParamsFunction = std::function<void(const Point &, Scalar &, Scalar &, Scalar &)>;
+        using HeteroParamsFunction = std::function<void(const Point &, Scalar &, Scalar &, Scalar &, Scalar &)>;
 
         void read(Input &in) override {
             in.get("a", a);
@@ -114,7 +114,7 @@ namespace utopia {
                      xmax,
                      ymin,
                      ymax,
-                     layer_width](const Point &p, Scalar &mu_out, Scalar &lambda_out, Scalar &fracture_toughness_out) {
+                     layer_width](const Point &p, Scalar &mu_out, Scalar &lambda_out, Scalar &fracture_toughness_out, Scalar& ) {
                         if (p[1] < bottom_layer_height || p[1] > top_layer_height) {
                             mu_out = mu_in;
                             lambda_out = lambda_in;
@@ -163,7 +163,7 @@ namespace utopia {
                                  ymax,
                                  boundary_protection,
                                  layer_width,
-                                 mesh_width](const Point &p, Scalar &, Scalar &, Scalar &fracture_toughness_out) {
+                                 mesh_width](const Point &p, Scalar &, Scalar &, Scalar &fracture_toughness_out, Scalar&) {
                     if (p[0] < 0.5 * (xmax - xmin) + mesh_width && p[0] > 0.5 * (xmax - xmin) - mesh_width) {
                         fracture_toughness_out = tough_factor * fracture_toughness_in;
                     }
@@ -177,18 +177,34 @@ namespace utopia {
             } else if (type == "Hobbs") {
                 Scalar bottom_layer_height_;
                 Scalar top_layer_height_;
+                bool include_interface_layer {false};
+
                 in.get("bottom_layer_height", bottom_layer_height_);
                 in.get("top_layer_height", top_layer_height_);
                 bottom_layer_height = bottom_layer_height_;
                 top_layer_height = top_layer_height_;
 
-                Scalar E1, E2, nu1, nu2, Gc1, Gc2;
+
+                Scalar E1, E2, nu1, nu2, Gc1, Gc2, Gc_int, l_, ft1, ft2, ft_int;
                 in.get("E_1", E1);
                 in.get("E_2", E2);
                 in.get("nu_1", nu1);
                 in.get("nu_2", nu2);
                 in.get("Gc_1", Gc1);
                 in.get("Gc_2", Gc2);
+                l_ = length_scale;
+
+                in.get("tensile_strength", ft1);
+                in.get("tensile_strength_2", ft2);
+                in.get("tensile_strength_int", ft_int);
+                tensile_strength = ft1;
+
+
+                in.get("include_interface_layer", include_interface_layer);
+                if (include_interface_layer)
+                    in.get("Gc_int", Gc_int);
+                else //interface layer same toughness as outer layer
+                    Gc_int = Gc2;
 
                 E = E1;
                 nu = nu1;
@@ -220,6 +236,11 @@ namespace utopia {
                                  nu2,
                                  Gc1,
                                  Gc2,
+                                 Gc_int,
+                                 ft1,
+                                 ft2,
+                                 ft_int,
+                                 l_,
                                  bottom_layer_height_,
                                  top_layer_height_,
                                  boundary_protection,
@@ -233,11 +254,19 @@ namespace utopia {
                                  generator](const Point &p,
                                             Scalar &mu_out,
                                             Scalar &lambda_out,
-                                            Scalar &fracture_toughness_out) mutable {
+                                            Scalar &fracture_toughness_out,
+                                            Scalar &tensile_strength) mutable {
                     if (p[1] < bottom_layer_height_ || p[1] > top_layer_height_) {  // Shale (stronger and more compliant)
                         lambda_out = E2 * nu2 / ((1. + nu2) * (1. - 2. * nu2));
                         mu_out = E2 / (2. * (1. + nu2));
-                        fracture_toughness_out = Gc2;
+                        if (p[1] < bottom_layer_height_ - 1.5*l_ || p[1] > top_layer_height_ + 1.5*l_ ){
+                            fracture_toughness_out = Gc2;
+                            tensile_strength = ft2;
+                        }
+                        else{
+                            fracture_toughness_out = Gc_int;
+                            tensile_strength = ft_int;
+                        }
                     } else {  // Dolostone (weaker and stiffer)
                         lambda_out = E1 * nu1 / ((1. + nu1) * (1. - 2. * nu1));
                         mu_out = E1 / (2. * (1. + nu1));
@@ -246,6 +275,7 @@ namespace utopia {
                         double noise = distribution(generator);
                         distribution.reset();
                         fracture_toughness_out = Gc1 + use_random * noise;
+                        tensile_strength = ft1;
                     }
 
                     if (boundary_protection) {
@@ -309,7 +339,7 @@ namespace utopia {
 
         void update(const Point &p, bool update_elastic_tensor) {
             if (hetero_params) {
-                hetero_params(p, mu, lambda, fracture_toughness);
+                hetero_params(p, mu, lambda, fracture_toughness, tensile_strength);
                 if (update_elastic_tensor)
                     fill_in_isotropic_elast_tensor();
             }

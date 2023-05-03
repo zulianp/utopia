@@ -433,7 +433,9 @@ namespace utopia {
 
                 fe_problem_->compute_tcv(this->solution_, tcv);
 
-                //residual = rmtr_->get_gnorm();
+                if (!use_box_constraints_){
+                    residual = tr_solver_->get_gnorm();
+                }
                 //iterations = rmtr_->get_total_iterations();
                 if (FunctionSpace::Dim == 3) {
                     fe_problem_->compute_cod(this->solution_, error_cod);
@@ -443,7 +445,7 @@ namespace utopia {
                     if (!writer.file_exists(this->csv_file_name_)) {
                         writer.open_file(this->csv_file_name_);
                         writer.write_table_row<std::string>(
-                            {"time step", "time", "elastic_energy", "fracture_energy", "elast_en_mid_layer","frac_en_mid_layer", "total_crack_vol"});
+                            {"time step", "time", "elastic_energy", "fracture_energy", "elast_en_mid_layer","frac_en_mid_layer", "total_crack_vol", "gnorm"});
                     } else {
                         writer.open_file(this->csv_file_name_);
                     }
@@ -454,7 +456,8 @@ namespace utopia {
                                                     fracture_energy,
                                                     ela_en_mid,
                                                     fra_en_mid,
-                                                    tcv
+                                                    tcv,
+                                                    residual
                                                     });
                     writer.close_file();
                 }
