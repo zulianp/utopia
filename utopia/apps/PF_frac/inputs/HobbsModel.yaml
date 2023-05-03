@@ -2,16 +2,16 @@
 app: Hobbs
 # Output 
 #output-path: Output/Hobb/HOBBS_Iso_AT2_d2_G800_E56_dt001_W4_l4_m6_p01_pn100_Fx1
-output-path: Output/HOBBS_VD_AT1_d2_G800_E56_dt0004_W3_l4_m1_p01_Corrected
+output-path: Output/Hobb/TRY_HOBBS_VD_AT1_d2_G100_Gi1000_1E32_1nu05_2nu45_dt0005_W3_l4_m1_p005_HR_ft12
 save_output: true
 # Mesh specification -----------------------------------------
 nx: 300
-ny: 100
+ny: 80
 #nz: 2
 x_min: 0
 x_max: 3
 y_min: 0
-y_max: 1
+y_max: 0.8
 n_levels: 1
 # Problem specification ------------------------------------------
 # Boundary Conditions
@@ -23,33 +23,37 @@ fix_phase_field_on_sides: true
 length_scale: 0.04
 with_damage: true
 use_penalty_irreversibility: true
-penalty_tol: 0.01
+penalty_tol: 0.005
 penalty_tol_non_neg: 1e9
 use_crack_set_irreversibiblity: true
 crack_set_tol: 0.9999999
 ## Material paramteters -------------------------------------------------
 hetero_params: Hobbs
-bottom_layer_height: 0.4
-top_layer_height: 0.6
-E_1: 56e9	        	#Dolostone
+bottom_layer_height: 0.3
+top_layer_height: 0.5
+include_interface_layer: true
+E_1: 32e9	        	#Dolostone
 E_2: 16e9			#Shale
-nu_1: 0.26			#Dolostone
-nu_2: 0.14 			#Shale 	
+nu_1: 0.05			#Dolostone
+nu_2: 0.45 			#Shale 	
 Gc_1: 48 			#Dolostone 48
-Gc_2: 800		 	#Shale
+Gc_2: 200		 	#Shale
+Gc_int: 1000
 random_variation: false		
 random_standard_deviation: 1
 boundary_protection: false	#increase fracture in a layer around the boundary
 layer_width: 0.1
-tensile_strength: 4e6
+tensile_strength: 3.79473e+06
+tensile_strength_2: 7e+06
+tensile_strength_int: 12e+06
 ## Time stepping -------------------------------------------------------
-dt: 0.001
+dt: 0.0005
 final_time: 0.15
 # dynamic time stepping with fracture energy
 fracture_energy_time_stepping: true
 frac_energy_max_change: 1.15
 frac_energy_min_change: 1.01
-dt_min: 0.0004
+dt_min: 0.0002
 dt_max: 0.001
 increase_factor: 2
 adjust_dt_on_failure: false
@@ -72,7 +76,7 @@ use_box_constraints: false  # TR method with penalty, run up to 5 cores
 solver:
   verbose: false
   mini_verbose: true
-  max_it: 1500
+  max_it: 5000
   atol: 1e-8
   atol_suff: 1e-16
   rtol: 1e-16
