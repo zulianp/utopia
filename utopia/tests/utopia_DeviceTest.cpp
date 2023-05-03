@@ -71,11 +71,7 @@ namespace utopia {
 #endif  // UTOPIA_WITH_PETSC
 
 #ifdef UTOPIA_WITH_TRILINOS
-#ifdef KOKKOS_ENABLE_CUDA
-        utopia_warning("Skipping device_test");
-#else
         DeviceTest<utopia::TpetraMatrix, utopia::TpetraVector>::run();
-#endif
 #endif  // UTOPIA_WITH_TRILINOS
     }
 

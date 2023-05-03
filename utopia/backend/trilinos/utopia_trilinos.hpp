@@ -5,6 +5,7 @@
 
 #ifdef UTOPIA_WITH_TRILINOS
 #include "utopia_Kokkos_ParallelFor.hpp"
+#include "utopia_Kokkos_ParallelReduce.hpp"
 #include "utopia_trilinos_DeviceView.hpp"
 #include "utopia_trilinos_Eval_Factory.hpp"
 #include "utopia_trilinos_ForwardDeclarations.hpp"
