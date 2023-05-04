@@ -54,3 +54,18 @@ run-utopia-benchmark:
     # the tests are not installed, so we need to run them from the build directory
     - cd /utopia.src/build
     - ./utopia_bench $UTOPIA_RUN_OPTS
+
+run-utopia_fe-test:
+  extends: .container-runner-daint-gpu
+  image: $PERSIST_IMAGE_NAME
+  variables:
+    SLURM_NTASKS: 1
+    SLURM_TIMELIMIT: "00:10:00"
+    USE_MPI: "NO"
+  script:
+    # the tests are not installed, so we need to run them from the build directory
+    - cd /utopia.src/utopia_fe/build
+    # run all tests
+    - ./utopia_fe_test --verbose
+  # FIXME some tests are failing
+  allow_failure: true
