@@ -33,7 +33,7 @@ cp $1 $FLUID_MESH
 cp $2 $SOLID_MESH
 
 N_PARTS=$3
-RESCALE_IMBALANCE=10
+RESCALE_IMBALANCE=1
 
 rm -f resample.yaml temp_.yaml
 ( echo "cat <<EOF >resample.yaml";

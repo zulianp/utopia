@@ -87,6 +87,14 @@ namespace utopia {
             in.get("export_operator_imbalance", export_operator_imbalance);
             in.get("rescale_imbalance", rescale_imbalance);
 
+            if (export_operator_imbalance && from_space.comm().size() != 1) {
+                if (!from_space.comm().rank()) {
+                    utopia::err() << "Option \"export_operator_imbalance : true\" only works for serial runs!\n";
+                }
+
+                Utopia::Abort();
+            }
+
             if (verbose) {
                 from_space.comm().root_print("Exiting read!\n", utopia::out().stream());
             }
@@ -122,10 +130,14 @@ namespace utopia {
                 auto mat = transfer.transfer_matrix();
                 Matrix_t T_t = transpose(*mat);
 
+                // Compute imbalance = T^T * T * 1
+
                 T_t.transform(UTOPIA_LAMBDA(const Size_t &, const Size_t &, const Scalar_t &v)->Scalar_t { return 1; });
 
-                Vector_t ones(col_layout(T_t), 1);
-                Vector_t imbalance = T_t * ones;
+                Vector_t ones(col_layout(*mat), 1);
+                Vector_t T_ones = (*mat) * ones;
+
+                Vector_t imbalance = T_t * T_ones;
 
                 imbalance *= rescale_imbalance;
                 imbalance.shift(1.0);
@@ -168,17 +180,6 @@ namespace utopia {
                 io.register_output_field("cost");
                 io.write(1, 1);
             }
-
-            // std::vector<Scalar_t> from_norms, to_norms;
-
-            // l2_norm(field, from_norms);
-            // l2_norm(to_field, to_norms);
-
-            // int n_var = from_norms.size();
-
-            // for (int i = 0; i < n_var; ++i) {
-            //     utopia::out() << from_norms[i] << " -> " << to_norms[i] << '\n';
-            // }
         }
 
         FETransferApp() {}
