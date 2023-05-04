@@ -57,6 +57,8 @@ option(UTOPIA_ENABLE_STK "Enable the stk functionalities" OFF)
 option(UTOPIA_ENABLE_MOONOLITH "Enable the moonolith functionalities" ON)
 option(UTOPIA_ENABLE_ARBORX "Enable the ArborX backend" OFF)
 
+option(UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE "Removed trilinos deprecated code" OFF)
+
 option(UTOPIA_ENABLE_FLUYA_MODE "Create utopia_fe configuration required by Fluya (overrides everything else)" OFF)
 
 if(UTOPIA_ENABLE_TRILINOS OR UTOPIA_ENABLE_MARS OR UTOPIA_ENABLE_INTREPID2)

@@ -14,7 +14,11 @@ namespace utopia {
         class FunctionSpace::Impl {
         public:
             // using DeviceType = typename Kokkos::Device<Kokkos::DefaultExecutionSpace, KokkosSpace>;
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+            using MarsCrsMatrix = Matrix::CrsMatrixType::local_matrix_device_type;
+#else
             using MarsCrsMatrix = Matrix::CrsMatrixType::local_matrix_type;
+#endif
             using MapType = Matrix::MapType;
 
             using DeviceType = Matrix::CrsMatrixType::device_type;
