@@ -1,0 +1,16 @@
+app: stk_transfer
+from:
+  mesh: 
+    type: file
+    # path: solid.e
+    path: ${FLUID_MESH}
+to:
+  mesh: 
+    type: file
+    # path: fluid.e
+    path: ${SOLID_MESH}
+
+output_path: indicator.e
+export_operator_imbalance: true
+rescale_imbalance: ${RESCALE_IMBALANCE}
+# 
