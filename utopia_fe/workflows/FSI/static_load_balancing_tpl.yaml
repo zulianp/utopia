@@ -4,6 +4,12 @@ from:
     type: file
     path: ${FLUID_MESH}
 to:
+  displace: ${DISPLACE_SOLID}
+  variables:
+    - name: disp
+      order: FIRST
+      n_components: 3
+
   mesh: 
     type: file
     path: ${SOLID_MESH}

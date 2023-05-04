@@ -52,9 +52,9 @@ namespace utopia {
                     const auto n_nodes = from_space.mesh().n_nodes();
 
                     if (from_space.comm().rank() == 0) {
-                        utopia::out() << "[Mesh] n elements: " << n_elements << ", n nodes: " << n_nodes << '\n';
+                        utopia::out() << "[From Mesh] n elements: " << n_elements << ", n nodes: " << n_nodes << '\n';
 
-                        utopia::out() << "[Field] size: " << size_field << ", norm: " << norm_field << '\n';
+                        utopia::out() << "[From Field] size: " << size_field << ", norm: " << norm_field << '\n';
                     }
 
                 } else {
@@ -70,7 +70,31 @@ namespace utopia {
                 from_space.comm().root_print("Reading to!\n", utopia::out().stream());
             }
 
-            in.get("to", to_space);
+            // in.get("to", to_space);
+            in.get("to", [this](Input &in) {
+                bool displace = false;
+                in.get("displace", displace);
+
+                if (displace) {
+                    Field<FunctionSpace> displacement_field;
+                    to_space.read_with_state(in, displacement_field);
+                    to_space.displace(displacement_field.data());
+
+                    const Scalar_t norm_displacement_field = norm2(displacement_field.data());
+                    const Size_t size_displacement_field = displacement_field.data().size();
+
+                    const auto n_elements = to_space.mesh().n_elements();
+                    const auto n_nodes = to_space.mesh().n_nodes();
+
+                    if (to_space.comm().rank() == 0) {
+                        utopia::out() << "[To Mesh] n elements: " << n_elements << ", n nodes: " << n_nodes << '\n';
+                        utopia::out() << "[To Field] size: " << size_displacement_field
+                                      << ", norm: " << norm_displacement_field << '\n';
+                    }
+                } else {
+                    to_space.read(in);
+                }
+            });
 
             if (to_space.empty()) {
                 return;
