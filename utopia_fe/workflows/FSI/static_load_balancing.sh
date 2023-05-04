@@ -33,6 +33,7 @@ cp $1 $FLUID_MESH
 cp $2 $SOLID_MESH
 
 N_PARTS=$3
+# Control scale of the weights (effective range?)
 RESCALE_IMBALANCE=1
 
 rm -f resample.yaml temp_.yaml

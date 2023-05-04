@@ -128,19 +128,14 @@ namespace utopia {
 
             if (export_operator_imbalance) {
                 auto mat = transfer.transfer_matrix();
-                Matrix_t T_t = transpose(*mat);
+
+                mat->transform(
+                    UTOPIA_LAMBDA(const Size_t &, const Size_t &, const Scalar_t &v)->Scalar_t { return 1; });
 
                 // Compute imbalance = T^T * T * 1
-
-                T_t.transform(UTOPIA_LAMBDA(const Size_t &, const Size_t &, const Scalar_t &v)->Scalar_t { return 1; });
-
                 Vector_t ones(col_layout(*mat), 1);
                 Vector_t T_ones = (*mat) * ones;
-
-                Vector_t imbalance = T_t * T_ones;
-
-                imbalance *= rescale_imbalance;
-                imbalance.shift(1.0);
+                Vector_t imbalance = transpose(*mat) * T_ones;
 
                 from_space.write("imbalance.e", imbalance);
 
@@ -171,6 +166,12 @@ namespace utopia {
                             e_view.set(i, val);
                         });
                 }
+
+                Scalar_t max_imbalance = max(e_vec);
+                max_imbalance = std::max(max_imbalance, Scalar_t(1));
+                // Normalize
+                e_vec *= rescale_imbalance / max_imbalance;
+                e_vec.shift(1.0);
 
                 Field<FunctionSpace> elemental_field("cost", make_ref(from_space), make_ref(e_vec));
                 from_space.backend_set_elemental_field(elemental_field);
