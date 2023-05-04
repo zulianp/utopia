@@ -367,22 +367,24 @@ namespace utopia {
             }
 
             auto &bulk_data = this->mesh().bulk_data();
-            auto &elem_buckets = utopia::stk::local_elements(bulk_data);
-
             SizeType num_nodes_x_element = 0;
             {
-                for (const auto &ib : elem_buckets) {
-                    const Bucket_t &b = *ib;
-                    const Bucket_t::size_type length = b.size();
+                auto &elem_buckets = utopia::stk::local_elements(bulk_data);
 
-                    for (Bucket_t::size_type k = 0; k < length; ++k) {
-                        Entity_t elem = b[k];
-                        num_nodes_x_element = bulk_data.num_nodes(elem);
-                        break;
-                    }
+                {
+                    for (const auto &ib : elem_buckets) {
+                        const Bucket_t &b = *ib;
+                        const Bucket_t::size_type length = b.size();
 
-                    if (length) {
-                        break;
+                        for (Bucket_t::size_type k = 0; k < length; ++k) {
+                            Entity_t elem = b[k];
+                            num_nodes_x_element = bulk_data.num_nodes(elem);
+                            break;
+                        }
+
+                        if (length) {
+                            break;
+                        }
                     }
                 }
             }
@@ -395,6 +397,8 @@ namespace utopia {
             auto ml = matrix_layout(elemental_layout, nodal_layout);
 
             utopia::out() << "create_node_to_element_matrix\n";
+            utopia::out() << "nle: " << this->mesh().n_local_elements() << " nge: " << this->mesh().n_elements()
+                          << "\n";
             utopia::out() << ml.size(0) << ", " << ml.size(1) << "\n";
 
             matrix.sparse(ml, num_nodes_x_element, num_nodes_x_element);
@@ -412,6 +416,12 @@ namespace utopia {
 
             const bool is_block = matrix.is_block();
 
+            auto rr = matrix.row_range();
+
+            auto &meta_data = this->mesh().meta_data();
+            const BucketVector_t &elem_buckets =
+                bulk_data.get_buckets(::stk::topology::ELEMENT_RANK, meta_data.locally_owned_part());
+
             Size_t elem_idx = 0;
             for (const auto &ib : elem_buckets) {
                 const Bucket_t &b = *ib;
@@ -422,10 +432,10 @@ namespace utopia {
                     Entity_t elem = b[k];
                     // const Size_t elem_idx = utopia::stk::convert_entity_to_index(elem) - n_local_nodes;
 
-                    auto g_eid = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(elem));
-                    ;
+                    // auto g_eid = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(elem));
+
                     for (int i = 0; i < num_nodes_x_element; i++) {
-                        row_idx[i] = g_eid * num_nodes_x_element + i;
+                        row_idx[i] = rr.begin() + elem_idx * num_nodes_x_element + i;
                     }
 
                     const Size_t n_nodes = bulk_data.num_nodes(elem);
@@ -861,6 +871,10 @@ namespace utopia {
             auto &&local_to_global = dof_map().local_to_global();
 
             const int nv = n_var();
+            const int spatial_dim = mesh().spatial_dimension();
+
+            auto *coords = meta_data.coordinate_field();
+            assert(coords);
 
             if (local_to_global.empty()) {
                 assert(comm().size() == 1);
@@ -871,11 +885,19 @@ namespace utopia {
                     auto &bc = *bc_ptr;
                     auto *part = meta_data.get_part(bc.name);
                     if (part) {
+#ifdef UTOPIA_WITH_TINY_EXPR
+                        DirichletBoundary::VaryingCondition *varying_bc = nullptr;
+#endif
                         double value = 0;
                         const bool is_uniform = bc.is_uniform();
+
                         if (is_uniform) {
                             value = static_cast<DirichletBoundary::UniformCondition &>(bc).value();
-                        } else {
+                        } else
+#ifdef UTOPIA_WITH_TINY_EXPR
+                            if (!(varying_bc = dynamic_cast<DirichletBoundary::VaryingCondition *>(&bc)))
+#endif
+                        {
                             continue;
                         }
 
@@ -889,9 +911,19 @@ namespace utopia {
                                 auto node = b[k];
                                 auto idx = utopia::stk::convert_entity_to_index(node);
 
-                                // if (!is_uniform) {
-                                //     // TODO
-                                // }
+#ifdef UTOPIA_WITH_TINY_EXPR
+                                if (varying_bc) {
+                                    Scalar p[3] = {0., 0., 0.};
+                                    const Scalar *points = (const Scalar *)::stk::mesh::field_data(*coords, node);
+
+                                    for (int d = 0; d < spatial_dim; d++) {
+                                        p[d] = points[d];
+                                    }
+                                    value = varying_bc->eval(p[0], p[1], p[2]);
+                                }
+#else
+                                Utopia::Abort("Varying boundary conditions require UTOPIA_WITH_TINY_EXPR=ON!");
+#endif
 
                                 v_view.set(idx * nv + bc.component, value);
                             }
@@ -899,20 +931,24 @@ namespace utopia {
                     }
                 }
             } else {
-                // auto r = range(v);
-                // auto v_view = view_device(v);
-
                 Write<Vector> w(v, utopia::GLOBAL_INSERT);
 
                 for (auto &bc_ptr : impl_->dirichlet_boundary) {
                     auto &bc = *bc_ptr;
                     auto *part = meta_data.get_part(bc.name);
                     if (part) {
+#ifdef UTOPIA_WITH_TINY_EXPR
+                        DirichletBoundary::VaryingCondition *varying_bc = nullptr;
+#endif
                         double value = 0;
                         const bool is_uniform = bc.is_uniform();
                         if (is_uniform) {
                             value = static_cast<DirichletBoundary::UniformCondition &>(bc).value();
-                        } else {
+                        } else
+#ifdef UTOPIA_WITH_TINY_EXPR
+                            if (!(varying_bc = dynamic_cast<DirichletBoundary::VaryingCondition *>(&bc)))
+#endif
+                        {
                             continue;
                         }
 
@@ -927,10 +963,21 @@ namespace utopia {
                                 auto node = b[k];
                                 auto local_idx = utopia::stk::convert_entity_to_index(node);
                                 assert(local_idx < local_to_global.size());
+#ifdef UTOPIA_WITH_TINY_EXPR
+                                if (varying_bc) {
+                                    Scalar p[3] = {0., 0., 0.};
 
-                                // if (!is_uniform) {
-                                //     // TODO
-                                // }
+                                    const Scalar *points = (const Scalar *)::stk::mesh::field_data(*coords, node);
+
+                                    for (int d = 0; d < spatial_dim; d++) {
+                                        p[d] = points[d];
+                                    }
+
+                                    value = varying_bc->eval(p[0], p[1], p[2]);
+                                }
+#else
+                                Utopia::Abort("Varying boundary conditions require UTOPIA_WITH_TINY_EXPR=ON!");
+#endif
 
                                 v.c_set(local_to_global(local_idx, bc.component), value);
                             }
@@ -946,10 +993,11 @@ namespace utopia {
 
                 if (ow_bc && ow_bc->vector) {
                     overwrite_parts({ow_bc->name}, {ow_bc->component}, *ow_bc->vector, v);
-                } else {
-                    assert(false && "IMPLEMENT ME");
-                    Utopia::Abort("Invalid BC!");
                 }
+                // else {
+                //     assert(false && "IMPLEMENT ME");
+                //     Utopia::Abort("Invalid BC!");
+                // }
             }
         }
 
