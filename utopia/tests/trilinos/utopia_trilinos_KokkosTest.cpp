@@ -103,9 +103,11 @@ namespace utopia {
 
             TpetraVectord w(vl, -1.);
 
-            auto w_view = view_device(w);
-            parallel_for(
-                range_device(w), UTOPIA_LAMBDA(const SizeType &i) { w_view.set(i, i); });
+            {
+                auto w_view = view_device(w);
+                parallel_for(
+                    range_device(w), UTOPIA_LAMBDA(const SizeType &i) { w_view.set(i, i); });
+            }
 
             {
                 Read<TpetraVectord> r_(w);
