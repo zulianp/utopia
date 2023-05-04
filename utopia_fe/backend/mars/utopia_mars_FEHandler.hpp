@@ -60,7 +60,7 @@ namespace utopia {
                                           const std::string side,
                                           const int component) override {
                 // auto sp = *sparsity_pattern;
-                auto vec = v.raw_type()->getLocalView<::mars::KokkosSpace>();
+                auto vec = v.raw_type()->getLocalView<::mars::KokkosSpace>(Tpetra::Access::ReadWrite);
                 auto sp_dof_handler = get_dof_handler();
                 // BC set values to constraint value (i.e., boundary value)
                 dof_handler->boundary_dof_iterate(
@@ -72,7 +72,7 @@ namespace utopia {
             }
 
             void apply_zero_constraints(Vector &v, const std::string side, const int component) override {
-                auto vec = v.raw_type()->getLocalView<::mars::KokkosSpace>();
+                auto vec = v.raw_type()->getLocalView<::mars::KokkosSpace>(Tpetra::Access::ReadWrite);
                 auto dof_handler = get_dof_handler();
                 // BC set values to constraint value to zero
                 dof_handler.boundary_dof_iterate(
@@ -88,8 +88,8 @@ namespace utopia {
                                            const std::string side,
                                            const int component) override {
                 // auto sp = *sparsity_pattern;
-                auto in_view = in.raw_type()->getLocalView<::mars::KokkosSpace>();
-                auto out_view = out.raw_type()->getLocalView<::mars::KokkosSpace>();
+                auto in_view = in.raw_type()->getLocalView<::mars::KokkosSpace>(Tpetra::Access::ReadOnly);
+                auto out_view = out.raw_type()->getLocalView<::mars::KokkosSpace>(Tpetra::Access::ReadWrite);
                 auto sp_dof_handler = get_dof_handler();
 
                 // BC set values to constraint value (i.e., boundary value)

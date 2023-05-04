@@ -193,7 +193,7 @@ namespace utopia {
 
                 SparseMatrixBuilder matrix_builder(sp, hessian.raw_type()->getLocalMatrixDevice());
 
-                auto matrix = hessian.raw_type()->getLocalMatrix();
+                auto matrix = hessian.raw_type()->getLocalMatrixDevice();
                 // TODO: Add execution space for the Range policy
                 Kokkos::parallel_for(
                     "Reset values to 0", Kokkos::RangePolicy<>(0, matrix.values.extent(0)), UTOPIA_LAMBDA(const int i) {
