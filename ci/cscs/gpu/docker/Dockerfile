@@ -19,8 +19,6 @@ RUN mkdir -p /utopia.src/build \
     -DCMAKE_INSTALL_PREFIX=$UTOPIA_DIR \
     -DCMAKE_VERBOSE_MAKEFILE=ON \
     -DCMAKE_CXX_COMPILER=/opt/view/bin/nvcc_wrapper \
-    -DCMAKE_CXX_STANDARD=17 \
-    -DCMAKE_CXX_EXTENSIONS=OFF \
     -DBUILD_SHARED_LIBS=OFF \
     -DUTOPIA_ENABLE_SCRIPTING=OFF \
     -DUTOPIA_ENABLE_CXX14_FEATURES=ON \
@@ -38,14 +36,12 @@ RUN mkdir -p /utopia.src/utopia_fe/build \
   && cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$UTOPIA_DIR \
-    -DCMAKE_PREFIX_PATH=$MARS_DIR/lib/cmake \
     -DCMAKE_VERBOSE_MAKEFILE=ON \
     -DCMAKE_CXX_COMPILER=/opt/view/bin/nvcc_wrapper \
-    -DCMAKE_CXX_STANDARD=17 \
-    -DCMAKE_CXX_EXTENSIONS=OFF \
+    -DCMAKE_PREFIX_PATH=$MARS_DIR/lib/cmake \
     -DBUILD_SHARED_LIBS=OFF \
     -DUTOPIA_ENABLE_CXX14_FEATURES=ON \
-    -DUTOPIA_ENABLE_LIBMESH=OFF \
+    -DUTOPIA_ENABLE_LIBMESH=ON \
     -DUTOPIA_ENABLE_MARS=ON \
     /utopia.src/utopia_fe |& tee cmake_output.log \
   && ! grep 'Manually-specified variables were' cmake_output.log \
