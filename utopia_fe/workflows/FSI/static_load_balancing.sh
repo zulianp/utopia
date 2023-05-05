@@ -5,7 +5,9 @@
 
 set -e
 
-export PATH=$PWD:$PATH
+SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+
+export PATH=$SCRIPTPATH:$PATH
 
 if [[ -z "$UTOPIA_FE_EXEC" ]]
 then
@@ -25,8 +27,11 @@ then
 	exit -1
 fi
 
-FLUID_MESH=fluid.e
-SOLID_MESH=solid.e
+workspace=workspace
+mkdir -p $workspace
+
+FLUID_MESH=$workspace/`basename $1`
+SOLID_MESH=$workspace/`basename $2`
 
 # Copy the mesh to local folder
 cp $1 $FLUID_MESH
@@ -34,12 +39,20 @@ cp $2 $SOLID_MESH
 
 N_PARTS=$3
 # Control scale of the weights (effective range?)
-RESCALE_IMBALANCE=2
-DISPLACE_SOLID=true
+
+if [[ -z "$RESCALE_IMBALANCE" ]]
+then
+	RESCALE_IMBALANCE=2
+fi
+
+if [[ -z "$DISPLACE_SOLID" ]]
+then
+	DISPLACE_SOLID=true
+fi
 
 rm -f resample.yaml temp_.yaml
 ( echo "cat <<EOF >resample.yaml";
-  cat static_load_balancing_tpl.yaml;
+  cat $SCRIPTPATH/static_load_balancing_tpl.yaml;
   echo "EOF";
 ) >temp_.yaml
 . temp_.yaml
@@ -47,19 +60,26 @@ rm -f resample.yaml temp_.yaml
 rm temp_.yaml
 cat resample.yaml
 
-# Parallel node_to_element_matrix does not work yet
-# $TRILINOS_DIR/bin/decomp -p $N_PARTS $FLUID_MESH
-# $TRILINOS_DIR/bin/decomp -p $N_PARTS $SOLID_MESH
+# Parallel cost estimation or not
+if [[ -z "$COST_ESTIMATION_N_PROCS" ]]
+then
+	$UTOPIA_FE_EXEC @file resample.yaml
+else
+	# Parallel node_to_element_matrix does not work yet
+	cd $workspace
+	$TRILINOS_DIR/bin/decomp -p $COST_ESTIMATION_N_PROCS `basename $FLUID_MESH`
+	$TRILINOS_DIR/bin/decomp -p $COST_ESTIMATION_N_PROCS `basename $SOLID_MESH`
+	cd -
 
-# mpiexec -np $N_PARTS \
-$UTOPIA_FE_EXEC @file resample.yaml
-
-# costs=(`ls cost.*.*`)
-# $TRILINOS_DIR/bin/epu -auto ${costs[0]}
+	mpiexec -np $COST_ESTIMATION_N_PROCS \
+	$UTOPIA_FE_EXEC @file resample.yaml
+	costs=(`ls cost.*.*`)
+	$TRILINOS_DIR/bin/epu -auto ${costs[0]}
+fi
 
 rm -f input-ldbl temp_.txt
 ( echo "cat <<EOF >input-ldbl";
-  cat input-ldbl-tpl.txt;
+  cat $SCRIPTPATH/input-ldbl-tpl.txt;
   echo "EOF";
 ) >temp_.txt
 . temp_.txt

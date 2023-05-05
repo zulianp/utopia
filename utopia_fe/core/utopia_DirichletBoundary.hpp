@@ -78,6 +78,42 @@ namespace utopia {
         };
 
 #ifdef UTOPIA_WITH_TINY_EXPR
+        class VaryingCondition : public Condition {
+        public:
+            using Super = Condition;
+            static constexpr const char *class_name() { return "VaryingCondition"; }
+
+            std::unique_ptr<utopia::SymbolicFunction> expr_;
+            double t_{0};
+
+            void update(const SimulationTime<double> &t) override { t_ = t.get(); }
+
+            inline Scalar eval(const Scalar x, const Scalar y, const Scalar z) const {
+                return expr_->eval(x, y, z, t_);
+            }
+
+            bool is_uniform() const override { return false; }
+
+            VaryingCondition() : Super(), expr_(utopia::make_unique<SymbolicFunction>("0")) {}
+            VaryingCondition(std::string name, const int component)
+                : Super(std::move(name), component), expr_(utopia::make_unique<SymbolicFunction>("0")) {}
+
+            void read(Input &in) override {
+                Super::read(in);
+
+                std::string expr;
+                in.get("value", expr);
+                if (!expr.empty()) {
+                    *expr_ = utopia::symbolic(expr);
+                }
+            }
+
+            void describe(std::ostream &os) const override {
+                Super::describe(os);
+                os << "value:\t" << expr_->to_string() << '\n';
+            }
+        };
+
         class TimeDependentCondition : public UniformCondition {
         public:
             using Super = UniformCondition;
@@ -112,7 +148,7 @@ namespace utopia {
                 os << "value:\t" << expr_->to_string() << '\n';
             }
         };
-#endif //UTOPIA_WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
 
         class OverwriteCondition : public Condition {
         public:
@@ -157,15 +193,18 @@ namespace utopia {
 #ifdef UTOPIA_WITH_TINY_EXPR
                 if (type == TimeDependentCondition::class_name()) {
                     c = std::make_shared<TimeDependentCondition>();
-                } else 
-#endif //UTOPIA_WITH_TINY_EXPR
-                if (type.empty() || type == UniformCondition::class_name()) {
-                    c = std::make_shared<UniformCondition>();
-                } else if (type == OverwriteCondition::class_name()) {
-                    c = std::make_shared<OverwriteCondition>(nullptr);
-                } else {
-                    return;
-                }
+                } else if (type == VaryingCondition::class_name()) {
+                    // printf("VaryingCondition\n");
+                    c = std::make_shared<VaryingCondition>();
+                } else
+#endif  // UTOPIA_WITH_TINY_EXPR
+                    if (type.empty() || type == UniformCondition::class_name()) {
+                        c = std::make_shared<UniformCondition>();
+                    } else if (type == OverwriteCondition::class_name()) {
+                        c = std::make_shared<OverwriteCondition>(nullptr);
+                    } else {
+                        return;
+                    }
 
                 c->read(in);
                 this->add(c);
@@ -181,15 +220,18 @@ namespace utopia {
 #ifdef UTOPIA_WITH_TINY_EXPR
                 if (type == TimeDependentCondition::class_name()) {
                     c = std::make_shared<TimeDependentCondition>();
-                } else 
-#endif //UTOPIA_WITH_TINY_EXPR
-                if (type.empty() || type == UniformCondition::class_name()) {
-                    c = std::make_shared<UniformCondition>();
-                } else if (type == OverwriteCondition::class_name()) {
-                    c = std::make_shared<OverwriteCondition>(v);
-                } else {
-                    return;
-                }
+                } else if (type == VaryingCondition::class_name()) {
+                    // printf("VaryingCondition\n");
+                    c = std::make_shared<VaryingCondition>();
+                } else
+#endif  // UTOPIA_WITH_TINY_EXPR
+                    if (type.empty() || type == UniformCondition::class_name()) {
+                        c = std::make_shared<UniformCondition>();
+                    } else if (type == OverwriteCondition::class_name()) {
+                        c = std::make_shared<OverwriteCondition>(v);
+                    } else {
+                        return;
+                    }
 
                 c->read(in);
                 this->add(c);

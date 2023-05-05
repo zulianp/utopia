@@ -111,13 +111,13 @@ namespace utopia {
             in.get("export_operator_imbalance", export_operator_imbalance);
             in.get("rescale_imbalance", rescale_imbalance);
 
-            if (export_operator_imbalance && from_space.comm().size() != 1) {
-                if (!from_space.comm().rank()) {
-                    utopia::err() << "Option \"export_operator_imbalance : true\" only works for serial runs!\n";
-                }
+            // if (export_operator_imbalance && from_space.comm().size() != 1) {
+            //     if (!from_space.comm().rank()) {
+            //         utopia::err() << "Option \"export_operator_imbalance : true\" only works for serial runs!\n";
+            //     }
 
-                Utopia::Abort();
-            }
+            //     // Utopia::Abort();
+            // }
 
             if (verbose) {
                 from_space.comm().root_print("Exiting read!\n", utopia::out().stream());
