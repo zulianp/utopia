@@ -101,7 +101,10 @@ if(NOT TRILINOS_FOUND)
         "-DTrilinos_ENABLE_SEACASNemspread:BOOL=ON"
         "-DTrilinos_ENABLE_SEACASNemslice:BOOL=ON"
         "-DTrilinos_ENABLE_SEACASIoss:BOOL=ON"
-        "-DTrilinos_ENABLE_Percept:BOOL=ON")
+        "-DTrilinos_ENABLE_Zoltan2:BOOL=ON"
+        "-DTrilinos_ENABLE_Zoltan:BOOL=ON"
+        "-DTrilinos_ENABLE_Percept:BOOL=ON"
+        "-DTPL_ENABLE_Boost:BOOL=ON")
 
     list(APPEND TRILINOS_CMAKE_ARGS "-DTrilinos_ENABLE_Intrepid2:BOOL=ON")
 
