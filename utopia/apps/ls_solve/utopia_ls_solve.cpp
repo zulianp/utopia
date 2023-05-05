@@ -256,7 +256,7 @@ namespace utopia {
                 prec->rtol(1e-18);
                 prec->stol(1e-18);
                 prec->atol(1e-18);
-                prec->max_it(10);
+                prec->max_it(20);
 
                 cg->set_preconditioner(prec);
                 cg->rtol(1e-18);

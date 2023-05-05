@@ -67,8 +67,8 @@ then
 else
 	# Parallel node_to_element_matrix does not work yet
 	cd $workspace
-	$TRILINOS_DIR/bin/decomp -p $COST_ESTIMATION_N_PROCS `basename $FLUID_MESH`
-	$TRILINOS_DIR/bin/decomp -p $COST_ESTIMATION_N_PROCS `basename $SOLID_MESH`
+	$TRILINOS_DIR/bin/decomp -p $COST_ESTIMATION_N_PROCS --spectral -V `basename $FLUID_MESH`
+	$TRILINOS_DIR/bin/decomp -p $COST_ESTIMATION_N_PROCS --spectral -V `basename $SOLID_MESH`
 	cd -
 
 	mpiexec -np $COST_ESTIMATION_N_PROCS \
@@ -86,7 +86,7 @@ rm -f input-ldbl temp_.txt
 
 rm temp_.txt
 
-$TRILINOS_DIR/bin/decomp -p $N_PARTS -V -i input-ldbl $FLUID_MESH
+$TRILINOS_DIR/bin/decomp -p $N_PARTS --spectral -V -i input-ldbl $FLUID_MESH
 
 
 # clean-up
