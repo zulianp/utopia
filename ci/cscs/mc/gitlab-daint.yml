@@ -7,7 +7,7 @@ stages:
   - test # test stage is running on a slurm cluster
 
 variables:
-  PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/utopia_gpu:$CI_COMMIT_SHA
+  PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/utopia_mc:$CI_COMMIT_SHA
   UTOPIA_RUN_OPTS: '-data_path /utopia.src/utopia/data --verbose'
 
 build-utopia-baseimage:
@@ -21,18 +21,18 @@ build-utopia-baseimage:
     reports:
       dotenv: build.env
   variables:
-    DOCKERFILE: utopia/ci/cscs/gpu/docker/Dockerfile.base
+    DOCKERFILE: ci/cscs/mc/docker/Dockerfile.base
 
 build-utopia:
   extends: .container-builder
   stage: build
   variables:
-    DOCKERFILE: utopia/ci/cscs/gpu/docker/Dockerfile
+    DOCKERFILE: ci/cscs/mc/docker/Dockerfile
     DOCKER_BUILD_ARGS: '["BASE_IMAGE=$BASE_IMAGE"]'
     GIT_SUBMODULE_STRATEGY: recursive
 
-run-utopia-test:
-  extends: .container-runner-daint-gpu
+run-utopia-test-singletask:
+  extends: .container-runner-daint-mc
   image: $PERSIST_IMAGE_NAME
   variables:
     SLURM_NTASKS: 1
@@ -43,11 +43,9 @@ run-utopia-test:
     - cd /utopia.src/build
     # run all tests
     - ./utopia_test $UTOPIA_RUN_OPTS
-  # FIXME remove line below when tests are passing
-  allow_failure: true
 
 run-utopia-benchmark:
-  extends: .container-runner-daint-gpu
+  extends: .container-runner-daint-mc
   image: $PERSIST_IMAGE_NAME
   variables:
     SLURM_TIMELIMIT: "00:10:00"
