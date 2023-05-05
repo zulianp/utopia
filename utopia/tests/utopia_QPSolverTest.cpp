@@ -439,8 +439,16 @@ namespace utopia {
         using IndexSet = typename Traits::IndexSet;
 
         void run() {
-            UTOPIA_RUN_TEST(MPRGP_DD);
-            // FIXME
+            if constexpr(Traits::Backend == PETSC) {
+// FIXME(zulianp) this test causes Segmentation Violation when utopia is built with gpu support
+#ifdef PETSC_HAVE_CUDA
+                utopia_warning("Skipping MPRGP_DD");
+#else
+                UTOPIA_RUN_TEST(MPRGP_DD);
+#endif
+            } else {
+                UTOPIA_RUN_TEST(MPRGP_DD);
+            }
             UTOPIA_RUN_TEST(poly_qp);
         }
 

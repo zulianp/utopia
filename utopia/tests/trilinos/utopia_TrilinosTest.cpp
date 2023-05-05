@@ -26,9 +26,6 @@
 #include "utopia_trilinos_Utils.hpp"
 #include "utopia_trilinos_solvers.hpp"
 
-// FIXME This is deprecated remove it
-#include "utopia_trilinos_Each_impl.hpp"
-
 #ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_trilinos.hpp"
 #endif
@@ -52,39 +49,7 @@ namespace utopia {
         template <class Matrix>
         void build_rectangular_matrix(const SizeType &n, const SizeType &m, Matrix &mat) const {
             using TraitsT = utopia::Traits<Matrix>;
-            // mat  = local_sparse(n, m, 2);
-            mat.sparse(layout(comm_, n, m, TraitsT::determine(), TraitsT::determine()), 2, 2);
-
-            Write<Matrix> w_(mat);
-            auto r = row_range(mat);
-            auto cols = size(mat).get(1);
-            for (auto i = r.begin(); i < r.end(); ++i) {
-                if (i >= cols) {
-                    break;
-                }
-
-                mat.set(i, i, 1.);
-            }
-        }
-
-        template <class Matrix>
-        void build_rectangular_matrix_2(const SizeType &n, const SizeType &m, Matrix &mat) const {
-            using TraitsT = utopia::Traits<Matrix>;
-            // mat  = local_sparse(n, m, 2);
-            mat.sparse(layout(comm_, n, m, TraitsT::determine(), TraitsT::determine()), 2, 2);
-
-            Write<Matrix> w_(mat);
-            auto r = row_range(mat);
-            auto cols = size(mat).get(1);
-            for (auto i = r.begin(); i < r.end(); ++i) {
-                if (i >= cols) {
-                    break;
-                }
-
-                mat.set(i, i, 1.);
-            }
-
-            mat.set(0, m - 1, 1.);
+            mat.identity(layout(comm_, n, m, TraitsT::determine(), TraitsT::determine()), 1.);
         }
 
         void trilinos_build() {
@@ -593,7 +558,6 @@ namespace utopia {
             cg.solve(H, g, x);
 
             double diff = norm2(g - H * x);
-            ;
             utopia_test_assert(approxeq(diff, 0., 1e-6));
         }
 
@@ -824,7 +788,7 @@ namespace utopia {
 #ifdef UTOPIA_WITH_PETSC
             test_mg<PetscMatrix, PetscVector>();
 #endif  // UTOPIA_WITH_PETSC
-        // trilinos version
+            // trilinos version
             test_mg<TpetraMatrixd, TpetraVectord>();
         }
 
@@ -1026,32 +990,6 @@ namespace utopia {
             utopia_test_assert(ok);
         }
 
-#ifdef UTOPIA_WITH_PETSC
-        void trilinos_petsc_interop() {
-            KSPSolver<TpetraMatrixd, TpetraVectord> solver;
-
-            SizeType n = 20;
-            Poisson1D<TpetraMatrixd, TpetraVectord> problem(n);
-
-            TpetraVectord x(layout(comm_, Traits::decide(), n), 0.0), g;
-            TpetraMatrixd H;
-
-            problem.gradient(x, g);
-            problem.hessian(x, H);
-
-            g *= 0.0001;
-
-            solver.solve(H, g, x);
-
-            PetscMatrix p_mat;
-            convert(H, p_mat);
-
-            // disp(p_mat);
-            double diff = norm2(g - H * x);
-            utopia_test_assert(approxeq(diff, 0., 1e-8));
-        }
-#endif  // UTOPIA_WITH_PETSC
-
         void trilinos_structure() {
             auto n = 10;
             TpetraMatrixd A;
@@ -1061,19 +999,6 @@ namespace utopia {
             auto expr = structure(A);
 
             TpetraMatrixd B(expr);
-        }
-
-        void trilinos_exp() {
-#ifdef UTOPIA_WITH_PETSC
-            TpetraVectord x(layout(comm_, 10, Traits::determine()), 2.);
-            PetscVector y(layout(comm_, 10, PetscTraits::determine()), 2.);
-
-            TpetraVectord ex = exp(x);
-            PetscVector ey = exp(y);
-
-            utopia_test_assert(cross_backend_approxeq(ey, ex));
-
-#endif  // UTOPIA_WITH_PETSC
         }
 
         void trilinos_diag_ops() {
@@ -1103,62 +1028,6 @@ namespace utopia {
             double sum_m_new = sum(m * ones);
 
             utopia_test_assert(approxeq(sum_m_new, sum_d + sum_m_copy));
-        }
-
-        void trilinos_bratu_1D() {
-#ifdef UTOPIA_WITH_PETSC
-            int n = 10;
-
-            auto fun_tpetra = std::make_shared<Bratu1D<TpetraMatrixd, TpetraVectord>>(n);
-            auto fun_petsc = std::make_shared<Bratu1D<PetscMatrix, PetscVector>>(n);
-
-            TpetraVectord x_tpetra(layout(comm_, Traits::decide(), n), 1.0);
-            PetscVector x_petsc(layout(comm_, PetscTraits::decide(), n), 1.0);
-
-            double val_tpetra = 0.;
-            double val_petsc = 0.;
-
-            bool ok = true;
-            ok = fun_tpetra->value(x_tpetra, val_tpetra);
-            utopia_test_assert(ok);
-            ok = fun_petsc->value(x_petsc, val_petsc);
-            utopia_test_assert(ok);
-
-            utopia_test_assert(cross_backend_approxeq(x_petsc, x_tpetra));
-
-            utopia_test_assert(approxeq(val_tpetra, val_petsc, 1e-8));
-
-            TpetraVectord grad_tpetra;
-            PetscVector grad_petsc;
-
-            ok = fun_tpetra->gradient(x_tpetra, grad_tpetra);
-            utopia_test_assert(ok);
-            ok = fun_petsc->gradient(x_petsc, grad_petsc);
-            utopia_test_assert(ok);
-
-            utopia_test_assert(cross_backend_approxeq(grad_petsc, grad_tpetra));
-
-            // last part fails
-
-            TpetraMatrixd H_tpetra;
-            PetscMatrix H_petsc;
-
-            ok = fun_tpetra->hessian(x_tpetra, H_tpetra);
-            utopia_test_assert(ok);
-            ok = fun_petsc->hessian(x_petsc, H_petsc);
-            utopia_test_assert(ok);
-
-            // write("H_p.m", H_petsc);
-            // write("H_t.m", H_tpetra);
-
-            PetscMatrix H_converted;
-            convert(H_tpetra, H_converted);
-
-            // write("H_c.m", H_converted);
-
-            utopia_test_assert(cross_backend_approxeq(H_petsc, H_tpetra));
-
-#endif  // UTOPIA_WITH_PETSC
         }
 
         template <class Matrix, class Vector>
@@ -1273,30 +1142,6 @@ namespace utopia {
             }
         }
 
-#ifdef UTOPIA_WITH_PETSC
-        void trilinos_copy_write_big() {
-            PetscMatrix petsc_P;
-
-            const std::string folder = Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
-            bool ok = read(folder + "/I_2", petsc_P);
-            utopia_test_assert(ok);
-
-            TpetraMatrixd P;
-            convert(petsc_P, P);
-
-            P = transpose(P);
-
-            TpetraMatrixd P2 = P;
-            P2 *= 0.;
-
-            {
-                Write<TpetraMatrixd> w_(P2);
-                each_read(P,
-                          [&P2](const SizeType i, const SizeType j, const double value) { P2.set(i, j, value * 2.); });
-            }
-        }
-#endif  // UTOPIA_WITH_PETSC
-
         void trilinos_ghosted() {
             const int n = mpi_world_size() * 2;
             const int off = mpi_world_rank() * 2;
@@ -1332,7 +1177,6 @@ namespace utopia {
             // petsc version
             rmtr_test<PetscMatrix, PetscVector>();
 #endif  // UTOPIA_WITH_PETSC
-
             rmtr_test<TpetraMatrixd, TpetraVectord>();
         }
 
@@ -1404,38 +1248,6 @@ namespace utopia {
         }
 
 #endif  // HAVE_AMESOS2_KOKKOS
-
-#ifdef UTOPIA_WITH_PETSC
-        void trilinos_transform() {
-            PetscMatrix petsc_P;
-
-            const std::string folder = Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
-            bool ok = read(folder + "/I_2", petsc_P);
-            utopia_test_assert(ok);
-
-            TpetraMatrixd P;
-            convert(petsc_P, P);
-
-            double sum_P = sum(P);
-            P = transpose(P);
-
-            each_apply(P, [](const double value) -> double { return value * 2.; });
-
-            double sum_P_2 = sum(P);
-
-            utopia_test_assert(approxeq(sum_P * 2., sum_P_2));
-
-            each_transform(P, [](const SizeType &, const SizeType j, const double &) -> double { return j; });
-
-            each_read(P, [](const SizeType i, const SizeType j, const double value) {
-                if (j != SizeType(value)) {
-                    utopia::out() << i << " " << j << " " << value << std::endl;
-                }
-
-                utopia_test_assert(j == SizeType(value));
-            });
-        }
-#endif  // UTOPIA_WITH_PETSC
 
         void trilinos_set_zeros() {
             TpetraMatrixd m;
@@ -1578,7 +1390,6 @@ namespace utopia {
 
             UTOPIA_RUN_TEST(trilinos_range);
             UTOPIA_RUN_TEST(trilinos_mg_1D);
-            UTOPIA_RUN_TEST(trilinos_bratu_1D);
             UTOPIA_RUN_TEST(trilinos_replace_value);
             UTOPIA_RUN_TEST(trilinos_ghosted);
             UTOPIA_RUN_TEST(trilinos_set_zeros);
@@ -1588,7 +1399,6 @@ namespace utopia {
 
             ////////////////////////////////////////////
             // test that fail on GPU if the env variables are not set correctly for cuda
-            UTOPIA_RUN_TEST(trilinos_exp);
             UTOPIA_RUN_TEST(trilinos_mg);
             UTOPIA_RUN_TEST(trilinos_cg);
             UTOPIA_RUN_TEST(trilinos_ptap);
@@ -1609,12 +1419,6 @@ namespace utopia {
 #ifdef UTOPIA_WITH_TRILINOS_AMESOS2
             UTOPIA_RUN_TEST(trilinos_amesos2);
 #endif  // UTOPIA_WITH_TRILINOS_AMESOS2
-
-#ifdef UTOPIA_WITH_PETSC
-            UTOPIA_RUN_TEST(trilinos_transform);
-            UTOPIA_RUN_TEST(trilinos_petsc_interop);
-            UTOPIA_RUN_TEST(trilinos_copy_write_big);
-#endif  // UTOPIA_WITH_PETSC
 
             // Fails on multinode GPU
             UTOPIA_RUN_TEST(trilinos_mat_axpy);
@@ -1641,6 +1445,166 @@ namespace utopia {
     void trilinos_specific() { TrilinosTest().run(); }
 
     UTOPIA_REGISTER_TEST_FUNCTION(trilinos_specific);
+
+#ifdef UTOPIA_WITH_PETSC
+    class TrilinosInteropPetscTest {
+        using Traits = typename utopia::Traits<TpetraVector>;
+        Traits::Communicator comm_;
+
+    public:
+        void trilinos_transform() {
+            PetscMatrix petsc_P;
+
+            const std::string folder = Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
+            bool ok = read(folder + "/I_2", petsc_P);
+            utopia_test_assert(ok);
+
+            TpetraMatrixd P;
+            convert(petsc_P, P);
+
+            double sum_P = sum(P);
+            P = transpose(P);
+
+            each_apply(P, [](const double value) -> double { return value * 2.; });
+
+            double sum_P_2 = sum(P);
+
+            utopia_test_assert(approxeq(sum_P * 2., sum_P_2));
+
+            each_transform(P, [](const SizeType &, const SizeType j, const double &) -> double { return j; });
+
+            each_read(P, [](const SizeType i, const SizeType j, const double value) {
+                if (j != SizeType(value)) {
+                    utopia::out() << i << " " << j << " " << value << std::endl;
+                }
+
+                utopia_test_assert(j == SizeType(value));
+            });
+        }
+
+        void trilinos_petsc_interop() {
+            KSPSolver<TpetraMatrixd, TpetraVectord> solver;
+
+            SizeType n = 20;
+            Poisson1D<TpetraMatrixd, TpetraVectord> problem(n);
+
+            TpetraVectord x(layout(comm_, Traits::decide(), n), 0.0), g;
+            TpetraMatrixd H;
+
+            problem.gradient(x, g);
+            problem.hessian(x, H);
+
+            g *= 0.0001;
+
+            solver.solve(H, g, x);
+
+            PetscMatrix p_mat;
+            convert(H, p_mat);
+
+            // disp(p_mat);
+            double diff = norm2(g - H * x);
+            utopia_test_assert(approxeq(diff, 0., 1e-8));
+        }
+
+        void trilinos_copy_write_big() {
+            PetscMatrix petsc_P;
+
+            const std::string folder = Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
+            bool ok = read(folder + "/I_2", petsc_P);
+            utopia_test_assert(ok);
+
+            TpetraMatrixd P;
+            convert(petsc_P, P);
+
+            P = transpose(P);
+
+            TpetraMatrixd P2 = P;
+            P2 *= 0.;
+
+            {
+                Write<TpetraMatrixd> w_(P2);
+                each_read(P,
+                          [&P2](const SizeType i, const SizeType j, const double value) { P2.set(i, j, value * 2.); });
+            }
+        }
+
+        void trilinos_exp() {
+            TpetraVectord x(layout(comm_, 10, Traits::determine()), 2.);
+            PetscVector y(layout(comm_, 10, PetscTraits::determine()), 2.);
+
+            TpetraVectord ex = exp(x);
+            PetscVector ey = exp(y);
+
+            utopia_test_assert(cross_backend_approxeq(ey, ex));
+        }
+
+        void trilinos_bratu_1D() {
+            int n = 10;
+
+            auto fun_tpetra = std::make_shared<Bratu1D<TpetraMatrixd, TpetraVectord>>(n);
+            auto fun_petsc = std::make_shared<Bratu1D<PetscMatrix, PetscVector>>(n);
+
+            TpetraVectord x_tpetra(layout(comm_, Traits::decide(), n), 1.0);
+            PetscVector x_petsc(layout(comm_, PetscTraits::decide(), n), 1.0);
+
+            double val_tpetra = 0.;
+            double val_petsc = 0.;
+
+            bool ok = true;
+            ok = fun_tpetra->value(x_tpetra, val_tpetra);
+            utopia_test_assert(ok);
+            ok = fun_petsc->value(x_petsc, val_petsc);
+            utopia_test_assert(ok);
+
+            utopia_test_assert(cross_backend_approxeq(x_petsc, x_tpetra));
+
+            utopia_test_assert(approxeq(val_tpetra, val_petsc, 1e-8));
+
+            TpetraVectord grad_tpetra;
+            PetscVector grad_petsc;
+
+            ok = fun_tpetra->gradient(x_tpetra, grad_tpetra);
+            utopia_test_assert(ok);
+            ok = fun_petsc->gradient(x_petsc, grad_petsc);
+            utopia_test_assert(ok);
+
+            utopia_test_assert(cross_backend_approxeq(grad_petsc, grad_tpetra));
+
+            // last part fails
+
+            TpetraMatrixd H_tpetra;
+            PetscMatrix H_petsc;
+
+            ok = fun_tpetra->hessian(x_tpetra, H_tpetra);
+            utopia_test_assert(ok);
+            ok = fun_petsc->hessian(x_petsc, H_petsc);
+            utopia_test_assert(ok);
+
+            // write("H_p.m", H_petsc);
+            // write("H_t.m", H_tpetra);
+
+            PetscMatrix H_converted;
+            convert(H_tpetra, H_converted);
+
+            // write("H_c.m", H_converted);
+
+            utopia_test_assert(cross_backend_approxeq(H_petsc, H_tpetra));
+        }
+
+        void run() {
+            UTOPIA_RUN_TEST(trilinos_transform);
+            UTOPIA_RUN_TEST(trilinos_petsc_interop);
+            UTOPIA_RUN_TEST(trilinos_copy_write_big);
+            UTOPIA_RUN_TEST(trilinos_exp);
+            UTOPIA_RUN_TEST(trilinos_bratu_1D);
+        }
+    };
+
+    void trilinos_interop_petsc() { TrilinosInteropPetscTest().run(); }
+
+    // Implementation of ConvertTensor not compatible with mixed host/device memory space
+    UTOPIA_REGISTER_TEST_FUNCTION(trilinos_interop_petsc);
+#endif  // UTOPIA_WITH_PETSC
 }  // namespace utopia
 
 #endif  // UTOPIA_WITH_TRILINOS

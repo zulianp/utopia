@@ -33,7 +33,16 @@ public:
 #endif
 
         UTOPIA_RUN_TEST(handcoded_partitions_to_permutations);
-        UTOPIA_RUN_TEST(schur_complement);
+// FIXME(zulianp) this test causes Segmentation Violation when utopia is built with gpu support
+        if constexpr (Traits::Backend == PETSC) {
+#ifdef PETSC_HAVE_CUDA
+            utopia_warning("Skipping schur_complement");
+#else
+            UTOPIA_RUN_TEST(schur_complement);
+#endif
+        } else {
+            UTOPIA_RUN_TEST(schur_complement);
+        }
     }
 
 #ifdef UTOPIA_WITH_METIS

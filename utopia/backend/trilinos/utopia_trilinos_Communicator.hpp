@@ -73,7 +73,7 @@ namespace utopia {
 
         template <typename T>
         inline T min(const T &val) const {
-            T ret_global = 0.0;
+            T ret_global = static_cast<T>(0);
             Teuchos::reduceAll(*get(), Teuchos::REDUCE_MIN, 1, &val, &ret_global);
             return ret_global;
         }
