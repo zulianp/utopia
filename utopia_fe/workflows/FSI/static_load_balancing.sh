@@ -21,6 +21,11 @@ then
 	exit -1
 fi
 
+if [[ -z "$LAUNCH" ]]
+then
+	LAUNCH=mpiexec
+fi
+
 if (($# != 3))
 then
 	printf "usage: $0 <fluid.e> <solid.e> <n paritions>\n" 1>&2
@@ -71,7 +76,7 @@ else
 	$TRILINOS_DIR/bin/decomp -p $COST_ESTIMATION_N_PROCS --spectral -V `basename $SOLID_MESH`
 	cd -
 
-	mpiexec -np $COST_ESTIMATION_N_PROCS \
+	$LAUNCH -np $COST_ESTIMATION_N_PROCS \
 	$UTOPIA_FE_EXEC @file resample.yaml
 	costs=(`ls cost.*.*`)
 	$TRILINOS_DIR/bin/epu -auto ${costs[0]}
