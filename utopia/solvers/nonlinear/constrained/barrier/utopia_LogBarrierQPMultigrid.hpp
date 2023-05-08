@@ -1,6 +1,10 @@
 #ifndef UTOPIA_LOG_BARRIER_QP_MULTIGRID_SOLVER_HPP
 #define UTOPIA_LOG_BARRIER_QP_MULTIGRID_SOLVER_HPP
 
+#include "utopia_Base.hpp"
+
+#ifdef UTOPIA_ENABLE_PETSC
+
 #include "utopia_BarrierMultigrid.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_ILU.hpp"
@@ -9,7 +13,6 @@
 #include "utopia_QuadraticFunction.hpp"
 #include "utopia_polymorphic_LinearSolver.hpp"
 
-#ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_BlockAgglomerate.hpp"
 
 #include <iomanip>

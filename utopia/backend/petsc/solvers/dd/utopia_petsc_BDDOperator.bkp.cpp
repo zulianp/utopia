@@ -1248,8 +1248,8 @@ namespace utopia {
             if (impl_->verbose) comm().root_print("Using amg(A_GG) preconditioner");
 
             auto solver = std::make_shared<KSPSolver<Matrix, Vector>>();
-            solver->ksp_type("preonly");
-            solver->pc_type("hypre");
+            solver->ksp_type(KSPPREONLY);
+            solver->pc_type(PCHYPRE);
             solver->update(impl_->A_GG_);
             solver->max_it(1);
             return solver;

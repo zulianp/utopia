@@ -115,8 +115,6 @@ namespace utopia {
 
         const Vector &exact_sol() const override { return exact_sol_; }
 
-        Scalar min_function_value() const override { return -1.490057781426608e-01; }
-
         std::string name() const override { return "Membrane2D"; }
 
         SizeType dim() const override { return n_ * n_; }

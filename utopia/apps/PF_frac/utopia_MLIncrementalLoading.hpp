@@ -44,7 +44,6 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::read(...)");
             IncrementalLoadingBase<FunctionSpace>::read(in);
 
-            in.get("log_output_path", log_output_path_);
             in.get("n_coarse_sub_comm", n_coarse_sub_comm_);
             in.get("n_levels", n_levels_);
             in.get("save_output", save_output_);
@@ -52,9 +51,12 @@ namespace utopia {
             in.get("hjsmn_smoother", hjsmn_smoother_);
             in.get("block_solver", block_solver_);
             in.get("use_simd", use_simd_);
+            in.get("nx", nx_);
+            in.get("ny", ny_);
 
-            in.get("energy_csv_file_name", csv_file_name_);
+            log_output_path_ = this->output_path_ + "_log.csv";
 
+            // Creates the Problem Type
             init_ml_setup();
 
             for (std::size_t l = 0; l < level_functions_.size(); l++) {
@@ -79,7 +81,6 @@ namespace utopia {
                 std::cerr << "n_levels must be at least 2" << std::endl;
                 return false;
             }
-
             spaces_.resize(n_levels_);
 
             level_functions_.resize(n_levels_);
@@ -210,7 +211,7 @@ namespace utopia {
             }
 
             // auto ls = std::make_shared<GMRES<Matrix, Vector>>();
-            // ls->pc_type("bjacobi");
+            // ls->pc_type(PCBJACOBI);
             // tr_strategy_coarse = std::make_shared<utopia::SemismoothNewton<Matrix,
             // Vector>>(ls);
 
@@ -286,6 +287,8 @@ namespace utopia {
                 if (true) {
                     UTOPIA_UNUSED(space);
 
+                    // E.P Writing to file from Fracture model done here
+                    // Casting Fracture model into type and calling its write to file functionality
                     if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                         fun_finest->write_to_file(this->output_path_, this->solution_, time);
                     }
@@ -368,7 +371,8 @@ namespace utopia {
             spaces_.back()->apply_constraints(this->solution_);
 
             if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
-                fun_finest->build_irreversility_constraint(this->lb_, this->ub_);
+                fun_finest->build_irreversility_constraint(
+                    this->lb_, this->ub_);  // What is this doing and why is it hard coded values???? Double size
             }
 
             for (std::size_t l = 0; l < BC_conditions_.size(); l++) {
@@ -416,22 +420,39 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("MLIncrementalLoading::prepare_for_solve(...)");
         }
 
-        void update_time_step(const SizeType &conv_reason) override {
+        // NO ALTERNATIVE FOR Fracture_energy_monitoring=false
+        void update_time_step(const SizeType &conv_reason, bool) override {
             UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::update_time_step(...)");
 
             bool repeat_step = this->adjust_dt_on_failure_ && conv_reason < 0;
             if (!repeat_step) {
                 auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get());
                 if (fun_finest) {
-                    repeat_step = fun_finest->must_reduce_time_step(this->solution_);
+                    // E.P Calc frac energy at new solution
+                    // And repeat if larger than a certain tolerance
+                    Scalar trial_fracture_energy{0.0};
+                    fun_finest->fracture_energy(this->solution_, trial_fracture_energy);
+                    repeat_step = this->must_reduce_time_step(
+                        trial_fracture_energy);  // this also checks if frac energy change is too small
+
+                    // if we are at the minimum time step, do not shrink
+                    if (repeat_step == true && this->dt_ * this->shrinking_factor_ < this->dt_min_) {
+                        repeat_step = false;
+                        if (mpi_world_rank() == 0) {
+                            utopia::out() << "time step " << this->dt_ << " too close to minumum " << this->dt_min_
+                                          << " not reducing\n";
+                        }
+                    }
                 }
             }
 
             if (repeat_step) {
+                if (mpi_world_rank() == 0) {
+                    utopia::out() << "------- Repeating time step\n";
+                }
                 this->time_ -= this->dt_;
                 this->dt_ = this->dt_ * this->shrinking_factor_;
                 this->time_ += this->dt_;
-
                 if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                     fun_finest->make_iterate_feasible(this->lb_, this->ub_, this->solution_);
                     fun_finest->get_old_solution(this->solution_);
@@ -492,50 +513,127 @@ namespace utopia {
                     this->write_to_file(*spaces_.back(), this->time_);
                 }
 
+                // Advance time step
+                this->time_step_counter_ += 1;
+
+                // Choosing time step
+                if (this->increase_next_time_step_ && this->dt_ * this->increase_factor_ < this->dt_max_) {
+                    this->dt_ *= this->increase_factor_;     // E.P Increasing time step if decided earlier by
+                                                             // IncrementalLoadingBase
+                    this->increase_next_time_step_ = false;  // reset to zero for next time step
+                    if (mpi_world_rank() == 0) {
+                        utopia::out() << "------- Increasing next time step:  " << this->dt_ << "\n";
+                    }
+                }
+
+                // Changing time step if decided by Second Phase
                 if (this->time_ < second_phase_time_stepper_.start_time_) {
-                    // increment time step
-                    this->time_ += this->dt_;
-                    this->time_step_counter_ += 1;
+                    this->time_ += this->dt_;  // increment time step by first phase
                 } else {
-                    this->time_ += second_phase_time_stepper_.dt_;
-                    this->time_step_counter_ += 1;
+                    this->time_ += second_phase_time_stepper_.dt_;  // increment time step by second phase
                 }
             }
 
-            this->export_energies_csv();
+            // E.P this also updates the fracture energy at old time step
+            // Need to call for dynamic time stepping strategy that uses fracture energy
+            this->export_energies_csv(repeat_step);
 
             UTOPIA_TRACE_REGION_END("MLIncrementalLoading::update_time_step(...)");
         }
 
-        void export_energies_csv() {
-            if (!csv_file_name_.empty()) {
+        void export_energies_csv(bool repeat_step) {
+            if (!this->csv_file_name_.empty()) {
                 CSVWriter writer{};
-                Scalar elastic_energy = 0.0, fracture_energy = 0.0, error_tcv = 0.0, error_cod = 0.0;
+                Scalar elastic_energy = 0.0, fracture_energy = 0.0, error_tcv = 0.0, error_cod = 0.0, residual = 0.0,
+                       iterations = 0.0;
 
                 if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                     fun_finest->elastic_energy(this->solution_, elastic_energy);
                     fun_finest->fracture_energy(this->solution_, fracture_energy);
 
+                    residual = rmtr_->get_gnorm();
+                    iterations = rmtr_->get_total_iterations();
                     if (FunctionSpace::Dim == 3) {
                         fun_finest->compute_tcv(this->solution_, error_tcv);
                         fun_finest->compute_cod(this->solution_, error_cod);
                     }
                 }
 
+                if (!repeat_step) this->frac_energy_old_ = fracture_energy;  // only store old value if we dont repeat
+
                 if (mpi_world_rank() == 0) {
-                    if (!writer.file_exists(csv_file_name_)) {
-                        writer.open_file(csv_file_name_);
+                    if (!writer.file_exists(this->csv_file_name_)) {
+                        writer.open_file(this->csv_file_name_);
                         writer.write_table_row<std::string>(
-                            {"time", "elastic_energy", "fracture_energy", "error_tcv", "error_cod"});
+                            {"time step", "time", "elastic_energy", "fracture_energy", "residual", "iterations"});
                     } else {
-                        writer.open_file(csv_file_name_);
+                        writer.open_file(this->csv_file_name_);
                     }
 
-                    writer.write_table_row<Scalar>(
-                        {this->time_, elastic_energy, fracture_energy, error_tcv, error_cod});
+                    writer.write_table_row<Scalar>({static_cast<Scalar>(this->time_step_counter_),
+                                                    this->time_,
+                                                    elastic_energy,
+                                                    fracture_energy,
+                                                    residual,
+                                                    iterations});
+
                     writer.close_file();
                 }
             }
+        }
+
+        void export_setup_file() {
+            // Saving input file as txt
+            CSVWriter writer{};
+            std::string output_path = this->output_path_ + "_Setup.txt";
+
+            auto *fun_finest = dynamic_cast<ProblemType *>(this->level_functions_.back().get());
+
+            double atol = rmtr_->atol();
+            double atol_suff = rmtr_->atol_suff();
+            double suff_it = rmtr_->suff_it();
+
+            // Getting material properties
+            std::vector<double> p = fun_finest->WriteParametersToVector();
+            // p.nx, p.ny, this->dt_, p.Length_x, p.length_y, p.E, p.length_scale, p.fracture_toughness, p.atol,
+            // p.atol_suff
+            if (mpi_world_rank() == 0) {
+                if (writer.file_exists(output_path)) writer.remove_file(output_path);
+
+                writer.open_file(output_path);
+                writer.write_table_row<std::string>({"nx",
+                                                     "ny",
+                                                     "dt",
+                                                     "Length x",
+                                                     "Length y",
+                                                     "Youngs Modulus",
+                                                     "lengthscale",
+                                                     "Fracture Toughness",
+                                                     "atol",
+                                                     "atol_suff",
+                                                     "suff_it",
+                                                     "n levels",
+                                                     "dt_min"});
+                writer.write_table_row<Scalar>({Scalar(nx_),
+                                                Scalar(ny_),
+                                                this->dt_,
+                                                p[0],
+                                                p[1],
+                                                p[2],
+                                                p[3],
+                                                p[4],
+                                                atol,
+                                                atol_suff,
+                                                suff_it,
+                                                Scalar(n_levels_),
+                                                this->dt_min_});
+                writer.close_file();
+
+                std::cout << "Saving setup file: " << output_path << std::endl;
+            }
+
+            // Nodes not calibrated here
+            // fun_finest->export_material_params(this->output_path_);
         }
 
         void run() override {
@@ -548,6 +646,9 @@ namespace utopia {
             // init fine level spaces
             this->init(*spaces_[n_levels_ - 1]);
 
+            // Save material properties
+            export_setup_file();
+
             this->time_step_counter_ = 0;
             while (this->time_ < this->final_time_) {
                 if (mpi_world_rank() == 0) {
@@ -559,12 +660,15 @@ namespace utopia {
                                      "################# \n";
                 }
 
+                // applies boundary conditions based on time
                 prepare_for_solve();
 
+                // Just for very first time step
                 if (this->time_ == this->dt_) {
                     auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get());
                     fun_finest->set_old_solution(this->solution_);
                     fun_finest->set_dt(this->dt_);
+                    fun_finest->export_material_params(this->output_path_);
                 }
 
                 // ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -574,8 +678,13 @@ namespace utopia {
 
                 rmtr_->solve(this->solution_);
                 auto sol_status = rmtr_->solution_status();
+                this->total_wall_clock_time_ += rmtr_->get_time();
+                if (mpi_world_rank() == 0) {
+                    utopia::out() << "Total Wall clock time: " << this->total_wall_clock_time_ << "\n";
+                }
+
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////
-                update_time_step(sol_status.reason);
+                update_time_step(sol_status.reason, true);  // ML Incremenet only does frac energy monitoring
             }
 
             UTOPIA_TRACE_REGION_END("MLIncrementalLoading::run(...)");
@@ -600,6 +709,9 @@ namespace utopia {
         // Vector>, GALERKIN>> rmtr_; std::shared_ptr<RMTR_inf<Matrix, Vector,
         // TRGrattonBoxKornhuber<Matrix, Vector>, SECOND_ORDER>> rmtr_;
 
+        // mesh params
+        int nx_, ny_;
+
         bool save_output_;
 
         TimeStepperInfo<Scalar> second_phase_time_stepper_;
@@ -608,8 +720,6 @@ namespace utopia {
         bool hjsmn_smoother_;
         bool block_solver_{true};
         bool use_simd_{false};
-
-        std::string csv_file_name_;
     };
 
 }  // namespace utopia

@@ -27,6 +27,10 @@ if(USE_SPIKE_SOLVERS)
   list(APPEND UTOPIA_MODULES spike/solvers)
 endif()
 
+if(UTOPIA_ENABLE_ISOLVER)
+  add_subdirectory(../plug_in_and_out/isolver)
+endif()
+
 # #################  BACKENDS  ######################
 
 # ##############################################################################
@@ -312,10 +316,13 @@ if(UTOPIA_ENABLE_TRILINOS)
       string(TOLOWER ${package} packageLower)
       list(FIND Trilinos_PACKAGE_LIST ${package} PACKAGE_FOUND)
       if(NOT PACKAGE_FOUND EQUAL -1)
-        # # set(UTOPIA_WITH_TRILINOS_${packageUpper} TRUE) if(${package}
-        # STREQUAL "MueLu") # ugly hack, but we need to link with muelu-adapters
-        # also I cannot # wait until Trilinos finally supports cmake targets
-        # correctly list(APPEND UTOPIA_TRILINOS_DEPS ${MueLu_LIBRARIES}) endif()
+        set(UTOPIA_ENABLE_TRILINOS_${packageUpper} TRUE)
+        if(${package} STREQUAL "MueLu")
+          # ugly hack, but we need to link with muelu-adapters
+          # also I cannot # wait until Trilinos finally supports cmake targets
+          # correctly
+          list(APPEND UTOPIA_TRILINOS_DEPS ${MueLu_LIBRARIES})
+        endif()
         # message(STATUS "${package}")
         list(APPEND UTOPIA_TRILINOS_DEPS ${${package}_LIBRARIES})
       endif()

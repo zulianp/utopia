@@ -13,14 +13,14 @@ namespace utopia {
     public:
         using super = utopia::KSPSolver<Matrix, Vector, PETSC>;
 
-        BiCGStab(const std::string &preconditioner = "jacobi") : KSPSolver<Matrix, Vector, PETSC>() {
+        BiCGStab(const std::string &preconditioner = PCJACOBI) : KSPSolver<Matrix, Vector, PETSC>() {
             this->pc_type(preconditioner);
-            this->ksp_type("bcgs");
+            this->ksp_type(KSPBCGS);
         }
 
         void read(Input &is) override {
             super::read(is);
-            super::ksp_type("bcgs");
+            super::ksp_type(KSPBCGS);
         }
 
         BiCGStab *clone() const override { return new BiCGStab(*this); }
@@ -32,14 +32,14 @@ namespace utopia {
     public:
         using super = utopia::KSPSolver<Matrix, Vector, PETSC>;
 
-        MINRES(const std::string &preconditioner = "jacobi") : KSPSolver<Matrix, Vector, PETSC>() {
+        MINRES(const std::string &preconditioner = PCJACOBI) : KSPSolver<Matrix, Vector, PETSC>() {
             this->pc_type(preconditioner);
-            this->ksp_type("minres");
+            this->ksp_type(KSPMINRES);
         }
 
         void read(Input &is) override {
             super::read(is);
-            super::ksp_type("minres");
+            super::ksp_type(KSPMINRES);
         }
 
         MINRES *clone() const override { return new MINRES(*this); }
@@ -52,14 +52,14 @@ namespace utopia {
         using super = utopia::KSPSolver<Matrix, Vector, PETSC>;
 
         SOR() : KSPSolver<Matrix, Vector, PETSC>() {
-            this->pc_type("sor");
-            this->ksp_type("richardson");
+            this->pc_type(PCSOR);
+            this->ksp_type(KSPRICHARDSON);
         }
 
         void read(Input &is) override {
             super::read(is);
-            super::ksp_type("richardson");
-            super::pc_type("sor");
+            super::ksp_type(KSPRICHARDSON);
+            super::pc_type(PCSOR);
         }
 
         SOR *clone() const override { return new SOR(*this); }

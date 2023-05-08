@@ -1,7 +1,7 @@
 #include "test_problems/utopia_QPSolverTestProblem.hpp"
 #include "utopia.hpp"
-#include "utopia_AlgebraUnitTest.hpp"
 #include "utopia_BlockQPSolver.hpp"
+#include "utopia_SubCommUnitTest.hpp"
 
 #include "utopia_RedundantQPSolver.hpp"
 #include "utopia_SemismoothNewton_old.hpp"
@@ -18,15 +18,11 @@
 namespace utopia {
 
     template <class Matrix, class Vector>
-    class SubCommAlgebraTest final : public AlgebraUnitTest<Vector> {
+    class SubCommAlgebraTest final : public SubCommUnitTest<Vector> {
     public:
         using Traits = utopia::Traits<Vector>;
         using Scalar = typename Traits::Scalar;
         using SizeType = typename Traits::SizeType;
-        using IndexSet = typename Traits::IndexSet;
-        using Comm = typename Traits::Communicator;
-        using Layout = typename Traits::Layout;
-        using MatrixLayout = typename Traits::MatrixLayout;
 
         void sum_vectors() {
             Vector v1(layout(this->comm(), 2, this->comm().size() * 2), 1.0);
@@ -255,13 +251,14 @@ namespace utopia {
     };
 
     void sub_comm_algebra() {
+        const bool verbose = Utopia::instance().verbose();
 #ifdef UTOPIA_ENABLE_PETSC
-        run_parallel_test<SubCommAlgebraTest<PetscMatrix, PetscVector>>();
+        run_parallel_test<SubCommAlgebraTest<PetscMatrix, PetscVector>>(verbose);
 #endif  // UTOPIA_ENABLE_PETSC
 
-        // #ifdef UTOPIA_ENABLE_TRILINOS
-        //         run_parallel_test< SubCommAlgebraTest<TpetraMatrix, TpetraVector> >();
-        // #endif //UTOPIA_ENABLE_TRILINOS
+        // #ifdef UTOPIA_WITH_TRILINOS
+        //         run_parallel_test< SubCommAlgebraTest<TpetraMatrix, TpetraVector> >(verbose);
+        // #endif //UTOPIA_WITH_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(sub_comm_algebra);

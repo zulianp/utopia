@@ -9,8 +9,6 @@
 
 namespace utopia {
     template class KSPSolver<TpetraMatrixd, TpetraVectord, TRILINOS>;
-    template class Factorization<TpetraMatrixd, TpetraVectord, TRILINOS>;
-    template class BiCGStab<TpetraMatrixd, TpetraVectord, TRILINOS>;
     template class GaussSeidel<TpetraMatrixd, TpetraVectord, TRILINOS>;
 }  // namespace utopia
 

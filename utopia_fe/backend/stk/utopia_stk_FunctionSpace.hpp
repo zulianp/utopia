@@ -125,6 +125,8 @@ namespace utopia {
 
             void create_boundary_node_list(IndexArray &node_list) const;
 
+            void create_node_to_element_matrix(Matrix &matrix) const;
+
         private:
             class Impl;
             // class Var;

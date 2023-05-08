@@ -34,6 +34,7 @@ namespace utopia {
         inline constexpr static SolverType cg() { return "cg"; }
         inline constexpr static SolverType bicgstab() { return "bicgstab"; }
         inline constexpr static SolverType direct() { return "direct"; }
+        inline constexpr static SolverType gmres() { return "gmres"; }
         inline constexpr static SolverType ksp() { return "ksp"; }
 
         inline constexpr static SolverType lu_decomposition() { return "lu_decomposition"; }

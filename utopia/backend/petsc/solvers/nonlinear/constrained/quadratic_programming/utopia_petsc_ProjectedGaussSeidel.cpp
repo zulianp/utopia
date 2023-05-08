@@ -29,7 +29,7 @@ namespace utopia {
     ProjectedGaussSeidel<PetscMatrix, PetscVector, PETSC>::~ProjectedGaussSeidel() = default;
 
     ProjectedGaussSeidel<PetscMatrix, PetscVector, PETSC>::ProjectedGaussSeidel()
-        : n_local_sweeps_(3), check_s_norm_each_(1) {}
+        : n_local_sweeps_(1), check_s_norm_each_(10) {}
 
     // FIXME copy constructor creates weird behaviour
     ProjectedGaussSeidel<PetscMatrix, PetscVector, PETSC>::ProjectedGaussSeidel(const ProjectedGaussSeidel &other)

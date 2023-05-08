@@ -7,8 +7,10 @@
 #include "utopia_TRBase.hpp"
 #include "utopia_TRSubproblem.hpp"
 
+#include "utopia_Tracer.hpp"
+
 namespace utopia {
-    template <class Matrix, class Vector>
+    template <class Matrix, class Vector = typename Traits<Matrix>::Vector>
     class TrustRegion final : public NewtonBase<Matrix, Vector>, public TrustRegionBase<Vector> {
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
@@ -35,6 +37,8 @@ namespace utopia {
         }
 
         bool solve(Function<Matrix, Vector> &fun, Vector &x_k) override {
+            UTOPIA_TRACE_SCOPE("TrustRegion::solve");
+
             using namespace utopia;
 
             // passing solver and parameters into subproblem
@@ -77,6 +81,13 @@ namespace utopia {
                                    "delta_k",
                                    "|| p_k || "});
                 PrintInfo::print_iter_status(it, {g_norm});
+            }
+            else if (this->mini_verbose_){
+                this->init_solver("TRUST_REGION_BASE",
+                                  { " it. ",
+                                   "|| g ||",
+                                    "J_k" });
+                PrintInfo::print_iter_status(it, {g_norm, E_k });
             }
 
 #else
@@ -175,6 +186,8 @@ namespace utopia {
                 if (this->verbose_)
                     PrintInfo::print_iter_status(it,
                                                  {g_norm, r_norm, product, E_k, E_k1, ared, pred, rho, delta, s_norm});
+                else if (this->mini_verbose_)
+                    PrintInfo::print_iter_status(it, {g_norm, E_k});
 #else
                 if (this->verbose_) PrintInfo::print_iter_status(it, {g_norm, r_norm, E_k, E_k1, rho, delta, s_norm});
 #endif

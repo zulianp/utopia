@@ -183,7 +183,7 @@ namespace utopia {
 
             auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector>>("stcg", "lu", false);
 
-            if (x.comm().size() != 1) subproblem->pc_type("bjacobi");
+            if (x.comm().size() != 1) subproblem->pc_type(PCBJACOBI);
 
             subproblem->atol(1e-14);
             subproblem->max_it(1000);
@@ -278,7 +278,7 @@ namespace utopia {
             }
 
             // auto lsolver = std::make_shared<GMRES<Matrix, Vector> >();
-            // lsolver->pc_type("bjacobi");
+            // lsolver->pc_type(PCBJACOBI);
 
             // auto lsolver = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE>
             // >();

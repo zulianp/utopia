@@ -88,17 +88,19 @@ namespace utopia {
 
         void read(Input &in) override {
             MatrixFreeNonLinearSolver<Vector>::read(in);
-            in.get("dumping", alpha_);
+            in.get("damping", alpha_);
+            in.get_deprecated("dumping", "damping", alpha_);
 
             if (ls_strategy_) {
-                in.get("line-search", *ls_strategy_);
+                in.get("line_search", *ls_strategy_);
+                in.get_deprecated("line-search", "line_search", *ls_strategy_);
             }
         }
 
         void print_usage(std::ostream &os) const override {
             MatrixFreeNonLinearSolver<Vector>::print_usage(os);
-            this->print_param_usage(os, "dumping", "real", "Default step size.", "1.0");
-            this->print_param_usage(os, "line-search", "LSStrategy", "Input parameters for line-search strategy.", "-");
+            this->print_param_usage(os, "damping", "real", "Default step size.", "1.0");
+            this->print_param_usage(os, "line_search", "LSStrategy", "Input parameters for line-search strategy.", "-");
         }
 
         bool set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy) {
@@ -109,6 +111,11 @@ namespace utopia {
         void dumping_parameter(const Scalar &alpha) { alpha_ = alpha; }
 
         const Scalar dumping_parameter() { return alpha_; }
+
+
+        void damping_parameter(const Scalar &alpha) { alpha_ = alpha; }
+
+        const Scalar damping_parameter() { return alpha_; }
 
     private:
         Scalar alpha_;                            /*!< Dumping parameter. */

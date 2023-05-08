@@ -380,7 +380,7 @@ namespace utopia {
     class is_parallel<TensorType> {             \
     public:                                     \
         enum { value = true };                  \
-    }
+    };
 }  // namespace utopia
 
 #endif  // utopia_utopia_TRAITS_HPP

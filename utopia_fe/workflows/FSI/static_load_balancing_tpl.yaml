@@ -1,0 +1,22 @@
+app: stk_transfer
+from:
+  mesh: 
+    type: file
+    path: ${FLUID_MESH}
+    auto_aura: true
+to:
+  displace: ${DISPLACE_SOLID}
+  variables:
+    - name: disp
+      order: FIRST
+      n_components: 3
+
+  mesh: 
+    type: file
+    path: ${SOLID_MESH}
+    auto_aura: true
+    
+output_path: indicator.e
+export_operator_imbalance: true
+rescale_imbalance: ${RESCALE_IMBALANCE}
+# 

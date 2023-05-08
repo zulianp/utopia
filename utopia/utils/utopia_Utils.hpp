@@ -175,6 +175,10 @@ namespace utopia {
             if (pFile != nullptr && mpi_world_rank() == 0) fclose(pFile);
         }
 
+        void remove_file(const std::string file_name){
+            std::remove(file_name.c_str());
+        }
+
         inline bool file_exists(const std::string &file_name) {
             struct stat buffer {};
             return (stat(file_name.c_str(), &buffer) == 0);

@@ -5,12 +5,14 @@
 
 #ifdef UTOPIA_ENABLE_TRILINOS
 #include "utopia_Kokkos_ParallelFor.hpp"
+#include "utopia_Kokkos_ParallelReduce.hpp"
 #include "utopia_trilinos_DeviceView.hpp"
 #include "utopia_trilinos_Eval_Factory.hpp"
 #include "utopia_trilinos_ForwardDeclarations.hpp"
 #include "utopia_trilinos_RowView.hpp"
 #include "utopia_trilinos_Traits.hpp"
 #include "utopia_trilinos_Types.hpp"
+#include "utopia_trilinos_ViewHost.hpp"
 #include "utopia_trilinos_solvers.hpp"
 
 // optimizations
@@ -25,6 +27,7 @@
 #include "utopia_Tpetra_Matrix_impl.hpp"
 #include "utopia_Tpetra_Vector_impl.hpp"
 #include "utopia_trilinos_DiffController.hpp"
+#include "utopia_trilinos_Each_impl.hpp"
 #include "utopia_trilinos_LinearSolverFactory.hpp"
 #include "utopia_trilinos_MaxRowNNZ.hpp"
 // FIXME re-introduce later

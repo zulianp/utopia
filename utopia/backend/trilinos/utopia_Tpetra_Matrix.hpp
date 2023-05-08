@@ -79,7 +79,7 @@ namespace utopia {
         //   return mat_->clone(node2, params);
         // }
 
-        TpetraMatrix(const TpetraMatrix &other) : owner_(true) {
+        TpetraMatrix(const TpetraMatrix &other) : comm_(other.comm_), owner_(true) {
             if (!other.is_null()) {
                 mat_.reset(new CrsMatrixType(other.implementation(), Teuchos::Copy));
             }

@@ -1,7 +1,5 @@
 #include "utopia_trilinos_LinearSolverFactory.hpp"
 
-#include "utopia_AlgebraicMultigrid.hpp"
-#include "utopia_ConjugateGradient.hpp"
 #include "utopia_FactoryMethod.hpp"
 #include "utopia_LinearSolver.hpp"
 #include "utopia_LinearSolverFactory.hpp"
@@ -41,15 +39,14 @@ namespace utopia {
 
     void LinearSolverFactory<TpetraMatrix, TpetraVector, TRILINOS>::init() {
         solvers_[Solver::utopia_cg()] =
-            utopia::make_unique<LSFactoryMethod<ConjugateGradient<TpetraMatrix, TpetraVector, HOMEMADE>>>();
-        // solvers_[Solver::automatic()] = utopia::make_unique<LSFactoryMethod<BiCGStab<TpetraMatrix, TpetraVector>>>();
+            utopia::make_unique<LSFactoryMethod<ConjugateGradient<TpetraMatrix, TpetraVector>>>();
+        solvers_[Solver::automatic()] = utopia::make_unique<LSFactoryMethod<BiCGStab<TpetraMatrix, TpetraVector>>>();
         solvers_[Solver::cg()] = utopia::make_unique<LSFactoryMethod<ConjugateGradient<TpetraMatrix, TpetraVector>>>();
-        // solvers_[Solver::bicgstab()] = utopia::make_unique<LSFactoryMethod<BiCGStab<TpetraMatrix, TpetraVector>>>();
+        solvers_[Solver::bicgstab()] = utopia::make_unique<LSFactoryMethod<BiCGStab<TpetraMatrix, TpetraVector>>>();
         // solvers_[Solver::ksp()] = utopia::make_unique<LSFactoryMethod<KSPSolver<TpetraMatrix, TpetraVector>>>();
-        // solvers_[Solver::direct()] = utopia::make_unique<LSFactoryMethod<Factorization<TpetraMatrix,
-        // TpetraVector>>>(); solvers_["gmres"] = utopia::make_unique<LSFactoryMethod<GMRES<TpetraMatrix,
-        // TpetraVector>>>(); solvers_["amg"] = utopia::make_unique<LSFactoryMethod<AlgebraicMultigrid<TpetraMatrix,
-        // TpetraVector>>>();
+        solvers_[Solver::direct()] = utopia::make_unique<LSFactoryMethod<Factorization<TpetraMatrix, TpetraVector>>>();
+        solvers_[Solver::gmres()] = utopia::make_unique<LSFactoryMethod<GMRES<TpetraMatrix, TpetraVector>>>();
+        // solvers_["amg"] = utopia::make_unique<LSFactoryMethod<AlgebraicMultigrid<TpetraMatrix, TpetraVector>>>();
     }
 
 }  // namespace utopia

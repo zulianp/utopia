@@ -427,6 +427,8 @@ namespace utopia {
         bool verbose = false;
     };
 
+#ifdef UTOPIA_ENABLE_PETSC
+
     // FIXME merge with the other once it is poperly implemented
     template <class Matrix, class Vector>
     class PQPSolverTest {
@@ -639,6 +641,7 @@ namespace utopia {
         }
     };
 
+#endif
     template <class Matrix, class Vector>
     class MonotoneMGTest {
     public:
@@ -715,8 +718,8 @@ namespace utopia {
             auto coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
             // auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
             // auto coarse_smoother = std::make_shared<KSPSolver<Matrix, Vector>>();
-            // coarse_smoother->pc_type("bjacobi");
-            // coarse_smoother->ksp_type("cg");
+            // coarse_smoother->pc_type(PCBJACOBI);
+            // coarse_smoother->ksp_type(KSPCG);
 
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
             // auto direct_solver = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();

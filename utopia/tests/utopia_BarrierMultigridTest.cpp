@@ -1,5 +1,9 @@
 #include "utopia_Testing.hpp"
 
+#include "utopia_Base.hpp"
+
+#ifdef UTOPIA_WITH_PETSC
+
 #include "utopia.hpp"
 
 #include "test_problems/utopia_QPSolverTestProblem.hpp"
@@ -205,3 +209,5 @@ namespace utopia {
 
     UTOPIA_REGISTER_TEST_FUNCTION(barrier_mg);
 }  // namespace utopia
+
+#endif 

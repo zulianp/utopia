@@ -9,12 +9,18 @@ namespace utopia {
 
     template <typename Data, typename KokkosOp, typename Scalar>
     struct MatDataOpFunctor {
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 140000)
+        KOKKOS_INLINE_FUNCTION void join(Scalar &val, const Scalar &other) const {
+            val = op_.apply(val, other);
+        }
+#else
         KOKKOS_INLINE_FUNCTION void join(volatile Scalar &val, const volatile Scalar &other) const {
             // Kokkos forces us to have the input values being declared volatile. Hence we need to make copies for the
             // reduction operations
             const Scalar tmp1 = val, tmp2 = other;
             val = op_.apply(tmp1, tmp2);
         }
+#endif
 
         KOKKOS_INLINE_FUNCTION void operator()(const int &i, Scalar &val) const { val = op_.apply(val, data_(i)); }
 

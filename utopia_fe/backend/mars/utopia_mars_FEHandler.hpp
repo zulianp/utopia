@@ -60,7 +60,7 @@ namespace utopia {
                                           const std::string side,
                                           const int component) override {
                 // auto sp = *sparsity_pattern;
-                auto vec = v.raw_type()->getLocalView<::mars::KokkosSpace>();
+                auto vec = v.raw_type()->getLocalView<::mars::KokkosSpace>(Tpetra::Access::ReadWrite);
                 auto sp_dof_handler = get_dof_handler();
                 // BC set values to constraint value (i.e., boundary value)
                 dof_handler->boundary_dof_iterate(
@@ -72,7 +72,7 @@ namespace utopia {
             }
 
             void apply_zero_constraints(Vector &v, const std::string side, const int component) override {
-                auto vec = v.raw_type()->getLocalView<::mars::KokkosSpace>();
+                auto vec = v.raw_type()->getLocalView<::mars::KokkosSpace>(Tpetra::Access::ReadWrite);
                 auto dof_handler = get_dof_handler();
                 // BC set values to constraint value to zero
                 dof_handler.boundary_dof_iterate(
@@ -88,8 +88,8 @@ namespace utopia {
                                            const std::string side,
                                            const int component) override {
                 // auto sp = *sparsity_pattern;
-                auto in_view = in.raw_type()->getLocalView<::mars::KokkosSpace>();
-                auto out_view = out.raw_type()->getLocalView<::mars::KokkosSpace>();
+                auto in_view = in.raw_type()->getLocalView<::mars::KokkosSpace>(Tpetra::Access::ReadOnly);
+                auto out_view = out.raw_type()->getLocalView<::mars::KokkosSpace>(Tpetra::Access::ReadWrite);
                 auto sp_dof_handler = get_dof_handler();
 
                 // BC set values to constraint value (i.e., boundary value)
@@ -360,6 +360,26 @@ namespace utopia {
                 };
 
                 fe_dof_map.iterate(kernel);
+            }
+
+            void local_to_global(const Comm &comm,
+                                 const std::vector<KokkosDiscretization::ScalarAccumulator> &acc,
+                                 std::vector<Scalar> &scalars,
+                                 const Part &part = KokkosDiscretization::all()) override {
+                auto n = fe_dof_map->get_dof_handler().get_mesh().get_chunk_size();
+
+                Scalar summed = 0;
+                for (auto &a : acc) {
+                    Scalar temp = 0;
+
+                    Kokkos::parallel_reduce(
+                        "scalar_local_to_global", n, UTOPIA_LAMBDA(const int i, Scalar &acc) { acc += a(i, 0); }, temp);
+
+                    summed += temp;
+                }
+
+                summed = comm.sum(summed);
+                scalars[0] = summed;
             }
 
             void local_to_global_on_boundary(

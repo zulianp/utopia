@@ -35,7 +35,11 @@ namespace utopia {
             using IndexSet = Traits<FunctionSpace>::IndexSet;
             using Comm = Traits<FunctionSpace>::Communicator;
 
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+            using MarsCrsMatrix = Matrix::CrsMatrixType::local_matrix_device_type;
+#else
             using MarsCrsMatrix = Matrix::CrsMatrixType::local_matrix_type;
+#endif
 
             using FE = Traits<FunctionSpace>::FE;
             using KokkosDiscretization = utopia::kokkos::Discretization<FunctionSpace, FE>;
@@ -109,6 +113,11 @@ namespace utopia {
                                          AssemblyMode mode,
                                          Vector &vec,
                                          const KokkosDiscretization::Part &part = KokkosDiscretization::all()) = 0;
+
+            virtual void local_to_global(const Comm &comm,
+                                         const std::vector<KokkosDiscretization::ScalarAccumulator> &acc,
+                                         std::vector<Scalar> &scalars,
+                                         const Part &part = KokkosDiscretization::all()) = 0;
 
             virtual void local_to_global_on_boundary(
                 const std::vector<KokkosDiscretization::VectorAccumulator> &acc,

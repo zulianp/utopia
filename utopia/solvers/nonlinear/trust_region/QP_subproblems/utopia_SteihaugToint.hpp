@@ -7,6 +7,8 @@
 #include "utopia_Preconditioner.hpp"
 #include "utopia_TRSubproblem.hpp"
 
+#include "utopia_Tracer.hpp"
+
 namespace utopia {
     /**
      * @brief      Class for Steihaug Toint conjugate gradient.
@@ -34,6 +36,8 @@ namespace utopia {
         SteihaugToint *clone() const override { return new SteihaugToint(*this); }
 
         void update(const Operator<Vector> &A) override {
+            UTOPIA_TRACE_SCOPE("SteihaugToint::update");
+
             auto A_layout = row_layout(A);
 
             if (!initialized_ || !A_layout.same(layout_)) {
@@ -53,6 +57,8 @@ namespace utopia {
         }
 
         bool apply(const Vector &b, Vector &x) override {
+            UTOPIA_TRACE_SCOPE("SteihaugToint::apply");
+
             minus_rhs = -1.0 * b;
             if (this->precond_) {
                 // auto A_ptr = utopia::op(this->get_operator());
@@ -74,6 +80,8 @@ namespace utopia {
         // }
 
         bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override {
+            UTOPIA_TRACE_SCOPE("SteihaugToint::solve");
+
             minus_rhs = rhs;
             minus_rhs *= -1.0;
 
@@ -91,6 +99,8 @@ namespace utopia {
 
     private:
         bool unpreconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &corr) {
+            UTOPIA_TRACE_SCOPE("SteihaugToint::unpreconditioned_solve");
+
             r = -1.0 * g;
             v_k = r;
             Scalar alpha, g_norm, d_B_d, z, z1;
@@ -150,6 +160,8 @@ namespace utopia {
         }
 
         bool preconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &s_k) {
+            UTOPIA_TRACE_SCOPE("SteihaugToint::preconditioned_solve");
+
             bool converged = false;
             SizeType it = 0;
 
@@ -352,6 +364,8 @@ namespace utopia {
 
     public:
         void init_memory(const Layout &layout) override {
+            UTOPIA_TRACE_SCOPE("SteihaugToint::init_memory");
+
             // resets all buffers in case the size has changed
             v_k.zeros(layout);
             r.zeros(layout);

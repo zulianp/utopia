@@ -26,7 +26,8 @@ namespace utopia {
 
             {
                 auto x_view = view_device(x_init_);
-                parallel_for(range_device(x_init_), UTOPIA_LAMBDA(const SizeType &i) { x_view.set(i, i + 1.0); });
+                parallel_for(
+                    range_device(x_init_), UTOPIA_LAMBDA(const SizeType &i) { x_view.set(i, i + 1.0); });
             }
         }
 
@@ -96,10 +97,6 @@ namespace utopia {
         Vector initial_guess() const override { return x_init_; }
 
         const Vector &exact_sol() const override { return x_exact_; }
-
-        Scalar min_function_value() const override {
-            return 7.08765e-5;  // if n=10
-        }
 
     private:
         SizeType n_loc_;

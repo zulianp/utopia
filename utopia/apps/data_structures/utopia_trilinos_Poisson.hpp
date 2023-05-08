@@ -110,8 +110,6 @@ namespace utopia {
 
         const Vector &exact_sol() const override { return exact_sol_; }
 
-        Scalar min_function_value() const override { return -1.013634375000014e+01; }
-
         std::string name() const override { return "Poisson_Kokkos"; }
 
         SizeType dim() const override { return n_ * n_ * n_; }

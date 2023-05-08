@@ -54,9 +54,10 @@ namespace utopia {
                 run_tr(this->test_functions_, solver, "NewtonTest_CG_HOMEMADE_jacobi", this->verbose_);
             });
 
+#ifdef UTOPIA_WITH_PETSC  // call to pc_type() is only supported by PETSC KSP solver
             this->register_experiment("NewtonTest_CG_PETSC_jacobi", [this]() {
                 auto lin_solver = std::make_shared<utopia::ConjugateGradient<Matrix, Vector> >();
-                lin_solver->pc_type("sor");
+                lin_solver->pc_type(PCSOR);
                 // lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
                 // lin_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
 
@@ -67,6 +68,7 @@ namespace utopia {
                 Newton<Matrix, Vector> solver(lin_solver);
                 run_tr(this->test_functions_, solver, "NewtonTest_CG_PETSC_inv_diag", this->verbose_);
             });
+#endif  // UTOPIA_WITH_PETSC
 
             this->register_experiment("NewtonTest_STCG_inv_diag", [this]() {
                 auto lin_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
@@ -130,15 +132,15 @@ namespace utopia {
                 run_tr(
                     this->test_functions_, solver, "NewtonTest_BiCGStab_HOMEMADE_SimpleBacktracking", this->verbose_);
             });
-#endif
 
             this->register_experiment("TR_STCG", [this]() {
                 auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
-                subproblem->pc_type("asm");
+                subproblem->pc_type(PCASM);
                 TrustRegion<Matrix, Vector> solver(subproblem);
                 solver.delta0(1e10);
                 run_tr(this->test_functions_, solver, "TR_STCG", this->verbose_);
             });
+#endif  // UTOPIA_WITH_PETSC
         }
 
     private:

@@ -30,7 +30,7 @@ namespace utopia {
 
         std::string fe_family{"LAGRANGE"};
         std::string order{"FIRST"};
-        std::string name{"var"};
+        std::string name{"fevar"};
         int n_components{1};
     };
 

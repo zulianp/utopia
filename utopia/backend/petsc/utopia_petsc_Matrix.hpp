@@ -647,6 +647,16 @@ namespace utopia {
             update_mirror();
         }
 
+        void wrap(MPI_Comm comm,
+                  const PetscInt rows_local,
+                  const PetscInt cols_local,
+                  const PetscInt rows_global,
+                  const PetscInt cols_global,
+                  PetscInt *rowptr,
+                  PetscInt *colidx,
+                  PetscScalar *values,
+                  std::function<void()> destroy_callback);
+
         void own(Mat &mat) {
             wrapper_ = std::make_shared<PetscMatrixMemory>(mat, true);
             update_mirror();

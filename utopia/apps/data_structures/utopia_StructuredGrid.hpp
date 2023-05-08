@@ -126,6 +126,21 @@ namespace utopia {
             return min_h;
         }
 
+        UTOPIA_INLINE_FUNCTION constexpr Scalar min_spacing_x() const {
+            const SizeType n = dim();
+
+            Scalar min_h = (box_max_[0] - box_min_[0]) / dims_[0];
+            return min_h;
+        }
+
+
+        UTOPIA_INLINE_FUNCTION constexpr Scalar min_spacing_y() const {
+            const SizeType n = dim();
+
+            Scalar min_h = (box_max_[1] - box_min_[1]) / dims_[1];
+            return min_h;
+        }
+
         UTOPIA_INLINE_FUNCTION constexpr Scalar cell_size(const SizeType &, const SizeType &d) const {
             return (box_max_[d] - box_min_[d]) / (dims_[d] - 1);
         }

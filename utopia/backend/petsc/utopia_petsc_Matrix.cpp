@@ -532,17 +532,25 @@ namespace utopia {
     }
 
     PetscMatrix::Scalar PetscMatrix::sum() const {
-        Vec row_sum;
+        Scalar result = static_cast<Scalar>(0);
+        MPI_Comm comm = communicator();
 
-        MatCreateVecs(raw_type(), nullptr, &row_sum);
+        int size = 0;
+        MPI_Comm_size(comm, &size);
 
-        MatGetRowSum(raw_type(), row_sum);
+        if (!is_block() && (size == 1 || !is_mpi())) {
+            Vec v;
+            MatCreateVecs(raw_type(), nullptr, &v);
+            MatGetRowSum(raw_type(), v);
+            check_error(VecSum(v, &result));
 
-        Scalar res = 0.;
-        check_error(VecSum(row_sum, &res));
+            VecDestroy(&v);
+        } else {
+            result = generic_local_reduce(*this, result, utopia::Plus());
+            MPI_Allreduce(MPI_IN_PLACE, &result, 1, MPI_DOUBLE, MPI_SUM, comm);
+        }
 
-        VecDestroy(&row_sum);
-        return res;
+        return result;
     }
 
     PetscMatrix::Scalar PetscMatrix::max() const {
@@ -556,7 +564,7 @@ namespace utopia {
             Vec v;
             MatCreateVecs(raw_type(), nullptr, &v);
             MatGetRowMax(raw_type(), v, nullptr);
-            VecMax(v, nullptr, &result);
+            check_error(VecMax(v, nullptr, &result));
 
             VecDestroy(&v);
         } else {
@@ -578,7 +586,7 @@ namespace utopia {
             Vec v;
             MatCreateVecs(raw_type(), nullptr, &v);
             MatGetRowMin(raw_type(), v, nullptr);
-            VecMin(v, nullptr, &result);
+            check_error(VecMin(v, nullptr, &result));
 
             VecDestroy(&v);
         } else {
@@ -1682,6 +1690,34 @@ namespace utopia {
         } else {
             scalar_matrix = *this;
         }
+    }
+
+    // https://petsc.org/release/docs/manualpages/Mat/MatCreateMPIAIJWithSplitArrays/
+
+    void PetscMatrix::wrap(MPI_Comm comm,
+                           const PetscInt rows_local,
+                           const PetscInt cols_local,
+                           const PetscInt rows_global,
+                           const PetscInt cols_global,
+                           PetscInt *rowptr,
+                           PetscInt *colidx,
+                           PetscScalar *values,
+                           std::function<void()> destroy_callback) {
+        destroy();
+
+        int size;
+        MPI_Comm_size(comm, &size);
+
+        if (size == 1) {
+            check_error(MatCreateSeqAIJWithArrays(comm, rows_global, cols_global, rowptr, colidx, values, &raw_type()));
+
+        } else {
+            check_error(MatCreateMPIAIJWithArrays(
+                comm, rows_local, cols_local, rows_global, cols_global, rowptr, colidx, values, &raw_type()));
+        }
+
+        this->destroy_callback = destroy_callback;
+        update_mirror();
     }
 
 }  // namespace utopia
