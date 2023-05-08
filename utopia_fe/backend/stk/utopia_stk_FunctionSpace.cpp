@@ -885,7 +885,7 @@ namespace utopia {
                     auto &bc = *bc_ptr;
                     auto *part = meta_data.get_part(bc.name);
                     if (part) {
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
                         DirichletBoundary::VaryingCondition *varying_bc = nullptr;
 #endif
                         double value = 0;
@@ -894,7 +894,7 @@ namespace utopia {
                         if (is_uniform) {
                             value = static_cast<DirichletBoundary::UniformCondition &>(bc).value();
                         } else
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
                             if (!(varying_bc = dynamic_cast<DirichletBoundary::VaryingCondition *>(&bc)))
 #endif
                         {
@@ -911,7 +911,7 @@ namespace utopia {
                                 auto node = b[k];
                                 auto idx = utopia::stk::convert_entity_to_index(node);
 
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
                                 if (varying_bc) {
                                     Scalar p[3] = {0., 0., 0.};
                                     const Scalar *points = (const Scalar *)::stk::mesh::field_data(*coords, node);
@@ -922,7 +922,7 @@ namespace utopia {
                                     value = varying_bc->eval(p[0], p[1], p[2]);
                                 }
 #else
-                                Utopia::Abort("Varying boundary conditions require UTOPIA_WITH_TINY_EXPR=ON!");
+                                Utopia::Abort("Varying boundary conditions require UTOPIA_ENABLE_TINY_EXPR=ON!");
 #endif
 
                                 v_view.set(idx * nv + bc.component, value);
@@ -937,7 +937,7 @@ namespace utopia {
                     auto &bc = *bc_ptr;
                     auto *part = meta_data.get_part(bc.name);
                     if (part) {
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
                         DirichletBoundary::VaryingCondition *varying_bc = nullptr;
 #endif
                         double value = 0;
@@ -945,7 +945,7 @@ namespace utopia {
                         if (is_uniform) {
                             value = static_cast<DirichletBoundary::UniformCondition &>(bc).value();
                         } else
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
                             if (!(varying_bc = dynamic_cast<DirichletBoundary::VaryingCondition *>(&bc)))
 #endif
                         {
@@ -963,7 +963,7 @@ namespace utopia {
                                 auto node = b[k];
                                 auto local_idx = utopia::stk::convert_entity_to_index(node);
                                 assert(local_idx < local_to_global.size());
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
                                 if (varying_bc) {
                                     Scalar p[3] = {0., 0., 0.};
 
@@ -976,7 +976,7 @@ namespace utopia {
                                     value = varying_bc->eval(p[0], p[1], p[2]);
                                 }
 #else
-                                Utopia::Abort("Varying boundary conditions require UTOPIA_WITH_TINY_EXPR=ON!");
+                                Utopia::Abort("Varying boundary conditions require UTOPIA_ENABLE_TINY_EXPR=ON!");
 #endif
 
                                 v.c_set(local_to_global(local_idx, bc.component), value);

@@ -5,7 +5,7 @@
 
 namespace utopia {
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
     class TrilinosLinearSolverTest : public SubCommUnitTest<TpetraVector> {
     public:
         void run() override {
@@ -16,16 +16,16 @@ namespace utopia {
             UTOPIA_RUN_TEST(trilinos_bicg);
             UTOPIA_RUN_TEST(trilinos_gmres);
             // then with preconditioner
-#ifdef UTOPIA_WITH_TRILINOS_IFPACK2
+#ifdef UTOPIA_ENABLE_TRILINOS_IFPACK2
             UTOPIA_RUN_TEST(trilinos_cg_ilut);
             UTOPIA_RUN_TEST(trilinos_bicg_ilut);
             UTOPIA_RUN_TEST(trilinos_gmres_ilut);
 #endif
-#ifdef UTOPIA_WITH_TRILINOS_MUELU
+#ifdef UTOPIA_ENABLE_TRILINOS_MUELU
             UTOPIA_RUN_TEST(trilinos_cg_mg);
             UTOPIA_RUN_TEST(trilinos_bicg_mg);
             UTOPIA_RUN_TEST(trilinos_gmres_mg);
-#endif  // UTOPIA_WITH_TRILINOS_MUELU
+#endif  // UTOPIA_ENABLE_TRILINOS_MUELU
         }
 
     private:
@@ -116,19 +116,19 @@ namespace utopia {
             trilinos_solver_test(solver);
         }
 
-#ifdef UTOPIA_WITH_TRILINOS_IFPACK2
+#ifdef UTOPIA_ENABLE_TRILINOS_IFPACK2
         void trilinos_cg_ilut() { trilinos_cg("ILUT"); }
         void trilinos_bicg_ilut() { trilinos_bicg("ILUT"); }
         void trilinos_gmres_ilut() { trilinos_gmres("ILUT"); }
         void trilinos_minres_ilut() { trilinos_minres("ILUT"); }
-#endif  // UTOPIA_WITH_TRILINOS_IFPACK2
+#endif  // UTOPIA_ENABLE_TRILINOS_IFPACK2
 
-#ifdef UTOPIA_WITH_TRILINOS_MUELU
+#ifdef UTOPIA_ENABLE_TRILINOS_MUELU
         void trilinos_cg_mg() { trilinos_cg("MueLu"); }
         void trilinos_bicg_mg() { trilinos_bicg("MueLu"); }
         void trilinos_gmres_mg() { trilinos_gmres("MueLu"); }
         void trilinos_minres_mg() { trilinos_minres("MueLu"); }
-#endif  // UTOPIA_WITH_TRILINOS_MUELU
+#endif  // UTOPIA_ENABLE_TRILINOS_MUELU
     };
 
     void trilinos_solver() {
@@ -138,5 +138,5 @@ namespace utopia {
 
     UTOPIA_REGISTER_TEST_FUNCTION(trilinos_solver);
 
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
 }  // namespace utopia

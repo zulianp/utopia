@@ -1,6 +1,6 @@
 
 #include "utopia.hpp"
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 
 #include "utopia_Newton.hpp"
 #include "utopia_SubCommUnitTest.hpp"
@@ -54,7 +54,6 @@ namespace utopia {
 
             // solve_and_verify(mprgp, fun);
 
-
             QPSolverTestProblem<Matrix, Vector> fun;
             PMPRGP<Matrix, Vector> pmprgp;
             pmprgp.rtol(1e-14);
@@ -67,22 +66,22 @@ namespace utopia {
 
     void psqp_test() {
         const bool verbose = Utopia::instance().verbose();
-        // #ifdef UTOPIA_WITH_BLAS
+        // #ifdef UTOPIA_ENABLE_BLAS
         //         // Serial backend
         //         run_serial_test<PreconditionedQPTest<BlasMatrixd, BlasVectord>>();
-        // #endif  // UTOPIA_WITH_BLAS
+        // #endif  // UTOPIA_ENABLE_BLAS
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         run_parallel_test<PreconditionedQPTest<PetscMatrix, PetscVector>>(verbose);
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
-        // #ifdef UTOPIA_WITH_TRILINOS
+        // #ifdef UTOPIA_ENABLE_TRILINOS
         //         run_parallel_test<PreconditionedQPTest<TpetraMatrixd, TpetraVectord>>(verbose);
-        // #endif  // UTOPIA_WITH_TRILINOS
+        // #endif  // UTOPIA_ENABLE_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(psqp_test);
 
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC

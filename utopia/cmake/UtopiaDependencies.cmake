@@ -28,7 +28,7 @@ if(USE_SPIKE_SOLVERS)
 endif()
 
 if(UTOPIA_ENABLE_ISOLVER)
-  add_subdirectory(../plug_in_and_out/isolver)
+  add_subdirectory(plug_in_and_out/isolver)
 endif()
 
 # #################  BACKENDS  ######################
@@ -310,7 +310,7 @@ if(UTOPIA_ENABLE_TRILINOS)
     # target names
     list(APPEND Utopia_Trilinos_possible_packages Amesos2 Belos Ifpack2 MueLu)
     foreach(package ${Utopia_Trilinos_possible_packages})
-      # e.g Amesos2: UTOPIA_WITH_TRILINOS_AMESOS2=TRUE if package is found in
+      # e.g Amesos2: UTOPIA_ENABLE_TRILINOS_AMESOS2=TRUE if package is found in
       # Trilinos_PACKAGE_LIST
       string(TOUPPER ${package} packageUpper)
       string(TOLOWER ${package} packageLower)
@@ -318,9 +318,8 @@ if(UTOPIA_ENABLE_TRILINOS)
       if(NOT PACKAGE_FOUND EQUAL -1)
         set(UTOPIA_ENABLE_TRILINOS_${packageUpper} TRUE)
         if(${package} STREQUAL "MueLu")
-          # ugly hack, but we need to link with muelu-adapters
-          # also I cannot # wait until Trilinos finally supports cmake targets
-          # correctly
+          # ugly hack, but we need to link with muelu-adapters also I cannot #
+          # wait until Trilinos finally supports cmake targets correctly
           list(APPEND UTOPIA_TRILINOS_DEPS ${MueLu_LIBRARIES})
         endif()
         # message(STATUS "${package}")
@@ -512,6 +511,50 @@ if(UTOPIA_ENABLE_TINY_EXPR)
   endif()
 endif()
 
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
+
+# #################ISOLVER######################
+if(UTOPIA_ENABLE_ISOLVER)
+  find_path(
+    ISOLVER_LSOLVE_DIR
+    NAMES isolver_lsolve.h
+    HINTS ${ISOLVER_DIR}/interfaces/lsolve
+          $ENV{ISOLVER_DIR}/isolver/interfaces/lsolve
+          ${CMAKE_CURRENT_SOURCE_DIR}/external/isolver/interfaces/lsolve)
+
+  if(NOT ISOLVER_LSOLVE_DIR)
+    message(FATAL_ERROR "${ISOLVER_LSOLVE_DIR}")
+  endif()
+
+  scan_directories(${ISOLVER_LSOLVE_DIR} "." UTOPIA_BUILD_INCLUDES
+                   UTOPIA_HEADERS UTOPIA_SOURCES)
+  set(UTOPIA_BUILD_INCLUDES ${UTOPIA_BUILD_INCLUDES})
+
+  set(UTOPIA_HEADERS ${UTOPIA_HEADERS})
+
+  set(UTOPIA_SOURCES ${UTOPIA_SOURCES})
+
+  find_path(
+    ISOLVER_NLSOLVE_DIR
+    NAMES isolver_function.h
+    HINTS ${ISOLVER_DIR}/interfaces/nlsolve
+          $ENV{ISOLVER_DIR}/isolver/interfaces/nlsolve
+          ${CMAKE_CURRENT_SOURCE_DIR}/external/isolver/interfaces/nlsolve)
+
+  if(NOT ISOLVER_NLSOLVE_DIR)
+    message(FATAL_ERROR "${ISOLVER_NLSOLVE_DIR}")
+  endif()
+
+  scan_directories(${ISOLVER_NLSOLVE_DIR} "." UTOPIA_BUILD_INCLUDES
+                   UTOPIA_HEADERS UTOPIA_SOURCES)
+  set(UTOPIA_BUILD_INCLUDES ${UTOPIA_BUILD_INCLUDES})
+
+  set(UTOPIA_HEADERS ${UTOPIA_HEADERS})
+
+  set(UTOPIA_SOURCES ${UTOPIA_SOURCES})
+endif()
 # ##############################################################################
 # ##############################################################################
 # ##############################################################################

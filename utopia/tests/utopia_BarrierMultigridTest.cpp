@@ -2,7 +2,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 
 #include "utopia.hpp"
 
@@ -210,4 +210,4 @@ namespace utopia {
     UTOPIA_REGISTER_TEST_FUNCTION(barrier_mg);
 }  // namespace utopia
 
-#endif 
+#endif

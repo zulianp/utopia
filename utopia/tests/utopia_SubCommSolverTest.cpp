@@ -98,22 +98,22 @@ namespace utopia {
 
     void sub_comm_solver() {
         const bool verbose = Utopia::instance().verbose();
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
         // Serial backend
         run_serial_test<GradientDescentTest<BlasMatrixd, BlasVectord>>();
         // Disable NewtonTest beacuse Blas backend does not support GMRES linear solver.
         // run_serial_test<NewtonTest<BlasMatrixd, BlasVectord>>();
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         run_parallel_test<GradientDescentTest<PetscMatrix, PetscVector>>(verbose);
         run_parallel_test<NewtonTest<PetscMatrix, PetscVector>>(verbose);
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
         run_parallel_test<GradientDescentTest<TpetraMatrixd, TpetraVectord>>(verbose);
         run_parallel_test<NewtonTest<TpetraMatrix, TpetraVector>>(verbose);
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(sub_comm_solver);

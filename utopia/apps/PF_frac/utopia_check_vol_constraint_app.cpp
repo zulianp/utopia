@@ -40,7 +40,7 @@
 #include "utopia_TrivialPreconditioners.hpp"
 #include "utopia_TrustRegionVariableBound.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
 
@@ -54,20 +54,20 @@
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_RedundantQPSolver.hpp"
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 #include <chrono>
 #include <cmath>
 #include <random>
 
-#ifdef UTOPIA_WITH_VC
+#ifdef UTOPIA_ENABLE_VC
 #include "utopia_vc_IsotropicPhaseFieldForBrittleFractures.hpp"
-#endif  // UTOPIA_WITH_VC
+#endif  // UTOPIA_ENABLE_VC
 
 namespace utopia {
 
     template <class FunctionSpace>
-#ifdef UTOPIA_WITH_VC
+#ifdef UTOPIA_ENABLE_VC
     using FractureModel = utopia::VcIsotropicPhaseFieldForBrittleFractures<FunctionSpace>;
 #else
     using FractureModel = utopia::IsotropicPhaseFieldForBrittleFractures<FunctionSpace>;

@@ -5,7 +5,7 @@
 #include "utopia_Config.hpp"
 #include "utopia_ConjugateGradient.hpp"
 
-#ifdef UTOPIA_WITH_TRILINOS_BELOS
+#ifdef UTOPIA_ENABLE_TRILINOS_BELOS
 
 namespace utopia {
     /**
@@ -42,5 +42,5 @@ namespace utopia {
     };
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_TRILINOS_BELOS
+#endif  // UTOPIA_ENABLE_TRILINOS_BELOS
 #endif  // UTOPIA_TRILINOS_SOLVERS_CG_HPP

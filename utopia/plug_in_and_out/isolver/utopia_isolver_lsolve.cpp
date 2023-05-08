@@ -2,7 +2,7 @@
 #include "utopia_InputParameters.hpp"
 #include "utopia_polymorphic_LinearSolver.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc.hpp"
 #include "utopia_petsc_BDDLinearSolver.hpp"
 #include "utopia_petsc_LinearSolverFactory.hpp"
@@ -11,16 +11,16 @@ using Matrix_t = utopia::PetscMatrix;
 using Solver_t = utopia::KSPSolver<utopia::PetscMatrix, utopia::PetscVector>;
 // using Solver_t = utopia::BDDLinearSolver<utopia::PetscMatrix, utopia::PetscVector>;
 #else
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 using Matrix_t = utopia::TpetraMatrixd;
 using Solver_t = utopia::ConjugateGradient<utopia::TpetraMatrixd, utopia::TpetraVectord>;
 #else
 
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
 #error "Blas backend not enough for this feature!\nPlease use -DUTOPIA_ENABLE_ISOLVER=OFF"
-#endif  // UTOPIA_WITH_BLAS
-#endif  // UTOPIA_WITH_TRILINOS
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_BLAS
+#endif  // UTOPIA_ENABLE_TRILINOS
+#endif  // UTOPIA_ENABLE_PETSC
 
 using Vector_t = typename utopia::Traits<Matrix_t>::Vector;
 using Scalar_t = typename utopia::Traits<Matrix_t>::Scalar;
@@ -41,15 +41,15 @@ extern "C" {
 #include "isolver_lsolve.h"
 
 int ISOLVER_EXPORT isolver_lsolve_init(isolver_lsolve_t *info) {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     PetscInitializeNoArguments();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
     auto solver = new Solver_t();
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     solver->pc_type("hypre");
     solver->ksp_type("gmres");
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
     info->private_data = (void *)solver;
 
@@ -207,9 +207,9 @@ int ISOLVER_EXPORT isolver_lsolve_destroy(isolver_lsolve_t *info) {
     delete solver;
     info->private_data = nullptr;
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     PetscFinalize();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
     return 0;
 }
 }

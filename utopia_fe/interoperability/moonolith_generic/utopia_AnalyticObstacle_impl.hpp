@@ -72,7 +72,7 @@ namespace utopia {
             }
         };
 
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
         class Gap : public Fun {
         public:
             using Super = Fun;
@@ -117,7 +117,7 @@ namespace utopia {
                 normal_z = utopia::SymbolicFunction(expr_normal_z);
             }
         };
-#endif  // UTOPIA_WITH_TINY_EXPR
+#endif  // UTOPIA_ENABLE_TINY_EXPR
 
         std::vector<std::unique_ptr<Fun>> functions;
         bool update_transfer{true};
@@ -139,12 +139,12 @@ namespace utopia {
                     auto fun = utopia::make_unique<typename Impl::Plane>();
                     fun->read(node);
                     impl_->functions.push_back(std::move(fun));
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
                 } else if (type == Impl::Gap::name()) {
                     auto fun = utopia::make_unique<typename Impl::Gap>();
                     fun->read(node);
                     impl_->functions.push_back(std::move(fun));
-#endif  // UTOPIA_WITH_TINY_EXPR
+#endif  // UTOPIA_ENABLE_TINY_EXPR
                 } else {
                     Utopia::Abort("Unsupported obstacle fun type!");
                 }

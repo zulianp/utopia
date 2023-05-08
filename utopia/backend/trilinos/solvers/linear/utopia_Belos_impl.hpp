@@ -203,7 +203,7 @@ namespace utopia {
             direct_pc->initialize();
             direct_pc->compute();
             pc = direct_pc;
-#else   // UTOPIA_WITH_TRILINOS_IFPACK2
+#else   // UTOPIA_ENABLE_TRILINOS_IFPACK2
             m_utopia_error(
                 "Cannot use Direct Preconditioner with BelosSolver, since Trilinos was built without Ifpack2 support");
 #endif  // UTOPIA_ENABLE_TRILINOS_IFPACK2
@@ -219,7 +219,7 @@ namespace utopia {
 #else
             m_utopia_error(
                 "Cannot use MueLu as preconditioner with BelosSolver, since Trilinos was built without MueLu support");
-#endif  // UTOPIA_WITH_TRILINOS_MUELU
+#endif  // UTOPIA_ENABLE_TRILINOS_MUELU
         }
         if (!pc.is_null()) {
             std::string pc_side_lc(pc_side_);

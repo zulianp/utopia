@@ -75,6 +75,8 @@ option(UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE
 option(UTOPIA_ENABLE_FLUYA_MODE "Create utopia configuration required by Fluya"
        OFF)
 
+option(UTOPIA_ENABLE_ISOLVER "Enable ISolver" OFF)
+
 set(UTOPIA_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_ROOT_PATH}/cmake")
 
