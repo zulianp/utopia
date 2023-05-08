@@ -71,5 +71,5 @@ run-utopia_fe-test:
     - cd /utopia.src/utopia_fe/build
     # run all tests
     - ./utopia_fe_test --verbose
-  # FIXME some tests are failing
+  # FIXME some tests fail with Segmentation Violation when petsc is built with cuda support
   allow_failure: true
