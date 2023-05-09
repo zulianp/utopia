@@ -17,8 +17,10 @@ RUN mkdir -p /utopia.src/build \
   && cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$UTOPIA_DIR \
-    -DCMAKE_VERBOSE_MAKEFILE=ON \
+    -DCMAKE_VERBOSE_MAKEFILE=OFF \
     -DCMAKE_CXX_COMPILER=/opt/view/bin/nvcc_wrapper \
+    -DCMAKE_CXX_EXTENSIONS=OFF \
+    -DCMAKE_CXX_STANDARD=17 \
     -DBUILD_SHARED_LIBS=OFF \
     -DUTOPIA_ENABLE_SCRIPTING=OFF \
     -DUTOPIA_ENABLE_CXX14_FEATURES=ON \
@@ -36,7 +38,7 @@ RUN mkdir -p /utopia.src/utopia_fe/build \
   && cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$UTOPIA_DIR \
-    -DCMAKE_VERBOSE_MAKEFILE=ON \
+    -DCMAKE_VERBOSE_MAKEFILE=OFF \
     -DCMAKE_CXX_COMPILER=/opt/view/bin/nvcc_wrapper \
     -DCMAKE_PREFIX_PATH=$MARS_DIR/lib/cmake \
     -DBUILD_SHARED_LIBS=OFF \

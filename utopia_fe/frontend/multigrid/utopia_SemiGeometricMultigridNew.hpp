@@ -109,7 +109,7 @@ namespace utopia {
             params.set("block_size", this->block_size());
 
             auto smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
-            auto direct_solver = std::make_shared<KSPSolver<Matrix, Vector>>();
+            auto direct_solver = std::make_shared<BiCGStab<Matrix, Vector>>();
 
             smoother->read(params);
             algorithm_ = utopia::make_unique<Multigrid>(smoother, direct_solver);
