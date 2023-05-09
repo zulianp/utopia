@@ -234,6 +234,8 @@ namespace utopia {
             //     Utopia::Abort();
             // }
 
+            inline void must_apply_constraints(const bool val) override { must_apply_constraints_ = val; }
+
         private:
             AssemblyMode mode_{OVERWRITE_MODE};
             std::shared_ptr<Assembler> assembler_;

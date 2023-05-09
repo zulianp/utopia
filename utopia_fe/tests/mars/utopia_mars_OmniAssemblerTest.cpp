@@ -234,6 +234,7 @@ void mars_new_auto_assembler_test() {
 
     auto neohook = MaterialFactory_t::make(space.mesh().spatial_dimension(), "NeoHookeanOgden");
     neohook->initialize(make_ref(space));
+    neohook->must_apply_constraints(false);
 
     Matrix_t mat;
     space.create_matrix(mat);
