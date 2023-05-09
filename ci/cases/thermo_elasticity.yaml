@@ -1,0 +1,85 @@
+app: nlsolve
+matrix_free: false
+
+solver:
+  verbose: true
+  max-it: 10
+  linear_solver:
+    verbose: true
+    apply_gradient_descent_step: true
+    max_it: 1000
+    backend: petsc
+    type: ksp
+    ksp_type: gmres
+    pc_type: hypre
+
+problem:
+  # output_path: ./thermo_elasticity_out.vtu
+  # output_path: ./thermo_elasticity_out.e
+  output_path: ./thermo_elasticity_out.bp
+  assembly:
+    material:
+      type: WeakLinearThermoElasticity
+      displacement: 0
+      temperature: 3
+      mu: 10
+      lambda: 10
+      alpha: 0.5
+      verbose: true
+    quadrature_order: 5
+    # forcing_functions: # Not supported yet
+    # - where: volume
+    #   value: 0
+    #   verbose: false
+
+space:
+  # Generated mesh
+  n_var: 4
+  mesh:
+    type: cube
+    elem_type: HEX8
+    nx: 20
+    ny: 20
+    nz: 20
+    min_x: 0
+    min_y: 0
+    min_z: 0
+    max_x: 1
+    max_y: 1
+    max_z: 1
+  # Problem Variables
+  variables:
+  - name: displacement
+    order: FIRST
+    n_components: 3
+  - name: temperature
+    order: FIRST
+    n_components: 1
+  boundary_conditions:
+  - name: left
+    value: 0
+    var: 0
+  - name: left
+    value: 0
+    var: 1
+  - name: left
+    value: 0
+    var: 2
+  - name: left
+    value: 0
+    var: 3
+  - name: right
+    value: 0
+    var: 0
+  - name: right
+    value: 0
+    var: 1
+  - name: right
+    value: 0
+    var: 2
+  - name: right
+    value: 0
+    var: 3
+  - name: bottom
+    value: 1000
+    var: 3
