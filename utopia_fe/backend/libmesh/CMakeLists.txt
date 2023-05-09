@@ -36,6 +36,9 @@ if(LIBMESH_FOUND)
     utopiafe_add_module(utopia_libmesh ${CMAKE_CURRENT_SOURCE_DIR}
                         "${UTOPIA_LIBMESH_MODULES}")
 
+    # to avoid conflict with built-in operator
+    target_compile_definitions(utopia_libmesh PUBLIC PETSC_SKIP_CXX_COMPLEX_FIX)
+
     target_include_directories(utopia_libmesh BEFORE
                                PUBLIC ${LIBMESH_INCLUDE_DIR})
 

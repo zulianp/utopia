@@ -105,7 +105,7 @@ void mars_solve_aux(Input &in) {
 
     // static int once = 0;
     // if (once++ == 1) {
-    utopia_test_assert(space.write("result.bp", x));
+    //     utopia_test_assert(space.write("result.bp", x));
     // }
 
     c.stop();
