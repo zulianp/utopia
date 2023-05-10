@@ -7,6 +7,9 @@ stages:
   - test # test stage is running on a slurm cluster
 
 variables:
+  # for CUDA-aware MPI, Sarus requires LD_PRELOAD to be set in order to load
+  # the specified cuda libraries from the compute node before all others
+  CUDA_LIBS: '/usr/local/cuda/compat/libcuda.so:/usr/local/cuda/lib64/libcudart.so'
   PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/utopia_gpu:$CI_COMMIT_SHA
   UTOPIA_CASE_PATH: '/utopia.src/ci/cases/'
   UTOPIA_RUN_OPTS: '-data_path /utopia.src/utopia/data --verbose'
@@ -68,9 +71,7 @@ run-utopia_fe-test:
     # the tests are not installed, so we need to run them from the build directory
     - cd /utopia.src/utopia_fe/build
     # run all tests
-    - ./utopia_fe_test --verbose
-  # FIXME some tests fail with Segmentation Violation when petsc is built with cuda support
-  allow_failure: true
+    - env LD_PRELOAD=$CUDA_LIBS ./utopia_fe_test --verbose
 
 run-utopia_fe-mars:
   extends: .container-runner-daint-gpu
@@ -84,6 +85,6 @@ run-utopia_fe-mars:
     # the tests are not installed, so we need to run them from the build directory
     - cd /utopia.src/utopia_fe/build
     # run all tests
-    - ./utopia_fe_exec --verbose -backend mars @file $UTOPIA_CASE_PATH/elasticity.yaml
-    - ./utopia_fe_exec --verbose -backend mars @file $UTOPIA_CASE_PATH/poisson.yaml
-    - ./utopia_fe_exec --verbose -backend mars @file $UTOPIA_CASE_PATH/thermo_elasticity.yaml
+    - env LD_PRELOAD=$CUDA_LIBS ./utopia_fe_exec --verbose -backend mars @file $UTOPIA_CASE_PATH/elasticity.yaml
+    - env LD_PRELOAD=$CUDA_LIBS ./utopia_fe_exec --verbose -backend mars @file $UTOPIA_CASE_PATH/poisson.yaml
+    - env LD_PRELOAD=$CUDA_LIBS ./utopia_fe_exec --verbose -backend mars @file $UTOPIA_CASE_PATH/thermo_elasticity.yaml
