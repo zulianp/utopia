@@ -58,8 +58,6 @@ namespace utopia {
             std::variant<bool, int, std::string> value;
         };
 
-        inline Amesos2Solver *clone() const override { return new Amesos2Solver(*this); }
-
         Amesos2Solver(const Amesos2Solver &other);
         Amesos2Solver() = delete;
         Amesos2Solver(const std::string &solver_type,
