@@ -787,7 +787,7 @@ namespace utopia {
 #ifdef UTOPIA_WITH_PETSC
             test_mg<PetscMatrix, PetscVector>();
 #endif  // UTOPIA_WITH_PETSC
-        // trilinos version
+            // trilinos version
             test_mg<TpetraMatrixd, TpetraVectord>();
         }
 

@@ -587,6 +587,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(nnz_test);
             UTOPIA_RUN_TEST(trace_test);
             UTOPIA_RUN_TEST(in_place_test);
+
             UTOPIA_RUN_TEST(chop_test);
         }
     };
