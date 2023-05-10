@@ -696,45 +696,68 @@ namespace utopia {
         void read(Input & in) override {
             in.get("top_layer_height", ymax_);
             in.get("bottom_layer_height", ymin_);
+            in.get("random_damage", random_damage_);
+            in.get("uniform_damage", uniform_damage_);
+            in.get("IC_number", number_);
+
         }
 
         void init(PetscVector &x) override {
             using CoeffVector = utopia::StaticVector<Scalar, NNodes>;
             // un-hard-code
+
+            ///RANDOM DAMAGE /// ============================
             auto C = this->space_.subspace(PF_component_);
             int  total_nodes = this->space_.mesh().n_nodes();
-            auto min_elem = this->space_.mesh().min_spacing();
 
             auto xyz_min = this->space_.mesh().box_min();
             auto xyz_max = this->space_.mesh().box_max();
-
-            auto height = xyz_max(1) - xyz_min(1);
             auto width  = xyz_max(0) - xyz_min(0);
 
             double width_x = width / 10.0;
             double height_min = ymin_;
             double height_max = ymax_;
+            double height = ymax_ - ymin_;
+
             double damage_threshold = 1.;
 
             std::default_random_engine generator;
-            std::poisson_distribution<int> distribution(4);
-
-            if (mpi_world_rank() == 0) {
-                utopia::out() << "rand: " << double(rand())/RAND_MAX << "  \n";
-            }
-
-            std::vector<Rectangle<Scalar>> rectangles;
+            std::poisson_distribution<int> distribution(3);
 
             int seed = mpi_world_rank()*total_nodes;
             generator.seed(seed);
+            bool random_damage = random_damage_;
 
-            auto sampler = utopia::sampler(C, [&generator, &distribution, xyz_min, xyz_max, width_x, height_min, height_max, total_nodes, damage_threshold](const Point &x) -> Scalar {
-                if ( x(1) < height_max && x(1) > height_min &&
-                     x(0) > xyz_min(0) + width_x && x(0) < xyz_max(0) - width_x ) {
-                    double random_damage = double(distribution(generator))/10.0;
-                    if (random_damage >= damage_threshold) return 1.0;
+            /// Uniform Damage /// ========================
+            auto min_elem_x = this->space_.mesh().min_spacing_x();
+            auto min_elem_y = this->space_.mesh().min_spacing_y();
+
+            double number = number_;
+            bool uniform_damage = uniform_damage_;
+
+
+            auto sampler = utopia::sampler(C, [&generator, &distribution, uniform_damage, random_damage, width, height_max, height_min,
+                                             min_elem_x, min_elem_y, number, xyz_min, xyz_max, width_x, height,damage_threshold](const Point &x) -> Scalar {
+
+                if (uniform_damage){
+                    if ( x(1) <= height_max  && x(1) >= height_max - height/4.0 &&
+                         x(0) > xyz_min(0) + width_x && x(0) < xyz_max(0) - width_x &&
+                         fmod( x(0) , width/number) <= 0.5*width/number + 0.501*min_elem_x &&
+                         fmod( x(0) , width/number) >= 0.5*width/number - 0.501*min_elem_x  ){
+                        std::cout << x(0) << "  " << x(1) << std::endl;
+                        return 1.0;
+                    }
                     else return 0.0;
-                } else return 0.0;
+                }
+                if (random_damage){
+                    if ( x(1) < height_max && x(1) > height_min &&
+                         x(0) > xyz_min(0) + width_x && x(0) < xyz_max(0) - width_x ) {
+                        double rand_damage = double(distribution(generator))/10.0;
+                        if (rand_damage >= damage_threshold) return 1.0;
+                        else return 0.0;
+                    } else return 0.0;
+                }
+                return 0.0;
                 });
 
             {
@@ -757,6 +780,8 @@ namespace utopia {
     private:
         SizeType PF_component_;
         Scalar ymin_, ymax_;
+        bool random_damage_, uniform_damage_;
+        Scalar number_;
     };
 
 

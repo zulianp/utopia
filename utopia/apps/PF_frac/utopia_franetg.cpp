@@ -823,7 +823,9 @@ namespace utopia {
         stats.start();
 
         DamagedSedimentaryLayers<FunctionSpace> IC_setup(space, 0.0);
-        SedimentaryLayers<FunctionSpace> BC_setup(space, 0.0);
+        DirichletAndVolConstraints<FunctionSpace,
+                                   SedimentaryLayers<FunctionSpace>,
+                                   LayeredSubdomain<FunctionSpace>  > BC_setup(space);
 
         IncrementalLoading<FunctionSpace, ProblemType> time_stepper(space, IC_setup, BC_setup);
 
