@@ -4,6 +4,8 @@
 #include <Trilinos_version.h>
 #if (TRILINOS_MAJOR_MINOR_VERSION >= 140000)
 #include <Tpetra_KokkosCompat_DefaultNode.hpp>
+#else
+#include <Kokkos_DefaultNode.hpp>
 #endif
 #include <Tpetra_Operator.hpp>
 #include <vector>

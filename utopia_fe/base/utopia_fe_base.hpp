@@ -9,9 +9,12 @@ namespace utopia {
 #ifdef UTOPIA_WITH_TRILINOS_ALGEBRA
     using USparseMatrix = TpetraMatrixd;
     using UVector = TpetraVectord;
-#else
+#elif WITH_PETSC
     using USparseMatrix = PetscMatrix;
     using UVector = PetscVector;
+#else
+    using USparseMatrix = TpetraMatrixd;
+    using UVector = TpetraVectord;
 #endif  // UTOPIA_WITH_TRILINOS_ALGEBRA
 
     using UIndexArray = utopia::Traits<UVector>::IndexArray;

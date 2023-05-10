@@ -587,17 +587,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(nnz_test);
             UTOPIA_RUN_TEST(trace_test);
             UTOPIA_RUN_TEST(in_place_test);
-
-            // FIXME(zulianp) this test causes Segmentation Violation when utopia is built with gpu support
-            if constexpr (Traits::Backend == PETSC) {
-#ifdef PETSC_HAVE_CUDA
-                utopia_warning("Skipping chop_test");
-#else
-                UTOPIA_RUN_TEST(chop_test);
-#endif
-            } else {
-                UTOPIA_RUN_TEST(chop_test);
-            }
+            UTOPIA_RUN_TEST(chop_test);
         }
     };
 

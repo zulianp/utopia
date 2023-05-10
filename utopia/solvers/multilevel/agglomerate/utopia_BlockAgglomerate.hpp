@@ -2,15 +2,9 @@
 #define UTOPIA_BLOCK_AGGLOMERATE_HPP
 
 #include "utopia_Base.hpp"
-
-#ifdef UTOPIA_WITH_PETSC
-
+#include "utopia_CRSMatrix.hpp"
 #include "utopia_MatrixAgglomerator.hpp"
 
-#include "utopia_petsc_Utils.hpp"
-
-#include "utopia_CRSMatrix.hpp"
-#include "utopia_petsc_ILUDecompose.hpp"
 
 namespace utopia {
 
@@ -170,5 +164,4 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif
 #endif  // UTOPIA_BLOCK_AGGLOMERATE_HPP

@@ -192,8 +192,8 @@ namespace utopia {
         convert(dof_map.get_send_list(), ghost_nodes);
         UVector gx = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
 
-        std::vector<PetscInt> dofs(1);
-        std::vector<PetscScalar> vals(1);
+        std::vector<USizeType> dofs(1);
+        std::vector<UScalar> vals(1);
 
         for (int i = 0; i < spatial_dim; ++i) {
             gx = disp[i];

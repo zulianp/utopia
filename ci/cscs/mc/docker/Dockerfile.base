@@ -60,5 +60,5 @@ COPY --from=builder /etc/profile.d/z10_spack_environment.sh /etc/profile.d/z10_s
 RUN fix_spack_install
 
 RUN apt-get -yqq update && apt-get -yqq upgrade \
- && apt-get -yqq install build-essential gfortran \
+ && apt-get -yqq install build-essential gdb gfortran \
  && rm -rf /var/lib/apt/lists/*

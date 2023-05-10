@@ -84,7 +84,7 @@ void mars_solve_aux(Input &in) {
 
     c.start();
 
-    ConjugateGradient<Matrix_t, Vector_t> cg;
+    ConjugateGradient<Matrix_t, Vector_t, HOMEMADE> cg;
     cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix_t, Vector_t>>());
     cg.apply_gradient_descent_step(true);
     cg.max_it(200);
