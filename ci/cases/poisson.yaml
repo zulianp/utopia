@@ -1,0 +1,60 @@
+app: nlsolve
+matrix_free: false
+
+solver:
+  verbose: true
+  max-it: 10
+  linear_solver:
+    verbose: true
+  #   apply_gradient_descent_step: true
+  #   max-it: 20
+  #   max_it: 20
+  #   backend: petsc
+  #   type: ksp
+  #   ksp_type: cg
+  #   pc_type: hypre
+
+problem:
+  # output_path: ./poisson_out.vtu
+  output_path: ./poisson_out.bp
+  assembly:
+    material:
+      type: LaplaceOperator
+    quadrature_order: 4
+    # forcing_functions: # Not supported yet
+    # - where: volume
+    #   value: 1
+    #   verbose: false
+
+space:
+  # Generated mesh
+  mesh:
+    type: cube
+    elem_type: HEX8
+    nx: 20
+    ny: 20
+    nz: 20
+    min_x: 0
+    min_y: 0
+    min_z: 0
+    max_x: 1
+    max_y: 1
+    max_z: 1
+  # Problem Variables
+  variables:
+  - name: u
+    order: FIRST
+  # Dirichlet conditions
+  boundary_conditions:
+  - name: left
+    value: 0
+  - name: right
+    value: 1
+  # - name: bottom
+  #   value: 0
+  # - name: top
+  #   value: 0
+  # - name: back
+  #   value: 0
+  # - name: front
+  #   value: 0
