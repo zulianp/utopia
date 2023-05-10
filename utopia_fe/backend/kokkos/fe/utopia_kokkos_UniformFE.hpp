@@ -5,7 +5,6 @@
 #include "utopia_kokkos_FEBase.hpp"
 
 #include <Kokkos_DynRankView.hpp>
-#include <Kokkos_View.hpp>
 
 #include <cassert>
 

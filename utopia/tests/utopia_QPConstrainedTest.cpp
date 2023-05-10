@@ -172,10 +172,6 @@ namespace utopia {
 
     static void qp_constrained() {
 #ifdef UTOPIA_WITH_PETSC
-// FIXME(zulianp) this test causes Segmentation Violation when utopia is built with gpu support
-#ifdef PETSC_HAVE_CUDA
-        utopia_warning("Skipping qp_constrained");
-#else
         int verbosity_level = 1;
         const int n_global = 20;
         bool alg_verbose = false;
@@ -187,7 +183,6 @@ namespace utopia {
         QPConstrainedBenchmark<PetscMatrix, PetscVector> bench_petsc(n_global, alg_verbose);
         bench_petsc.set_verbosity_level(verbosity_level);
         bench_petsc.run();
-#endif  // PETSC_HAVE_CUDA
 #endif  // UTOPIA_WITH_PETSC
 
         // #ifdef UTOPIA_WITH_TRILINOS

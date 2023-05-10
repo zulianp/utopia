@@ -9,7 +9,6 @@
 #include "utopia_kokkos_FEForwardDeclarations.hpp"
 
 #include <Kokkos_DynRankView.hpp>
-#include <Kokkos_View.hpp>
 
 namespace utopia {
 
