@@ -48,10 +48,6 @@ run-utopia-benchmark:
   extends: .container-runner-daint-gpu
   image: $PERSIST_IMAGE_NAME
   variables:
-# FIXME multi-node execution fails on petsc backend (uncomment lines below)
-#   SLURM_JOB_NUM_NODES: 4
-#   SLURM_NTASKS_PER_NODE: 1
-#   SLURM_PARTITION: normal
     SLURM_TIMELIMIT: "00:10:00"
     USE_MPI: "YES"
   script:

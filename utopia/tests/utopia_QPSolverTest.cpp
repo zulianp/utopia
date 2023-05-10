@@ -428,7 +428,6 @@ namespace utopia {
     };
 
 #ifdef UTOPIA_WITH_PETSC
-
     // FIXME merge with the other once it is poperly implemented
     template <class Matrix, class Vector>
     class PQPSolverTest {
@@ -442,7 +441,6 @@ namespace utopia {
 
         void run() {
             UTOPIA_RUN_TEST(MPRGP_DD);
-            // FIXME
             UTOPIA_RUN_TEST(poly_qp);
         }
 

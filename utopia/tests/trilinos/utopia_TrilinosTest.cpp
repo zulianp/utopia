@@ -787,7 +787,7 @@ namespace utopia {
 #ifdef UTOPIA_WITH_PETSC
             test_mg<PetscMatrix, PetscVector>();
 #endif  // UTOPIA_WITH_PETSC
-            // trilinos version
+        // trilinos version
             test_mg<TpetraMatrixd, TpetraVectord>();
         }
 
@@ -1335,6 +1335,8 @@ namespace utopia {
             // FIXME fails from mpi_world_size() > 3
             UTOPIA_RUN_TEST(trilinos_copy_write);
 
+            ////////////////////////////////////////////
+            // test that fail on GPU if the env variables are not set correctly for cuda
             UTOPIA_RUN_TEST(trilinos_mg);
             UTOPIA_RUN_TEST(trilinos_cg);
             // FIXME fails with Floating Point Exception on PizDaint with more than 1 task

@@ -23,7 +23,7 @@ namespace utopia {
         }
 
         inline constexpr static SolverPackage default_package() {
-// FIXME solver package SUPERLU_DIST causes MPI error (invalid communicator) during MPI finalize
+// FIXME(zulianp) package SUPERLU_DIST causes MPI error (invalid communicator) during MPI finalize
 #if defined(PETSC_HAVE_SUPERLU_DIST) && (0)
             return MATSOLVERSUPERLU_DIST;
 #else  // PETSC_HAVE_SUPERLU_DIST
