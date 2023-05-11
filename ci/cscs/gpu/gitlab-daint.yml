@@ -41,9 +41,6 @@ build-utopia:
     DOCKERFILE: ci/cscs/gpu/docker/Dockerfile
     DOCKER_BUILD_ARGS: '["BASE_IMAGE=$BASE_IMAGE"]'
     GIT_SUBMODULE_STRATEGY: recursive
-    # FIXME delete line below when config petsc+trilinos works on gpu node
-    # for now, tests will be performed on build-utopia-no_petsc
-    PERSIST_IMAGE_NAME: discard
 
 # this build configuration is used by Mars test pipeline
 # no tests will be performed in this pipeline, we only care about the buildability
@@ -54,8 +51,7 @@ build-utopia-no_petsc:
     DOCKERFILE: ci/cscs/gpu/docker/Dockerfile.no_petsc
     DOCKER_BUILD_ARGS: '["BASE_IMAGE=$BASE_IMAGE"]'
     GIT_SUBMODULE_STRATEGY: recursive
-    # FIXME uncomment line below when config petsc+trilinos works on gpu node
-    # PERSIST_IMAGE_NAME: discard
+    PERSIST_IMAGE_NAME: discard
 
 run-utopia-test:
   extends: .container-runner-daint-gpu

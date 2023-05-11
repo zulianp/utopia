@@ -7,7 +7,7 @@
 #include "utopia_petsc_Eval_KroneckerProduct.hpp"
 #include "utopia_petsc_Eval_Parallel.hpp"
 #include "utopia_petsc_Eval_Rename.hpp"
-// #include "utopia_petsc_Eval_Chop.hpp" //UNCOMMENT ME TO USE ALENA'S VERSION
+#include "utopia_petsc_Eval_Chop.hpp"
 #include "utopia_petsc_EvalDotVecVecs.hpp"
 #include "utopia_petsc_EvalMatGetCol.hpp"
 #include "utopia_petsc_Eval_Blocks.hpp"
