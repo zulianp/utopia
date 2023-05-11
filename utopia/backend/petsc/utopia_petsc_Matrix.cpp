@@ -6,15 +6,16 @@
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector.hpp"
 
+#include "utopia_petsc_CrsView.hpp"
+
 #include <algorithm>
 #include <set>
 #include <utility>
 
 #ifdef UTOPIA_WITH_MATRIX_IO
 
-extern "C" {
 #include "matrixio_crs.h"
-}
+#include "utils.h"
 
 #endif
 
@@ -265,9 +266,115 @@ namespace utopia {
                         TypeToString<SizeType>::get(),
                         TypeToString<Scalar>::get());
     }
+
+    bool PetscMatrix::write_raw(MPI_Comm comm,
+                                const std::string &rowptr_path,
+                                const std::string &colidx_path,
+                                const std::string &values_path) const {
+        crs_t crs;
+        crs.lrows = this->local_rows();
+        crs.grows = this->rows();
+
+        crs.rowptr_type = string_to_mpi_datatype(TypeToString<SizeType>::get());
+        crs.colidx_type = string_to_mpi_datatype(TypeToString<SizeType>::get());
+        crs.values_type = string_to_mpi_datatype(TypeToString<Scalar>::get());
+
+        int size;
+        MPI_Comm_size(comm, &size);
+        if (size == 1) {
+            PetscCrsView crs_view(raw_type());
+
+            crs.rowptr = (char *)&crs_view.row_ptr()[0];
+            crs.colidx = (char *)&crs_view.colidx()[0];
+            crs.values = (char *)&crs_view.values()[0];
+
+            crs.lnnz = crs_view.nnz();
+            crs.gnnz = crs_view.nnz();
+
+            crs.start = 0;
+            crs.rowoffset = 0;
+
+        } else {
+            PetscErrorCode err = 0;
+
+            const PetscInt *cols;
+            Mat d, o;
+            err = MatMPIAIJGetSeqAIJ(raw_type(), &d, &o, &cols);
+            assert(err == 0);
+
+            PetscCrsView d_crs_view(d);
+            PetscCrsView o_crs_view(o);
+
+            crs.lnnz = d_crs_view.nnz() + o_crs_view.nnz();
+            PetscInt *rowptr = (PetscInt *)malloc((crs.lrows + 1) * sizeof(PetscInt));
+            PetscInt *colidx = (PetscInt *)malloc(crs.lnnz * sizeof(PetscInt));
+            PetscScalar *values = (PetscScalar *)malloc(crs.lnnz * sizeof(PetscScalar));
+
+            long lnnz = crs.lnnz;
+            long start = 0;
+            MPI_Exscan(&lnnz, &start, 1, MPI_LONG, MPI_SUM, comm);
+            crs.start = start;
+            crs.rowoffset = this->row_range().begin();
+
+            PetscInt coloff = this->col_range().begin();
+
+            auto d_rowptr = d_crs_view.row_ptr();
+            auto o_rowptr = o_crs_view.row_ptr();
+
+            auto d_colidx = d_crs_view.colidx();
+            auto o_colidx = o_crs_view.colidx();
+
+            auto d_values = d_crs_view.values();
+            auto o_values = o_crs_view.values();
+
+            PetscInt nghosts;
+            const PetscInt *ghosts = nullptr;
+            MatGetGhosts(raw_type(), &nghosts, &ghosts);
+
+            rowptr[0] = start;
+
+            ptrdiff_t last_offset = 0;
+            for (ptrdiff_t i = 0; i < crs.lrows; i++) {
+                rowptr[i + 1] = (d_rowptr[i + 1] - d_rowptr[i]) + (o_rowptr[i + 1] - o_rowptr[i]) + rowptr[i];
+
+                for (PetscInt k = d_rowptr[i]; k < d_rowptr[i + 1]; k++, last_offset++) {
+                    colidx[last_offset] = coloff + d_colidx[k];
+                    values[last_offset] = d_values[k];
+                }
+
+                for (PetscInt k = o_rowptr[i]; k < o_rowptr[i + 1]; k++, last_offset++) {
+                    colidx[last_offset] = ghosts[d_colidx[k]];
+                    values[last_offset] = o_values[k];
+                }
+            }
+
+            crs.rowptr = (char *)rowptr;
+            crs.colidx = (char *)colidx;
+            crs.values = (char *)values;
+        }
+
+        bool ok = crs_write(comm, rowptr_path.c_str(), colidx_path.c_str(), values_path.c_str(), &crs) == 0;
+
+        if (size == 1) {
+            crs_release(&crs);
+        } else {
+            crs_free(&crs);
+        }
+
+        return ok;
+    }
+
 #endif  // UTOPIA_WITH_MATRIX_IO
 
     bool PetscMatrix::write(const std::string &path) const {
+#ifdef UTOPIA_WITH_MATRIX_IO
+        Path ppath = path;
+        if (ppath.extension() == "raw") {
+            Path folder = ppath.parent();
+            return write_raw(comm().get(), folder / "rowptr.raw", folder / "colidx.raw", folder / "values.raw");
+        }
+#endif
+
         if (is_matlab_file(path)) {
             return write_matlab(path);
         }
@@ -1555,8 +1662,8 @@ namespace utopia {
     }
 
     void PetscMatrix::diagonal_block(PetscMatrix &other) const {
-        // reference count on the returned matrix is not incremented and it is used as part of the containing MPI Mat's
-        // normal operation
+        // reference count on the returned matrix is not incremented and it is used as part of the containing MPI
+        // Mat's normal operation
         Mat M;
         check_error(MatGetDiagonalBlock(raw_type(), &M));
         other.copy_from(M);
