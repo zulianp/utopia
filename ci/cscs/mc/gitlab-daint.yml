@@ -39,6 +39,17 @@ build-utopia:
     DOCKER_BUILD_ARGS: '["BASE_IMAGE=$BASE_IMAGE"]'
     GIT_SUBMODULE_STRATEGY: recursive
 
+# this build configuration is used by Mars test pipeline
+# no tests will be performed in this pipeline, we only care about the buildability
+build-utopia-no_petsc:
+  extends: .container-builder
+  stage: build
+  variables:
+    DOCKERFILE: ci/cscs/mc/docker/Dockerfile.no_petsc
+    DOCKER_BUILD_ARGS: '["BASE_IMAGE=$BASE_IMAGE"]'
+    GIT_SUBMODULE_STRATEGY: recursive
+    PERSIST_IMAGE_NAME: discard
+
 run-utopia-test-singletask:
   extends: .container-runner-daint-mc
   image: $PERSIST_IMAGE_NAME
