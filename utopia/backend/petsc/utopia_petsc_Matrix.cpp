@@ -339,6 +339,7 @@ namespace utopia {
 
                 for (PetscInt k = d_rowptr[i]; k < d_rowptr[i + 1]; k++, last_offset++) {
                     colidx[last_offset] = coloff + d_colidx[k];
+                    assert(colidx[last_offset] < this->cols());
                     values[last_offset] = d_values[k];
                 }
 
@@ -371,6 +372,7 @@ namespace utopia {
         Path ppath = path;
         if (ppath.extension() == "raw") {
             Path folder = ppath.parent();
+            folder.make_dir();
             return write_raw(comm().get(), folder / "rowptr.raw", folder / "colidx.raw", folder / "values.raw");
         }
 #endif

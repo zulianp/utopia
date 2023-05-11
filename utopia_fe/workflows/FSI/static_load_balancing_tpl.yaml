@@ -19,4 +19,5 @@ to:
 output_path: indicator.e
 export_operator_imbalance: true
 rescale_imbalance: ${RESCALE_IMBALANCE}
+export_example_coupled_system: ${EXPORT_EXAMPLE_COUPLED_SYSTEM}
 # 

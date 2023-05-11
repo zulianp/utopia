@@ -21,6 +21,12 @@ then
 	exit -1
 fi
 
+if [[ -z "$SFEM_DIR" ]]
+then
+	echo "Error! Please define SFEM_DIR=<path_to_trilinos_installation>"
+	exit -1
+fi
+
 if [[ -z "$LAUNCH" ]]
 then
 	LAUNCH=mpiexec
@@ -55,10 +61,7 @@ then
 	DISPLACE_SOLID=true
 fi
 
-if [[ -z "$EXPORT_EXAMPLE_COUPLED_SYSTEM" ]]
-then
-	EXPORT_EXAMPLE_COUPLED_SYSTEM=false
-fi
+EXPORT_EXAMPLE_COUPLED_SYSTEM=true
 
 rm -f resample.yaml temp_.yaml
 ( echo "cat <<EOF >resample.yaml";
@@ -87,19 +90,23 @@ else
 	$TRILINOS_DIR/bin/epu -auto ${costs[0]}
 fi
 
-rm -f input-ldbl temp_.txt
-( echo "cat <<EOF >input-ldbl";
-  cat $SCRIPTPATH/input-ldbl-tpl.txt;
-  echo "EOF";
-) >temp_.txt
-. temp_.txt
+raw_system=raw_system
+raw_decomp=decomp.raw
+raw_mesh=raw_mesh
+text_decomp=decomp.txt
 
-rm temp_.txt
+set -x
+$SFEM_DIR/python/mesh/exodusII_to_raw.py $FLUID_MESH $raw_mesh
+$SFEM_DIR/workflows/decomposition/partition_mesh_based_on_operator.sh $raw_mesh $raw_system $N_PARTS $raw_decomp
+$SFEM_DIR/python/raw2text.py $raw_decomp int32 $text_decomp
 
-$TRILINOS_DIR/bin/decomp -p $N_PARTS --spectral -V -i input-ldbl $FLUID_MESH
+$TRILINOS_DIR/bin/decomp -p $N_PARTS -l infile=$text_decomp $FLUID_MESH
 
+
+$SFEM_DIR/python/fp_convert.py  $raw_decomp proc-float32.raw int32 float32
+$SFEM_DIR/python/mesh/raw_to_db.py $raw_mesh decomp-vis.vtk --cell_data="proc-float32.raw" --cell_data_type="float32"
 
 # clean-up
 rm resample.yaml
-rm input-ldbl
+
 

@@ -209,13 +209,21 @@ namespace utopia {
             }
 
             if (export_example_coupled_system) {
+                using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
+
+                // TODO
                 Matrix_t from_matrix;
                 from_space.create_matrix(from_matrix);
-                from_matrix.transform_values(UTOPIA_LAMBDA(const Scalar_t)->Scalar_t { return 1.0; });
+                FEModelFunction_t from_model(make_ref(from_space));
+                from_model.init_mass_matrix_assembler();
+                from_model.assemble_mass_matrix(from_matrix);
 
                 Matrix_t to_matrix;
                 to_space.create_matrix(to_matrix);
-                to_matrix.transform_values(UTOPIA_LAMBDA(const Scalar_t)->Scalar_t { return 1.0; });
+
+                FEModelFunction_t to_model(make_ref(to_space));
+                to_model.init_mass_matrix_assembler();
+                to_model.assemble_mass_matrix(to_matrix);
 
                 Matrix_t system =
                     from_matrix + transpose(*transfer.transfer_matrix()) * to_matrix * *transfer.transfer_matrix();
