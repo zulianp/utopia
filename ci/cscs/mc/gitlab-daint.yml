@@ -15,7 +15,12 @@ build-utopia-baseimage:
   extends: .container-builder
   stage: build_base
   before_script:
-    - DOCKERFILE_TAG=`sha256sum $DOCKERFILE | head -c 16`
+    - DATA_TAG=`mktemp`
+    - sha256sum $DOCKERFILE > $DATA_TAG
+    # always use latest branch revision from mars repo
+    - git ls-remote $MARS_GIT_URL $MARS_GIT_REFS >> $DATA_TAG
+    - DOCKERFILE_TAG=`sha256sum $DATA_TAG | head -c 16`
+    - rm -f $DATA_TAG
     - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/baseimage/utopia_base:$DOCKERFILE_TAG
     - echo "BASE_IMAGE=$PERSIST_IMAGE_NAME" >> build.env
   artifacts:
@@ -23,6 +28,8 @@ build-utopia-baseimage:
       dotenv: build.env
   variables:
     DOCKERFILE: ci/cscs/mc/docker/Dockerfile.base
+    MARS_GIT_URL: 'https://bitbucket.org/zulianp/mars.git'
+    MARS_GIT_REFS: 'refs/heads/development'
 
 build-utopia:
   extends: .container-builder
