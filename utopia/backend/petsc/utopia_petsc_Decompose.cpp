@@ -98,7 +98,7 @@ namespace utopia {
                 vtxdist[r] = rrs[r];
             }
         } else {
-            vtxdist = (PetscInt *)(&rrs[0]);
+            vtxdist = (idx_t *)&rrs[0];
         }
 
         idx_t ncon = 1;
