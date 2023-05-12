@@ -87,7 +87,9 @@ namespace utopia {
 #else
 
     bool parallel_decompose(const PetscMatrix &matrix, const int num_partitions, int *partitions) {
-        idx_t *vtxdist = (idx_t *)&matrix.row_ranges()[0];
+        auto rrs = matrix.row_ranges();
+        idx_t *vtxdist = const_cast<PetscInt *>(&rrs[0]);
+
         idx_t ncon = 1;
         idx_t *vwgt = nullptr;
         // idx_t* vsize = nullptr;
@@ -150,12 +152,14 @@ namespace utopia {
             auto begin = rowptr[i];
             for (PetscInt k = 0; k < d_row.length; ++k) {
                 colidx[begin + k] = col_offset + d_row.colidx(k);
+                assert(colidx[begin + k] < matrix.cols());
             }
 
             // append offsets
             begin += d_row.length;
             for (PetscInt k = 0; k < o_row.length; ++k) {
                 colidx[begin + k] = colmap[o_row.colidx(k)];
+                assert(colidx[begin + k] < matrix.cols());
             }
         }
 
@@ -185,6 +189,10 @@ namespace utopia {
             matrix.comm().synched_print(ss.str());
         }
 
+        // matrix.comm().barrier();
+        // printf("%d ParMETIS_V3_PartKway\n", matrix.comm().rank());
+        // matrix.comm().barrier();
+
         int ret = ParMETIS_V3_PartKway(vtxdist,     // 0
                                        &rowptr[0],  // 1
                                        &colidx[0],  // 2
@@ -201,6 +209,10 @@ namespace utopia {
                                        parts,       // 13
                                        &comm);      // 14
 
+        // matrix.comm().barrier();
+        // printf("%d ParMETIS_V3_PartKway DONE\n", matrix.comm().rank());
+        // matrix.comm().barrier();
+
         if (ret == METIS_OK) {
             return true;
         } else {
@@ -208,6 +220,123 @@ namespace utopia {
         }
     }
 #endif
+
+    bool partitions_to_permutations(const Communicator &comm,
+                                    const ArrayView<const PetscInt> &rrs,
+                                    const int *partitions,
+                                    Traits<PetscMatrix>::IndexArray &index,
+                                    std::vector<int> &rpartitions,
+                                    std::vector<int> &rindex) {
+        const int comm_size = comm.size();
+
+        PetscInt r_begin = rrs[comm.rank()];
+
+        std::vector<PetscInt> send_row_count(comm_size, 0);
+        std::vector<PetscInt> recv_row_count(comm_size, 0);
+
+        const int local_rows = rrs[comm.rank() + 1] - r_begin;
+
+        std::vector<PetscInt> sendbuf(local_rows, 0);
+        std::vector<int> sdispls(comm_size + 1, 0);
+        std::vector<int> sendcounts(comm_size, 0);
+
+        rindex.resize(local_rows);
+
+        {  // Fill send buffers!
+
+            for (int i = 0; i < local_rows; ++i) {
+                int part = partitions[i];
+                assert(part < comm.size());
+                assert(part >= 0);
+
+                rindex[i] = sdispls[part + 1];
+                ++sdispls[part + 1];
+            }
+
+            for (int i = 0; i < comm_size; ++i) {
+                sdispls[i + 1] += sdispls[i];
+            }
+
+            for (int i = 0; i < local_rows; ++i) {
+                int part = partitions[i];
+                int idx = sdispls[part] + sendcounts[part]++;
+                sendbuf[idx] = r_begin + i;
+            }
+        }
+
+        std::vector<int> rdispls(comm_size + 1, 0);
+        std::vector<int> recvcounts(comm_size, 0);
+        std::vector<int> roffsets(comm_size, 0);
+        std::vector<PetscInt> sizes(comm_size, 0);
+        PetscInt incoming = 0;
+
+        {  // Fill recv buffers
+            // exchange send/receive permuatation info
+            MPI_Alltoall(sendcounts.data(),
+                         1,
+                         utopia::MPIType<int>::value(),
+                         recvcounts.data(),
+                         1,
+                         utopia::MPIType<int>::value(),
+                         comm.raw_comm());
+
+            for (int r = 0; r < comm_size; ++r) {
+                // Rows that are kept local are also counted!
+                incoming += recvcounts[r];
+                rdispls[r + 1] = rdispls[r] + recvcounts[r];
+            }
+
+            MPI_Alltoall(rdispls.data(),
+                         1,
+                         utopia::MPIType<int>::value(),
+                         roffsets.data(),
+                         1,
+                         utopia::MPIType<int>::value(),
+                         comm.raw_comm());
+
+            MPI_Allgather(
+                &incoming, 1, MPIType<PetscInt>::value(), sizes.data(), 1, MPIType<PetscInt>::value(), comm.raw_comm());
+
+            PetscInt proc_offset = 0;
+            for (int r = 0; r < comm_size; r++) {
+                roffsets[r] += proc_offset;
+                proc_offset += sizes[r];
+            }
+        }
+
+        index.resize(incoming, 0);
+
+        MPI_Alltoallv(sendbuf.data(),
+                      sendcounts.data(),
+                      sdispls.data(),
+                      MPIType<PetscInt>::value(),
+                      index.data(),
+                      recvcounts.data(),
+                      rdispls.data(),
+                      MPIType<PetscInt>::value(),
+                      comm.raw_comm());
+
+        rpartitions.resize(incoming, -1);
+
+        for (SizeType r = 0; r < comm_size; r++) {
+            SizeType offset = rdispls[r];
+            SizeType count = recvcounts[r];
+
+            for (SizeType i = 0; i < count; i++) {
+                rpartitions[offset + i] = r;
+            }
+        }
+
+        for (int i = 0; i < local_rows; ++i) {
+            int part = partitions[i];
+            assert(part < comm.size());
+            assert(part >= 0);
+
+            rindex[i] += roffsets[part];
+        }
+
+        return true;
+    }
 
     bool partitions_to_permutations(const Communicator &comm,
                                     const ArrayView<const PetscInt> &rrs,
@@ -357,6 +486,9 @@ namespace utopia {
         PetscInt n_indices = permutation.size();
         for (PetscInt i = 0; i < n_indices; ++i) {
             partitioning[i] = find_rank(comm_size, n_local, &original_row_ranges[0], permutation[i]);
+
+            // printf("%d -> %d\n", permutation[i], partitioning[i]);
+
             assert(partitioning[i] < comm_size);
             assert(partitioning[i] >= 0);
         }
@@ -432,6 +564,33 @@ namespace utopia {
         }
 
         return redistribute_from_permutation(in, permutation, out);
+    }
+
+    bool rebalance(const PetscMatrix &in,
+                   PetscMatrix &out,
+                   std::vector<int> &partitioning,
+                   Traits<PetscMatrix>::IndexArray &permutation,
+                   std::vector<int> &r_partitioning,
+                   Traits<PetscMatrix>::IndexArray &r_permutation) {
+        if (in.comm().size() == 1) {
+            return false;
+        }
+
+        assert(in.rows() == in.cols());
+
+        partitioning.resize(in.local_rows(), 0);
+
+        if (!parallel_decompose(in, in.comm().size(), &partitioning[0])) {
+            return false;
+        }
+
+        if (!partitions_to_permutations(
+                in.comm(), in.row_ranges(), &partitioning[0], permutation, r_partitioning, r_permutation)) {
+            return false;
+        }
+
+        bool ok = redistribute_from_permutation(in, permutation, out);
+        return ok;
     }
 
 }  // namespace utopia

@@ -9,6 +9,8 @@
 
 #include "utopia_petsc_SchurComplement.hpp"
 
+#include "utopia_petsc_RebalancedSolver.hpp"
+
 #include "petscmat.h"
 
 using namespace utopia;
@@ -28,12 +30,14 @@ public:
 #endif
 
 #ifdef UTOPIA_WITH_PARMETIS
+        // UTOPIA_RUN_TEST(petsc_rebalanced_solver_file);
         UTOPIA_RUN_TEST(parmetis_decompose);
         UTOPIA_RUN_TEST(parmetis_rebalance);
+        UTOPIA_RUN_TEST(petsc_rebalanced_solver);
 #endif
 
         UTOPIA_RUN_TEST(handcoded_partitions_to_permutations);
-// FIXME(zulianp) this test causes Segmentation Violation when utopia is built with gpu support
+        // FIXME(zulianp) this test causes Segmentation Violation when utopia is built with gpu support
         if constexpr (Traits::Backend == PETSC) {
 #ifdef PETSC_HAVE_CUDA
             utopia_warning("Skipping schur_complement");
@@ -63,6 +67,8 @@ public:
 #ifdef UTOPIA_WITH_PARMETIS
     void parmetis_decompose() {
         auto &&comm = Comm::get_default();
+        if (comm.size() == 1) return;
+
         int mult = comm.rank() + 1;
 
         Matrix mat;
@@ -82,6 +88,8 @@ public:
 
     void parmetis_rebalance() {
         auto &&comm = Comm::get_default();
+        if (comm.size() == 1) return;
+
         int mult = comm.rank() + 1;
         int n_local = mult * 3;
 
@@ -93,6 +101,8 @@ public:
         IndexArray partitioning, permutation;
 
         utopia_test_assert(rebalance(mat, rebalanced, partitioning, permutation));
+
+        // disp(rebalanced);
 
 #if 0
         {
@@ -122,10 +132,72 @@ public:
         disp(rebalanced);
 #endif
     }
+
+    void petsc_rebalanced_solver() {
+        auto &&comm = Comm::get_default();
+
+        int n = 20;
+
+        auto vl = layout(comm, Traits::decide(), n);
+        auto ml = layout(comm, Traits::decide(), Traits::decide(), n, n);
+
+        Matrix A;
+        A.sparse(ml, 3, 2);
+        Vector b(vl, 1.);
+        Vector x(vl, 0.);
+
+        assemble_laplacian_1D(A, true);
+
+        {
+            Range r = row_range(A);
+            Write<Vector> w_b(b);
+
+            if (r.inside(0)) {
+                b.set(0, 0.);
+            }
+
+            if (r.inside(n - 1)) {
+                b.set(n - 1, 0.);
+            }
+        }
+
+        RebalancedSolver solver;
+
+        auto p = utopia::param_list(utopia::param("inner_solver", utopia::param_list(utopia::param("verbose", true))));
+        solver.read(p);
+
+        solver.update(make_ref(A));
+        solver.apply(b, x);
+    }
+
+    void petsc_rebalanced_solver_file() {
+        auto &&comm = Comm::get_default();
+
+        int n = 20;
+
+        Matrix A;
+        A.read(comm.get(), "mat.bin");
+        // A.write("mat.raw");
+
+        auto vl = row_layout(A);
+        Vector b(vl, 1.);
+        Vector x(vl, 0.);
+
+        RebalancedSolver solver;
+
+        auto p = utopia::param_list(utopia::param("inner_solver", utopia::param_list(utopia::param("verbose", true))));
+        solver.read(p);
+
+        solver.update(make_ref(A));
+        solver.apply(b, x);
+    }
 #endif
 
     void handcoded_partitions_to_permutations() {
         auto &&comm = Comm::get_default();
+
+        if (comm.size() == 1) return;
+
         int mult = comm.rank() + 1;
         int n_local = mult * 2;
 
@@ -230,7 +302,7 @@ public:
         {
             // ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
             MPRGP<Matrix, Vector> cg;
-            cg.verbose(true);
+            // cg.verbose(true);
             // cg.apply_gradient_descent_step(true);
 
             cg.max_it(40000);
@@ -255,7 +327,7 @@ public:
         {
             // ConjugateGradient<Matrix, Vector, HOMEMADE> og_cg;
             MPRGP<Matrix, Vector> og_cg;
-            og_cg.verbose(true);
+            og_cg.verbose(false);
             // og_cg.apply_gradient_descent_step(true);
 
             og_cg.max_it(40000);

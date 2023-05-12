@@ -12,6 +12,12 @@ namespace utopia {
                                     const int *partitions,
                                     Traits<PetscMatrix>::IndexArray &index);
 
+    bool partitions_to_permutations(const Communicator &comm,
+                                    const ArrayView<const PetscInt> &rrs,
+                                    const int *partitions,
+                                    Traits<PetscMatrix>::IndexArray &index,
+                                    std::vector<int> &rpartitions);
+
     bool redistribute_from_permutation(const PetscMatrix &in,
                                        const Traits<PetscMatrix>::IndexArray &permutation,
                                        PetscMatrix &out,
@@ -25,6 +31,13 @@ namespace utopia {
                    PetscMatrix &out,
                    std::vector<int> &partitioning,
                    Traits<PetscMatrix>::IndexArray &permutation);
+
+    bool rebalance(const PetscMatrix &in,
+                   PetscMatrix &out,
+                   std::vector<int> &partitioning,
+                   Traits<PetscMatrix>::IndexArray &permutation,
+                   std::vector<int> &r_partitioning,
+                   Traits<PetscMatrix>::IndexArray &r_permutation);
 
     bool partitions_to_permutations(const PetscMatrix &matrix,
                                     const int *partitions,

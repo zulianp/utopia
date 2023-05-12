@@ -327,25 +327,30 @@ namespace utopia {
             auto d_values = d_crs_view.values();
             auto o_values = o_crs_view.values();
 
-            PetscInt nghosts;
-            const PetscInt *ghosts = nullptr;
-            MatGetGhosts(raw_type(), &nghosts, &ghosts);
+            // PetscInt nghosts;
+            // const PetscInt *ghosts = nullptr;
+            // MatGetGhosts(raw_type(), &nghosts, &ghosts);
 
             rowptr[0] = start;
 
-            ptrdiff_t last_offset = 0;
+            
             for (ptrdiff_t i = 0; i < crs.lrows; i++) {
                 rowptr[i + 1] = (d_rowptr[i + 1] - d_rowptr[i]) + (o_rowptr[i + 1] - o_rowptr[i]) + rowptr[i];
 
-                for (PetscInt k = d_rowptr[i]; k < d_rowptr[i + 1]; k++, last_offset++) {
-                    colidx[last_offset] = coloff + d_colidx[k];
+                ptrdiff_t last_offset = rowptr[i];
+                for (PetscInt k = d_rowptr[i]; k < d_rowptr[i + 1]; k++) {
+                    colidx[last_offset + k] = coloff + d_colidx[k];
+                    values[last_offset + k] = d_values[k];
+
                     assert(colidx[last_offset] < this->cols());
-                    values[last_offset] = d_values[k];
                 }
 
-                for (PetscInt k = o_rowptr[i]; k < o_rowptr[i + 1]; k++, last_offset++) {
-                    colidx[last_offset] = ghosts[d_colidx[k]];
-                    values[last_offset] = o_values[k];
+                last_offset += d_rowptr[i + 1] - d_rowptr[i];
+                for (PetscInt k = o_rowptr[i]; k < o_rowptr[i + 1]; k++) {
+                    colidx[last_offset + k] = cols[o_colidx[k]];
+                    values[last_offset + k] = o_values[k];
+
+                    assert(colidx[last_offset] < this->cols());
                 }
             }
 

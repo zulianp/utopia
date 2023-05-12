@@ -1,6 +1,7 @@
 #include "utopia_Instance.hpp"
 #include "utopia_Allocations.hpp"
 #include "utopia_AuthoredWork.hpp"
+#include "utopia_Banner.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_CiteUtopia.hpp"
 #include "utopia_Config.hpp"
@@ -8,7 +9,8 @@
 #include "utopia_MPI.hpp"
 #include "utopia_Tracer.hpp"
 #include "utopia_make_unique.hpp"
-#include "utopia_Banner.hpp"
+
+#include "utopia_Base.hpp"
 
 #include "utopia_Reporter.hpp"
 
@@ -206,8 +208,7 @@ namespace utopia {
 #endif  // UTOPIA_TRACE_ENABLED
         }
 
-        if(verbose()) 
-        {
+        if (verbose()) {
             Banner::welcome();
         }
     }
