@@ -88,7 +88,18 @@ namespace utopia {
 
     bool parallel_decompose(const PetscMatrix &matrix, const int num_partitions, int *partitions) {
         auto rrs = matrix.row_ranges();
-        idx_t *vtxdist = const_cast<PetscInt *>(&rrs[0]);
+
+        int comm_size = matrix.comm().size();
+
+        idx_t *vtxdist = nullptr;
+        if (sizeof(idx_t) != sizeof(PetscInt)) {
+            vtxdist = (idx_t *)malloc((comm_size + 1) * sizeof(idx_t));
+            for (int r = 0; r <= comm_size; r++) {
+                vtxdist[r] = rrs[r];
+            }
+        } else {
+            vtxdist = const_cast<PetscInt *>(&rrs[0]);
+        }
 
         idx_t ncon = 1;
         idx_t *vwgt = nullptr;
@@ -212,6 +223,10 @@ namespace utopia {
         // matrix.comm().barrier();
         // printf("%d ParMETIS_V3_PartKway DONE\n", matrix.comm().rank());
         // matrix.comm().barrier();
+
+        if (sizeof(idx_t) != sizeof(PetscInt)) {
+            free(vtxdist);
+        }
 
         if (ret == METIS_OK) {
             return true;
