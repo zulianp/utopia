@@ -18,19 +18,16 @@ namespace utopia {
             apply(r.begin(), r.end(), f);
         }
 
+        template <class T, typename F>
+        inline static void apply(const RangeDevice<T> &r, F f) {
+            apply(r.begin(), r.end(), f);
+        }
+
         template <typename F>
         inline static void apply(const std::size_t &begin, const std::size_t &end, F f) {
             auto extent = end - begin;
             Kokkos::parallel_for(
                 extent, KOKKOS_LAMBDA(const int i) { f(begin + i); });
-
-            Kokkos::fence();
-        }
-
-        template <typename F>
-        inline static void apply(const std::size_t &n, F f) {
-            Kokkos::parallel_for(
-                n, KOKKOS_LAMBDA(const int i) { f(i); });
 
             Kokkos::fence();
         }

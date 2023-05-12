@@ -48,7 +48,23 @@ namespace utopia {
     };
 
     template <int Backend>
-    class ParallelFor : public For<1> {};
+    class ParallelFor {
+    public:
+        template <typename F>
+        inline static void apply(const Range &r, F f) {
+            apply(r.begin(), r.end(), f);
+        }
+
+        template <class T, typename F>
+        inline static void apply(const RangeDevice<T> &r, F f) {
+            apply(r.begin(), r.end(), f);
+        }
+
+        template <typename F>
+        inline static void apply(const std::size_t &begin, const std::size_t &end, F f) {
+            For<1>::apply(begin, end, f);
+        }
+    };
 }  // namespace utopia
 
 #endif  // UTOPIA_FOR_HPP
