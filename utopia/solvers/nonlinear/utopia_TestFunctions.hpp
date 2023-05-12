@@ -7,6 +7,7 @@
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_ExtendedFunction.hpp"
+#include "utopia_For.hpp"
 
 namespace utopia {
 
@@ -117,7 +118,21 @@ namespace utopia {
                 const auto &ub = *constraints_.upper_bound();
                 const auto &lb = *constraints_.lower_bound();
 
-                {
+                UTOPIA_IF_CONSTEXPR(Traits<Vector>::Backend == PETSC) {
+                    Read<Vector> lr(lb);
+                    Read<Vector> ur(ub);
+                    Read<Vector> xr(x);
+                    Write<Vector> hr(help_);
+
+                    ParallelFor<PETSC>::apply(
+                        local_range_device(help_), [&](const SizeType i) {
+                            const Scalar li = lb.get(i);
+                            const Scalar ui = ub.get(i);
+                            const Scalar xi = x.get(i);
+
+                            help_.set(i, (xi < li || xi > ui) ? 1.0 : 0.0);
+                        });
+                } else {
                     auto d_lb = const_local_view_device(lb);
                     auto d_ub = const_local_view_device(ub);
                     auto d_x = const_local_view_device(x);
@@ -227,7 +242,21 @@ namespace utopia {
                 const auto &ub = *constraints_.upper_bound();
                 const auto &lb = *constraints_.lower_bound();
 
-                {
+                UTOPIA_IF_CONSTEXPR(Traits<Vector>::Backend == PETSC) {
+                    Read<Vector> lr(lb);
+                    Read<Vector> ur(ub);
+                    Read<Vector> xr(x);
+                    Write<Vector> hr(help_);
+
+                    ParallelFor<PETSC>::apply(
+                        local_range_device(help_), [&](const SizeType i) {
+                            const Scalar li = lb.get(i);
+                            const Scalar ui = ub.get(i);
+                            const Scalar xi = x.get(i);
+
+                            help_.set(i, (xi < li || xi > ui) ? 1.0 : 0.0);
+                        });
+                } else {
                     auto d_lb = const_local_view_device(lb);
                     auto d_ub = const_local_view_device(ub);
                     auto d_x = const_local_view_device(x);
@@ -248,7 +277,19 @@ namespace utopia {
             } else if (constraints_.has_upper_bound() && !constraints_.has_lower_bound()) {
                 const auto &ub = *constraints_.upper_bound();
 
-                {
+                UTOPIA_IF_CONSTEXPR(Traits<Vector>::Backend == PETSC) {
+                    Read<Vector> ur(ub);
+                    Read<Vector> xr(x);
+                    Write<Vector> hr(help_);
+
+                    ParallelFor<PETSC>::apply(
+                        local_range_device(help_), [&](const SizeType i) {
+                            const Scalar ui = ub.get(i);
+                            const Scalar xi = x.get(i);
+
+                            help_.set(i, (xi > ui) ? 1.0 : 0.0);
+                        });
+                } else {
                     auto d_ub = const_local_view_device(ub);
                     auto d_x = const_local_view_device(x);
 
@@ -267,7 +308,19 @@ namespace utopia {
             } else {
                 const auto &lb = *constraints_.lower_bound();
 
-                {
+                UTOPIA_IF_CONSTEXPR(Traits<Vector>::Backend == PETSC) {
+                    Read<Vector> lr(lb);
+                    Read<Vector> xr(x);
+                    Write<Vector> hr(help_);
+
+                    ParallelFor<PETSC>::apply(
+                        local_range_device(help_), [&](const SizeType i) {
+                            const Scalar li = lb.get(i);
+                            const Scalar xi = x.get(i);
+
+                            help_.set(i, (xi < li) ? 1.0 : 0.0);
+                        });
+                } else {
                     auto d_lb = const_local_view_device(lb);
                     auto d_x = const_local_view_device(x);
 

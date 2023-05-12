@@ -161,7 +161,18 @@ namespace utopia {
                 const auto &ub = *constraints_.upper_bound();
                 const auto &lb = *constraints_.lower_bound();
 
-                {
+                UTOPIA_IF_CONSTEXPR(Traits<Vector>::Backend == PETSC) {
+                    Read<Vector> lr(lb);
+                    Read<Vector> ur(ub);
+                    Write<Vector> xr(x);
+                    ParallelFor<PETSC>::apply(
+                        local_range_device(x), [&](const SizeType i) {
+                            const Scalar li = lb.get(i);
+                            const Scalar ui = ub.get(i);
+                            const Scalar xi = x.get(i);
+                            x.set(i, (li >= xi) ? li : ((ui <= xi) ? ui : xi));
+                        });
+                } else {
                     auto d_lb = const_local_view_device(lb);
                     auto d_ub = const_local_view_device(ub);
                     auto x_view = local_view_device(x);

@@ -210,7 +210,24 @@ namespace utopia {
         void get_fi(const Vector &x, const Vector &g, const Vector &lb, const Vector &ub, Vector &fi) const {
             assert(!empty(fi));
 
-            {
+            UTOPIA_IF_CONSTEXPR(Traits<Vector>::Backend == PETSC) {
+                Read<Vector> lr(lb);
+                Read<Vector> ur(ub);
+                Read<Vector> xr(x);
+                Read<Vector> gr(g);
+                Write<Vector> fr(fi);
+
+                ParallelFor<PETSC>::apply(
+                    local_range_device(fi), [&](const SizeType i) {
+                        // read all
+                        const Scalar li = lb.get(i);
+                        const Scalar ui = ub.get(i);
+                        const Scalar xi = x.get(i);
+                        const Scalar gi = g.get(i);
+
+                        fi.set(i, (li < xi && xi < ui) ? gi : Scalar(0.0));
+                    });
+            } else {
                 auto d_lb = const_local_view_device(lb);
                 auto d_ub = const_local_view_device(ub);
                 auto d_x = const_local_view_device(x);
@@ -268,7 +285,28 @@ namespace utopia {
         void get_beta(const Vector &x, const Vector &g, const Vector &lb, const Vector &ub, Vector &beta) const {
             assert(!empty(beta));
 
-            {
+            UTOPIA_IF_CONSTEXPR(Traits<Vector>::Backend == PETSC) {
+                Read<Vector> lr(lb);
+                Read<Vector> ur(ub);
+                Read<Vector> xr(x);
+                Read<Vector> gr(g);
+                Write<Vector> br(beta);
+
+                ParallelFor<PETSC>::apply(
+                    local_range_device(beta), [&](const SizeType i) {
+                        // read all
+                        const Scalar li = lb.get(i);
+                        const Scalar ui = ub.get(i);
+                        const Scalar xi = x.get(i);
+                        const Scalar gi = g.get(i);
+
+                        const Scalar val = (std::abs(li - xi) < 1e-14)
+                                                ? std::min(0.0, gi)
+                                                : ((std::abs(ui - xi) < 1e-14) ? std::max(0.0, gi) : 0.0);
+
+                        beta.set(i, val);
+                    });
+            } else {
                 auto d_lb = const_local_view_device(lb);
                 auto d_ub = const_local_view_device(ub);
                 auto d_x = const_local_view_device(x);
