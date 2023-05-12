@@ -241,7 +241,7 @@ namespace utopia {
                                     const int *partitions,
                                     Traits<PetscMatrix>::IndexArray &index,
                                     std::vector<int> &rpartitions,
-                                    std::vector<int> &rindex) {
+                                    Traits<PetscMatrix>::IndexArray &rindex) {
         const int comm_size = comm.size();
 
         PetscInt r_begin = rrs[comm.rank()];
