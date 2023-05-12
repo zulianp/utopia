@@ -55,7 +55,7 @@ public:
         mat.sparse(serial_layout(20, 20), 3, 3);
         assemble_laplacian_1D(mat);
 
-        std::vector<SizeType> decomposition(mat.rows(), -1);
+        std::vector<int> decomposition(mat.rows(), -1);
         utopia_test_assert(decompose(mat, 3, &decomposition[0]));
 
         //  for (auto tag : decomposition) {
@@ -75,7 +75,7 @@ public:
         mat.sparse(layout(comm, mult * 3, mult * 3, Traits::determine(), Traits::determine()), 3, 3);
         assemble_laplacian_1D(mat);
 
-        std::vector<SizeType> decomposition(mat.local_rows(), -1);
+        std::vector<int> decomposition(mat.local_rows(), -1);
         utopia_test_assert(parallel_decompose(mat, comm.size(), &decomposition[0]));
 
         // std::stringstream ss;
@@ -98,7 +98,8 @@ public:
         assemble_laplacian_1D(mat);
 
         Matrix rebalanced;
-        IndexArray partitioning, permutation;
+        std::vector<int> partitioning;
+        IndexArray permutation;
 
         utopia_test_assert(rebalance(mat, rebalanced, partitioning, permutation));
 
