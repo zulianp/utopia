@@ -614,13 +614,15 @@ if(UTOPIA_ENABLE_YAML_CPP)
     add_subdirectory(backend/yamlcpp)
 endif()
 
-if(UTOPIA_ENABLE_METIS)
-    add_subdirectory(backend/metis)
-endif()
 
 if(UTOPIA_ENABLE_PARMETIS)
     add_subdirectory(backend/parmetis)
 endif()
+
+if(UTOPIA_ENABLE_METIS)
+    add_subdirectory(backend/metis)
+endif()
+
 
 
 include(UtopiaISolver)
