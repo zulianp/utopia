@@ -100,17 +100,15 @@ if(NOT CYGWIN)
             INSTALL_DIR ${PETSC_INSTALL_DIR}
             LOG_CONFIGURE 1
             LOG_BUILD 1
-            CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR>
-                              ${PETSC_CONFIG_ARGS}
+            CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> ${PETSC_CONFIG_ARGS}
             BUILD_COMMAND ${MAKE_COMMAND}
             INSTALL_COMMAND make install
             # COMMAND       ${MAKE_COMMAND}
         )
 
         set_target_properties(petsc PROPERTIES EXCLUDE_FROM_ALL TRUE)
+        set(PETSC_DIR ${PETSC_INSTALL_DIR})
+        set(ENV{PETSC_DIR} ${PETSC_INSTALL_DIR})
 
     endif()
 endif()
-
-set(PETSc_DIR ${PETSC_INSTALL_DIR})
-set(ENV{PETSC_DIR} ${PETSC_INSTALL_DIR})
