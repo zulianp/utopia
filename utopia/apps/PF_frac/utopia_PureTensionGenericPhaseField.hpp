@@ -1,5 +1,5 @@
-#ifndef UTOPIA_VOLDEV_GENERIC_PHASE_FIELD_HPP
-#define UTOPIA_VOLDEV_GENERIC_PHASE_FIELD_HPP
+#ifndef UTOPIA_PURE_TENSION_GENERIC_PHASE_FIELD_HPP
+#define UTOPIA_PURE_TENSION_GENERIC_PHASE_FIELD_HPP
 
 #include "utopia_CoefStrainView.hpp"
 #include "utopia_DeviceTensorContraction.hpp"
@@ -24,7 +24,7 @@
 namespace utopia {
 
     template <class FunctionSpace, int Dim = FunctionSpace::Dim, class PFFormulation = AT1 >
-    class VolDevGenericPhaseField final : public GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation, VolDevEnergySplit> {
+    class PureTensionGenericPhaseField final : public GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation, VolDevEnergySplit> {
     public:
         using Scalar = typename FunctionSpace::Scalar;
         using Point = typename FunctionSpace::Point;
@@ -51,12 +51,12 @@ namespace utopia {
         static const int C_NDofs = CSpace::NDofs;
         static const int U_NDofs = USpace::NDofs;
 
-        VolDevGenericPhaseField(FunctionSpace &space)
+        PureTensionGenericPhaseField(FunctionSpace &space)
             : GenericPhaseFieldFormulation(space) {
             this->params_.fill_in_isotropic_elast_tensor();
         }
 
-        VolDevGenericPhaseField(FunctionSpace &space, const Parameters &params)
+        PureTensionGenericPhaseField(FunctionSpace &space, const Parameters &params)
             : GenericPhaseFieldFormulation(space, params) {
             this->params_.fill_in_isotropic_elast_tensor();
         }
@@ -64,7 +64,7 @@ namespace utopia {
 
 
         bool value(const Vector &x_const, Scalar &val) const override {
-            UTOPIA_TRACE_REGION_BEGIN("VolDevGenericPhaseField::value");
+            UTOPIA_TRACE_REGION_BEGIN("PureTensionGenericPhaseField::value");
 
             USpace U;
             this->space_.subspace(1, U);
@@ -190,7 +190,7 @@ namespace utopia {
 
             this->add_pf_constraints(x_const);   //TAKEN AWAY BUT STILL ACTIVE IN VOL DEV SPLIT -- CHECK
 
-            UTOPIA_TRACE_REGION_END("VolDevGenericPhaseField::value");
+            UTOPIA_TRACE_REGION_END("PureTensionGenericPhaseField::value");
             return true;
         }
 
@@ -292,12 +292,12 @@ namespace utopia {
 
             assert(val == val);
 
-            UTOPIA_TRACE_REGION_END("VolDevGenericPhaseField::elastic_energy");
+            UTOPIA_TRACE_REGION_END("PureTensionGenericPhaseField::elastic_energy");
             return true;
         }
 
         bool fracture_energy(const Vector &x_const, Scalar &val) const override {
-            UTOPIA_TRACE_REGION_BEGIN("VolDevGenericPhaseField::fracture_energy");
+            UTOPIA_TRACE_REGION_BEGIN("PureTensionGenericPhaseField::fracture_energy");
 
             USpace U;
             this->space_.subspace(1, U);
@@ -389,12 +389,12 @@ namespace utopia {
 
             val = x_const.comm().sum(val);
 
-            UTOPIA_TRACE_REGION_END("VolDevGenericPhaseField::fracture_energy");
+            UTOPIA_TRACE_REGION_END("PureTensionGenericPhaseField::fracture_energy");
             return true;
         }
 
         bool gradient(const Vector &x_const, Vector &g) const override {
-            UTOPIA_TRACE_REGION_BEGIN("VolDevGenericPhaseField::gradient");
+            UTOPIA_TRACE_REGION_BEGIN("PureTensionGenericPhaseField::gradient");
 
             if (empty(g)) {
                 this->space_.create_vector(g);
@@ -578,12 +578,12 @@ namespace utopia {
                 this->apply_zero_constraints_irreversibiblity(g, x_const);
             }
 
-            UTOPIA_TRACE_REGION_END("VolDevGenericPhaseField::gradient");
+            UTOPIA_TRACE_REGION_END("PureTensionGenericPhaseField::gradient");
             return true;
         }
 
         bool hessian(const Vector &x_const, Matrix &H) const override {
-            UTOPIA_TRACE_REGION_BEGIN("VolDevGenericPhaseField::hessian");
+            UTOPIA_TRACE_REGION_BEGIN("PureTensionGenericPhaseField::hessian");
 
             if (empty(H)) {
                 this->space_.create_matrix(H);
@@ -640,7 +640,7 @@ namespace utopia {
             Strain<USpace, Quadrature> ref_strain_u(U, q);
 
             {
-                UTOPIA_TRACE_REGION_BEGIN("VolDevGenericPhaseField::hessian_local_assembly");
+                UTOPIA_TRACE_REGION_BEGIN("PureTensionGenericPhaseField::hessian_local_assembly");
 
                 auto U_view = U.view_device();
                 auto C_view = C.view_device();
@@ -822,7 +822,7 @@ namespace utopia {
                         space_view.add_matrix(e, el_mat, H_view);
                     });
 
-                UTOPIA_TRACE_REGION_END("VolDevGenericPhaseField::hessian_local_assembly");
+                UTOPIA_TRACE_REGION_END("PureTensionGenericPhaseField::hessian_local_assembly");
             }
 
             // check before boundary conditions
@@ -836,7 +836,7 @@ namespace utopia {
                 this->apply_zero_constraints_irreversibiblity(H, x_const);
             }
 
-            UTOPIA_TRACE_REGION_END("VolDevGenericPhaseField::hessian");
+            UTOPIA_TRACE_REGION_END("PureTensionGenericPhaseField::hessian");
             return true;
         }
 

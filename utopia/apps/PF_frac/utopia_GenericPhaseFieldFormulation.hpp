@@ -267,8 +267,69 @@ namespace utopia {
     };
    
 
+    struct IsotropicEnergySplit {
+    public:
 
-    template <class FunctionSpace, int Dim = FunctionSpace::Dim, class PFFormulation = AT1>
+        template <class Strain, class Parameters, class Scalar, class PFFormulation>
+        UTOPIA_INLINE_FUNCTION static Scalar elastic_energy(const Parameters &params,
+                                                            const Scalar &phase_field_value,
+                                                            const Scalar &trace,
+                                                            const Strain &strain) {
+            return (PFFormulation::degradation(phase_field_value, params) *
+                        (1.0 - params.regularization) +
+                    params.regularization) *
+                   strain_energy(params, trace, strain);
+        }
+
+        template <class Strain, class Parameters, class Scalar>
+        UTOPIA_INLINE_FUNCTION static Scalar strain_energy(const Parameters &params,
+                                                           const Scalar trace,
+                                                           const Strain &strain) {
+            return 0.5 * params.lambda * trace * trace + params.mu * inner(strain, strain);
+        }
+
+
+    };
+
+
+    struct VolDevEnergySplit {
+    public:
+
+
+
+        template <class Strain, class Parameters, class Scalar, class PFFormulation>
+        UTOPIA_INLINE_FUNCTION static Scalar elastic_energy(const Parameters &params,
+                                                            const Scalar &phase_field_value,     //must be calculated
+                                                            const Scalar &tr,                    //must be calculated
+                                                            const Strain &strain) {              //must be calculated
+            Strain strain_dev = strain - ((1. / Dim) * tr * device::identity<Scalar>());
+
+            const Scalar tr_negative = device::min(tr, 0.0);
+            const Scalar tr_positive = tr - tr_negative;
+
+            const Strain strain_dev2 = transpose(strain_dev) * strain_dev;
+            Scalar tr2dv = trace(strain_dev2);
+
+            // energy positive
+            const Scalar energy_positive = (0.5 * params.kappa * tr_positive * tr_positive) + (params.mu * tr2dv);
+            const Scalar energy_negative = (0.5 * params.kappa * tr_negative * tr_negative);
+
+            const Scalar elastic_energy =
+                (PFFormulation::degradation(phase_field_value, params) *
+                 energy_positive) +
+                energy_negative;
+
+            return elastic_energy;
+        }
+
+
+    };
+
+
+
+
+
+    template <class FunctionSpace, int Dim = FunctionSpace::Dim, class PFFormulation = AT1, class EnergySplit=IsotropicEnergySplit>
     class GenericPhaseFieldFormulation : public PhaseFieldFracBase<FunctionSpace, Dim> {
     public:
         using Scalar = typename FunctionSpace::Scalar;
@@ -339,6 +400,32 @@ namespace utopia {
 
         ////////////////////////////////////////////////////////////////////////////////////
 
+
+        /////// NEW GENERIC FUNCTIONALITY ///////////////////
+
+        template <class Grad, class Strain>
+        UTOPIA_INLINE_FUNCTION static Scalar energy(const Parameters &params,
+                                                    const Scalar &phase_field_value, // must be known!
+                                                    const Grad &phase_field_grad,    //must be known!
+                                                    const Scalar &trace,             //must be known!
+                                                    const Strain &strain) {          //must be known!
+            return GenericPhaseFieldFormulation::fracture_energy(
+                       params, phase_field_value, phase_field_grad) +
+                   EnergySplit::elastic_energy(params, phase_field_value, trace, strain);
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
         /// VALUE TERMS /////
         // E.P Generic implementation of   w1(w + l^2 |nabla alpha|^2 )
         template <typename PhaseFieldValue, class Grad>
@@ -349,6 +436,8 @@ namespace utopia {
                    (PFFormulation::local_dissipation(phase_field_value) +
                     params.length_scale * params.length_scale * inner(phase_field_grad, phase_field_grad));
         }
+
+
 
         /// Gradient Terms ////
         template <typename PhaseFieldValue, class Grad, typename TestFunction, class GradTest>

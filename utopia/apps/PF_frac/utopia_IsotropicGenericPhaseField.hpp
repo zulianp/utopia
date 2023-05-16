@@ -24,8 +24,8 @@
 
 namespace utopia {
 
-    template <class FunctionSpace, int Dim = FunctionSpace::Dim, class PFFormulation = AT1 >
-    class IsotropicGenericPhaseField final : public GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation> {
+    template <class FunctionSpace, int Dim = FunctionSpace::Dim, class PFFormulation = AT1>
+    class IsotropicGenericPhaseField final : public GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation, IsotropicEnergySplit> {
     public:
         using Scalar = typename FunctionSpace::Scalar;
         using Point = typename FunctionSpace::Point;
@@ -42,6 +42,8 @@ namespace utopia {
         using MixedElem = typename FunctionSpace::ViewDevice::Elem;
         using Parameters = utopia::PFFracParameters<FunctionSpace>;
 
+        using GenericPhaseFieldFormulation = typename utopia::GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation,IsotropicEnergySplit>;
+
         // FIXME
         using Shape = typename FunctionSpace::Shape;
         using Quadrature = utopia::Quadrature<Shape, 2 * (Shape::Order)>;
@@ -51,10 +53,10 @@ namespace utopia {
         static const int U_NDofs = USpace::NDofs;
 
         IsotropicGenericPhaseField(FunctionSpace &space) 
-            : GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation>(space) {}
+            : GenericPhaseFieldFormulation(space) {}
 
         IsotropicGenericPhaseField(FunctionSpace &space, const Parameters &params)
-            : GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation>(space, params) {}
+            : GenericPhaseFieldFormulation(space, params) {}
 
 
 
@@ -373,7 +375,7 @@ namespace utopia {
 
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             el_energy += 
-                                GenericPhaseFieldFormulation<FunctionSpace, Dim,PFFormulation>::fracture_energy(
+                                GenericPhaseFieldFormulation::fracture_energy(
                                     this->params_, c[qp], c_grad_el[qp]) *
                                     dx(qp);
                         }
@@ -528,8 +530,7 @@ namespace utopia {
 
                             for (SizeType j = 0; j < C_NDofs; ++j) {
                                 const Scalar shape_test = c_shape_fun_el(j, qp);
-                                const Scalar frac = GenericPhaseFieldFormulation<FunctionSpace, Dim,PFFormulation>::
-                                    grad_fracture_energy_wrt_c(
+                                const Scalar frac = GenericPhaseFieldFormulation::grad_fracture_energy_wrt_c(
                                         this->params_, c[qp], c_grad_el[qp], shape_test, c_grad_shape_el(j, qp));
 
                                 if (this->params_.use_pressure) {
@@ -777,7 +778,7 @@ namespace utopia {
                                 auto element_stress = 2.0 * mu * u_strain_shape_el(j, qp) +
                                                     lambda * trace(u_strain_shape_el(j, qp)) * (device::identity<Scalar>());
                                     Scalar val =
-                                        GenericPhaseFieldFormulation<FunctionSpace, Dim,PFFormulation>::bilinear_uu(
+                                        GenericPhaseFieldFormulation::bilinear_uu(
                                             this->params_,
                                             c[qp], 
                                             //p_stress_view.stress(j, qp),       //constant material props  
@@ -864,9 +865,9 @@ namespace utopia {
                                                          const Scalar &shape_prod,
                                                          const GradShape &grad_trial,
                                                          const GradShape &grad_test) {
-            return GenericPhaseFieldFormulation<FunctionSpace, Dim,PFFormulation>::diffusion_c(
+            return GenericPhaseFieldFormulation::diffusion_c(
                         params, grad_trial, grad_test) +
-                   GenericPhaseFieldFormulation<FunctionSpace,Dim, PFFormulation>::reaction_c(
+                   GenericPhaseFieldFormulation::reaction_c(
                         params, phase_field_value, shape_prod) +
                    elastic_deriv_cc(params, phase_field_value, strain_energy, shape_prod);
         }
@@ -934,7 +935,7 @@ namespace utopia {
             //double frac_en = GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation>::fracture_energy(
             //                       params, phase_field_value, phase_field_grad);
             //std::cout << frac_en << std::endl;
-            return GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation>::fracture_energy(
+            return GenericPhaseFieldFormulation::fracture_energy(
                        params, phase_field_value, phase_field_grad) +
                    elastic_energy(params, phase_field_value, trace, strain);
         }
@@ -955,7 +956,7 @@ namespace utopia {
                                 params.regularization) *
                                std::max(strain_energy(params, trace, strain), PFFormulation::min_crack_driving_force(params) );
 
-            return GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation>::fracture_energy(
+            return GenericPhaseFieldFormulation::fracture_energy(
                         params, phase_field_value, phase_field_grad) +
                     elastic_energy;
         }
@@ -1237,7 +1238,7 @@ namespace utopia {
 
 
                                  fracture_value += shape * weight *
-                                       GenericPhaseFieldFormulation<FunctionSpace, Dim,PFFormulation>::fracture_energy(
+                                       GenericPhaseFieldFormulation::fracture_energy(
                                                 this->params_, c[qp], c_grad_el[qp]); //sum fracture energy at integration point
 
                                 elastic_value += shape * weight *
