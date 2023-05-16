@@ -284,7 +284,117 @@ namespace utopia {
                             fracture_toughness_out = Gc2;
                     }
                 };
-            }
+            } else if (type == "DoubleLayer") {
+                Scalar bottom_layer_height_, bottom_layer_height2_;
+                Scalar top_layer_height_, top_layer_height2_;
+                bool include_interface_layer {false};
+
+                in.get("bottom_layer_height", bottom_layer_height_);
+                in.get("bottom_layer_height2", bottom_layer_height2_);
+                in.get("top_layer_height", top_layer_height_);
+                in.get("top_layer_height2", top_layer_height2_);
+                bottom_layer_height = bottom_layer_height_;
+                top_layer_height = top_layer_height_;
+                bottom_layer_height2 = bottom_layer_height2_;
+                top_layer_height2 = top_layer_height2_;
+
+                Scalar E1, E2, nu1, nu2, Gc1, Gc2, Gc_int, l_, ft1, ft2, ft_int;
+                in.get("E_1", E1);
+                in.get("E_2", E2);
+                in.get("nu_1", nu1);
+                in.get("nu_2", nu2);
+                in.get("Gc_1", Gc1);
+                in.get("Gc_2", Gc2);
+                l_ = length_scale;
+
+                in.get("tensile_strength", ft1);
+                in.get("tensile_strength_2", ft2);
+                in.get("tensile_strength_int", ft_int);
+                tensile_strength = ft1;
+
+
+                in.get("include_interface_layer", include_interface_layer);
+                if (include_interface_layer)
+                    in.get("Gc_int", Gc_int);
+                else //interface layer same toughness as outer layer
+                    Gc_int = Gc2;
+
+                E = E1;
+                nu = nu1;
+                fracture_toughness = Gc1;
+
+                // Random variation
+                bool random_variation{false};
+                Scalar toughness_deviation{1.0};
+                in.get("random_variation", random_variation);
+                in.get("random_standard_deviation", toughness_deviation);
+
+                double use_random = random_variation ? 1.0 : 0.0;
+                std::normal_distribution<double> distribution(0., toughness_deviation);
+                std::default_random_engine generator;
+
+                bool boundary_protection(false);
+                Scalar layer_width(0);
+                Scalar xmin, xmax, ymin, ymax;
+                in.get("boundary_protection", boundary_protection);
+                in.get("layer_width", layer_width);
+                in.get("x_min", xmin);
+                in.get("x_max", xmax);
+                in.get("y_min", ymin);
+                in.get("y_max", ymax);
+
+                hetero_params = [E1,
+                                 E2,
+                                 nu1,
+                                 nu2,
+                                 Gc1,
+                                 Gc2,
+                                 Gc_int,
+                                 ft1,
+                                 ft2,
+                                 ft_int,
+                                 l_,
+                                 bottom_layer_height_,
+                                 top_layer_height_,
+                                 bottom_layer_height2_,
+                                 top_layer_height2_,
+                                 boundary_protection,
+                                 xmin,
+                                 xmax,
+                                 ymin,
+                                 ymax,
+                                 layer_width,
+                                 use_random,
+                                 distribution,
+                                 generator](const Point &p,
+                                            Scalar &mu_out,
+                                            Scalar &lambda_out,
+                                            Scalar &fracture_toughness_out,
+                                            Scalar &tensile_strength) mutable {
+                    if ( (p[1] < top_layer_height_ && p[1] > bottom_layer_height_) ||
+                         (p[1] < top_layer_height2_ && p[1] > bottom_layer_height2_) ) {  // Dolostone (weaker and stiffer)
+                        lambda_out = E1 * nu1 / ((1. + nu1) * (1. - 2. * nu1));
+                        mu_out = E1 / (2. * (1. + nu1));
+
+                        generator.seed((1e6 * p[1] * p[1] + 1e6 * p[0] * p[0]));
+                        double noise = distribution(generator);
+                        distribution.reset();
+                        fracture_toughness_out = Gc1 + use_random * noise;
+                        tensile_strength = ft1;
+                    } else {  // Shale (stronger and more compliant)
+                        lambda_out = E2 * nu2 / ((1. + nu2) * (1. - 2. * nu2));
+                        mu_out = E2 / (2. * (1. + nu2));
+                        if (p[1] < bottom_layer_height_ - 1.5*l_ || p[1] > top_layer_height_ + 1.5*l_ ){
+                            fracture_toughness_out = Gc2;
+                            tensile_strength = ft2;
+                        }
+                        else{
+                            fracture_toughness_out = Gc_int;
+                            tensile_strength = ft_int;
+                        }
+                    }
+                };
+            } //end of double layer
 
             // Initialising other parameters
             if (nu != 0.0 && E != 0.0) {
@@ -331,7 +441,9 @@ namespace utopia {
               Length_y(0),
               Length_z(0),
               top_layer_height(0),
-              bottom_layer_height(0)
+              bottom_layer_height(0),
+              top_layer_height2(0),
+              bottom_layer_height2(0)
 
         {
             kappa = lambda + (2.0 * mu / Dim);
@@ -387,6 +499,7 @@ namespace utopia {
             penalty_tol_non_neg, mobility;
         Scalar Length_x, Length_y, Length_z;
         Scalar top_layer_height, bottom_layer_height;
+        Scalar top_layer_height2, bottom_layer_height2;
 
         // Scalar E1, E2, nu1, nu2, Gc1, Gc2; //for hobbs three layer model
         bool use_penalty_irreversibility{false}, use_crack_set_irreversibiblity{false}, use_pressure{false};
