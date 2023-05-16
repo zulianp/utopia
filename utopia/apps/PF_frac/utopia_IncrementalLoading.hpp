@@ -258,6 +258,9 @@ namespace utopia {
                     // auto linear_solver = std::make_shared<SteihaugToint<PetscMatrix, PetscVector>>();
                     auto linear_solver = std::make_shared<Lanczos<PetscMatrix, PetscVector>>();
                     linear_solver->pc_type("bjacobi");
+                    linear_solver->atol(1e-9);
+                    linear_solver->rtol(1e-13);
+                    linear_solver->stol(1e-13);
                     qp_solver = std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector>>(linear_solver);
                 }
 
@@ -265,7 +268,11 @@ namespace utopia {
             } else {
                 auto qp_solver = std::make_shared<utopia::Lanczos<PetscMatrix, PetscVector>>();
                 // auto qp_solver = std::make_shared<utopia::SteihaugToint<PetscMatrix, PetscVector>>();
-                qp_solver->pc_type("bjacobi");
+                qp_solver->pc_type("hypre");
+                qp_solver->atol(1e-9);
+                qp_solver->rtol(1e-13);
+                qp_solver->stol(1e-13);
+                qp_solver->max_it(10000);
                 tr_solver_ = std::make_shared<TrustRegion<PetscMatrix, PetscVector>>(qp_solver);
             }
 
@@ -429,7 +436,7 @@ namespace utopia {
 
                 fe_problem_->compute_tcv(this->solution_, tcv);
 
-                if (!use_box_constraints_){
+                if (!use_box_constraints_) {
                     residual = tr_solver_->get_gnorm();
                 }
 
@@ -446,7 +453,7 @@ namespace utopia {
                                                              "fracture_energy",
                                                              "elast_en_mid_layer",
                                                              "frac_en_mid_layer",
-                                                             "total_crack_vol", 
+                                                             "total_crack_vol",
                                                              "gnorm"});
                     } else {
                         writer.open_file(this->csv_file_name_);
@@ -459,8 +466,7 @@ namespace utopia {
                                                     ela_en_mid,
                                                     fra_en_mid,
                                                     tcv,
-                                                    residual
-                                                    });
+                                                    residual});
                     writer.close_file();
                 }
             }

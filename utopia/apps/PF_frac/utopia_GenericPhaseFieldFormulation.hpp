@@ -21,95 +21,97 @@
 
 namespace utopia {
 
-    // E.P See linear softening law in Wu & Nguyen 2017 - Length-scale insensitive phase field damage model for brittle fracture
+    // E.P See linear softening law in Wu & Nguyen 2017 - Length-scale insensitive phase field damage model for brittle
+    // fracture
     struct CHZ_Linear {
+        static constexpr double a2_ = -0.5;
 
-          static constexpr double a2_ = -0.5;
+        template <class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static double damage_normalisation(const PFFracParameters<FunctionSpace> &p) {
+            // c0 = pi
+            return p.fracture_toughness / (p.length_scale * M_PI);
+        }
 
-           template<class FunctionSpace>
-           UTOPIA_INLINE_FUNCTION static double damage_normalisation(const PFFracParameters<FunctionSpace> & p) {
-               // c0 = pi
-               return  p.fracture_toughness/(p.length_scale*M_PI);
-           }
+        template <typename C>
+        UTOPIA_INLINE_FUNCTION static C local_dissipation(const C &c) {
+            // alpha * [( epsi + (1-epsi)* alpha]   where epsi = 2 for linear
 
-           template <typename C>
-           UTOPIA_INLINE_FUNCTION static C local_dissipation(const C &c) {
-               // alpha * [( epsi + (1-epsi)* alpha]   where epsi = 2 for linear
+            return 2.0 * c - c * c;
+        }
 
-               return 2.0*c - c*c;
-           }
+        template <typename C>
+        UTOPIA_INLINE_FUNCTION static C local_dissipation_deriv(const C &c) {
+            return 2.0 - 2.0 * c;
+        }
 
-           template <typename C>
-           UTOPIA_INLINE_FUNCTION static C local_dissipation_deriv(const C &c) {
-               return 2.0 - 2.0*c;
-           }
+        template <typename C>
+        UTOPIA_INLINE_FUNCTION static C local_dissipation_deriv2(const C &) {
+            return -2.0;
+        }
 
-           template <typename C>
-           UTOPIA_INLINE_FUNCTION static C local_dissipation_deriv2(const C &) {
-               return -2.0;
-           }
+        // E.P: Penalty for AT1 Model is used herein
+        // this computation follows eq. 60 from "On penalization in variational
+        // phase-field models of britlle fracture, Gerasimov, Lorenzis"
+        template <class FunctionSpace>
+        static void configure_penalty_irreversibility(PFFracParameters<FunctionSpace> &p) {
+            assert(p.use_penalty_irreversibility);
+            typename FunctionSpace::Scalar tol2 = p.penalty_tol * p.penalty_tol;
+            p.penalty_param_irreversible = p.fracture_toughness / p.length_scale * (27.0 / (64.0 * tol2));
+        }
 
-           // E.P: Penalty for AT1 Model is used herein
-           // this computation follows eq. 60 from "On penalization in variational
-           // phase-field models of britlle fracture, Gerasimov, Lorenzis"
-           template<class FunctionSpace>
-           static void configure_penalty_irreversibility( PFFracParameters<FunctionSpace> & p){
-               assert(p.use_penalty_irreversibility);
-               typename FunctionSpace::Scalar tol2 = p.penalty_tol * p.penalty_tol;
-               p.penalty_param_irreversible = p.fracture_toughness / p.length_scale * (27.0 /(64.0 * tol2) );
-           }
+        template <class FunctionSpace>
+        static void configure_penalty_non_negative(PFFracParameters<FunctionSpace> &p) {
+            assert(p.use_penalty_irreversibility);
+            typename FunctionSpace::Scalar L = (p.Length_x + p.Length_y + p.Length_z) / FunctionSpace::Dim;
+            p.penalty_param_non_neg = p.fracture_toughness / p.length_scale * 9.0 / 64.0 * (L / p.length_scale - 2.0) /
+                                      (p.penalty_tol_non_neg);
+            if (mpi_world_rank() == 0)
+                utopia::out() << "Lengthscale: " << p.length_scale
+                              << "  Penalty CHZ_linear n_neg: " << p.penalty_param_non_neg << std::endl;
+        }
 
-           template<class FunctionSpace>
-           static void configure_penalty_non_negative( PFFracParameters<FunctionSpace> & p){
-               assert(p.use_penalty_irreversibility);
-               typename FunctionSpace::Scalar L = (p.Length_x + p.Length_y + p.Length_z)/FunctionSpace::Dim;
-               p.penalty_param_non_neg = p.fracture_toughness / p.length_scale * 9.0/64.0 * (L/p.length_scale - 2.0 )/(p.penalty_tol_non_neg);
-               if (mpi_world_rank()==0)
-                 utopia::out() << "Lengthscale: " << p.length_scale << "  Penalty CHZ_linear n_neg: " << p.penalty_param_non_neg << std::endl;
-           }
+        template <typename C, class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static C degradation(const C &c, const PFFracParameters<FunctionSpace> &p) {
+            const double a1_ =
+                4.0 / (M_PI * p.length_scale) * p.E * p.fracture_toughness / (p.tensile_strength * p.tensile_strength);
+            C imc = 1.0 - c;
+            C imc2 = imc * imc;
+            return imc2 / (imc2 + a1_ * c * (1. + a2_ * c));
+        }
 
+        template <typename C, class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static C degradation_deriv(const C &c, const PFFracParameters<FunctionSpace> &p) {
+            const double a1_ =
+                4.0 / (M_PI * p.length_scale) * p.E * p.fracture_toughness / (p.tensile_strength * p.tensile_strength);
+            C imc = 1.0 - c;
+            C imc2 = imc * imc;
+            return -a1_ * imc * (2.0 * a2_ * c + c + 1.0) / std::pow(a1_ * c * (a2_ * c + 1.0) + imc2, 2.0);
+        }
 
-           template<typename C, class FunctionSpace>
-           UTOPIA_INLINE_FUNCTION static C degradation(const C &c, const PFFracParameters<FunctionSpace> & p) {
-               const double a1_ = 4.0/(M_PI*p.length_scale) * p.E * p.fracture_toughness / (p.tensile_strength*p.tensile_strength) ;
-               C imc  = 1.0 - c;
-               C imc2 = imc*imc;
-               return imc2/(imc2 + a1_*c*(1. + a2_*c));
-           }
+        template <typename C, class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static C degradation_deriv2(const C &c, const PFFracParameters<FunctionSpace> &p) {
+            const double a1_ =
+                4.0 / (M_PI * p.length_scale) * p.E * p.fracture_toughness / (p.tensile_strength * p.tensile_strength);
+            C imc = 1.0 - c;
+            C imc2 = imc * imc;
+            return 2.0 * a1_ * (2.0 * a2_ * c + c - a2_) / std::pow(a1_ * c * (a2_ * c + 1.0) + imc2, 2.0) +
+                   2.0 * a1_ * imc * (2.0 * a2_ * c + c + 1.0) * (2.0 * a1_ * a2_ * c + a1_ - 2.0 * imc) /
+                       std::pow(a1_ * c * (a2_ * c + 1.0) + imc2, 3.0);
+        }
 
-           template <typename C, class FunctionSpace>
-           UTOPIA_INLINE_FUNCTION static C degradation_deriv( const C &c, const PFFracParameters<FunctionSpace> & p) {
-               const double a1_ = 4.0/(M_PI*p.length_scale) * p.E * p.fracture_toughness / (p.tensile_strength*p.tensile_strength) ;
-               C imc  = 1.0 - c;
-               C imc2 = imc*imc;
-               return - a1_*imc*(2.0*a2_*c + c + 1.0)/std::pow(a1_*c*(a2_*c+1.0) + imc2  ,2.0);
-           }
+        static const bool penalise_negative_phase_field_values =
+            false;  // NOT WORKING, but AT1 models need to penalise negative phase field values
 
-           template <typename C, class FunctionSpace>
-           UTOPIA_INLINE_FUNCTION static C degradation_deriv2( const C &c, const PFFracParameters<FunctionSpace> & p) {
-               const double a1_ = 4.0/(M_PI*p.length_scale) * p.E * p.fracture_toughness / (p.tensile_strength*p.tensile_strength) ;
-               C imc  = 1.0 - c;
-               C imc2 = imc*imc;
-               return 2.0*a1_*(2.0*a2_*c + c - a2_)/std::pow(a1_*c*(a2_*c+1.0) + imc2  ,2.0)
-                       + 2.0*a1_*imc*(2.0*a2_*c + c + 1.0)*(2.0*a1_*a2_*c + a1_ - 2.0*imc )/std::pow(a1_*c*(a2_*c+1.0) + imc2  , 3.0);
-           }
+        static const bool enforce_min_crack_driving_force = false;  // NOT WORKING, keep false.
 
-           static const bool penalise_negative_phase_field_values = false; //NOT WORKING, but AT1 models need to penalise negative phase field values
+        template <class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static double min_crack_driving_force(const PFFracParameters<FunctionSpace> &p) {
+            return 0.5 * p.tensile_strength * p.tensile_strength / p.E;
+        }
 
-           static const bool enforce_min_crack_driving_force = false; //NOT WORKING, keep false.
-
-           template<class FunctionSpace>
-           UTOPIA_INLINE_FUNCTION static double min_crack_driving_force(const PFFracParameters<FunctionSpace> & p) {
-                      return 0.5*p.tensile_strength*p.tensile_strength/p.E;
-                  }
-
-
-           //Value of phase field when damage localises in 1D bar
-           static double CriticalDamage() {return 0.0 ; } //elastic phase
-
-
-       };
-
+        // Value of phase field when damage localises in 1D bar
+        static double CriticalDamage() { return 0.0; }  // elastic phase
+    };
 
     struct AT1 {
     public:
@@ -124,7 +126,7 @@ namespace utopia {
         }
 
         template <typename C>
-        UTOPIA_INLINE_FUNCTION static C local_dissipation_deriv(const C & c) {
+        UTOPIA_INLINE_FUNCTION static C local_dissipation_deriv(const C &c) {
             return 1.0;
         }
 
@@ -157,26 +159,26 @@ namespace utopia {
                               << std::endl;
         }
 
-       template <typename C, class FunctionSpace>
-       UTOPIA_INLINE_FUNCTION static C degradation(const C &c, const PFFracParameters<FunctionSpace> & ) {
-           C imc = 1.0 - c;
-           return imc * imc;
-       }
+        template <typename C, class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static C degradation(const C &c, const PFFracParameters<FunctionSpace> &) {
+            C imc = 1.0 - c;
+            return imc * imc;
+        }
 
-       template <typename C, class FunctionSpace>
-       UTOPIA_INLINE_FUNCTION static C degradation_deriv( const C &c, const PFFracParameters<FunctionSpace> & ) {
-           C imc = 1.0 - c;
-           return -2.0 * imc;
-       }
+        template <typename C, class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static C degradation_deriv(const C &c, const PFFracParameters<FunctionSpace> &) {
+            C imc = 1.0 - c;
+            return -2.0 * imc;
+        }
 
-       template <typename C, class FunctionSpace>
-       UTOPIA_INLINE_FUNCTION static C degradation_deriv2( const C &, const PFFracParameters<FunctionSpace> & ) {
-           return 2.0;
-       }
+        template <typename C, class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static C degradation_deriv2(const C &, const PFFracParameters<FunctionSpace> &) {
+            return 2.0;
+        }
 
         static const bool penalise_negative_phase_field_values =
             false;  // NOT WORKING, but AT1 models need to penalise negative phase field values
-        
+
         static const bool enforce_min_crack_driving_force = false;
 
         template <class FunctionSpace>
@@ -184,9 +186,8 @@ namespace utopia {
             return 3.0 / 16.0 * p.fracture_toughness / p.length_scale;
         }
 
-       //Value of phase field when damage localises in 1D bar
-       static double CriticalDamage() {return 0.0 ; } //elastic phase
-
+        // Value of phase field when damage localises in 1D bar
+        static double CriticalDamage() { return 0.0; }  // elastic phase
     };
 
     struct AT2 {
@@ -232,24 +233,22 @@ namespace utopia {
                               << std::endl;
         }
 
-        
+        template <typename C, class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static C degradation(const C &c, const PFFracParameters<FunctionSpace> &) {
+            C imc = 1.0 - c;
+            return imc * imc;
+        }
 
-       template <typename C, class FunctionSpace>
-       UTOPIA_INLINE_FUNCTION static C degradation(const C &c, const PFFracParameters<FunctionSpace> &) {
-           C imc = 1.0 - c;
-           return imc * imc;
-       }
+        template <typename C, class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static C degradation_deriv(const C &c, const PFFracParameters<FunctionSpace> &) {
+            C imc = 1.0 - c;
+            return -2.0 * imc;
+        }
 
-       template <typename C, class FunctionSpace>
-       UTOPIA_INLINE_FUNCTION static C degradation_deriv( const C &c, const PFFracParameters<FunctionSpace> &) {
-           C imc = 1.0 - c;
-           return -2.0 * imc;
-       }
-
-       template <typename C, class FunctionSpace>
-       UTOPIA_INLINE_FUNCTION static C degradation_deriv2( const C &, const PFFracParameters<FunctionSpace> &) {
-           return 2.0;
-       }
+        template <typename C, class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static C degradation_deriv2(const C &, const PFFracParameters<FunctionSpace> &) {
+            return 2.0;
+        }
 
         static const bool penalise_negative_phase_field_values =
             false;  // AT2 models do not need to penalise negative phase field values
@@ -260,13 +259,10 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION static double min_crack_driving_force(const PFFracParameters<FunctionSpace> &p) {
             return 3.0 / 16.0 * p.fracture_toughness / p.length_scale;
         }
-      
-        //Value of phase field when damage localises in 1D bar (disregarding the stability of the bar)
-        static double CriticalDamage() {return 0.25 ; } //elastic phase
-  
-    };
-   
 
+        // Value of phase field when damage localises in 1D bar (disregarding the stability of the bar)
+        static double CriticalDamage() { return 0.25; }  // elastic phase
+    };
 
     template <class FunctionSpace, int Dim = FunctionSpace::Dim, class PFFormulation = AT1>
     class GenericPhaseFieldFormulation : public PhaseFieldFracBase<FunctionSpace, Dim> {
@@ -303,19 +299,21 @@ namespace utopia {
         GenericPhaseFieldFormulation(FunctionSpace &space, const Parameters &params)
             : PhaseFieldFracBase<FunctionSpace, Dim>(space, params) {}
 
-        //Tensile strength (for models with elastic phase AT1 and CHZ )
-        double CriticalStress(){
+        // Tensile strength (for models with elastic phase AT1 and CHZ )
+        double CriticalStress() {
             // sigma_c = Eo * Uc / L
             return this->params_.E * CriticalDisplacement() / this->params_.Length_x;
         }
 
-        //For a 1D homogeneous Bar
-        double CriticalDisplacement(){
+        // For a 1D homogeneous Bar
+        double CriticalDisplacement() {
             const double c = PFFormulation::CriticalDamage();
             // Uc = L * sqrt( - 2 w'/E' )
-            return this->params_.Length_x * 
-                std::sqrt(- 2.0 * PFFormulation::damage_normalisation(this->params_) * PFFormulation::local_dissipation_deriv(c)
-                            / (PFFormulation::degradation_deriv(c, this->params_) * this->params_.E)  ); }
+            return this->params_.Length_x *
+                   std::sqrt(-2.0 * PFFormulation::damage_normalisation(this->params_) *
+                             PFFormulation::local_dissipation_deriv(c) /
+                             (PFFormulation::degradation_deriv(c, this->params_) * this->params_.E));
+        }
 
         void read(Input &in) {
             PhaseFieldFracBase<FunctionSpace, Dim>::read(in);
@@ -389,8 +387,8 @@ namespace utopia {
                                                                   const PhaseFieldValue &phase_field_value,
                                                                   const StressShape &stress,
                                                                   const Grad &strain_test) {
-            const auto gc =
-                ((1.0 - params.regularization) * PFFormulation::degradation(phase_field_value, params) + params.regularization);
+            const auto gc = ((1.0 - params.regularization) * PFFormulation::degradation(phase_field_value, params) +
+                             params.regularization);
             return inner(gc * stress, strain_test);
         }
 
@@ -473,13 +471,13 @@ namespace utopia {
                         Scalar el_energy = 0.0;
 
                         if (centroid[1] > this->non_const_params().bottom_layer_height &&
-                            centroid[1] < this->non_const_params().top_layer_height ){
-                            //only for middle layer
+                            centroid[1] < this->non_const_params().top_layer_height) {
+                            // only for middle layer
                             for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                                 el_energy +=
-                                    GenericPhaseFieldFormulation<FunctionSpace, Dim,PFFormulation>::fracture_energy(
+                                    GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation>::fracture_energy(
                                         this->params_, c[qp], c_grad_el[qp]) *
-                                        dx(qp);
+                                    dx(qp);
                             }
                         }
                         assert(el_energy == el_energy);
@@ -494,8 +492,9 @@ namespace utopia {
             return true;
         }
 
-
-        virtual bool export_strain_and_stress(std::string output_path, const Vector &x_const, const Scalar time) const override{
+        virtual bool export_strain_and_stress(std::string output_path,
+                                              const Vector &x_const,
+                                              const Scalar time) const override {
             UTOPIA_TRACE_REGION_BEGIN("PhaseFieldFracBase::strain");
 
             static const int strain_components = (Dim - 1) * 3;
@@ -567,9 +566,9 @@ namespace utopia {
                 auto U_view = U.view_device();
                 auto C_view = C.view_device();
                 auto S_view = S.view_device();
-                auto CC_view = CC.view_device(); //EP
+                auto CC_view = CC.view_device();  // EP
 
-                auto c_view = c_val.view_device();//EP
+                auto c_view = c_val.view_device();  // EP
                 auto u_view = u_val.view_device();
 
                 auto strain_view = strain.view_device();
@@ -645,14 +644,15 @@ namespace utopia {
                                 // calculate stress at quadrature
                                 const Scalar tr_strain_u = trace(el_strain.strain[qp]);
                                 this->compute_stress(this->params_,
-                                               tr_strain_u,
-                                               el_strain.strain[qp],
-                                               stress);  // gets stress at quadrature point
+                                                     tr_strain_u,
+                                                     el_strain.strain[qp],
+                                                     stress);  // gets stress at quadrature point
 
                                 strain_value +=
                                     epsi * shape * weight;  // matrix of strains added to existing nodal strain (
 
-                                stress_value += PFFormulation::degradation(c[qp], this->params_) * stress * shape * weight;  // Sum stress at integration point
+                                stress_value += PFFormulation::degradation(c[qp], this->params_) * stress * shape *
+                                                weight;  // Sum stress at integration point
 
                                 // getting nodal weight for normalisation
                                 weight_el_vec[n] += shape * weight;
@@ -663,8 +663,9 @@ namespace utopia {
                             for (int r = 0; r < Dim; ++r) {
                                 for (int c = r; c < Dim; c++) {
                                     strain_and_stress_el_vec[idx * offset + n] = stress_value(r, c);
-                                    if (strain_components<Total_components)
-                                        strain_and_stress_el_vec[(strain_components + idx)*offset + n ] = strain_value(r,c);
+                                    if (strain_components < Total_components)
+                                        strain_and_stress_el_vec[(strain_components + idx) * offset + n] =
+                                            strain_value(r, c);
                                     idx++;
                                 }
                             }
@@ -698,13 +699,18 @@ namespace utopia {
                             strain_and_stress_view.set(nodal_offset + k,
                                                        si / wi);  // normalise the strain value by the weight wi
 
-//                            if (strain_components != total_components) {
-//                                auto sig_i =
-//                                    strain_and_stress_view.get(nodal_offset + strain_components +
-//                                                               k);  // get stress component which is offset additionally
-//                                                                    // in the g vector by the strain components
-//                                strain_and_stress_view.set(nodal_offset + strain_components + k, sig_i / wi);
-//                            }
+                            //                            if (strain_components != total_components) {
+                            //                                auto sig_i =
+                            //                                    strain_and_stress_view.get(nodal_offset +
+                            //                                    strain_components +
+                            //                                                               k);  // get stress
+                            //                                                               component which is offset
+                            //                                                               additionally
+                            //                                                                    // in the g vector by
+                            //                                                                    the strain components
+                            //                                strain_and_stress_view.set(nodal_offset +
+                            //                                strain_components + k, sig_i / wi);
+                            //                            }
                             // assert( std::signbit(si) == std::signbit(sig_i));
                         }
                     });
@@ -718,13 +724,13 @@ namespace utopia {
             return true;
         }
 
-        bool export_material_params(std::string output_path){
+        bool export_material_params(std::string output_path) {
             UTOPIA_TRACE_REGION_BEGIN("GenericPhaseFieldFormulation::export_mechanical_params");
 
-            static const int total_components = 7.0; //E, nu, Gc, lambda, mu, tensile_strength, crit_disp
+            static const int total_components = 7.0;  // E, nu, Gc, lambda, mu, tensile_strength, crit_disp
 
             using PSpace = typename FunctionSpace::template Subspace<total_components>;
-            using SElem  = typename PSpace::ViewDevice::Elem;
+            using SElem = typename PSpace::ViewDevice::Elem;
             using WSpace = typename FunctionSpace::template Subspace<1>;
 
             Vector w;
@@ -739,7 +745,6 @@ namespace utopia {
             PSpace S(std::move(param_mesh));
             WSpace C(this->space_.mesh().clone(1));
 
-
             S.create_vector(g);
             C.create_vector(w);
             ///////////////////////////////////////////////////////////////////////////
@@ -747,66 +752,60 @@ namespace utopia {
             {
                 ////////////////////////////////////////////////////////////////////////////
 
-
-
                 auto S_view = S.view_device();
                 auto C_view = C.view_device();
 
-                // Preparing the vector for which the parameter function space knows the dimensions (nodes*components), so
-                // that we can write on this later
+                // Preparing the vector for which the parameter function space knows the dimensions (nodes*components),
+                // so that we can write on this later
                 auto g_view = S.assembly_view_device(g);
                 auto w_view = C.assembly_view_device(w);
 
+                Device::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        StaticVector<Scalar, total_components * C_NDofs> material_params;
+                        StaticVector<Scalar, C_NDofs> node_count;
+                        material_params.set(.0);
+                        node_count.set(1.0);
 
+                        SElem s_e;
+                        S_view.elem(i, s_e);  // just needed for add_vector into g (and node coords)
 
-            Device::parallel_for(
-                this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    StaticVector<Scalar, total_components * C_NDofs> material_params;
-                    StaticVector<Scalar, C_NDofs> node_count;
-                    material_params.set(.0);
-                    node_count.set(1.0);
+                        CElem c_e;
+                        C_view.elem(i, c_e);  // getting element for storing wieghts in CSpace
 
-                    SElem s_e;
-                    S_view.elem(i, s_e);  // just needed for add_vector into g (and node coords)
+                        for (SizeType n = 0; n < C_NDofs; n++) {
+                            ////////////////////////////////////////////
+                            bool update_elast_tensor = false;
+                            Point coord;
+                            s_e.node(n, coord);
+                            this->non_const_params().update(coord, update_elast_tensor);
+                            ////////////////////////////////////////////
 
-                    CElem c_e;
-                    C_view.elem(i, c_e);  // getting element for storing wieghts in CSpace
+                            Scalar Gc = this->params_.fracture_toughness;
+                            Scalar mu = this->params_.mu;
+                            Scalar l = this->params_.lambda;
+                            Scalar E = mu * (3. * l + 2. * mu) / (l + mu);
+                            Scalar nu = E / (2.0 * mu) - 1.;
+                            Scalar tens_strength =
+                                CriticalStress();  // std::pow(3./8. * Gc*E/this->params_.length_scale, 0.5);  //AT1
+                                                   // hardcoded
+                            Scalar crit_disp = CriticalDisplacement();
 
-                    for (SizeType n = 0; n < C_NDofs; n++) {
+                            material_params[n] = E;
+                            material_params[C_NDofs + n] = nu;
+                            material_params[C_NDofs * 2 + n] = Gc;
+                            material_params[C_NDofs * 3 + n] = l;
+                            material_params[C_NDofs * 4 + n] = mu;
+                            material_params[C_NDofs * 5 + n] = tens_strength;
+                            material_params[C_NDofs * 6 + n] = crit_disp;
+                        }
 
-                        ////////////////////////////////////////////
-                        bool update_elast_tensor = false;
-                        Point coord;
-                        s_e.node(n, coord);
-                        this->non_const_params().update(coord, update_elast_tensor);
-                        ////////////////////////////////////////////
-
-                        Scalar Gc = this->params_.fracture_toughness;
-                        Scalar mu = this->params_.mu ;
-                        Scalar l  = this->params_.lambda;
-                        Scalar E  = mu*(3.*l + 2.*mu)/(l+mu);
-                        Scalar nu = E/(2.0*mu) - 1.;
-                        Scalar tens_strength = CriticalStress();  //std::pow(3./8. * Gc*E/this->params_.length_scale, 0.5);  //AT1 hardcoded
-                        Scalar crit_disp = CriticalDisplacement();
-
-
-                        material_params[n] = E;
-                        material_params[C_NDofs   + n] = nu;
-                        material_params[C_NDofs*2 + n] = Gc;
-                        material_params[C_NDofs*3 + n] = l;
-                        material_params[C_NDofs*4 + n] = mu;
-                        material_params[C_NDofs*5 + n] = tens_strength;
-                        material_params[C_NDofs*6 + n] = crit_disp;
-
-                    }
-
-                    C_view.add_vector(c_e, node_count, w_view);
-                    S_view.add_vector(s_e, material_params, g_view);
-                        }); //end of parallel loop
+                        C_view.add_vector(c_e, node_count, w_view);
+                        S_view.add_vector(s_e, material_params, g_view);
+                    });  // end of parallel loop
             }
 
             {
-
                 auto mat_params = local_view_device(g);
                 auto node_count = local_view_device(w);
                 auto r = local_range_device(w);  // range of vector w (using primitivo di utopio)
@@ -814,15 +813,14 @@ namespace utopia {
                     r, UTOPIA_LAMBDA(int i) {
                         auto wi = node_count.get(i);  // extracts vector component
                         for (int k = 0; k < total_components; k++) {
-
-                            int nodal_offset = i * total_components;                //vector g is 2*straincomponents bigger than vector of weights w
-                            auto si = mat_params.get(nodal_offset + k);      //get k'th strain corresponding to node i with weight i
-                            mat_params.set(nodal_offset + k, si / wi);       //normalise the strain value by the weight wi
-
+                            int nodal_offset =
+                                i * total_components;  // vector g is 2*straincomponents bigger than vector of weights w
+                            auto si = mat_params.get(nodal_offset +
+                                                     k);  // get k'th strain corresponding to node i with weight i
+                            mat_params.set(nodal_offset + k, si / wi);  // normalise the strain value by the weight wi
                         }
                     });
             }  // incase backed PETSC needs synchronisation (create view in scopes and destroy them when not needed)
-
 
             rename("E nu Gc lambda mu ft Uc", g);
             output_path += "_params.vtr";
@@ -830,7 +828,6 @@ namespace utopia {
 
             UTOPIA_TRACE_REGION_END("GenericPhaseFieldFormulation::export_mechanical_params");
             return true;
-
         }
 
     protected:
