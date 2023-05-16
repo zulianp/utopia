@@ -30,7 +30,7 @@ public:
 #endif
 
 #ifdef UTOPIA_WITH_PARMETIS
-        // UTOPIA_RUN_TEST(petsc_rebalanced_solver_file);
+        UTOPIA_RUN_TEST(petsc_rebalanced_solver_file);
         UTOPIA_RUN_TEST(parmetis_decompose);
         UTOPIA_RUN_TEST(parmetis_rebalance);
         UTOPIA_RUN_TEST(petsc_rebalanced_solver);
@@ -164,8 +164,8 @@ public:
 
         RebalancedSolver solver;
 
-        auto p = utopia::param_list(utopia::param("inner_solver", utopia::param_list(utopia::param("verbose", true))));
-        solver.read(p);
+        // auto p = utopia::param_list(utopia::param("inner_solver", utopia::param_list(utopia::param("verbose",
+        // true)))); solver.read(p);
 
         solver.update(make_ref(A));
         solver.apply(b, x);
@@ -174,20 +174,28 @@ public:
     void petsc_rebalanced_solver_file() {
         auto &&comm = Comm::get_default();
 
-        int n = 20;
-
         Matrix A;
         A.read(comm.get(), "mat.bin");
-        // A.write("mat.raw");
+        // A.read(comm.get(), "cippo/rowptr.raw");
 
         auto vl = row_layout(A);
         Vector b(vl, 1.);
         Vector x(vl, 0.);
 
-        RebalancedSolver solver;
+        if (!A.comm().rank()) {
+            utopia::out() << "dofs: " << A.rows() << "\n";
+        }
 
-        auto p = utopia::param_list(utopia::param("inner_solver", utopia::param_list(utopia::param("verbose", true))));
+        auto sp = utopia::param_list(utopia::param("type", "bdd"),
+                                     utopia::param("inner_solver", utopia::param_list(utopia::param("verbose", true))));
+
+        auto p = utopia::param_list(utopia::param("inner_solver", std::move(sp)));
+
+        RebalancedSolver solver;
         solver.read(p);
+
+        // OmniLinearSolver<Matrix, Vector> solver;
+        // solver.read(sp);
 
         solver.update(make_ref(A));
         solver.apply(b, x);

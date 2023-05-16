@@ -101,6 +101,8 @@ namespace utopia {
             vtxdist = (idx_t *)&rrs[0];
         }
 
+        const idx_t row_offset = vtxdist[matrix.comm().rank()];
+
         idx_t ncon = 1;
         idx_t *vwgt = nullptr;
         // idx_t* vsize = nullptr;
@@ -124,8 +126,8 @@ namespace utopia {
         PetscCrsView d_view(d);
         PetscCrsView o_view(o);
 
-        std::vector<idx_t> rowptr(d_view.rows() + 1, 0);
-        std::vector<idx_t> colidx(d_view.colidx().size() + o_view.colidx().size(), -1);
+        std::vector<idx_t> xadj(d_view.rows() + 1, 0);
+        std::vector<idx_t> adjncy(d_view.colidx().size() + o_view.colidx().size(), -1);
         std::vector<real_t> tpwgts(num_partitions, 1. / num_partitions);
         std::vector<idx_t> actual_vwgts(d_view.rows(), 0);
 
@@ -134,79 +136,42 @@ namespace utopia {
         PetscInt local_rows = d_view.rows();
         PetscInt col_offset = cr.begin();
 
-        auto d_rowptr = d_view.row_ptr();
-        rowptr[0] = 0;
-        for (PetscInt i = 0; i < local_rows; ++i) {
-            rowptr[i + 1] = d_rowptr[i + 1] - d_rowptr[i];
-        }
-
-        auto o_rowptr = o_view.row_ptr();
-        for (PetscInt i = 0; i < local_rows; ++i) {
-            rowptr[i + 1] += o_rowptr[i + 1] - o_rowptr[i];
-        }
-
-        // Copy weights
-        for (PetscInt i = 0; i < local_rows; ++i) {
-            actual_vwgts[i] = rowptr[i + 1];
-        }
-        vwgt = &actual_vwgts[0];
-        wgtflag = 2;
-
-        for (PetscInt i = 0; i < local_rows; ++i) {
-            rowptr[i + 1] += rowptr[i];
-        }
+        auto d_xadj = d_view.row_ptr();
+        xadj[0] = 0;
 
         for (PetscInt i = 0; i < local_rows; ++i) {
             auto d_row = d_view.row(i);
             auto o_row = o_view.row(i);
 
-            auto begin = rowptr[i];
+            xadj[i + 1] = xadj[i];
             for (PetscInt k = 0; k < d_row.length; ++k) {
-                colidx[begin + k] = col_offset + d_row.colidx(k);
-                assert(colidx[begin + k] < matrix.cols());
+                const idx_t col = d_row.colidx(k);
+                if (col_offset + col != row_offset + i) {
+                    adjncy[xadj[i + 1]++] = col_offset + col;
+                }
             }
 
-            // append offsets
-            begin += d_row.length;
             for (PetscInt k = 0; k < o_row.length; ++k) {
-                colidx[begin + k] = colmap[o_row.colidx(k)];
-                assert(colidx[begin + k] < matrix.cols());
+                const idx_t col = colmap[o_row.colidx(k)];
+                if (col != row_offset + i) {
+                    adjncy[xadj[i + 1]++] = col;
+                }
             }
         }
 
-        if (false) {
-            std::stringstream ss;
-
-            for (auto r : rowptr) {
-                ss << r << " ";
-            }
-
-            ss << "\n";
-
-            for (auto c : colidx) {
-                ss << c << " ";
-            }
-
-            ss << "\n";
-
-            real_t sumw = 0;
-
-            for (auto w : tpwgts) {
-                sumw += w;
-            }
-
-            ss << "sumw = " << sumw << "\n";
-
-            matrix.comm().synched_print(ss.str());
+        for (PetscInt i = 0; i < local_rows; ++i) {
+            actual_vwgts[i] = xadj[i + 1] - xadj[i];
         }
 
-        // matrix.comm().barrier();
-        // printf("%d ParMETIS_V3_PartKway\n", matrix.comm().rank());
-        // matrix.comm().barrier();
+        // vwgt = &actual_vwgts[0];
+        // wgtflag = 2;
+
+        vwgt = 0;
+        wgtflag = 0;
 
         int ret = ParMETIS_V3_PartKway(vtxdist,     // 0
-                                       &rowptr[0],  // 1
-                                       &colidx[0],  // 2
+                                       &xadj[0],    // 1
+                                       &adjncy[0],  // 2
                                        vwgt,        // 3
                                        adjwgt,      // 4
                                        &wgtflag,    // 5
@@ -219,10 +184,6 @@ namespace utopia {
                                        &edgecut,    // 12
                                        parts,       // 13
                                        &comm);      // 14
-
-        // matrix.comm().barrier();
-        // printf("%d ParMETIS_V3_PartKway DONE\n", matrix.comm().rank());
-        // matrix.comm().barrier();
 
         if (sizeof(idx_t) != sizeof(PetscInt)) {
             free(vtxdist);
