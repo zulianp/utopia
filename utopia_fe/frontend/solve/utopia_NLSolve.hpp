@@ -48,6 +48,9 @@ namespace utopia {
             in.get("export_rhs", export_rhs_);
             in.get("export_tensors", export_tensors_);
             in.get("matrix_free", matrix_free_);
+
+            in.get("matrix_export_name", matrix_export_name_);
+            in.get("vector_export_name", vector_export_name_);
         }
 
         inline void set_solver(const std::shared_ptr<NewtonBase_t> &solver) { solver_ = solver; }
@@ -72,7 +75,7 @@ namespace utopia {
             function_->space()->apply_constraints(x);
 
             if (export_tensors_) {
-                write("load_rhs.m", rhs);
+                write(vector_export_name_, rhs);
             }
 
             if (export_rhs_) {
@@ -129,8 +132,8 @@ namespace utopia {
             function_->space()->apply_constraints(rhs);
 
             if (export_tensors_) {
-                write("load_H.m", A);
-                write("load_rhs.m", rhs);
+                write(matrix_export_name_, A);
+                // write(vector_export_name_, rhs);
             }
 
             if (export_rhs_) {
@@ -296,6 +299,8 @@ namespace utopia {
         bool use_pseudo_newton_{false};
         bool export_rhs_{false};
         bool export_tensors_{false};
+        std::string matrix_export_name_{"mat.bin"};
+        std::string vector_export_name_{"vec.bin"};
         bool matrix_free_{false};
 
         void init_defaults() {

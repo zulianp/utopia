@@ -114,7 +114,7 @@ namespace utopia {
         real_t ubvec[1] = {1.05};
         idx_t options[3] = {0};
         // idx_t objval = -1;
-        idx_t edgecut;
+        idx_t edgecut = 0;
         idx_t *parts = partitions;
         MPI_Comm comm = matrix.comm().raw_comm();
 
@@ -129,7 +129,6 @@ namespace utopia {
         std::vector<idx_t> xadj(d_view.rows() + 1, 0);
         std::vector<idx_t> adjncy(d_view.colidx().size() + o_view.colidx().size(), -1);
         std::vector<real_t> tpwgts(num_partitions, 1. / num_partitions);
-        std::vector<idx_t> actual_vwgts(d_view.rows(), 0);
 
         auto cr = matrix.col_range();
 
@@ -159,15 +158,29 @@ namespace utopia {
             }
         }
 
-        for (PetscInt i = 0; i < local_rows; ++i) {
-            actual_vwgts[i] = xadj[i + 1] - xadj[i];
-        }
-
-        // vwgt = &actual_vwgts[0];
         // wgtflag = 2;
-
-        vwgt = 0;
         wgtflag = 0;
+
+        if (wgtflag) {
+            std::vector<idx_t> actual_vwgts(d_view.rows(), 0);
+
+            for (PetscInt i = 0; i < local_rows; ++i) {
+                actual_vwgts[i] = xadj[i + 1] - xadj[i];
+            }
+
+            idx_t max_weight = 0;
+            for (PetscInt i = 0; i < local_rows; ++i) {
+                max_weight = std::max(max_weight, actual_vwgts[i]);
+            }
+
+            for (PetscInt i = 0; i < local_rows; ++i) {
+                max_weight = std::max(max_weight, actual_vwgts[i]);
+                actual_vwgts[i] *= 2 / max_weight;
+                actual_vwgts[i] = std::max(actual_vwgts[i], 1);
+            }
+
+            vwgt = &actual_vwgts[0];
+        }
 
         int ret = ParMETIS_V3_PartKway(vtxdist,     // 0
                                        &xadj[0],    // 1
