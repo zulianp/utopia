@@ -16,7 +16,8 @@ if(UTOPIA_PETSC)
         fe
         ls_solve
         qp_solve
-        nlsolve)
+        nlsolve
+        utilities)
 
     message(STATUS "HI: ${APPS_MODULES}")
 
