@@ -70,6 +70,8 @@ namespace utopia {
 
         inline bool has_operator() const { return static_cast<bool>(operator_); }
 
+        void use_new_algo(const bool val);
+
     private:
         std::shared_ptr<MeshBase> from_mesh;
         std::shared_ptr<MeshBase> filtered_from_mesh;

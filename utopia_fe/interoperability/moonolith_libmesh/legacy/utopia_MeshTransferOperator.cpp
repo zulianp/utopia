@@ -145,6 +145,11 @@ namespace utopia {
         return types;
     }
 
+    void MeshTransferOperator::use_new_algo(const bool val) {
+        params_->use_new_algo = val;
+        params_->discretization = "new";
+    }
+
     MeshTransferOperator::MeshTransferOperator(const std::shared_ptr<MeshBase> &from_mesh,
                                                const std::shared_ptr<DofMap> &from_dofs,
                                                const std::shared_ptr<MeshBase> &to_mesh,
