@@ -877,5 +877,7 @@ namespace utopia {
             return ret;
         }
 
+        void FunctionSpace::create_node_to_element_matrix(Matrix &) const { assert(false); }
+
     }  // namespace libmesh
 }  // namespace utopia

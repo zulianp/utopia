@@ -132,6 +132,8 @@ namespace utopia {
 
             void initialize() override;
 
+            void create_node_to_element_matrix(Matrix &matrix) const;
+
         private:
             using Impl = utopia::libmesh::FunctionSpaceWrapper;
             std::shared_ptr<Impl> impl_;

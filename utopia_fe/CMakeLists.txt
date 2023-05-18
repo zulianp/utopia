@@ -262,7 +262,7 @@ endif()
 
 ##################################################
 
-if(UTOPIA_ENABLE_INTREPID2 OR UTOPIA_ENABLE_MARS)
+if(UTOPIA_ENABLE_INTREPID2 OR UTOPIA_ENABLE_MARS OR UTOPIA_ENABLE_LIBMESH_KOKKOS)
     list(APPEND UTOPIA_FE_MODULES backend/kokkos)
 endif()
 
