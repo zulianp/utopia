@@ -84,6 +84,14 @@ namespace utopia {
 
         inline void use_dual_lagrange_multiplier(const bool val) { use_dual_lagrange_multiplier_ = val; }
 
+        std::vector<std::shared_ptr<USparseMatrix>> matrices() const {
+            if (data.Q) {
+                return {data.B, data.D, data.Q};
+            } else {
+                return {data.B, data.D};
+            }
+        }
+
     private:
         TransferData data;
         bool use_convert_transfer_;

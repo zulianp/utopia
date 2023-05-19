@@ -542,6 +542,7 @@ namespace utopia {
             }
 
             operator_ = new_assembler.build_operator();
+            matrices_ = new_assembler.matrices();
 
             // if(params_->normalize_rows) {
             //     auto pseudo_l2_operator = std::make_shared<PseudoL2TransferOperator>();
