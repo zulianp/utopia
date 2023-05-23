@@ -20,6 +20,14 @@
 
 namespace utopia {
 
+#define UTOPIA_READ_ENV(name, conversion) \
+    do {                                  \
+        char *var = getenv(#name);        \
+        if (var) {                        \
+            name = conversion(var);       \
+        }                                 \
+    } while (0)
+
 #ifndef UTOPIA_WITH_METIS
 
     bool decompose(const PetscMatrix &, const int, int *) { return false; }
@@ -158,12 +166,15 @@ namespace utopia {
             }
         }
 
-        // wgtflag = 2;
-        wgtflag = 0;
+        int UTOPIA_METIS_USE_WEIGHTS = 0;
+        UTOPIA_READ_ENV(UTOPIA_METIS_USE_WEIGHTS, atoi);
+        wgtflag = UTOPIA_METIS_USE_WEIGHTS ? 2 : 0;
 
+        int UTOPIA_METIS_WEIGHT_FACTOR = 2;
+        UTOPIA_READ_ENV(UTOPIA_METIS_WEIGHT_FACTOR, atoi);
+
+        std::vector<idx_t> actual_vwgts(d_view.rows(), 0);
         if (wgtflag) {
-            std::vector<idx_t> actual_vwgts(d_view.rows(), 0);
-
             for (PetscInt i = 0; i < local_rows; ++i) {
                 actual_vwgts[i] = xadj[i + 1] - xadj[i];
             }
@@ -175,7 +186,7 @@ namespace utopia {
 
             for (PetscInt i = 0; i < local_rows; ++i) {
                 max_weight = std::max(max_weight, actual_vwgts[i]);
-                actual_vwgts[i] *= 2 / max_weight;
+                actual_vwgts[i] *= UTOPIA_METIS_WEIGHT_FACTOR / max_weight;
                 actual_vwgts[i] = std::max(actual_vwgts[i], 1);
             }
 

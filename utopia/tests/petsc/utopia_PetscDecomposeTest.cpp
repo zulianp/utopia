@@ -186,8 +186,11 @@ public:
             utopia::out() << "dofs: " << A.rows() << "\n";
         }
 
-        auto sp = utopia::param_list(utopia::param("type", "bdd"),
-                                     utopia::param("inner_solver", utopia::param_list(utopia::param("verbose", true))));
+        auto sp = utopia::param_list(
+            utopia::param("type", "bdd"),
+            utopia::param("verbose", true),
+            utopia::param("inner_solver",
+                          utopia::param_list(utopia::param("verbose", true), utopia::param("max_it", 10 * 1000))));
 
         auto p = utopia::param_list(utopia::param("inner_solver", std::move(sp)));
 
