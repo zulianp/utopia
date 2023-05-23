@@ -96,28 +96,71 @@ namespace utopia {
 
         class CompositePolynomialBarrier {
         public:
+            // 0.5*pow(d - d_hat, 2)/pow(d_hat, 2) + 0.25*p2*pow(d - d_hat, 4)/pow(d_hat, 4)
+            // grad_f
+            // 1.0*(d - d_hat)*(pow(d_hat, 2) + p2*pow(d - d_hat, 2))/pow(d_hat, 4)
+            // H_f
+            // (1.0*pow(d_hat, 2) + 3.0*p2*pow(d - d_hat, 2))/pow(d_hat, 4)
+
+#if 0
+            // Order 4
             UTOPIA_INLINE_FUNCTION Scalar value(const Scalar d) const {
-                return factor1 * barrier1.value(d) + factor2 * barrier2.value(d);
+                // FLOATING POINT OPS!
+                //       - Result: ADD + 2*DIV + 3*MUL + 4*POW
+                //       - Subexpressions: SUB
+                const Scalar x0 = d - d_hat;
+                return 0.5 * pow(x0, 2) / pow(d_hat, 2) + 0.25 * p2 * pow(x0, 4) / pow(d_hat, 4);
             }
 
             UTOPIA_INLINE_FUNCTION Scalar gradient(const Scalar d) const {
-                return factor1 * barrier1.gradient(d) + factor2 * barrier2.gradient(d);
+                // FLOATING POINT OPS!
+                //       - Result: ADD + DIV + 3*MUL + 3*POW
+                //       - Subexpressions: SUB
+                const Scalar x0 = d - d_hat;
+                return 1.0 * x0 * (pow(d_hat, 2) + p2 * pow(x0, 2)) / pow(d_hat, 4);
             }
 
             UTOPIA_INLINE_FUNCTION Scalar hessian(const Scalar d) const {
-                return factor1 * barrier1.hessian(d) + factor2 * barrier2.hessian(d);
+                // FLOATING POINT OPS!
+                //       - Result: ADD + DIV + 3*MUL + 3*POW + SUB
+                //       - Subexpressions: 0
+                return (1.0 * pow(d_hat, 2) + 3.0 * p2 * pow(d - d_hat, 2)) / pow(d_hat, 4);
+            }
+#else
+            // Order 8
+            UTOPIA_INLINE_FUNCTION Scalar value(const Scalar d) const {
+                // FLOATING POINT OPS!
+                //       - Result: 2*ADD + 3*DIV + 5*MUL + 6*POW
+                //       - Subexpressions: SUB
+                const Scalar x0 = d - d_hat;
+                return 0.5 * pow(x0, 2) / pow(d_hat, 2) + 0.25 * p2 * pow(x0, 4) / pow(d_hat, 4) +
+                       0.0625 * p3 * pow(x0, 8) / pow(d_hat, 8);
             }
 
-            UTOPIA_INLINE_FUNCTION CompositePolynomialBarrier(const Scalar barrier_thickness1,
-                                                              const Scalar barrier_thickness2 = 1e-16) {
-                barrier1.d_hat = barrier_thickness1;
-                barrier2.d_hat = barrier_thickness2;
+            UTOPIA_INLINE_FUNCTION Scalar gradient(const Scalar d) const {
+                // FLOATING POINT OPS!
+                //       - Result: 2*ADD + DIV + 7*MUL + 5*POW
+                //       - Subexpressions: SUB
+                const Scalar x0 = d - d_hat;
+                return x0 * (1.0 * pow(d_hat, 6) + 1.0 * pow(d_hat, 4) * p2 * pow(x0, 2) + 0.5 * p3 * pow(x0, 6)) /
+                       pow(d_hat, 8);
             }
 
-            PolynomialBarrier barrier1;
-            PolynomialBarrier barrier2;
-            Scalar factor1{1};
-            Scalar factor2{1};
+            UTOPIA_INLINE_FUNCTION Scalar hessian(const Scalar d) const {
+                // FLOATING POINT OPS!
+                //       - Result: 2*ADD + 3*DIV + 4*MUL + 5*POW
+                //       - Subexpressions: SUB
+                const Scalar x0 = d - d_hat;
+                return 1.0 / pow(d_hat, 2) + 3.0 * p2 * pow(x0, 2) / pow(d_hat, 4) +
+                       3.5 * p3 * pow(x0, 6) / pow(d_hat, 8);
+            }
+#endif
+
+            UTOPIA_INLINE_FUNCTION CompositePolynomialBarrier(const Scalar barrier_thickness)
+                : d_hat(barrier_thickness) {}
+
+            Scalar p1{1}, p2{1}, p3{1}, p4{1};
+            Scalar d_hat{0.1};
         };
 
         class HighOrderPolynomialBarrier {

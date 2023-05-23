@@ -257,7 +257,7 @@ namespace utopia {
                 auto &&from_mass_matrix = from_->mass_matrix();
                 auto &&to_mass_matrix = to_->mass_matrix();
 
-                if (verbose_) {
+                if (verbose_ && !transfer_->comm().rank()) {
                     utopia::out() << "Condensing mass matrix!\n";
                 }
 
@@ -277,7 +277,7 @@ namespace utopia {
                 const Size_t n = from_matrices.size();
                 assert(n == Size_t(to_matrices.size()));
 
-                if (verbose_) {
+                if (verbose_ && !transfer_->comm().rank()) {
                     utopia::out() << "Condensing " << n << " pair(s) of systems!\n";
                 }
 
@@ -300,7 +300,7 @@ namespace utopia {
                 const Size_t n = from_vectors.size();
                 assert(n == Size_t(to_vectors.size()));
 
-                if (verbose_) {
+                if (verbose_ && !transfer_->comm().rank()) {
                     utopia::out() << "Condensing " << n << " pair(s) of rhs!\n";
                 }
 
