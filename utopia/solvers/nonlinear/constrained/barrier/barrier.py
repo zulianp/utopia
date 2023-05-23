@@ -60,12 +60,10 @@ param = (d - d_hat) / d_hat;
 
 
 # Arbitary order 2*N
-N=3
+N=1
 
 p1, p2, p3, p4 = sp.symbols('p1 p2 p3 p4')
 p = [p1, p2, p3, p4]
-
-f = 0
 
 mul = (param * param)
 scale = 0.5
@@ -75,7 +73,6 @@ for i in range(1, N):
 	scale = scale * scale
 	mul = mul * mul
 	f += pi * scale * mul
-
 
 grad_f = sp.simplify(sp.diff(f, d))
 H_f = sp.simplify(sp.diff(grad_f, d))

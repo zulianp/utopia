@@ -109,7 +109,7 @@ namespace utopia {
                 //       - Result: ADD + 2*DIV + 3*MUL + 4*POW
                 //       - Subexpressions: SUB
                 const Scalar x0 = d - d_hat;
-                return 0.5 * pow(x0, 2) / pow(d_hat, 2) + 0.25 * p2 * pow(x0, 4) / pow(d_hat, 4);
+                return (d < d_hat) * ((0.5 * pow(x0, 2) / pow(d_hat, 2) + 0.25 * p2 * pow(x0, 4) / pow(d_hat, 4)));
             }
 
             UTOPIA_INLINE_FUNCTION Scalar gradient(const Scalar d) const {
@@ -117,14 +117,14 @@ namespace utopia {
                 //       - Result: ADD + DIV + 3*MUL + 3*POW
                 //       - Subexpressions: SUB
                 const Scalar x0 = d - d_hat;
-                return 1.0 * x0 * (pow(d_hat, 2) + p2 * pow(x0, 2)) / pow(d_hat, 4);
+                return (d < d_hat) * (1.0 * x0 * (pow(d_hat, 2) + p2 * pow(x0, 2)) / pow(d_hat, 4));
             }
 
             UTOPIA_INLINE_FUNCTION Scalar hessian(const Scalar d) const {
                 // FLOATING POINT OPS!
                 //       - Result: ADD + DIV + 3*MUL + 3*POW + SUB
                 //       - Subexpressions: 0
-                return (1.0 * pow(d_hat, 2) + 3.0 * p2 * pow(d - d_hat, 2)) / pow(d_hat, 4);
+                return (d < d_hat) * ((1.0 * pow(d_hat, 2) + 3.0 * p2 * pow(d - d_hat, 2)) / pow(d_hat, 4));
             }
 #else
             // Order 8
@@ -133,8 +133,8 @@ namespace utopia {
                 //       - Result: 2*ADD + 3*DIV + 5*MUL + 6*POW
                 //       - Subexpressions: SUB
                 const Scalar x0 = d - d_hat;
-                return 0.5 * pow(x0, 2) / pow(d_hat, 2) + 0.25 * p2 * pow(x0, 4) / pow(d_hat, 4) +
-                       0.0625 * p3 * pow(x0, 8) / pow(d_hat, 8);
+                return (d < d_hat) * (0.5 * pow(x0, 2) / pow(d_hat, 2) + 0.25 * p2 * pow(x0, 4) / pow(d_hat, 4) +
+                                      0.0625 * p3 * pow(x0, 8) / pow(d_hat, 8));
             }
 
             UTOPIA_INLINE_FUNCTION Scalar gradient(const Scalar d) const {
@@ -142,8 +142,9 @@ namespace utopia {
                 //       - Result: 2*ADD + DIV + 7*MUL + 5*POW
                 //       - Subexpressions: SUB
                 const Scalar x0 = d - d_hat;
-                return x0 * (1.0 * pow(d_hat, 6) + 1.0 * pow(d_hat, 4) * p2 * pow(x0, 2) + 0.5 * p3 * pow(x0, 6)) /
-                       pow(d_hat, 8);
+                return (d < d_hat) *
+                       (x0 * (1.0 * pow(d_hat, 6) + 1.0 * pow(d_hat, 4) * p2 * pow(x0, 2) + 0.5 * p3 * pow(x0, 6)) /
+                        pow(d_hat, 8));
             }
 
             UTOPIA_INLINE_FUNCTION Scalar hessian(const Scalar d) const {
@@ -151,8 +152,8 @@ namespace utopia {
                 //       - Result: 2*ADD + 3*DIV + 4*MUL + 5*POW
                 //       - Subexpressions: SUB
                 const Scalar x0 = d - d_hat;
-                return 1.0 / pow(d_hat, 2) + 3.0 * p2 * pow(x0, 2) / pow(d_hat, 4) +
-                       3.5 * p3 * pow(x0, 6) / pow(d_hat, 8);
+                return (d < d_hat) * (1.0 / pow(d_hat, 2) + 3.0 * p2 * pow(x0, 2) / pow(d_hat, 4) +
+                                      3.5 * p3 * pow(x0, 6) / pow(d_hat, 8));
             }
 #endif
 
