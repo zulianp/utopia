@@ -188,8 +188,8 @@ namespace utopia {
             }
 
             for (PetscInt i = 0; i < local_rows; ++i) {
-                actual_vwgts[i] *= UTOPIA_METIS_WEIGHT_FACTOR / max_weight;
-                actual_vwgts[i] = UTOPIA_METIS_WEIGHT_SHIFT + std::max(actual_vwgts[i], 1);
+                actual_vwgts[i] = UTOPIA_METIS_WEIGHT_SHIFT +
+                                  std::max(actual_vwgts[i] * UTOPIA_METIS_WEIGHT_FACTOR / max_weight, 1.f);
             }
 
             vwgt = &actual_vwgts[0];
