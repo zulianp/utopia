@@ -170,8 +170,11 @@ namespace utopia {
         UTOPIA_READ_ENV(UTOPIA_METIS_USE_WEIGHTS, atoi);
         wgtflag = UTOPIA_METIS_USE_WEIGHTS ? 2 : 0;
 
-        int UTOPIA_METIS_WEIGHT_FACTOR = 2;
-        UTOPIA_READ_ENV(UTOPIA_METIS_WEIGHT_FACTOR, atoi);
+        float UTOPIA_METIS_WEIGHT_FACTOR = 2;
+        UTOPIA_READ_ENV(UTOPIA_METIS_WEIGHT_FACTOR, atof);
+
+        float UTOPIA_METIS_WEIGHT_SHIFT = 0;
+        UTOPIA_READ_ENV(UTOPIA_METIS_WEIGHT_SHIFT, atof);
 
         std::vector<idx_t> actual_vwgts(d_view.rows(), 0);
         if (wgtflag) {
@@ -185,9 +188,8 @@ namespace utopia {
             }
 
             for (PetscInt i = 0; i < local_rows; ++i) {
-                max_weight = std::max(max_weight, actual_vwgts[i]);
                 actual_vwgts[i] *= UTOPIA_METIS_WEIGHT_FACTOR / max_weight;
-                actual_vwgts[i] = std::max(actual_vwgts[i], 1);
+                actual_vwgts[i] = UTOPIA_METIS_WEIGHT_SHIFT + std::max(actual_vwgts[i], 1);
             }
 
             vwgt = &actual_vwgts[0];
