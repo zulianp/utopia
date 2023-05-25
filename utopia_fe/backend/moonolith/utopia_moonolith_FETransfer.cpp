@@ -599,8 +599,7 @@ namespace utopia {
         bool FETransfer::write(const Path &) const { return false; }
 
         FETransfer::Communicator &FETransfer::comm() {
-            if (empty()) {
-                assert(false);
+            if (empty() || !impl_->data.coupling_matrix) {
                 static Communicator self(Communicator::self());
                 return self;
             } else {
@@ -609,8 +608,7 @@ namespace utopia {
         }
 
         const FETransfer::Communicator &FETransfer::comm() const {
-            if (empty()) {
-                assert(false);
+            if (empty() || !impl_->data.coupling_matrix) {
                 static Communicator self(Communicator::self());
                 return self;
             } else {

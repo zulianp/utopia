@@ -152,7 +152,7 @@ namespace utopia {
             transfer.apply(field.data(), to_field.data());
             to_space.write(output_path, to_field.data());
 
-#if 0
+#if 1
             if (export_example_coupled_system) {
                 using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
 
@@ -175,7 +175,6 @@ namespace utopia {
 
                 system.write("raw_system/rowptr.raw");
             }
-
 
             if (export_operator_imbalance) {
                 auto mat = transfer.transfer_matrix();
