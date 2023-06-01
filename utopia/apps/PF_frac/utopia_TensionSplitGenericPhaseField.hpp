@@ -846,7 +846,7 @@ namespace utopia {
                                                          const Grad &strain,
                                                          const Grad &strain_trial,
                                                          const Grad &strain_test) {
-            const Scalar strain0tr = trace(strain);
+  /*          const Scalar strain0tr = trace(strain);
 
             Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_neg, Jacobian_mult;
 
@@ -861,8 +861,26 @@ namespace utopia {
             Jacobian_mult = (gc * Jacobian_mult) + Jacobian_neg;
 
             Scalar val = inner(strain_trial, contraction(Jacobian_mult, strain_test));
+*/
+             const Scalar strain0tr = trace(strain);
 
-            return val;
+             Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_neg, Jacobian_mult;
+
+             if (strain0tr > 0) {
+                 Jacobian_mult = params.kappa * params.I4sym;  //change something here??
+             }
+
+             Scalar gc = PFFormulation::degradation(phase_field_value, params );
+
+             // would be nicer, if this works without 4th order tensor...
+             Jacobian_neg = params.elast_tensor - Jacobian_mult;
+
+             //final degraded strain field
+             Jacobian_mult = (gc * Jacobian_mult) + Jacobian_neg;
+
+             Scalar val = inner(strain_trial, contraction(Jacobian_mult, strain_test));
+
+             return val;
         }
 
         template <class GradShape>
@@ -1127,7 +1145,7 @@ namespace utopia {
             // Creating Subspace with cloned mesh
 
             SSpace S(std::move(strain_mesh));
-            assert(S.n_dofs() == C.n_dofs() * total_components);
+            assert(S.n_dofs() == CC.n_dofs() * total_components);
 
             S.create_vector(g);
             W.create_vector(w);

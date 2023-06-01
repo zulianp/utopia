@@ -345,6 +345,7 @@ namespace utopia {
 
                     // increment time step
                     this->time_ += this->dt_;
+                    this->time_step_counter_ += 1;
                 }
             } else {
                 Scalar trial_fracture_energy{0.0};
