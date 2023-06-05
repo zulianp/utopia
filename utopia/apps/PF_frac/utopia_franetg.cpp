@@ -216,9 +216,9 @@ namespace utopia {
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
-        // using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT2>;
+        using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT2>;
         //        using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT1>;
-        using ProblemType = utopia::IsotropicPhaseFieldForBrittleFractures<FunctionSpace, Dim>;
+        // using ProblemType = utopia::IsotropicPhaseFieldForBrittleFractures<FunctionSpace, Dim>;
         Comm world;
 
         MPITimeStatistics stats(world);
