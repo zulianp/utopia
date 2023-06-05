@@ -62,6 +62,9 @@ namespace utopia {
         }
 
         void Obstacle::Params::describe(std::ostream &os) const {
+            os << "-----------------------------------------\n";
+            os << "utopia::moonolith::Obstacle\n";
+            os << "-----------------------------------------\n";
             os << "variable_number: \t" << variable_number << "\n";
             os << "gap_negative_bound: \t" << gap_negative_bound << "\n";
             os << "gap_positive_bound: \t" << gap_positive_bound << "\n";
