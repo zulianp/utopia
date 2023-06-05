@@ -207,18 +207,18 @@ namespace utopia {
                         el_mat.set(0.0);
                         elast_view.assemble(i, e, el_mat);
 
-                        printf("---------------------\n");
-                        for (int i = 0; i < NFunctions; i++) {
-                            for (int j = 0; j < NFunctions; j++) {
-                                double val = el_mat(i, j);
-                                if (std::abs(val) < 1e-4) {
-                                    val = 0;
-                                }
-                                printf("%.4g, ", val);
-                            }
-                            printf("\n");
-                        }
-                        printf("---------------------\n");
+                        // printf("---------------------\n");
+                        // for (int i = 0; i < NFunctions; i++) {
+                        //     for (int j = 0; j < NFunctions; j++) {
+                        //         double val = el_mat(i, j);
+                        //         if (std::abs(val) < 1e-4) {
+                        //             val = 0;
+                        //         }
+                        //         printf("%.4g, ", val);
+                        //     }
+                        //     printf("\n");
+                        // }
+                        // printf("---------------------\n");
 
                         space_view.add_matrix(e, el_mat, mat_view);
                     });

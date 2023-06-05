@@ -981,18 +981,18 @@ namespace utopia {
                             }
                         }
 
-                        printf("---------------------\n");
-                        for (int i = 0; i < U_NDofs + C_NDofs; i++) {
-                            for (int j = 0; j < U_NDofs + C_NDofs; j++) {
-                                double val = el_mat(i, j);
-                                if (std::abs(val) < 1e-4) {
-                                    val = 0;
-                                }
-                                printf("%.4g, ", val);
-                            }
-                            printf("\n");
-                        }
-                        printf("---------------------\n");
+                        // printf("---------------------\n");
+                        // for (int i = 0; i < U_NDofs + C_NDofs; i++) {
+                        //     for (int j = 0; j < U_NDofs + C_NDofs; j++) {
+                        //         double val = el_mat(i, j);
+                        //         if (std::abs(val) < 1e-4) {
+                        //             val = 0;
+                        //         }
+                        //         printf("%.4g, ", val);
+                        //     }
+                        //     printf("\n");
+                        // }
+                        // printf("---------------------\n");
 
                         space_view.add_matrix(e, el_mat, H_view);
                     });
