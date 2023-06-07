@@ -62,6 +62,11 @@ namespace utopia {
             in.get("turn_off_uc_coupling", turn_off_uc_coupling);
             in.get("turn_off_cu_coupling", turn_off_cu_coupling);
 
+            //Checking derivatives
+            in.get("check_elastic_energy", check_elastic_energy);
+            in.get("check_fracture_energy", check_fracture_energy);
+
+
             in.get("mobility", mobility);
             in.get("use_mobility", use_mobility);
 
@@ -510,6 +515,10 @@ namespace utopia {
         Tensor4th<Scalar, Dim, Dim, Dim, Dim> I4sym;
 
         HeteroParamsFunction hetero_params;
+
+        bool check_elastic_energy{false}, check_fracture_energy{false};
+
+
     };
 
     template <class FunctionSpace, int Dim = FunctionSpace::Dim>
@@ -578,6 +587,7 @@ namespace utopia {
             in.get("use_dense_hessian", use_dense_hessian_);
             in.get("check_derivatives", check_derivatives_);
             in.get("diff_controller", diff_ctrl_);
+
             init_force_field(in);
         }
 

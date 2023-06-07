@@ -838,6 +838,115 @@ namespace utopia {
     };
 
 
+    template <class FunctionSpace>
+    class SmoothQuadraticPhaseField: public InitialCondition<FunctionSpace> {
+    public:
+        // using Comm           = typename FunctionSpace::Comm;
+        using Mesh = typename FunctionSpace::Mesh;
+        using Elem = typename FunctionSpace::Shape;
+        using ElemView = typename FunctionSpace::ViewDevice::Elem;
+        using SizeType = typename FunctionSpace::SizeType;
+        using Scalar = typename FunctionSpace::Scalar;
+        using Dev = typename FunctionSpace::Device;
+        using Point = typename FunctionSpace::Point;
+        using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+        static const int NNodes = Elem::NNodes;
+
+        SmoothQuadraticPhaseField(FunctionSpace &space, const SizeType &PF_component)
+            : InitialCondition<FunctionSpace>(space), PF_component_(PF_component){}
+
+        void read(Input & ) override {
+        }
+
+        void init(PetscVector &x) override {
+            using CoeffVector = utopia::StaticVector<Scalar, NNodes>;
+            // un-hard-code
+            auto C = this->space_.subspace(PF_component_);
+
+            auto xyz_min = this->space_.mesh().box_min();
+            auto xyz_max = this->space_.mesh().box_max();
+
+
+            auto sampler = utopia::sampler(C, [xyz_max](const Point &x) -> Scalar {
+                double norm = xyz_max[0]*xyz_max[0] + xyz_max[1]*xyz_max[1];
+                double alpha = x[0]*x[0] + x[1]*x[1];
+                std::cout << alpha/norm << std::endl;
+                return alpha/norm;
+                });
+
+            {
+                auto C_view = C.view_device();
+                auto sampler_view = sampler.view_device();
+                auto x_view = this->space_.assembly_view_device(x);
+
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
+
+                        CoeffVector s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
+            }
+        }
+
+    private:
+        SizeType PF_component_;
+
+    };
+
+    template <class FunctionSpace>
+    class SmoothLinearPhaseField: public InitialCondition<FunctionSpace> {
+    public:
+        // using Comm           = typename FunctionSpace::Comm;
+        using Mesh = typename FunctionSpace::Mesh;
+        using Elem = typename FunctionSpace::Shape;
+        using ElemView = typename FunctionSpace::ViewDevice::Elem;
+        using SizeType = typename FunctionSpace::SizeType;
+        using Scalar = typename FunctionSpace::Scalar;
+        using Dev = typename FunctionSpace::Device;
+        using Point = typename FunctionSpace::Point;
+        using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+        static const int NNodes = Elem::NNodes;
+
+        SmoothLinearPhaseField(FunctionSpace &space, const SizeType &PF_component)
+            : InitialCondition<FunctionSpace>(space), PF_component_(PF_component){}
+
+        void read(Input & ) override {
+        }
+
+        void init(PetscVector &x) override {
+            using CoeffVector = utopia::StaticVector<Scalar, NNodes>;
+            // un-hard-code
+            auto C = this->space_.subspace(PF_component_);
+
+            auto sampler = utopia::sampler(C, [](const Point &x) -> Scalar {
+                double alpha = x[0] + x[1];
+                return alpha;
+                });
+
+            {
+                auto C_view = C.view_device();
+                auto sampler_view = sampler.view_device();
+                auto x_view = this->space_.assembly_view_device(x);
+
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
+
+                        CoeffVector s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
+            }
+        }
+
+    private:
+        SizeType PF_component_;
+
+    };
 
 
 

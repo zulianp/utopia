@@ -55,6 +55,9 @@ namespace utopia {
 
                 utopia::err() << "----------------------\n";
                 assert(false);
+            } else {
+                utopia::err() << "------ Gradient Check Passed -------\n";
+                std::cerr << "error: " << diff << std::endl;
             }
 
             return ok;
@@ -93,18 +96,21 @@ namespace utopia {
                 rename("h", const_cast<Matrix &>(H));
                 write("H_utopia.m", H);
 
-                // std::cerr << "-------------------------\n";
-                // std::cerr << "Expected:\n";
-                // std::cerr << "-------------------------\n";
-                // disp(Hfd);
+                 std::cerr << "-------------------------\n";
+                 std::cerr << "Expected:\n";
+                 std::cerr << "-------------------------\n";
+                 disp(Hfd);
 
-                // std::cerr << "-------------------------\n";
-                // std::cerr << "Actual:\n";
-                // std::cerr << "-------------------------\n";
-                // disp(H);
+                 std::cerr << "-------------------------\n";
+                 std::cerr << "Actual:\n";
+                 std::cerr << "-------------------------\n";
+                 disp(H);
 
                 std::cerr << "----------------------\n";
                 assert(false);
+            } else {
+                utopia::err() << "------ Hessian Check Passed -------\n";
+                std::cerr << "error: " << diff << std::endl;
             }
 
             return ok;
