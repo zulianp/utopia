@@ -711,6 +711,8 @@ namespace utopia {
         void read(Input &in) override {
             in.get("bottom_layer_height", y_min_);
             in.get("top_layer_height"   , y_max_);
+            in.get("bottom_layer_height2", y_min2_);
+            in.get("top_layer_height2"   , y_max2_);
         }
 
         void emplace_time_dependent_BC(const Scalar &) override {
@@ -719,7 +721,8 @@ namespace utopia {
 
             this->space_.emplace_constraint(
                 UTOPIA_LAMBDA(const Point &p)->bool {
-                    return  p(1) <= y_min_ || p(1) >= y_max_;
+                    return  ( !(p(1) >= y_min_  && p(1) <= y_max_) &&   //Not in layer 1  and
+                              !(p(1) > y_min2_  && p(1) < y_max2_) );    //Not in layer 2
                 },
                 UTOPIA_LAMBDA(const Point &)->Scalar { return val_; },
                 0);
@@ -727,6 +730,7 @@ namespace utopia {
 
     private:
         Scalar  y_min_, y_max_;
+        Scalar  y_min2_, y_max2_;
         Scalar val_;
     };
 

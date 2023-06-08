@@ -121,7 +121,7 @@ namespace utopia {
                     alpha /= 2;
                 }
 
-                if (verbose_ && t > 1) {
+                if (verbose_ && t > 1 && !g.comm().rank()) {
                     utopia::out() << "reduced alpha to " << alpha << ", with " << t << " bisection(s)!\n";
                 }
 

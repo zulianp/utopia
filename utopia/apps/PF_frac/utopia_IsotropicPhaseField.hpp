@@ -721,14 +721,14 @@ namespace utopia {
                     });
             }
 
-            // check before boundary conditions
-            if (this->check_derivatives_) {
-                this->diff_ctrl_.check_grad(*this, x_const, g);
-            }
-
             if (!empty(this->force_field_)) {
                 // MAYBE g -= this->force_field_;
                 g += this->force_field_;
+            }
+
+            // check before boundary conditions
+            if (this->check_derivatives_) {
+                this->diff_ctrl_.check_grad(*this, x_const, g);
             }
 
             this->space_.apply_zero_constraints(g);
@@ -893,8 +893,6 @@ namespace utopia {
                                     Scalar val = bilinear_cc(this->params_,
                                                              c[qp],
                                                              eep,
-                                                             // c_shape_j,
-                                                             // c_shape_l,
                                                              c_shape_j_l_prod,
                                                              c_grad_shape_el(j, qp),
                                                              c_grad_l) *
@@ -982,6 +980,19 @@ namespace utopia {
                                 }
                             }
                         }
+
+                        // printf("---------------------\n");
+                        // for (int i = 0; i < U_NDofs + C_NDofs; i++) {
+                        //     for (int j = 0; j < U_NDofs + C_NDofs; j++) {
+                        //         double val = el_mat(i, j);
+                        //         if (std::abs(val) < 1e-4) {
+                        //             val = 0;
+                        //         }
+                        //         printf("%.4g, ", val);
+                        //     }
+                        //     printf("\n");
+                        // }
+                        // printf("---------------------\n");
 
                         space_view.add_matrix(e, el_mat, H_view);
                     });

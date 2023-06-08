@@ -1122,7 +1122,7 @@ namespace utopia {
             // Creating Subspace with cloned mesh
 
             SSpace S(std::move(strain_mesh));
-            assert(S.n_dofs() == C.n_dofs() * total_components);
+            assert(S.n_dofs() == CC.n_dofs() * total_components);
 
             S.create_vector(g);
             W.create_vector(w);

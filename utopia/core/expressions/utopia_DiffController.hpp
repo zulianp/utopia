@@ -36,21 +36,28 @@ namespace utopia {
             fd.grad(fun, x, gfd);
             bool ok = approxeq(gfd, g, 1e-7);
 
+            Scalar diff = norm1(gfd - g);
+
             if (!ok) {
                 utopia::err() << "------ Failure -------\n";
                 utopia::err() << "------ Gradient ------\n";
-                utopia::err() << "Expected:\n";
+                // utopia::err() << "Expected:\n";
+                std::cerr << "error: " << diff << std::endl;
+
                 rename("g_fd", gfd);
-                disp(gfd);
+                // disp(gfd);
                 write("G_fd.m", gfd);
 
-                utopia::err() << "Actual:\n";
-                disp(g);
+                // utopia::err() << "Actual:\n";
+                // disp(g);
                 rename("g", const_cast<Vector &>(g));
                 write("G.m", g);
 
                 utopia::err() << "----------------------\n";
                 assert(false);
+            } else {
+                utopia::err() << "------ Gradient Check Passed -------\n";
+                std::cerr << "error: " << diff << std::endl;
             }
 
             return ok;
@@ -89,14 +96,21 @@ namespace utopia {
                 rename("h", const_cast<Matrix &>(H));
                 write("H_utopia.m", H);
 
-                std::cerr << "Expected:\n";
-                disp(Hfd);
+                 std::cerr << "-------------------------\n";
+                 std::cerr << "Expected:\n";
+                 std::cerr << "-------------------------\n";
+                 disp(Hfd);
 
-                std::cerr << "Actual:\n";
-                disp(H);
+                 std::cerr << "-------------------------\n";
+                 std::cerr << "Actual:\n";
+                 std::cerr << "-------------------------\n";
+                 disp(H);
 
                 std::cerr << "----------------------\n";
                 assert(false);
+            } else {
+                utopia::err() << "------ Hessian Check Passed -------\n";
+                std::cerr << "error: " << diff << std::endl;
             }
 
             return ok;

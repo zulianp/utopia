@@ -196,6 +196,7 @@ namespace utopia {
 
             TestFunctionND_1<Matrix, Vector> fun(n);
 
+            newton_solver.enable_differentiation_control(comm_.size() == 1);
             newton_solver.solve(fun, actual);
 
             // Check if the result is what we expected
