@@ -42,7 +42,7 @@ check_derivatives: true
 block_solver: true
 hjsmn_smoother: false
 diff_controller:
-  spacing: 1.0e-06
+  spacing: 1.0e-04 # we should choose more wisely in the future 
   hessian_from_grad: false
 use_mprgp: true  
 use_box_constraints: false  # TR method with penalty, run up to 5 cores

@@ -738,72 +738,55 @@ namespace utopia {
                                 }
                             }
 
-                            // for (SizeType l = 0; l < U_NDofs; ++l) {
-                            //     auto &&u_strain_shape_l = u_strain_shape_el(l, qp);
+                            for (SizeType l = 0; l < U_NDofs; ++l) {
+                                auto &&u_strain_shape_l = u_strain_shape_el(l, qp);
 
-                            //     for (SizeType j = l; j < U_NDofs; ++j) {
-                            //         // Varying stress tensor
-                            //         auto element_stress =
-                            //             2.0 * mu * u_strain_shape_el(j, qp) +
-                            //             lambda * trace(u_strain_shape_el(j, qp)) * (device::identity<Scalar>());
+                                for (SizeType j = l; j < U_NDofs; ++j) {
+                                    // Varying stress tensor
+                                    auto element_stress =
+                                        2.0 * mu * u_strain_shape_el(j, qp) +
+                                        lambda * trace(u_strain_shape_el(j, qp)) * (device::identity<Scalar>());
 
-                            //         Scalar val = 0.0;
-                            //         if (this->params_.check_elastic_energy) {
-                            //             val = PhaseFieldFracBase<FunctionSpace, Dim>::bilinear_uu(
-                            //                       this->params_,
-                            //                       c[qp],
-                            //                       // p_stress_view.stress(j, qp),       //constant material props
-                            //                       element_stress,  // hetero material props
-                            //                       u_strain_shape_l) *
-                            //                   dx(qp);
-                            //         }
+                                    Scalar val = 0.0;
+                                    if (this->params_.check_elastic_energy) {
+                                        val = PhaseFieldFracBase<FunctionSpace, Dim>::bilinear_uu(
+                                                  this->params_,
+                                                  c[qp],
+                                                  // p_stress_view.stress(j, qp),       //constant material props
+                                                  element_stress,  // hetero material props
+                                                  u_strain_shape_l) *
+                                              dx(qp);
+                                    }
 
-                            //         val = (l == j) ? (0.5 * val) : val;
-                            //         el_mat(C_NDofs + l, C_NDofs + j) += val;
-                            //         el_mat(C_NDofs + j, C_NDofs + l) += val;
-                            //     }
-                            // }
+                                    val = (l == j) ? (0.5 * val) : val;
+                                    el_mat(C_NDofs + l, C_NDofs + j) += val;
+                                    el_mat(C_NDofs + j, C_NDofs + l) += val;
+                                }
+                            }
 
                             //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-                            // compute_stress(this->params_, tr_strain_u, el_strain.strain[qp], stress);
-                            // for (SizeType c_i = 0; c_i < C_NDofs; ++c_i) {
-                            //     // CHANGE (pre-compute/store shape fun)
-                            //     const Scalar c_shape_i = c_shape_fun_el(c_i, qp);
+                            compute_stress(this->params_, tr_strain_u, el_strain.strain[qp], stress);
+                            for (SizeType c_i = 0; c_i < C_NDofs; ++c_i) {
+                                // CHANGE (pre-compute/store shape fun)
+                                const Scalar c_shape_i = c_shape_fun_el(c_i, qp);
 
-                            //     for (SizeType u_i = 0; u_i < U_NDofs; ++u_i) {
-                            //         auto &&strain_shape = u_strain_shape_el(u_i, qp);
+                                for (SizeType u_i = 0; u_i < U_NDofs; ++u_i) {
+                                    auto &&strain_shape = u_strain_shape_el(u_i, qp);
 
-                            //         Scalar val =
-                            //             bilinear_uc(this->params_, c[qp], stress, strain_shape, c_shape_i) * dx(qp);
+                                    Scalar val =
+                                        bilinear_uc(this->params_, c[qp], stress, strain_shape, c_shape_i) * dx(qp);
 
-                            //         // E.P Added 7th June 2023 - Try and also include this to make it exactly true
-                            //         // Scalar val2 = bilinear_cu(this->params_, c[qp], stress, strain_shape,
-                            //         // c_shape_i) * dx(qp);
+                                    // not symetric, but more numerically stable
+                                    // if (this->params_.turn_off_cu_coupling == false) {
+                                    el_mat(c_i, C_NDofs + u_i) += val;
+                                    // }
 
-                            //         // not symetric, but more numerically stable
-                            //         // if (this->params_.turn_off_cu_coupling == false) {
-                            //         el_mat(c_i, C_NDofs + u_i) += val;
-                            //         // }
-
-                            //         // if (this->params_.turn_off_uc_coupling == false) {
-                            //         el_mat(C_NDofs + u_i, c_i) += val;
-                            //     }
-                            // }
+                                    // if (this->params_.turn_off_uc_coupling == false) {
+                                    el_mat(C_NDofs + u_i, c_i) += val;
+                                }
+                            }
                         }
-
-                        // printf("--------------------- Printing Element Coupling Matrix \n");
-                        // for (int i = 0; i < U_NDofs + C_NDofs; i++) {
-                        //     for (int j = 0; j < U_NDofs + C_NDofs; j++) {
-                        //         double val = el_mat(i, j);
-                        //         if (std::abs(val) < 1e-4) {
-                        //             val = 0;
-                        //         }
-                        //         printf("%.4g, ", val);
-                        //     }
-                        //     printf("\n");
-                        // }
-                        // printf("---------------------\n");
 
                         space_view.add_matrix(e, el_mat, H_view);
                     });
