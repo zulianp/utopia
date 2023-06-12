@@ -7,6 +7,13 @@
 #include <stk_mesh/base/Comm.hpp>
 #include <stk_mesh/base/MetaData.hpp>
 
+
+#include "Trilinos_version.h"
+
+#if TRILINOS_MAJOR_MINOR_VERSION >= 140100
+#include <stk_mesh/base/MeshBuilder.hpp>
+#endif
+
 namespace utopia {
     namespace stk {
 
@@ -140,7 +147,14 @@ namespace utopia {
 
             bool load() {
                 auto meta_data = std::make_shared<Impl::MetaData>();
+
+#if TRILINOS_MAJOR_MINOR_VERSION >= 140100
+                ::stk::mesh::MeshBuilder builder(mesh.comm().raw_comm());
+                builder.set_aura_option(auto_aura_option);
+                std::shared_ptr<Impl::BulkData> bulk_data = builder.create(meta_data);
+#else
                 auto bulk_data = std::make_shared<Impl::BulkData>(*meta_data, mesh.comm().raw_comm(), auto_aura_option);
+#endif
 
                 try {
                     io_broker->set_bulk_data(*bulk_data);
