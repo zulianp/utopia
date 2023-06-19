@@ -333,6 +333,7 @@ namespace utopia {
         void read(Input &in) override {
             std::string type;
             in.get("type", type);
+            in.get("tao_type", type);
 
             if (!type.empty() && TaoTypes::is_valid(type, true)) {
                 set_type(type);
