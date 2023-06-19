@@ -66,11 +66,10 @@ namespace utopia {
         impl_->tao->set_linear_solver(linear_solver);
     }
 
-std::shared_ptr<utopia::LinearSolver<PetscMatrix, PetscVector>> TaoQPSolver<PetscMatrix, PetscVector>::linear_solver() const
-{
-    return impl_->tao->linear_solver();
-}
-
+    std::shared_ptr<utopia::LinearSolver<PetscMatrix, PetscVector>>
+    TaoQPSolver<PetscMatrix, PetscVector>::linear_solver() const {
+        return impl_->tao->linear_solver();
+    }
 
     typename TaoQPSolver<PetscMatrix, PetscVector>::Scalar TaoQPSolver<PetscMatrix, PetscVector>::atol() const {
         return impl_->tao->atol();

@@ -460,6 +460,8 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     bool TaoSolver<Matrix, Vector>::solve(Function<Matrix, Vector> &fun, Vector &x) {
+        UTOPIA_TRACE_SCOPE("TaoSolver::solve");
+
         init(fun, x);
         this->init_solver("Tao Solver", {""});
         auto flg = impl_->solve(x);
@@ -482,6 +484,8 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     void TaoSolver<Matrix, Vector>::init(Function<Matrix, Vector> &fun, Vector &x) {
+        UTOPIA_TRACE_SCOPE("TaoSolver::init");
+
         if (!impl_->initialized(size(x))) {
             impl_->init(x.comm().get());
 
