@@ -447,6 +447,11 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     void TaoSolver<Matrix, Vector>::read(Input &in) {
+        in.get("linear_solver", [&](Input &lin) {
+            auto ls = std::make_shared<OmniLinearSolver<Matrix, Vector>>();
+            this->set_linear_solver(ls);
+        });
+
         NewtonBase<Matrix, Vector>::read(in);
         // VariableBoundSolverInterface<Vector>::read(in);
         impl_->read(in);
