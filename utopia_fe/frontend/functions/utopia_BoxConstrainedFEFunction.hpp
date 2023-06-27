@@ -126,6 +126,7 @@ namespace utopia {
             in.get("max_constraints_iterations", max_constraints_iterations_);
             in.get("rescale", rescale_);
             in.get("inverse_diagonal_scaling", inverse_diagonal_scaling_);
+            in.get("print_active_set", print_active_set_);
         }
 
         void ensure_qp_solver() {
@@ -215,6 +216,14 @@ namespace utopia {
 
                         qp_solver_converged = qp_solver_->solve(H_c, g_c, increment_c);
 
+                        if(print_active_set_) {
+                        // Count active nodes
+                            auto count_a = box.count_active(increment, 1e-16);
+                            if(increment.comm().rank() == 0) {
+                                utopia::out() << "Active dofs: " << count_a << "\n";
+                            }
+                        }
+
                         fun.inverse_transform(increment_c, increment);
 
                         if (box.upper_bound()) {
@@ -236,6 +245,14 @@ namespace utopia {
                         }
 
                         qp_solver_converged = qp_solver_->solve(H, g, increment);
+
+                        if(print_active_set_) {
+                        // Count active nodes
+                            auto count_a = box.count_active(increment, 1e-16);
+                            if(increment.comm().rank() == 0) {
+                                utopia::out() << "Active dofs: " << count_a << "\n";
+                            }
+                        }
 
                         if (box.upper_bound()) {
                             *box.upper_bound() -= increment;
@@ -261,6 +278,10 @@ namespace utopia {
                         const Scalar_t material_inc_norm = norm2(increment);
 
                         if (this->verbose()) {
+                            if(increment.comm().rank() == 0) {
+                                utopia::out() << "Contact linearization (||u_old - u||_2):\n";
+                            }
+
                             PrintInfo::print_iter_status(total_iter, {material_inc_norm});
                         }
 
@@ -303,6 +324,7 @@ namespace utopia {
         Scalar_t material_iter_tol_{1e-6};
         Scalar_t rescale_{1};
         bool inverse_diagonal_scaling_{false};
+        bool print_active_set_{true};
 
         // FIXME move somewhere else
         static void register_fe_solvers() {
