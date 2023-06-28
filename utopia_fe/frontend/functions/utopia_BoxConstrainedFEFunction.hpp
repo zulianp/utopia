@@ -276,32 +276,33 @@ namespace utopia {
                     if (fun.is_linear()) {
                         material_converged = qp_solver_converged;
                     } else {
-                        const Scalar_t material_inc_norm_2 = norm2(increment);
+                        const Scalar_t material_inc_norm_A = std::sqrt(dot(increment, H * increment));
 
                         if (this->verbose()) {
-                            const Scalar_t material_inc_norm_A = std::sqrt(dot(increment, H * increment));
+                            const Scalar_t material_inc_norm_2 = norm2(increment);
+
                             PrintInfo::print_iter_status(material_iter, {material_inc_norm_2, material_inc_norm_A});
                         }
 
-                        if (material_inc_norm_2 < material_iter_tol_) {
+                        if (material_inc_norm_A < material_iter_tol_) {
                             material_converged = true;
                             break;
                         }
                     }
                 }
 
-                Scalar_t x_diff_norm_2 = norm2(x_old - x);
+                Scalar_t x_diff_norm_A = std::sqrt(dot((x_old - x), H * (x_old - x)));
 
                 if (this->verbose()) {
                     if (increment.comm().rank() == 0) {
                         utopia::out() << "Contact linearization (||u_old - u||_2):\n";
                     }
 
-                    Scalar_t x_diff_norm_A = std::sqrt(dot((x_old - x), H * (x_old - x)));
+                    Scalar_t x_diff_norm_2 = norm2(x_old - x);
                     PrintInfo::print_iter_status(constraints_iter, {x_diff_norm_2, x_diff_norm_A});
                 }
 
-                converged = this->check_convergence(constraints_iter, 1, 1, x_diff_norm_2);
+                converged = this->check_convergence(constraints_iter, 1, 1, x_diff_norm_A);
 
                 if (converged) {
                     x.comm().root_print("Converged!");
