@@ -164,12 +164,12 @@ namespace utopia {
             bool first = true;
             int total_iter = 0;
             bool converged = false;
-            for (int constraints_iter = 1; constraints_iter < max_constraints_iterations_; ++constraints_iter) {
+            for (int constraints_iter = 1; constraints_iter <= max_constraints_iterations_; ++constraints_iter) {
                 x_old = x;
                 fun.constraints_gradient(x, box);
 
                 bool material_converged = false;
-                for (int material_iter = 1; material_iter < max_material_iterations; ++material_iter, ++total_iter) {
+                for (int material_iter = 1; material_iter <= max_material_iterations; ++material_iter, ++total_iter) {
                     fun.hessian_and_gradient(x, H, g);
 
                     if (rescale_ != 1.) {
@@ -277,13 +277,9 @@ namespace utopia {
                         material_converged = qp_solver_converged;
                     } else {
                         const Scalar_t material_inc_norm_2 = norm2(increment);
-                        const Scalar_t material_inc_norm_A = std::sqrt(dot(increment, H * increment));
 
                         if (this->verbose()) {
-                            if (increment.comm().rank() == 0) {
-                                utopia::out() << "Material linearization (||u_old - u||_2):\n";
-                            }
-
+                            const Scalar_t material_inc_norm_A = std::sqrt(dot(increment, H * increment));
                             PrintInfo::print_iter_status(material_iter, {material_inc_norm_2, material_inc_norm_A});
                         }
 
@@ -295,9 +291,13 @@ namespace utopia {
                 }
 
                 Scalar_t x_diff_norm_2 = norm2(x_old - x);
-                Scalar_t x_diff_norm_A = std::sqrt(dot((x_old - x), H * (x_old - x)));
 
                 if (this->verbose()) {
+                    if (increment.comm().rank() == 0) {
+                        utopia::out() << "Contact linearization (||u_old - u||_2):\n";
+                    }
+
+                    Scalar_t x_diff_norm_A = std::sqrt(dot((x_old - x), H * (x_old - x)));
                     PrintInfo::print_iter_status(constraints_iter, {x_diff_norm_2, x_diff_norm_A});
                 }
 
