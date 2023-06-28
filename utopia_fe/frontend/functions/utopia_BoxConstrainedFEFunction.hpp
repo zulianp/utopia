@@ -216,10 +216,10 @@ namespace utopia {
 
                         qp_solver_converged = qp_solver_->solve(H_c, g_c, increment_c);
 
-                        if(print_active_set_) {
-                        // Count active nodes
+                        if (print_active_set_) {
+                            // Count active nodes
                             auto count_a = box.count_active(increment, 1e-16);
-                            if(increment.comm().rank() == 0) {
+                            if (increment.comm().rank() == 0) {
                                 utopia::out() << "Active dofs: " << count_a << "\n";
                             }
                         }
@@ -246,10 +246,10 @@ namespace utopia {
 
                         qp_solver_converged = qp_solver_->solve(H, g, increment);
 
-                        if(print_active_set_) {
-                        // Count active nodes
+                        if (print_active_set_) {
+                            // Count active nodes
                             auto count_a = box.count_active(increment, 1e-16);
-                            if(increment.comm().rank() == 0) {
+                            if (increment.comm().rank() == 0) {
                                 utopia::out() << "Active dofs: " << count_a << "\n";
                             }
                         }
@@ -278,10 +278,6 @@ namespace utopia {
                         const Scalar_t material_inc_norm = norm2(increment);
 
                         if (this->verbose()) {
-                            if(increment.comm().rank() == 0) {
-                                utopia::out() << "Contact linearization (||u_old - u||_2):\n";
-                            }
-
                             PrintInfo::print_iter_status(total_iter, {material_inc_norm});
                         }
 
@@ -295,6 +291,10 @@ namespace utopia {
                 Scalar_t x_diff_norm = norm2(x_old - x);
 
                 if (this->verbose()) {
+                    if (increment.comm().rank() == 0) {
+                        utopia::out() << "Contact linearization (||u_old - u||_2):\n";
+                    }
+
                     PrintInfo::print_iter_status(total_iter, {x_diff_norm});
                 }
 
