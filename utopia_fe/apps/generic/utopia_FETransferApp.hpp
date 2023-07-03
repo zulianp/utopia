@@ -246,7 +246,7 @@ namespace utopia {
         Path output_path{"./out.e"};
         bool export_from_function{false};
         bool verbose{true};
-        bool export_operator_imbalance{false};
+        bool export_operator_imbalance{true};
         bool export_example_coupled_system{false};
         Scalar_t rescale_imbalance{1};
     };
