@@ -296,8 +296,12 @@ namespace utopia {
                         return false;
                     }
                 } else {
-                    utopia::err() << "[Error] not implemented\n";
-                    assert(false && "IMPLEMENT ME!!!");
+                    // utopia::err() << "[Error] not implemented\n";
+                    // assert(false && "IMPLEMENT ME!!!");
+
+                    if (!assembler.assemble(m_from, m_to, opts.tags)) {
+                        return false;
+                    }
                 }
 
                 FETransferPrepareData::apply(opts, assembler, data);
@@ -419,6 +423,8 @@ namespace utopia {
 
         bool FETransfer::init(const std::shared_ptr<FunctionSpace> &from, const std::shared_ptr<FunctionSpace> &to) {
             UTOPIA_TRACE_REGION_BEGIN("FETransfer::init");
+
+            ::moonolith::Moonolith::instance().verbose(Utopia::instance().verbose());
 
             assert(from->mesh().spatial_dimension() == to->mesh().spatial_dimension());
 
@@ -593,8 +599,7 @@ namespace utopia {
         bool FETransfer::write(const Path &) const { return false; }
 
         FETransfer::Communicator &FETransfer::comm() {
-            if (empty()) {
-                assert(false);
+            if (empty() || !impl_->data.coupling_matrix) {
                 static Communicator self(Communicator::self());
                 return self;
             } else {
@@ -603,8 +608,7 @@ namespace utopia {
         }
 
         const FETransfer::Communicator &FETransfer::comm() const {
-            if (empty()) {
-                assert(false);
+            if (empty() || !impl_->data.coupling_matrix) {
                 static Communicator self(Communicator::self());
                 return self;
             } else {

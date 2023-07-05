@@ -44,34 +44,26 @@ run-utopia-test-singletask:
     # run all tests
     - ./utopia_test $UTOPIA_RUN_OPTS
 
-run-utopia-test-multitask:
-  extends: .container-runner-daint-mc
-  image: $PERSIST_IMAGE_NAME
-  variables:
-    SLURM_NTASKS: 8
-    SLURM_TIMELIMIT: "00:10:00"
-    USE_MPI: "YES"
-  script:
-    # the tests are not installed, so we need to run them from the build directory
-    - cd /utopia.src/build
-    # run selected tests
-# FIXME solver tests are disabled because they take extremely long time on PizDaint
-#   - ./utopia_test $UTOPIA_RUN_OPTS -test sub_comm_solver
-    - ./utopia_test $UTOPIA_RUN_OPTS -test trilinos_interop_petsc
-#   - ./utopia_test $UTOPIA_RUN_OPTS -test trilinos_solver
-    - ./utopia_test $UTOPIA_RUN_OPTS -test trilinos_specific
-
 run-utopia-benchmark:
   extends: .container-runner-daint-mc
   image: $PERSIST_IMAGE_NAME
   variables:
-# FIXME multi-node execution fails on petsc backend (uncomment lines below)
-#   SLURM_JOB_NUM_NODES: 4
-#   SLURM_NTASKS_PER_NODE: 1
-#   SLURM_PARTITION: normal
     SLURM_TIMELIMIT: "00:10:00"
     USE_MPI: "YES"
   script:
     # the tests are not installed, so we need to run them from the build directory
     - cd /utopia.src/build
     - ./utopia_bench $UTOPIA_RUN_OPTS
+
+run-utopia_fe-test:
+  extends: .container-runner-daint-mc
+  image: $PERSIST_IMAGE_NAME
+  variables:
+    SLURM_NTASKS: 1
+    SLURM_TIMELIMIT: "00:10:00"
+    USE_MPI: "NO"
+  script:
+    # the tests are not installed, so we need to run them from the build directory
+    - cd /utopia.src/utopia_fe/build
+    # run all tests
+    - ./utopia_fe_test --verbose

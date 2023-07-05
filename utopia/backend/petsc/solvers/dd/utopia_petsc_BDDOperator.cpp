@@ -63,7 +63,7 @@ namespace utopia {
             Matrix local_block;
             local_block_view(mat, local_block);
 
-            std::vector<SizeType> partitions(local_block.rows(), -1);
+            std::vector<int> partitions(local_block.rows(), -1);
 
             if (!decompose(local_block, num_blocks, &partitions[0])) {
                 UTOPIA_TRACE_REGION_END("BDDOperator::extend_skeleton_with_local_blocks");

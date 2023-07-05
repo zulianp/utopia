@@ -144,6 +144,16 @@ namespace utopia {
             }
         }
 
+        void init_mass_matrix_assembler() {
+            auto params = param_list(param("material",
+                                           param_list(param("type", "Mass"),                         //
+                                                      param("lumped", true),                         //
+                                                      param("n_components", this->space()->n_var())  //
+                                                      )));
+
+            this->mass_matrix_assembler()->read(params);
+        }
+
         void read(Input &in) override {
             Super::read(in);
             in.get("assembly", *assembler_);
@@ -157,13 +167,7 @@ namespace utopia {
             });
 
             if (!user_defined_mass) {
-                auto params = param_list(param("material",
-                                               param_list(param("type", "Mass"),                         //
-                                                          param("lumped", true),                         //
-                                                          param("n_components", this->space()->n_var())  //
-                                                          )));
-
-                this->mass_matrix_assembler()->read(params);
+                init_mass_matrix_assembler();
             }
 
             auto space_name = space()->name();

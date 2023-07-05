@@ -10,6 +10,8 @@
 #include "utopia_Tracer.hpp"
 #include "utopia_make_unique.hpp"
 
+#include "utopia_Base.hpp"
+
 #include "utopia_Reporter.hpp"
 
 #ifdef UTOPIA_ENABLE_TRILINOS

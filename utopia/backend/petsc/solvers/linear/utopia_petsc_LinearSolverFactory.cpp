@@ -24,6 +24,8 @@
 
 #include "utopia_petsc_KSPSolverMF.hpp"
 
+#include "utopia_petsc_RebalancedSolver.hpp"
+
 #include <map>
 #include <memory>
 #include <string>
@@ -69,6 +71,9 @@ namespace utopia {
         solvers_[Solver::gmres()] = utopia::make_unique<LSFactoryMethod<GMRES<PetscMatrix, PetscVector>>>();
         solvers_["amg"] = utopia::make_unique<LSFactoryMethod<AlgebraicMultigrid<PetscMatrix, PetscVector>>>();
         solvers_["bdd"] = utopia::make_unique<LSFactoryMethod<BDDLinearSolver<PetscMatrix, PetscVector>>>();
+#ifdef UTOPIA_WITH_PARMETIS
+        solvers_["rebalanced"] = utopia::make_unique<LSFactoryMethod<RebalancedSolver>>();
+#endif  // UTOPIA_WITH_PARMETIS
     }
 
 }  // namespace utopia

@@ -127,6 +127,48 @@ namespace utopia {
             return !has_empty_bounds() && lo.same(layout(*lower_bound())) && lo.same(layout(*upper_bound()));
         }
 
+        SizeType local_count_active(const Vector &x, const Scalar tol = 0) const {
+            SizeType count_active = 0;
+
+            auto x_view = const_local_view_device(x);
+            auto r = local_range_device(x);
+
+            if (this->has_upper_bound() && this->has_lower_bound()) {
+                auto u_view = const_local_view_device(*this->upper_bound());
+                auto l_view = const_local_view_device(*this->lower_bound());
+
+                parallel_reduce(
+                    r,
+                    UTOPIA_LAMBDA(const SizeType &i)->SizeType {
+                        return (l_view.get(i) + tol >= x_view.get(i)) || (u_view.get(i) - tol <= x_view.get(i));
+                    },
+                    count_active);
+
+            } else if (this->has_upper_bound()) {
+                auto u_view = const_local_view_device(*this->upper_bound());
+
+                parallel_reduce(
+                    r,
+                    UTOPIA_LAMBDA(const SizeType &i)->SizeType { return (u_view.get(i) - tol <= x_view.get(i)); },
+                    count_active);
+
+            } else if (this->has_lower_bound()) {
+                auto l_view = const_local_view_device(*this->lower_bound());
+
+                parallel_reduce(
+                    r,
+                    UTOPIA_LAMBDA(const SizeType &i)->SizeType { return (l_view.get(i) + tol >= x_view.get(i)); },
+                    count_active);
+            }
+
+            return count_active;
+        }
+
+        SizeType count_active(const Vector &x, const Scalar tol = 0) const {
+            SizeType ca = local_count_active(x, tol);
+            return x.comm().sum(ca);
+        }
+
         bool determine_boolean_selector(const Scalar &negative_infinity,
                                         const Scalar &positive_infinity,
                                         Vector &boolean_selector,

@@ -6,6 +6,7 @@
 #include "utopia_Agglomerate.hpp"
 #include "utopia_BlockAgglomerate.hpp"
 #include "utopia_ElementWisePseudoInverse.hpp"
+#include "utopia_FEModelFunction.hpp"
 #include "utopia_Field.hpp"
 #include "utopia_ILU.hpp"
 #include "utopia_MPITimeStatistics.hpp"
@@ -110,6 +111,7 @@ namespace utopia {
             in.get("export_from_function", export_from_function);
             in.get("export_operator_imbalance", export_operator_imbalance);
             in.get("rescale_imbalance", rescale_imbalance);
+            in.get("export_example_coupled_system", export_example_coupled_system);
 
             // if (export_operator_imbalance && from_space.comm().size() != 1) {
             //     if (!from_space.comm().rank()) {
@@ -149,6 +151,30 @@ namespace utopia {
 
             transfer.apply(field.data(), to_field.data());
             to_space.write(output_path, to_field.data());
+
+#if 1
+            if (export_example_coupled_system) {
+                using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
+
+                // TODO
+                Matrix_t from_matrix;
+                from_space.create_matrix(from_matrix);
+                FEModelFunction_t from_model(make_ref(from_space));
+                from_model.init_mass_matrix_assembler();
+                from_model.assemble_mass_matrix(from_matrix);
+
+                Matrix_t to_matrix;
+                to_space.create_matrix(to_matrix);
+
+                FEModelFunction_t to_model(make_ref(to_space));
+                to_model.init_mass_matrix_assembler();
+                to_model.assemble_mass_matrix(to_matrix);
+
+                Matrix_t system =
+                    from_matrix + transpose(*transfer.transfer_matrix()) * to_matrix * *transfer.transfer_matrix();
+
+                system.write("raw_system/rowptr.raw");
+            }
 
             if (export_operator_imbalance) {
                 auto mat = transfer.transfer_matrix();
@@ -205,6 +231,7 @@ namespace utopia {
                 io.register_output_field("cost");
                 io.write(1, 1);
             }
+#endif
         }
 
         FETransferApp() {}
@@ -219,7 +246,8 @@ namespace utopia {
         Path output_path{"./out.e"};
         bool export_from_function{false};
         bool verbose{true};
-        bool export_operator_imbalance{false};
+        bool export_operator_imbalance{true};
+        bool export_example_coupled_system{false};
         Scalar_t rescale_imbalance{1};
     };
 

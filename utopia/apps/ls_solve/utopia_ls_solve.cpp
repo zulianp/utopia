@@ -79,7 +79,7 @@ namespace utopia {
             stats.start();
 
             std::string path_A, path_b, path_mat_for_preconditioner, path_oracle, path_output = "out.mm";
-            bool use_amg = true;
+            bool use_amg = false;
             int block_size = 1;
             bool write_matlab = false;
             bool rescale_with_diag = false;
@@ -156,7 +156,7 @@ namespace utopia {
 
             x.zeros(row_layout(A));
 
-            std::shared_ptr<LinearSolver<Matrix, Vector>> solver;
+            std::shared_ptr<LinearSolver<Matrix, Vector>> solver = std::make_shared<OmniLinearSolver<Matrix, Vector>>();
 
             if (!use_lor_cg) {
                 if (use_amg) {
@@ -211,26 +211,10 @@ namespace utopia {
                         solver = amg;
                     }
 
-                } else {
-                    if (use_ksp) {
-                        auto ksp = std::make_shared<KSPSolver<Matrix, Vector>>();
-                        ksp->factor_set_pivot_in_blocks(convert_to_block_matrix);
-                        solver = ksp;
-                    } else {
-                        // auto ksp = std::make_shared<KSPSolver<Matrix, Vector>>();
-                        // auto ilu = std::make_shared<ILU<Matrix, Vector>>();
-
-                        // InputParameters inner_params;
-                        // inner_params.set("block_size", block_size);
-
-                        // ilu->read(inner_params);
-                        // ilu->max_it(1);
-
-                        // ksp->set_preconditioner(ilu);
-                        // solver = ksp;
-
-                        solver = std::make_shared<ILU<Matrix, Vector>>();
-                    }
+                } else if (use_ksp) {
+                    auto ksp = std::make_shared<KSPSolver<Matrix, Vector>>();
+                    ksp->factor_set_pivot_in_blocks(convert_to_block_matrix);
+                    solver = ksp;
                 }
 
                 solver->read(in);

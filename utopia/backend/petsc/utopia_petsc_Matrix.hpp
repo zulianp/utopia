@@ -750,6 +750,11 @@ namespace utopia {
                       const std::string &rowptr_path,
                       const std::string &colidx_path,
                       const std::string &values_path);
+
+        bool write_raw(MPI_Comm comm,
+                       const std::string &rowptr_path,
+                       const std::string &colidx_path,
+                       const std::string &values_path) const;
 #endif  // UTOPIA_ENABLE_MATRIX_IO
 
         void copy_from(Mat mat);

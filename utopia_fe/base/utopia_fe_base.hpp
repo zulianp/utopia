@@ -10,8 +10,13 @@ namespace utopia {
     using USparseMatrix = TpetraMatrixd;
     using UVector = TpetraVectord;
 #else
+#ifdef UTOPIA_WITH_PETSC
     using USparseMatrix = PetscMatrix;
     using UVector = PetscVector;
+#else
+    using USparseMatrix = TpetraMatrixd;
+    using UVector = TpetraVectord;
+#endif
 #endif  // UTOPIA_ENABLE_TRILINOS_ALGEBRA
 
     using UIndexArray = utopia::Traits<UVector>::IndexArray;

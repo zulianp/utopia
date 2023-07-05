@@ -84,7 +84,7 @@ void mars_solve_aux(Input &in) {
 
     c.start();
 
-    ConjugateGradient<Matrix_t, Vector_t> cg;
+    ConjugateGradient<Matrix_t, Vector_t, HOMEMADE> cg;
     cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix_t, Vector_t>>());
     cg.apply_gradient_descent_step(true);
     cg.max_it(200);
@@ -105,7 +105,7 @@ void mars_solve_aux(Input &in) {
 
     // static int once = 0;
     // if (once++ == 1) {
-    utopia_test_assert(space.write("result.bp", x));
+    //     utopia_test_assert(space.write("result.bp", x));
     // }
 
     c.stop();
@@ -234,6 +234,7 @@ void mars_new_auto_assembler_test() {
 
     auto neohook = MaterialFactory_t::make(space.mesh().spatial_dimension(), "NeoHookeanOgden");
     neohook->initialize(make_ref(space));
+    neohook->must_apply_constraints(false);
 
     Matrix_t mat;
     space.create_matrix(mat);
