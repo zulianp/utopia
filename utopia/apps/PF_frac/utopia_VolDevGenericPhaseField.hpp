@@ -634,7 +634,7 @@ namespace utopia {
             CoefStrain<USpace, Quadrature> strain(u_coeff, q);
 
             // reference based
-            ShapeStress<USpace, Quadrature> p_stress(U, q, this->params_.mu, this->params_.lambda);
+            //ShapeStress<USpace, Quadrature> p_stress(U, q, this->params_.mu, this->params_.lambda); //Check this!! This doesnt seem truly reference based
             Strain<USpace, Quadrature> ref_strain_u(U, q);
 
             {
@@ -659,7 +659,7 @@ namespace utopia {
                 auto c_grad_shape_view = c_grad_shape.view_device();
 
                 // FIXME
-                auto p_stress_view = p_stress.view_device();
+//                auto p_stress_view = p_stress.view_device(); //E.P Must remove as this DOESNT UPDATE MATERIAL PROPERTIES
 
                 auto H_view = this->space_.assembly_view_device(H);
                 auto ref_strain_u_view = ref_strain_u.view_device();
@@ -767,6 +767,23 @@ namespace utopia {
                                 auto &&u_strain_shape_l = u_strain_shape_el(l, qp);
 
                                 for (SizeType j = l; j < U_NDofs; ++j) {
+
+                                    //Isotropic version
+                                    auto element_stress =
+                                        2.0 * this->params_.mu * u_strain_shape_el(j, qp) +
+                                        this->params_.lambda * trace(u_strain_shape_el(j, qp)) * (device::identity<Scalar>());
+
+
+                                    Scalar valiso =
+                                        GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation>::bilinear_uu(
+                                            this->params_,
+                                            c[qp],
+                                            element_stress,  // hetero material props
+                                            u_strain_shape_l) *
+                                        dx(qp);
+
+
+
                                     // Varying stress tensor
                                     Scalar val = bilinear_uu(this->params_,
                                                              c[qp],
@@ -774,6 +791,12 @@ namespace utopia {
                                                              u_strain_shape_el(j, qp),
                                                              u_strain_shape_l) *
                                                  dx(qp);
+
+                                    std::cout << "val    : " << val    <<std::endl;
+                                    std::cout << "val iso: " << valiso <<std::endl;
+
+
+                                    //val = valiso; uncomment to check if iso is correct
 
                                     val = (l == j) ? (0.5 * val) : val;
                                     el_mat(C_NDofs + l, C_NDofs + j) += val;
@@ -821,6 +844,20 @@ namespace utopia {
                                 }
                             }
                         }
+
+
+                        printf("---------------------\n");
+                        for (int i = 0; i < U_NDofs + C_NDofs; i++) {
+                            for (int j = 0; j < U_NDofs + C_NDofs; j++) {
+                                double val = el_mat(i, j);
+                                if (std::abs(val) < 1e-4) {
+                                    val = 0;
+                                }
+                                printf("%.4g, ", val);
+                            }
+                            printf("\n");
+                        }
+                        printf("---------------------\n");
 
                         space_view.add_matrix(e, el_mat, H_view);
                     });

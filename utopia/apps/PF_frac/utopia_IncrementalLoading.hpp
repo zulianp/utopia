@@ -471,8 +471,8 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("IncrementalLoading::run(...)");
 
             // just for testing purposes...
-            fe_problem_->use_crack_set_irreversibiblity(true);
-            fe_problem_->turn_off_cu_coupling(true);
+            //fe_problem_->use_crack_set_irreversibiblity(true);
+            //fe_problem_->turn_off_cu_coupling(true);
             // fe_problem_->turn_off_uc_coupling(true);
 
             this->init(space_);

@@ -445,7 +445,10 @@ namespace utopia {
               top_layer_height(0),
               bottom_layer_height(0),
               top_layer_height2(0),
-              bottom_layer_height2(0)
+              bottom_layer_height2(0),
+              use_pressure(false),
+              turn_off_uc_coupling(false),
+              turn_off_cu_coupling(false)
 
         {
             kappa = lambda + (2.0 * mu / Dim);

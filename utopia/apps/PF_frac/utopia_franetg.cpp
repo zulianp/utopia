@@ -260,7 +260,12 @@ namespace utopia {
         using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using ProblemType = utopia::PhaseFieldDerivativeCheck_Original<FunctionSpace, Dim>;
+//        using ProblemType = utopia::PhaseFieldDerivativeCheck_Original<FunctionSpace, Dim>;
+//        using ProblemType = utopia::IsotropicPhaseFieldForBrittleFractures<FunctionSpace, Dim>;
+//        using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT1>; //Checked
+        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT2>; //Broken
+//        using ProblemType = utopia::PhaseFieldVolDevSplit<FunctionSpace, Dim>; //Checked
+
         Comm world;
 
         MPITimeStatistics stats(world);
@@ -274,8 +279,9 @@ namespace utopia {
 
         stats.start();
 
+//        HomogeneousBar<FunctionSpace> IC_setup(space, 0.0);
         SmoothQuadraticPhaseField<FunctionSpace> IC_setup(space, 0.0);
-        UniaxialLoading2D<FunctionSpace> BC_setup(space, 0.0);
+        BiaxialLoading2D<FunctionSpace> BC_setup(space, 0.0);
 
         IncrementalLoading<FunctionSpace, ProblemType> time_stepper(space, IC_setup, BC_setup);
 

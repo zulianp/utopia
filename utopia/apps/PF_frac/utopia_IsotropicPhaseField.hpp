@@ -879,7 +879,8 @@ namespace utopia {
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             const Scalar tr_strain_u = trace(el_strain.strain[qp]);
 
-                            const Scalar eep = elastic_energy(this->params_, c[qp], tr_strain_u, el_strain.strain[qp]);
+                            //const Scalar eep = elastic_energy(this->params_, c[qp], tr_strain_u, el_strain.strain[qp]);
+                            const Scalar eep_fix = strain_energy(this->params_, tr_strain_u, el_strain.strain[qp]);
 
                             // pragma GCCunroll(C_NDofs)
                             for (SizeType l = 0; l < C_NDofs; ++l) {
@@ -892,7 +893,7 @@ namespace utopia {
 
                                     Scalar val = bilinear_cc(this->params_,
                                                              c[qp],
-                                                             eep,
+                                                             eep_fix,
                                                              c_shape_j_l_prod,
                                                              c_grad_shape_el(j, qp),
                                                              c_grad_l) *
@@ -956,7 +957,7 @@ namespace utopia {
                                     // UNROLL_FACTOR)) #pragma GCC unroll U_MIN(U_NDofs,
                                     // UNROLL_FACTOR)
                                     for (SizeType u_i = 0; u_i < U_NDofs; ++u_i) {
-                                        auto &&strain_shape = u_strain_shape_el(u_i, qp);
+                                        auto &&strain_shape = u_strain_shape_el(u_i, qp); //E.P ?? should this be strain shape functions or just strain??
 
                                         Scalar val =
                                             bilinear_uc(this->params_, c[qp], stress, strain_shape, c_shape_i) * dx(qp);
@@ -979,20 +980,20 @@ namespace utopia {
                                     }
                                 }
                             }
-                        }
+                        }//end of quadrature point llop
 
-                        // printf("---------------------\n");
-                        // for (int i = 0; i < U_NDofs + C_NDofs; i++) {
-                        //     for (int j = 0; j < U_NDofs + C_NDofs; j++) {
-                        //         double val = el_mat(i, j);
-                        //         if (std::abs(val) < 1e-4) {
-                        //             val = 0;
-                        //         }
-                        //         printf("%.4g, ", val);
-                        //     }
-                        //     printf("\n");
-                        // }
-                        // printf("---------------------\n");
+                         printf("---------------------\n");
+                         for (int i = 0; i < U_NDofs + C_NDofs; i++) {
+                             for (int j = 0; j < U_NDofs + C_NDofs; j++) {
+                                 double val = el_mat(i, j);
+                                 if (std::abs(val) < 1e-4) {
+                                     val = 0;
+                                 }
+                                 printf("%.4g, ", val);
+                             }
+                             printf("\n");
+                         }
+                         printf("---------------------\n");
 
                         space_view.add_matrix(e, el_mat, H_view);
                     });
