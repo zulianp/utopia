@@ -9,25 +9,28 @@ nx: 2
 ny: 2
 #nz: 2
 x_min: 0
-x_max: 0.9
+x_max: 3
 y_min: 0
-y_max: 0.5
+y_max: 1
 n_levels: 1
 # Problem specification ------------------------------------------
 # Boundary Conditions
-disp_y: 0.0
-disp_x: 0.1
+disp_y: 0.02
+disp_x: 0.01
 #PhaseField Debugging
 check_elastic_energy:  true
-check_fracture_energy: true
+check_fracture_energy: false
+turn_off_cu_coupling:  false
+turn_off_uc_coupling:  false
 use_penalty_irreversibility: false
 use_crack_set_irreversibiblity: false
 # Phase field formulation
 length_scale: 0.1
-regularization: 0.0000
-penalty_tol: 0.0
+regularization: 0.0001
+penalty_tol: 0.01
 penalty_tol_non_neg: 1e9
 crack_set_tol: 0.9999999
+use_pressure: false
 ## Material paramteters -------------------------------------------------
 hetero_params: None
 E: 1e10
@@ -35,21 +38,21 @@ nu: 0.15
 Gc: 50
 ## Time stepping -------------------------------------------------------
 dt: 0.0005
-final_time: 0.001
+final_time: 0.15
 # Solver specific options
-use_dense_hessian: true
+use_dense_hessian: false
 check_derivatives: true
 block_solver: true
 hjsmn_smoother: false
 diff_controller:
-  spacing: 1.0e-04 # we should choose more wisely in the future 
+  spacing: 1.0e-06
   hessian_from_grad: false
 use_mprgp: true  
 use_box_constraints: false  # TR method with penalty, run up to 5 cores
 solver:
   verbose: false
   mini_verbose: true
-  max_it: 1
+  max_it: 6000
   atol: 1e-8
   atol_suff: 1e-16
   rtol: 1e-16
