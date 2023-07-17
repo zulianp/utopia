@@ -411,6 +411,7 @@ namespace utopia {
             }
 
             // Must be done after lambda and mu
+            fill_in_isotropic_elast_tensor();
             kappa = lambda + (2.0 * mu / Dim);
 
         }  // end of read
@@ -457,8 +458,10 @@ namespace utopia {
         void update(const Point &p, bool update_elastic_tensor) {
             if (hetero_params) {
                 hetero_params(p, mu, lambda, fracture_toughness, tensile_strength);
-                if (update_elastic_tensor) fill_in_isotropic_elast_tensor();
+                kappa = lambda + (2.0 * mu / Dim);
             }
+            if (update_elastic_tensor) fill_in_isotropic_elast_tensor();
+
         }
 
         void initialise_Lame_parameters() {
@@ -494,7 +497,8 @@ namespace utopia {
                 }
             }
 
-            I4sym.identity_sym();
+            I4sym.identity_sym_k(); //E.P Fixed i4sym to correct version for Kappa
+            I4shear.identity_shearmod(Dim); //E.P i4shear for mu identity contribution to elasticity tensor
             kappa = lambda + (2.0 * mu / Dim);
         }
 
@@ -511,7 +515,7 @@ namespace utopia {
         bool use_mobility{false};
 
         Tensor4th<Scalar, Dim, Dim, Dim, Dim> elast_tensor;
-        Tensor4th<Scalar, Dim, Dim, Dim, Dim> I4sym;
+        Tensor4th<Scalar, Dim, Dim, Dim, Dim> I4sym, I4shear;
 
         HeteroParamsFunction hetero_params;
 

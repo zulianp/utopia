@@ -27,6 +27,7 @@ namespace utopia {
     {
     public:
         using Scalar = typename FunctionSpace::Scalar;
+        using Point = typename FunctionSpace::Point;
         using SizeType = typename FunctionSpace::SizeType;
         using Vector = typename FunctionSpace::Vector;
         using Matrix = typename FunctionSpace::Matrix;
@@ -611,6 +612,13 @@ namespace utopia {
                         auto c_shape_fun_el = c_shape_view.make(c_e);
 
                         ////////////////////////////////////////////
+                        bool update_elast_tensor = true;
+                        Point centroid;
+                        c_e.centroid(centroid);
+                        this->non_const_params().update(centroid, update_elast_tensor);
+                        // Getting new material parameter values
+
+                        ////////////////////////////////////////////
                         Scalar tr_strain_u, eep;
 
                         for (int qp = 0; qp < NQuadPoints; ++qp) {
@@ -716,14 +724,28 @@ namespace utopia {
                             }
                         }
 
+                        printf("---------------------\n");
+                        for (int i = 0; i < U_NDofs + C_NDofs; i++) {
+                            for (int j = 0; j < U_NDofs + C_NDofs; j++) {
+                                double val = el_mat(i, j);
+                                if (std::abs(val) < 1e-4) {
+                                    val = 0;
+                                }
+                                printf("%.4g, ", val);
+                            }
+                            printf("\n");
+                        }
+                        printf("---------------------\n");
+
+
                         space_view.add_matrix(e, el_mat, H_view);
                     });
             }
 
-            // check before boundary conditions
-            // // if (this->check_derivatives_) {
-            // this->diff_ctrl_.check_hessian(*this, x_const, H);
-            // // }
+//             check before boundary conditions
+             if (this->check_derivatives_) {
+                this->diff_ctrl_.check_hessian(*this, x_const, H);
+             }
 
             this->space_.apply_constraints(H);
 

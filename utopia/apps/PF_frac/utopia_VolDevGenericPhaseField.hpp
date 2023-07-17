@@ -768,35 +768,14 @@ namespace utopia {
 
                                 for (SizeType j = l; j < U_NDofs; ++j) {
 
-                                    //Isotropic version
-                                    auto element_stress =
-                                        2.0 * this->params_.mu * u_strain_shape_el(j, qp) +
-                                        this->params_.lambda * trace(u_strain_shape_el(j, qp)) * (device::identity<Scalar>());
-
-
-                                    Scalar valiso =
-                                        GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation>::bilinear_uu(
-                                            this->params_,
-                                            c[qp],
-                                            element_stress,  // hetero material props
-                                            u_strain_shape_l) *
-                                        dx(qp);
-
-
-
                                     // Varying stress tensor
-                                    Scalar val = bilinear_uu(this->params_,
+                                    Scalar val = bilinear_uu_EP(this->params_,   //E.P Both bilinear_uu and bilienear_uu_EP work, however EP is more intuitive to understand
                                                              c[qp],
                                                              el_strain.strain[qp],
                                                              u_strain_shape_el(j, qp),
                                                              u_strain_shape_l) *
                                                  dx(qp);
 
-                                    std::cout << "val    : " << val    <<std::endl;
-                                    std::cout << "val iso: " << valiso <<std::endl;
-
-
-                                    //val = valiso; uncomment to check if iso is correct
 
                                     val = (l == j) ? (0.5 * val) : val;
                                     el_mat(C_NDofs + l, C_NDofs + j) += val;
@@ -846,18 +825,18 @@ namespace utopia {
                         }
 
 
-                        printf("---------------------\n");
-                        for (int i = 0; i < U_NDofs + C_NDofs; i++) {
-                            for (int j = 0; j < U_NDofs + C_NDofs; j++) {
-                                double val = el_mat(i, j);
-                                if (std::abs(val) < 1e-4) {
-                                    val = 0;
-                                }
-                                printf("%.4g, ", val);
-                            }
-                            printf("\n");
-                        }
-                        printf("---------------------\n");
+//                        printf("---------------------\n");
+//                        for (int i = 0; i < U_NDofs + C_NDofs; i++) {
+//                            for (int j = 0; j < U_NDofs + C_NDofs; j++) {
+//                                double val = el_mat(i, j);
+//                                if (std::abs(val) < 1e-4) {
+//                                    val = 0;
+//                                }
+//                                printf("%.4g, ", val);
+//                            }
+//                            printf("\n");
+//                        }
+//                        printf("---------------------\n");
 
                         space_view.add_matrix(e, el_mat, H_view);
                     });
@@ -881,6 +860,8 @@ namespace utopia {
         }
 
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
         template <class Grad>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(const Parameters &params,
@@ -906,6 +887,36 @@ namespace utopia {
 
             return val;
         }
+
+        //Alternative way to write degradation
+        template <class Grad>
+        UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu_EP(const Parameters &params,
+                                                         const Scalar &phase_field_value,
+                                                         const Grad &strain,
+                                                         const Grad &strain_trial,
+                                                         const Grad &strain_test) {
+            const Scalar strain0tr = trace(strain);
+
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_neg, Jacobian_pos, Jacobian_shear, Jacobian_bulk;
+            Jacobian_shear = params.mu    * params.I4shear;
+            Jacobian_bulk  = params.kappa * params.I4sym;
+
+            //Tension
+            if (strain0tr > 0) {   //shear terms          +   bulk terms
+                Jacobian_pos = params.mu * params.I4shear + params.kappa * params.I4sym ;
+            }
+            //compression
+            else {
+                Jacobian_pos = params.mu * params.I4shear; //shear term
+                Jacobian_neg = params.kappa * params.I4sym; // bulk term
+            }
+
+            Scalar gc = PFFormulation::degradation(phase_field_value, params);
+            Scalar val = inner(strain_trial, contraction(Jacobian_neg + gc*Jacobian_pos, strain_test));
+
+            return val;
+        }
+
 
         template <class GradShape>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_cc(const Parameters &params,
