@@ -20,7 +20,7 @@ namespace utopia {
 
         std::shared_ptr<LinearSolver> linear_solver;
         bool debug{false};
-        Scalar penalty_param{1e8};
+        Scalar penalty_param{1e6};
     };
 
     template <class Matrix, class Vector, int Backend>
@@ -94,7 +94,7 @@ namespace utopia {
         auto a_ptr = this->get_operator();
         auto linear_solver = impl_->linear_solver;
 
-        Scalar penalty_param = impl_->penalty_param;
+        const Scalar penalty_param = impl_->penalty_param;
 
         bool converged = false;
 
@@ -115,7 +115,7 @@ namespace utopia {
                         const Scalar di = d_view.get(i);
                         const Scalar gi = g_view.get(i);
                         const Scalar active = di <= 0;
-                        const Scalar g_active = -active * (gi + penalty_param * di);
+                        const Scalar g_active = active * (gi - penalty_param * di);
                         const Scalar gg = -(gi + g_active);
                         g_view.set(i, gg);
                         diag_B_view.set(i, active * penalty_param);
@@ -123,6 +123,7 @@ namespace utopia {
             }
 
             A.shift_diag(diag_B);
+            c.set(0);
             linear_solver->solve(A, g, c);
             x += c;
 
