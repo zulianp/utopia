@@ -76,6 +76,8 @@ namespace utopia {
         assert(x.empty() || (x.size() == b.size() && b.comm().size() == x.comm().size()));
         assert(this->has_upper_bound());
 
+        this->verbose(true);
+
         if (this->verbose()) {
             this->init_solver("ShiftedPenaltyQPSolver comm.size = " + std::to_string(b.comm().size()),
                               {" it. ", "      || x_k - x_{k-1} ||"});
@@ -121,9 +123,7 @@ namespace utopia {
             }
 
             A.shift_diag(diag_B);
-            linear_solver->update(A);
-            linear_solver->apply(g, c);
-
+            linear_solver->solve(A, g, c);
             x += c;
 
             Scalar norm_c = norm2(c);
