@@ -58,6 +58,12 @@ if(NOT Trilinos_FOUND)
     "-DCMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}"
     "-DBUILD_SHARED_LIBS=OFF"
     "-DTrilinos_SET_GROUP_AND_PERMISSIONS_ON_INSTALL_BASE_DIR=${TRILINOS_INSTALL_DIR}"
+    "-DCMAKE_INSTALL_PREFIX=/Users/dylan/Documents/Summer-Internship/Installations/Trilinos"
+    "-DCMAKE_BUILD_TYPE=Release"
+    "-DCMAKE_CXX_COMPILER=mpicxx"
+    "-DCMAKE_C_COMPILER=mpicc"
+    "-DCMAKE_CXX_STANDARD=17"
+    "-DBUILD_SHARED_LIBS=OFF"
     "-DAmesos2_ENABLE_EXPLICIT_INSTANTIATION=ON"
     "-DIfpack2_ENABLE_EXPLICIT_INSTANTIATION=ON"
     "-DMueLu_ENABLE_EXPLICIT_INSTANTIATION=ON"
@@ -84,7 +90,7 @@ if(NOT Trilinos_FOUND)
     "-DTrilinos_ENABLE_Ifpack2:BOOL=ON"
     "-DTrilinos_ENABLE_Intrepid2:BOOL=ON"
     "-DTrilinos_ENABLE_MueLu:BOOL=ON"
-    "-DTrilinos_ENABLE_NOX=ON "
+    "-DTrilinos_ENABLE_NOX=ON"
     "-DTrilinos_ENABLE_SEACASEpu:BOOL=ON"
     "-DTrilinos_ENABLE_SEACASExodiff:BOOL=ON"
     "-DTrilinos_ENABLE_SEACASExodus:BOOL=ON"
@@ -107,11 +113,16 @@ if(NOT Trilinos_FOUND)
     "-DTrilinos_ENABLE_Zoltan2:BOOL=ON"
     "-DTrilinos_ENABLE_Zoltan:BOOL=ON"
     "-DTPL_ENABLE_SuperLU:BOOL=OFF"
+    "-DXpetra_ENABLE_EXPLICIT_INSTANTIATION:BOOL=ON"
+    "-DTPL_ENABLE_SuperLU:BOOL=ON"
+    "-DTrilinos_ENABLE_Percept:BOOL=ON"
+    "-DTPL_ENABLE_HDF5:BOOL=ON"
     "-DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON"
     "-DTrilinos_ENABLE_Kokkos=ON"
     "-DTPL_ENABLE_HDF5=ON"
-    "-DTPL_HDF5_INCLUDE_DIRS=/usr/local/Cellar/hdf5/1.12.2_2/include"
-    "-DTPL_HDF5_LIBRARY_DIRS=/usr/local/Cellar/hdf5/1.12.2_2/lib")
+    "-DTPL_HDF5_INCLUDE_DIRS=/usr/local/Cellar/hdf5/1.14.1/include"
+    "-DTPL_HDF5_LIBRARY_DIRS=/usr/local/Cellar/hdf5/1.14.1/lib")
+
 
 
   # For cuda

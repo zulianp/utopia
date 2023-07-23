@@ -58,12 +58,12 @@ cmake .. \
 -DTPL_ENABLE_SuperLU:BOOL=ON \
 -DTPL_ENABLE_Boost:BOOL=ON \
 -DTrilinos_ENABLE_Percept:BOOL=ON \
--DTPL_ENABLE_HDF5:BOOL=ON
+-DTPL_ENABLE_HDF5:BOOL=ON \
 -DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON \
 -DTrilinos_ENABLE_Kokkos=ON \
 -DTPL_ENABLE_HDF5=ON \
--DTPL_HDF5_INCLUDE_DIRS=/usr/local/Cellar/hdf5/1.12.2_2/include \
--DTPL_HDF5_LIBRARY_DIRS=/usr/local/Cellar/hdf5/1.12.2_2/lib 
+-DTPL_HDF5_INCLUDE_DIRS=/usr/local/Cellar/hdf5/1.14.1/include \
+-DTPL_HDF5_LIBRARY_DIRS=/usr/local/Cellar/hdf5/1.14.1/lib 
 
 
 
