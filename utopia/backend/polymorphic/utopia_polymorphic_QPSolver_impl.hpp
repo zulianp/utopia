@@ -14,6 +14,7 @@
 #include "utopia_ProjectedGaussSeidel.hpp"
 #include "utopia_ProjectedGradient.hpp"
 #include "utopia_SemismoothNewton.hpp"
+#include "utopia_ShiftedPenaltyQPSolver_impl.hpp"
 
 // PETSC
 #ifdef UTOPIA_WITH_PETSC
@@ -122,6 +123,7 @@ namespace utopia {
                 register_solver<HomeMadeLogBarrierQPSolver>("any", "logbarrier");
                 register_solver<HomeMadePrimalInteriorPointSolver>("any", "ipm");
                 register_solver<HomeMadeMPRGP>("any", "mprgp");
+                register_solver<utopia::ShiftedPenaltyQPSolver<Matrix>>("any", "spm");
             }
 
 #ifdef UTOPIA_WITH_PETSC
