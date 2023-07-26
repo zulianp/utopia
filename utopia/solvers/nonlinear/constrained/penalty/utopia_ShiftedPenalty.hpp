@@ -15,6 +15,7 @@ namespace utopia {
 
     template <class Matrix, class Vector = typename Traits<Matrix>::Vector>
     class ShiftedPenalty : public Penalty<Matrix, Vector> {
+    public:
         using Super = utopia::Penalty<Matrix, Vector>;
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
@@ -24,6 +25,8 @@ namespace utopia {
         ShiftedPenalty() = default;
         explicit ShiftedPenalty(const std::shared_ptr<BoxConstraints> &box) : Super(box) {}
         virtual ~ShiftedPenalty() = default;
+
+        std::string function_type() const override { return "ShiftedPenalty"; }
 
         bool penalty_gradient(const Vector &x, Vector &g) const {
             Vector d;
@@ -65,19 +68,23 @@ namespace utopia {
                         // diag_B_view.set(i, active * penalty_parameter);
                     });
             }
+
+            return true;
         }
 
         bool penalty_hessian(const Vector &x, Vector &H) const {
             Vector d, diag_B;
             const Scalar penalty_parameter = penalty_parameter_;
 
-            diag_B.zeros(layout(x));
+            if (H.empty()) {
+                H.zeros(layout(x));
+            }
 
             if (this->box()->has_upper_bound()) {
                 d = *this->box()->upper_bound() - x;
 
                 auto d_view = const_local_view_device(d);
-                auto diag_B_view = local_view_device(diag_B);
+                auto diag_B_view = local_view_device(H);
 
                 parallel_for(
                     local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
@@ -93,7 +100,7 @@ namespace utopia {
                 d = *this->box()->lower_bound() - x;
 
                 auto d_view = const_local_view_device(d);
-                auto diag_B_view = local_view_device(diag_B);
+                auto diag_B_view = local_view_device(H);
 
                 parallel_for(
                     local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
@@ -104,7 +111,7 @@ namespace utopia {
                     });
             }
 
-            H.shift_diag(diag_B);
+            return true;
         }
 
         bool penalty_value(const Vector &x, Vector &v) const {
@@ -139,13 +146,16 @@ namespace utopia {
                         v_view.set(i, active * di * di * penalty_parameter);
                     });
             }
+
+            return true;
         }
 
-        bool hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const {
+        bool hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const override {
             return gradient(x, g) && hessian(x, H);
         }
 
-        bool hessian(const Vector &x, Vector &H) const {
+        bool hessian(const Vector &x, Vector &H) const override {
+            UTOPIA_TRACE_SCOPE("ShiftedPenalty::hessian");
             Vector work, h(layout(x), 0.);
 
             if (this->has_transform()) {
@@ -192,7 +202,8 @@ namespace utopia {
             return true;
         }
 
-        bool hessian(const Vector &x, Matrix &H) const {
+        bool hessian(const Vector &x, Matrix &H) const override {
+            UTOPIA_TRACE_SCOPE("ShiftedPenalty::hessian");
             Vector work, h(layout(x), 0.);
 
             if (this->has_transform()) {
@@ -232,7 +243,9 @@ namespace utopia {
         }
 
         /// FIXME shift is not considred in the energy value here
-        bool value(const Vector &x, Scalar &value) const {
+        bool value(const Vector &x, Scalar &value) const override {
+            UTOPIA_TRACE_SCOPE("ShiftedPenalty::value");
+
             Vector work, v(layout(x), 0.);
 
             if (this->has_transform()) {
@@ -271,7 +284,8 @@ namespace utopia {
             return true;
         }
 
-        bool gradient(const Vector &x, Vector &grad) const {
+        bool gradient(const Vector &x, Vector &grad) const override {
+            UTOPIA_TRACE_SCOPE("ShiftedPenalty::gradient");
             Vector work, g(layout(x), 0.);
 
             if (this->has_transform()) {
@@ -375,7 +389,7 @@ namespace utopia {
         }
 
         UTOPIA_NVCC_PRIVATE
-        Scalar penalty_parameter_{1e-10};
+        Scalar penalty_parameter_{1e8};
     };
 }  // namespace utopia
 

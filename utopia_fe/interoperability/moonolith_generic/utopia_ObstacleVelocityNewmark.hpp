@@ -31,7 +31,7 @@ namespace utopia {
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
         using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using Mesh_t = typename Traits<FunctionSpace>::Mesh;
-        using LogBarrierBase = utopia::LogBarrierBase<Matrix_t, Vector_t>;
+        using Penalty = utopia::Penalty<Matrix_t, Vector_t>;
 
         ObstacleVelocityNewmark(const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &unconstrained)
             : Super(unconstrained) {}
@@ -180,7 +180,7 @@ namespace utopia {
             ////////////////////////////////////////////////////////////////////////////////
             std::string function_type;
             in.get("function_type", function_type);
-            barrier_ = LogBarrierFactory<Matrix_t, Vector_t>::new_log_barrier(function_type);
+            barrier_ = PenaltyFactory<Matrix_t, Vector_t>::new_penalty(function_type);
             barrier_->read(in);
 
             bool use_barrier_mass_scaling = true;
@@ -362,7 +362,7 @@ namespace utopia {
 
         bool update(const Vector_t & /*x*/) override {
             if (barrier_) {
-                barrier_->update_barrier();
+                barrier_->update();
             }
 
             return true;
@@ -413,7 +413,7 @@ namespace utopia {
 
     private:
         std::shared_ptr<ContactInterface<FunctionSpace>> obstacle_;
-        std::shared_ptr<LogBarrierBase> barrier_;
+        std::shared_ptr<Penalty> barrier_;
         bool debug_{false};
         int debug_from_iteration_{0};
         bool trivial_obstacle_{false};

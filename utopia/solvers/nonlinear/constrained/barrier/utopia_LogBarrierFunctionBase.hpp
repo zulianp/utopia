@@ -29,7 +29,6 @@ namespace utopia {
         virtual bool barrier_gradient(const Vector &x, Vector &g) const = 0;
         virtual bool barrier_hessian(const Vector &x, Vector &H) const = 0;
         virtual bool barrier_value(const Vector &x, Vector &v) const = 0;
-        virtual std::string function_type() const = 0;
 
         virtual bool hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const final {
             return gradient(x, g) && hessian(x, H);
@@ -209,114 +208,6 @@ namespace utopia {
             return true;
         }
 
-        virtual bool project_onto_feasibile_region(Vector &x) const {
-            bool ok = false;
-            if (this->has_transform()) {
-                Vector temp_x;
-                this->transform()->transform(x, temp_x);
-
-                if (this->has_selection()) {
-                    ok = extend_project_onto_feasibile_region_with_selection(temp_x);
-                } else {
-                    ok = extend_project_onto_feasibile_region(temp_x);
-                }
-
-                this->transform()->inverse_transform(temp_x, x);
-
-            } else {
-                if (this->has_selection()) {
-                    ok = extend_project_onto_feasibile_region_with_selection(x);
-                } else {
-                    ok = extend_project_onto_feasibile_region(x);
-                }
-            }
-
-            return ok;
-        }
-
-        bool extend_project_onto_feasibile_region_with_selection(Vector &x) const {
-            if (this->box()->has_upper_bound()) {
-                auto ub_view = local_view_device(*this->box()->upper_bound());
-                auto x_view = local_view_device(x);
-                auto selector_view = local_view_device(this->selection());
-
-                Scalar soft_boundary = this->soft_boundary_;
-                parallel_for(
-                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                        auto s = selector_view.get(i);
-
-                        if (s > 0.99) {
-                            auto xi = x_view.get(i);
-                            auto ubi = ub_view.get(i);
-
-                            if (xi > ubi) {
-                                x_view.set(i, ubi - soft_boundary);
-                            }
-                        }
-                    });
-            }
-
-            if (this->box()->has_lower_bound()) {
-                auto lb_view = local_view_device(*this->box()->lower_bound());
-                auto x_view = local_view_device(x);
-                auto selector_view = local_view_device(this->selection());
-
-                Scalar soft_boundary = this->soft_boundary_;
-
-                parallel_for(
-                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                        auto s = selector_view.get(i);
-
-                        if (s > 0.99) {
-                            auto xi = x_view.get(i);
-                            auto lbi = lb_view.get(i);
-
-                            if (xi < lbi) {
-                                x_view.set(i, lbi + soft_boundary);
-                            }
-                        }
-                    });
-            }
-
-            return true;
-        }
-
-        bool extend_project_onto_feasibile_region(Vector &x) const {
-            if (this->box()->has_upper_bound()) {
-                auto ub_view = local_view_device(*this->box()->upper_bound());
-                auto x_view = local_view_device(x);
-
-                Scalar soft_boundary = this->soft_boundary_;
-                parallel_for(
-                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                        auto xi = x_view.get(i);
-                        auto ubi = ub_view.get(i);
-
-                        if (xi > ubi) {
-                            x_view.set(i, ubi - soft_boundary);
-                        }
-                    });
-            }
-
-            if (this->box()->has_lower_bound()) {
-                auto lb_view = local_view_device(*this->box()->lower_bound());
-                auto x_view = local_view_device(x);
-
-                Scalar soft_boundary = this->soft_boundary_;
-                parallel_for(
-                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                        auto xi = x_view.get(i);
-                        auto lbi = lb_view.get(i);
-
-                        if (xi < lbi) {
-                            x_view.set(i, lbi + soft_boundary);
-                        }
-                    });
-            }
-
-            return true;
-        }
-
         ////////////////////////////////////////////////////////////////////////////////////////////
 
         // inline bool this->has_transform() const { return static_cast<bool>(transform_); }
@@ -364,6 +255,8 @@ namespace utopia {
             current_barrier_parameter_ =
                 std::max(current_barrier_parameter_ * barrier_parameter_shrinking_factor_, min_barrier_parameter_);
         }
+
+        void update() override { update_barrier(); }
 
         void compute_diff_upper_bound(const Vector &x, Vector &diff) const {
             if (diff.empty()) {
@@ -442,8 +335,7 @@ namespace utopia {
                                  barrier_parameter_shrinking_factor_,
                                  "Factor with which the barrier term is reduced.")
                      .add_option("min_barrier_parameter", min_barrier_parameter_, "Smallest barrier parameter allowed.")
-                     .add_option(
-                         "soft_boundary", soft_boundary_, "A value in (0,0.01) used to project in the feasible region.")
+
                      // .add_option("verbose", verbose_, "Enable/Disable verbose output.")
                      .add_option("zero", zero_, "numerical zero (>0)")
                      // .add_option(
@@ -468,7 +360,7 @@ namespace utopia {
             os << "current_barrier_parameter:\t" << current_barrier_parameter_ << "\n";
 
             // Soft limit
-            os << "soft_boundary:\t" << soft_boundary_ << "\n";
+
             os << "zero:\t" << zero_ << "\n";
 
             // Auto selector tol
@@ -502,7 +394,7 @@ namespace utopia {
         Scalar current_barrier_parameter_{1e-10};
 
         // Soft limit
-        Scalar soft_boundary_{1e-7};
+
         Scalar zero_{1e-20};
 
         // // Auto selector tol

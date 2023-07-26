@@ -74,7 +74,7 @@ namespace utopia {
                     "function_type", function_type, "Type of LogBarrier. Options={LogBarrier|BoundedLogBarrier}")
                 .parse(in);
 
-            function_ = LogBarrierFactory<Matrix, Vector>::new_log_barrier_function(function_type);
+            function_ = PenaltyFactory<Matrix, Vector>::new_log_barrier_function(function_type);
             function_->read(in);
         }
 
