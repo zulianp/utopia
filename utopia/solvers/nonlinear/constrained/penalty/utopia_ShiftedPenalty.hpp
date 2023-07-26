@@ -44,9 +44,8 @@ namespace utopia {
                         const Scalar gi = g_view.get(i);
                         const Scalar active = di <= 0;
                         const Scalar g_active = active * (gi - penalty_parameter * di);
-                        const Scalar gg = -(gi + g_active);
+                        const Scalar gg = (gi + g_active);
                         g_view.set(i, gg);
-                        // diag_B_view.set(i, active * penalty_parameter);
                     });
             }
 
@@ -63,9 +62,8 @@ namespace utopia {
                         const Scalar gi = g_view.get(i);
                         const Scalar active = di >= 0;
                         const Scalar g_active = active * (gi - penalty_parameter * di);
-                        const Scalar gg = -(gi + g_active);
+                        const Scalar gg = (gi + g_active);
                         g_view.set(i, gg);
-                        // diag_B_view.set(i, active * penalty_parameter);
                     });
             }
 
@@ -389,7 +387,7 @@ namespace utopia {
         }
 
         UTOPIA_NVCC_PRIVATE
-        Scalar penalty_parameter_{1e8};
+        Scalar penalty_parameter_{1e4};
     };
 }  // namespace utopia
 
