@@ -7,27 +7,30 @@
 #include "utopia_Layout.hpp"
 #include "utopia_Options.hpp"
 
+#include "utopia_Penalty.hpp"
+
 #include <limits>
 
 namespace utopia {
 
     template <class Matrix, class Vector = typename Traits<Matrix>::Vector>
-    class ShiftedPenalty : public Configurable {
+    class ShiftedPenalty : public Penalty<Matrix, Vector> {
+        using Super = utopia::Penalty<Matrix, Vector>;
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using BoxConstraints = utopia::BoxConstraints<Vector>;
         using Transformation = utopia::Transformation<Matrix, Vector>;
 
         ShiftedPenalty() = default;
-        explicit ShiftedPenalty(const std::shared_ptr<BoxConstraints> &box) : box_(box) {}
+        explicit ShiftedPenalty(const std::shared_ptr<BoxConstraints> &box) : Super(box) {}
         virtual ~ShiftedPenalty() = default;
 
         bool penalty_gradient(const Vector &x, Vector &g) const {
             Vector d;
             const Scalar penalty_parameter = penalty_parameter_;
 
-            if (box_->has_upper_bound()) {
-                d = *box_->upper_bound() - x;
+            if (this->box()->has_upper_bound()) {
+                d = *this->box()->upper_bound() - x;
 
                 auto d_view = const_local_view_device(d);
                 auto g_view = local_view_device(g);
@@ -44,9 +47,9 @@ namespace utopia {
                     });
             }
 
-            if (box_->has_lower_bound()) {
+            if (this->box()->has_lower_bound()) {
                 // TODO Check
-                d = *box_->lower_bound() - x;
+                d = *this->box()->lower_bound() - x;
 
                 auto d_view = const_local_view_device(d);
                 auto g_view = local_view_device(g);
@@ -70,8 +73,8 @@ namespace utopia {
 
             diag_B.zeros(layout(x));
 
-            if (box_->has_upper_bound()) {
-                d = *box_->upper_bound() - x;
+            if (this->box()->has_upper_bound()) {
+                d = *this->box()->upper_bound() - x;
 
                 auto d_view = const_local_view_device(d);
                 auto diag_B_view = local_view_device(diag_B);
@@ -85,9 +88,9 @@ namespace utopia {
                     });
             }
 
-            if (box_->has_lower_bound()) {
+            if (this->box()->has_lower_bound()) {
                 // TODO Check
-                d = *box_->lower_bound() - x;
+                d = *this->box()->lower_bound() - x;
 
                 auto d_view = const_local_view_device(d);
                 auto diag_B_view = local_view_device(diag_B);
@@ -108,8 +111,8 @@ namespace utopia {
             Vector d;
             const Scalar penalty_parameter = penalty_parameter_;
 
-            if (box_->has_upper_bound()) {
-                d = *box_->upper_bound() - x;
+            if (this->box()->has_upper_bound()) {
+                d = *this->box()->upper_bound() - x;
 
                 auto d_view = const_local_view_device(d);
                 auto v_view = local_view_device(v);
@@ -122,9 +125,9 @@ namespace utopia {
                     });
             }
 
-            if (box_->has_lower_bound()) {
+            if (this->box()->has_lower_bound()) {
                 // TODO Check
-                d = *box_->lower_bound() - x;
+                d = *this->box()->lower_bound() - x;
 
                 auto d_view = const_local_view_device(d);
                 auto v_view = local_view_device(v);
@@ -145,33 +148,33 @@ namespace utopia {
         bool hessian(const Vector &x, Vector &H) const {
             Vector work, h(layout(x), 0.);
 
-            if (has_transform()) {
+            if (this->has_transform()) {
                 // Transform to constraint base
-                transform_->transform(x, work);
+                this->transform()->transform(x, work);
                 if (!penalty_hessian(work, h)) {
                     return false;
                 }
 
-                apply_selection(h);
+                this->apply_selection(h);
 
                 // Scale contribuions
-                if (has_scaling_matrix()) {
-                    scaling_matrix()->apply(h, work);
+                if (this->has_scaling_matrix()) {
+                    this->scaling_matrix()->apply(h, work);
                     h = work;
                 }
 
                 // Transform to problem base
-                transform_->inverse_transform_direction(h, work);
+                this->transform()->inverse_transform_direction(h, work);
                 H += (work);
             } else {
                 if (!penalty_hessian(x, h)) {
                     return false;
                 }
 
-                apply_selection(h);
+                this->apply_selection(h);
 
-                if (has_scaling_matrix()) {
-                    scaling_matrix()->apply(h, work);
+                if (this->has_scaling_matrix()) {
+                    this->scaling_matrix()->apply(h, work);
                     if (empty(H)) {
                         H = work;
                     } else {
@@ -192,33 +195,33 @@ namespace utopia {
         bool hessian(const Vector &x, Matrix &H) const {
             Vector work, h(layout(x), 0.);
 
-            if (has_transform()) {
+            if (this->has_transform()) {
                 // Transform to constraint base
-                transform_->transform(x, work);
+                this->transform()->transform(x, work);
                 if (!penalty_hessian(work, h)) {
                     return false;
                 }
 
-                apply_selection(h);
+                this->apply_selection(h);
 
                 // Scale contribuions
-                if (has_scaling_matrix()) {
-                    scaling_matrix()->apply(h, work);
+                if (this->has_scaling_matrix()) {
+                    this->scaling_matrix()->apply(h, work);
                     h = work;
                 }
 
                 // Transform to problem base
-                transform_->inverse_transform_direction(h, work);
+                this->transform()->inverse_transform_direction(h, work);
                 H.shift_diag(work);
             } else {
                 if (!penalty_hessian(x, h)) {
                     return false;
                 }
 
-                apply_selection(h);
+                this->apply_selection(h);
 
-                if (has_scaling_matrix()) {
-                    scaling_matrix()->apply(h, work);
+                if (this->has_scaling_matrix()) {
+                    this->scaling_matrix()->apply(h, work);
                     H.shift_diag(work);
                 } else {
                     H.shift_diag(h);
@@ -232,33 +235,33 @@ namespace utopia {
         bool value(const Vector &x, Scalar &value) const {
             Vector work, v(layout(x), 0.);
 
-            if (has_transform()) {
+            if (this->has_transform()) {
                 // Transform to constraint base
-                transform_->transform(x, work);
+                this->transform()->transform(x, work);
                 if (!penalty_value(work, v)) {
                     return false;
                 }
 
-                apply_selection(v);
+                this->apply_selection(v);
 
                 // Scale contribuions
-                if (has_scaling_matrix()) {
-                    scaling_matrix()->apply(v, work);
+                if (this->has_scaling_matrix()) {
+                    this->scaling_matrix()->apply(v, work);
                     v = work;
                 }
 
                 // Transform to problem base
-                transform_->inverse_transform_direction(v, work);
+                this->transform()->inverse_transform_direction(v, work);
                 value = sum(v);
             } else {
                 if (!penalty_value(x, v)) {
                     return false;
                 }
 
-                apply_selection(v);
+                this->apply_selection(v);
 
-                if (has_scaling_matrix()) {
-                    scaling_matrix()->apply(v, work);
+                if (this->has_scaling_matrix()) {
+                    this->scaling_matrix()->apply(v, work);
                     value = sum(work);
                 } else {
                     value = sum(v);
@@ -271,27 +274,27 @@ namespace utopia {
         bool gradient(const Vector &x, Vector &grad) const {
             Vector work, g(layout(x), 0.);
 
-            if (has_transform()) {
+            if (this->has_transform()) {
                 // Transform to constraint base
-                transform_->transform(x, work);
+                this->transform()->transform(x, work);
 
                 // Transform gradient
-                transform_->transform(grad, g);
+                this->transform()->transform(grad, g);
 
                 if (!penalty_gradient(work, g)) {
                     return false;
                 }
 
-                apply_selection(g);
+                this->apply_selection(g);
 
                 // Scale contribuions
-                if (has_scaling_matrix()) {
-                    scaling_matrix()->apply(g, work);
+                if (this->has_scaling_matrix()) {
+                    this->scaling_matrix()->apply(g, work);
                     g = work;
                 }
 
                 // Transform to problem base
-                transform_->inverse_transform_direction(g, work);
+                this->transform()->inverse_transform_direction(g, work);
                 grad += work;
             } else {
                 // Copy gradient
@@ -300,10 +303,10 @@ namespace utopia {
                     return false;
                 }
 
-                apply_selection(g);
+                this->apply_selection(g);
 
-                if (has_scaling_matrix()) {
-                    scaling_matrix()->apply(g, work);
+                if (this->has_scaling_matrix()) {
+                    this->scaling_matrix()->apply(g, work);
                     grad += work;
                 } else {
                     grad += g;
@@ -313,55 +316,12 @@ namespace utopia {
             return true;
         }
 
-        ////////////////////////////////////////////////////////////////////////////////////////////
-
-        inline bool has_transform() const { return static_cast<bool>(transform_); }
-        void set_transform(const std::shared_ptr<Transformation> &t) { transform_ = t; }
-        const std::shared_ptr<Transformation> &transform() const {
-            assert(has_transform());
-            return transform_;
-        }
-
-        ////////////////////////////////////////////////////////////////////////////////////////////
-
-        void set_selection(const std::shared_ptr<Vector> &selection) { selection_ = selection; }
-
-        virtual void apply_selection(Vector &penalty_value) const {
-            if (has_selection()) {
-                penalty_value = e_mul(*selection_, penalty_value);
-            }
-        }
-
-        bool has_selection() const { return static_cast<bool>(selection_); }
-
-        inline const Vector &selection() const {
-            assert(has_selection());
-            return *selection_;
-        }
-
-        // void auto_selector(const bool val) { auto_selector_ = val; }
-
-        void determine_boolean_selector() const {
-            if (!this->box_) return;
-
-            if (!selection_) {
-                selection_ = std::make_shared<Vector>();
-            }
-
-            this->box_->determine_boolean_selector(-infinity_, infinity_, *selection_);
-        }
-
-        ////////////////////////////////////////////////////////////////////////////////////////////
-
-        void set_box_constraints(const std::shared_ptr<BoxConstraints> &box) { box_ = box; }
-        const std::shared_ptr<BoxConstraints> &box() { return box_; }
-
         void compute_diff_upper_bound(const Vector &x, Vector &diff) const {
             if (diff.empty()) {
                 diff.zeros(layout(x));
             }
 
-            auto ub_view = local_view_device(*box_->upper_bound());
+            auto ub_view = local_view_device(*this->box()->upper_bound());
             auto x_view = local_view_device(x);
             auto diff_view = local_view_device(diff);
 
@@ -379,7 +339,7 @@ namespace utopia {
                 diff.zeros(layout(x));
             }
 
-            auto lb_view = local_view_device(*box_->lower_bound());
+            auto lb_view = local_view_device(*this->box()->lower_bound());
             auto x_view = local_view_device(x);
             auto diff_view = local_view_device(diff);
 
@@ -392,24 +352,10 @@ namespace utopia {
                 });
         }
 
-        inline bool verbose() const { return verbose_; }
-        virtual void reset() {}
-
-        inline bool has_scaling_matrix() const { return static_cast<bool>(scaling_matrix_); }
-
-        inline void set_scaling_matrix(const std::shared_ptr<Matrix> &scaling_matrix) {
-            scaling_matrix_ = scaling_matrix;
-        }
-        inline const std::shared_ptr<Matrix> &scaling_matrix() const {
-            assert(has_scaling_matrix());
-            return scaling_matrix_;
-        }
-
         void read(Input &in) override {
             if (!Options()
                      .add_option(
                          "penalty_parameter", penalty_parameter_, "see Numerical Optimization - J. Nocedal, S. Wright.")
-                     .add_option("verbose", verbose_, "Enable/Disable verbose output.")
                      .parse(in)) {
                 return;
             }
@@ -423,23 +369,13 @@ namespace utopia {
             os << "-----------------------------------------\n";
             os << "utopia::ShiftedPenalty\n";
             os << "-----------------------------------------\n";
-            os << "verbose:\t" << verbose_ << "\n";
+            os << "penalty_parameter:\t" << penalty_parameter_ << "\n";
 
             os << "-----------------------------------------\n";
         }
 
         UTOPIA_NVCC_PRIVATE
-
-        // Barrier requirements
-        std::shared_ptr<BoxConstraints> box_;
-        std::shared_ptr<Transformation> transform_;
-        std::shared_ptr<Matrix> scaling_matrix_;
-        std::shared_ptr<Vector> selection_;
-
-        // Barrier parameters
         Scalar penalty_parameter_{1e-10};
-        bool verbose_{false};
-        Scalar infinity_{1e5};
     };
 }  // namespace utopia
 
