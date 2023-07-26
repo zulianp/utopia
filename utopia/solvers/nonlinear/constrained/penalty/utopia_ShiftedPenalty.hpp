@@ -105,8 +105,37 @@ namespace utopia {
         }
 
         bool penalty_value(const Vector &x, Vector &v) const {
+            Vector d;
             const Scalar penalty_parameter = penalty_parameter_;
-            //
+
+            if (box_->has_upper_bound()) {
+                d = *box_->upper_bound() - x;
+
+                auto d_view = const_local_view_device(d);
+                auto v_view = local_view_device(v);
+
+                parallel_for(
+                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                        const Scalar di = d_view.get(i);
+                        const Scalar active = di <= 0;
+                        v_view.set(i, active * di * di * penalty_parameter);
+                    });
+            }
+
+            if (box_->has_lower_bound()) {
+                // TODO Check
+                d = *box_->lower_bound() - x;
+
+                auto d_view = const_local_view_device(d);
+                auto v_view = local_view_device(v);
+
+                parallel_for(
+                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                        const Scalar di = d_view.get(i);
+                        const Scalar active = di >= 0;
+                        v_view.set(i, active * di * di * penalty_parameter);
+                    });
+            }
         }
 
         bool hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const {
