@@ -11,7 +11,7 @@
 
 namespace utopia {
 
-    template <class Matrix, class Vector>
+    template <class Matrix, class Vector = typename Traits<Matrix>::Vector>
     class ShiftedPenalty : public Configurable {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
@@ -22,16 +22,98 @@ namespace utopia {
         explicit ShiftedPenalty(const std::shared_ptr<BoxConstraints> &box) : box_(box) {}
         virtual ~ShiftedPenalty() = default;
 
-        virtual bool penalty_gradient(const Vector &x, Vector &g) const = 0;
-        virtual bool penalty_hessian(const Vector &x, Vector &H) const = 0;
-        virtual bool penalty_value(const Vector &x, Vector &v) const = 0;
-        virtual std::string function_type() const = 0;
+        bool penalty_gradient(const Vector &x, Vector &g) const {
+            Vector d;
+            const Scalar penalty_parameter = penalty_parameter_;
 
-        virtual bool hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const final {
+            if (box_->has_upper_bound()) {
+                d = *box_->upper_bound() - x;
+
+                auto d_view = const_local_view_device(d);
+                auto g_view = local_view_device(g);
+
+                parallel_for(
+                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                        const Scalar di = d_view.get(i);
+                        const Scalar gi = g_view.get(i);
+                        const Scalar active = di <= 0;
+                        const Scalar g_active = active * (gi - penalty_parameter * di);
+                        const Scalar gg = -(gi + g_active);
+                        g_view.set(i, gg);
+                        // diag_B_view.set(i, active * penalty_parameter);
+                    });
+            }
+
+            if (box_->has_lower_bound()) {
+                // TODO Check
+                d = *box_->lower_bound() - x;
+
+                auto d_view = const_local_view_device(d);
+                auto g_view = local_view_device(g);
+
+                parallel_for(
+                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                        const Scalar di = d_view.get(i);
+                        const Scalar gi = g_view.get(i);
+                        const Scalar active = di >= 0;
+                        const Scalar g_active = active * (gi - penalty_parameter * di);
+                        const Scalar gg = -(gi + g_active);
+                        g_view.set(i, gg);
+                        // diag_B_view.set(i, active * penalty_parameter);
+                    });
+            }
+        }
+
+        bool penalty_hessian(const Vector &x, Vector &H) const {
+            Vector d, diag_B;
+            const Scalar penalty_parameter = penalty_parameter_;
+
+            diag_B.zeros(layout(x));
+
+            if (box_->has_upper_bound()) {
+                d = *box_->upper_bound() - x;
+
+                auto d_view = const_local_view_device(d);
+                auto diag_B_view = local_view_device(diag_B);
+
+                parallel_for(
+                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                        const Scalar di = d_view.get(i);
+                        const Scalar active = di <= 0;
+
+                        diag_B_view.set(i, active * penalty_parameter);
+                    });
+            }
+
+            if (box_->has_lower_bound()) {
+                // TODO Check
+                d = *box_->lower_bound() - x;
+
+                auto d_view = const_local_view_device(d);
+                auto diag_B_view = local_view_device(diag_B);
+
+                parallel_for(
+                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                        const Scalar di = d_view.get(i);
+                        const Scalar active = di >= 0;
+
+                        diag_B_view.set(i, active * penalty_parameter);
+                    });
+            }
+
+            H.shift_diag(diag_B);
+        }
+
+        bool penalty_value(const Vector &x, Vector &v) const {
+            const Scalar penalty_parameter = penalty_parameter_;
+            //
+        }
+
+        bool hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const {
             return gradient(x, g) && hessian(x, H);
         }
 
-        virtual bool hessian(const Vector &x, Vector &H) const final {
+        bool hessian(const Vector &x, Vector &H) const {
             Vector work, h(layout(x), 0.);
 
             if (has_transform()) {
@@ -78,7 +160,7 @@ namespace utopia {
             return true;
         }
 
-        virtual bool hessian(const Vector &x, Matrix &H) const final {
+        bool hessian(const Vector &x, Matrix &H) const {
             Vector work, h(layout(x), 0.);
 
             if (has_transform()) {
@@ -118,7 +200,7 @@ namespace utopia {
         }
 
         /// FIXME shift is not considred in the energy value here
-        virtual bool value(const Vector &x, Scalar &value) const final {
+        bool value(const Vector &x, Scalar &value) const {
             Vector work, v(layout(x), 0.);
 
             if (has_transform()) {
@@ -157,7 +239,7 @@ namespace utopia {
             return true;
         }
 
-        virtual bool gradient(const Vector &x, Vector &grad) const final {
+        bool gradient(const Vector &x, Vector &grad) const {
             Vector work, g(layout(x), 0.);
 
             if (has_transform()) {
@@ -228,7 +310,7 @@ namespace utopia {
             return *selection_;
         }
 
-        void auto_selector(const bool val) { auto_selector_ = val; }
+        // void auto_selector(const bool val) { auto_selector_ = val; }
 
         void determine_boolean_selector() const {
             if (!this->box_) return;
@@ -254,7 +336,6 @@ namespace utopia {
             auto x_view = local_view_device(x);
             auto diff_view = local_view_device(diff);
 
-            auto zero = zero_;
             parallel_for(
                 local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
                     auto xi = x_view.get(i);
@@ -273,7 +354,6 @@ namespace utopia {
             auto x_view = local_view_device(x);
             auto diff_view = local_view_device(diff);
 
-            auto zero = zero_;
             parallel_for(
                 local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
                     auto xi = x_view.get(i);
@@ -284,7 +364,7 @@ namespace utopia {
         }
 
         inline bool verbose() const { return verbose_; }
-        virtual void reset() { current_penalty_parameter_ = penalty_parameter_; }
+        virtual void reset() {}
 
         inline bool has_scaling_matrix() const { return static_cast<bool>(scaling_matrix_); }
 
@@ -314,8 +394,6 @@ namespace utopia {
             os << "-----------------------------------------\n";
             os << "utopia::ShiftedPenalty\n";
             os << "-----------------------------------------\n";
-
-            os << "auto_selector:\t" << auto_selector_ << "\n";
             os << "verbose:\t" << verbose_ << "\n";
 
             os << "-----------------------------------------\n";
@@ -332,6 +410,7 @@ namespace utopia {
         // Barrier parameters
         Scalar penalty_parameter_{1e-10};
         bool verbose_{false};
+        Scalar infinity_{1e5};
     };
 }  // namespace utopia
 

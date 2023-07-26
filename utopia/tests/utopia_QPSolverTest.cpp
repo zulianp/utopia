@@ -23,6 +23,7 @@
 
 #include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_PrimalInteriorPointSolver_impl.hpp"
+#include "utopia_ShiftedPenalty.hpp"
 #include "utopia_ShiftedPenaltyQPSolver_impl.hpp"
 
 #ifdef UTOPIA_WITH_PETSC
