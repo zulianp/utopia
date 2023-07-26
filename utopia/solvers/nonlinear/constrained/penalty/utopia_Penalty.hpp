@@ -6,6 +6,7 @@
 #include "utopia_Function.hpp"
 #include "utopia_Layout.hpp"
 #include "utopia_Options.hpp"
+#include "utopia_TransformedBoxConstraints.hpp"
 
 #include <limits>
 
@@ -13,6 +14,7 @@ namespace utopia {
 
     template <class Matrix, class Vector = typename Traits<Matrix>::Vector>
     class Penalty : public Configurable {
+    public:
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using BoxConstraints = utopia::BoxConstraints<Vector>;
@@ -71,7 +73,7 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////////////////////////////////
 
         void set_box_constraints(const std::shared_ptr<BoxConstraints> &box) { box_ = box; }
-        const std::shared_ptr<BoxConstraints> &box() { return box_; }
+        const std::shared_ptr<BoxConstraints> &box() const { return box_; }
         inline bool verbose() const { return verbose_; }
         virtual void reset() {}
 

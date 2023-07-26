@@ -91,7 +91,7 @@ namespace utopia {
 
         void set_selection(const std::shared_ptr<Vector> &selection) override {
             function_->set_selection(selection);
-            function_->auto_selector(false);
+            // function_->auto_selector(false);
         }
 
         virtual void set_linear_solver(const std::shared_ptr<LinearSolver> &linear_solver) {
