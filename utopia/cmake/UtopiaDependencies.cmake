@@ -178,6 +178,12 @@ if(MPI_CXX_COMPILER)
   set(CMAKE_CXX_COMPILER_DEBUG ${MPI_CXX_COMPILER})
 endif()
 
+
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
+# #################LOCAL_INSTALL_OPTIONS######################
+
 if(UTOPIA_INSTALL_PETSC
    AND NOT CYGWIN
    AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
@@ -204,7 +210,8 @@ if(UTOPIA_ENABLE_PETSC)
     # message("petsc dir = ${PETSC_DIR}")
     # find_package(PETSc)
     set(PETSC_FOUND FALSE)
-    find_package(PETSc PATHS ${PETSC_DIR} NO_DEFAULT_PATH)
+    message(STATUS ${PETSC_INSTALL_DIR})
+    find_package(PETSc REQUIRED PATHS ${PETSC_INSTALL_DIR})
   endif()
 
   if(PETSC_FOUND)
@@ -335,7 +342,7 @@ if(UTOPIA_ENABLE_TRILINOS)
     list(APPEND UTOPIA_DEP_INCLUDES ${Trilinos_INCLUDE_DIRS})
     list(APPEND UTOPIA_DEP_LIBRARIES ${UTOPIA_TRILINOS_DEPS})
 
-    message(STATUS "UTOPIA_DEP_INCLUDES${UTOPIA_DEP_LIBRARIES}")
+    # message(STATUS "UTOPIA_DEP_INCLUDES${UTOPIA_DEP_LIBRARIES}")
 
     find_package(TpetraExt)
     if(TRILINOS_TPETRAEXT_FOUND)
