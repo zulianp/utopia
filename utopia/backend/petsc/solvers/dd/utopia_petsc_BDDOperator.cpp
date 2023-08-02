@@ -273,6 +273,7 @@ namespace utopia {
         in.get("block_size", impl_->block_size);
         // in.get("handle_linear_constraints", impl_->handle_linear_constraints);
         in.get("num_blocks", impl_->num_blocks);
+        in.get("schur_complement", impl_->schur_complement);
     }
 
     template <class Matrix, class Vector>
