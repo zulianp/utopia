@@ -2,11 +2,11 @@
 app: ShearTestSingleLevel
 # Output 
 #output-path: Output/0_ShearTest_VD_AT1_Ambati_p01_dt0001_t00001_l0075_m1_HR8000_PFnof
-output-path: Output/Shear/Shear_VD_AT1_p01_dt0001_t00001_l0075_m1_HR8000
+output-path: Output/Shear/Shear_VD_AT1_p01_dt0001_t00001_l0075_m4_Wth1_HR12000
 save_output: true
 # Mesh specification -----------------------------------------
-nx: 101
-ny: 101
+nx: 401
+ny: 401
 #nz: 2
 x_min: 0
 x_max: 1  
@@ -21,6 +21,7 @@ disp_x: 1.0
 # Phase field formulation
 #length_scale: 0.004 Ambati formulation
 length_scale: 0.0075 #Shear test 1 a) from Miehe (l = half of what Miehe assigns)
+initial_crack_width: 1 #number of mesh size on each side 0.6 before
 with_damage: true
 use_penalty_irreversibility: true
 penalty_tol: 0.01				#0.01 = Adequate Pen (De Lorenzis Paper)
@@ -38,7 +39,7 @@ hetero_params: HomogeneousBar
 fix_phase_field_on_sides: false
 ## Time stepping -------------------------------------------------------
 dt: 0.0001 #Ambati shear dt = 1e-5
-final_time: 0.02  
+final_time: 0.02
 # dynamic time stepping with fracture energy
 fracture_energy_time_stepping: true
 frac_energy_max_change: 1.03			#Maximum allowable change in fracture energy (otherwise time step is cut)
@@ -70,7 +71,7 @@ use_box_constraints: false  # TR method with penalty, run up to 5 cores
 solver:
   verbose: false
   mini_verbose: true
-  max_it: 8000
+  max_it: 12000
   atol: 1e-8
   atol_suff: 1e-8
   rtol: 1e-16
