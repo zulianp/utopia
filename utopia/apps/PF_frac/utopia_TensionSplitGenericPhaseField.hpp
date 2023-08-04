@@ -634,7 +634,6 @@ namespace utopia {
             CoefStrain<USpace, Quadrature> strain(u_coeff, q);
 
             // reference based
-            ShapeStress<USpace, Quadrature> p_stress(U, q, this->params_.mu, this->params_.lambda);
             Strain<USpace, Quadrature> ref_strain_u(U, q);
 
             {
@@ -657,9 +656,6 @@ namespace utopia {
                 // auto v_grad_shape_view = v_grad_shape.view_device();
                 auto c_shape_view = c_shape.view_device();
                 auto c_grad_shape_view = c_grad_shape.view_device();
-
-                // FIXME
-                auto p_stress_view = p_stress.view_device();
 
                 auto H_view = this->space_.assembly_view_device(H);
                 auto ref_strain_u_view = ref_strain_u.view_device();
@@ -709,9 +705,6 @@ namespace utopia {
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             compute_positive_quantities(
                                 this->params_, el_strain.strain[qp], stress_positive, tr_strain_u, eep); //Positive Strain energy  calculated here
-
-                            //const Scalar eep = elastic_energy(this->params_, c[qp], tr_strain_u, el_strain.strain[qp]);
-                            //const Scalar eep_fix = strain_energy(this->params_, tr_strain_u, el_strain.strain[qp]);
 
                             // pragma GCCunroll(C_NDofs)
                             for (SizeType l = 0; l < C_NDofs; ++l) {

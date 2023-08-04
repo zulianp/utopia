@@ -41,15 +41,15 @@ namespace utopia {
             if (!ok) {
                 utopia::err() << "------ Failure -------\n";
                 utopia::err() << "------ Gradient ------\n";
-                // utopia::err() << "Expected:\n";
                 std::cerr << "error: " << diff << std::endl;
 
+                utopia::err() << "Expected:\n";
                 rename("g_fd", gfd);
-                // disp(gfd);
+                disp(gfd);
                 write("G_fd.m", gfd);
 
-                // utopia::err() << "Actual:\n";
-                // disp(g);
+                utopia::err() << "Actual:\n";
+                 disp(g);
                 rename("g", const_cast<Vector &>(g));
                 write("G.m", g);
 

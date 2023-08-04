@@ -33,11 +33,23 @@ namespace utopia {
         using HeteroParamsFunction = std::function<void(const Point &, Scalar &, Scalar &, Scalar &, Scalar &)>;
 
         void read(Input &in) override {
+
+            // Getting length of model (it is a material parameter too! - used in penalization)
+            Scalar xyzmin, xyzmax;
+            in.get("x_min", xyzmin);
+            in.get("x_max", xyzmax);
+            Length_x = xyzmax - xyzmin;
+            in.get("y_min", xyzmin);
+            in.get("y_max", xyzmax);
+            Length_y = xyzmax - xyzmin;
+            in.get("z_min", xyzmin);
+            in.get("z_max", xyzmax);
+            Length_z = xyzmax - xyzmin;
+
             in.get("a", a);
             in.get("b", b);
             in.get("d", d);
             in.get("f", f);
-            in.get("length_scale", length_scale);
             in.get("regularization", regularization);
             in.get("pressure", pressure);
             in.get("use_pressure", use_pressure);
@@ -48,13 +60,6 @@ namespace utopia {
 
             in.get("use_crack_set_irreversibiblity", use_crack_set_irreversibiblity);
             in.get("crack_set_tol", crack_set_tol);
-
-            in.get("mu", mu);
-            in.get("lambda", lambda);
-            in.get("nu", nu);
-            in.get("E", E);
-            in.get("fracture_toughness", fracture_toughness);
-            in.get("tensile_strength", tensile_strength);
 
             in.get("l_0", l_0);
             in.get("pressure0", pressure0);
@@ -69,17 +74,36 @@ namespace utopia {
             in.get("mobility", mobility);
             in.get("use_mobility", use_mobility);
 
-            // Getting length of model (it is a material parameter too! - used in penalization)
-            Scalar xyzmin, xyzmax;
-            in.get("x_min", xyzmin);
-            in.get("x_max", xyzmax);
-            Length_x = xyzmax - xyzmin;
-            in.get("y_min", xyzmin);
-            in.get("y_max", xyzmax);
-            Length_y = xyzmax - xyzmin;
-            in.get("z_min", xyzmin);
-            in.get("z_max", xyzmax);
-            Length_z = xyzmax - xyzmin;
+
+
+            //MATERIAL PARAMETERS =============================================
+            in.get("length_scale", length_scale);
+            in.get("mu", mu);
+            in.get("lambda", lambda);
+            in.get("nu", nu);
+            in.get("E", E);
+            in.get("fracture_toughness", fracture_toughness);
+            in.get("tensile_strength", tensile_strength);
+
+            // Initialising other parameters
+            if (nu != 0.0 && E != 0.0) {
+                initialise_Lame_parameters();
+            } else {
+                initialise_Young_Poisson_parameters();
+            }
+//            if (mpi_world_rank() == 0) {
+//                utopia::out() << "E: " << E << "  nu: " << nu << "  Gc: " << fracture_toughness << " mu: " << mu
+//                              << "  lambda: " << lambda << " f_t: " << tensile_strength << "\n";
+//            }
+
+            // Must be done after lambda and mu
+            fill_in_isotropic_elast_tensor();
+            kappa = lambda + (2.0 * mu / Dim);
+
+            //END OF MATERIAL PARAMETERS =============================================
+
+
+
 
             std::string type;
             in.get("hetero_params", type);
@@ -140,8 +164,6 @@ namespace utopia {
                 Scalar nx;  // mesh resoultion in x
                 in.get("nx", nx);
 
-                Scalar tough_factor;
-                in.get("tough_factor", tough_factor);
 
                 Scalar xmin, xmax, ymin, ymax;
                 in.get("x_min", xmin);
@@ -149,38 +171,10 @@ namespace utopia {
                 in.get("y_min", ymin);
                 in.get("y_max", ymax);
 
-                bool boundary_protection(false);
-                in.get("boundary_protection", boundary_protection);
-                Scalar layer_width(0);
-                in.get("layer_width", layer_width);
-
-                const Scalar fracture_toughness_in = fracture_toughness;
-
-                Scalar mesh_width = 1.0;
-                in.get("mesh_width", mesh_width);
-                mesh_width *= 0.5 * (xmax - xmin) / nx;
-
-                hetero_params = [fracture_toughness_in,
-                                 tough_factor,
-                                 xmin,
-                                 xmax,
-                                 ymin,
-                                 ymax,
-                                 boundary_protection,
-                                 layer_width,
-                                 mesh_width](
-                                    const Point &p, Scalar &, Scalar &, Scalar &fracture_toughness_out, Scalar &) {
-                    if (p[0] < 0.5 * (xmax - xmin) + mesh_width && p[0] > 0.5 * (xmax - xmin) - mesh_width) {
-                        fracture_toughness_out = tough_factor * fracture_toughness_in;
-                    }
-
-                    if (boundary_protection) {
-                        if (p[0] < xmin + layer_width || p[0] > xmax - layer_width)
-                            fracture_toughness_out = fracture_toughness_in * 2.0;
-                    }
+                hetero_params = [](const Point &, Scalar &, Scalar &, Scalar &, Scalar &) {
                 };
 
-            } else if (type == "Hobbs") {
+            } else if (type == "SingleSedimentaryLayer") {
                 Scalar bottom_layer_height_;
                 Scalar top_layer_height_;
                 bool include_interface_layer{false};
@@ -224,11 +218,7 @@ namespace utopia {
                 std::normal_distribution<double> distribution(0., toughness_deviation);
                 std::default_random_engine generator;
 
-                bool boundary_protection(false);
-                Scalar layer_width(0);
                 Scalar xmin, xmax, ymin, ymax;
-                in.get("boundary_protection", boundary_protection);
-                in.get("layer_width", layer_width);
                 in.get("x_min", xmin);
                 in.get("x_max", xmax);
                 in.get("y_min", ymin);
@@ -247,12 +237,10 @@ namespace utopia {
                                  l_,
                                  bottom_layer_height_,
                                  top_layer_height_,
-                                 boundary_protection,
                                  xmin,
                                  xmax,
                                  ymin,
                                  ymax,
-                                 layer_width,
                                  use_random,
                                  distribution,
                                  generator](const Point &p,
@@ -282,11 +270,6 @@ namespace utopia {
                         tensile_strength = ft1;
                     }
 
-                    if (boundary_protection) {
-                        if (p[0] < xmin + layer_width || p[0] > xmax - layer_width || p[1] < ymin + layer_width ||
-                            p[1] > ymax - layer_width)
-                            fracture_toughness_out = Gc2;
-                    }
                 };
             } else if (type == "DoubleLayer") {
                 Scalar bottom_layer_height_, bottom_layer_height2_;
@@ -398,6 +381,33 @@ namespace utopia {
                     }
                 };
             }  // end of double layer
+            else if (type == "BilinearTest") {
+
+                Scalar xmin, xmax, ymin, ymax;
+                in.get("x_min", xmin);
+                in.get("x_max", xmax);
+                in.get("y_min", ymin);
+                in.get("y_max", ymax);
+
+                initialise_Lame_parameters();
+                Scalar mu_base = this->mu;
+                Scalar lambda_base = this->lambda;
+                Scalar FractureTough_base = this->fracture_toughness;
+
+                hetero_params = [xmin,
+                                 xmax,
+                                 ymin,
+                                 ymax,
+                                 mu_base,
+                                 lambda_base,
+                                 FractureTough_base](
+                                    const Point &p, Scalar & mu, Scalar & lambda, Scalar &fracture_tough, Scalar &) {
+                        mu             = mu_base            * (1.0 + p(0)/xmax + p(1)/ymax);
+                        lambda         = lambda_base        * (1.0 + p(0)/xmax + p(1)/ymax);
+                        fracture_tough = FractureTough_base * (1.0 + p(0)/xmax + p(1)/ymax);
+                };
+
+            } // end of Bilinear test
 
             // Initialising other parameters
             if (nu != 0.0 && E != 0.0) {
@@ -430,7 +440,7 @@ namespace utopia {
               nu(0.0),
               E(0.0),
               l_0(1.0),
-              pressure0(1e-3),
+              pressure0(0.0),
               tensile_strength(0.0),
               regularization(1e-10),
               pressure(0.0),
@@ -674,7 +684,7 @@ namespace utopia {
 
         // elastic energy specified by inherited class
         virtual bool elastic_energy_in_middle_layer(const Vector & /*x_const*/, Scalar & /*val*/) const {
-            std::cout << "GenericPhaseFieldFormulation::elastic_energy_in_middle_layer(), Please define method in "
+            std::cout << "PhaseFieldFracBase::elastic_energy_in_middle_layer(), Please define method in "
                          "derived class!"
                       << std::endl;
             exit(1);
@@ -682,7 +692,7 @@ namespace utopia {
 
         // elastic energy specified by inherited class
         virtual bool fracture_energy_in_middle_layer(const Vector & /*x_const*/, Scalar & /*val*/) const {
-            std::cout << "GenericPhaseFieldFormulation::fracture_energy_in_middle_layer(), Please define method in "
+            std::cout << "PhaseFieldFracBase::fracture_energy_in_middle_layer(), Please define method in "
                          "derived class!"
                       << std::endl;
             exit(1);
@@ -986,6 +996,7 @@ namespace utopia {
             this->space_.subspace(1, U);
 
             WSpace C(this->space_.mesh().clone(1));
+            CSpace CC = this->space_.subspace(0);
 
             /// Creating strain subspace
 
@@ -1009,9 +1020,11 @@ namespace utopia {
             this->space_.global_to_local(x_const, *this->local_x_);  // Gets the vector local to the MPI processor
             auto u_coeff = std::make_shared<Coefficient<USpace>>(
                 U, this->local_x_);  // Sets stage for getting accessing the element node variables
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(CC, this->local_x_);
 
             // getting FEFunction Space which contains objects for shape function manipulation
             FEFunction<USpace> u_fun(u_coeff);
+            FEFunction<CSpace> c_fun(c_coeff);
 
             {
                 ////////////////////////////////////////////////////////////////////////////
@@ -1022,6 +1035,7 @@ namespace utopia {
                 // Creating objects for Nodal and Gradient interpolation
                 auto u_val = u_fun.value(q);
                 auto u_grad = u_fun.gradient(q);
+                auto c_val = c_fun.value(q);
 
                 // What is thAis for ???
                 auto differential = C.differential(q);
@@ -1037,7 +1051,9 @@ namespace utopia {
                 auto U_view = U.view_device();
                 auto C_view = C.view_device();
                 auto S_view = S.view_device();
+                auto CC_view = CC.view_device();  // EP
 
+                auto c_view = c_val.view_device();  // EP
                 auto u_view = u_val.view_device();
 
                 auto strain_view = strain.view_device();
@@ -1082,6 +1098,12 @@ namespace utopia {
                         CElem c_e;
                         C_view.elem(i, c_e);  // getting element for storing wieghts in CSpace
 
+                        CElem cc_e;
+                        CC_view.elem(i, cc_e);  // getting element for storing wieghts in CSpace
+
+                        StaticVector<Scalar, NQuadPoints> c;
+                        c_view.get(cc_e, c);
+
                         auto dx = differential_view.make(c_e);
                         auto c_shape_fun_el = c_shape_view.make(c_e);  // shape functions (scalar)
 
@@ -1113,7 +1135,7 @@ namespace utopia {
 
                                 strain_value +=
                                     epsi * shape * weight;  // matrix of strains added to existing nodal strain (
-                                stress_value += stress * shape * weight;  // Sum stress at integration point
+                                stress_value += quadratic_degradation(this->params_, c[qp]) * stress * shape * weight;  // Sum stress at integration point
 
                                 // getting nodal weight for normalisation
                                 weight_el_vec[n] += shape * weight;
@@ -1516,7 +1538,7 @@ namespace utopia {
         Scalar get_dt() const { return dt_; }
 
         virtual void write_to_file(const std::string &output_path, const Vector &x, const Scalar time) {
-            space_.write(output_path + "_" + std::to_string(time) + ".vtr", x);
+            space_.write(output_path + "_X_" + std::to_string(time) + ".vtr", x);
         }
 
         std::vector<double> WriteParametersToVector() {

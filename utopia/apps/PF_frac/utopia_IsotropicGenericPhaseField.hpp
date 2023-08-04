@@ -888,7 +888,7 @@ namespace utopia {
                                                          const Stress &stress,
                                                          const FullStrain &full_strain,
                                                          const Scalar &c_trial_fun) {
-            return PFFormulation::degradation_deriv(phase_field_value, params) * c_trial_fun *
+            return (1.0-params.regularization)*PFFormulation::degradation_deriv(phase_field_value, params) * c_trial_fun *
                    inner(stress, full_strain);
         }
 
@@ -917,11 +917,6 @@ namespace utopia {
                                                                        const Scalar &trace,
                                                                        const Strain &strain) {
             Scalar strain_en = strain_energy(params, trace, strain);
-            if (PFFormulation::enforce_min_crack_driving_force) {
-                strain_en = PFFormulation::min_crack_driving_force(params) > strain_en
-                                ? PFFormulation::min_crack_driving_force(params)
-                                : strain_en;
-            }
             return (PFFormulation::degradation_deriv(phase_field_value, params) * (1.0 - params.regularization)) *
                    strain_en;
         }

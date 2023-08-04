@@ -206,6 +206,7 @@ namespace utopia {
 
             //E.P: setting solver metrics for later printing
             gnorm_ = g_norm;
+            iterations_ = it;
 
             return true;
         }
@@ -221,6 +222,7 @@ namespace utopia {
         }
 
         Scalar get_gnorm(){return gnorm_;}
+        Scalar get_iterations(){return iterations_ ; }
 
     private:
         Scalar get_pred(const Vector &g_minus, const Matrix &B, const Vector &p_k) {
@@ -229,6 +231,7 @@ namespace utopia {
 
         Vector g_minus_;
         Scalar gnorm_;
+        Scalar iterations_;
     };
 
 }  // namespace utopia

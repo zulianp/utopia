@@ -310,6 +310,11 @@ namespace utopia {
                     UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
                     0  // alpha
                 );
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::right(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
             }
         }
 
@@ -472,19 +477,18 @@ namespace utopia {
     };
 
     template <class FunctionSpace>
-    class SedimentaryLayers : public BCSetup<FunctionSpace> {
+    class SedimentaryLayers_BC : public BCSetup<FunctionSpace> {
     public:
         using Scalar = typename FunctionSpace::Scalar;
         using Vector = typename FunctionSpace::Vector;
 
-        SedimentaryLayers(FunctionSpace &space, const Scalar &Top_disp_y = 1.0, const Scalar &Right_disp_x = 1.0)
+        SedimentaryLayers_BC(FunctionSpace &space, const Scalar &Top_disp_y = 1.0, const Scalar &Right_disp_x = 1.0)
             : BCSetup<FunctionSpace>(space), disp_y_(Top_disp_y), disp_x_(Right_disp_x) {}
 
         void read(Input &in) override {
             in.get("disp_y", disp_y_);
             in.get("disp_x", disp_x_);
             in.get("fix_phase_field_on_sides", fix_phase_field_);
-            in.get("set_damage_to_zero_in_softer_layers", set_damage_to_zero_in_softer_layers_ );
         }
 
         void emplace_time_dependent_BC(const Scalar &time) override {
@@ -531,7 +535,6 @@ namespace utopia {
         Scalar disp_y_;
         Scalar disp_x_;
         bool   fix_phase_field_{false};
-        bool   set_damage_to_zero_in_softer_layers_{false};
     };
 
     template <class FunctionSpace>
@@ -713,6 +716,8 @@ namespace utopia {
             in.get("top_layer_height"   , y_max_);
             in.get("bottom_layer_height2", y_min2_);
             in.get("top_layer_height2"   , y_max2_);
+            in.get("allow_phase_field_close_to_layer", allow_pf_close_to_layer);
+            in.get("length_scale", length_scale);
         }
 
         void emplace_time_dependent_BC(const Scalar &) override {
@@ -721,8 +726,13 @@ namespace utopia {
 
             this->space_.emplace_constraint(
                 UTOPIA_LAMBDA(const Point &p)->bool {
-                    return  ( !(p(1) >= y_min_  && p(1) <= y_max_) &&   //Not in layer 1  and
-                              !(p(1) > y_min2_  && p(1) < y_max2_) );    //Not in layer 2
+                    if (allow_pf_close_to_layer == false){
+                        return  ( !(p(1) >= y_min_  && p(1) <= y_max_) &&   //Not in layer 1  and
+                                  !(p(1) > y_min2_  && p(1) < y_max2_) );    //Not in layer 2
+                    } else {
+                        return  ( !(p(1) >= y_min_ - 2.0*length_scale && p(1) <= y_max_ + 2.0*length_scale) &&   //Not in layer 1  and
+                                  !(p(1) > y_min2_ - 2.0*length_scale && p(1) < y_max2_ + 2.0*length_scale) );    //Not in layer 2
+                            }
                 },
                 UTOPIA_LAMBDA(const Point &)->Scalar { return val_; },
                 0);
@@ -732,6 +742,8 @@ namespace utopia {
         Scalar  y_min_, y_max_;
         Scalar  y_min2_, y_max2_;
         Scalar val_;
+        Scalar length_scale;
+        bool allow_pf_close_to_layer{false};
     };
 
     template <class FunctionSpace, class DirichletBC, class Constraints>

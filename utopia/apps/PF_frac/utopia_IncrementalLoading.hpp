@@ -313,6 +313,7 @@ namespace utopia {
                 }
             }
 
+            //E.P CHECK - What is this doing here.
             fe_problem_->build_irreversility_constraint(this->lb_);
 
             UTOPIA_TRACE_REGION_END("IncrementalLoading::prepare_for_solve(...)");
@@ -385,8 +386,6 @@ namespace utopia {
 
                     if (this->pressure0_ != 0.0) {
                         this->write_to_file(space_, 1e-5 * this->time_);
-                    } else {
-                        this->write_to_file(space_, this->time_);
                     }
 
                     // Advance time step
@@ -426,12 +425,13 @@ namespace utopia {
 
                 fe_problem_->elastic_energy(this->solution_, elastic_energy);
                 fe_problem_->elastic_energy_in_middle_layer(this->solution_, ela_en_mid);
-                fe_problem_->fracture_energy_in_middle_layer(this->solution_, fra_en_mid);
+//                fe_problem_->fracture_energy_in_middle_layer(this->solution_, fra_en_mid);
 
                 fe_problem_->compute_tcv(this->solution_, tcv);
 
                 if (!use_box_constraints_) {
                     residual = tr_solver_->get_gnorm();
+                    iterations = tr_solver_->get_iterations();
                 }
 
                 if (FunctionSpace::Dim == 3) {
@@ -448,7 +448,8 @@ namespace utopia {
                                                              "elast_en_mid_layer",
                                                              "frac_en_mid_layer",
                                                              "total_crack_vol",
-                                                             "gnorm"});
+                                                             "gnorm",
+                                                             "iterations"});
                     } else {
                         writer.open_file(this->csv_file_name_);
                     }
@@ -460,7 +461,8 @@ namespace utopia {
                                                     ela_en_mid,
                                                     fra_en_mid,
                                                     tcv,
-                                                    residual});
+                                                    residual,
+                                                    iterations});
                     writer.close_file();
                 }
             }
@@ -472,8 +474,8 @@ namespace utopia {
 
             // just for testing purposes...
             //fe_problem_->use_crack_set_irreversibiblity(true);
-            //fe_problem_->turn_off_cu_coupling(true);
-            // fe_problem_->turn_off_uc_coupling(true);
+//            fe_problem_->turn_off_cu_coupling(true);
+//            fe_problem_->turn_off_uc_coupling(true);
 
             this->init(space_);
 
@@ -521,7 +523,6 @@ namespace utopia {
                     conv_reason = sol_status.reason;
                 }
 
-                exit(0);
 
                 // ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
