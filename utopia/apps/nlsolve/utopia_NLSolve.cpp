@@ -67,6 +67,8 @@ namespace utopia {
         const Communicator &comm() const override { return comm_; }
 
         bool gradient(const Vector_t &x, Vector_t &g) const override {
+            UTOPIA_TRACE_SCOPE("PluginFunction::gradient");
+
             if (g.empty()) {
                 g.zeros(layout(x));
             } else {
@@ -98,6 +100,7 @@ namespace utopia {
         }
 
         bool hessian(const Vector_t &x, Matrix_t &H) const override {
+            UTOPIA_TRACE_SCOPE("PluginFunction::hessian");
             // if (H.empty()) {
             ptrdiff_t nlocal;
             ptrdiff_t nglobal;
@@ -162,17 +165,34 @@ void nlsolve(utopia::Input &in) {
 
     if (solver_type == "ConjugateGradient") {
         // Linear
-
         Vector_t g;
         fun.create_vector(g);
         fun.gradient(x, g);
+        g = -g;
+
+        Vector_t c;
+        fun.create_vector(c);
+        c.set(0.0);
 
         utopia::ConjugateGradient<Matrix_t, Vector_t, utopia::HOMEMADE> cg;
+        cg.apply_gradient_descent_step(true);
         cg.read(in);
 
         // x is used for nonlinear material for computing the entries of the Hessian
         fun.update(x);
-        cg.solve(fun, g, x);
+
+        bool matrix_free = true;
+        in.get("matrix_free", matrix_free);
+
+        if (matrix_free) {
+            cg.solve(fun, g, c);
+        } else {
+            Matrix_t H;
+            fun.hessian(x, H);
+            cg.solve(H, g, c);
+        }
+
+        x += c;
     } else if (solver_type == "GradientDescent") {
         auto gd = std::make_shared<utopia::GradientDescent<Vector_t>>();
         gd->damping_parameter(0.9);
@@ -186,10 +206,12 @@ void nlsolve(utopia::Input &in) {
             // auto cg = std::make_shared<utopia::ConjugateGradient<Matrix_t, Vector_t, utopia::HOMEMADE>>();
             // cg->verbose(true);
 
-            auto ls = std::make_shared<utopia::KSPSolver<Matrix_t, Vector_t>>();
-            ls->pc_type(PCHYPRE);
-            ls->ksp_type(KSPCG);
-            ls->verbose(true);
+            // auto ls = std::make_shared<utopia::KSPSolver<Matrix_t, Vector_t>>();
+            // ls->pc_type(PCHYPRE);
+            // ls->ksp_type(KSPBICG);
+            // ls->verbose(true);
+
+            auto ls = std::make_shared<utopia::Factorization<Matrix_t, Vector_t>>();
 
             newton->set_linear_solver(ls);
             nlsolver = newton;
