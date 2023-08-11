@@ -3,6 +3,8 @@
 
 #include "utopia.hpp"
 
+// #include "utopia_TrivialPreconditioners.hpp"
+
 #ifdef UTOPIA_ENABLE_ISOLVER
 #ifdef UTOPIA_WITH_PETSC
 
@@ -37,6 +39,8 @@ namespace utopia {
         }
 
         bool apply(const Vector_t &input, Vector_t &output) const override {
+            UTOPIA_TRACE_SCOPE("PluginFunction::apply");
+
             if (!current_solution_) {
                 assert(false);
                 return false;
@@ -158,13 +162,14 @@ void nlsolve(utopia::Input &in) {
     Vector_t x;
     fun.create_vector(x);
     x.set(0.);
-    fun.project_onto_feasibile_region(x);
 
     std::string solver_type = "Newton";
     in.get("solver_type", solver_type);
 
     if (solver_type == "ConjugateGradient") {
         // Linear
+        fun.project_onto_feasibile_region(x);
+
         Vector_t g;
         fun.create_vector(g);
         fun.gradient(x, g);
@@ -189,6 +194,16 @@ void nlsolve(utopia::Input &in) {
         } else {
             Matrix_t H;
             fun.hessian(x, H);
+
+            // auto prec = std::make_shared<utopia::ILU<Matrix_t, Vector_t>>();
+            // utopia::InputParameters params;
+            // params.set("block_size", 4);
+            // params.set("max_it", 4);
+            // prec->read(params);
+            // cg.set_preconditioner(prec);
+
+            cg.set_preconditioner(std::make_shared<utopia::InvDiagPreconditioner<Matrix_t, Vector_t>>());
+
             cg.solve(H, g, c);
         }
 
