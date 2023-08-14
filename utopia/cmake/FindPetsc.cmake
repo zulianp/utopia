@@ -22,7 +22,7 @@
 # For details see the accompanying COPYING-CMAKE-SCRIPTS file.
 #
 
-cmake_policy(VERSION 3.3)
+cmake_policy(VERSION 3.5)
 
 set(PETSC_VALID_COMPONENTS
   C
@@ -343,4 +343,4 @@ include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (PETSc
   REQUIRED_VARS PETSC_INCLUDES PETSC_LIBRARIES PETSC_EXECUTABLE_RUNS
   VERSION_VAR PETSC_VERSION
-  FAIL_MESSAGE "PETSc could not be found.  Be sure to set PETSC_DIR and PETSC_ARCH.")
+  FAIL_MESSAGE "PETSc could not be found.  Be sure to set PETSC_DIR and PETSC_ARCHPETSC_ARC.")

@@ -1,4 +1,5 @@
 #include "utopia_Base.hpp"
+#include "utopia_ConjugateGradient.hpp"
 #include "utopia_InputParameters.hpp"
 #include "utopia_polymorphic_LinearSolver.hpp"
 
@@ -12,6 +13,7 @@ using Solver_t = utopia::KSPSolver<utopia::PetscMatrix, utopia::PetscVector>;
 // using Solver_t = utopia::BDDLinearSolver<utopia::PetscMatrix, utopia::PetscVector>;
 #else
 #ifdef UTOPIA_ENABLE_TRILINOS
+#include "utopia_trilinos_Types.hpp"
 using Matrix_t = utopia::TpetraMatrixd;
 using Solver_t = utopia::ConjugateGradient<utopia::TpetraMatrixd, utopia::TpetraVectord>;
 #else

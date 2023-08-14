@@ -104,9 +104,11 @@ if(NOT CYGWIN)
     )
 
     set_target_properties(petsc PROPERTIES EXCLUDE_FROM_ALL TRUE)
-    set(PETSC_DIR ${PETSC_INSTALL_DIR})
-    set(ENV{PETSC_DIR} ${PETSC_INSTALL_DIR})
 
+    if(PETSC_FOUND)
+      set(PETSC_DIR ${PETSC_INSTALL_DIR})
+      set(ENV{PETSC_DIR} ${PETSC_INSTALL_DIR})
+    endif()
     # if(NOT PETC_FOUND)
     #   find_package(PETSc REQUIRED)
     # endif()
