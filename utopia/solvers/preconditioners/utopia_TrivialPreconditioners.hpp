@@ -7,6 +7,8 @@
 #include "utopia_Traits.hpp"
 #include "utopia_make_unique.hpp"
 
+#include "utopia_ElementWisePseudoInverse.hpp"
+
 #include <cassert>
 #include <memory>
 
@@ -37,7 +39,9 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();
 
             UTOPIA_NO_ALLOC_BEGIN("InvDiagPreconditioner:region2");
-            d = 1.0 / d;
+            // d = 1.0 / d;
+
+            e_pseudo_inv(d, d);
             UTOPIA_NO_ALLOC_END();
         }
 

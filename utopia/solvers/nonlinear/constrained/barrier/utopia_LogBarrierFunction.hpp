@@ -293,7 +293,7 @@ namespace utopia {
             if (barrier()) barrier()->compute_diff_lower_bound(x, diff);
         }
 
-        void auto_selector(const bool val) { barrier()->auto_selector(val); }
+        // void auto_selector(const bool val) { barrier()->auto_selector(val); }
 
         LogBarrierFunction() : barrier_(std::make_shared<LogBarrier<Matrix, Vector>>()) {}
 

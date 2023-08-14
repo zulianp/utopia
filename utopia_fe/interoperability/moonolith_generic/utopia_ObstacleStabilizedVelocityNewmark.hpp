@@ -26,7 +26,7 @@ namespace utopia {
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
         using Layout_t = typename Traits<FunctionSpace>::Layout;
 
-        using LogBarrierBase = utopia::LogBarrierBase<Matrix_t, Vector_t>;
+        using Penalty = utopia::Penalty<Matrix_t, Vector_t>;
 
         void read(Input &in) override {
             Super::read(in);
@@ -56,7 +56,7 @@ namespace utopia {
             ////////////////////////////////////////////////////////////////////////////////
             std::string function_type;
             in.get("function_type", function_type);
-            barrier_ = LogBarrierFactory<Matrix_t, Vector_t>::new_log_barrier(function_type);
+            barrier_ = PenaltyFactory<Matrix_t, Vector_t>::new_penalty(function_type);
             barrier_->read(in);
 
             bool use_barrier_mass_scaling = false;
@@ -329,7 +329,7 @@ namespace utopia {
 
         bool update(const Vector_t & /*x*/) override {
             if (barrier_) {
-                barrier_->update_barrier();
+                barrier_->update();
             }
 
             return true;
@@ -422,7 +422,7 @@ namespace utopia {
         int debug_from_iteration_{0};
         bool stabilized_formulation_{true};
 
-        std::shared_ptr<LogBarrierBase> barrier_;
+        std::shared_ptr<Penalty> barrier_;
         bool trivial_obstacle_{false};
         bool zero_initial_guess_{true};
 

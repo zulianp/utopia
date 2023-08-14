@@ -74,7 +74,7 @@ namespace utopia {
                     "function_type", function_type, "Type of LogBarrier. Options={LogBarrier|BoundedLogBarrier}")
                 .parse(in);
 
-            function_ = LogBarrierFactory<Matrix, Vector>::new_log_barrier_function(function_type);
+            function_ = PenaltyFactory<Matrix, Vector>::new_log_barrier_function(function_type);
             function_->read(in);
         }
 
@@ -91,7 +91,7 @@ namespace utopia {
 
         void set_selection(const std::shared_ptr<Vector> &selection) override {
             function_->set_selection(selection);
-            function_->auto_selector(false);
+            // function_->auto_selector(false);
         }
 
         virtual void set_linear_solver(const std::shared_ptr<LinearSolver> &linear_solver) {

@@ -23,6 +23,8 @@
 
 #include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_PrimalInteriorPointSolver_impl.hpp"
+#include "utopia_ShiftedPenalty.hpp"
+#include "utopia_ShiftedPenaltyQPSolver_impl.hpp"
 
 #ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc_BDDLinearSolver.hpp"
@@ -402,6 +404,11 @@ namespace utopia {
             // disp(x);
         }
 
+        void shifted_penalty_test() {
+            ShiftedPenaltyQPSolver<Matrix> qp_solver;
+            run_qp_solver(qp_solver);
+        }
+
         void run() {
             print_backend_info();
             UTOPIA_RUN_TEST(interior_point_qp_solver_test);
@@ -412,6 +419,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(ngs_test);
             UTOPIA_RUN_TEST(MPRGP_test);
             UTOPIA_RUN_TEST(nblockgs_test);
+            UTOPIA_RUN_TEST(shifted_penalty_test);
         }
 
         void run_GS_QR() {
