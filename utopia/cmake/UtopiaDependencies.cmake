@@ -178,7 +178,6 @@ if(MPI_CXX_COMPILER)
   set(CMAKE_CXX_COMPILER_DEBUG ${MPI_CXX_COMPILER})
 endif()
 
-
 # ##############################################################################
 # ##############################################################################
 # ##############################################################################
@@ -208,8 +207,15 @@ if(UTOPIA_ENABLE_PETSC)
   set(PETSC_TEST_RUNS TRUE)
   set(PETSC_EXECUTABLE_RUNS TRUE) # On daint we cannot run them
 
+  if(NOT UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
   find_package(PETSc QUIET)
-
+  else()
+    set(PETSC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../external/petsc")
+    # set(PETSC_ARCH "arch-darwin-c-debug")
+    set(ENV{PETSC_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/../external/petsc")
+    set(ENV{PETSC_ARCH} "arch-darwin-c-debug")
+    find_package(PETSc QUIET)
+  endif()
   if(PETSC_FOUND)
     list(APPEND UTOPIA_BUILD_INCLUDES ${PETSC_INCLUDES})
     list(APPEND UTOPIA_DEP_LIBRARIES ${PETSC_LIBRARIES})
@@ -251,7 +257,7 @@ if(UTOPIA_ENABLE_PETSC)
     set(UTOPIA_ENABLE_PETSC FALSE)
   endif()
 
-  if(PETSC_FOUND AND UTOPIA_ENABLE_SLEPC) 
+  if(PETSC_FOUND AND UTOPIA_ENABLE_SLEPC)
     find_package(SLEPc QUIET)
     if(SLEPC_FOUND)
       list(APPEND UTOPIA_BUILD_INCLUDES ${SLEPC_INCLUDES})
@@ -262,8 +268,8 @@ if(UTOPIA_ENABLE_PETSC)
       set(UTOPIA_SLEPC_VERSION ${SLEPC_VERSION})
       # set(UTOPIA_ENABLE_SLEPC TRUE PARENT_SCOPE)
     else()
-      # message(WARNING "[Warning] Slepc not found")
-      # set(UTOPIA_ENABLE_SLEPC FALSE)
+      # message(WARNING "[Warning] Slepc not found") set(UTOPIA_ENABLE_SLEPC
+      # FALSE)
     endif()
   endif()
   add_subdirectory(backend/petsc)

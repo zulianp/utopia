@@ -21,12 +21,18 @@ if(NOT CYGWIN)
     set(PETSC_CONFIG_ARGS $ENV{PETSC_CONFIG_ARGS})
     set(PETSC_CONFIG_ARGS
         ${PETSC_CONFIG_ARGS}
+        PETSC_ARCH=linux-gnu-c-debug
         --with-mpi=1
         --download-scalapack=yes
         --download-hypre=yes
         # --with-cxx-dialect=C++11
         --download-mumps=yes
         --with-debugging=0)
+
+
+    if(UTOPIA_ENABLE_SLEPC AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
+    set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --download-slepc=yes)
+    endif()
 
     if(UTOPIA_PETSC_ENABLE_SUPERLU)
       set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --download-superlu_dist=yes
@@ -105,13 +111,8 @@ if(NOT CYGWIN)
 
     set_target_properties(petsc PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-    if(PETSC_FOUND)
-      set(PETSC_DIR ${PETSC_INSTALL_DIR})
-      set(ENV{PETSC_DIR} ${PETSC_INSTALL_DIR})
-    endif()
-    # if(NOT PETC_FOUND)
-    #   find_package(PETSc REQUIRED)
-    # endif()
+    # set(PETSC_DIR ${PETSC_INSTALL_DIR})
+    # set(ENV{PETSC_DIR} ${PETSC_INSTALL_DIR})
 
   endif()
 endif()
