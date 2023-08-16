@@ -21,7 +21,6 @@ if(NOT CYGWIN)
     set(PETSC_CONFIG_ARGS $ENV{PETSC_CONFIG_ARGS})
     set(PETSC_CONFIG_ARGS
         ${PETSC_CONFIG_ARGS}
-        PETSC_ARCH=linux-gnu-c-debug
         --with-mpi=1
         --download-scalapack=yes
         --download-hypre=yes
