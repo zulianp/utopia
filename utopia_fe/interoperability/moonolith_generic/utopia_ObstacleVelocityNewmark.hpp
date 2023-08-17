@@ -166,6 +166,7 @@ namespace utopia {
             in.get_deprecated("dumping", "damping", damping_);
             in.get("damping", damping_);
             in.get("allow_projection", allow_projection_);
+            in.get("non_smooth_projection", non_smooth_projection_);
 
             if (!obstacle_) {
                 std::string type;
@@ -224,9 +225,61 @@ namespace utopia {
             return Super::time_derivative(x, dfdt);
         }
 
+        bool non_smooth_project(const Vector_t &velocity, Vector_t &x) {
+            this->x_old();
+            update_x(velocity, x);
+
+            MPRGP<Matrix_t, Vector_t> qp_solver;
+
+            Matrix_t H;
+            Vector_t buff_1(layout(x), 0), buff_2(layout(x), 0);
+
+            // delta_x
+            buff_2 = x - this->x_old();
+
+            // Transform x into obstacle coordinate system
+            obstacle_->transform(buff_2, buff_1);
+
+            SizeType n_violations = box_->count_violations(buff_1);
+            if(!n_violations) return true;
+
+            // remove delta_x from upper_bound
+            *box_->upper_bound() -= buff_1;
+
+            qp_solver.verbose(true);
+            qp_solver.set_box_constraints(*box_);
+
+            this->function()->hessian(x, H);
+            Super::integrate_hessian(x, H);
+            this->space()->apply_constraints(H);
+
+            buff_1.set(0);
+            buff_2.set(0);
+
+            Matrix_t H_c;
+            obstacle_->transform(H, H_c);
+            qp_solver.solve(H_c, buff_2, buff_1);
+
+            Scalar_t diff_x = norm2(buff_1);
+
+            if (!x.comm().rank()) {
+                utopia::out() << "found " << n_violations  <<  " violations, diff_x: " << diff_x << "\n";
+            }
+
+            // Transform correction into body coordinate system
+            obstacle_->inverse_transform(buff_1, buff_2);
+            x += buff_2;
+            return true;
+        }
+
         bool update_IVP(const Vector_t &velocity) override {
             Vector_t x = this->x_old();
-            update_x(velocity, x);
+
+            if (non_smooth_projection_) {
+                non_smooth_project(velocity, x);
+            } else {
+                update_x(velocity, x);
+            }
 
             if (x.has_nan_or_inf()) {
                 this->~ObstacleVelocityNewmark();
@@ -423,10 +476,12 @@ namespace utopia {
         int max_bisections_{6};
         bool verbose_{false};
         bool zero_initial_guess_{true};
+        bool non_smooth_projection_{false};
 
         Scalar_t damping_{0.98};
 
         std::shared_ptr<LineSearchBoxProjection<Vector_t>> line_search_;
+        std::shared_ptr<BoxConstraints<Vector_t>> box_;
 
         void update_x(const Vector_t &velocity, Vector_t &x) const {
             x = this->x_old();
@@ -486,6 +541,8 @@ namespace utopia {
                 line_search_->set_transform(trafo);
                 line_search_->set_dumping(damping_);
             }
+
+            box_ = box;
 
             return ok;
         }
