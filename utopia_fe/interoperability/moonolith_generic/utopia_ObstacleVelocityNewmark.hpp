@@ -210,6 +210,7 @@ namespace utopia {
             os << "max_bisections:\t" << max_bisections_ << "\n";
             os << "verbose:\t" << verbose_ << "\n";
             os << "zero_initial_guess:\t" << zero_initial_guess_ << "\n";
+            os << "non_smooth_projection:\t" << non_smooth_projection_ << "\n";
 
             os << "damping:\t" << damping_ << "\n";
 
@@ -241,7 +242,7 @@ namespace utopia {
             obstacle_->transform(buff_2, buff_1);
 
             SizeType n_violations = box_->count_violations(buff_1);
-            if(!n_violations) return true;
+            if (!n_violations) return true;
 
             // remove delta_x from upper_bound
             *box_->upper_bound() -= buff_1;
@@ -263,7 +264,7 @@ namespace utopia {
             Scalar_t diff_x = norm2(buff_1);
 
             if (!x.comm().rank()) {
-                utopia::out() << "found " << n_violations  <<  " violations, diff_x: " << diff_x << "\n";
+                utopia::out() << "found " << n_violations << " violations, diff_x: " << diff_x << "\n";
             }
 
             // Transform correction into body coordinate system
