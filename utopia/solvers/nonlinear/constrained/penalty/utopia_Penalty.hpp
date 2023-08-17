@@ -182,6 +182,8 @@ namespace utopia {
         }
 
         ////////////////////////////////////////////////////////////////////////////////////////////
+        virtual void set_auxiliary_forcing(const std::shared_ptr<Vector> & /*vec*/) {}
+        virtual bool supports_auxiliary_forcing() const { return false; }
 
         void set_box_constraints(const std::shared_ptr<BoxConstraints> &box) { box_ = box; }
         const std::shared_ptr<BoxConstraints> &box() const { return box_; }

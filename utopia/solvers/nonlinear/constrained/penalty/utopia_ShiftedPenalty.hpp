@@ -67,6 +67,22 @@ namespace utopia {
                     });
             }
 
+            if (auxiliary_forcing_) {
+                d = *this->box()->upper_bound() - x;
+
+                auto d_view = const_local_view_device(d);
+                auto aux_f_view = local_view_device(*auxiliary_forcing_);
+
+                parallel_for(
+                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                        const Scalar di = d_view.get(i);
+                        const Scalar gi = aux_f_view.get(i);
+                        const Scalar active = di <= 0;
+                        const Scalar f_active = active * (aux_f_view);
+                        g_view.add(i, f_active);
+                    });
+            }
+
             return true;
         }
 
@@ -386,8 +402,12 @@ namespace utopia {
             os << "-----------------------------------------\n";
         }
 
+        void set_auxiliary_forcing(const std::shared_ptr<Vector> &vec) override { auxiliary_forcing_ = vec; }
+        bool supports_auxiliary_forcing() const override { return true; }
+
         UTOPIA_NVCC_PRIVATE
         Scalar penalty_parameter_{1e4};
+        std::shared_ptr<Vector> auxiliary_forcing_;
     };
 }  // namespace utopia
 
