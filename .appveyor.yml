@@ -11,6 +11,10 @@ init:
 cache:
 
 
+environment:
+  MINGW_DIR: C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin
+
+
 
 install:
 # Install MS-MPI
@@ -22,6 +26,7 @@ install:
 - ps: Start-FileDownload 'https://github.com/microsoft/Microsoft-MPI/releases/download/v10.1.1/msmpisdk.msi'
 - msmpisdk.msi /quiet /passive
 - set PATH=C:\Program Files\Microsoft MPI\Bin;%PATH%
+
 
 
 # Install Blas/Lapack
