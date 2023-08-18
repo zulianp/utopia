@@ -9,8 +9,7 @@ init:
 
 # cache dependencies libraries.
 cache:
-  - C:\projects\blas-> appveyor.yml
-  - C:\projects\lapack-> appveyor.yml
+
 
 
 install:
