@@ -425,7 +425,7 @@ if(UTOPIA_ENABLE_YAML_CPP)
     set(UTOPIA_DEP_LIBRARIES ${UTOPIA_DEP_LIBRARIES})
 
   else()
-    include(../../cmake/InstallYAMLCPP.cmake)
+    include(../cmake/InstallYAMLCPP.cmake)
   endif()
   add_subdirectory(backend/yamlcpp)
 endif()
