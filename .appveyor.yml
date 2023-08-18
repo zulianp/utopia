@@ -11,9 +11,6 @@ init:
 cache:
 
 
-environment:
-  MINGW_DIR: C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin
-
 
 install:
 # Install MS-MPI
@@ -28,14 +25,10 @@ install:
 
 
 # Install Blas/Lapack
-- ps: Start-FileDownload 'http://netlib.org/lapack/lapack.tgz'
-- 7z x lapack.tgz -so | 7z x -si -ttar > nul
-- cd lapack-3.10.
-
-- cmd: set PATH=%MINGW_DIR%;%PATH%
-- cmd: set PATH=%PY_DIR%;%PY_DIR%\Scripts;%PATH%
-
-- IF NOT EXIST C:\projects\installations\lapack cmake -G "MinGW Makefiles" . -B "build" -DCMAKE_INSTALL_PREFIX="C:\projects\installations\lapack" -DCMAKE_CXX_FLAGS="/W0 /EHsc" && cmake --build build --config Release --target install
+# - ps: Start-FileDownload 'http://netlib.org/lapack/lapack.tgz'
+# - 7z x lapack.tgz -so | 7z x -si -ttar > nul
+# - cd lapack-3.10.
+# - IF NOT EXIST C:\projects\installations\lapack cmake -G "MinGW Makefiles" . -B "build" -DCMAKE_INSTALL_PREFIX="C:\projects\installations\lapack" -DCMAKE_CXX_FLAGS="/W0 /EHsc" && cmake --build build --config Release --target install
 
 
 # Other way with ninja
@@ -50,6 +43,17 @@ install:
 # - cd 
 
 
+## Utopia
+
+- cd c:\projects\utopia
+- cmake -Ball_builds -DCMAKE_EXE_LINKER_FLAGS:STRING="/machine:x64" -DMPI_C_INCLUDE_PATH="C:\Program Files (x86)\Microsoft SDKs\MPI\Include" -DMPI_C_LIBRARIES="C:\Program Files (x86)\Microsoft SDKs\MPI\Lib\x64\msmpi.lib" -DMPI_CXX_LIBRARIES="C:\Program Files (x86)\Microsoft SDKs\MPI\Lib\x64\msmpi.lib" -DMPI_CXX_INCLUDE_PATH="C:\Program Files (x86)\Microsoft SDKs\MPI\Include -DUTOPIA_ENABLE_TRACE_EXPR=ON -DUTOPIA_ENABLE_TRACE=ON -DUTOPIA_ENABLE_TRILINOS=ON -DUTOPIA_ENABLE_BLAS=ON -DUTOPIA_ENABLE_YAML_CPP=ON -DUTOPIA_ENABLE_POLYMORPHIC=ON -DUTOPIA_ENABLE_PETSC=ON -DUTOPIA_ENABLE_TESTS=ON -DUTOPIA_ENABLE_BENCHMARK=ON -DUTOPIA_ENABLE_EXAMPLES=ON -DUTOPIA_ENABLE_SCRIPTING=OFF -DUTOPIA_ENABLE_SLEPC=ON -DCMAKE_INSTALL_PREFIX=install -DUTOPIA_ENABLE_ISOLVER=ON -DUTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL=ON 
+
+build_script:
+  - cmake --build trilinos --config Release -j 4
+  # - cmake --build all_builds --config Release -j 4
+  # - ls -lah all_builds
+  # - ls -lah all_builds/Release
+  # - cmake --build all_builds --config Release --target install
 
 
 
