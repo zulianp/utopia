@@ -24,6 +24,20 @@ install:
 - set PATH=C:\Program Files\Microsoft MPI\Bin;%PATH%
 
 
+- cd c:\projects
+- mkdir blas && cd blas
+# Blas
+- ps: Start-FileDownload 'https://icl.utk.edu/lapack-for-windows/libraries/VisualStudio/3.7.0/Dynamic-MINGW/Win64/libblas.dll'
+- ps: Start-FileDownload 'https://icl.utk.edu/lapack-for-windows/libraries/VisualStudio/3.7.0/Dynamic-MINGW/Win32/libblas.lib'
+
+
+- cd c:\projects
+- mkdir lapack && cd lapack
+# Lapack
+- ps: Start-FileDownload 'https://icl.utk.edu/lapack-for-windows/libraries/VisualStudio/3.7.0/Dynamic-MINGW/Win64/liblapack.dll'
+- ps: Start-FileDownload 'https://icl.utk.edu/lapack-for-windows/libraries/VisualStudio/3.7.0/Dynamic-MINGW/Win32/liblapack.lib'
+
+
 # Install Blas/Lapack
 # - ps: Start-FileDownload 'http://netlib.org/lapack/lapack.tgz'
 # - 7z x lapack.tgz -so | 7z x -si -ttar > nul
