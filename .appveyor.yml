@@ -29,7 +29,9 @@ install:
 - 7z x lapack.tgz -so | 7z x -si -ttar > nul
 - cd lapack-3.10.1
 
-- ls "%MINGW_DIR%\\gfortran.exe"
+- ls C:\Program Files (x86)\Intel\
+- ls C:\Program Files (x86)\Intel\compiler
+
 
 - IF NOT EXIST C:\projects\installations\lapack cmake -G "Visual Studio 16 2019" -A x64 -S . -B "build" -DCMAKE_INSTALL_PREFIX="C:\projects\installations\lapack" -DCMAKE_CXX_FLAGS="/W0 /EHsc" -DCMAKE_Fortran_COMPILER="%MINGW_DIR%\\gfortran.exe" && cmake --build build --config Release --target install
 
