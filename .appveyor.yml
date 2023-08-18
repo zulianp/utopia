@@ -12,7 +12,7 @@ cache:
 
 
 environment:
-  FC:  C:\msys64\mingw64\bin\gfortran.exe
+  MINGW_DIR: C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin
 
 
 install:
@@ -30,9 +30,13 @@ install:
 # Install Blas/Lapack
 - ps: Start-FileDownload 'http://netlib.org/lapack/lapack.tgz'
 - 7z x lapack.tgz -so | 7z x -si -ttar > nul
-- cd lapack-3.10.1
+- cd lapack-3.10.
+
+- cmd: set PATH=%MINGW_DIR%;%PATH%
+- cmd: set PATH=%PY_DIR%;%PY_DIR%\Scripts;%PATH%
 
 - IF NOT EXIST C:\projects\installations\lapack cmake -G "MinGW Makefiles" . -B "build" -DCMAKE_INSTALL_PREFIX="C:\projects\installations\lapack" -DCMAKE_CXX_FLAGS="/W0 /EHsc" && cmake --build build --config Release --target install
+
 
 # Other way with ninja
 # - cmake -G "Ninja" -DCMAKE_BUILD_TYPE:STRING="Debug" -DCMAKE_INSTALL_PREFIX="C:\projects\installations\lapack" -DCMAKE_C_COMPILER:FILEPATH="C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\bin\Hostx64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="C:\PROGRAM FILES (X86)\MICROSOFT VISUAL STUDIO\2019\COMMUNITY\COMMON7\IDE\COMMONEXTENTIONS\MICROSOFT\CMAKE\Ninja\ninja.exe" "C:\projects\lapack-3.10.1"
