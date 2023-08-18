@@ -213,7 +213,7 @@ list(JOIN CONFIG_CONTENT "\n" OLD_CMAKE_CONFIG_CONTENT)
 # ##############################################################################
 # ##############################################################################
 # ##############################################################################
-# # MORE INSTALL
+# # MORE INSTALL and POST-INSTALL
 
 install(FILES ${CMAKE_BINARY_DIR}/utopia-config.makefile DESTINATION config)
 install(FILES ${CMAKE_BINARY_DIR}/utopia-config.cmake DESTINATION config)
@@ -239,6 +239,9 @@ write_basic_package_version_file(
 # install the configuration file
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/UtopiaConfig.cmake
         DESTINATION lib/cmake/)
+
+
+include(cmake/PostInstall.cmake)
 
 # ##############################################################################
 # ##############################################################################

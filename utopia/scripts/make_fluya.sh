@@ -2,14 +2,17 @@
 
 today=$(date)
 printf "%s\n" "$today"
-printf "Testing Cmake Script:\n"
+printf "Testing Cmake Script Fluya mode:\n"
 
 
 # Should check env for trilinos_dir but for now leave like this.
 _fluya_mode(){
-	cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DTrilinos_DIR=/Users/dylan/Documents/Summer-Internship/Installations/Trilinos/lib/cmake/Trilinos
-	make -j
+	cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DCMAKE_INSTALL_PREFIX=/Users/dylan/Documents/Summer-Internship/Installations/utopia
+	make -j4
+	./utopia_test
+	./utopia_bench
 	make install
+	make test_install
 	
 }
 
