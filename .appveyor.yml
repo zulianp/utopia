@@ -1,5 +1,5 @@
 version: '{build}'
-# clone_folder: c:\projects\sgrid
+clone_folder: c:\projects\utopia
 
 image: Visual Studio 2019
 
