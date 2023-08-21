@@ -40,8 +40,8 @@ install:
 
 # Boost C++
 - cd c:\projects
--mkdir boost && cd boost
-- ps Start-FileDownload 'https://sourceforge.net/projects/boost/files/boost/1.83.0/boost_1_83_0.tar.gz'
+- mkdir boost && cd boost
+- ps: Start-FileDownload 'https://sourceforge.net/projects/boost/files/boost/1.83.0/boost_1_83_0.tar.gz'
 - 7z x boost_1_83_0.tar.gz -so | 7z x -si -ttar > nul
 
 
