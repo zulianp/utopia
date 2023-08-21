@@ -48,7 +48,7 @@ install:
 - cd c:\projects
 - mkdir hdf5 && cd hdf5
 - ps: Start-FileDownload 'https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.14/hdf5-1.14.1/bin/windows/hdf5-1.14.1-2-Std-win10_64-vs16.zip'
-- 7z x hdf5-1.14.1-2-Std-win10_64-vs16.zip -so | 7z x -si -ttar > nul
+- 7z x hdf5-1.14.1-2-Std-win10_64-vs16.zip
 - cd hdf
 - HDF5-1.14.1-win64.msi /quiet /passive
 
