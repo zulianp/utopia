@@ -188,9 +188,26 @@ namespace utopia {
         const Vector_t &solution() const override { return this->x_old(); }
         bool report_solution(const Vector_t &x) override { return Super::report_solution(x); }
 
+        // bool update(const Vector_t &x) override {
+        //     if (barrier_) {
+        //         barrier_->update(x);
+        //     }
+
+        //     return true;
+        // }
+
         bool update(const Vector_t &x) override {
             if (barrier_) {
-                barrier_->update(x);
+                Vector_t x_obs;
+
+                if (trivial_obstacle_) {
+                    obstacle_->transform(x, x_obs);
+                } else {
+                    Vector_t x_temp = x - this->x_old();
+                    obstacle_->transform(x_temp, x_obs);
+                }
+
+                barrier_->update(x_obs);
             }
 
             return true;
