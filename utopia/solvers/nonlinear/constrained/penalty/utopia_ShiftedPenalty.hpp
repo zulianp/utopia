@@ -332,6 +332,17 @@ namespace utopia {
                             dps_view.set(i, dps);
                         });
                 }
+
+                if (verbose_) {
+                    const SizeType c = sum(*active);
+                    Vector diff = *this->box()->upper_bound() - x;
+                    diff.e_min(0);
+                    const Scalar penetration_norm = norm2(diff);
+
+                    if (!x.comm().rank() && c > 0) {
+                        utopia::out() << "Active: " << c << ", penetration norm: " << penetration_norm << " \n";
+                    }
+                }
             }
         }
 
@@ -401,6 +412,9 @@ namespace utopia {
             if (!Options()
                      .add_option(
                          "penalty_parameter", penalty_parameter_, "see Numerical Optimization - J. Nocedal, S. Wright.")
+                     .add_option("verbose",
+                                 verbose_,
+                                 "If verbose == true, prints additional information (with computational overhead).")
                      .parse(in)) {
                 return;
             }
@@ -434,7 +448,7 @@ namespace utopia {
         std::shared_ptr<Vector> active;
         std::shared_ptr<Vector> shift;
         std::shared_ptr<Vector> dps;
-        bool verbose_{true};
+        bool verbose_{false};
     };
 }  // namespace utopia
 
