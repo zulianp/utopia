@@ -50,8 +50,8 @@ install:
 - ps: Start-FileDownload 'https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.14/hdf5-1.14.1/bin/windows/hdf5-1.14.1-2-Std-win10_64-vs16.zip'
 - 7z x hdf5-1.14.1-2-Std-win10_64-vs16.zip
 - cd hdf
-- ps: Set-PSDebug -Trace 1
-- HDF5-1.14.1-win64.msi /passive
+- HDF5-1.14.1-win64.msi /passive /quiet
+- ls "C:\Program Files\HDF_Group\HDF5\1.14.2\"
 
 
 
