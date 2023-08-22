@@ -10,6 +10,7 @@ init:
 # cache dependencies libraries.
 cache:
   - C:\projects\installations\trilinos -> appveyor.yml
+  - C:\projects\hdf5 -> appveyor.yml
 
 
 
@@ -46,16 +47,7 @@ install:
 
 # HDF5 win
 - cd c:\projects
-- mkdir hdf5 && cd hdf5
-- ps: Start-FileDownload 'https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.14/hdf5-1.14.2/src/CMake-hdf5-1.14.2.zip'
-- 7z x CMake-hdf5-1.14.2.zip
-- ls
-- cd "CMake-hdf5-1.14.2\CMake-hdf5-1.14.2\"
-- build-vs2019-64.bat
-# - cd "build\"
-# - 7z x HDF5-1.14.2-win64.zip -so
-# - ls
-# - msiexec /i HDF5-1.14.1-win64.msi /passive /quiet
+- IF NOT EXIST C:\projects\hdf5 mkdir hdf5 && cd hdf5 && ps: Start-FileDownload 'https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.14/hdf5-1.14.2/src/CMake-hdf5-1.14.2.zip' && 7z x CMake-hdf5-1.14.2.zip && cd "CMake-hdf5-1.14.2\CMake-hdf5-1.14.2\" && build-vs2019-64.bat && cd "build\" && 7z x HDF5-1.14.2-win64.zip
 
 
 
