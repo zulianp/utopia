@@ -9,8 +9,8 @@ init:
 
 # cache dependencies libraries.
 cache:
-  - C:\projects\installations\trilinos -> appveyor.yml
-  - C:\projects\hdf5 -> appveyor.yml
+  # - C:\projects\installations\trilinos -> appveyor.yml
+  # - C:\projects\hdf5 -> appveyor.yml
 
 
 
