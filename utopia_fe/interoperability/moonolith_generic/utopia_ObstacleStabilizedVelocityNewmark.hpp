@@ -327,9 +327,9 @@ namespace utopia {
             return Super::hessian_and_gradient(x, H, g);
         }
 
-        bool update(const Vector_t & /*x*/) override {
+        bool update(const Vector_t &x) override {
             if (barrier_) {
-                barrier_->update();
+                barrier_->update(x);
             }
 
             return true;

@@ -414,9 +414,19 @@ namespace utopia {
         const Vector_t &solution() const override { return this->x_old(); }
         bool report_solution(const Vector_t &) override { return Super::report_solution(solution()); }
 
-        bool update(const Vector_t & /*x*/) override {
+        bool update(const Vector_t &velocity) override {
             if (barrier_) {
-                barrier_->update();
+                Vector_t x, x_obs;
+                update_x(velocity, x);
+
+                if (trivial_obstacle_) {
+                    obstacle_->transform(x, x_obs);
+                } else {
+                    Vector_t x_temp = x - this->x_old();
+                    obstacle_->transform(x_temp, x_obs);
+                }
+
+                barrier_->update(x_obs);
             }
 
             return true;

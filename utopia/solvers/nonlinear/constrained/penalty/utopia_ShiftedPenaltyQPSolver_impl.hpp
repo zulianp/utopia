@@ -20,7 +20,7 @@ namespace utopia {
 
         std::shared_ptr<LinearSolver> linear_solver;
         bool debug{false};
-        Scalar penalty_param{1e6};
+        Scalar penalty_param{1e4};
     };
 
     template <class Matrix, class Vector, int Backend>
@@ -80,7 +80,11 @@ namespace utopia {
 
         if (this->verbose()) {
             this->init_solver("ShiftedPenaltyQPSolver comm.size = " + std::to_string(b.comm().size()),
-                              {" it. ", "      || x_k - x_{k-1} ||"});
+                              {" it. ",
+                               "      || x_k - x_{k-1} ||, "
+                               "      || g_{k-1} ||, "
+                               "      || s_{k-1} ||, "
+                               "      || d_{k-1} ||"});
         }
 
         Vector d, g, diag_B, c;
@@ -99,30 +103,45 @@ namespace utopia {
 
         bool converged = false;
 
+        Vector shift(layout(b), 0);
+        Vector active(layout(b));
         const int max_it = this->max_it();
         for (int it = 1; it <= max_it; it++) {
             g = *a_ptr * x - b;
             d = *ub_ptr - x;
 
-            A.same_nnz_pattern_copy(*this->get_operator());
-
             {
                 auto d_view = const_local_view_device(d);
+
+                auto a_view = local_view_device(active);
+                auto s_view = local_view_device(shift);
+
                 auto g_view = local_view_device(g);
                 auto diag_B_view = local_view_device(diag_B);
 
                 parallel_for(
                     local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
                         const Scalar di = d_view.get(i);
-                        const Scalar gi = g_view.get(i);
-                        const Scalar active = di <= 0;
-                        const Scalar g_active = active * (gi - penalty_param * di);
-                        const Scalar gg = -(gi + g_active);
-                        g_view.set(i, gg);
+                        Scalar si = s_view.get(i);
+                        Scalar dps = di + si;
+
+                        const Scalar active = dps <= 0;
+                        a_view.set(i, active);
+
+                        si = active * dps;
+                        s_view.set(i, si);
+                        dps = di + si;
+
+                        // Gradient
+                        g_view.set(i, g_view.get(i) - active * (penalty_param * dps));
+
+                        // Hessian
                         diag_B_view.set(i, active * penalty_param);
                     });
             }
 
+            g = -g;
+            A.same_nnz_pattern_copy(*this->get_operator());
             A.shift_diag(diag_B);
             c.set(0);
             linear_solver->solve(A, g, c);
@@ -131,7 +150,10 @@ namespace utopia {
             Scalar norm_c = norm2(c);
 
             if (this->verbose()) {
-                PrintInfo::print_iter_status(it, {norm_c});
+                Scalar norm_g = norm2(g);
+                Scalar norm_d = norm2(e_mul(d, active));
+                Scalar norm_s = norm2(shift);
+                PrintInfo::print_iter_status(it, {norm_c, norm_g, norm_s, norm_d});
             }
 
             converged = this->check_convergence(it, 1, 1, norm_c);

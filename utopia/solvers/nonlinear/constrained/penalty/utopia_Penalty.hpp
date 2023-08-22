@@ -190,7 +190,7 @@ namespace utopia {
         inline bool verbose() const { return verbose_; }
         virtual void reset() {}
 
-        virtual void update() {}
+        virtual void update(const Vector &) = 0;
 
         inline bool has_scaling_matrix() const { return static_cast<bool>(scaling_matrix_); }
 
