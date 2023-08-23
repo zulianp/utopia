@@ -29,7 +29,7 @@ namespace utopia {
         std::string function_type() const override { return "ShiftedPenalty"; }
 
         bool penalty_gradient(const Vector &x, Vector &g) const {
-            const Scalar penalty_parameter = penalty_parameter_;
+            const Scalar penalty_parameter = penalty_parameter_current_;
 
             auto dps_view = const_local_view_device(*dps);
             auto g_view = local_view_device(g);
@@ -50,7 +50,7 @@ namespace utopia {
 
         bool penalty_hessian(const Vector &x, Vector &H) const {
             Vector d, diag_B;
-            const Scalar penalty_parameter = penalty_parameter_;
+            const Scalar penalty_parameter = penalty_parameter_current_;
 
             if (H.empty()) {
                 H.zeros(layout(x));
@@ -74,7 +74,7 @@ namespace utopia {
 
         bool penalty_value(const Vector &x, Vector &v) const {
             Vector d;
-            const Scalar penalty_parameter = penalty_parameter_;
+            const Scalar penalty_parameter = penalty_parameter_current_;
 
             if (this->box()->has_upper_bound()) {
                 d = *this->box()->upper_bound() - x;
@@ -368,6 +368,9 @@ namespace utopia {
             } else {
                 update_shift_aux(x);
             }
+
+            penalty_parameter_current_ =
+                std::min(penalty_parameter_max_, penalty_parameter_factor_ * penalty_parameter_current_);
         }
 
         void update(const Vector &x) override { update_shift(x); }
@@ -409,14 +412,26 @@ namespace utopia {
         }
 
         void read(Input &in) override {
+            penalty_parameter_max_ = 0;
             if (!Options()
                      .add_option(
                          "penalty_parameter", penalty_parameter_, "see Numerical Optimization - J. Nocedal, S. Wright.")
+                     .add_option("penalty_parameter_max",
+                                 penalty_parameter_max_,
+                                 "Maximum value allowed for penalty_parameter.")
+                     .add_option("penalty_parameter_factor",
+                                 penalty_parameter_factor_,
+                                 "Increase factor for the penalty parameter.")
                      .add_option("verbose",
                                  verbose_,
                                  "If verbose == true, prints additional information (with computational overhead).")
                      .parse(in)) {
                 return;
+            }
+
+            penalty_parameter_current_ = penalty_parameter_;
+            if (penalty_parameter_max_ == 0) {
+                penalty_parameter_max_ = penalty_parameter_;
             }
 
             if (mpi_world_rank() == 0) {
@@ -428,6 +443,8 @@ namespace utopia {
             if (shift) {
                 shift->set(0.);
             }
+
+            penalty_parameter_current_ = penalty_parameter_;
         }
 
         void describe(std::ostream &os) const {
@@ -444,6 +461,10 @@ namespace utopia {
 
         UTOPIA_NVCC_PRIVATE
         Scalar penalty_parameter_{1e4};
+        Scalar penalty_parameter_current_{1e4};
+        Scalar penalty_parameter_max_{1e4};
+        Scalar penalty_parameter_factor_{1.5};
+
         std::shared_ptr<Vector> auxiliary_forcing_;
         std::shared_ptr<Vector> active;
         std::shared_ptr<Vector> shift;
