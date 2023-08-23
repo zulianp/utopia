@@ -338,9 +338,11 @@ namespace utopia {
                     Vector diff = *this->box()->upper_bound() - x;
                     diff.e_min(0);
                     const Scalar penetration_norm = norm2(diff);
+                    const Scalar shift_norm = norm2(*shift);
 
                     if (!x.comm().rank() && c > 0) {
-                        utopia::out() << "Active: " << c << ", penetration norm: " << penetration_norm << " \n";
+                        utopia::out() << "Active: " << c << ", penetration_norm: " << penetration_norm
+                                      << ", shift_norm: " << shift_norm << "\n";
                     }
                 }
             }
