@@ -25,6 +25,7 @@ using Solver_t = utopia::ConjugateGradient<utopia::TpetraMatrixd, utopia::Tpetra
 using Vector_t = typename utopia::Traits<Matrix_t>::Vector;
 using Scalar_t = typename utopia::Traits<Matrix_t>::Scalar;
 using Size_t = typename utopia::Traits<Matrix_t>::SizeType;
+using LinearSolver_t = utopia::LinearSolver<Matrix_t, Vector_t>;
 
 #define Scalar_t ISOLVER_SCALAR_T;
 #define Size_t ISOLVER_IDX_T;
@@ -101,6 +102,8 @@ int ISOLVER_EXPORT isolver_lsolve_update_with_preconditioner_crs(const isolver_l
                                                                  const isolver_idx_t *const prec_rowptr,
                                                                  const isolver_idx_t *const prec_colidx,
                                                                  const isolver_scalar_t *const prec_values) {
+    using PrecT = utopia::PreconditionedSolver<Matrix_t, Vector_t>;
+
     auto mat = std::make_shared<Matrix_t>();
 
     mat->wrap(info->comm,
@@ -115,9 +118,12 @@ int ISOLVER_EXPORT isolver_lsolve_update_with_preconditioner_crs(const isolver_l
                   // Resources are freed outside!
               });
 
-    auto prec = std::make_shared<Matrix_t>();
+    auto lsolver = (LinearSolver_t *)info->private_data;
+    auto prec_solver = dynamic_cast<PrecT *>(lsolver);
+    if (prec_solver) {
+        auto prec = std::make_shared<Matrix_t>();
 
-    prec->wrap(info->comm,
+        prec->wrap(info->comm,
                n_local,
                n_local,
                n_global,
@@ -126,11 +132,11 @@ int ISOLVER_EXPORT isolver_lsolve_update_with_preconditioner_crs(const isolver_l
                (isolver_idx_t *)prec_colidx,
                (isolver_scalar_t *)prec_values,
                []() {
-                   // Resources are freed outside!
-               });
+                       // Resources are freed outside!
+                   });
 
-    auto solver = (Solver_t *)info->private_data;
-    solver->update(mat, prec);
+        prec_solver->update(mat, prec);
+    }
 
     return 0;
 }
@@ -139,7 +145,7 @@ int ISOLVER_EXPORT isolver_lsolve_apply(const isolver_lsolve_t *info,
                                         const isolver_scalar_t *const rhs,
                                         isolver_scalar_t *const x) {
     auto solver = (Solver_t *)info->private_data;
-    auto op = solver->get_operator();
+    auto &&op = solver->get_operator();
 
     Vector_t w_rhs, w_x;
 
