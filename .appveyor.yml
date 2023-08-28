@@ -11,7 +11,7 @@ init:
 cache:
   # - C:\projects\installations\trilinos -> appveyor.yml
   # - C:\projects\hdf5 -> appveyor.yml
-  # - C:\projects\hdf5\CMake-hdf5-1.14.2 -> appveyor.yml
+  - C:\projects\hdf5\CMake-hdf5-1.14.2 -> appveyor.yml
 
 
 
