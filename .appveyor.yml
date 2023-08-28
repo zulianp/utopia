@@ -48,7 +48,7 @@ install:
 - ps: Start-FileDownload 'https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.14/hdf5-1.14.2/src/CMake-hdf5-1.14.2.zip'
 - IF NOT EXIST C:\projects\hdf5\CMake-hdf5-1.14.2\CMake-hdf5-1.14.2\build\HDF5-1.14.2-win64 7z x CMake-hdf5-1.14.2.zip && cd "CMake-hdf5-1.14.2\CMake-hdf5-1.14.2\" && build-vs2019-64.bat && cd "build\" && 7z x HDF5-1.14.2-win64.zip
 
-- ls "c:/projects/hdf5/CMake-hdf5-1.14.2/CMake-hdf5-1.14.2/build/HDF5-1.14.2-win64/HDF5-1.14.2-win64/cmake/"
+- ls C:\projects\hdf5\CMake-hdf5-1.14.2\CMake-hdf5-1.14.2\build\HDF5-1.14.2-win64\HDF5-1.14.2-win64\cmake\
 
 
 #NETCDF
