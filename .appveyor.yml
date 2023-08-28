@@ -48,14 +48,16 @@ install:
 - ps: Start-FileDownload 'https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.14/hdf5-1.14.2/src/CMake-hdf5-1.14.2.zip'
 - IF NOT EXIST C:\projects\hdf5\CMake-hdf5-1.14.2\CMake-hdf5-1.14.2\build\HDF5-1.14.2-win64 7z x CMake-hdf5-1.14.2.zip && cd "CMake-hdf5-1.14.2\CMake-hdf5-1.14.2\" && build-vs2019-64.bat && cd "build\" && 7z x HDF5-1.14.2-win64.zip
 
+- ls "c:/projects/hdf5/CMake-hdf5-1.14.2/CMake-hdf5-1.14.2/build/HDF5-1.14.2-win64/HDF5-1.14.2-win64/cmake/"
+
 
 #NETCDF
-- cd c:\projects
-- IF NOT EXIST C:\projects\netcdf mkdir netcdf && cd netcdf 
-- ps: Start-FileDownload 'https://downloads.unidata.ucar.edu/netcdf-c/4.9.2/netcdf-c-4.9.2.tar.gz'
-- 7z x netcdf-c-4.9.2.tar.gz -so | 7z x -si -ttar > nul
-- cd netcdf-c-4.9.2
-- cmake -G "Visual Studio 16 2019" -A x64 -S . -B "build64" -DCMAKE_INSTALL_PREFIX="C:\projects\installations\netcdf" -DCMAKE_CXX_FLAGS="/W0 /EHsc" -DHDF5_DIR="c:/projects/hdf5/CMake-hdf5-1.14.2/CMake-hdf5-1.14.2/build/HDF5-1.14.2-win64/HDF5-1.14.2-win64/cmake/" -DCMAKE_BUILD_TYPE=Release && cmake --build build64 --config Release --target install
+# - cd c:\projects
+# - IF NOT EXIST C:\projects\netcdf mkdir netcdf && cd netcdf 
+# - ps: Start-FileDownload 'https://downloads.unidata.ucar.edu/netcdf-c/4.9.2/netcdf-c-4.9.2.tar.gz'
+# - 7z x netcdf-c-4.9.2.tar.gz -so | 7z x -si -ttar > nul
+# - cd netcdf-c-4.9.2
+# - cmake -G "Visual Studio 16 2019" -A x64 -S . -B "build64" -DCMAKE_INSTALL_PREFIX="C:\projects\installations\netcdf" -DCMAKE_CXX_FLAGS="/W0 /EHsc" -DHDF5_DIR="c:/projects/hdf5/CMake-hdf5-1.14.2/CMake-hdf5-1.14.2/build/HDF5-1.14.2-win64/HDF5-1.14.2-win64/cmake/" -DCMAKE_BUILD_TYPE=Release && cmake --build build64 --config Release --target install
 
 # Config msys
 # - cd "C:\msys64\usr\bin" 
