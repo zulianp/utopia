@@ -46,7 +46,7 @@ install:
 # - ps: Start-FileDownload 'https://sourceforge.net/projects/boost/files/boost/1.83.0/boost_1_83_0.tar.gz'
 # - 7z x boost_1_83_0.tar.gz -so | 7z x -si -ttar > nul
 
-HDF5 win
+#HDF5 win
 - cd c:\projects
 - IF NOT EXIST C:\projects\hdf5 mkdir hdf5 && cd hdf5 
 - ps: Start-FileDownload 'https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.14/hdf5-1.14.2/src/CMake-hdf5-1.14.2.zip'
