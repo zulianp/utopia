@@ -10,10 +10,7 @@ init:
 # cache dependencies libraries.
 cache:
   # - C:\projects\installations\trilinos -> appveyor.yml
-  # - C:\projects\hdf5 -> appveyor.yml
-  - C:\projects\hdf5\CMake-hdf5-1.14.2 -> appveyor.yml
-
-
+  - C:\projects\hdf5\CMake-hdf5-1.14.2\CMake-hdf5-1.14.2\build\HDF5-1.14.2-win64 -> appveyor.yml
 
 install:
 # Install MS-MPI
@@ -26,13 +23,11 @@ install:
 - msmpisdk.msi /quiet /passive
 - set PATH=C:\Program Files\Microsoft MPI\Bin;%PATH%
 
-
 - cd c:\projects
 - mkdir blas && cd blas
 # Blas
 - ps: Start-FileDownload 'https://icl.utk.edu/lapack-for-windows/libraries/VisualStudio/3.7.0/Dynamic-MINGW/Win64/libblas.dll'
 - ps: Start-FileDownload 'https://icl.utk.edu/lapack-for-windows/libraries/VisualStudio/3.7.0/Dynamic-MINGW/Win32/libblas.lib'
-
 
 - cd c:\projects
 - mkdir lapack && cd lapack
@@ -50,15 +45,23 @@ install:
 - cd c:\projects
 - IF NOT EXIST C:\projects\hdf5 mkdir hdf5 && cd hdf5 
 - ps: Start-FileDownload 'https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.14/hdf5-1.14.2/src/CMake-hdf5-1.14.2.zip'
-- IF NOT EXIST CMake-hdf5-1.14.2 7z x CMake-hdf5-1.14.2.zip && cd "CMake-hdf5-1.14.2\CMake-hdf5-1.14.2\" && build-vs2019-64.bat && cd "build\" && 7z x HDF5-1.14.2-win64.zip
+- IF NOT EXIST C:\projects\hdf5\CMake-hdf5-1.14.2\CMake-hdf5-1.14.2\build\HDF5-1.14.2-win64 7z x CMake-hdf5-1.14.2.zip && cd "CMake-hdf5-1.14.2\CMake-hdf5-1.14.2\" && build-vs2019-64.bat && cd "build\" && 7z x HDF5-1.14.2-win64.zip
+
+# Config msys
+# - cd "C:\msys64\usr\bin" 
+# - bash.exe -l -c "echo $MINGW_PREFIX"
+# - bash.exe -l -c "pacman -Syu"
+# - bash.exe -l -c "pacman -S autoconf automake-wrapper bison bsdcpio make git"
 
 #Install Petsc
 # Does not natively compile with windows
 # Cannot use MS-MPI, Intel-MPI, MPICH2
 # Options are, Cygwin to compile, MSYS, 
+# - cd c:\projects\petsc
 # - ps: Start-FileDownload 'https://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-3.18.3.tar.gz'
 # - 7z x petsc-3.18.3.tar.gz -so | 7z x -si -ttar > nul
-# - cd 
+# - cd petsc-3.18.3
+# - C:\msys64\usr\bin\bash.exe -l -c " /usr/bin/python ./configure --with-mpiexec='C:/Program Files/Microsoft MPI/Bin/mpiexec.exe'"
 
 # Install Trilinos
 - cd c:\projects
