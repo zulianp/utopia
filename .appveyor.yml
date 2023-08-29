@@ -41,7 +41,7 @@ install:
 - cd c:\projects
 - IF NOT EXIST boost mkdir boost
 - cd boost
-ps: if (-not (Test-Path -Path 'c:\projects\boost\boost_1_83_0.tar.gz' -PathType Leaf )) { Start-FileDownload 'https://sourceforge.net/projects/boost/files/boost/1.83.0/boost_1_83_0.tar.gz'}
+- ps: if (-not (Test-Path -Path 'c:\projects\boost\boost_1_83_0.tar.gz' -PathType Leaf )) { Start-FileDownload 'https://sourceforge.net/projects/boost/files/boost/1.83.0/boost_1_83_0.tar.gz'}
 - IF EXIST boost_1_83_0.tar.gz 7z x boost_1_83_0.tar.gz -so | 7z x -si -ttar > nul
 
 # SUPERLU NOT COMPILING AS OF NOW.
