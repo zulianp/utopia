@@ -37,16 +37,16 @@ install:
 - ps: Start-FileDownload 'https://icl.utk.edu/lapack-for-windows/libraries/VisualStudio/3.7.0/Dynamic-MINGW/Win32/liblapack.lib'
 
 # Boost C++
-- cd c:\projects
-- mkdir boost && cd boost
-- ps: Start-FileDownload 'https://sourceforge.net/projects/boost/files/boost/1.83.0/boost_1_83_0.tar.gz'
-- 7z x boost_1_83_0.tar.gz -so | 7z x -si -ttar > nul
+# - cd c:\projects
+# - mkdir boost && cd boost
+# - ps: Start-FileDownload 'https://sourceforge.net/projects/boost/files/boost/1.83.0/boost_1_83_0.tar.gz'
+# - 7z x boost_1_83_0.tar.gz -so | 7z x -si -ttar > nul
 
 # SUPERLU
 - cd c:\projects
 - mkdir superlu && cd superlu
 - ps: Start-FileDownload 'https://github.com/xiaoyeli/superlu/archive/refs/tags/v6.0.1.tar.gz'
-- 7z x superlu-6.0.1.tar.gz -so | 7z x -si -ttar > nul
+- 7z x v6.0.1.tar.gz -so | 7z x -si -ttar > nul
 - cd superlu-6.0.1
 - cmake -G "Visual Studio 16 2019" -A x64 -S . -B "build64" -DCMAKE_INSTALL_PREFIX="C:\projects\installations\superlu" -DCMAKE_CXX_FLAGS="/W0 /EHsc" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=mpicxx -DMPI_C_INCLUDE_PATH="C:\Program Files (x86)\Microsoft SDKs\MPI\Include" -DMPI_C_LIBRARIES="C:\Program Files (x86)\Microsoft SDKs\MPI\Lib\x64\msmpi.lib" -DMPI_CXX_LIBRARIES="C:\Program Files (x86)\Microsoft SDKs\MPI\Lib\x64\msmpi.lib" -DMPI_CXX_INCLUDE_PATH="C:/Program Files (x86)/Microsoft SDKs/MPI/Include" -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_STANDARD=17 && cmake --build build64 --config Release --target install
 
