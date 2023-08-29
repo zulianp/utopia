@@ -37,7 +37,7 @@ install:
 - ps: Start-FileDownload 'https://icl.utk.edu/lapack-for-windows/libraries/VisualStudio/3.7.0/Dynamic-MINGW/Win64/liblapack.dll'
 - ps: Start-FileDownload 'https://icl.utk.edu/lapack-for-windows/libraries/VisualStudio/3.7.0/Dynamic-MINGW/Win32/liblapack.lib'
 
-Boost C++
+# Boost C++
 - cd c:\projects
 - IF NOT EXIST boost mkdir boost
 - cd boost
