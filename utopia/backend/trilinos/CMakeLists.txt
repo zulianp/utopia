@@ -24,8 +24,4 @@ if(Trilinos_FOUND)
   set(UTOPIA_SOURCES
       ${UTOPIA_SOURCES}
       PARENT_SCOPE)
-
-  set(UTOPIA_DEP_INCLUDES
-      ${Trilinos_INCLUDE_DIRS}
-      PARENT_SCOPE)
 endif()

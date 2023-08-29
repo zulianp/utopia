@@ -78,6 +78,7 @@ target_include_directories(
          $<INSTALL_INTERFACE:include>)
 
 target_include_directories(utopia PUBLIC ${UTOPIA_DEP_INCLUDES})
+message(STATUS "UTOPIA_DEP_INCLUDES: ${UTOPIA_DEP_INCLUDES}")
 target_link_libraries(utopia PUBLIC ${UTOPIA_DEP_LIBRARIES})
 
 # ##############################################################################
