@@ -38,10 +38,9 @@ endif()
 # ##############################################################################
 
 # #################MPI######################
-find_package(MPIExtended)
 if(UTOPIA_ENABLE_MPI)
+  find_package(MPIExtended REQUIRED)
   if(MPI_FOUND)
-
     if(MPI_C_INCLUDE_PATH)
       set(UTOPIA_DEP_INCLUDES "${UTOPIA_DEP_INCLUDES};${MPI_C_INCLUDE_PATH}")
     endif()
@@ -60,16 +59,13 @@ if(UTOPIA_ENABLE_MPI)
 
     if(MPI_CXX_LIBRARIES)
       set(UTOPIA_DEP_LIBRARIES "${UTOPIA_DEP_LIBRARIES};${MPI_CXX_LIBRARIES}")
+
+      set(UTOPIA_MPI_DIR ${MPI_LIBRARIES})
+      set(UTOPIA_MPI_VERSION ${MPI_C_VERSION})
     endif()
-
-    set(UTOPIA_ENABLE_MPI ON)
-    set(UTOPIA_ENABLE_MPI TRUE)
-
-    set(UTOPIA_MPI_DIR ${MPI_LIBRARIES})
-    set(UTOPIA_MPI_VERSION ${MPI_C_VERSION})
+  else()
+    message(WARNING "NO Proper MPI installation")
   endif()
-else()
-  message(WARNING "NO Proper MPI installation")
 endif()
 
 # ##############################################################################
@@ -208,13 +204,13 @@ if(UTOPIA_ENABLE_PETSC)
   set(PETSC_EXECUTABLE_RUNS TRUE) # On daint we cannot run them
 
   if(NOT UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
-  find_package(PETSc REQUIRED)
+    find_package(PETSc REQUIRED)
   else()
     find_package(PETSc QUIET)
     # set(PETSC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../external/petsc")
-    # set(PETSC_ARCH "arch-darwin-c-debug")
-    # set(ENV{PETSC_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/../external/petsc")
-    # set(ENV{PETSC_ARCH} "arch-darwin-c-debug")
+    # set(PETSC_ARCH "arch-darwin-c-debug") set(ENV{PETSC_DIR}
+    # "${CMAKE_CURRENT_SOURCE_DIR}/../external/petsc") set(ENV{PETSC_ARCH}
+    # "arch-darwin-c-debug")
   endif()
   if(PETSC_FOUND)
     list(APPEND UTOPIA_BUILD_INCLUDES ${PETSC_INCLUDES})
