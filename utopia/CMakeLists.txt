@@ -66,19 +66,25 @@ utopia_link_default_targets(utopia)
 # ##############################################################################
 # ##############################################################################
 # INCLUDE
-
 foreach(include ${UTOPIA_BUILD_INCLUDES})
-  target_include_directories(utopia BEFORE PUBLIC $<BUILD_INTERFACE:${include}>)
+    target_include_directories(utopia BEFORE
+                               PUBLIC $<BUILD_INTERFACE:${include}>)
 endforeach()
 
 target_include_directories(
-  utopia BEFORE
-  PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-         $<INSTALL_INTERFACE:include>)
+    utopia BEFORE
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
+           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+           $<INSTALL_INTERFACE:include> $<INSTALL_INTERFACE:include/kernels>)
 
 target_include_directories(utopia PUBLIC ${UTOPIA_DEP_INCLUDES})
 message(STATUS "UTOPIA_DEP_INCLUDES: ${UTOPIA_DEP_INCLUDES}")
+
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
+# LINK
+
 target_link_libraries(utopia PUBLIC ${UTOPIA_DEP_LIBRARIES})
 
 # ##############################################################################
