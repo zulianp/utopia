@@ -77,7 +77,7 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
          $<INSTALL_INTERFACE:include>)
 
-target_include_directories(utopia PUBLIC ${UTOPIA_DEP_INCLUDES})
+# target_include_directories(utopia PUBLIC ${UTOPIA_DEP_INCLUDES})
 message(STATUS "UTOPIA_DEP_INCLUDES: ${UTOPIA_DEP_INCLUDES}")
 target_link_libraries(utopia PUBLIC ${UTOPIA_DEP_LIBRARIES})
 
@@ -238,7 +238,6 @@ write_basic_package_version_file(
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/UtopiaConfig.cmake
         DESTINATION lib/cmake/)
 
-
 include(cmake/PostInstall.cmake)
 
 # ##############################################################################
@@ -284,6 +283,5 @@ if(UTOPIA_ENABLE_EXAMPLES
   add_dependencies(complete utopia utopia_test utopia_bench utopia_exec
                    utopia_examples)
 endif()
-
 
 print_dependency_table()
