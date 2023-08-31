@@ -12,7 +12,7 @@ cache:
   - C:\projects\installations\trilinos -> appveyor.yml
   - C:\projects\trilinos -> appveyor.yml
   - C:\projects\trilinos\trilinos-14-4-0- -> appveyor.yml
-  - C:\projects\boost -> appveyor.yml
+  - C:\projects\boost\boost_1_83_0 -> appveyor.yml
   - C:\projects\hdf5\CMake-hdf5-1.14.2\CMake-hdf5-1.14.2\build\HDF5-1.14.2-win64 -> appveyor.yml
 
 install:
