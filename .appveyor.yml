@@ -10,6 +10,7 @@ init:
 # cache dependencies libraries.
 cache:
   - C:\projects\installations\trilinos -> appveyor.yml
+  - C:\projects\trilinos\trilinos-release-14-4-0 -> appveyor.yml
   - C:\projects\trilinos -> appveyor.yml
   - C:\projects\trilinos\trilinos-14-4-0- -> appveyor.yml
   - C:\projects\boost\boost_1_83_0 -> appveyor.yml
