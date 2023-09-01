@@ -64,6 +64,11 @@ namespace utopia {
             return true;
         }
 
+        void apply_constraints(Vector_t &x) const {
+            auto x_view = local_view_device(x);
+            impl_.apply_constraints(&x_view.array()[0]);
+        }
+
         Size size() const override { return {current_solution_->size(), current_solution_->size()}; }
         Size local_size() const override { return {current_solution_->local_size(), current_solution_->local_size()}; }
 
@@ -227,9 +232,30 @@ void nlsolve(utopia::Input &in) {
             // ls->verbose(true);
 
             auto ls = std::make_shared<utopia::Factorization<Matrix_t, Vector_t>>();
-
             newton->set_linear_solver(ls);
             nlsolver = newton;
+
+            bool linear_start = false;
+            in.get("linear_start", linear_start);
+
+            if (linear_start) {
+                if (!x.comm().rank()) {
+                    utopia::out() << "Linear start!\n";
+                }
+                Matrix_t H;
+                Vector_t g;
+
+                fun.hessian(x, H);
+                fun.gradient(x, g);
+                g = -g;
+
+                fun.apply_constraints(x);
+                fun.apply_constraints(g);
+                ls->solve(H, g, x);
+            } else {
+                fun.apply_constraints(x);
+            }
+
         } else {
             auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix_t, Vector_t, utopia::HOMEMADE>>();
             auto trust_region = std::make_shared<utopia::TrustRegion<Matrix_t>>(subproblem);

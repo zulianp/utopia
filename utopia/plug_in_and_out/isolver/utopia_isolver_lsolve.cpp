@@ -9,8 +9,12 @@
 
 using Matrix_t = utopia::PetscMatrix;
 using Solver_t = utopia::KSPSolver<utopia::PetscMatrix, utopia::PetscVector>;
+// using Solver_t = utopia::Factorization<utopia::PetscMatrix, utopia::PetscVector>;
+// using Solver_t = utopia::ConjugateGradient<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>;
 // using Solver_t = utopia::BDDLinearSolver<utopia::PetscMatrix, utopia::PetscVector>;
+
 #else
+
 #ifdef UTOPIA_WITH_TRILINOS
 using Matrix_t = utopia::TpetraMatrixd;
 using Solver_t = utopia::ConjugateGradient<utopia::TpetraMatrixd, utopia::TpetraVectord>;
@@ -47,9 +51,10 @@ int ISOLVER_EXPORT isolver_lsolve_init(isolver_lsolve_t *info) {
 #endif  // UTOPIA_WITH_PETSC
 
     auto solver = new Solver_t();
+// solver->apply_gradient_descent_step(true);
 #ifdef UTOPIA_WITH_PETSC
     solver->pc_type("hypre");
-    solver->ksp_type("gmres");
+    solver->ksp_type("cg");
 #endif  // UTOPIA_WITH_PETSC
 
     info->private_data = (void *)solver;
@@ -88,6 +93,8 @@ int ISOLVER_EXPORT isolver_lsolve_update_crs(const isolver_lsolve_t *info,
                   // Resources are freed outside!
               });
 
+    utopia::out() << mat->rows() << ", " << mat->cols() << "\n";
+
     auto solver = (Solver_t *)info->private_data;
     solver->update(mat);
     return 0;
@@ -124,14 +131,14 @@ int ISOLVER_EXPORT isolver_lsolve_update_with_preconditioner_crs(const isolver_l
         auto prec = std::make_shared<Matrix_t>();
 
         prec->wrap(info->comm,
-               n_local,
-               n_local,
-               n_global,
-               n_global,
-               (isolver_idx_t *)prec_rowptr,
-               (isolver_idx_t *)prec_colidx,
-               (isolver_scalar_t *)prec_values,
-               []() {
+                   n_local,
+                   n_local,
+                   n_global,
+                   n_global,
+                   (isolver_idx_t *)prec_rowptr,
+                   (isolver_idx_t *)prec_colidx,
+                   (isolver_scalar_t *)prec_values,
+                   []() {
                        // Resources are freed outside!
                    });
 
