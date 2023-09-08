@@ -53,8 +53,9 @@ int ISOLVER_EXPORT isolver_lsolve_init(isolver_lsolve_t *info) {
     auto solver = new Solver_t();
 // solver->apply_gradient_descent_step(true);
 #ifdef UTOPIA_WITH_PETSC
-    solver->pc_type("hypre");
-    solver->ksp_type("cg");
+    // solver->pc_type("hypre");
+    solver->pc_type(PCILU);
+    solver->ksp_type(KSPFGMRES);
 #endif  // UTOPIA_WITH_PETSC
 
     info->private_data = (void *)solver;
