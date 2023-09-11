@@ -174,8 +174,11 @@ public:
     void petsc_rebalanced_solver_file() {
         auto &&comm = Comm::get_default();
 
+        Path path = Utopia::instance().get("data_path");
+        path = path / "K_hexa_10x10x10_3D";
+
         Matrix A;
-        A.read(comm.get(), "mat.bin");
+        A.read(comm.get(), path);
         // A.read(comm.get(), "cippo/rowptr.raw");
 
         auto vl = row_layout(A);
