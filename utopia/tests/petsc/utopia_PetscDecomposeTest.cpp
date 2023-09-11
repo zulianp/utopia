@@ -175,7 +175,7 @@ public:
         auto &&comm = Comm::get_default();
 
         Path path = Utopia::instance().get("data_path");
-        path = path / "K_hexa_10x10x10_3D";
+        path = path / "forQR/A";
 
         Matrix A;
         A.read(comm.get(), path);
@@ -195,7 +195,9 @@ public:
             utopia::param("inner_solver",
                           utopia::param_list(utopia::param("verbose", true), utopia::param("max_it", 10 * 1000))));
 
-        auto p = utopia::param_list(utopia::param("inner_solver", std::move(sp)));
+        auto p = utopia::param_list(
+            utopia::param("block_size", (comm.size() == 2 || comm.size() == 4)? 2 : 1),
+            utopia::param("inner_solver", std::move(sp)));
 
         RebalancedSolver solver;
         solver.read(p);

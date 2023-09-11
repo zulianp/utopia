@@ -221,6 +221,143 @@ namespace utopia {
             return false;
         }
     }
+
+    bool parallel_decompose_block(const int block_size,
+                                  const PetscMatrix &matrix,
+                                  const int num_partitions,
+                                  int *partitions) {
+        auto rrs = matrix.row_ranges();
+
+        int comm_size = matrix.comm().size();
+        idx_t *vtxdist = (idx_t *)malloc((comm_size + 1) * sizeof(idx_t));
+
+        for (int r = 0; r <= comm_size; r++) {
+            vtxdist[r] = rrs[r] / block_size;
+        }
+
+        const idx_t row_offset = vtxdist[matrix.comm().rank()];
+
+        idx_t ncon = 1;
+        idx_t *vwgt = nullptr;
+        // idx_t* vsize = nullptr;
+        idx_t *adjwgt = nullptr;
+        idx_t wgtflag = 0;
+        idx_t numflag = 0;
+        idx_t nparts = num_partitions;
+
+        real_t ubvec[1] = {1.05};
+        idx_t options[3] = {0};
+        // idx_t objval = -1;
+        idx_t edgecut = 0;
+        idx_t *parts = partitions;
+        MPI_Comm comm = matrix.comm().raw_comm();
+
+        Mat d, o;
+
+        const PetscInt *colmap;
+        MatMPIAIJGetSeqAIJ(matrix.raw_type(), &d, &o, &colmap);
+
+        PetscCrsView d_view(d);
+        PetscCrsView o_view(o);
+
+        ptrdiff_t n_local_block_rows = d_view.rows() / block_size;
+        ptrdiff_t block_nnz = (d_view.colidx().size() + o_view.colidx().size()) / (block_size * block_size);
+
+        std::vector<idx_t> xadj(n_local_block_rows + 1, 0);
+        std::vector<idx_t> adjncy(block_nnz, -1);
+        std::vector<real_t> tpwgts(num_partitions, 1. / num_partitions);
+
+        auto cr = matrix.col_range();
+
+        PetscInt col_offset = cr.begin() / block_size;
+
+        auto d_xadj = d_view.row_ptr();
+        xadj[0] = 0;
+
+        for (PetscInt i = 0; i < n_local_block_rows; i++) {
+            auto d_row = d_view.row(i * block_size);
+            auto o_row = o_view.row(i * block_size);
+
+            xadj[i + 1] = xadj[i];
+
+            for (PetscInt k = 0; k < d_row.length; k += block_size) {
+                const idx_t col = d_row.colidx(k) / block_size;
+
+                if (col_offset + col != row_offset + i) {
+                    adjncy[xadj[i + 1]++] = col_offset + col;
+                }
+            }
+
+            for (PetscInt k = 0; k < o_row.length; k += block_size) {
+                const idx_t col = colmap[o_row.colidx(k)] / block_size;
+                if (col != row_offset + i) {
+                    adjncy[xadj[i + 1]++] = col;
+                }
+            }
+        }
+
+        int UTOPIA_METIS_USE_WEIGHTS = 0;
+        UTOPIA_READ_ENV(UTOPIA_METIS_USE_WEIGHTS, atoi);
+        wgtflag = UTOPIA_METIS_USE_WEIGHTS ? 2 : 0;
+
+        float UTOPIA_METIS_WEIGHT_FACTOR = 2;
+        UTOPIA_READ_ENV(UTOPIA_METIS_WEIGHT_FACTOR, atof);
+
+        float UTOPIA_METIS_WEIGHT_SHIFT = 0;
+        UTOPIA_READ_ENV(UTOPIA_METIS_WEIGHT_SHIFT, atof);
+
+        std::vector<idx_t> actual_vwgts(d_view.rows(), 0);
+        if (wgtflag) {
+            for (PetscInt i = 0; i < n_local_block_rows; ++i) {
+                actual_vwgts[i] = xadj[i + 1] - xadj[i];
+            }
+
+            idx_t max_weight = 0;
+            for (PetscInt i = 0; i < n_local_block_rows; ++i) {
+                max_weight = std::max(max_weight, actual_vwgts[i]);
+            }
+
+            for (PetscInt i = 0; i < n_local_block_rows; ++i) {
+                actual_vwgts[i] = UTOPIA_METIS_WEIGHT_SHIFT +
+                                  std::max(actual_vwgts[i] * UTOPIA_METIS_WEIGHT_FACTOR / max_weight, 1.f);
+            }
+
+            vwgt = &actual_vwgts[0];
+        }
+
+        int ret = ParMETIS_V3_PartKway(vtxdist,     // 0
+                                       &xadj[0],    // 1
+                                       &adjncy[0],  // 2
+                                       vwgt,        // 3
+                                       adjwgt,      // 4
+                                       &wgtflag,    // 5
+                                       &numflag,    // 6
+                                       &ncon,       // 7
+                                       &nparts,     // 8
+                                       &tpwgts[0],  // 9
+                                       ubvec,       // 10
+                                       options,     // 11
+                                       &edgecut,    // 12
+                                       parts,       // 13
+                                       &comm);      // 14
+
+        if (sizeof(idx_t) != sizeof(PetscInt)) {
+            free(vtxdist);
+        }
+
+        if (ret == METIS_OK) {
+            // Since we redistribute scalars we need to unblock here
+            for (PetscInt i = n_local_block_rows-1; i >= 0 ; i--) {
+                for(int b = 0; b < block_size; b++) {
+                    parts[i*block_size + b] = parts[i];
+                }
+            }
+
+            return true;
+        } else {
+            return false;
+        }
+    }
 #endif
 
     bool partitions_to_permutations(const Communicator &comm,
@@ -569,6 +706,32 @@ namespace utopia {
         }
 
         return redistribute_from_permutation(in, permutation, out);
+    }
+
+    bool initialize_rebalance_block(const int block_size,
+                                    const PetscMatrix &in,
+                                    std::vector<int> &partitioning,
+                                    Traits<PetscMatrix>::IndexArray &permutation,
+                                    std::vector<int> &r_partitioning,
+                                    Traits<PetscMatrix>::IndexArray &r_permutation) {
+        if (in.comm().size() == 1) {
+            return false;
+        }
+
+        assert(in.rows() == in.cols());
+
+        partitioning.resize(in.local_rows(), 0);
+
+        if (!parallel_decompose_block(block_size, in, in.comm().size(), &partitioning[0])) {
+            return false;
+        }
+
+        if (!partitions_to_permutations(
+                in.comm(), in.row_ranges(), &partitioning[0], permutation, r_partitioning, r_permutation)) {
+            return false;
+        }
+
+        return true;
     }
 
     bool initialize_rebalance(const PetscMatrix &in,

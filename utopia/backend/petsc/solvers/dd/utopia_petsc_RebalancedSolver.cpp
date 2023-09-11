@@ -23,11 +23,14 @@ namespace utopia {
 
         std::vector<int> partitioning, inverse_partitioning;
         IndexArray permutation, inverse_permutation;
+
+        int block_size{1};
     };
 
     void RebalancedSolver::read(Input &in) {
         Super::read(in);
         in.get("inner_solver", *impl_->solver);
+        in.get("block_size", impl_->block_size);
     }
 
     RebalancedSolver::RebalancedSolver() : impl_(utopia::make_unique<Impl>()) {
@@ -61,12 +64,32 @@ namespace utopia {
 
             // op->write("mat.bin");
 
-            rebalance(*op,
-                      impl_->op,
-                      impl_->partitioning,
-                      impl_->permutation,
-                      impl_->inverse_partitioning,
-                      impl_->inverse_permutation);
+            if (impl_->block_size == 1) {
+                initialize_rebalance(*op,
+                                     impl_->partitioning,
+                                     impl_->permutation,
+                                     impl_->inverse_partitioning,
+                                     impl_->inverse_permutation);
+
+         
+            } else {
+                initialize_rebalance_block(impl_->block_size,
+                                           *op,
+                                           impl_->partitioning,
+                                           impl_->permutation,
+                                           impl_->inverse_partitioning,
+                                           impl_->inverse_permutation);
+
+                // std::stringstream ss;
+                // for (auto i : impl_->partitioning) {
+                //     ss << i << " ";
+                // }
+
+                // ss << "\n";
+                // op->comm().synched_print(ss.str());
+            }
+
+            utopia::redistribute_from_permutation(*op, impl_->permutation, impl_->op);
 
             // printf("%d DONE\n",  op->comm().rank());
 
