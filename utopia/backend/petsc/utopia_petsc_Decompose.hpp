@@ -32,6 +32,12 @@ namespace utopia {
                    std::vector<int> &partitioning,
                    Traits<PetscMatrix>::IndexArray &permutation);
 
+    bool initialize_rebalance(const PetscMatrix &in,
+                              std::vector<int> &partitioning,
+                              Traits<PetscMatrix>::IndexArray &permutation,
+                              std::vector<int> &r_partitioning,
+                              Traits<PetscMatrix>::IndexArray &r_permutation);
+
     bool rebalance(const PetscMatrix &in,
                    PetscMatrix &out,
                    std::vector<int> &partitioning,

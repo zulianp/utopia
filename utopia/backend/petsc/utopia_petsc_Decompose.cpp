@@ -510,7 +510,10 @@ namespace utopia {
             return false;
         }
 
-        out.destroy();  // Destroy because a new matrix is created below!
+        if (reuse == MAT_INITIAL_MATRIX) {
+            out.destroy();  // Destroy because a new matrix is created below!
+        }
+
         err = MatCreateSubMatrix(in.raw_type(), is, is, reuse, &out.raw_type());
 
         ISDestroy(&is);
@@ -568,12 +571,11 @@ namespace utopia {
         return redistribute_from_permutation(in, permutation, out);
     }
 
-    bool rebalance(const PetscMatrix &in,
-                   PetscMatrix &out,
-                   std::vector<int> &partitioning,
-                   Traits<PetscMatrix>::IndexArray &permutation,
-                   std::vector<int> &r_partitioning,
-                   Traits<PetscMatrix>::IndexArray &r_permutation) {
+    bool initialize_rebalance(const PetscMatrix &in,
+                              std::vector<int> &partitioning,
+                              Traits<PetscMatrix>::IndexArray &permutation,
+                              std::vector<int> &r_partitioning,
+                              Traits<PetscMatrix>::IndexArray &r_permutation) {
         if (in.comm().size() == 1) {
             return false;
         }
@@ -591,8 +593,24 @@ namespace utopia {
             return false;
         }
 
-        bool ok = redistribute_from_permutation(in, permutation, out);
-        return ok;
+        return true;
+    }
+
+    bool rebalance(const PetscMatrix &in,
+                   PetscMatrix &out,
+                   std::vector<int> &partitioning,
+                   Traits<PetscMatrix>::IndexArray &permutation,
+                   std::vector<int> &r_partitioning,
+                   Traits<PetscMatrix>::IndexArray &r_permutation) {
+        if (in.comm().size() == 1) {
+            return false;
+        }
+
+        if (!initialize_rebalance(in, partitioning, permutation, r_partitioning, r_permutation)) {
+            return false;
+        }
+
+        return redistribute_from_permutation(in, permutation, out);
     }
 
 }  // namespace utopia
