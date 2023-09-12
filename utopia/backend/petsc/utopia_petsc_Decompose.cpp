@@ -282,15 +282,18 @@ namespace utopia {
 
             for (PetscInt k = 0; k < d_row.length; k += block_size) {
                 const idx_t col = d_row.colidx(k) / block_size;
+                const idx_t component = d_row.colidx(k) - col * block_size;
 
-                if (col_offset + col != row_offset + i) {
+                if (col_offset + col != row_offset + i && component == 0) {
                     adjncy[xadj[i + 1]++] = col_offset + col;
                 }
             }
 
             for (PetscInt k = 0; k < o_row.length; k += block_size) {
                 const idx_t col = colmap[o_row.colidx(k)] / block_size;
-                if (col != row_offset + i) {
+                const idx_t component = o_row.colidx(k) - col * block_size;
+
+                if (col != row_offset + i && component == 0) {
                     adjncy[xadj[i + 1]++] = col;
                 }
             }
