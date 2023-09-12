@@ -90,7 +90,18 @@ namespace utopia {
 
 #ifndef UTOPIA_WITH_PARMETIS
 
-    bool parallel_decompose(const PetscMatrix &, const int, int *) { return false; }
+    bool parallel_decompose(const PetscMatrix &, const int, int *) {
+        Utopia::Abort("This functionality requires ParMetis!");
+        return false;
+    }
+
+    bool parallel_decompose_block(const int block_size,
+                                  const PetscMatrix &matrix,
+                                  const int num_partitions,
+                                  int *partitions) {
+        Utopia::Abort("This functionality requires ParMetis!");
+        return false;
+    }
 
 #else
 
@@ -350,9 +361,9 @@ namespace utopia {
 
         if (ret == METIS_OK) {
             // Since we redistribute scalars we need to unblock here
-            for (PetscInt i = n_local_block_rows-1; i >= 0 ; i--) {
-                for(int b = 0; b < block_size; b++) {
-                    parts[i*block_size + b] = parts[i];
+            for (PetscInt i = n_local_block_rows - 1; i >= 0; i--) {
+                for (int b = 0; b < block_size; b++) {
+                    parts[i * block_size + b] = parts[i];
                 }
             }
 

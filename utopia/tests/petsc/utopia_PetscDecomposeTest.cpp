@@ -174,12 +174,16 @@ public:
     void petsc_rebalanced_solver_file() {
         auto &&comm = Comm::get_default();
 
-        Path path = Utopia::instance().get("data_path");
-        path = path / "forQR/A";
+        // Path path = Utopia::instance().get("data_path");
+        // path = path / "forQR/A";
+
+        Path path = "/Users/patrickzulian/Desktop/cloud/owncloud_HSLU/Patrick/2023/Cases/FP70/mat_raw/rowptr.raw";
 
         Matrix A;
         A.read(comm.get(), path);
         // A.read(comm.get(), "cippo/rowptr.raw");
+
+        A.comm().synched_print(std::to_string(A.local_rows()));
 
         auto vl = row_layout(A);
         Vector b(vl, 1.);
@@ -189,14 +193,26 @@ public:
             utopia::out() << "dofs: " << A.rows() << "\n";
         }
 
+        // auto sp = utopia::param_list(
+        //     utopia::param("type", "bdd"),
+        //     utopia::param("verbose", true),
+        //     utopia::param("block_size", 4),
+        //     utopia::param("num_blocks", 4),
+        //     utopia::param("inner_solver",
+        //                   utopia::param_list(utopia::param("verbose", true), utopia::param("max_it", 10 * 1000))));
+
         auto sp = utopia::param_list(
-            utopia::param("type", "bdd"),
-            utopia::param("verbose", true),
-            utopia::param("inner_solver",
-                          utopia::param_list(utopia::param("verbose", true), utopia::param("max_it", 10 * 1000))));
+            utopia::param("type", "ksp"),
+            utopia::param("ksp_type", "fgrmes"),
+            utopia::param("pc_type", "bjacobi"),
+            utopia::param("atol", "1e-8"),
+            utopia::param("rtol", "1e-18"),
+            utopia::param("stol", "1e-16"),
+            utopia::param("verbose", true)
+            );
 
         auto p = utopia::param_list(
-            utopia::param("block_size", (comm.size() == 2 || comm.size() == 4)? 2 : 1),
+            // utopia::param("block_size", (comm.size() == 2 || comm.size() == 4)? 2 : 1),
             utopia::param("inner_solver", std::move(sp)));
 
         RebalancedSolver solver;
