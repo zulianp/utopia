@@ -218,6 +218,28 @@ namespace utopia {
         }
 
         bool setup_IVP(Vector_t &x) override {
+            // update_constraints(x);
+
+            // if (!this->assemble_mass_matrix()) {
+            //     return false;
+            // }
+
+            // if (non_smooth_projection_) {
+            //     non_smooth_project(x);
+            // }
+
+            // assert(this->mass_matrix());
+            // Scalar_t sum_mm = sum(*this->mass_matrix());
+            // this->state()->has_zero_density = sum_mm == 0.0;
+
+            // auto vlo = layout(x);
+
+            // // x_old_.zeros(vlo);
+            // this->x_old() = x;
+            // this->velocity_old().zeros(vlo);
+            // this->acceleration_old().zeros(vlo);
+
+
             update_constraints(x);
             return Super::setup_IVP(x);
         }
@@ -226,9 +248,8 @@ namespace utopia {
             return Super::time_derivative(x, dfdt);
         }
 
-        bool non_smooth_project(const Vector_t &velocity, Vector_t &x) {
-            this->x_old();
-            update_x(velocity, x);
+        bool non_smooth_project(Vector_t &x) {
+            
 
             MPRGP<Matrix_t, Vector_t> qp_solver;
 
@@ -275,12 +296,11 @@ namespace utopia {
 
         bool update_IVP(const Vector_t &velocity) override {
             Vector_t x = this->x_old();
+            update_x(velocity, x);
 
             if (non_smooth_projection_) {
-                non_smooth_project(velocity, x);
-            } else {
-                update_x(velocity, x);
-            }
+                non_smooth_project(x);
+            } 
 
             if (x.has_nan_or_inf()) {
                 this->~ObstacleVelocityNewmark();
