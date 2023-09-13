@@ -185,6 +185,8 @@ public:
 
         A.comm().synched_print(std::to_string(A.local_rows()));
 
+        // A.write("AA.bin");
+
         auto vl = row_layout(A);
         Vector b(vl, 1.);
         Vector x(vl, 0.);
