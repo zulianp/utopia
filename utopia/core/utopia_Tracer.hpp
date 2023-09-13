@@ -239,7 +239,7 @@ namespace utopia {
 
 #define UTOPIA_TRACE_SCOPE(macro_expr_)                   \
     utopia::Tracer::instance().region_begin(macro_expr_); \
-    ExitScopeCallback utopia_trace_scope__([]() { utopia::Tracer::instance().region_end(); });
+    utopia::ExitScopeCallback utopia_trace_scope__([]() { utopia::Tracer::instance().region_end(); });
 
 #define UTOPIA_TRACE_REGION_BEGIN(macro_region_name_) \
     utopia::Tracer::instance().region_begin(macro_region_name_);  //, __FILE__, __LINE__)
