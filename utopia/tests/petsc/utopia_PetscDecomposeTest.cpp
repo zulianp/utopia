@@ -183,6 +183,16 @@ public:
         A.read(comm.get(), path);
         // A.read(comm.get(), "cippo/rowptr.raw");
 
+        if (0) {
+            // Check symmetry
+            Matrix ApAt = A;
+            ApAt.transform_values([](const Scalar) -> Scalar { return 1; });
+            ApAt -= transpose(ApAt);
+            double sum_ApAt = sum(abs(ApAt));
+
+            printf("symmetric test %g == 0\n", sum_ApAt);
+        }
+
         A.comm().synched_print(std::to_string(A.local_rows()));
 
         // A.write("AA.bin");
@@ -191,11 +201,13 @@ public:
         Vector b(vl, 1.);
         Vector x(vl, 0.);
 
-        if (!A.comm().rank()) {
-            utopia::out() << "dofs: " << A.rows() << "\n";
-        }
+        // if (!A.comm().rank()) {
+        //     utopia::out() << "dofs: " << A.rows() << "\n";
+        // }
+
+        // Temporary
         auto sp = utopia::param_list(utopia::param("type", "ksp"),
-                                     utopia::param("ksp_type", "dgmres"),
+                                     utopia::param("ksp_type", "bcgstab"),
                                      utopia::param("pc_type", "bjacobi"),
                                      utopia::param("atol", "1e-8"),
                                      utopia::param("rtol", "1e-18"),
@@ -205,16 +217,24 @@ public:
         auto p = utopia::param_list(
             // utopia::param("block_size", (comm.size() == 2 || comm.size() == 4)? 2 : 1),
             utopia::param("block_size", 4),
+            // utopia::param("block_size", 1),
             utopia::param("inner_solver", std::move(sp)));
 
         RebalancedSolver solver;
         solver.read(p);
 
         // OmniLinearSolver<Matrix, Vector> solver;
-        // solver.read(sp);
+        // p.get("inner_solver", solver);
 
         solver.update(make_ref(A));
         solver.apply(b, x);
+
+        Vector r = b - A * x;
+        Scalar r_norm = norm2(r);
+
+        if (!r.comm().rank()) {
+            utopia::out() << "r_norm: " << r_norm << "\n";
+        }
     }
 #endif
 

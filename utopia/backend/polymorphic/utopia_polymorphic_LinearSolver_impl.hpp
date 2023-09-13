@@ -7,14 +7,22 @@ namespace utopia {
     void OmniLinearSolver<Matrix, Vector>::read(Input &in) {
         Super::read(in);
 
-        std::string backend = Traits<Vector>::backend_info().get_name();
+        // std::string backend = Traits<Vector>::backend_info().get_name();
         std::string type = "gmres";
 
-        in.get("backend", backend);
+        // in.get("backend", backend);
         in.get("type", type);
 
         impl_ = LinearSolverFactory<Matrix, Vector>::new_linear_solver(type);
         impl_->read(in);
+    }
+
+    template <class Matrix, class Vector>
+    void OmniLinearSolver<Matrix, Vector>::verbose(const bool &val) {
+        Super::verbose(val);
+        if (impl_) {
+            impl_->verbose(val);
+        }
     }
 
     template <class Matrix, class Vector>

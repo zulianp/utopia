@@ -25,6 +25,7 @@ namespace utopia {
         bool apply(const Vector &rhs, Vector &sol) override;
         void update(const std::shared_ptr<const Matrix> &mat) override;
         void read(Input &in) override;
+        void verbose(const bool &verbose) override;
 
     private:
         std::unique_ptr<LinearSolver<Matrix, Vector>> impl_;

@@ -3,6 +3,7 @@
 #include "utopia_Communicator.hpp"
 #include "utopia_Instance.hpp"
 #include "utopia_Logger.hpp"
+#include "utopia_TypeToString.hpp"
 
 #ifdef UTOPIA_WITH_METIS
 #include "utopia_Metis.hpp"
@@ -12,11 +13,20 @@
 #include "utopia_ParMetis.hpp"
 #endif
 
+#ifdef UTOPIA_WITH_MATRIX_IO
+
+#include "matrixio_crs.h"
+#include "utils.h"
+
+#endif
+
 #include "utopia_petsc_CrsView.hpp"
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Vector.hpp"
 
 #include "utopia_petsc_Utils.hpp"
+
+#include "utopia_Core.hpp"
 
 namespace utopia {
 
@@ -269,6 +279,72 @@ namespace utopia {
         }
     }
 
+#ifdef UTOPIA_WITH_MATRIX_IO
+    void write_parmetis_graph(const PetscCommunicator &comm,
+        const ptrdiff_t local_rows, const ptrdiff_t rows, PetscInt row_offset,
+        idx_t *rowptr,
+        idx_t *colidx,
+        real_t *values 
+        )
+    {
+        UTOPIA_TRACE_SCOPE("write_parmetis_graph");
+
+        const idx_t rowptr0 = rowptr[0];
+
+        crs_t crs;
+        crs.lrows = local_rows;
+        crs.grows = rows;
+        crs.lnnz = rowptr[local_rows];
+
+
+        std::stringstream ss;
+
+        ss << "local_rows: " << local_rows  << "\n";
+        ss << "rows: " << rows  << "\n";
+        ss << "rowptr[local_rows]: " << rowptr[local_rows]  << "\n";
+
+        for(ptrdiff_t i = 0; i < 3; i++) {
+        for(idx_t k = rowptr[i]; k < rowptr[i+1]; k++) {
+            ss << colidx[k] << " ";
+        }
+
+        ss << "\n";
+    }
+
+        comm.synched_print(ss.str());
+        
+         // long lnnz = crs.lnnz;
+        // long start = 0;
+        // MPI_Exscan(&lnnz, &start, 1, MPI_LONG, MPI_SUM, comm);
+        // crs.start = start;
+
+        // crs.rowoffset = row_offset;
+
+        // crs.rowptr_type = string_to_mpi_datatype(TypeToString<idx_t>::get());
+        // crs.colidx_type = string_to_mpi_datatype(TypeToString<idx_t>::get());
+        // crs.values_type = string_to_mpi_datatype(TypeToString<real_t>::get());
+
+        // if(!rowptr0) {
+        //     for(ptrdiff_t i = 0; i < local_rows + 1; i++) {
+        //         rowptr[i] += row_offset;
+        //     }
+        // }
+
+        // crs.rowptr = (char *)rowptr;
+        // crs.colidx = (char *)colidx;
+        // crs.values = (char *)values;
+
+        // crs_write(comm.get(), "dbg/rowptr.raw", "dbg/colidx.raw", "dbg/values.raw", &crs);
+
+        // if(!rowptr0) {
+        //     for(ptrdiff_t i = 0; i < local_rows + 1; i++) {
+        //         rowptr[i] -= row_offset;
+        //     }
+        // }
+    }
+#endif
+
+#if 0
     bool parallel_decompose_block(const int block_size,
                                   const PetscMatrix &matrix,
                                   const int num_partitions,
@@ -303,7 +379,10 @@ namespace utopia {
 
         Mat d, o;
 
+        // PetscMatrix smat = matrix + utopia::transpose(matrix);
+
         const PetscInt *colmap;
+        // MatMPIAIJGetSeqAIJ(smat.raw_type(), &d, &o, &colmap);
         MatMPIAIJGetSeqAIJ(matrix.raw_type(), &d, &o, &colmap);
 
         PetscCrsView d_view(d);
@@ -358,8 +437,10 @@ namespace utopia {
         float UTOPIA_METIS_WEIGHT_SHIFT = 0;
         UTOPIA_READ_ENV(UTOPIA_METIS_WEIGHT_SHIFT, atof);
 
-        std::vector<idx_t> actual_vwgts(d_view.rows(), 0);
+        std::vector<idx_t> actual_vwgts;
         if (wgtflag) {
+            actual_vwgts.resize(d_view.rows(), 0);
+
             for (PetscInt i = 0; i < n_local_block_rows; ++i) {
                 actual_vwgts[i] = xadj[i + 1] - xadj[i];
             }
@@ -379,6 +460,15 @@ namespace utopia {
 
         int ret = 0;
         {
+
+            write_parmetis_graph(matrix.comm(),
+                n_local_block_rows, matrix.rows() / block_size,
+                    matrix.row_range().begin(),
+                    &xadj[0],
+                    &adjncy[0],
+                    &tpwgts[0]
+                    );
+
             UTOPIA_TRACE_SCOPE("ParMETIS_V3_PartKway");
             ret = ParMETIS_V3_PartKway(vtxdist,     // 0
                                        &xadj[0],    // 1
@@ -416,6 +506,193 @@ namespace utopia {
             return false;
         }
     }
+
+#else //0
+    bool parallel_decompose_block(const int block_size,
+                                  const PetscMatrix &matrix,
+                                  const int num_partitions,
+                                  int *partitions) {
+        if(!parallel_decompose(matrix, num_partitions, partitions)) {
+            return false;
+        }
+
+        // Make sure that vector dofs are together
+        // FIXME this is not very good
+        ptrdiff_t lrows = matrix.local_rows() / block_size;
+        for(ptrdiff_t i = 0; i < lrows; i++) {
+            for(int bi = 1; bi < block_size; bi++) {
+                partitions[i*block_size + bi] = partitions[i*block_size];
+            }
+        }
+
+        return true;
+    }
+
+    // bool parallel_decompose_block(const int block_size,
+    //                               const PetscMatrix &matrix,
+    //                               const int num_partitions,
+    //                               int *partitions) {
+    //     UTOPIA_TRACE_SCOPE("parallel_decompose_block");
+
+    //     auto rrs = matrix.row_ranges();
+
+    //     int comm_size = matrix.comm().size();
+    //     idx_t *vtxdist = (idx_t *)malloc((comm_size + 1) * sizeof(idx_t));
+
+    //     for (int r = 0; r <= comm_size; r++) {
+    //         vtxdist[r] = rrs[r] / block_size;
+    //     }
+
+    //     const idx_t row_offset = vtxdist[matrix.comm().rank()];
+
+    //     idx_t ncon = 1;
+    //     idx_t *vwgt = nullptr;
+    //     // idx_t* vsize = nullptr;
+    //     idx_t *adjwgt = nullptr;
+    //     idx_t wgtflag = 0;
+    //     idx_t numflag = 0;
+    //     idx_t nparts = num_partitions;
+
+    //     real_t ubvec[1] = {1.05};
+    //     idx_t options[3] = {0};
+    //     // idx_t objval = -1;
+    //     idx_t edgecut = 0;
+    //     idx_t *parts = partitions;
+    //     MPI_Comm comm = matrix.comm().raw_comm();
+
+    //     Mat d, o;
+
+    //     const PetscInt *colmap;
+    //     MatMPIAIJGetSeqAIJ(matrix.raw_type(), &d, &o, &colmap);
+
+    //     PetscCrsView d_view(d);
+    //     PetscCrsView o_view(o);
+
+    //     ptrdiff_t n_local_block_rows = d_view.rows() / block_size;
+    //     // ptrdiff_t block_nnz = (d_view.colidx().size() + o_view.colidx().size()) / (block_size * block_size);
+    //     ptrdiff_t block_nnz = (d_view.colidx().size() + o_view.colidx().size()) / (block_size);
+
+    //     std::vector<idx_t> xadj(n_local_block_rows + 1, 0);
+    //     std::vector<idx_t> adjncy(block_nnz, -1);
+    //     std::vector<real_t> tpwgts(num_partitions, 1. / num_partitions);
+
+    //     auto cr = matrix.col_range();
+
+    //     PetscInt col_offset = cr.begin() / block_size;
+
+    //     auto d_xadj = d_view.row_ptr();
+    //     xadj[0] = 0;
+
+    //     std::vector<PetscInt> row;
+    //     for (PetscInt i = 0; i < n_local_block_rows; i++) {
+    //         xadj[i + 1] = xadj[i];
+
+    //         row.clear();
+
+    //         for (int bi = 0; bi < block_size; bi++) {
+    //             auto d_row = d_view.row(i * block_size + bi);
+    //             auto o_row = o_view.row(i * block_size + bi);
+
+    //             for (PetscInt k = 0; k < d_row.length; k++) {
+    //                 const idx_t col = d_row.colidx(k) / block_size;
+    //                 if (col_offset + col != row_offset) {
+    //                     row.push_back(col);
+    //                 }
+    //             }
+
+    //             for (PetscInt k = 0; k < o_row.length; k++) {
+    //                 const idx_t col = colmap[o_row.colidx(k)] / block_size;
+    //                 row.push_back(col);
+    //             }
+    //         }
+
+    //         std::sort(row.begin(), row.end());
+    //         auto r_end = std::unique(row.begin(), row.end());
+
+    //         for (auto it = row.begin(); it != r_end; it++) {
+    //             adjncy[xadj[i + 1]++] = *it;
+    //         }
+    //     }
+
+    //     int UTOPIA_METIS_USE_WEIGHTS = 0;
+    //     UTOPIA_READ_ENV(UTOPIA_METIS_USE_WEIGHTS, atoi);
+    //     wgtflag = UTOPIA_METIS_USE_WEIGHTS ? 2 : 0;
+
+    //     float UTOPIA_METIS_WEIGHT_FACTOR = 2;
+    //     UTOPIA_READ_ENV(UTOPIA_METIS_WEIGHT_FACTOR, atof);
+
+    //     float UTOPIA_METIS_WEIGHT_SHIFT = 0;
+    //     UTOPIA_READ_ENV(UTOPIA_METIS_WEIGHT_SHIFT, atof);
+
+    //     std::vector<idx_t> actual_vwgts;
+    //     if (wgtflag) {
+    //         actual_vwgts.resize(d_view.rows(), 0);
+    //         for (PetscInt i = 0; i < n_local_block_rows; ++i) {
+    //             actual_vwgts[i] = xadj[i + 1] - xadj[i];
+    //         }
+
+    //         idx_t max_weight = 0;
+    //         for (PetscInt i = 0; i < n_local_block_rows; ++i) {
+    //             max_weight = std::max(max_weight, actual_vwgts[i]);
+    //         }
+
+    //         for (PetscInt i = 0; i < n_local_block_rows; ++i) {
+    //             actual_vwgts[i] = UTOPIA_METIS_WEIGHT_SHIFT +
+    //                               std::max(actual_vwgts[i] * UTOPIA_METIS_WEIGHT_FACTOR / max_weight, 1.f);
+    //         }
+
+    //         vwgt = &actual_vwgts[0];
+    //     }
+
+    //     int ret = 0;
+    //     {
+
+    //         write_parmetis_graph(matrix.comm(),
+    //             n_local_block_rows, matrix.rows() / block_size,
+    //                 matrix.row_range().begin(),
+    //                 &xadj[0],
+    //                 &adjncy[0],
+    //                 &tpwgts[0]
+    //                 );
+
+    //         UTOPIA_TRACE_SCOPE("ParMETIS_V3_PartKway");
+    //         ret = ParMETIS_V3_PartKway(vtxdist,     // 0
+    //                                    &xadj[0],    // 1
+    //                                    &adjncy[0],  // 2
+    //                                    vwgt,        // 3
+    //                                    adjwgt,      // 4
+    //                                    &wgtflag,    // 5
+    //                                    &numflag,    // 6
+    //                                    &ncon,       // 7
+    //                                    &nparts,     // 8
+    //                                    &tpwgts[0],  // 9
+    //                                    ubvec,       // 10
+    //                                    options,     // 11
+    //                                    &edgecut,    // 12
+    //                                    parts,       // 13
+    //                                    &comm);      // 14
+    //     }
+
+    //     if (sizeof(idx_t) != sizeof(PetscInt)) {
+    //         free(vtxdist);
+    //     }
+
+    //     print_stats(matrix.comm(), matrix.rows() / block_size, n_local_block_rows, parts);
+
+    //     if (ret == METIS_OK) {
+    //         // Since we redistribute scalars we need to unblock here
+    //         for (PetscInt i = n_local_block_rows - 1; i >= 0; i--) {
+    //             for (int b = 0; b < block_size; b++) {
+    //                 parts[i * block_size + b] = parts[i];
+    //             }
+    //         }
+
+    //         return true;
+    //     } else {
+    //         return false;
+    //     }
+    // }
+#endif // 0
 #endif
 
     bool partitions_to_permutations(const Communicator &comm,
