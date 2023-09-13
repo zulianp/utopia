@@ -104,8 +104,38 @@ namespace utopia {
     }
 
 #else
+    static void print_stats(const MPICommunicator &comm,
+                            const PetscInt rows,
+                            PetscInt const local_rows,
+                            const int *parts) {
+        if (Utopia::instance().verbose()) {
+            PetscInt migrating_nodes = 0;
+
+            int rank = comm.rank();
+            for (PetscInt i = 0; i < local_rows; i++) {
+                migrating_nodes += parts[i] != rank;
+            }
+
+            ptrdiff_t total_migrating_nodes = comm.sum(migrating_nodes);
+            std::stringstream ss;
+
+            if (!rank) {
+                ss << "Migrating nodes " << total_migrating_nodes << "/" << (rows) << " ("
+                   << (100 * double(total_migrating_nodes) / (rows)) << "%)\n";
+            }
+
+            ss << migrating_nodes << "/" << local_rows << " (" << (100 * double(migrating_nodes) / local_rows)
+               << "%)\n";
+
+            utopia::out() << std::flush;
+            comm.synched_print(ss.str());
+            utopia::out() << std::flush;
+        }
+    }
 
     bool parallel_decompose(const PetscMatrix &matrix, const int num_partitions, int *partitions) {
+        UTOPIA_TRACE_SCOPE("parallel_decompose");
+
         auto rrs = matrix.row_ranges();
 
         int comm_size = matrix.comm().size();
@@ -206,7 +236,10 @@ namespace utopia {
             vwgt = &actual_vwgts[0];
         }
 
-        int ret = ParMETIS_V3_PartKway(vtxdist,     // 0
+        int ret = 0;
+        {
+            UTOPIA_TRACE_SCOPE("ParMETIS_V3_PartKway");
+            ret = ParMETIS_V3_PartKway(vtxdist,     // 0
                                        &xadj[0],    // 1
                                        &adjncy[0],  // 2
                                        vwgt,        // 3
@@ -221,6 +254,9 @@ namespace utopia {
                                        &edgecut,    // 12
                                        parts,       // 13
                                        &comm);      // 14
+        }
+
+        print_stats(matrix.comm(), matrix.rows(), matrix.local_rows(), parts);
 
         if (sizeof(idx_t) != sizeof(PetscInt)) {
             free(vtxdist);
@@ -237,6 +273,8 @@ namespace utopia {
                                   const PetscMatrix &matrix,
                                   const int num_partitions,
                                   int *partitions) {
+        UTOPIA_TRACE_SCOPE("parallel_decompose_block");
+
         auto rrs = matrix.row_ranges();
 
         int comm_size = matrix.comm().size();
@@ -339,7 +377,10 @@ namespace utopia {
             vwgt = &actual_vwgts[0];
         }
 
-        int ret = ParMETIS_V3_PartKway(vtxdist,     // 0
+        int ret = 0;
+        {
+            UTOPIA_TRACE_SCOPE("ParMETIS_V3_PartKway");
+            ret = ParMETIS_V3_PartKway(vtxdist,     // 0
                                        &xadj[0],    // 1
                                        &adjncy[0],  // 2
                                        vwgt,        // 3
@@ -354,10 +395,13 @@ namespace utopia {
                                        &edgecut,    // 12
                                        parts,       // 13
                                        &comm);      // 14
+        }
 
         if (sizeof(idx_t) != sizeof(PetscInt)) {
             free(vtxdist);
         }
+
+        print_stats(matrix.comm(), matrix.rows() / block_size, n_local_block_rows, parts);
 
         if (ret == METIS_OK) {
             // Since we redistribute scalars we need to unblock here
@@ -380,6 +424,8 @@ namespace utopia {
                                     Traits<PetscMatrix>::IndexArray &index,
                                     std::vector<int> &rpartitions,
                                     Traits<PetscMatrix>::IndexArray &rindex) {
+        UTOPIA_TRACE_SCOPE("partitions_to_permutations");
+
         const int comm_size = comm.size();
 
         PetscInt r_begin = rrs[comm.rank()];
@@ -653,6 +699,8 @@ namespace utopia {
                                        const Traits<PetscMatrix>::IndexArray &permutation,
                                        PetscMatrix &out,
                                        MatReuse reuse) {
+        UTOPIA_TRACE_SCOPE("redistribute_from_permutation");
+
         IS is = nullptr;
         PetscErrorCode err =
             ISCreateGeneral(in.comm().raw_comm(), permutation.size(), &permutation[0], PETSC_USE_POINTER, &is);

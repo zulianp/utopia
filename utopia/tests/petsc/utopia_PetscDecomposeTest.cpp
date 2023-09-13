@@ -194,27 +194,17 @@ public:
         if (!A.comm().rank()) {
             utopia::out() << "dofs: " << A.rows() << "\n";
         }
-
-        // auto sp = utopia::param_list(
-        //     utopia::param("type", "bdd"),
-        //     utopia::param("verbose", true),
-        //     utopia::param("block_size", 4),
-        //     utopia::param("num_blocks", 4),
-        //     utopia::param("inner_solver",
-        //                   utopia::param_list(utopia::param("verbose", true), utopia::param("max_it", 10 * 1000))));
-
-        auto sp = utopia::param_list(
-            utopia::param("type", "ksp"),
-            utopia::param("ksp_type", "fgrmes"),
-            utopia::param("pc_type", "bjacobi"),
-            utopia::param("atol", "1e-8"),
-            utopia::param("rtol", "1e-18"),
-            utopia::param("stol", "1e-16"),
-            utopia::param("verbose", true)
-            );
+        auto sp = utopia::param_list(utopia::param("type", "ksp"),
+                                     utopia::param("ksp_type", "dgmres"),
+                                     utopia::param("pc_type", "bjacobi"),
+                                     utopia::param("atol", "1e-8"),
+                                     utopia::param("rtol", "1e-18"),
+                                     utopia::param("stol", "1e-16"),
+                                     utopia::param("verbose", true));
 
         auto p = utopia::param_list(
             // utopia::param("block_size", (comm.size() == 2 || comm.size() == 4)? 2 : 1),
+            utopia::param("block_size", 4),
             utopia::param("inner_solver", std::move(sp)));
 
         RebalancedSolver solver;
