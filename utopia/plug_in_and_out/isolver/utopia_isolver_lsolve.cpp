@@ -1,5 +1,6 @@
 #include "utopia_Base.hpp"
 #include "utopia_InputParameters.hpp"
+#include "utopia_Utils.hpp"
 #include "utopia_polymorphic_LinearSolver.hpp"
 
 #ifdef UTOPIA_WITH_PETSC
@@ -33,14 +34,6 @@ using LinearSolver_t = utopia::LinearSolver<Matrix_t, Vector_t>;
 
 #define Scalar_t ISOLVER_SCALAR_T;
 #define Size_t ISOLVER_IDX_T;
-
-#define UTOPIA_READ_ENV(name, conversion) \
-    do {                                  \
-        char *var = getenv(#name);        \
-        if (var) {                        \
-            name = conversion(var);       \
-        }                                 \
-    } while (0)
 
 extern "C" {
 #include "isolver_lsolve.h"

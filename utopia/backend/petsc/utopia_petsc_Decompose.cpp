@@ -4,6 +4,7 @@
 #include "utopia_Instance.hpp"
 #include "utopia_Logger.hpp"
 #include "utopia_TypeToString.hpp"
+#include "utopia_Utils.hpp"
 
 #ifdef UTOPIA_WITH_METIS
 #include "utopia_Metis.hpp"
@@ -29,14 +30,6 @@
 #include "utopia_Core.hpp"
 
 namespace utopia {
-
-#define UTOPIA_READ_ENV(name, conversion) \
-    do {                                  \
-        char *var = getenv(#name);        \
-        if (var) {                        \
-            name = conversion(var);       \
-        }                                 \
-    } while (0)
 
 #ifndef UTOPIA_WITH_METIS
 
@@ -143,7 +136,30 @@ namespace utopia {
         }
     }
 
+    bool parallel_decompose_random(const PetscMatrix &matrix, const int num_partitions, int *partitions) {
+        UTOPIA_TRACE_SCOPE("parallel_decompose_random");
+        ptrdiff_t local_rows = matrix.local_rows();
+
+        std::srand(std::time(nullptr));  // use current time as seed for random generator
+
+        for (ptrdiff_t i = 0; i < local_rows; i++) {
+            int random_part = num_partitions * double(std::rand()) / RAND_MAX;
+            partitions[i] = std::min(random_part, num_partitions - 1);
+        }
+
+        return true;
+    }
+
     bool parallel_decompose(const PetscMatrix &matrix, const int num_partitions, int *partitions) {
+        {  // Use for stress test
+            int UTOPIA_DEBUG_RANDOM_DECOMPOSITION = 0;
+            UTOPIA_READ_ENV(UTOPIA_DEBUG_RANDOM_DECOMPOSITION, atoi);
+
+            if (UTOPIA_DEBUG_RANDOM_DECOMPOSITION) {
+                return parallel_decompose_random(matrix, num_partitions, partitions);
+            }
+        }
+
         UTOPIA_TRACE_SCOPE("parallel_decompose");
 
         auto rrs = matrix.row_ranges();
@@ -281,12 +297,12 @@ namespace utopia {
 
 #ifdef UTOPIA_WITH_MATRIX_IO
     void write_parmetis_graph(const PetscCommunicator &comm,
-        const ptrdiff_t local_rows, const ptrdiff_t rows, PetscInt row_offset,
-        idx_t *rowptr,
-        idx_t *colidx,
-        real_t *values 
-        )
-    {
+                              const ptrdiff_t local_rows,
+                              const ptrdiff_t rows,
+                              PetscInt row_offset,
+                              idx_t *rowptr,
+                              idx_t *colidx,
+                              real_t *values) {
         UTOPIA_TRACE_SCOPE("write_parmetis_graph");
 
         const idx_t rowptr0 = rowptr[0];
@@ -296,24 +312,23 @@ namespace utopia {
         crs.grows = rows;
         crs.lnnz = rowptr[local_rows];
 
-
         std::stringstream ss;
 
-        ss << "local_rows: " << local_rows  << "\n";
-        ss << "rows: " << rows  << "\n";
-        ss << "rowptr[local_rows]: " << rowptr[local_rows]  << "\n";
+        ss << "local_rows: " << local_rows << "\n";
+        ss << "rows: " << rows << "\n";
+        ss << "rowptr[local_rows]: " << rowptr[local_rows] << "\n";
 
-        for(ptrdiff_t i = 0; i < 3; i++) {
-        for(idx_t k = rowptr[i]; k < rowptr[i+1]; k++) {
-            ss << colidx[k] << " ";
+        for (ptrdiff_t i = 0; i < 3; i++) {
+            for (idx_t k = rowptr[i]; k < rowptr[i + 1]; k++) {
+                ss << colidx[k] << " ";
+            }
+
+            ss << "\n";
         }
 
-        ss << "\n";
-    }
-
         comm.synched_print(ss.str());
-        
-         // long lnnz = crs.lnnz;
+
+        // long lnnz = crs.lnnz;
         // long start = 0;
         // MPI_Exscan(&lnnz, &start, 1, MPI_LONG, MPI_SUM, comm);
         // crs.start = start;
@@ -507,21 +522,21 @@ namespace utopia {
         }
     }
 
-#else //0
+#else   // 0
     bool parallel_decompose_block(const int block_size,
                                   const PetscMatrix &matrix,
                                   const int num_partitions,
                                   int *partitions) {
-        if(!parallel_decompose(matrix, num_partitions, partitions)) {
+        if (!parallel_decompose(matrix, num_partitions, partitions)) {
             return false;
         }
 
         // Make sure that vector dofs are together
         // FIXME this is not very good
         ptrdiff_t lrows = matrix.local_rows() / block_size;
-        for(ptrdiff_t i = 0; i < lrows; i++) {
-            for(int bi = 1; bi < block_size; bi++) {
-                partitions[i*block_size + bi] = partitions[i*block_size];
+        for (ptrdiff_t i = 0; i < lrows; i++) {
+            for (int bi = 1; bi < block_size; bi++) {
+                partitions[i * block_size + bi] = partitions[i * block_size];
             }
         }
 
@@ -692,7 +707,7 @@ namespace utopia {
     //         return false;
     //     }
     // }
-#endif // 0
+#endif  // 0
 #endif
 
     bool partitions_to_permutations(const Communicator &comm,

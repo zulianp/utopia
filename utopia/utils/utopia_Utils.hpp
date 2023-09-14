@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <functional>
 #include <memory>
 #include <string>
@@ -25,6 +26,14 @@
 #define UTOPIA_LIKELY(x) (x)
 #define UTOPIA_UNLIKELY(x) (x)
 #endif
+
+#define UTOPIA_READ_ENV(name, conversion) \
+    do {                                  \
+        char *var = getenv(#name);        \
+        if (var) {                        \
+            name = conversion(var);       \
+        }                                 \
+    } while (0)
 
 namespace utopia {
     inline bool file_exists(const std::string &file_name) {
@@ -175,9 +184,7 @@ namespace utopia {
             if (pFile != nullptr && mpi_world_rank() == 0) fclose(pFile);
         }
 
-        void remove_file(const std::string file_name){
-            std::remove(file_name.c_str());
-        }
+        void remove_file(const std::string file_name) { std::remove(file_name.c_str()); }
 
         inline bool file_exists(const std::string &file_name) {
             struct stat buffer {};

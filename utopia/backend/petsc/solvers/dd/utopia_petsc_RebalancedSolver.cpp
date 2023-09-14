@@ -91,6 +91,12 @@ namespace utopia {
 
             utopia::redistribute_from_permutation(*op, impl_->permutation, impl_->op);
 
+            if (0) {
+                std::stringstream ss;
+                ss << impl_->op.local_rows();
+                op->comm().synched_print(ss.str());
+            }
+
             // printf("%d DONE\n",  op->comm().rank());
 
             // std::stringstream ss;
