@@ -367,6 +367,12 @@ namespace utopia {
                 BC_conditions_[l]->emplace_time_dependent_BC(this->time_);
             }
 
+            for (std::size_t l = 0; l < BC_conditions_.size(); l++) {
+                if (auto *fff = dynamic_cast<ProblemType *>(level_functions_[l].get())) {
+                    fff->set_time(this->time_);
+                }
+            }
+
             // update fine level solution  and constraint
             spaces_.back()->apply_constraints(this->solution_);
 
