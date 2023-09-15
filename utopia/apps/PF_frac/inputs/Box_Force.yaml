@@ -1,0 +1,118 @@
+---
+app: BoxForceTest
+# Output 
+#output-path: Output/Hobb/HOBBS_PT_AT1_d2_Dirch_1E32_1nu05_2nu45_dt0003_W2_l2_m15_p01_Unif
+output-path: Output/BoxForce_100p_dam_DX0_5e5
+save_output: true
+# Mesh specification -----------------------------------------
+nx: 101
+ny: 101
+#nz: 2
+x_min: 0
+x_max: 1
+y_min: 0
+y_max: 1
+n_levels: 1
+# Problem specification ------------------------------------------
+# Boundary Conditions
+disp_y: 0.0
+disp_x: 0.0 #0.0000001 #0.02e3
+fix_phase_field_on_sides: false
+no_damage_on: false
+neumann_bc:
+  side: top
+  value: 100 #-1e-3
+  component: 2 #xaxis
+#Initial Condition
+# Phase field formulation
+length_scale: 0.05
+with_damage: true
+use_penalty_irreversibility: true
+penalty_tol: 0.01
+penalty_tol_non_neg: 1e9
+use_crack_set_irreversibiblity: true
+crack_set_tol: 0.9999999
+## Material paramteters -------------------------------------------------
+#hetero_params: none
+#E: 20e9	        	#Dolostone
+#nu: 0.25		#Dolostone
+#Gc: 200			#Dolostone 48
+hetero_params: RegularisedSingleLayer
+random_variation: false
+random_standard_deviation: 1
+random_damage: false
+uniform_damage: false
+central_damage: false
+IC_number: 10 			#for uniform damage
+bottom_layer_height: 0.4	
+top_layer_height: 0.6
+bottom_layer_height2: -10e3 	#below zero not modelled	
+top_layer_height2: -10e3 	#below zero ... 
+interface_regularisation_length: 0.09
+E_1: 32e9	        	#Dolostone
+E_2: 6e9			#Shale
+nu_1: 0.25			#Dolostone
+nu_2: 0.15 			#Shale 	
+Gc_1: 20 			#Dolostone 48
+Gc_2: 20		 	#Shale
+ft_1: 0.00104641
+ft_2: 0.00774596
+Gc_int: 1000e-6
+random_variation: false		
+random_standard_deviation: 1
+## Time stepping -------------------------------------------------------
+dt: 0.0005
+final_time: 0.15
+# dynamic time stepping with fracture energy
+fracture_energy_time_stepping: true
+frac_energy_max_change: 1.15
+frac_energy_min_change: 1.01
+dt_min: 0.00005
+dt_max: 0.0005
+increase_factor: 2
+adjust_dt_on_failure: false
+shrinking_factor: 0.5
+## Pressure handling ---------------------------------------------------------
+mobility: 0.0
+use_mobility: false 
+use_pressure: false
+use_constant_pressure: false
+pressure0: 0
+pressure_increase_factor: 0
+# Solver specific options
+turn_off_uc_coupling: true
+turn_off_cu_coupling: true
+use_dense_hessian: false
+check_derivatives: false
+block_solver: true
+hjsmn_smoother: false
+diff_controller:
+  spacing: 1.0e-06
+  hessian_from_grad: false
+use_mprgp: true  
+use_box_constraints: false  # TR method with penalty, run up to 5 cores
+solver:
+  verbose: false
+  mini_verbose: true
+  max_it: 8000
+  atol: 1e-8
+  atol_suff: 1e-16
+  rtol: 1e-16
+  rtol_suff: 1e-16
+  stol: 1e-16
+  stol_suff: 1e-16  
+  suff_it: 500
+  max_coarse_it: 2
+  max_sucessful_coarse_it: 1
+  pre_smoothing_steps: 2
+  post_smoothing_steps: 2
+  deltaH_lagging: false
+  Hpost_lagging: false
+  grad_smoothess_termination: 1.0e-06
+  max_sucessful_smoothing_it: 1
+  max_QP_smoothing_it: 60
+  max_QP_coarse_it: 1000
+  linear_solver:
+    verbose: false
+    atol: 1.0e-8
+    max_it: 1200
