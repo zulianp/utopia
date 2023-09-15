@@ -716,23 +716,23 @@ namespace utopia {
                             }
                         }
 
-//                         printf("\n------ u gradient ------\n");
-//                         for (int i = 0; i < U_NDofs; i++) {
-//                            double val = u_el_vec(i);
-//                            if (std::abs(val) < 1e-4) {
-//                                val = 0;
-//                            }
-//                            printf("%.4g, ", val);
-//                         }
-//                         printf("\n------- c gradient ------\n");
-//                         for (int j = 0; j < C_NDofs; j++) {
-//                                 double val = c_el_vec(j);
-//                                 if (std::abs(val) < 1e-4) {
-//                                     val = 0;
-//                                 }
-//                                 printf("%.4g, ", val);
-//                             }
-//                         printf("\n");
+                        //                         printf("\n------ u gradient ------\n");
+                        //                         for (int i = 0; i < U_NDofs; i++) {
+                        //                            double val = u_el_vec(i);
+                        //                            if (std::abs(val) < 1e-4) {
+                        //                                val = 0;
+                        //                            }
+                        //                            printf("%.4g, ", val);
+                        //                         }
+                        //                         printf("\n------- c gradient ------\n");
+                        //                         for (int j = 0; j < C_NDofs; j++) {
+                        //                                 double val = c_el_vec(j);
+                        //                                 if (std::abs(val) < 1e-4) {
+                        //                                     val = 0;
+                        //                                 }
+                        //                                 printf("%.4g, ", val);
+                        //                             }
+                        //                         printf("\n");
 
                         U_view.add_vector(u_e, u_el_vec, g_view);
                         C_view.add_vector(c_e, c_el_vec, g_view);
@@ -740,8 +740,8 @@ namespace utopia {
             }
 
             if (!empty(this->force_field_)) {
-                // MAYBE g -= this->force_field_;
-                g += this->force_field_;
+                g -= this->force_field_;
+                //                g += this->force_field_;
             }
 
             // check before boundary conditions
@@ -893,7 +893,8 @@ namespace utopia {
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             const Scalar tr_strain_u = trace(el_strain.strain[qp]);
 
-                            //const Scalar eep = elastic_energy(this->params_, c[qp], tr_strain_u, el_strain.strain[qp]);
+                            // const Scalar eep = elastic_energy(this->params_, c[qp], tr_strain_u,
+                            // el_strain.strain[qp]);
                             const Scalar eep_fix = strain_energy(this->params_, tr_strain_u, el_strain.strain[qp]);
 
                             // pragma GCCunroll(C_NDofs)
@@ -972,13 +973,14 @@ namespace utopia {
                                     // UNROLL_FACTOR)) #pragma GCC unroll U_MIN(U_NDofs,
                                     // UNROLL_FACTOR)
                                     for (SizeType u_i = 0; u_i < U_NDofs; ++u_i) {
-                                        auto &&strain_shape = u_strain_shape_el(u_i, qp); //E.P ?? should this be strain shape functions or just strain??
+                                        auto &&strain_shape = u_strain_shape_el(
+                                            u_i, qp);  // E.P ?? should this be strain shape functions or just strain??
 
                                         Scalar val =
                                             bilinear_uc(this->params_, c[qp], stress, strain_shape, c_shape_i) * dx(qp);
 
                                         if (this->params_.use_pressure) {
-                                                    std::cout << "USE PRESSURE IS ON" << std::endl;
+                                            std::cout << "USE PRESSURE IS ON" << std::endl;
                                             const Scalar tr_strain_shape = sum(diag(strain_shape));
                                             val += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(
                                                        this->params_, c[qp]) *
@@ -996,20 +998,20 @@ namespace utopia {
                                     }
                                 }
                             }
-                        }//end of quadrature point llop
+                        }  // end of quadrature point llop
 
-//                         printf("\n------- Hess ------------\n");
-//                         for (int i = 0; i < U_NDofs + C_NDofs; i++) {
-//                             for (int j = 0; j < U_NDofs + C_NDofs; j++) {
-//                                 double val = el_mat(i, j);
-//                                 if (std::abs(val) < 1e-4) {
-//                                     val = 0;
-//                                 }
-//                                 printf("%.4g, ", val);
-//                             }
-//                             printf("\n");
-//                         }
-//                         printf("---------------------\n");
+                        //                         printf("\n------- Hess ------------\n");
+                        //                         for (int i = 0; i < U_NDofs + C_NDofs; i++) {
+                        //                             for (int j = 0; j < U_NDofs + C_NDofs; j++) {
+                        //                                 double val = el_mat(i, j);
+                        //                                 if (std::abs(val) < 1e-4) {
+                        //                                     val = 0;
+                        //                                 }
+                        //                                 printf("%.4g, ", val);
+                        //                             }
+                        //                             printf("\n");
+                        //                         }
+                        //                         printf("---------------------\n");
 
                         space_view.add_matrix(e, el_mat, H_view);
                     });
@@ -1115,8 +1117,9 @@ namespace utopia {
                                                     // u
                                                     const Scalar &trace,
                                                     const Strain &strain) {
-//            std::cout << "frac en: " << PhaseFieldFracBase<FunctionSpace, Dim>::fracture_energy(
-//                        params, phase_field_value, phase_field_grad) << "   elas en: " << elastic_energy(params, phase_field_value, trace, strain) << std::endl;
+            //            std::cout << "frac en: " << PhaseFieldFracBase<FunctionSpace, Dim>::fracture_energy(
+            //                        params, phase_field_value, phase_field_grad) << "   elas en: " <<
+            //                        elastic_energy(params, phase_field_value, trace, strain) << std::endl;
 
             return PhaseFieldFracBase<FunctionSpace, Dim>::fracture_energy(
                        params, phase_field_value, phase_field_grad) +

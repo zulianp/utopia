@@ -545,8 +545,8 @@ namespace utopia {
 
             if (!empty(this->force_field_)) {
                 assert(false);
-                // MAYBE g -= this->force_field_;
-                g += this->force_field_;
+                g -= this->force_field_;
+                //                g += this->force_field_;
             }
 
             // check before boundary conditions

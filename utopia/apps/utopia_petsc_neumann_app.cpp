@@ -46,7 +46,7 @@ namespace utopia {
         NeumannBoundaryCondition<FunctionSpace> bc(
             space,
             // selector
-            SideSet::left(),
+            SideSet::top(),
             // value
             UTOPIA_LAMBDA(const Point &)->Scalar { return 1.0; },
             0);

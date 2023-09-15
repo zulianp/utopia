@@ -564,8 +564,8 @@ namespace utopia {
             }
 
             if (!empty(this->force_field_)) {
-                // MAYBE g -= this->force_field_;
-                g += this->force_field_;
+                g -= this->force_field_;
+                //                g += this->force_field_;
             }
 
             this->space_.apply_zero_constraints(g);
@@ -632,7 +632,8 @@ namespace utopia {
             CoefStrain<USpace, Quadrature> strain(u_coeff, q);
 
             // reference based
-            //ShapeStress<USpace, Quadrature> p_stress(U, q, this->params_.mu, this->params_.lambda); //Check this!! This doesnt seem truly reference based
+            // ShapeStress<USpace, Quadrature> p_stress(U, q, this->params_.mu, this->params_.lambda); //Check this!!
+            // This doesnt seem truly reference based
             Strain<USpace, Quadrature> ref_strain_u(U, q);
 
             {
@@ -657,7 +658,8 @@ namespace utopia {
                 auto c_grad_shape_view = c_grad_shape.view_device();
 
                 // FIXME
-//                auto p_stress_view = p_stress.view_device(); //E.P Must remove as this DOESNT UPDATE MATERIAL PROPERTIES
+                //                auto p_stress_view = p_stress.view_device(); //E.P Must remove as this DOESNT UPDATE
+                //                MATERIAL PROPERTIES
 
                 auto H_view = this->space_.assembly_view_device(H);
                 auto ref_strain_u_view = ref_strain_u.view_device();
@@ -765,15 +767,15 @@ namespace utopia {
                                 auto &&u_strain_shape_l = u_strain_shape_el(l, qp);
 
                                 for (SizeType j = l; j < U_NDofs; ++j) {
-
                                     // Varying stress tensor
-                                    Scalar val = bilinear_uu_EP(this->params_,   //E.P Both bilinear_uu and bilienear_uu_EP work, however EP is more intuitive to understand
-                                                             c[qp],
-                                                             el_strain.strain[qp],
-                                                             u_strain_shape_el(j, qp),
-                                                             u_strain_shape_l) *
-                                                 dx(qp);
-
+                                    Scalar val =
+                                        bilinear_uu_EP(this->params_,  // E.P Both bilinear_uu and bilienear_uu_EP work,
+                                                                       // however EP is more intuitive to understand
+                                                       c[qp],
+                                                       el_strain.strain[qp],
+                                                       u_strain_shape_el(j, qp),
+                                                       u_strain_shape_l) *
+                                        dx(qp);
 
                                     val = (l == j) ? (0.5 * val) : val;
                                     el_mat(C_NDofs + l, C_NDofs + j) += val;
@@ -812,32 +814,32 @@ namespace utopia {
                                         // not symetric, but more numerically stable
                                         if (this->params_.turn_off_cu_coupling == false) {
                                             el_mat(c_i, C_NDofs + u_i) += val;
-//                                                    std::cout << "here 1" << std::endl;
+                                            //                                                    std::cout << "here 1"
+                                            //                                                    << std::endl;
                                         }
 
                                         if (this->params_.turn_off_uc_coupling == false) {
                                             el_mat(C_NDofs + u_i, c_i) += val;
-//                                                    std::cout << "here 2" << std::endl;
-
+                                            //                                                    std::cout << "here 2"
+                                            //                                                    << std::endl;
                                         }
                                     }
                                 }
                             }
                         }
 
-
-//                        printf("---------------------\n");
-//                        for (int i = 0; i < U_NDofs + C_NDofs; i++) {
-//                            for (int j = 0; j < U_NDofs + C_NDofs; j++) {
-//                                double val = el_mat(i, j);
-//                                if (std::abs(val) < 1e-4) {
-//                                    val = 0;
-//                                }
-//                                printf("%.4g, ", val);
-//                            }
-//                            printf("\n");
-//                        }
-//                        printf("---------------------\n");
+                        //                        printf("---------------------\n");
+                        //                        for (int i = 0; i < U_NDofs + C_NDofs; i++) {
+                        //                            for (int j = 0; j < U_NDofs + C_NDofs; j++) {
+                        //                                double val = el_mat(i, j);
+                        //                                if (std::abs(val) < 1e-4) {
+                        //                                    val = 0;
+                        //                                }
+                        //                                printf("%.4g, ", val);
+                        //                            }
+                        //                            printf("\n");
+                        //                        }
+                        //                        printf("---------------------\n");
 
                         space_view.add_matrix(e, el_mat, H_view);
                     });
@@ -861,8 +863,6 @@ namespace utopia {
         }
 
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
 
         template <class Grad>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(const Parameters &params,
@@ -889,35 +889,35 @@ namespace utopia {
             return val;
         }
 
-        //Alternative way to write degradation
+        // Alternative way to write degradation
         template <class Grad>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu_EP(const Parameters &params,
-                                                         const Scalar &phase_field_value,
-                                                         const Grad &strain,
-                                                         const Grad &strain_trial,
-                                                         const Grad &strain_test) {
+                                                            const Scalar &phase_field_value,
+                                                            const Grad &strain,
+                                                            const Grad &strain_trial,
+                                                            const Grad &strain_test) {
             const Scalar strain0tr = trace(strain);
 
-            Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_neg, Jacobian_pos; //, Jacobian_shear, Jacobian_bulk;
-//            Jacobian_shear = params.mu    * params.I4shear;
-//            Jacobian_bulk  = params.kappa * params.I4sym;
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_neg, Jacobian_pos;  //, Jacobian_shear, Jacobian_bulk;
+            //            Jacobian_shear = params.mu    * params.I4shear;
+            //            Jacobian_bulk  = params.kappa * params.I4sym;
 
-            //Tension
-            if (strain0tr > 0) {   //shear terms          +   bulk terms
-                Jacobian_pos = params.mu * params.I4shear + params.kappa * params.I4sym ;
+            // Tension
+            if (strain0tr > 0) {  // shear terms          +   bulk terms
+                Jacobian_pos = params.mu * params.I4shear + params.kappa * params.I4sym;
             }
-            //compression
+            // compression
             else {
-                Jacobian_pos = params.mu * params.I4shear; //shear term
-                Jacobian_neg = params.kappa * params.I4sym; // bulk term
+                Jacobian_pos = params.mu * params.I4shear;   // shear term
+                Jacobian_neg = params.kappa * params.I4sym;  // bulk term
             }
 
-            Scalar gc = (1.0-params.regularization) * PFFormulation::degradation(phase_field_value, params) + params.regularization;
-            Scalar val = inner(strain_trial, contraction(Jacobian_neg + gc*Jacobian_pos, strain_test));
+            Scalar gc = (1.0 - params.regularization) * PFFormulation::degradation(phase_field_value, params) +
+                        params.regularization;
+            Scalar val = inner(strain_trial, contraction(Jacobian_neg + gc * Jacobian_pos, strain_test));
 
             return val;
         }
-
 
         template <class GradShape>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_cc(const Parameters &params,
@@ -941,8 +941,8 @@ namespace utopia {
                                                          const Stress &stress,
                                                          const FullStrain &full_strain,
                                                          const Scalar &c_trial_fun) {
-            return (1.0-params.regularization)*PFFormulation::degradation_deriv(phase_field_value, params) * c_trial_fun *
-                   inner(stress, full_strain);
+            return (1.0 - params.regularization) * PFFormulation::degradation_deriv(phase_field_value, params) *
+                   c_trial_fun * inner(stress, full_strain);
         }
 
         UTOPIA_INLINE_FUNCTION static Scalar elastic_deriv_cc(const Parameters &params,
@@ -975,26 +975,27 @@ namespace utopia {
             stress += ((2.0 * params.mu) * strain_dev);
 
             gc = PFFormulation::degradation(phase_field_value, params);
-            stress = ( (1.0-params.regularization)*gc + params.regularization) * stress + ((params.kappa * tr_negative) * device::identity<Scalar>());
+            stress = ((1.0 - params.regularization) * gc + params.regularization) * stress +
+                     ((params.kappa * tr_negative) * device::identity<Scalar>());
 
             // energy positive
             const Scalar energy_positive =
                 (0.5 * params.kappa * tr_positive * tr_positive) + (params.mu * inner(strain_dev, strain_dev));
 
-            elast_energy_derivative_c = (1.0-params.regularization)*PFFormulation::degradation_deriv(phase_field_value, params) * energy_positive;
+            elast_energy_derivative_c = (1.0 - params.regularization) *
+                                        PFFormulation::degradation_deriv(phase_field_value, params) * energy_positive;
         }
-
 
         template <class Strain, class Stress>
         UTOPIA_INLINE_FUNCTION static void compute_stress_components(const Parameters &params,
-                                                          const Scalar &phase_field_value,
-                                                          const Strain &strain,
-                                                          Stress &stress_vol,
-                                                          Stress &stress_dev,
-                                                          Strain &strain_vol,
-                                                          Strain &strain_dev,
-                                                          Scalar &energy_vol,
-                                                          Scalar &energy_dev) {
+                                                                     const Scalar &phase_field_value,
+                                                                     const Strain &strain,
+                                                                     Stress &stress_vol,
+                                                                     Stress &stress_dev,
+                                                                     Strain &strain_vol,
+                                                                     Strain &strain_dev,
+                                                                     Scalar &energy_vol,
+                                                                     Scalar &energy_dev) {
             const Scalar tr = trace(strain);
             strain_dev = strain - (((1. / Dim) * tr) * device::identity<Scalar>());
             strain_vol = (((1. / Dim) * tr) * device::identity<Scalar>());
@@ -1002,26 +1003,25 @@ namespace utopia {
             const Scalar tr_negative = device::min(tr, 0.0);
             const Scalar tr_positive = tr - tr_negative;
 
-            Scalar gc = (1.0-params.regularization)*PFFormulation::degradation(phase_field_value, params) + params.regularization;
+            Scalar gc = (1.0 - params.regularization) * PFFormulation::degradation(phase_field_value, params) +
+                        params.regularization;
 
-            stress_dev = gc*((2.0 * params.mu) * strain_dev);
+            stress_dev = gc * ((2.0 * params.mu) * strain_dev);
 
             // energy positive
-            if (tr_negative < 0.0 ){
+            if (tr_negative < 0.0) {
                 stress_vol = ((params.kappa * tr_negative) * device::identity<Scalar>());
                 energy_vol = (0.5 * params.kappa * tr_negative * tr_negative);
-            }
-            else {
-                stress_vol = gc*((params.kappa * tr_positive) * device::identity<Scalar>()); \
-                energy_vol = gc*(0.5 * params.kappa * tr_positive * tr_positive);
+            } else {
+                stress_vol = gc * ((params.kappa * tr_positive) * device::identity<Scalar>());
+                energy_vol = gc * (0.5 * params.kappa * tr_positive * tr_positive);
             }
 
             const Strain strain_dev2 = transpose(strain_dev) * strain_dev;
             Scalar tr2dv = trace(strain_dev2);
 
             // energy positive
-            energy_dev = gc* (params.mu * tr2dv);
-
+            energy_dev = gc * (params.mu * tr2dv);
         }
 
         template <class Strain, class Stress>
@@ -1075,8 +1075,10 @@ namespace utopia {
             const Scalar energy_negative = (0.5 * params.kappa * tr_negative * tr_negative);
 
             const Scalar energy =
-                (PFFormulation::degradation(phase_field_value, params)*(1.0-params.regularization) + params.regularization) * energy_positive
-                    + energy_negative;
+                (PFFormulation::degradation(phase_field_value, params) * (1.0 - params.regularization) +
+                 params.regularization) *
+                    energy_positive +
+                energy_negative;
 
             return energy;
         }
@@ -1279,7 +1281,8 @@ namespace utopia {
 
                 Device::parallel_for(
                     this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                        Scalar elastic_value{0}, fracture_value{0}, elastic_pos{0}, elastic_neg{0}, elastic_vol{0}, elastic_dev{0};
+                        Scalar elastic_value{0}, fracture_value{0}, elastic_pos{0}, elastic_neg{0}, elastic_vol{0},
+                            elastic_dev{0};
                         StaticVector<Scalar, total_components * C_NDofs> energies_vec;
                         StaticVector<Scalar, C_NDofs> weight_el_vec;
                         StaticMatrix<Scalar, Dim, Dim> stress, stress_dummy;  //, strain_p;
@@ -1338,11 +1341,12 @@ namespace utopia {
 
                                 StaticMatrix<Scalar, Dim, Dim> stress_v, stress_dev, strain_v, strain_dev;
 
-
-                                Scalar gc = this->params_.regularization + (1.0-this->params_.regularization)*PFFormulation::degradation(c[qp], this->params_) ;
+                                Scalar gc =
+                                    this->params_.regularization + (1.0 - this->params_.regularization) *
+                                                                       PFFormulation::degradation(c[qp], this->params_);
                                 Scalar el_v{0}, el_d{0};
-                                compute_stress_components(this->params_, c[qp], epsi, stress_v, stress_dev, strain_v, strain_dev, el_v, el_d);
-
+                                compute_stress_components(
+                                    this->params_, c[qp], epsi, stress_v, stress_dev, strain_v, strain_dev, el_v, el_d);
 
                                 fracture_value +=
                                     shape * weight *
@@ -1354,53 +1358,77 @@ namespace utopia {
                                 elastic_value +=
                                     shape * weight * elastic_energy(this->params_, c[qp], tr, el_strain.strain[qp]);
 
-                                elastic_pos +=
-                                    shape * weight * gc * elastic_pos_qp;
+                                elastic_pos += shape * weight * gc * elastic_pos_qp;
 
                                 elastic_vol += shape * weight * el_v;
                                 elastic_dev += shape * weight * el_d;
 
-                                if ( elastic_vol + elastic_dev < 0.99*elastic_value || elastic_vol + elastic_dev > 1.01*elastic_value){
-                                       utopia_error("Vol and Deviatoric energies do not add up to total energy");
-                                       double error = (elastic_vol + elastic_dev)/elastic_value ;
-                                       utopia_error("Ratio: " + std::to_string(error) )
-                                       utopia_error("el v: " +  std::to_string(el_v) + "  el_d: " + std::to_string(el_d) +
-                                                    "  el_en: " + std::to_string(elastic_energy(this->params_, c[qp], tr, el_strain.strain[qp])));
+                                if (elastic_vol + elastic_dev < 0.99 * elastic_value ||
+                                    elastic_vol + elastic_dev > 1.01 * elastic_value) {
+                                    utopia_error("Vol and Deviatoric energies do not add up to total energy");
+                                    double error = (elastic_vol + elastic_dev) / elastic_value;
+                                    utopia_error("Ratio: " + std::to_string(error)) utopia_error(
+                                        "el v: " + std::to_string(el_v) + "  el_d: " + std::to_string(el_d) +
+                                        "  el_en: " +
+                                        std::to_string(elastic_energy(this->params_, c[qp], tr, el_strain.strain[qp])));
                                 }
 
-                                if ( el_v + el_d < 0.99*elastic_energy(this->params_, c[qp], tr, el_strain.strain[qp])|| elastic_vol + elastic_dev > 1.01*elastic_value){
-                                       utopia_error("Vol and Deviatoric energies do not add up to total energy");
-                                       double error = (elastic_vol + elastic_dev)/elastic_value ;
-                                       utopia_error("Ratio: " + std::to_string(error) );
+                                if (el_v + el_d <
+                                        0.99 * elastic_energy(this->params_, c[qp], tr, el_strain.strain[qp]) ||
+                                    elastic_vol + elastic_dev > 1.01 * elastic_value) {
+                                    utopia_error("Vol and Deviatoric energies do not add up to total energy");
+                                    double error = (elastic_vol + elastic_dev) / elastic_value;
+                                    utopia_error("Ratio: " + std::to_string(error));
                                 }
 
-
-                                //for verification
+                                // for verification
                                 Scalar energy_dummy, gc_dummy, tr_dummy;
                                 auto &epsi_dummy = el_strain.strain[qp];
                                 compute_stress(this->params_,  // need kappa updated
-                                        c[qp],
-                                        epsi_dummy,
-                                        stress_dummy,  // gets stress (already degraded) at quadrature point
-                                        tr_dummy,
-                                        gc_dummy,
-                                        energy_dummy);
+                                               c[qp],
+                                               epsi_dummy,
+                                               stress_dummy,  // gets stress (already degraded) at quadrature point
+                                               tr_dummy,
+                                               gc_dummy,
+                                               energy_dummy);
 
-//                                if ( std::pow( (stress_v + stress_dev - stress_dummy)(0,0), 2)/std::max(std::numeric_limits<double>::epsilon(),stress_dummy(0,0)) > 0.1 ||
-//                                     std::pow( (stress_v + stress_dev - stress_dummy)(0,1), 2)/std::max(std::numeric_limits<double>::epsilon(),stress_dummy(0,1)) > 0.1||
-//                                     std::pow( (stress_v + stress_dev - stress_dummy)(1,1), 2)/std::max(std::numeric_limits<double>::epsilon(),stress_dummy(1,1)) > 0.1 ){
-//                                       utopia_error("Vol and Deviatoric stress do not add up to total stress");
-//                                       double error_xx = ((stress_v + stress_dev)(0,0))/((stress_dummy)(0,0));
-//                                       double error_xy = ((stress_v + stress_dev)(0,1))/((stress_dummy)(0,1));
-//                                       double error_yy = ((stress_v + stress_dev)(1,1))/((stress_dummy)(1,1));
-////                                       utopia_error("error s_xx: " + std::to_string(error_xx) +
-////                                                    "\nerror s_xy: " + std::to_string(error_xy) +
-////                                                    "\nerror s_yy: " + std::to_string(error_yy) );
-//                                       utopia_error("comp s_xx: " + std::to_string((stress_v + stress_dev)(0,0)) + "  s_xx: " +  std::to_string((stress_dummy)(0,0)) +
-//                                                    "\ncomp s_xy: " + std::to_string((stress_v + stress_dev)(0,1)) + "  s_xy: " +  std::to_string((stress_dummy)(0,1)) +
-//                                                    "\ncomp s_yy: " + std::to_string((stress_v + stress_dev)(1,1)) + "  s_yy: " +  std::to_string((stress_dummy)(1,1)) );
-//                                        }
-
+                                //                                if ( std::pow( (stress_v + stress_dev -
+                                //                                stress_dummy)(0,0),
+                                //                                2)/std::max(std::numeric_limits<double>::epsilon(),stress_dummy(0,0))
+                                //                                > 0.1 ||
+                                //                                     std::pow( (stress_v + stress_dev -
+                                //                                     stress_dummy)(0,1),
+                                //                                     2)/std::max(std::numeric_limits<double>::epsilon(),stress_dummy(0,1))
+                                //                                     > 0.1|| std::pow( (stress_v + stress_dev -
+                                //                                     stress_dummy)(1,1),
+                                //                                     2)/std::max(std::numeric_limits<double>::epsilon(),stress_dummy(1,1))
+                                //                                     > 0.1 ){
+                                //                                       utopia_error("Vol and Deviatoric stress do not
+                                //                                       add up to total stress"); double error_xx =
+                                //                                       ((stress_v +
+                                //                                       stress_dev)(0,0))/((stress_dummy)(0,0)); double
+                                //                                       error_xy = ((stress_v +
+                                //                                       stress_dev)(0,1))/((stress_dummy)(0,1)); double
+                                //                                       error_yy = ((stress_v +
+                                //                                       stress_dev)(1,1))/((stress_dummy)(1,1));
+                                ////                                       utopia_error("error s_xx: " +
+                                ///std::to_string(error_xx) + / "\nerror s_xy: " + std::to_string(error_xy) + / "\nerror
+                                ///s_yy: " + std::to_string(error_yy) );
+                                //                                       utopia_error("comp s_xx: " +
+                                //                                       std::to_string((stress_v + stress_dev)(0,0)) +
+                                //                                       "  s_xx: " +
+                                //                                       std::to_string((stress_dummy)(0,0)) +
+                                //                                                    "\ncomp s_xy: " +
+                                //                                                    std::to_string((stress_v +
+                                //                                                    stress_dev)(0,1)) + "  s_xy: " +
+                                //                                                    std::to_string((stress_dummy)(0,1))
+                                //                                                    +
+                                //                                                    "\ncomp s_yy: " +
+                                //                                                    std::to_string((stress_v +
+                                //                                                    stress_dev)(1,1)) + "  s_yy: " +
+                                //                                                    std::to_string((stress_dummy)(1,1))
+                                //                                                    );
+                                //                                        }
 
                                 // getting nodal weight for normalisation
                                 weight_el_vec[n] += shape * weight;
@@ -1662,7 +1690,6 @@ namespace utopia {
                                 nodal_offset + k);  // get k'th strain corresponding to node i with weight i
                             strain_and_stress_view.set(nodal_offset + k,
                                                        si / wi);  // normalise the strain value by the weight wi
-
                         }
                     });
             }  // incase backed PETSC needs synchronisation (create view in scopes and destroy them when not needed)
@@ -1675,9 +1702,7 @@ namespace utopia {
             return true;
         }
 
-        bool export_volumetric_strain_stress(std::string output_path,
-                                      const Vector &x_const,
-                                      const Scalar time) const {
+        bool export_volumetric_strain_stress(std::string output_path, const Vector &x_const, const Scalar time) const {
             UTOPIA_TRACE_REGION_BEGIN("VolDevGenericPhaseField::export_strain_stress_energy_components");
 
             static const int strain_components = (Dim - 1) * 3;
@@ -1826,26 +1851,26 @@ namespace utopia {
 
                                 // calculate stress at quadrature
                                 Scalar el_v, el_d;
-                                compute_stress_components(this->params_,  // need kappa updated
-                                               c[qp],
-                                               epsi,
-                                               stress_v,  // gets stress (already degraded) at quadrature point
-                                               stress_d,
-                                               strain_v,
-                                               strain_d,
-                                               el_v,
-                                               el_d);
+                                compute_stress_components(
+                                    this->params_,  // need kappa updated
+                                    c[qp],
+                                    epsi,
+                                    stress_v,  // gets stress (already degraded) at quadrature point
+                                    stress_d,
+                                    strain_v,
+                                    strain_d,
+                                    el_v,
+                                    el_d);
 
                                 strain_value +=
                                     strain_v * shape * weight;  // matrix of strains added to existing nodal strain (
 
                                 stress_value += stress_v * shape * weight;  // Sum stress at integration point
 
-                                if ( std::pow( (strain_v + strain_d - epsi)(0,0), 2) > 1e-7 ||
-                                     std::pow( (strain_v + strain_d - epsi)(0,1), 2) > 1e-7 ||
-                                     std::pow( (strain_v + strain_d - epsi)(1,1), 2) > 1e-7  )
-                                       utopia_error("Vol and Deviatoric strains do not add up to total strain");
-
+                                if (std::pow((strain_v + strain_d - epsi)(0, 0), 2) > 1e-7 ||
+                                    std::pow((strain_v + strain_d - epsi)(0, 1), 2) > 1e-7 ||
+                                    std::pow((strain_v + strain_d - epsi)(1, 1), 2) > 1e-7)
+                                    utopia_error("Vol and Deviatoric strains do not add up to total strain");
 
                                 // getting nodal weight for normalisation
                                 weight_el_vec[n] += shape * weight;
@@ -1922,9 +1947,9 @@ namespace utopia {
 
             // Post-processing functions
             // And write outputs
-            export_strain_and_stress(output_path, x, time);    // different for VolDev formulation
-            export_elast_frac_energies(output_path, x, time);  // diff for VolDev Dormulation
-            export_volumetric_strain_stress(output_path, x, time);    // different for VolDev formulation
+            export_strain_and_stress(output_path, x, time);         // different for VolDev formulation
+            export_elast_frac_energies(output_path, x, time);       // diff for VolDev Dormulation
+            export_volumetric_strain_stress(output_path, x, time);  // different for VolDev formulation
 
             if (mpi_world_rank() == 0) std::cout << "Saving file: " << output_path << std::endl;
         }

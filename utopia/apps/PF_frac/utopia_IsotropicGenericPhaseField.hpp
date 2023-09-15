@@ -564,8 +564,8 @@ namespace utopia {
             }
 
             if (!empty(this->force_field_)) {
-                // MAYBE g -= this->force_field_;
-                g += this->force_field_;
+                g -= this->force_field_;
+                //                g += this->force_field_;
             }
 
             this->space_.apply_zero_constraints(g);
@@ -888,8 +888,8 @@ namespace utopia {
                                                          const Stress &stress,
                                                          const FullStrain &full_strain,
                                                          const Scalar &c_trial_fun) {
-            return (1.0-params.regularization)*PFFormulation::degradation_deriv(phase_field_value, params) * c_trial_fun *
-                   inner(stress, full_strain);
+            return (1.0 - params.regularization) * PFFormulation::degradation_deriv(phase_field_value, params) *
+                   c_trial_fun * inner(stress, full_strain);
         }
 
         UTOPIA_INLINE_FUNCTION static Scalar elastic_deriv_cc(const Parameters &params,
