@@ -77,6 +77,8 @@ namespace utopia {
         // TODO
         virtual void update(const Operator<Vector> &A) { UTOPIA_UNUSED(A); }
 
+        virtual void clear() {}
+
         Preconditioner *clone() const override = 0;
     };
 

@@ -24,6 +24,8 @@ namespace utopia {
         RebalancedSolver();
         ~RebalancedSolver();
 
+        void clear() override;
+
         void set_solver(const std::shared_ptr<LinearSolver<PetscMatrix, PetscVector>> &solver);
 
     private:

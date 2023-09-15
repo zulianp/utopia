@@ -25,12 +25,24 @@ namespace utopia {
         IndexArray permutation, inverse_permutation;
 
         int block_size{1};
+        bool keep_symbolic_factorization{false};
+
+        void clear() {
+            op.clear();
+            rhs.clear();
+            sol.clear();
+            partitioning.clear();
+            inverse_partitioning.clear();
+            permutation.clear();
+            inverse_permutation.clear();
+        }
     };
 
     void RebalancedSolver::read(Input &in) {
         Super::read(in);
         in.get("inner_solver", *impl_->solver);
         in.get("block_size", impl_->block_size);
+        in.get("keep_symbolic_factorization", impl_->keep_symbolic_factorization);
     }
 
     RebalancedSolver::RebalancedSolver() : impl_(utopia::make_unique<Impl>()) {
@@ -49,6 +61,8 @@ namespace utopia {
         return ptr.release();
     }
 
+    void RebalancedSolver::clear() { impl_->clear(); }
+
     void RebalancedSolver::update(const std::shared_ptr<const PetscMatrix> &op) {
         UTOPIA_TRACE_SCOPE("RebalancedSolver::update");
 
@@ -58,35 +72,24 @@ namespace utopia {
             impl_->solver->update(op);
         } else {
             // redist matrix
-
-            // printf("\n%d rebalance\n",  op->comm().rank());
-            // op->comm().barrier();
-
             // op->write("mat.bin");
 
-            if (impl_->block_size == 1) {
-                initialize_rebalance(*op,
-                                     impl_->partitioning,
-                                     impl_->permutation,
-                                     impl_->inverse_partitioning,
-                                     impl_->inverse_permutation);
+            if (impl_->op.empty() || !impl_->keep_symbolic_factorization) {
+                if (impl_->block_size == 1) {
+                    initialize_rebalance(*op,
+                                         impl_->partitioning,
+                                         impl_->permutation,
+                                         impl_->inverse_partitioning,
+                                         impl_->inverse_permutation);
 
-         
-            } else {
-                initialize_rebalance_block(impl_->block_size,
-                                           *op,
-                                           impl_->partitioning,
-                                           impl_->permutation,
-                                           impl_->inverse_partitioning,
-                                           impl_->inverse_permutation);
-
-                // std::stringstream ss;
-                // for (auto i : impl_->partitioning) {
-                //     ss << i << " ";
-                // }
-
-                // ss << "\n";
-                // op->comm().synched_print(ss.str());
+                } else {
+                    initialize_rebalance_block(impl_->block_size,
+                                               *op,
+                                               impl_->partitioning,
+                                               impl_->permutation,
+                                               impl_->inverse_partitioning,
+                                               impl_->inverse_permutation);
+                }
             }
 
             utopia::redistribute_from_permutation(*op, impl_->permutation, impl_->op);
