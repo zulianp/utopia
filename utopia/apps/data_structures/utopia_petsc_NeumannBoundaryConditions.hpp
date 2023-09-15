@@ -183,7 +183,7 @@ namespace utopia {
             auto shape_view = subspace.side_shape_device(q);
             auto dx_view = subspace.side_differential_device(q);
 
-            // PhysicalPoint<Side, SideQuadrature> pp(q);
+            PhysicalPoint<Side, SideQuadrature> pp(q);
 
             double t = time_;
             // subspace.each_boundary_element(side_set_, ...
@@ -223,11 +223,11 @@ namespace utopia {
                         auto fun = shape_view.make(e);
                         auto dx = dx_view.make(e);
 
-                        // auto pp_e = pp.make(e);
+                        auto pp_e = pp.make(e);
 
                         for (SizeType k = 0; k < SideQuadrature::NPoints; ++k) {
                             auto dx_k = dx(k);
-                            p.get(k, p_k);
+                            pp_e.get(k, p_k);
 
                             auto fun_k = fun_(p_k, t);
                             for (SizeType j = 0; j < SideView::NFunctions; ++j) {
