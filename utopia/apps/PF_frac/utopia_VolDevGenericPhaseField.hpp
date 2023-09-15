@@ -564,8 +564,8 @@ namespace utopia {
             }
 
             if (!empty(this->force_field_)) {
-                // MAYBE g -= this->force_field_;
-                g += this->force_field_;
+                g -= this->force_field_;
+                //g += this->force_field_;
             }
 
             this->space_.apply_zero_constraints(g);
