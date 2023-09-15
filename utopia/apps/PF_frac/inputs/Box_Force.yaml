@@ -20,12 +20,13 @@ disp_x: 0.0 #0.0000001 #0.02e3
 fix_phase_field_on_sides: false
 no_damage_on: false
 neumann_bc:
-  - side: top
-    value: 100 #-1e-3
-    component: 2 #xaxis
-  # - side: left
-  #   value: 200 #-1e-3
+  # - side: top
+  #   value: 100 #-1e-3
   #   component: 2 #xaxis
+  - side: top
+    type: varying
+    expr: "min(100, t*100)"
+    component: 2 #xaxis
 #Initial Condition
 # Phase field formulation
 length_scale: 0.05

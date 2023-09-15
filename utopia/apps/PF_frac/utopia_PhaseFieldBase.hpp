@@ -17,6 +17,8 @@
 #include "utopia_Views.hpp"
 #include "utopia_petsc_NeumannBoundaryConditions.hpp"
 
+#include "utopia_make_unique.hpp"
+
 #include <cmath>
 #include <random>
 
@@ -725,15 +727,15 @@ namespace utopia {
                         force_field_.set(0.0);
                     }
 
-                    NeumannBoundaryCondition<FunctionSpace> bc(space_);
-                    bc.read(node);
-                    bc.apply(force_field_);
+                    auto bc = utopia::make_unique<NeumannBoundaryCondition<FunctionSpace>>(space_);
+                    bc->read(node);
+                    bc->apply(force_field_);
+                    neumann_bcs.push_back(std::move(bc));
                 });
             });
 
-            if (false)
-            // if (true)
-            {
+            // if (false)
+            if (true) {
                 space_.write("force_field.vtr", force_field_);
             }
         }
@@ -1645,6 +1647,19 @@ namespace utopia {
         }
 
         void set_dt(const Scalar &dt) { dt_ = dt; }
+        void set_time(const Scalar &t) {
+            time_ = t;
+
+            if (empty(force_field_)) {
+                space_.create_vector(force_field_);
+                force_field_.set(0.0);
+            }
+
+            for (auto &&n : neumann_bcs) {
+                n->set_time(t);
+                n->apply(force_field_);
+            }
+        }
 
         Scalar get_dt() const { return dt_; }
 
@@ -1678,6 +1693,8 @@ namespace utopia {
         std::shared_ptr<Vector> local_c_old_;
 
         Scalar dt_;
+        Scalar time_{0};
+        std::vector<std::unique_ptr<NeumannBoundaryCondition<FunctionSpace>>> neumann_bcs;
     };
 
 }  // namespace utopia

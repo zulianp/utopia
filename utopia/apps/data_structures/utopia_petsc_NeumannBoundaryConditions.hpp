@@ -6,6 +6,8 @@
 // petsc
 #include "utopia_petsc_DMDA_FunctionSpace.hpp"
 
+#include "utopia_SymbolicFunction.hpp"
+
 namespace utopia {
 
     template <class Space, typename...>
@@ -37,6 +39,16 @@ namespace utopia {
         NeumannBoundaryCondition(const FunctionSpace &space,
                                  const utopia::function<bool(const Point &)> &selector,
                                  const utopia::function<Scalar(const Point &)> &fun,
+                                 const int component = 0)
+            : space_(space),
+              side_set_(SideSet::invalid()),
+              selector_(selector),
+              fun_(UTOPIA_LAMBDA(const Point &p, const double) { return fun(p); }),
+              component_(component) {}
+
+        NeumannBoundaryCondition(const FunctionSpace &space,
+                                 const utopia::function<bool(const Point &)> &selector,
+                                 const utopia::function<Scalar(const Point &, const double t)> &fun,
                                  const int component = 0)
             : space_(space), side_set_(SideSet::invalid()), selector_(selector), fun_(fun), component_(component) {}
 
@@ -104,7 +116,10 @@ namespace utopia {
                                  SideSet::BoundaryIdType side_set,
                                  const utopia::function<Scalar(const Point &)> &fun,
                                  const int component = 0)
-            : space_(space), side_set_(side_set), fun_(fun), component_(component) {
+            : space_(space),
+              side_set_(side_set),
+              fun_(UTOPIA_LAMBDA(const Point &p, const double) { return fun(p); }),
+              component_(component) {
             auto &&box_min = space.mesh().box_min();
             auto &&box_max = space.mesh().box_max();
             selector_ = make_boundary_selector(side_set_, box_min, box_max);
@@ -114,9 +129,31 @@ namespace utopia {
             std::string side_name = "";
             Scalar value = 0.0;
 
-            in.get("side", side_name);
+            in.require("side", side_name);
             in.get("value", value);
             in.get("component", component_);
+
+            std::string type;
+            in.get("type", type);
+
+            if (type.empty()) {
+                fun_ = UTOPIA_LAMBDA(const Point &, const double)->Scalar { return value; };
+            } else if (type == "varying") {
+                std::string expr;
+                in.require("expr", expr);
+                SymbolicFunction sfun(expr);
+
+                fun_ = UTOPIA_LAMBDA(const Point &p, const double t)->Scalar {
+                    double xx[4] = {0, 0, 0, t};
+                    for (int d = 0; d < Dim; d++) {
+                        xx[d] = p(d);
+                    }
+
+                    return sfun.eval(xx[0], xx[1], xx[2], xx[3]);
+                };
+            } else {
+                Utopia::Abort("PhaseFieldFracBase::init_force_field(...). Wrong neumann type :" + type);
+            }
 
             side_set_ = SideSet::from_name(side_name);
 
@@ -124,8 +161,6 @@ namespace utopia {
                 auto &&box_min = space_.mesh().box_min();
                 auto &&box_max = space_.mesh().box_max();
                 selector_ = make_boundary_selector(side_set_, box_min, box_max);
-
-                fun_ = UTOPIA_LAMBDA(const Point &)->Scalar { return value; };
 
             } else {
                 assert(false);
@@ -148,6 +183,9 @@ namespace utopia {
             auto shape_view = subspace.side_shape_device(q);
             auto dx_view = subspace.side_differential_device(q);
 
+            // PhysicalPoint<Side, SideQuadrature> pp(q);
+
+            double t = time_;
             // subspace.each_boundary_element(side_set_, ...
             Device::parallel_for(
                 subspace.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
@@ -185,11 +223,13 @@ namespace utopia {
                         auto fun = shape_view.make(e);
                         auto dx = dx_view.make(e);
 
+                        // auto pp_e = pp.make(e);
+
                         for (SizeType k = 0; k < SideQuadrature::NPoints; ++k) {
                             auto dx_k = dx(k);
                             p.get(k, p_k);
 
-                            auto fun_k = fun_(p_k);
+                            auto fun_k = fun_(p_k, t);
                             for (SizeType j = 0; j < SideView::NFunctions; ++j) {
                                 vec(idx[j]) += fun_k * fun(j, k) * dx_k;
                             }
@@ -202,14 +242,17 @@ namespace utopia {
                 });
         }
 
+        inline void set_time(const double t) { time_ = t; }
+
     private:
         const FunctionSpace &space_;
         SideSet::BoundaryIdType side_set_;
 
         utopia::function<bool(const Point &)> selector_;
-        utopia::function<Scalar(const Point &)> fun_;
+        utopia::function<Scalar(const Point &, const double)> fun_;
 
         int component_;
+        double time_{0};
     };
 
 }  // namespace utopia

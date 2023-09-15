@@ -299,6 +299,7 @@ namespace utopia {
             BC_.emplace_time_dependent_BC(this->time_);
             space_.apply_constraints(this->solution_);
             fe_problem_->set_dt(this->dt_);
+            fe_problem_->set_time(this->time_);
 
             if (this->use_pressure_) {
                 auto press_ts = this->pressure0_ + (this->time_ * this->pressure_increase_factor_);
@@ -313,7 +314,7 @@ namespace utopia {
                 }
             }
 
-            //E.P CHECK - What is this doing here.
+            // E.P CHECK - What is this doing here.
             fe_problem_->build_irreversility_constraint(this->lb_);
 
             UTOPIA_TRACE_REGION_END("IncrementalLoading::prepare_for_solve(...)");
@@ -425,7 +426,7 @@ namespace utopia {
 
                 fe_problem_->elastic_energy(this->solution_, elastic_energy);
                 fe_problem_->elastic_energy_in_middle_layer(this->solution_, ela_en_mid);
-//                fe_problem_->fracture_energy_in_middle_layer(this->solution_, fra_en_mid);
+                //                fe_problem_->fracture_energy_in_middle_layer(this->solution_, fra_en_mid);
 
                 fe_problem_->compute_tcv(this->solution_, tcv);
 
@@ -473,9 +474,9 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("IncrementalLoading::run(...)");
 
             // just for testing purposes...
-            //fe_problem_->use_crack_set_irreversibiblity(true);
-//            fe_problem_->turn_off_cu_coupling(true);
-//            fe_problem_->turn_off_uc_coupling(true);
+            // fe_problem_->use_crack_set_irreversibiblity(true);
+            //            fe_problem_->turn_off_cu_coupling(true);
+            //            fe_problem_->turn_off_uc_coupling(true);
 
             this->init(space_);
 
@@ -522,7 +523,6 @@ namespace utopia {
                     auto sol_status = tr_solver_->solution_status();
                     conv_reason = sol_status.reason;
                 }
-
 
                 // ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
