@@ -25,8 +25,12 @@ neumann_bc:
   #   component: 2 #xaxis
   - side: top
     type: varying
-    expr: "min(100, t*100)"
+    expr: "x"
     component: 2 #xaxis
+  # - side: bottom
+  #   type: varying
+  #   expr: "x"
+  #   component: 2 #xaxis
 #Initial Condition
 # Phase field formulation
 length_scale: 0.05

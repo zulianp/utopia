@@ -122,6 +122,7 @@ namespace utopia {
               component_(component) {
             auto &&box_min = space.mesh().box_min();
             auto &&box_max = space.mesh().box_max();
+
             selector_ = make_boundary_selector(side_set_, box_min, box_max);
         }
 
@@ -160,6 +161,7 @@ namespace utopia {
             if (side_set_ != SideSet::invalid()) {
                 auto &&box_min = space_.mesh().box_min();
                 auto &&box_max = space_.mesh().box_max();
+                printf("(%g %g) (%g %g)\n", box_min[0],box_min[1], box_max[0], box_max[1]);
                 selector_ = make_boundary_selector(side_set_, box_min, box_max);
 
             } else {
@@ -184,14 +186,16 @@ namespace utopia {
             auto dx_view = subspace.side_differential_device(q);
 
             PhysicalPoint<Side, SideQuadrature> pp(q);
+            int rank = v.comm().rank();
 
             double t = time_;
             // subspace.each_boundary_element(side_set_, ...
             Device::parallel_for(
                 subspace.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    if (!space_view.on_boundary(i)) {
-                        return;
-                    }
+                    // FIXME
+                    // if (!space_view.on_boundary(i)) {
+                    //     return;
+                    // }
 
                     ArrayView<SizeType, Side::NFunctions> idx{};
                     StaticVector<Scalar, NFunctions> vec;
@@ -213,7 +217,19 @@ namespace utopia {
 
                         e.centroid(p_k);
 
+
+                        // if(p_k(1) < 0.999) {
+                        //     continue;
+                        // }
+
+                        // if(rank != 3 &&rank != 4) continue;
+
+                        // printf("[%d]: %g %g\n",rank,  p_k(0), p_k(1));
+
                         if (!selector_(p_k)) continue;
+                        // printf("[%d]: OK %g %g\n",rank,  p_k(0), p_k(1));
+
+
 
                         assembled = true;
 
