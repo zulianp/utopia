@@ -1647,17 +1647,21 @@ namespace utopia {
         }
 
         void set_dt(const Scalar &dt) { dt_ = dt; }
+        
         void set_time(const Scalar &t) {
             time_ = t;
 
-            if (empty(force_field_)) {
-                space_.create_vector(force_field_);
-                force_field_.set(0.0);
-            }
+            if (!neumann_bcs.empty()) {
+                if (empty(force_field_)) {
+                    space_.create_vector(force_field_);
+                }
 
-            for (auto &&n : neumann_bcs) {
-                n->set_time(t);
-                n->apply(force_field_);
+                force_field_.set(0.0);
+
+                for (auto &&n : neumann_bcs) {
+                    n->set_time(t);
+                    n->apply(force_field_);
+                }
             }
         }
 
