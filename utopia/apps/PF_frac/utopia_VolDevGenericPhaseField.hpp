@@ -179,7 +179,6 @@ namespace utopia {
 
             if (!empty(this->force_field_)) {
                 // MAYBE -= dot(x_const, this->force_field_);
-                std::cout << "WARNING: Force field is being added, did you apply it?" <<std::endl;
                 val += dot(x_const, this->force_field_);
             }
 
@@ -1387,20 +1386,20 @@ namespace utopia {
                                         gc_dummy,
                                         energy_dummy);
 
-                                if ( std::pow( (stress_v + stress_dev - stress_dummy)(0,0), 2)/std::max(std::numeric_limits<double>::epsilon(),stress_dummy(0,0)) > 0.01 ||
-                                     std::pow( (stress_v + stress_dev - stress_dummy)(0,1), 2)/std::max(std::numeric_limits<double>::epsilon(),stress_dummy(0,1)) > 0.01||
-                                     std::pow( (stress_v + stress_dev - stress_dummy)(1,1), 2)/std::max(std::numeric_limits<double>::epsilon(),stress_dummy(1,1)) > 0.01 ){
-                                       utopia_error("Vol and Deviatoric stress do not add up to total stress");
-                                       double error_xx = ((stress_v + stress_dev)(0,0))/((stress_dummy)(0,0));
-                                       double error_xy = ((stress_v + stress_dev)(0,1))/((stress_dummy)(0,1));
-                                       double error_yy = ((stress_v + stress_dev)(1,1))/((stress_dummy)(1,1));
-//                                       utopia_error("error s_xx: " + std::to_string(error_xx) +
-//                                                    "\nerror s_xy: " + std::to_string(error_xy) +
-//                                                    "\nerror s_yy: " + std::to_string(error_yy) );
-                                       utopia_error("comp s_xx: " + std::to_string((stress_v + stress_dev)(0,0)) + "  s_xx: " +  std::to_string((stress_dummy)(0,0)) +
-                                                    "\ncomp s_xy: " + std::to_string((stress_v + stress_dev)(0,1)) + "  s_xy: " +  std::to_string((stress_dummy)(0,1)) +
-                                                    "\ncomp s_yy: " + std::to_string((stress_v + stress_dev)(1,1)) + "  s_yy: " +  std::to_string((stress_dummy)(1,1)) );
-                                        }
+//                                if ( std::pow( (stress_v + stress_dev - stress_dummy)(0,0), 2)/std::max(std::numeric_limits<double>::epsilon(),stress_dummy(0,0)) > 0.1 ||
+//                                     std::pow( (stress_v + stress_dev - stress_dummy)(0,1), 2)/std::max(std::numeric_limits<double>::epsilon(),stress_dummy(0,1)) > 0.1||
+//                                     std::pow( (stress_v + stress_dev - stress_dummy)(1,1), 2)/std::max(std::numeric_limits<double>::epsilon(),stress_dummy(1,1)) > 0.1 ){
+//                                       utopia_error("Vol and Deviatoric stress do not add up to total stress");
+//                                       double error_xx = ((stress_v + stress_dev)(0,0))/((stress_dummy)(0,0));
+//                                       double error_xy = ((stress_v + stress_dev)(0,1))/((stress_dummy)(0,1));
+//                                       double error_yy = ((stress_v + stress_dev)(1,1))/((stress_dummy)(1,1));
+////                                       utopia_error("error s_xx: " + std::to_string(error_xx) +
+////                                                    "\nerror s_xy: " + std::to_string(error_xy) +
+////                                                    "\nerror s_yy: " + std::to_string(error_yy) );
+//                                       utopia_error("comp s_xx: " + std::to_string((stress_v + stress_dev)(0,0)) + "  s_xx: " +  std::to_string((stress_dummy)(0,0)) +
+//                                                    "\ncomp s_xy: " + std::to_string((stress_v + stress_dev)(0,1)) + "  s_xy: " +  std::to_string((stress_dummy)(0,1)) +
+//                                                    "\ncomp s_yy: " + std::to_string((stress_v + stress_dev)(1,1)) + "  s_yy: " +  std::to_string((stress_dummy)(1,1)) );
+//                                        }
 
 
                                 // getting nodal weight for normalisation

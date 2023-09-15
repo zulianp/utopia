@@ -265,7 +265,7 @@ namespace utopia {
             } else {
                 auto qp_solver = std::make_shared<utopia::Lanczos<PetscMatrix, PetscVector>>();
                 // auto qp_solver = std::make_shared<utopia::SteihaugToint<PetscMatrix, PetscVector>>();
-                qp_solver->pc_type("bjacobi");
+                qp_solver->pc_type("hypre");
                 tr_solver_ = std::make_shared<TrustRegion<PetscMatrix, PetscVector>>(qp_solver);
             }
 

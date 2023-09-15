@@ -476,6 +476,83 @@ namespace utopia {
         bool fix_phase_field_{false};
     };
 
+
+    template <class FunctionSpace>
+    class BoxLoading : public BCSetup<FunctionSpace> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
+
+        BoxLoading(FunctionSpace &space, const Scalar &Top_disp_y = 1.0, const Scalar &Right_disp_x = 1.0)
+            : BCSetup<FunctionSpace>(space), disp_y_(Top_disp_y), disp_x_(Right_disp_x) {}
+
+        void read(Input &in) override {
+            in.get("disp_y", disp_y_);
+            in.get("disp_x", disp_x_);
+            in.get("fix_phase_field_on_sides", fix_phase_field_);
+        }
+
+        void emplace_time_dependent_BC(const Scalar &time) override {
+            // static const int Dim = FunctionSpace::Dim;
+
+            using Point = typename FunctionSpace::Point;
+            this->space_.reset_bc();
+
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::left(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                1  // disp_x
+            );
+
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::right(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_*time; },
+                1  // disp_x
+            );
+
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::bottom(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                2  // disp_y
+            );
+
+//            this->space_.emplace_dirichlet_condition(
+//                SideSet::left(),
+//                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+//                1  // disp_x
+//            );
+
+//            this->space_.emplace_dirichlet_condition(
+//                SideSet::right(),
+//                UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_ * time; },
+//                1  // disp_x
+//            );
+
+            // Fixing left and right boundary to no have any damage on them
+            if (fix_phase_field_) {
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::left(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::right(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
+            }
+        }
+
+    private:
+        Scalar disp_y_;
+        Scalar disp_x_;
+        bool fix_phase_field_{false};
+    };
+
     template <class FunctionSpace>
     class SedimentaryLayers_BC : public BCSetup<FunctionSpace> {
     public:
@@ -716,7 +793,8 @@ namespace utopia {
             in.get("top_layer_height"   , y_max_);
             in.get("bottom_layer_height2", y_min2_);
             in.get("top_layer_height2"   , y_max2_);
-            in.get("allow_phase_field_close_to_layer", allow_pf_close_to_layer);
+            in.get("no_phase_field_outside_layer", no_phase_field);
+            in.get("no_pf_length", no_pf_length);
             in.get("length_scale", length_scale);
         }
 
@@ -726,13 +804,11 @@ namespace utopia {
 
             this->space_.emplace_constraint(
                 UTOPIA_LAMBDA(const Point &p)->bool {
-                    if (allow_pf_close_to_layer == false){
-                        return  ( !(p(1) >= y_min_  && p(1) <= y_max_) &&   //Not in layer 1  and
-                                  !(p(1) > y_min2_  && p(1) < y_max2_) );    //Not in layer 2
-                    } else {
-                        return  ( !(p(1) >= y_min_ - 2.0*length_scale && p(1) <= y_max_ + 2.0*length_scale) &&   //Not in layer 1  and
-                                  !(p(1) > y_min2_ - 2.0*length_scale && p(1) < y_max2_ + 2.0*length_scale) );    //Not in layer 2
-                            }
+                    if (no_phase_field == true){
+                         return  ( !(p(1) >= y_min_ - no_pf_length*length_scale && p(1) <= y_max_ + no_pf_length*length_scale) &&   //Not in layer 1  and
+                                      !(p(1) > y_min2_ - no_pf_length*length_scale && p(1) < y_max2_ + no_pf_length*length_scale) );    //Not in layer 2
+
+                        } else return false;
                 },
                 UTOPIA_LAMBDA(const Point &)->Scalar { return val_; },
                 0);
@@ -742,8 +818,45 @@ namespace utopia {
         Scalar  y_min_, y_max_;
         Scalar  y_min2_, y_max2_;
         Scalar val_;
+        Scalar length_scale, no_pf_length;
+        bool allow_pf_close_to_layer{false}, no_phase_field{true};
+    };
+
+    template <class FunctionSpace>
+    class NoDamage : public BCSetup<FunctionSpace> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
+
+        NoDamage(FunctionSpace &space,
+                         const Scalar &y_min = 0,
+                         const Scalar &y_max = 1,
+                         const Scalar &val = 0)
+            : BCSetup<FunctionSpace>(space), y_min_(y_min), y_max_(y_max), val_(val) {}
+
+        void read(Input &in) override {
+            in.get("no_damage_on", no_damage_on);
+        }
+
+        void emplace_time_dependent_BC(const Scalar &) override {
+            using Point = typename FunctionSpace::Point;
+            this->space_.reset_constraints();
+
+            this->space_.emplace_constraint(
+                UTOPIA_LAMBDA(const Point &p)->bool {
+                            if (no_damage_on) return true;
+                            else return false;
+                },
+                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                0); //phase field
+        }
+
+    private:
+        Scalar  y_min_, y_max_;
+        Scalar  y_min2_, y_max2_;
+        Scalar val_;
         Scalar length_scale;
-        bool allow_pf_close_to_layer{false};
+        bool no_damage_on{true};
     };
 
     template <class FunctionSpace, class DirichletBC, class Constraints>
