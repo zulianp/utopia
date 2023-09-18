@@ -48,8 +48,9 @@ if(UTOPIA_ENABLE_CLANG_TIDY)
 endif()
 
 # More annoying
+if(NOT WIN32)
 set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
-
+endif()
 # More restrictive
 if(UTOPIA_PULL_REQUEST_MODE)
   set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=deprecated-declarations ")
