@@ -83,6 +83,7 @@ namespace utopia {
         bool full_trace_;
         bool only_root_export_;
         bool log_regions_{false};
+        int print_indent_level{0};
     };
 
     class Measurement {
@@ -162,7 +163,9 @@ namespace utopia {
         Measurement m(expr);
 
         if (log_regions_) {
+            std::string indent(print_indent_level * 2, ' ');
             utopia::out() << "BEGIN[" << mpi_world_rank() << "]: " << m.get_class() << "\n";
+            print_indent_level++;
         }
 
         running_events_.push(m.get_id());
@@ -178,7 +181,9 @@ namespace utopia {
         Measurement m(expr, "specialized_");
 
         if (log_regions_) {
-            utopia::out() << "BEGIN[" << mpi_world_rank() << "]: " << m.get_class() << "\n";
+            std::string indent(print_indent_level * 2, ' ');
+            utopia::out() << indent << "BEGIN[" << mpi_world_rank() << "]: " << m.get_class() << "\n";
+            print_indent_level++;
         }
 
         running_events_.push(m.get_id());
@@ -194,7 +199,9 @@ namespace utopia {
         Measurement m(region_name);  // + "  [" + file + ":" + std::to_string(line) + "]");
 
         if (log_regions_) {
-            utopia::out() << "BEGIN[" << mpi_world_rank() << "]: " << m.get_class() << "\n";
+            std::string indent(print_indent_level * 2, ' ');
+            utopia::out() << indent << "BEGIN[" << mpi_world_rank() << "]: " << m.get_class() << "\n";
+            print_indent_level++;
         }
 
         running_events_.push(m.get_id());
@@ -211,7 +218,9 @@ namespace utopia {
         running_events_.pop();
 
         if (log_regions_) {
-            utopia::out() << "END[" << mpi_world_rank() << "]: " << it->second.get_class() << " ("
+            print_indent_level--;
+            std::string indent(print_indent_level * 2, ' ');
+            utopia::out() << indent << "END[" << mpi_world_rank() << "]: " << it->second.get_class() << " ("
                           << it->second.seconds() << " seconds)\n";
         }
 
