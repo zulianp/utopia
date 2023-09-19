@@ -12,7 +12,6 @@ namespace utopia {
 
     template <class Vector>
     class MatrixFreeLinearSolver : virtual public Configurable,
-                                   virtual public Clonable,
                                    virtual public Preconditioner<Vector>,
                                    virtual public PreconditionedSolverInterface<Vector> {
     public:
@@ -81,8 +80,7 @@ namespace utopia {
             return solve(operator_cast<Vector>(*this->get_operator()), b, x);
         }
 
-        OperatorBasedLinearSolver *clone() const override = 0;
-
+        virtual OperatorBasedLinearSolver *clone() const = 0;
         OperatorBasedLinearSolver &operator=(const OperatorBasedLinearSolver &other)
         {
             if(this == &other) return *this;
