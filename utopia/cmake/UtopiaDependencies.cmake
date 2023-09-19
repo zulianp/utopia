@@ -374,12 +374,10 @@ endif()
 # #################YAML######################
 
 if(UTOPIA_ENABLE_YAML_CPP)
-  find_package(
-    yaml-cpp HINTS ${CMAKE_SOURCE_DIR}/../../dependencies/
-    ${CMAKE_SOURCE_DIR}/../../dependencies/yaml-cpp/share/cmake/yaml-cpp)
+  find_package(yaml-cpp)
 
   if(yaml-cpp_FOUND)
-    set(UTOPIA_ENABLE_YAML_CPP ON)
+    # set(UTOPIA_ENABLE_YAML_CPP ON)
     set(UTOPIA_ENABLE_YAML_CPP TRUE)
 
     set(UTOPIA_YAML_CPP_DIR ${yaml-cpp_DIR})
@@ -389,19 +387,19 @@ if(UTOPIA_ENABLE_YAML_CPP)
 
     # utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${YAMLCPP_MODULES}")
 
-    get_target_property(YAML_CPP_INCLUDE_DIR yaml-cpp
+    get_target_property(YAML_CPP_INCLUDE_DIR yaml-cpp::yaml-cpp
                         INTERFACE_INCLUDE_DIRECTORIES)
 
-    get_target_property(YAML_CPP_LIBRARIES yaml-cpp IMPORTED_LOCATION)
+    get_target_property(YAML_CPP_LIBRARIES yaml-cpp::yaml-cpp IMPORTED_LOCATION)
 
     if(NOT YAML_CPP_LIBRARIES)
-      get_target_property(YAML_CPP_LIBRARIES yaml-cpp IMPORTED_LOCATION_RELEASE)
+      get_target_property(YAML_CPP_LIBRARIES yaml-cpp::yaml-cpp IMPORTED_LOCATION_RELEASE)
     endif()
     if(NOT YAML_CPP_LIBRARIES)
-      get_target_property(YAML_CPP_LIBRARIES yaml-cpp IMPORTED_LOCATION_DEBUG)
+      get_target_property(YAML_CPP_LIBRARIES yaml-cpp::yaml-cpp IMPORTED_LOCATION_DEBUG)
     endif()
     if(NOT YAML_CPP_LIBRARIES)
-      get_target_property(YAML_CPP_LIBRARIES yaml-cpp
+      get_target_property(YAML_CPP_LIBRARIES yaml-cpp::yaml-cpp
                           IMPORTED_LOCATION_NOCONFIG)
     endif()
 
@@ -409,6 +407,8 @@ if(UTOPIA_ENABLE_YAML_CPP)
       STATUS
         "yaml-cpp found! Includes: ${YAML_CPP_INCLUDE_DIR}\nLibrary: ${YAML_CPP_LIBRARIES}\n"
     )
+
+    message(STATUS "YAML_LIBRARIES: ${YAML_CPP_LIBRARIES}")
 
     # target_link_libraries(utopia PUBLIC yaml-cpp)
     # target_include_directories(utopia PUBLIC ${YAML_CPP_INCLUDE_DIR})
@@ -418,9 +418,7 @@ if(UTOPIA_ENABLE_YAML_CPP)
     list(APPEND UTOPIA_DEP_LIBRARIES ${YAML_CPP_LIBRARIES})
 
     set(UTOPIA_BUILD_INCLUDES ${UTOPIA_BUILD_INCLUDES})
-
     set(UTOPIA_DEP_LIBRARIES ${UTOPIA_DEP_LIBRARIES})
-
   else()
     include(../../cmake/InstallYAMLCPP.cmake)
   endif()
