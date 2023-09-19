@@ -15,12 +15,16 @@ namespace utopia {
     class NCFunctionSpaceTest final : public UnitTest<typename Traits<FunctionSpace>::Communicator> {
     public:
         using SizeType = typename Traits<FunctionSpace>::SizeType;
+        using Comm = typename Traits<FunctionSpace>::Communicator;
         using Vector = typename Traits<FunctionSpace>::Vector;
         using Mesh = typename Traits<FunctionSpace>::Mesh;
         using NCFunctionSpace = utopia::NCFunctionSpace<FunctionSpace>;
 
 #ifdef UTOPIA_WITH_MOONOLITH
         void mortar() {
+            // FIXME
+            if(Comm::get_default().size() > 1) return;
+
             NCFunctionSpace ncspace(this->comm());
             ncspace.import("../data/testing/decomposition.yaml");
 

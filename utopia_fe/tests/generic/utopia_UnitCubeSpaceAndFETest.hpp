@@ -97,7 +97,7 @@ namespace utopia {
             utopia_test_assert(approxeq(sum_row_sum, 0.0, 1e-9));
 
             KSPSolver<Matrix_t, Vector_t> solver;
-            solver.pc_type("ilu");
+            solver.pc_type("bjacobi");
             solver.rtol(rtol);
             solver.verbose(verbose);
 
