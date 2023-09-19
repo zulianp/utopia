@@ -186,10 +186,10 @@ public:
     void petsc_rebalanced_solver_file() {
         auto &&comm = Comm::get_default();
 
-        // Path path = Utopia::instance().get("data_path");
-        // path = path / "forQR/A";
+        Path path = Utopia::instance().get("data_path");
+        path = path / "forQR/A";
 
-        Path path = "/Users/patrickzulian/Desktop/cloud/owncloud_HSLU/Patrick/2023/Cases/FP70/mat_raw/rowptr.raw";
+        // Path path = "/Users/patrickzulian/Desktop/cloud/owncloud_HSLU/Patrick/2023/Cases/FP70/mat_raw/rowptr.raw";
 
         Matrix A;
         A.read(comm.get(), path);
