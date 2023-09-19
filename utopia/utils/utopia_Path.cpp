@@ -14,7 +14,9 @@
 
 #ifdef WIN32
 static const char PATH_SEPARATOR = '\\';
+#include <filesystem>
 #else
+#include <unistd.h>
 static const char PATH_SEPARATOR = '/';
 #endif
 
@@ -111,8 +113,14 @@ namespace utopia {
     }
 
     bool Path::make_dir(const int permissions) {
+        #ifdef WIN32
+        return
+        std::filesystem::create_directories(path_.c_str());
+        #else
         int result = mkdir(path_.c_str(), permissions);
+
         return result == 0;
+        #endif
     }
 
     PathIterator::DirHandle::DirHandle(const std::string &path) { dir = opendir(path.c_str()); }
