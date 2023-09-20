@@ -4,11 +4,9 @@ if(yaml-cpp_FOUND)
     set(UTOPIA_WITH_YAML_CPP TRUE)
     set(UTOPIA_WITH_YAML_CPP TRUE PARENT_SCOPE)
 
-    list(
-        APPEND
+    list(APPEND
         YAMLCPP_MODULES
-        .
-        )
+        .)
 
     if(TARGET yaml-cpp)
         message(STATUS " yaml-cpp is a CMake target")
@@ -18,21 +16,22 @@ if(yaml-cpp_FOUND)
 
         get_target_property(YAML_CPP_LIBRARIES yaml-cpp
                             IMPORTED_LOCATION)
-
-        if(NOT YAML_CPP_LIBRARIES)
-            get_target_property(YAML_CPP_LIBRARIES yaml-cpp
-                                IMPORTED_LOCATION_RELEASE)
-        endif()
-        if(NOT YAML_CPP_LIBRARIES)
-            get_target_property(YAML_CPP_LIBRARIES yaml-cpp
-                                IMPORTED_LOCATION_DEBUG)
-        endif()
-        if(NOT YAML_CPP_LIBRARIES)
-            get_target_property(YAML_CPP_LIBRARIES yaml-cpp
-                                IMPORTED_LOCATION_NOCONFIG)
-        endif()
     else()
         message(STATUS " yaml-cpp is a NOT a CMake target")
+    endif()
+
+    
+    if(NOT YAML_CPP_LIBRARIES)
+        get_target_property(YAML_CPP_LIBRARIES yaml-cpp
+                            IMPORTED_LOCATION_RELEASE)
+    endif()
+    if(NOT YAML_CPP_LIBRARIES)
+        get_target_property(YAML_CPP_LIBRARIES yaml-cpp
+                            IMPORTED_LOCATION_DEBUG)
+    endif()
+    if(NOT YAML_CPP_LIBRARIES)
+        get_target_property(YAML_CPP_LIBRARIES yaml-cpp
+                            IMPORTED_LOCATION_NOCONFIG)
     endif()
 
     if(NOT YAML_CPP_LIBRARIES)
@@ -42,7 +41,6 @@ if(yaml-cpp_FOUND)
     message(STATUS "yaml-cpp found! Includes: ${YAML_CPP_INCLUDE_DIR}\nLibrary: ${YAML_CPP_LIBRARIES}\n")
 
     utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${YAMLCPP_MODULES}")
-    # target_link_libraries(utopia PUBLIC yaml-cpp)
     target_include_directories(utopia PUBLIC ${YAML_CPP_INCLUDE_DIR})
     target_link_libraries(utopia PUBLIC ${YAML_CPP_LIBRARIES})
 
@@ -56,7 +54,6 @@ if(yaml-cpp_FOUND)
     set(UTOPIA_THIRDPARTY_LIBRARIES
         ${UTOPIA_THIRDPARTY_LIBRARIES}
         PARENT_SCOPE)
-
 else()
     include(../../cmake/InstallYAMLCPP.cmake)
 endif()
