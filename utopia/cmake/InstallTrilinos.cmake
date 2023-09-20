@@ -111,8 +111,8 @@ if(NOT Trilinos_FOUND)
     "-DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON"
     "-DTrilinos_ENABLE_Kokkos=ON"
     "-DTPL_ENABLE_HDF5=ON"
-    "-DTPL_HDF5_INCLUDE_DIRS=/usr/local/Cellar/hdf5/1.14.1/include"
-    "-DTPL_HDF5_LIBRARY_DIRS=/usr/local/Cellar/hdf5/1.14.1/lib"
+    "-DTPL_HDF5_INCLUDE_DIRS=/usr/local/Cellar/hdf5/1.14.2/include"
+    "-DTPL_HDF5_LIBRARY_DIRS=/usr/local/Cellar/hdf5/1.14.2/lib"
     "-DTrilinos_SET_GROUP_AND_PERMISSIONS_ON_INSTALL_BASE_DIR=/Users/dylan/Documents/Summer-Internship/utopia/external/"
     "-DTrilinos_ENABLE_EXAMPLES=OFF")
 

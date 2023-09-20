@@ -56,14 +56,16 @@ cmake .. \
 -DTPL_ENABLE_SuperLU:BOOL=OFF \
 -DXpetra_ENABLE_EXPLICIT_INSTANTIATION:BOOL=ON   \
 -DTPL_ENABLE_SuperLU:BOOL=ON \
--DTPL_ENABLE_Boost:BOOL=ON \
+-DTPL_ENABLE_Boost:BOOL=OFF \
 -DTrilinos_ENABLE_Percept:BOOL=ON \
 -DTPL_ENABLE_HDF5:BOOL=ON \
 -DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON \
 -DTrilinos_ENABLE_Kokkos=ON \
 -DTPL_ENABLE_HDF5=ON \
--DTPL_HDF5_INCLUDE_DIRS=/usr/local/Cellar/hdf5/1.14.1/include \
--DTPL_HDF5_LIBRARY_DIRS=/usr/local/Cellar/hdf5/1.14.1/lib 
+-DTPL_HDF5_INCLUDE_DIRS=/usr/local/Cellar/hdf5/1.14.2/include \
+-DTPL_HDF5_LIBRARY_DIRS=/usr/local/Cellar/hdf5/1.14.2/lib \
+-DTPL_Boost_INCLUDE_DIRS=/usr/local/Cellar/boost/1.82.0_1/include \
+-DTPL_Boost_LIBRARY_DIRS=/usr/local/Cellar/boost/1.82.0_1/lib
 
 
 
