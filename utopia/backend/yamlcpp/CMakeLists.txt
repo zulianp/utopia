@@ -20,7 +20,6 @@ if(yaml-cpp_FOUND)
         message(STATUS " yaml-cpp is a NOT a CMake target")
     endif()
 
-    
     if(NOT YAML_CPP_LIBRARIES)
         get_target_property(YAML_CPP_LIBRARIES yaml-cpp
                             IMPORTED_LOCATION_RELEASE)
@@ -42,10 +41,15 @@ if(yaml-cpp_FOUND)
 
     utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${YAMLCPP_MODULES}")
     target_include_directories(utopia PUBLIC ${YAML_CPP_INCLUDE_DIR})
+
+    if(YAML_CPP_LIBRARY_DIR)
+        target_link_directories(utopia PUBLIC ${YAML_CPP_LIBRARY_DIR})
+    endif()
+
     target_link_libraries(utopia PUBLIC ${YAML_CPP_LIBRARIES})
 
     list(APPEND UTOPIA_THIRDPARTY_INCLUDES ${YAML_CPP_INCLUDE_DIR})
-    list(APPEND UTOPIA_THIRDPARTY_LIBRARIES ${YAML_CPP_LIBRARIES})
+    list(APPEND UTOPIA_THIRDPARTY_LIBRARIES ${YAML_CPP_LIBRARIES} -L${YAML_CPP_LIBRARY_DIR})
 
     set(UTOPIA_THIRDPARTY_INCLUDES
         ${UTOPIA_THIRDPARTY_INCLUDES}
