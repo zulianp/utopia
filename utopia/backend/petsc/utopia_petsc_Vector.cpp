@@ -531,7 +531,7 @@ namespace utopia {
     }
 
     void PetscVector::write_unlock(WriteMode mode) {
-        UTOPIA_TRACE_REGION_BEGIN("PetscVector::write_unlock");
+        // UTOPIA_TRACE_REGION_BEGIN("PetscVector::write_unlock");
 
         switch (mode) {
             case GLOBAL_INSERT:
@@ -561,7 +561,7 @@ namespace utopia {
             }
         }
 
-        UTOPIA_TRACE_REGION_END("PetscVector::write_unlock");
+        // UTOPIA_TRACE_REGION_END("PetscVector::write_unlock");
     }
 
     void PetscVector::read_and_write_lock(WriteMode mode) { write_lock(mode); }

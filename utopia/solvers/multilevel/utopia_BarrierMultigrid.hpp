@@ -249,7 +249,7 @@ namespace utopia {
                     nonlinear_smooth(fun, x, state, post_smoothing_steps());
                 }
 
-                barrier_->update();
+                barrier_->update(x);
 
                 /////////////////////////////////////////////
                 // Convergence check

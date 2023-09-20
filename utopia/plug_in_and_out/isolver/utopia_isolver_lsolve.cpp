@@ -1,6 +1,7 @@
 #include "utopia_Base.hpp"
 #include "utopia_ConjugateGradient.hpp"  // FIXME(zulianp)
 #include "utopia_InputParameters.hpp"
+#include "utopia_Utils.hpp"
 #include "utopia_polymorphic_LinearSolver.hpp"
 
 #ifdef UTOPIA_ENABLE_PETSC
@@ -10,7 +11,10 @@
 
 using Matrix_t = utopia::PetscMatrix;
 using Solver_t = utopia::KSPSolver<utopia::PetscMatrix, utopia::PetscVector>;
+// using Solver_t = utopia::Factorization<utopia::PetscMatrix, utopia::PetscVector>;
+// using Solver_t = utopia::ConjugateGradient<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>;
 // using Solver_t = utopia::BDDLinearSolver<utopia::PetscMatrix, utopia::PetscVector>;
+
 #else
 #ifdef UTOPIA_ENABLE_TRILINOS
 #include "utopia_trilinos_Types.hpp"
@@ -27,17 +31,10 @@ using Solver_t = utopia::ConjugateGradient<utopia::TpetraMatrixd, utopia::Tpetra
 using Vector_t = typename utopia::Traits<Matrix_t>::Vector;
 using Scalar_t = typename utopia::Traits<Matrix_t>::Scalar;
 using Size_t = typename utopia::Traits<Matrix_t>::SizeType;
+using LinearSolver_t = utopia::LinearSolver<Matrix_t, Vector_t>;
 
 #define Scalar_t ISOLVER_SCALAR_T;
 #define Size_t ISOLVER_IDX_T;
-
-#define UTOPIA_READ_ENV(name, conversion) \
-    do {                                  \
-        char *var = getenv(#name);        \
-        if (var) {                        \
-            name = conversion(var);       \
-        }                                 \
-    } while (0)
 
 extern "C" {
 #include "isolver_lsolve.h"
@@ -89,6 +86,8 @@ int ISOLVER_EXPORT isolver_lsolve_update_crs(const isolver_lsolve_t *info,
                   // Resources are freed outside!
               });
 
+    utopia::out() << mat->rows() << ", " << mat->cols() << "\n";
+
     auto solver = (Solver_t *)info->private_data;
     solver->update(mat);
     return 0;
@@ -103,6 +102,8 @@ int ISOLVER_EXPORT isolver_lsolve_update_with_preconditioner_crs(const isolver_l
                                                                  const isolver_idx_t *const prec_rowptr,
                                                                  const isolver_idx_t *const prec_colidx,
                                                                  const isolver_scalar_t *const prec_values) {
+    using PrecT = utopia::PreconditionedSolver<Matrix_t, Vector_t>;
+
     auto mat = std::make_shared<Matrix_t>();
 
     mat->wrap(info->comm,
@@ -117,22 +118,25 @@ int ISOLVER_EXPORT isolver_lsolve_update_with_preconditioner_crs(const isolver_l
                   // Resources are freed outside!
               });
 
-    auto prec = std::make_shared<Matrix_t>();
+    auto lsolver = (LinearSolver_t *)info->private_data;
+    auto prec_solver = dynamic_cast<PrecT *>(lsolver);
+    if (prec_solver) {
+        auto prec = std::make_shared<Matrix_t>();
 
-    prec->wrap(info->comm,
-               n_local,
-               n_local,
-               n_global,
-               n_global,
-               (isolver_idx_t *)prec_rowptr,
-               (isolver_idx_t *)prec_colidx,
-               (isolver_scalar_t *)prec_values,
-               []() {
-                   // Resources are freed outside!
-               });
+        prec->wrap(info->comm,
+                   n_local,
+                   n_local,
+                   n_global,
+                   n_global,
+                   (isolver_idx_t *)prec_rowptr,
+                   (isolver_idx_t *)prec_colidx,
+                   (isolver_scalar_t *)prec_values,
+                   []() {
+                       // Resources are freed outside!
+                   });
 
-    auto solver = (Solver_t *)info->private_data;
-    solver->update(mat, prec);
+        prec_solver->update(mat, prec);
+    }
 
     return 0;
 }
@@ -141,7 +145,7 @@ int ISOLVER_EXPORT isolver_lsolve_apply(const isolver_lsolve_t *info,
                                         const isolver_scalar_t *const rhs,
                                         isolver_scalar_t *const x) {
     auto solver = (Solver_t *)info->private_data;
-    auto op = solver->get_operator();
+    auto &&op = solver->get_operator();
 
     Vector_t w_rhs, w_x;
 

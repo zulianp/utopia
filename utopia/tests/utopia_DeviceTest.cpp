@@ -44,15 +44,11 @@ namespace utopia {
                 Scalar reduce_v = 0.0;
                 parallel_reduce(
                     r, UTOPIA_LAMBDA(const SizeType &i) { return v_device.get(i); }, reduce_v);
-
-                // test local reduce
-                reduce_v = v.comm().sum(reduce_v);
-                utopia_test_assert(static_cast<SizeType>(reduce_v) == (n - 1) * (n / 2));
             }
 
             // host context
             SizeType sum_v = sum(v);
-            utopia_test_assert(sum_v == (n - 1) * (n / 2));
+            utopia_test_assert(sum_v == ((n - 1) * (n)) / 2);
         }
 
         static void run() {

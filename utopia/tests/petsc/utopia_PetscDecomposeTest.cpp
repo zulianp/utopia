@@ -47,6 +47,17 @@ public:
         } else {
             UTOPIA_RUN_TEST(schur_complement);
         }
+
+#ifdef UTOPIA_WITH_METIS
+        UTOPIA_RUN_TEST(metis_decompose);
+#endif
+
+#ifdef UTOPIA_WITH_PARMETIS
+        UTOPIA_RUN_TEST(parmetis_decompose);
+        UTOPIA_RUN_TEST(parmetis_rebalance);
+        UTOPIA_RUN_TEST(petsc_rebalanced_solver);
+        UTOPIA_RUN_TEST(petsc_rebalanced_solver_file);
+#endif
     }
 
 #ifdef UTOPIA_ENABLE_METIS
@@ -137,7 +148,7 @@ public:
     void petsc_rebalanced_solver() {
         auto &&comm = Comm::get_default();
 
-        int n = 20;
+        int n = 55;
 
         auto vl = layout(comm, Traits::decide(), n);
         auto ml = layout(comm, Traits::decide(), Traits::decide(), n, n);
@@ -164,44 +175,101 @@ public:
 
         RebalancedSolver solver;
 
-        // auto p = utopia::param_list(utopia::param("inner_solver", utopia::param_list(utopia::param("verbose",
-        // true)))); solver.read(p);
+        auto p = utopia::param_list(utopia::param("inner_solver", utopia::param_list(utopia::param("verbose", true))));
+        solver.read(p);
 
         solver.update(make_ref(A));
         solver.apply(b, x);
+
+        int UTOPIA_DEBUG_RANDOM_DECOMPOSITION = 0;
+        UTOPIA_READ_ENV(UTOPIA_DEBUG_RANDOM_DECOMPOSITION, atoi);
+
+        // Test for multiple calls
+        if (UTOPIA_DEBUG_RANDOM_DECOMPOSITION) {
+            for (int i = 0; i < 10; i++) {
+                x *= 0.999;
+                solver.update(make_ref(A));
+                solver.apply(b, x);
+            }
+        }
     }
 
     void petsc_rebalanced_solver_file() {
         auto &&comm = Comm::get_default();
 
+        Path path = Utopia::instance().get("data_path");
+        path = path / "forQR/A";
+
+        // Path path = "/Users/patrickzulian/Desktop/cloud/owncloud_HSLU/Patrick/2023/Cases/FP70/mat_raw/rowptr.raw";
+
         Matrix A;
-        A.read(comm.get(), "mat.bin");
+        A.read(comm.get(), path);
         // A.read(comm.get(), "cippo/rowptr.raw");
+
+        if (0) {
+            // Check symmetry
+            Matrix ApAt = A;
+            ApAt.transform_values([](const Scalar) -> Scalar { return 1; });
+            ApAt -= transpose(ApAt);
+            double sum_ApAt = sum(abs(ApAt));
+
+            printf("symmetric test %g == 0\n", sum_ApAt);
+        }
+
+        A.comm().synched_print(std::to_string(A.local_rows()));
+
+        // A.write("AA.bin");
 
         auto vl = row_layout(A);
         Vector b(vl, 1.);
         Vector x(vl, 0.);
 
-        if (!A.comm().rank()) {
-            utopia::out() << "dofs: " << A.rows() << "\n";
-        }
+        // if (!A.comm().rank()) {
+        //     utopia::out() << "dofs: " << A.rows() << "\n";
+        // }
 
-        auto sp = utopia::param_list(
-            utopia::param("type", "bdd"),
-            utopia::param("verbose", true),
-            utopia::param("inner_solver",
-                          utopia::param_list(utopia::param("verbose", true), utopia::param("max_it", 10 * 1000))));
+        // Temporary
+        auto sp = utopia::param_list(utopia::param("type", "ksp"),
+                                     utopia::param("ksp_type", "bcgstab"),
+                                     utopia::param("pc_type", "bjacobi"),
+                                     utopia::param("atol", "1e-8"),
+                                     utopia::param("rtol", "1e-18"),
+                                     utopia::param("stol", "1e-16"),
+                                     utopia::param("verbose", true));
 
-        auto p = utopia::param_list(utopia::param("inner_solver", std::move(sp)));
+        auto p = utopia::param_list(
+            // utopia::param("block_size", (comm.size() == 2 || comm.size() == 4)? 2 : 1),
+            utopia::param("block_size", 4),
+            // utopia::param("block_size", 1),
+            utopia::param("inner_solver", std::move(sp)));
 
         RebalancedSolver solver;
         solver.read(p);
 
         // OmniLinearSolver<Matrix, Vector> solver;
-        // solver.read(sp);
+        // p.get("inner_solver", solver);
 
         solver.update(make_ref(A));
         solver.apply(b, x);
+
+        Vector r = b - A * x;
+        Scalar r_norm = norm2(r);
+
+        if (!r.comm().rank()) {
+            utopia::out() << "r_norm: " << r_norm << "\n";
+        }
+
+        int UTOPIA_DEBUG_RANDOM_DECOMPOSITION = 0;
+        UTOPIA_READ_ENV(UTOPIA_DEBUG_RANDOM_DECOMPOSITION, atoi);
+
+        // Test for multiple calls
+        if (UTOPIA_DEBUG_RANDOM_DECOMPOSITION) {
+            for (int i = 0; i < 10; i++) {
+                x *= 0.9999999;
+                solver.update(make_ref(A));
+                solver.apply(b, x);
+            }
+        }
     }
 #endif
 
@@ -276,8 +344,8 @@ public:
 
     void schur_complement() {
         auto &&comm = Comm::get_default();
-        int n_local = 1000;
-        int n_eliminated = n_local - 1;
+        int n_local = 10;
+        int n_eliminated = n_local - 2;
 
         Matrix mat;
         mat.sparse(layout(comm, n_local, n_local, Traits::determine(), Traits::determine()), 3, 3);
@@ -312,10 +380,10 @@ public:
         Vector rhs_eliminated, rhs_sc;
         sc.apply_righthand_side(rhs, rhs_eliminated, rhs_sc);
         {
-            // ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
-            MPRGP<Matrix, Vector> cg;
+            ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+            // MPRGP<Matrix, Vector> cg;
             // cg.verbose(true);
-            // cg.apply_gradient_descent_step(true);
+            cg.apply_gradient_descent_step(true);
 
             cg.max_it(40000);
             cg.atol(1e-50);
@@ -337,10 +405,10 @@ public:
         // Oracle
         Vector og_x(row_layout(mat), 0);
         {
-            // ConjugateGradient<Matrix, Vector, HOMEMADE> og_cg;
-            MPRGP<Matrix, Vector> og_cg;
+            ConjugateGradient<Matrix, Vector, HOMEMADE> og_cg;
+            // MPRGP<Matrix, Vector> og_cg;
             og_cg.verbose(false);
-            // og_cg.apply_gradient_descent_step(true);
+            og_cg.apply_gradient_descent_step(true);
 
             og_cg.max_it(40000);
             og_cg.atol(1e-8);

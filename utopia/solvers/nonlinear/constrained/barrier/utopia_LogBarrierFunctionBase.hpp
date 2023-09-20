@@ -256,7 +256,7 @@ namespace utopia {
                 std::max(current_barrier_parameter_ * barrier_parameter_shrinking_factor_, min_barrier_parameter_);
         }
 
-        void update() override { update_barrier(); }
+        void update(const Vector &) override { update_barrier(); }
 
         void compute_diff_upper_bound(const Vector &x, Vector &diff) const {
             if (diff.empty()) {

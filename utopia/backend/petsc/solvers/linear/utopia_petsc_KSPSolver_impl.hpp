@@ -3,6 +3,8 @@
 
 #include "utopia_petsc_KSPSolver.hpp"
 
+#include "utopia_Logger.hpp"
+
 #include "utopia_Core.hpp"
 #include "utopia_PreconditionedSolver.hpp"
 #include "utopia_Preconditioner.hpp"
@@ -1130,6 +1132,19 @@ namespace utopia {
         this->ksp_type(new_ksp_type);
         this->pc_type(new_pc_type);
         this->solver_package(new_solver_package);
+
+        if (this->verbose()) {
+            int rank = PetscCommunicator::world().rank();
+
+            if (!rank) {
+                utopia::out() << "------------------------------------\n";
+                utopia::out() << "KSPSolver\n";
+                utopia::out() << "ksp_type:       " << ksp_type() << "\n";
+                utopia::out() << "pc_type:        " << pc_type() << "\n";
+                utopia::out() << "solver_package: " << solver_package() << "\n";
+                utopia::out() << "------------------------------------\n";
+            }
+        }
     }
 
     template <typename Matrix, typename Vector>

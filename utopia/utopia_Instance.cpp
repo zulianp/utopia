@@ -202,7 +202,15 @@ namespace utopia {
                 Tracer::instance().full_trace(true);
             }
 
-            if (str == "--trace_log_regions") {
+            if (str == "--trace_root_log_regions") {
+                bool must_log = true;
+#ifdef UTOPIA_WITH_MPI
+                int rank;
+                MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+                must_log = !rank;
+#endif
+                Tracer::instance().log_regions(must_log);
+            } else if (str == "--trace_log_regions") {
                 Tracer::instance().log_regions(true);
             }
 #endif  // UTOPIA_ENABLE_TRACE

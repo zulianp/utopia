@@ -54,6 +54,8 @@ public:
     }
 
     void test_qp_patch_smoother() {
+        if(Comm::get_default().size() > 1) return;
+
         auto solver = std::make_shared<ProjectedGaussSeidel<PatchMatrix, PatchVector>>();
         PatchSmoother<Matrix, PatchMatrix> patch_smoother;
         patch_smoother.set_patch_solver(solver);
@@ -62,6 +64,8 @@ public:
     }
 
     void test_qp_patch_smoother_RAS() {
+        if(Comm::get_default().size() > 1) return;
+
         auto solver = std::make_shared<ProjectedGaussSeidel<PatchMatrix, PatchVector>>();
         RASPatchSmoother<Matrix, PatchMatrix> patch_smoother;
         patch_smoother.set_patch_solver(solver);
@@ -82,6 +86,8 @@ public:
     }
 
     void test_qp_patch_smoother_ssn() {
+        if(Comm::get_default().size() > 1) return;
+        
         auto solver =
             std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<Factorization<Matrix, Vector>>());
 

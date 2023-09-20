@@ -164,6 +164,48 @@ namespace utopia {
             return count_active;
         }
 
+        SizeType count_violations(const Vector &x) const {
+            SizeType ca = local_count_violations(x);
+            return x.comm().sum(ca);
+        }
+
+        SizeType local_count_violations(const Vector &x) const {
+            SizeType count_active = 0;
+
+            auto x_view = const_local_view_device(x);
+            auto r = local_range_device(x);
+
+            if (this->has_upper_bound() && this->has_lower_bound()) {
+                auto u_view = const_local_view_device(*this->upper_bound());
+                auto l_view = const_local_view_device(*this->lower_bound());
+
+                parallel_reduce(
+                    r,
+                    UTOPIA_LAMBDA(const SizeType &i)->SizeType {
+                        return (x_view.get(i) < l_view.get(i)) || (x_view.get(i) > u_view.get(i));
+                    },
+                    count_active);
+
+            } else if (this->has_upper_bound()) {
+                auto u_view = const_local_view_device(*this->upper_bound());
+
+                parallel_reduce(
+                    r,
+                    UTOPIA_LAMBDA(const SizeType &i)->SizeType { return (x_view.get(i) > u_view.get(i)); },
+                    count_active);
+
+            } else if (this->has_lower_bound()) {
+                auto l_view = const_local_view_device(*this->lower_bound());
+
+                parallel_reduce(
+                    r,
+                    UTOPIA_LAMBDA(const SizeType &i)->SizeType { return (x_view.get(i) < l_view.get(i)); },
+                    count_active);
+            }
+
+            return count_active;
+        }
+
         SizeType count_active(const Vector &x, const Scalar tol = 0) const {
             SizeType ca = local_count_active(x, tol);
             return x.comm().sum(ca);

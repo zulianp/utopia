@@ -182,13 +182,15 @@ namespace utopia {
         }
 
         ////////////////////////////////////////////////////////////////////////////////////////////
+        virtual void set_auxiliary_forcing(const std::shared_ptr<Vector> & /*vec*/) {}
+        virtual bool supports_auxiliary_forcing() const { return false; }
 
         void set_box_constraints(const std::shared_ptr<BoxConstraints> &box) { box_ = box; }
         const std::shared_ptr<BoxConstraints> &box() const { return box_; }
         inline bool verbose() const { return verbose_; }
         virtual void reset() {}
 
-        virtual void update() {}
+        virtual void update(const Vector &) = 0;
 
         inline bool has_scaling_matrix() const { return static_cast<bool>(scaling_matrix_); }
 
