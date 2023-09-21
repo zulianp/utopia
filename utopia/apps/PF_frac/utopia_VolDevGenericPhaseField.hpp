@@ -1412,8 +1412,8 @@ namespace utopia {
                                 //                                       error_yy = ((stress_v +
                                 //                                       stress_dev)(1,1))/((stress_dummy)(1,1));
                                 ////                                       utopia_error("error s_xx: " +
-                                ///std::to_string(error_xx) + / "\nerror s_xy: " + std::to_string(error_xy) + / "\nerror
-                                ///s_yy: " + std::to_string(error_yy) );
+                                /// std::to_string(error_xx) + / "\nerror s_xy: " + std::to_string(error_xy) + /
+                                /// "\nerror s_yy: " + std::to_string(error_yy) );
                                 //                                       utopia_error("comp s_xx: " +
                                 //                                       std::to_string((stress_v + stress_dev)(0,0)) +
                                 //                                       "  s_xx: " +
