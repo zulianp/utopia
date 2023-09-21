@@ -298,6 +298,39 @@ namespace utopia {
             }
         }
 
+        inline void identity_sym_k() { //E.P Added to correctly create tensor for Kappa contribution to elasticity matrix
+            set(0.0);
+            for (SizeType i = 0; i < extent(0); ++i) {
+                for (SizeType j = 0; j < extent(1); ++j) {
+                    for (SizeType k = 0; k < extent(2); ++k) {
+                        for (SizeType l = 0; l < extent(3); ++l) {
+                            const Scalar val = ( (i == j) && (k == l) ) ? 1.0 : 0.0 ;
+                            set(i, j, k, l, val);
+                        }
+                    }
+                }
+            }
+        }
+
+        inline void identity_shearmod( int Dim ) { //E.P Added to create tensor for shear modulus contribution to elasticity matrix
+            assert(Dim==1 || Dim == 2 || Dim == 3);
+            set(0.0);
+            for (SizeType i = 0; i < extent(0); ++i) {
+                for (SizeType j = 0; j < extent(1); ++j) {
+                    for (SizeType k = 0; k < extent(2); ++k) {
+                        for (SizeType l = 0; l < extent(3); ++l) {
+                            //const Scalar val = 1.0*( (i == k) && (j == l) ) + 1.0*( (i == l) && (j == k) ) - 2.0/3.0*( (i == j) && (k == l) ) ;
+                            Scalar val = 0.0;
+                            if ( (i == k) && (j == l) ) val += 1.0;
+                            if ( (i == l) && (j == k) ) val += 1.0;
+                            if ( (i == j) && (k == l) ) val -= 2.0/static_cast<double>(Dim);
+                            set(i, j, k, l, val);
+                        }
+                    }
+                }
+            }
+        }
+
     private:
         ArrayView4D view_{};
 

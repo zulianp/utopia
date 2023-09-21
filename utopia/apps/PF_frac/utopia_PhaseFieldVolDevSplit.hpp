@@ -27,6 +27,7 @@ namespace utopia {
     {
     public:
         using Scalar = typename FunctionSpace::Scalar;
+        using Point = typename FunctionSpace::Point;
         using SizeType = typename FunctionSpace::SizeType;
         using Vector = typename FunctionSpace::Vector;
         using Matrix = typename FunctionSpace::Matrix;
@@ -135,6 +136,13 @@ namespace utopia {
 
                         auto dx = differential_view.make(c_e);
 
+                        ////////////////////////////////////////////
+                        bool update_elast_tensor = true;
+                        Point centroid;
+                        c_e.centroid(centroid);
+                        this->non_const_params().update(centroid, update_elast_tensor);
+                        ////////////////////////////////////////////
+
                         Scalar el_energy = 0.0;
                         Scalar tr = 0.0;
 
@@ -142,6 +150,7 @@ namespace utopia {
                             el_energy += energy(this->params_, c[qp], c_grad_el[qp], el_strain.strain[qp], tr) * dx(qp);
 
                             if (this->params_.use_pressure) {
+                                        std::cout << "WARNING: Using pressure!" <<std::endl;
                                 el_energy += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation(
                                                  this->params_, c[qp]) *
                                              p[qp] * tr * dx(qp);
@@ -158,12 +167,14 @@ namespace utopia {
                             // }
 
                             if (this->params_.use_mobility) {
+                                        std::cout << "WARNING: Using mobility!" <<std::endl;
                                 auto c_diff = c[qp] - c_old[qp];
                                 el_energy +=
                                     0.5 * this->params_.mobility * (1. / this->get_dt()) * c_diff * c_diff * dx(qp);
                             }
                         }
 
+//                        std::cout << "\nE Val VD: " << el_energy << std::endl;
                         assert(el_energy == el_energy);
                         return el_energy;
                     },
@@ -436,6 +447,12 @@ namespace utopia {
                         auto c_shape_fun_el = c_shape_view.make(c_e);
 
                         ////////////////////////////////////////////
+                        bool update_elast_tensor = true;
+                        Point centroid;
+                        c_e.centroid(centroid);
+                        this->non_const_params().update(centroid, update_elast_tensor);
+                        ////////////////////////////////////////////
+
                         for (int qp = 0; qp < NQuadPoints; ++qp) {
                             compute_stress(this->params_, c[qp], el_strain.strain[qp], stress, tr_strain_u, gc, elast);
 
@@ -491,6 +508,24 @@ namespace utopia {
                                 // }
                             }
                         }
+
+//                                printf("\n------ u gradient VD ------\n");
+//                                for (int i = 0; i < U_NDofs; i++) {
+//                                   double val = u_el_vec(i);
+//                                   if (std::abs(val) < 1e-4) {
+//                                       val = 0;
+//                                   }
+//                                   printf("%.4g, ", val);
+//                                }
+//                                printf("\n------- c gradient VD ------\n");
+//                                for (int j = 0; j < C_NDofs; j++) {
+//                                        double val = c_el_vec(j);
+//                                        if (std::abs(val) < 1e-4) {
+//                                            val = 0;
+//                                        }
+//                                        printf("%.4g, ", val);
+//                                    }
+//                                printf("\n");
 
                         U_view.add_vector(u_e, u_el_vec, g_view);
                         C_view.add_vector(c_e, c_el_vec, g_view);
@@ -611,6 +646,13 @@ namespace utopia {
                         auto c_shape_fun_el = c_shape_view.make(c_e);
 
                         ////////////////////////////////////////////
+                        bool update_elast_tensor = true;
+                        Point centroid;
+                        c_e.centroid(centroid);
+                        this->non_const_params().update(centroid, update_elast_tensor);
+                        // Getting new material parameter values
+
+                        ////////////////////////////////////////////
                         Scalar tr_strain_u, eep;
 
                         for (int qp = 0; qp < NQuadPoints; ++qp) {
@@ -716,14 +758,28 @@ namespace utopia {
                             }
                         }
 
+                        printf("\n ------ Hess VD -----------\n");
+                        for (int i = 0; i < U_NDofs + C_NDofs; i++) {
+                            for (int j = 0; j < U_NDofs + C_NDofs; j++) {
+                                double val = el_mat(i, j);
+                                if (std::abs(val) < 1e-4) {
+                                    val = 0;
+                                }
+                                printf("%.4g, ", val);
+                            }
+                            printf("\n");
+                        }
+                        printf("---------------------\n");
+
+
                         space_view.add_matrix(e, el_mat, H_view);
                     });
             }
 
-            // check before boundary conditions
-            // // if (this->check_derivatives_) {
-            // this->diff_ctrl_.check_hessian(*this, x_const, H);
-            // // }
+//             check before boundary conditions
+             if (this->check_derivatives_) {
+                this->diff_ctrl_.check_hessian(*this, x_const, H);
+             }
 
             this->space_.apply_constraints(H);
 
@@ -778,6 +834,9 @@ namespace utopia {
                                                     // u
                                                     const Strain &strain,
                                                     Scalar &tr) {
+//            std::cout << "frac en: " << PhaseFieldFracBase<FunctionSpace, Dim>::fracture_energy(
+//                        params, phase_field_value, phase_field_grad) << "   elas en: " << elastic_energy(params, phase_field_value, strain, tr) << std::endl;
+
             return PhaseFieldFracBase<FunctionSpace, Dim>::fracture_energy(
                        params, phase_field_value, phase_field_grad) +
                    elastic_energy(params, phase_field_value, strain, tr);

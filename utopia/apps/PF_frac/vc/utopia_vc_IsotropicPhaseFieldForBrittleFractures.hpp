@@ -181,7 +181,7 @@ namespace utopia {
 
             if (!empty(this->force_field_)) {
                 // MAYBE -= dot(x_const, this->force_field_);
-                val += dot(x_const, this->force_field_);
+                val -= dot(x_const, this->force_field_);
             }
 
             // this->add_pf_constraints(x_const);
@@ -558,8 +558,8 @@ namespace utopia {
             }
 
             if (!empty(this->force_field_)) {
-                // MAYBE g -= this->force_field_;
-                g += this->force_field_;
+                g -= this->force_field_;
+                //                g += this->force_field_;
             }
 
             this->space_.apply_zero_constraints(g);

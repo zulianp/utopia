@@ -26,8 +26,11 @@ namespace utopia {
 
     template <typename Matrix, typename Vector>
     class KSP_TR<Matrix, Vector, PETSC> : public TRSubproblem<Matrix, Vector> {
+        using Super = utopia::TRSubproblem<Matrix, Vector>;
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
+
+        using Super::verbose;
 
         typedef utopia::KSPSolver<Matrix, Vector> KSPSolver;
         typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem;
@@ -59,13 +62,32 @@ namespace utopia {
 
             std::string pc_type_aux;
             std::string ksp_type_aux;
+            std::string solver_package_aux;
 
             in.get("pc_type", pc_type_aux);
             in.get("ksp_type", ksp_type_aux);
+            in.get("solver_package", solver_package_aux);
             in.get("redundant_solve_flg", redundant_solve_flg_);
 
             ksp_.pc_type(pc_type_aux);
             ksp_.ksp_type(ksp_type_aux);
+
+            if (!solver_package_aux.empty()) {
+                ksp_.solver_package(solver_package_aux);
+            }
+
+            if (this->verbose()) {
+                int rank = PetscCommunicator::world().rank();
+
+                if (!rank) {
+                    utopia::out() << "------------------------------------\n";
+                    utopia::out() << "KSPSolver\n";
+                    utopia::out() << "ksp_type:       " << ksp_.ksp_type() << "\n";
+                    utopia::out() << "pc_type:        " << ksp_.pc_type() << "\n";
+                    utopia::out() << "solver_package: " << ksp_.solver_package() << "\n";
+                    utopia::out() << "------------------------------------\n";
+                }
+            }
         }
 
         virtual void ksp_type(const std::string &ksp_type_name) {

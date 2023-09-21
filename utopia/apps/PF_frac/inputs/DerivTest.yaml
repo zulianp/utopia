@@ -1,0 +1,76 @@
+---
+app: HomogeneousBarDerivativeCheck
+# Output 
+#output-path: Output/Hobb/HOBBS_PT_AT1_d2_Dirch_1E32_1nu05_2nu45_dt0003_W2_l2_m15_p01_Unif
+output-path: Output/A0_DerivCheck_HomoBar_elast
+save_output: true
+# Mesh specification -----------------------------------------
+nx: 2
+ny: 2
+#nz: 2
+x_min: 0
+x_max: 3
+y_min: 0
+y_max: 1
+n_levels: 1
+# Problem specification ------------------------------------------
+# Boundary Conditions
+disp_y: 0.02
+disp_x: 0.01
+#PhaseField Debugging
+check_elastic_energy:  true
+check_fracture_energy: false
+turn_off_cu_coupling:  false
+turn_off_uc_coupling:  false
+use_penalty_irreversibility: false
+use_crack_set_irreversibiblity: false
+# Phase field formulation
+length_scale: 0.1
+regularization: 0.0001
+penalty_tol: 0.01
+penalty_tol_non_neg: 1e9
+crack_set_tol: 0.9999999
+use_pressure: false
+## Material paramteters -------------------------------------------------
+hetero_params: None
+E: 1e10
+nu: 0.15
+Gc: 50
+## Time stepping -------------------------------------------------------
+dt: 0.0005
+final_time: 0.15
+# Solver specific options
+use_dense_hessian: false
+check_derivatives: true
+block_solver: true
+hjsmn_smoother: false
+diff_controller:
+  spacing: 1.0e-06
+  hessian_from_grad: false
+use_mprgp: true  
+use_box_constraints: false  # TR method with penalty, run up to 5 cores
+solver:
+  verbose: false
+  mini_verbose: true
+  max_it: 6000
+  atol: 1e-8
+  atol_suff: 1e-16
+  rtol: 1e-16
+  rtol_suff: 1e-16
+  stol: 1e-16
+  stol_suff: 1e-16  
+  suff_it: 500
+  max_coarse_it: 2
+  max_sucessful_coarse_it: 1
+  pre_smoothing_steps: 2
+  post_smoothing_steps: 2
+  deltaH_lagging: false
+  Hpost_lagging: false
+  grad_smoothess_termination: 1.0e-06
+  max_sucessful_smoothing_it: 1
+  max_QP_smoothing_it: 60
+  max_QP_coarse_it: 1000
+  linear_solver:
+    verbose: false
+    atol: 1.0e-8
+    max_it: 1200

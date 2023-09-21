@@ -83,10 +83,34 @@ namespace utopia {
 
     // FIXME these quadrature defs are redundant
 
+    // template <>
+    // class Quadrature<PetscUniformQuad4, 2, 2> : public QuadratureBase<2, 6, 2> {
+    // public:
+    //     using Super = utopia::QuadratureBase<2, 6, 2>;
+    //     using Scalar = Super::Scalar;
+    //     using Point = Super::Point;
+    //     using ViewDevice = Quadrature;
+    //     using ViewHost = Quadrature;
+
+    //     Quadrature() { init(); }
+
+    //     Quadrature(const Quadrature &other)
+
+    //         = default;
+
+    //     void init() {
+    //         Quad4Quadrature<Scalar, Super::Order, Super::Dim, Super::NPoints>::get(this->points_, this->weights_);
+    //     }
+
+    //     inline const ViewDevice &view_device() const { return *this; }
+
+    //     inline const ViewHost &view_host() const { return *this; }
+    // };
+
     template <>
-    class Quadrature<PetscUniformQuad4, 2, 2> : public QuadratureBase<2, 6, 2> {
+    class Quadrature<PetscUniformQuad4, 2, 2> : public QuadratureBase<2, 16, 2> {
     public:
-        using Super = utopia::QuadratureBase<2, 6, 2>;
+        using Super = utopia::QuadratureBase<2, 16, 2>;
         using Scalar = Super::Scalar;
         using Point = Super::Point;
         using ViewDevice = Quadrature;
@@ -108,9 +132,9 @@ namespace utopia {
     };
 
     template <>
-    class Quadrature<PetscUniformQuad4, 0, 2> : public QuadratureBase<0, 4, 2> {
+    class Quadrature<PetscUniformQuad4, 0, 2> : public QuadratureBase<0, 16, 2> {
     public:
-        using Super = utopia::QuadratureBase<0, 4, 2>;
+        using Super = utopia::QuadratureBase<0, 16, 2>;
         using Scalar = Super::Scalar;
         using Point = Super::Point;
         using ViewDevice = Quadrature;
@@ -122,23 +146,45 @@ namespace utopia {
 
             = default;
 
-        void init() {
-            this->points_[0][0] = 0.211324865405187;
-            this->points_[0][1] = 0.211324865405187;
-            this->points_[1][0] = 0.788675134594813;
-            this->points_[1][1] = 0.211324865405187;
-            this->points_[2][0] = 0.211324865405187;
-            this->points_[2][1] = 0.788675134594813;
-            this->points_[3][0] = 0.788675134594813;
-            this->points_[3][1] = 0.788675134594813;
-
-            this->weights_ = {0.25, 0.25, 0.25, 0.25};
-        }
+        void init() { Quad4Quadrature<Scalar, 2, Super::Dim, Super::NPoints>::get(this->points_, this->weights_); }
 
         inline const ViewDevice &view_device() const { return *this; }
 
         inline const ViewHost &view_host() const { return *this; }
     };
+
+    // template <>
+    // class Quadrature<PetscUniformQuad4, 0, 2> : public QuadratureBase<0, 4, 2> {
+    // public:
+    //     using Super = utopia::QuadratureBase<0, 4, 2>;
+    //     using Scalar = Super::Scalar;
+    //     using Point = Super::Point;
+    //     using ViewDevice = Quadrature;
+    //     using ViewHost = Quadrature;
+
+    //     Quadrature() { init(); }
+
+    //     Quadrature(const Quadrature &other)
+
+    //         = default;
+
+    //     void init() {
+    //         this->points_[0][0] = 0.211324865405187;
+    //         this->points_[0][1] = 0.211324865405187;
+    //         this->points_[1][0] = 0.788675134594813;
+    //         this->points_[1][1] = 0.211324865405187;
+    //         this->points_[2][0] = 0.211324865405187;
+    //         this->points_[2][1] = 0.788675134594813;
+    //         this->points_[3][0] = 0.788675134594813;
+    //         this->points_[3][1] = 0.788675134594813;
+
+    //         this->weights_ = {0.25, 0.25, 0.25, 0.25};
+    //     }
+
+    //     inline const ViewDevice &view_device() const { return *this; }
+
+    //     inline const ViewHost &view_host() const { return *this; }
+    // };
 
     template <typename Scalar_, int PhysicalDim, int Order>
     class Quadrature<Quad4<Scalar_, PhysicalDim>, Order, 2> : public Quadrature<PetscUniformQuad4, Order, 2> {
