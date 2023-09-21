@@ -996,9 +996,15 @@ namespace utopia {
 
                             Scalar Gc = this->params_.fracture_toughness;
                             Scalar mu = this->params_.mu;
-                            Scalar l = this->params_.lambda;
-                            Scalar E = mu * (3. * l + 2. * mu) / (l + mu);
+                            Scalar l = this->params_.lambda;                         
+                            Scalar E;
+                            if constexpr(Dim == 3){
+                                E =  mu * (3. * l + 2. * mu) / (l + mu);
+                            } else {
+                                E = 4.0 * mu * (l + mu) / (l + 2.0*mu);
+                            }
                             Scalar nu = E / (2.0 * mu) - 1.;
+
                             Scalar tens_strength = TensileStrength();
                             Scalar crit_disp = CriticalDisplacement();
 

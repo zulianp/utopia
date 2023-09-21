@@ -242,14 +242,14 @@ namespace utopia {
                                  ymax,
                                  use_random,
                                  distribution,
-                                 generator](const Point &p,
+                                 generator,this](const Point &p,
                                             Scalar &mu_out,
                                             Scalar &lambda_out,
                                             Scalar &fracture_toughness_out,
                                             Scalar &tensile_strength) mutable {
                     if (p[1] < bottom_layer_height_ ||
                         p[1] > top_layer_height_) {  // Shale (stronger and more compliant)
-                        lambda_out = E2 * nu2 / ((1. + nu2) * (1. - 2. * nu2));
+                        lambda_out = initialise_lambda( E2 , nu2 );
                         mu_out = E2 / (2. * (1. + nu2));
                         if (p[1] < bottom_layer_height_ - 1.5 * l_ || p[1] > top_layer_height_ + 1.5 * l_) {
                             fracture_toughness_out = Gc2;
@@ -259,7 +259,7 @@ namespace utopia {
                             tensile_strength = ft_int;
                         }
                     } else {  // Dolostone (weaker and stiffer)
-                        lambda_out = E1 * nu1 / ((1. + nu1) * (1. - 2. * nu1));
+                        lambda_out = initialise_lambda( E1 , nu1 );
                         mu_out = E1 / (2. * (1. + nu1));
 
                         generator.seed((1e6 * p[1] * p[1] + 1e6 * p[0] * p[0]));
@@ -273,7 +273,6 @@ namespace utopia {
                 Scalar bottom_layer_height_;
                 Scalar top_layer_height_;
                 Scalar interface_regularisation_length;
-                bool include_interface_layer{false};
 
                 in.get("bottom_layer_height", bottom_layer_height_);
                 in.get("top_layer_height", top_layer_height_);
@@ -332,7 +331,7 @@ namespace utopia {
                                  ymax,
                                  use_random,
                                  distribution,
-                                 generator](const Point &p,
+                                 generator,this](const Point &p,
                                             Scalar &mu_out,
                                             Scalar &lambda_out,
                                             Scalar &fracture_toughness_out,
@@ -340,7 +339,7 @@ namespace utopia {
                     if (p[1] <= top_layer_height_ - interface_regularisation_length / 2.0 &&
                         p[1] >= bottom_layer_height_ + interface_regularisation_length / 2.0) {  // stiffer layer
 
-                        lambda_out = E1 * nu1 / ((1. + nu1) * (1. - 2. * nu1));
+                        lambda_out = initialise_lambda( E1 , nu1 );
                         mu_out = E1 / (2. * (1. + nu1));
 
                         generator.seed((1e6 * p[1] * p[1] + 1e6 * p[0] * p[0]));
@@ -352,7 +351,7 @@ namespace utopia {
                                 p[1] <= top_layer_height_) ||
                                (p[1] <= bottom_layer_height_ + interface_regularisation_length / 2.0 &&
                                 p[1] >= bottom_layer_height_)) {
-                        lambda_out = E1 * nu1 / ((1. + nu1) * (1. - 2. * nu1));
+                        lambda_out = initialise_lambda( E1 , nu1 );
                         mu_out = E1 / (2. * (1. + nu1));
 
                         double dist_to_interf =
@@ -367,7 +366,7 @@ namespace utopia {
                                (p[1] >= bottom_layer_height_ - interface_regularisation_length / 2.0 &&
                                 p[1] <= bottom_layer_height_)) {  // Shale (stronger and more compliant)
 
-                        lambda_out = E2 * nu2 / ((1. + nu2) * (1. - 2. * nu2));
+                        lambda_out = initialise_lambda( E2 , nu2 );
                         mu_out = E2 / (2. * (1. + nu2));
                         double dist_to_interf =
                             std::min(std::fabs(p[1] - (bottom_layer_height_ - interface_regularisation_length / 2.0)),
@@ -377,7 +376,7 @@ namespace utopia {
                         fracture_toughness_out = Gc_mixed;
                         tensile_strength = ft2;
                     } else {
-                        lambda_out = E2 * nu2 / ((1. + nu2) * (1. - 2. * nu2));
+                        lambda_out = initialise_lambda( E2 , nu2 );
                         mu_out = E2 / (2. * (1. + nu2));
                         fracture_toughness_out = Gc2;
                         tensile_strength = ft2;
@@ -464,7 +463,7 @@ namespace utopia {
                                  layer_width,
                                  use_random,
                                  distribution,
-                                 generator](const Point &p,
+                                 generator,this](const Point &p,
                                             Scalar &mu_out,
                                             Scalar &lambda_out,
                                             Scalar &fracture_toughness_out,
@@ -472,7 +471,7 @@ namespace utopia {
                     if ((p[1] < top_layer_height_ && p[1] > bottom_layer_height_) ||
                         (p[1] < top_layer_height2_ &&
                          p[1] > bottom_layer_height2_)) {  // Dolostone (weaker and stiffer)
-                        lambda_out = E1 * nu1 / ((1. + nu1) * (1. - 2. * nu1));
+                        lambda_out = initialise_lambda( E1 , nu1 );
                         mu_out = E1 / (2. * (1. + nu1));
 
                         generator.seed((1e6 * p[1] * p[1] + 1e6 * p[0] * p[0]));
@@ -481,7 +480,7 @@ namespace utopia {
                         fracture_toughness_out = Gc1 + use_random * noise;
                         tensile_strength = ft1;
                     } else {  // Shale (stronger and more compliant)
-                        lambda_out = E2 * nu2 / ((1. + nu2) * (1. - 2. * nu2));
+                        lambda_out = initialise_lambda(E2,nu2);
                         mu_out = E2 / (2. * (1. + nu2));
                         if (p[1] < bottom_layer_height_ - 1.5 * l_ || p[1] > top_layer_height_ + 1.5 * l_) {
                             fracture_toughness_out = Gc2;
@@ -520,14 +519,15 @@ namespace utopia {
             } else {
                 initialise_Young_Poisson_parameters();
             }
-            if (mpi_world_rank() == 0) {
-                utopia::out() << "E: " << E << "  nu: " << nu << "  Gc: " << fracture_toughness << " mu: " << mu
-                              << "  lambda: " << lambda << " f_t: " << tensile_strength << "\n";
-            }
 
             // Must be done after lambda and mu
             fill_in_isotropic_elast_tensor();
             kappa = lambda + (2.0 * mu / Dim);
+
+            if (mpi_world_rank() == 0) {
+                utopia::out() << "E: " << E << "  nu: " << nu << "  Gc: " << fracture_toughness << " mu: " << mu
+                              << "  lambda: " << lambda << " f_t: " << tensile_strength << "Kappa: " << kappa << "\n";
+            }
 
         }  // end of read
 
@@ -579,13 +579,22 @@ namespace utopia {
         }
 
         void initialise_Lame_parameters() {
-            lambda = E * nu / ((1. + nu) * (1. - 2. * nu));
+            lambda = E * nu / ((1. + nu) * (1. - static_cast<double>(Dim-1) * nu));
             mu = E / (2. * (1. + nu));
         }
 
+        Scalar initialise_lambda( Scalar E, Scalar nu) {
+            return  E * nu / ((1. + nu) * (1. - static_cast<double>(Dim-1) * nu));
+        }
+
         void initialise_Young_Poisson_parameters() {
+            if constexpr(Dim== 3){
             E = mu * (3.0 * lambda + 2.0 * mu) / (lambda + mu);
             nu = lambda / (2.0 * (lambda + mu));
+        } else {
+            E = 4.0*mu * (lambda + mu) / (lambda + 2.0*mu);
+            nu = lambda / (lambda + 2.0* mu);
+            }
         }
 
         std::pair<double, double> return_Lame_parameters(double E, double nu) {
