@@ -252,11 +252,17 @@ namespace utopia {
 
                 UTOPIA_INLINE_FUNCTION void init(int &val) const { val = 0; }
 
+#define UTOPIA_KOKKOS_JOIN_VOLATILE volatile
+
+#ifdef KOKKOS_VERSION_GREATER_EQUAL
 #if KOKKOS_VERSION_GREATER_EQUAL(4, 0, 1)
-                KOKKOS_INLINE_FUNCTION void join(int &val, const int &other) const
-#else
-                KOKKOS_INLINE_FUNCTION void join(volatile int &val, const volatile int &other) const
+#define UTOPIA_KOKKOS_JOIN_VOLATILE
 #endif
+#endif
+
+                KOKKOS_INLINE_FUNCTION void join(UTOPIA_KOKKOS_JOIN_VOLATILE int &val,
+                                                 const UTOPIA_KOKKOS_JOIN_VOLATILE int &other) const
+
                 {
                     // Kokkos forces us to have the input values being declared volatile. Hence we need to make copies
                     // for the reduction operations
