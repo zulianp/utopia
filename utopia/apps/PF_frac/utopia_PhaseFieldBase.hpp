@@ -181,7 +181,7 @@ namespace utopia {
                 bottom_layer_height = bottom_layer_height_;
                 top_layer_height = top_layer_height_;
 
-                Scalar E1, E2, nu1, nu2, Gc1, Gc2, Gc_int, l_, ft1, ft2, ft_int;
+                Scalar E1, E2, nu1, nu2, Gc1, Gc2, Gc_int, l_, ft1{1}, ft2{1}, ft_int{1};
                 in.get("E_1", E1);
                 in.get("E_2", E2);
                 in.get("nu_1", nu1);
@@ -210,11 +210,14 @@ namespace utopia {
                 // Random variation
                 bool random_variation{false};
                 Scalar toughness_deviation{1.0};
+                Scalar youngs_deviation{1.0};
                 in.get("random_variation", random_variation);
-                in.get("random_standard_deviation", toughness_deviation);
+                in.get("random_toughness_deviation", toughness_deviation);
+                in.get("random_youngs_deviation", youngs_deviation);
 
                 double use_random = random_variation ? 1.0 : 0.0;
-                std::normal_distribution<double> distribution(0., toughness_deviation);
+                std::normal_distribution<double> distribution_G(0., toughness_deviation);
+                std::normal_distribution<double> distribution_E(0., youngs_deviation);
                 std::default_random_engine generator;
 
                 Scalar xmin, xmax, ymin, ymax;
@@ -241,7 +244,8 @@ namespace utopia {
                                  ymin,
                                  ymax,
                                  use_random,
-                                 distribution,
+                                 distribution_E,
+                                 distribution_G,
                                  generator](const Point &p,
                                             Scalar &mu_out,
                                             Scalar &lambda_out,
@@ -259,13 +263,18 @@ namespace utopia {
                             tensile_strength = ft_int;
                         }
                     } else {  // Dolostone (weaker and stiffer)
-                        lambda_out = E1 * nu1 / ((1. + nu1) * (1. - 2. * nu1));
+
+                        double noise_E = distribution_E(generator);
+                        distribution_E.reset();
+
+                        lambda_out = E1 * nu1 / ((1. + nu1) * (1. - 2. * nu1)) + use_random*noise_E;
                         mu_out = E1 / (2. * (1. + nu1));
 
                         generator.seed((1e6 * p[1] * p[1] + 1e6 * p[0] * p[0]));
-                        double noise = distribution(generator);
-                        distribution.reset();
-                        fracture_toughness_out = Gc1 + use_random * noise;
+                        double noise_G = distribution_G(generator);
+                        distribution_G.reset();
+
+                        fracture_toughness_out = Gc1 + use_random * noise_G;
                         tensile_strength = ft1;
                     }
                 };
