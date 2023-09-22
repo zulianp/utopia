@@ -251,7 +251,13 @@ namespace utopia {
                 }
 
                 UTOPIA_INLINE_FUNCTION void init(int &val) const { val = 0; }
-                KOKKOS_INLINE_FUNCTION void join(volatile int &val, const volatile int &other) const {
+
+#if KOKKOS_VERSION_GREATER_EQUAL(4, 0, 1)
+                KOKKOS_INLINE_FUNCTION void join(int &val, const int &other) const
+#else
+                KOKKOS_INLINE_FUNCTION void join(volatile int &val, const volatile int &other) const
+#endif
+                {
                     // Kokkos forces us to have the input values being declared volatile. Hence we need to make copies
                     // for the reduction operations
                     const int tmp1 = val, tmp2 = other;
@@ -296,9 +302,8 @@ namespace utopia {
 
                 DetOp op(n, data);
                 ::Kokkos::parallel_for(
-                    this->fe()->cell_qp_range(), UTOPIA_LAMBDA(int cell, int qp) {
-                        result(cell, qp, 0) = op(cell, qp);
-                    });
+                    this->fe()->cell_qp_range(),
+                    UTOPIA_LAMBDA(int cell, int qp) { result(cell, qp, 0) = op(cell, qp); });
             }
 
             void eig(QPField<FE> &field) {
