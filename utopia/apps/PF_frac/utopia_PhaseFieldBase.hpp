@@ -1664,7 +1664,7 @@ namespace utopia {
             return pressure_field_;
         }
 
-        void set_dt(const Scalar &dt) { dt_ = dt; }
+       // void set_dt(const Scalar &dt) { dt_ = dt; }
 
         void set_time(const Scalar &t) {
             time_ = t;
@@ -1683,7 +1683,7 @@ namespace utopia {
             }
         }
 
-        Scalar get_dt() const { return dt_; }
+        //Scalar get_dt() const { return dt_; }
 
         virtual void write_to_file(const std::string &output_path, const Vector &x, const Scalar time) {
             space_.write(output_path + "_X_" + std::to_string(time) + ".vtr", x);
@@ -1714,7 +1714,7 @@ namespace utopia {
         std::shared_ptr<Vector> local_pressure_field_;
         std::shared_ptr<Vector> local_c_old_;
 
-        Scalar dt_;
+        //Scalar dt_;
         Scalar time_{0};
         std::vector<std::unique_ptr<NeumannBoundaryCondition<FunctionSpace>>> neumann_bcs;
     };

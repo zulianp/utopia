@@ -462,7 +462,7 @@ namespace utopia {
                 if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                     fun_finest->make_iterate_feasible(this->lb_, this->ub_, this->solution_);
                     fun_finest->get_old_solution(this->solution_);
-                    fun_finest->set_dt(this->dt_);
+                    //fun_finest->set_dt(this->dt_);
                 }
 
                 // reset sol on all levels - important for BC conditions mostly s
@@ -479,8 +479,8 @@ namespace utopia {
 
                     transfers_[l - 1]->project_down(fine_sol, coarse_sol);
                     spaces_[l]->apply_constraints(coarse_sol);
-                    fun_fine->set_dt(this->dt_);
-                    fun_coarse->set_dt(this->dt_);
+//                    fun_fine->set_dt(this->dt_);
+//                    fun_coarse->set_dt(this->dt_);
 
                     // transfers_[l]->restrict(fine_sol, coarse_sol);
                 }
@@ -490,7 +490,7 @@ namespace utopia {
                 if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                     fun_finest->make_iterate_feasible(this->lb_, this->ub_, this->solution_);
                     fun_finest->set_old_solution(this->solution_);
-                    fun_finest->set_dt(this->dt_);
+//                    fun_finest->set_dt(this->dt_);
                 }
 
                 // update sol on all levels
@@ -507,8 +507,8 @@ namespace utopia {
 
                     transfers_[l - 1]->project_down(fine_sol, coarse_sol);
                     spaces_[l]->apply_constraints(coarse_sol);
-                    fun_coarse->set_dt(this->dt_);
-                    fun_fine->set_dt(this->dt_);
+//                    fun_coarse->set_dt(this->dt_);
+//                    fun_fine->set_dt(this->dt_);
 
                     // transfers_[l]->restrict(fine_sol, coarse_sol);
                 }
@@ -673,7 +673,7 @@ namespace utopia {
                 if (this->time_ == this->dt_) {
                     auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get());
                     fun_finest->set_old_solution(this->solution_);
-                    fun_finest->set_dt(this->dt_);
+//                    fun_finest->set_dt(this->dt_);
                     fun_finest->export_material_params(this->output_path_);
                 }
 

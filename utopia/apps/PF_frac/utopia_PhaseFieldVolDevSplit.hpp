@@ -166,12 +166,13 @@ namespace utopia {
                             //     el_energy -= c[qp] * c[qp] * p[qp] * tr * dx(qp);
                             // }
 
-                            if (this->params_.use_mobility) {
+                            /*E.P Removed since get_dt() depracated
+                             * if (this->params_.use_mobility) {
                                         std::cout << "WARNING: Using mobility!" <<std::endl;
                                 auto c_diff = c[qp] - c_old[qp];
                                 el_energy +=
                                     0.5 * this->params_.mobility * (1. / this->get_dt()) * c_diff * c_diff * dx(qp);
-                            }
+                            }*/
                         }
 
 //                        std::cout << "\nE Val VD: " << el_energy << std::endl;
@@ -495,11 +496,12 @@ namespace utopia {
                                 //     c_el_vec(j) -= p[qp] * tr_strain_u * shape_test * dx(qp);
                                 // }
 
+                                /*E.P Removed since get_dt() depracated
                                 if (this->params_.use_mobility) {
                                     auto c_diff = c[qp] - c_old[qp];
                                     c_el_vec(j) +=
                                         this->params_.mobility * (1. / this->get_dt()) * c_diff * shape_test * dx(qp);
-                                }
+                                }*/
 
                                 // if (this->params_.use_pressure) {
                                 //     // indicator function is assumed to be c^2
@@ -686,10 +688,11 @@ namespace utopia {
                                     //     dx(qp);
                                     // }
 
+                                    /*E.P Removed since get_dt() depracated
                                     if (this->params_.use_mobility) {
                                         val += this->params_.mobility * (1. / this->get_dt()) * c_shape_fun_el(j, qp) *
                                                c_shape_l * dx(qp);
-                                    }
+                                    }*/
 
                                     val = (l == j) ? (0.5 * val) : val;
 

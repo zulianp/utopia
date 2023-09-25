@@ -109,6 +109,11 @@ namespace utopia {
             in.get("dt_max", dt_max_);
             in.get("increase_factor", increase_factor_);
 
+            // E.P Two timestepping
+            in.get("use_two_time_steps", use_two_time_steps_);
+            in.get("time_secondphase", time_secondphase_);
+            in.get("dt_secondphase", dt_secondphase_);
+
             csv_file_name_ = this->output_path_ + "_energies.csv";
         }
 
@@ -191,6 +196,10 @@ namespace utopia {
         Scalar dt_min_{0}, dt_max_{1e3};
         Scalar frac_energy_min_change_{1e10};
         bool increase_next_time_step_{false};
+
+        bool use_two_time_steps_{false};
+        Scalar dt_secondphase_{1};
+        Scalar time_secondphase_{1};
 
         Scalar increase_factor_{1};
 
@@ -306,7 +315,7 @@ namespace utopia {
 
             BC_.emplace_time_dependent_BC(this->time_);
             space_.apply_constraints(this->solution_);
-            fe_problem_->set_dt(this->dt_);
+            //fe_problem_->set_dt(this->dt_); E.P Removed, was only needed for mobility
             fe_problem_->set_time(this->time_);
 
             if (this->use_pressure_) {
@@ -339,6 +348,23 @@ namespace utopia {
                     this->time_ -= this->dt_;
                     this->dt_ = this->dt_ * this->shrinking_factor_;
                     this->time_ += this->dt_;
+                } else if (this->use_two_time_steps_) {
+
+                    //update solution
+                    fe_problem_->set_old_solution(this->solution_);
+
+                    // Writing strain stress solution to file
+                    fe_problem_->write_to_file(this->output_path_, this->solution_, this->time_);
+
+                    // Modify future time step
+                    if (this->time_ >= this->time_secondphase_)
+                        this->dt_ = this->dt_secondphase_;
+
+                    //prepare new solution
+                    this->time_ += this->dt_;
+                    this->time_step_counter_ += 1;
+
+
                 } else {
                     rename("X", this->solution_);
 
@@ -386,12 +412,12 @@ namespace utopia {
                     this->time_ += this->dt_;
 
                     fe_problem_->get_old_solution(this->solution_);
-                    fe_problem_->set_dt(this->dt_);
+                    //fe_problem_->set_dt(this->dt_); E.P Removed, was only needed for mobility
 
                 } else {  // Advance time step
 
                     fe_problem_->set_old_solution(this->solution_);
-                    fe_problem_->set_dt(this->dt_);
+                    //fe_problem_->set_dt(this->dt_); E.P Removed, was only needed for mobility
 
                     if (this->pressure0_ != 0.0) {
                         this->write_to_file(space_, 1e-5 * this->time_);
@@ -502,7 +528,7 @@ namespace utopia {
 
                 if (this->time_step_counter_ == 1) {
                     fe_problem_->set_old_solution(this->solution_);
-                    fe_problem_->set_dt(this->dt_);
+                    //fe_problem_->set_dt(this->dt_); //E.P removed - was only for used for mobility
                     fe_problem_->export_material_params(this->output_path_);
                 }
 
