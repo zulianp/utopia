@@ -683,8 +683,8 @@ namespace utopia {
 
                         Scalar el_energy = 0.0;
 
-                        if (centroid[1] > this->non_const_params().bottom_layer_height &&
-                            centroid[1] < this->non_const_params().top_layer_height) {
+                        if (centroid[1] >= this->non_const_params().bottom_layer_height &&
+                            centroid[1] <= this->non_const_params().top_layer_height) {
                             // only for middle layer
                             for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                                 el_energy +=
