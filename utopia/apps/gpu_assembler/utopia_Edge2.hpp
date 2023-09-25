@@ -132,7 +132,7 @@ namespace utopia {
 
         template <typename RefPoint, typename PhysicalPoint>
         UTOPIA_INLINE_FUNCTION void point(const RefPoint &in, PhysicalPoint &out) const {
-            out = in[0] * nodes_[1] + nodes_[0];
+            out = in[0] * nodes_[1] + (1 - in[0]) * nodes_[0];
         }
 
         UTOPIA_INLINE_FUNCTION Edge2() = default;

@@ -1,26 +1,36 @@
 ---
-app: Hobbs
+app: SingleSedimentaryLayer
 # Output 
-#output-path: Output/Hobb/HOBBS_Iso_AT2_d2_G800_E56_dt001_W4_l4_m6_p01_pn100_Fx1
-output-path: Output/HOBBS_VD_AT1_d2_Dirch_1E32_1nu05_2nu45_dt0003_W2_l2_m15_p01_Unif
+#output-path: Output/Hobb/HOBBS_PT_AT1_d2_Dirch_1E32_1nu05_2nu45_dt0003_W2_l2_m15_p01_Unif
+output-path: Output/SedimentaryLayer/Single_VD_AT1_mm_Comp1_d40_L400_H800_1E32_1nu25_1Gc20_2Gc100_2E6_2nu15_l03_m2_dt0005_dtm00005_p01_RegI09_New
 save_output: true
 # Mesh specification -----------------------------------------
-nx: 220
-ny: 88
+nx: 401
+ny: 161
 #nz: 2
 x_min: 0
-x_max: 2
+x_max: 4e3
 y_min: 0
-y_max: 0.8
+y_max: 1.6e3 #1.6e3
 n_levels: 1
 # Problem specification ------------------------------------------
 # Boundary Conditions
 disp_y: 0.0
-disp_x: 0.01
+disp_x: 0.03e3
 fix_phase_field_on_sides: true
+no_phase_field_outside_layer: true
+no_pf_length: 1
+neumann_bc:
+  # - side: top
+  #   value: 100 #-1e-3
+  #   component: 2 #xaxis
+  - side: top
+    type: varying
+    expr: "-0.001" # * (t/0.0001)"    #"-(t*2000*0.000001)"
+    component: 2
 #Initial Condition
 # Phase field formulation
-length_scale: 0.04 # 0.02
+length_scale: 0.03e3
 with_damage: true
 use_penalty_irreversibility: true
 penalty_tol: 0.01
@@ -28,45 +38,51 @@ penalty_tol_non_neg: 1e9
 use_crack_set_irreversibiblity: true
 crack_set_tol: 0.9999999
 ## Material paramteters -------------------------------------------------
-hetero_params: Hobbs
+hetero_params: RegularisedSingleLayer
+random_variation: true
+random_standard_deviation: 1e-6
 random_damage: false
-uniform_damage: true
-IC_number: 10 
-bottom_layer_height: 0.3
-top_layer_height: 0.5
-include_interface_layer: true
-E_1: 32e9	    #Dolostone
-E_2: 16e9			#Shale
-nu_1: 0.05		#Dolostone
-nu_2: 0.45 		#Shale 	
-Gc_1: 50 			#Dolostone 48
-Gc_2: 200		 	#Shale
-Gc_int: 1000
+uniform_damage: false
+central_damage: true
+IC_number: 10 			#for uniform damage
+bottom_layer_height: 0.6e3	
+top_layer_height: 1.0e3
+bottom_layer_height2: -10e3 	#below zero not modelled	
+top_layer_height2: -10e3 	#below zero ... 
+interface_regularisation_length: 0.09e3
+E_1: 30	        	#Dolostone
+E_2: 10			#Shale
+nu_1: 0.25			#Dolostone
+nu_2: 0.15 			#Shale 	
+Gc_1: 20e-6 			#Dolostone 48
+Gc_2: 100e-6		 	#Shale
+ft_1: 0.00104641
+ft_2: 0.00774596
+Gc_int: 1000e-6
 random_variation: false		
 random_standard_deviation: 1
-boundary_protection: false	#increase fracture in a layer around the boundary
-layer_width: 0.1
-tensile_strength: 3.5e+06
-tensile_strength_2: 7e+06
-tensile_strength_int: 12e+06
 ## Time stepping -------------------------------------------------------
-dt: 0.0005 ## 0.0005
+dt: 0.0005
 final_time: 0.15
 # dynamic time stepping with fracture energy
 fracture_energy_time_stepping: true
 frac_energy_max_change: 1.15
 frac_energy_min_change: 1.01
-dt_min: 0.000001
-dt_max: 0.0001   ##dt_max: 0.0005
+dt_min: 0.00005
+dt_max: 0.0005
 increase_factor: 2
 adjust_dt_on_failure: false
-shrinking_factor: 0.5
+shrinking_factor: 0.25
 ## Pressure handling ---------------------------------------------------------
+mobility: 0.0
+use_mobility: false 
 use_pressure: false
 use_constant_pressure: false
 pressure0: 0
 pressure_increase_factor: 0
 # Solver specific options
+turn_off_uc_coupling: true
+turn_off_cu_coupling: true
 use_dense_hessian: false
 check_derivatives: false
 block_solver: true
@@ -77,15 +93,15 @@ diff_controller:
 use_mprgp: true  
 use_box_constraints: false  # TR method with penalty, run up to 5 cores
 solver:
-  verbose: true
+  verbose: false
   mini_verbose: true
-  max_it: 6000
+  max_it: 8000
   atol: 1e-8
-  atol_suff: 1e-12
-  rtol: 1e-12
-  rtol_suff: 1e-12
-  stol: 1e-12
-  stol_suff: 1e-12
+  atol_suff: 1e-16
+  rtol: 1e-16
+  rtol_suff: 1e-16
+  stol: 1e-16
+  stol_suff: 1e-16  
   suff_it: 500
   max_coarse_it: 2
   max_sucessful_coarse_it: 1

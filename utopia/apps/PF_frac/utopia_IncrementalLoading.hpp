@@ -229,18 +229,18 @@ namespace utopia {
 
             in.get("use_box_constraints", use_box_constraints_);
 
-            init_solver();
+            choose_solver();
 
             if (use_box_constraints_ == false) in.get("solver", *tr_solver_);
 
             if (use_box_constraints_ == true) in.get("solver", *tr_solver_box_);
         }
 
-        void init_solver() {
+        void choose_solver() {
             // if (tr_solver_) return;
             // if (tr_solver_box_) return;
 
-            UTOPIA_TRACE_REGION_BEGIN("IncrementalLoading::init_solver(...)");
+            UTOPIA_TRACE_REGION_BEGIN("IncrementalLoading::choose_solver(...)");
 
             std::cout << "incremental loading ..... \n";
 
@@ -263,13 +263,21 @@ namespace utopia {
 
                 tr_solver_box_ = std::make_shared<TrustRegionVariableBound<PetscMatrix, PetscVector>>(qp_solver);
             } else {
+#if 0
+                    auto qp_solver = std::make_shared<utopia::SteihaugToint<PetscMatrix, PetscVector, HOMEMADE>>();
+                    auto prec = std::make_shared<KSPSolver<PetscMatrix, PetscVector>>();
+                    prec->ksp_type("bcstab");
+                    prec->pc_type("hypre");
+                    qp_solver->set_preconditioner(prec);
+#else
                 auto qp_solver = std::make_shared<utopia::Lanczos<PetscMatrix, PetscVector>>();
-                // auto qp_solver = std::make_shared<utopia::SteihaugToint<PetscMatrix, PetscVector>>();
-                qp_solver->pc_type("bjacobi");
+                qp_solver->pc_type("hypre");
+#endif
+
                 tr_solver_ = std::make_shared<TrustRegion<PetscMatrix, PetscVector>>(qp_solver);
             }
 
-            UTOPIA_TRACE_REGION_END("IncrementalLoading::init_solver(...)");
+            UTOPIA_TRACE_REGION_END("IncrementalLoading::choose_solver(...)");
         }
 
         void init_solution() override {
@@ -299,6 +307,7 @@ namespace utopia {
             BC_.emplace_time_dependent_BC(this->time_);
             space_.apply_constraints(this->solution_);
             fe_problem_->set_dt(this->dt_);
+            fe_problem_->set_time(this->time_);
 
             if (this->use_pressure_) {
                 auto press_ts = this->pressure0_ + (this->time_ * this->pressure_increase_factor_);
@@ -313,6 +322,7 @@ namespace utopia {
                 }
             }
 
+            // E.P CHECK - What is this doing here.
             fe_problem_->build_irreversility_constraint(this->lb_);
 
             UTOPIA_TRACE_REGION_END("IncrementalLoading::prepare_for_solve(...)");
@@ -345,6 +355,7 @@ namespace utopia {
 
                     // increment time step
                     this->time_ += this->dt_;
+                    this->time_step_counter_ += 1;
                 }
             } else {
                 Scalar trial_fracture_energy{0.0};
@@ -384,8 +395,6 @@ namespace utopia {
 
                     if (this->pressure0_ != 0.0) {
                         this->write_to_file(space_, 1e-5 * this->time_);
-                    } else {
-                        this->write_to_file(space_, this->time_);
                     }
 
                     // Advance time step
@@ -425,12 +434,15 @@ namespace utopia {
 
                 fe_problem_->elastic_energy(this->solution_, elastic_energy);
                 fe_problem_->elastic_energy_in_middle_layer(this->solution_, ela_en_mid);
-                fe_problem_->fracture_energy_in_middle_layer(this->solution_, fra_en_mid);
+                //                fe_problem_->fracture_energy_in_middle_layer(this->solution_, fra_en_mid);
 
                 fe_problem_->compute_tcv(this->solution_, tcv);
 
-                // residual = rmtr_->get_gnorm();
-                // iterations = rmtr_->get_total_iterations();
+                if (!use_box_constraints_) {
+                    residual = tr_solver_->get_gnorm();
+                    iterations = tr_solver_->get_iterations();
+                }
+
                 if (FunctionSpace::Dim == 3) {
                     fe_problem_->compute_cod(this->solution_, error_cod);
                 }
@@ -444,7 +456,9 @@ namespace utopia {
                                                              "fracture_energy",
                                                              "elast_en_mid_layer",
                                                              "frac_en_mid_layer",
-                                                             "total_crack_vol"});
+                                                             "total_crack_vol",
+                                                             "gnorm",
+                                                             "iterations"});
                     } else {
                         writer.open_file(this->csv_file_name_);
                     }
@@ -455,7 +469,9 @@ namespace utopia {
                                                     fracture_energy,
                                                     ela_en_mid,
                                                     fra_en_mid,
-                                                    tcv});
+                                                    tcv,
+                                                    residual,
+                                                    iterations});
                     writer.close_file();
                 }
             }
@@ -466,9 +482,9 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("IncrementalLoading::run(...)");
 
             // just for testing purposes...
-            fe_problem_->use_crack_set_irreversibiblity(true);
-            fe_problem_->turn_off_cu_coupling(true);
-            // fe_problem_->turn_off_uc_coupling(true);
+            // fe_problem_->use_crack_set_irreversibiblity(true);
+            //            fe_problem_->turn_off_cu_coupling(true);
+            //            fe_problem_->turn_off_uc_coupling(true);
 
             this->init(space_);
 
@@ -515,6 +531,7 @@ namespace utopia {
                     auto sol_status = tr_solver_->solution_status();
                     conv_reason = sol_status.reason;
                 }
+
                 // ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
                 // auto hess_approx = std::make_shared<JFNK<utopia::PetscVector>>(*fe_problem_);

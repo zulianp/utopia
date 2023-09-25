@@ -25,6 +25,8 @@ namespace utopia {
         double eval(const double x, const double y);
         double eval(const double x, const double y, const double z);
         double eval(const double x, const double y, const double z, const double t);
+        double eval(const double x, const double y, const double z, const double t) const;
+
         double eval(const std::vector<double> &x);
 
         bool valid() const;

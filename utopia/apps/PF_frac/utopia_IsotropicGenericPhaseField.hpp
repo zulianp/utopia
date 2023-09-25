@@ -176,7 +176,7 @@ namespace utopia {
 
             if (!empty(this->force_field_)) {
                 // MAYBE -= dot(x_const, this->force_field_);
-                val += dot(x_const, this->force_field_);
+                val -= dot(x_const, this->force_field_);
             }
 
             if (this->params_.use_crack_set_irreversibiblity) this->add_pf_constraints(x_const);
@@ -564,8 +564,8 @@ namespace utopia {
             }
 
             if (!empty(this->force_field_)) {
-                // MAYBE g -= this->force_field_;
-                g += this->force_field_;
+                g -= this->force_field_;
+                //                g += this->force_field_;
             }
 
             this->space_.apply_zero_constraints(g);
@@ -712,6 +712,7 @@ namespace utopia {
 
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             const Scalar tr_strain_u = trace(el_strain.strain[qp]);
+                            const Scalar dxq = dx(qp);
 
                             // const Scalar eep = elastic_energy(this->params_, c[qp], tr_strain_u,
                             // el_strain.strain[qp]);
@@ -734,25 +735,25 @@ namespace utopia {
                                                              c_shape_j_l_prod,
                                                              c_grad_shape_el(j, qp),
                                                              c_grad_l) *
-                                                 dx(qp);
+                                                 dxq;
 
                                     if (this->params_.use_pressure) {
                                         val += PFFormulation::degradation_deriv2(c[qp], this->params_) * p[qp] *
-                                               tr_strain_u * c_shape_j_l_prod * dx(qp);
+                                               tr_strain_u * c_shape_j_l_prod * dxq;
                                     }
 
                                     if (this->params_.use_penalty_irreversibility) {
                                         auto c_cold = c[qp] - c_old[qp];
                                         auto c_heaviside = c_cold <= 0.0 ? 1.0 : 0.0;
                                         val += c_heaviside * this->params_.penalty_param_irreversible *
-                                               c_shape_j_l_prod * dx(qp);
+                                               c_shape_j_l_prod * dxq;
 
                                         if (PFFormulation::penalise_negative_phase_field_values) {
                                             // std::cout << "Should not be here" << std::endl;
                                             auto c_at_qp = c[qp];
                                             auto c_neg_bracket = c_at_qp <= 0.0 ? 1.0 : 0.0;
                                             val += this->params_.penalty_param_non_neg * c_neg_bracket *
-                                                   c_shape_j_l_prod * dx(qp);
+                                                   c_shape_j_l_prod * dxq;
                                         }
                                     }
 
@@ -778,7 +779,7 @@ namespace utopia {
                                             // p_stress_view.stress(j, qp),       //constant material props
                                             element_stress,  // hetero material props
                                             u_strain_shape_l) *
-                                        dx(qp);
+                                        dxq;
 
                                     val = (l == j) ? (0.5 * val) : val;
                                     el_mat(C_NDofs + l, C_NDofs + j) += val;
@@ -805,7 +806,7 @@ namespace utopia {
                                         auto &&strain_shape = u_strain_shape_el(u_i, qp);
 
                                         Scalar val =
-                                            bilinear_uc(this->params_, c[qp], stress, strain_shape, c_shape_i) * dx(qp);
+                                            bilinear_uc(this->params_, c[qp], stress, strain_shape, c_shape_i) * dxq;
 
                                         if (this->params_.use_pressure) {
                                             const Scalar tr_strain_shape = sum(diag(strain_shape));
@@ -813,7 +814,7 @@ namespace utopia {
                                                                                       // Check
                                                        c[qp],
                                                        this->params_) *
-                                                   p[qp] * tr_strain_shape * c_shape_i * dx(qp);
+                                                   p[qp] * tr_strain_shape * c_shape_i * dxq;
                                         }
 
                                         // not symetric, but more numerically stable
@@ -828,6 +829,19 @@ namespace utopia {
                                 }
                             }
                         }
+
+                        // printf("---------------------\n");
+                        // for (int i = 0; i < U_NDofs + C_NDofs; i++) {
+                        //     for (int j = 0; j < U_NDofs + C_NDofs; j++) {
+                        //         double val = el_mat(i, j);
+                        //         if (std::abs(val) < 1e-4) {
+                        //             val = 0;
+                        //         }
+                        //         printf("%.4g, ", val);
+                        //     }
+                        //     printf("\n");
+                        // }
+                        // printf("---------------------\n");
 
                         space_view.add_matrix(e, el_mat, H_view);
                     });
@@ -874,8 +888,8 @@ namespace utopia {
                                                          const Stress &stress,
                                                          const FullStrain &full_strain,
                                                          const Scalar &c_trial_fun) {
-            return PFFormulation::degradation_deriv(phase_field_value, params) * c_trial_fun *
-                   inner(stress, full_strain);
+            return (1.0 - params.regularization) * PFFormulation::degradation_deriv(phase_field_value, params) *
+                   c_trial_fun * inner(stress, full_strain);
         }
 
         UTOPIA_INLINE_FUNCTION static Scalar elastic_deriv_cc(const Parameters &params,
@@ -903,11 +917,6 @@ namespace utopia {
                                                                        const Scalar &trace,
                                                                        const Strain &strain) {
             Scalar strain_en = strain_energy(params, trace, strain);
-            if (PFFormulation::enforce_min_crack_driving_force) {
-                strain_en = PFFormulation::min_crack_driving_force(params) > strain_en
-                                ? PFFormulation::min_crack_driving_force(params)
-                                : strain_en;
-            }
             return (PFFormulation::degradation_deriv(phase_field_value, params) * (1.0 - params.regularization)) *
                    strain_en;
         }
@@ -1106,7 +1115,8 @@ namespace utopia {
             // Creating Subspace with cloned mesh
 
             SSpace S(std::move(strain_mesh));
-            // assert(S.n_dofs() == C.n_dofs() * total_components);
+
+            assert(S.n_dofs() == CC.n_dofs() * total_components);
 
             S.create_vector(g);
             W.create_vector(w);

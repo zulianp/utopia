@@ -8,6 +8,9 @@
 #include <utility>
 #include <vector>
 
+static double my_max(double a, double b) { return (a > b) ? a : b; }
+static double my_min(double a, double b) { return (a < b) ? a : b; }
+
 namespace utopia {
     class SymbolicFunction::Impl {
     public:
@@ -22,6 +25,8 @@ namespace utopia {
                   {"y", &y_, TE_VARIABLE, nullptr},
                   {"z", &z_, TE_VARIABLE, nullptr},
                   {"t", &t_, TE_VARIABLE, nullptr},
+                  {"max", (void *)my_max, TE_FUNCTION2, nullptr},
+                  {"min", (void *)my_min, TE_FUNCTION2, nullptr}  //
               }),
               err_(0) {
             /* Compile the expression with variables. */
@@ -88,6 +93,14 @@ namespace utopia {
     }
 
     double SymbolicFunction::eval(const double x, const double y, const double z, const double t) {
+        impl_->x_ = x;
+        impl_->y_ = y;
+        impl_->z_ = z;
+        impl_->t_ = t;
+        return impl_->eval();
+    }
+
+    double SymbolicFunction::eval(const double x, const double y, const double z, const double t) const {
         impl_->x_ = x;
         impl_->y_ = y;
         impl_->z_ = z;

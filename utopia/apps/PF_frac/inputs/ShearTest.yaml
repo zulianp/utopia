@@ -1,11 +1,12 @@
 ---
-app: ShearTestSingleLevel_VolDev
+app: ShearTestSingleLevel
 # Output 
-output-path: Output/ShearTest_AT1_VolDev_Ambati_p01_dt0002_t00001_l4_m2
+#output-path: Output/0_ShearTest_VD_AT1_Ambati_p01_dt0001_t00001_l0075_m1_HR8000_PFnof
+output-path: Output/Shear/Shear_VD_AT1_p01_dt0001_t00001_l0075_m1_HR8000
 save_output: true
 # Mesh specification -----------------------------------------
-nx: 200
-ny: 200
+nx: 101
+ny: 101
 #nz: 2
 x_min: 0
 x_max: 1  
@@ -18,46 +19,45 @@ disp_y: 0.0
 disp_x: 1.0
 #Initial Condition
 # Phase field formulation
-length_scale: 0.004
+#length_scale: 0.004 Ambati formulation
+length_scale: 0.0075 #Shear test 1 a) from Miehe (l = half of what Miehe assigns)
 with_damage: true
 use_penalty_irreversibility: true
-penalty_tol: 0.001				#0.01 = Adequate Pen (De Lorenzis Paper)
+penalty_tol: 0.01				#0.01 = Adequate Pen (De Lorenzis Paper)
 penalty_tol_non_neg: 1e9  			#1e9 = NO Pen,  0.1-0.01 = Adequate Pen (De Lorenzis paper)
 use_crack_set_irreversibiblity: true
-crack_set_tol: 0.96
-mobility: 1.0e-06
+crack_set_tol: 0.99999999
 ## Material paramteters -------------------------------------------------
 lambda: 121.15 					#Grimsel granite
 mu: 80.77
 #E: 210e9
 #nu: 0.3					#Grimsel granite
 fracture_toughness: 2.7e-3				#Grimsel granite
-tensile_strength: 2445.42			#Only used with Cohesive Zone Model (CHZ)
-boundary_protection: false			#increase frac toughness in a layer around the boundary
-layer_width: 10					#only used if boundary_protection=true
 # Heterogeneous variations
 hetero_params: HomogeneousBar
-mesh_width: 1
-tough_factor: 1					#introduces a small decrease in fracture toughness in middle of domain (1 = no change in frac tough)
-fix_phase_field_on_sides: true
+fix_phase_field_on_sides: false
 ## Time stepping -------------------------------------------------------
-dt: 0.0002
+dt: 0.0001 #Ambati shear dt = 1e-5
 final_time: 0.02  
 # dynamic time stepping with fracture energy
 fracture_energy_time_stepping: true
-frac_energy_max_change: 1.05			#Maximum allowable change in fracture energy (otherwise time step is cut)
+frac_energy_max_change: 1.03			#Maximum allowable change in fracture energy (otherwise time step is cut)
 frac_energy_min_change: 1.0			#minimum allowable change in fracture energy (otherwise time step is increased)
 dt_min: 0.00001
-dt_max: 0.0004
-increase_factor: 4
+dt_max: 0.0001
+increase_factor: 2
 shrinking_factor: 0.25
 adjust_dt_on_failure: false
 ## Pressure handling ---------------------------------------------------------
+mobility: 0.0
+use_mobility: false 
 use_pressure: false
 use_constant_pressure: false
 pressure0: 0
 pressure_increase_factor: 0
 # Solver specific options
+turn_off_uc_coupling: true
+turn_off_cu_coupling: true
 use_dense_hessian: false
 check_derivatives: false
 block_solver: true
@@ -67,18 +67,17 @@ diff_controller:
   hessian_from_grad: false
 use_mprgp: true  
 use_box_constraints: false  # TR method with penalty, run up to 5 cores
-# use_box_constraints: true # TR method with constraints, run up to 5 cores
 solver:
   verbose: false
-  mini_verbose: false
-  max_it: 1000
-  atol: 1e-7
-  atol_suff: 1e-6
-  rtol: 1e-12
-  rtol_suff: 1e-12
-  stol: 1e-12
-  stol_suff: 1e-12  
-  suff_it: 500
+  mini_verbose: true
+  max_it: 8000
+  atol: 1e-8
+  atol_suff: 1e-8
+  rtol: 1e-16
+  rtol_suff: 1e-16
+  stol: 1e-16
+  stol_suff: 1e-16  
+  suff_it: 50
   max_coarse_it: 2
   max_sucessful_coarse_it: 1
   pre_smoothing_steps: 2
@@ -89,7 +88,7 @@ solver:
   max_sucessful_smoothing_it: 1
   max_QP_smoothing_it: 60
   max_QP_coarse_it: 1000
-  linear-solver:
+  linear_solver:
     verbose: false
-    atol: 1.0e-7
-    max_it: 1000
+    atol: 1.0e-8
+    max_it: 1200

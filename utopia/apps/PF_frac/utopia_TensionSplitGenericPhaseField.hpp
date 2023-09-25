@@ -1,5 +1,5 @@
-#ifndef UTOPIA_VOLDEV_GENERIC_PHASE_FIELD_HPP
-#define UTOPIA_VOLDEV_GENERIC_PHASE_FIELD_HPP
+#ifndef UTOPIA_TENSION_SPLIT_GENERIC_PHASE_FIELD_HPP
+#define UTOPIA_TENSION_SPLIT_GENERIC_PHASE_FIELD_HPP
 
 #include "utopia_CoefStrainView.hpp"
 #include "utopia_DeviceTensorContraction.hpp"
@@ -24,7 +24,7 @@
 namespace utopia {
 
     template <class FunctionSpace, int Dim = FunctionSpace::Dim, class PFFormulation = AT1>
-    class VolDevGenericPhaseField final : public GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation> {
+    class TensionSplitGenericPhaseField final : public GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation> {
     public:
         using Scalar = typename FunctionSpace::Scalar;
         using Point = typename FunctionSpace::Point;
@@ -49,12 +49,12 @@ namespace utopia {
         static const int C_NDofs = CSpace::NDofs;
         static const int U_NDofs = USpace::NDofs;
 
-        VolDevGenericPhaseField(FunctionSpace &space)
+        TensionSplitGenericPhaseField(FunctionSpace &space)
             : GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation>(space) {
             this->params_.fill_in_isotropic_elast_tensor();
         }
 
-        VolDevGenericPhaseField(FunctionSpace &space, const Parameters &params)
+        TensionSplitGenericPhaseField(FunctionSpace &space, const Parameters &params)
             : GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation>(space, params) {
             this->params_.fill_in_isotropic_elast_tensor();
         }
@@ -431,6 +431,7 @@ namespace utopia {
             auto u_val = u_fun.value(q);
             auto differential = C.differential(q);
 
+            // auto v_grad_shape = U.shape_grad(q);
             auto c_shape = C.shape(q);
             auto c_grad_shape = C.shape_grad(q);
 
@@ -451,6 +452,7 @@ namespace utopia {
                 auto strain_view = strain.view_device();
                 auto differential_view = differential.view_device();
 
+                // auto v_grad_shape_view = v_grad_shape.view_device();
                 auto c_shape_view = c_shape.view_device();
                 auto c_grad_shape_view = c_grad_shape.view_device();
 
@@ -542,6 +544,7 @@ namespace utopia {
                                     // std::cout << "pen: " << this->params_.penalty_param_irreversible << std::endl;
 
                                     if (PFFormulation::penalise_negative_phase_field_values) {
+                                        // std::cout << "Should not be here" << std::endl;
                                         auto c_at_qp = c[qp];
                                         auto c_neg_bracket = c_at_qp < 0.0 ? -c_at_qp : 0.0;
                                         c_el_vec(j) +=
@@ -631,8 +634,6 @@ namespace utopia {
             CoefStrain<USpace, Quadrature> strain(u_coeff, q);
 
             // reference based
-            // ShapeStress<USpace, Quadrature> p_stress(U, q, this->params_.mu, this->params_.lambda); //Check this!!
-            // This doesnt seem truly reference based
             Strain<USpace, Quadrature> ref_strain_u(U, q);
 
             {
@@ -655,10 +656,6 @@ namespace utopia {
                 // auto v_grad_shape_view = v_grad_shape.view_device();
                 auto c_shape_view = c_shape.view_device();
                 auto c_grad_shape_view = c_grad_shape.view_device();
-
-                // FIXME
-                //                auto p_stress_view = p_stress.view_device(); //E.P Must remove as this DOESNT UPDATE
-                //                MATERIAL PROPERTIES
 
                 auto H_view = this->space_.assembly_view_device(H);
                 auto ref_strain_u_view = ref_strain_u.view_device();
@@ -712,10 +709,6 @@ namespace utopia {
                                                         tr_strain_u,
                                                         eep);  // Positive Strain energy  calculated here
 
-                            // const Scalar eep = elastic_energy(this->params_, c[qp], tr_strain_u,
-                            // el_strain.strain[qp]); const Scalar eep_fix = strain_energy(this->params_, tr_strain_u,
-                            // el_strain.strain[qp]);
-
                             // pragma GCCunroll(C_NDofs)
                             for (SizeType l = 0; l < C_NDofs; ++l) {
                                 const Scalar c_shape_l = c_shape_fun_el(l, qp);
@@ -747,6 +740,7 @@ namespace utopia {
                                                c_shape_j_l_prod * dx(qp);
 
                                         if (PFFormulation::penalise_negative_phase_field_values) {
+                                            // std::cout << "Should not be here" << std::endl;
                                             auto c_at_qp = c[qp];
                                             auto c_neg_bracket = c_at_qp <= 0.0 ? 1.0 : 0.0;
                                             val += this->params_.penalty_param_non_neg * c_neg_bracket *
@@ -766,15 +760,12 @@ namespace utopia {
 
                                 for (SizeType j = l; j < U_NDofs; ++j) {
                                     // Varying stress tensor
-
-                                    Scalar val =
-                                        bilinear_uu_EP(this->params_,  // E.P Both bilinear_uu and bilienear_uu_EP work,
-                                                                       // however EP is more intuitive to understand
-                                                       c[qp],
-                                                       el_strain.strain[qp],
-                                                       u_strain_shape_el(j, qp),
-                                                       u_strain_shape_l) *
-                                        dx(qp);
+                                    Scalar val = bilinear_uu(this->params_,
+                                                             c[qp],
+                                                             el_strain.strain[qp],
+                                                             u_strain_shape_el(j, qp),
+                                                             u_strain_shape_l) *
+                                                 dx(qp);
 
                                     val = (l == j) ? (0.5 * val) : val;
                                     el_mat(C_NDofs + l, C_NDofs + j) += val;
@@ -813,32 +804,15 @@ namespace utopia {
                                         // not symetric, but more numerically stable
                                         if (this->params_.turn_off_cu_coupling == false) {
                                             el_mat(c_i, C_NDofs + u_i) += val;
-                                            //                                                    std::cout << "here 1"
-                                            //                                                    << std::endl;
                                         }
 
                                         if (this->params_.turn_off_uc_coupling == false) {
                                             el_mat(C_NDofs + u_i, c_i) += val;
-                                            //                                                    std::cout << "here 2"
-                                            //                                                    << std::endl;
                                         }
                                     }
                                 }
                             }
                         }
-
-                        //                        printf("---------------------\n");
-                        //                        for (int i = 0; i < U_NDofs + C_NDofs; i++) {
-                        //                            for (int j = 0; j < U_NDofs + C_NDofs; j++) {
-                        //                                double val = el_mat(i, j);
-                        //                                if (std::abs(val) < 1e-4) {
-                        //                                    val = 0;
-                        //                                }
-                        //                                printf("%.4g, ", val);
-                        //                            }
-                        //                            printf("\n");
-                        //                        }
-                        //                        printf("---------------------\n");
 
                         space_view.add_matrix(e, el_mat, H_view);
                     });
@@ -869,51 +843,39 @@ namespace utopia {
                                                          const Grad &strain,
                                                          const Grad &strain_trial,
                                                          const Grad &strain_test) {
+            /*          const Scalar strain0tr = trace(strain);
+
+                      Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_neg, Jacobian_mult;
+
+                      if (strain0tr < 0) {
+                          Jacobian_neg = params.kappa * params.I4sym;  //change something here??
+                      }
+
+                      Scalar gc = PFFormulation::degradation(phase_field_value, params );
+
+                      // would be nicer, if this works without 4th order tensor...
+                      Jacobian_mult = params.elast_tensor - Jacobian_neg;
+                      Jacobian_mult = (gc * Jacobian_mult) + Jacobian_neg;
+
+                      Scalar val = inner(strain_trial, contraction(Jacobian_mult, strain_test));
+          */
             const Scalar strain0tr = trace(strain);
 
             Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_neg, Jacobian_mult;
 
-            if (strain0tr < 0) {
-                Jacobian_neg = params.kappa * params.I4sym;
+            if (strain0tr > 0) {
+                Jacobian_mult = params.kappa * params.I4sym;  // change something here??
             }
 
             Scalar gc = PFFormulation::degradation(phase_field_value, params);
 
             // would be nicer, if this works without 4th order tensor...
-            Jacobian_mult = params.elast_tensor - Jacobian_neg;
+            Jacobian_neg = params.elast_tensor - Jacobian_mult;
+
+            // final degraded strain field
             Jacobian_mult = (gc * Jacobian_mult) + Jacobian_neg;
 
             Scalar val = inner(strain_trial, contraction(Jacobian_mult, strain_test));
-
-            return val;
-        }
-
-        // Alternative way to write degradation
-        template <class Grad>
-        UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu_EP(const Parameters &params,
-                                                            const Scalar &phase_field_value,
-                                                            const Grad &strain,
-                                                            const Grad &strain_trial,
-                                                            const Grad &strain_test) {
-            const Scalar strain0tr = trace(strain);
-
-            Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_neg, Jacobian_pos;  //, Jacobian_shear, Jacobian_bulk;
-            //            Jacobian_shear = params.mu    * params.I4shear;
-            //            Jacobian_bulk  = params.kappa * params.I4sym;
-
-            // Tension
-            if (strain0tr > 0) {  // shear terms          +   bulk terms
-                Jacobian_pos = params.mu * params.I4shear + params.kappa * params.I4sym;
-            }
-            // compression
-            else {
-                Jacobian_pos = params.mu * params.I4shear;   // shear term
-                Jacobian_neg = params.kappa * params.I4sym;  // bulk term
-            }
-
-            Scalar gc = (1.0 - params.regularization) * PFFormulation::degradation(phase_field_value, params) +
-                        params.regularization;
-            Scalar val = inner(strain_trial, contraction(Jacobian_neg + gc * Jacobian_pos, strain_test));
 
             return val;
         }
@@ -940,8 +902,8 @@ namespace utopia {
                                                          const Stress &stress,
                                                          const FullStrain &full_strain,
                                                          const Scalar &c_trial_fun) {
-            return (1.0 - params.regularization) * PFFormulation::degradation_deriv(phase_field_value, params) *
-                   c_trial_fun * inner(stress, full_strain);
+            return PFFormulation::degradation_deriv(phase_field_value, params) * c_trial_fun *
+                   inner(stress, full_strain);
         }
 
         UTOPIA_INLINE_FUNCTION static Scalar elastic_deriv_cc(const Parameters &params,
@@ -963,7 +925,7 @@ namespace utopia {
                                                           Stress &stress,
                                                           Scalar &tr,
                                                           Scalar &gc,
-                                                          Scalar &elast_energy_derivative_c) {
+                                                          Scalar &damaged_energy_deriv_c) {
             tr = trace(strain);
             const Strain strain_dev = strain - (((1. / Dim) * tr) * device::identity<Scalar>());
 
@@ -971,56 +933,15 @@ namespace utopia {
             const Scalar tr_positive = tr - tr_negative;
 
             stress = ((params.kappa * tr_positive) * device::identity<Scalar>());
-            stress += ((2.0 * params.mu) * strain_dev);
 
             gc = PFFormulation::degradation(phase_field_value, params);
-            stress = ((1.0 - params.regularization) * gc + params.regularization) * stress +
-                     ((params.kappa * tr_negative) * device::identity<Scalar>());
+            stress = (gc * stress) + ((params.kappa * tr_negative) * device::identity<Scalar>());
+            stress += ((2.0 * params.mu) * strain_dev);  // shear part not degraded here
 
             // energy positive
-            const Scalar energy_positive =
-                (0.5 * params.kappa * tr_positive * tr_positive) + (params.mu * inner(strain_dev, strain_dev));
+            const Scalar energy_positive = (0.5 * params.kappa * tr_positive * tr_positive);  // Only under extension
 
-            elast_energy_derivative_c = (1.0 - params.regularization) *
-                                        PFFormulation::degradation_deriv(phase_field_value, params) * energy_positive;
-        }
-
-        template <class Strain, class Stress>
-        UTOPIA_INLINE_FUNCTION static void compute_stress_components(const Parameters &params,
-                                                                     const Scalar &phase_field_value,
-                                                                     const Strain &strain,
-                                                                     Stress &stress_vol,
-                                                                     Stress &stress_dev,
-                                                                     Strain &strain_vol,
-                                                                     Strain &strain_dev,
-                                                                     Scalar &energy_vol,
-                                                                     Scalar &energy_dev) {
-            const Scalar tr = trace(strain);
-            strain_dev = strain - (((1. / Dim) * tr) * device::identity<Scalar>());
-            strain_vol = (((1. / Dim) * tr) * device::identity<Scalar>());
-
-            const Scalar tr_negative = device::min(tr, 0.0);
-            const Scalar tr_positive = tr - tr_negative;
-
-            Scalar gc = (1.0 - params.regularization) * PFFormulation::degradation(phase_field_value, params) +
-                        params.regularization;
-
-            stress_dev = gc * ((2.0 * params.mu) * strain_dev);
-
-            // energy positive
-            if (tr_negative < 0.0) {
-                stress_vol = ((params.kappa * tr_negative) * device::identity<Scalar>());
-                energy_vol = (0.5 * params.kappa * tr_negative * tr_negative);
-            } else {
-                stress_vol = gc * ((params.kappa * tr_positive) * device::identity<Scalar>());
-                energy_vol = gc * (0.5 * params.kappa * tr_positive * tr_positive);
-            }
-
-            const Strain strain_dev2 = transpose(strain_dev) * strain_dev;
-            Scalar tr2dv = trace(strain_dev2);
-
-            // energy positive
-            energy_dev = gc * (params.mu * tr2dv);
+            damaged_energy_deriv_c = PFFormulation::degradation_deriv(phase_field_value, params) * energy_positive;
         }
 
         template <class Strain, class Stress>
@@ -1036,10 +957,10 @@ namespace utopia {
             const Scalar tr_positive = tr - tr_negative;
 
             stress_positive = ((params.kappa * tr_positive) * device::identity<Scalar>());
-            stress_positive += ((2.0 * params.mu) * strain_dev);
+            // stress_positive += ((2.0 * params.mu) * strain_dev); //Not included in pure extension failure
 
             energy_positive =
-                (0.5 * params.kappa * tr_positive * tr_positive) + (params.mu * inner(strain_dev, strain_dev));
+                (0.5 * params.kappa * tr_positive * tr_positive);  // + (params.mu * inner(strain_dev, strain_dev));
         }
 
         template <class Grad, class Strain>
@@ -1070,14 +991,12 @@ namespace utopia {
             Scalar tr2dv = trace(strain_dev2);
 
             // energy positive
-            const Scalar energy_positive = (0.5 * params.kappa * tr_positive * tr_positive) + (params.mu * tr2dv);
-            const Scalar energy_negative = (0.5 * params.kappa * tr_negative * tr_negative);
+            const Scalar energy_positive = (0.5 * params.kappa * tr_positive * tr_positive);  // just pure tension
+            const Scalar energy_negative = (0.5 * params.kappa * tr_negative * tr_negative) +
+                                           (params.mu * tr2dv);  // Shear terms now in residual (negative) energy
 
             const Scalar energy =
-                (PFFormulation::degradation(phase_field_value, params) * (1.0 - params.regularization) +
-                 params.regularization) *
-                    energy_positive +
-                energy_negative;
+                (PFFormulation::degradation(phase_field_value, params) * energy_positive) + energy_negative;
 
             return energy;
         }
@@ -1190,7 +1109,7 @@ namespace utopia {
         bool export_elast_frac_energies(std::string output_path, const Vector &x_const, const Scalar time) const {
             UTOPIA_TRACE_REGION_BEGIN("VolDevGeneric::export_elast_frac_energies");
 
-            static const int total_components = 5;  // elastic energy, fracture energy, pos_energy, vol en, dev en
+            static const int total_components = 3;  // elastic energy, fracture energy
 
             using WSpace = typename FunctionSpace::template Subspace<1>;
             using SSpace = typename FunctionSpace::template Subspace<total_components>;
@@ -1213,7 +1132,6 @@ namespace utopia {
             // Creating Subspace with cloned mesh
 
             SSpace S(std::move(strain_mesh));
-
             assert(S.n_dofs() == CC.n_dofs() * total_components);
 
             S.create_vector(g);
@@ -1281,11 +1199,11 @@ namespace utopia {
 
                 Device::parallel_for(
                     this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                        Scalar elastic_value{0}, fracture_value{0}, elastic_pos{0}, elastic_neg{0}, elastic_vol{0},
-                            elastic_dev{0};
+                        Scalar elastic_value, fracture_value, elastic_pos, elastic_neg;
                         StaticVector<Scalar, total_components * C_NDofs> energies_vec;
                         StaticVector<Scalar, C_NDofs> weight_el_vec;
-                        StaticMatrix<Scalar, Dim, Dim> stress, stress_dummy;  //, strain_p;
+                        StaticMatrix<Scalar, Dim, Dim> stress;  //, strain_p;
+
                         energies_vec.set(0.0);
                         weight_el_vec.set(0.0);
 
@@ -1328,26 +1246,14 @@ namespace utopia {
                             elastic_value = 0.0;
                             elastic_pos = 0.0;
                             fracture_value = 0.0;
-                            elastic_vol = 0.0;
-                            elastic_dev = 0.0;
                             for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                                 auto shape = c_shape_fun_el(n, qp);  // shape function at N and Quadrature point
                                 auto weight = dx(qp);                // no need for weights! we want length instead
 
                                 // Calculate strain at quadrature point
                                 auto &epsi = el_strain.strain[qp];
-
                                 Scalar tr = trace(el_strain.strain[qp]), elastic_pos_qp;
                                 compute_positive_quantities(this->params_, epsi, stress, tr, elastic_pos_qp);
-
-                                StaticMatrix<Scalar, Dim, Dim> stress_v, stress_dev, strain_v, strain_dev;
-
-                                Scalar gc =
-                                    this->params_.regularization + (1.0 - this->params_.regularization) *
-                                                                       PFFormulation::degradation(c[qp], this->params_);
-                                Scalar el_v{0}, el_d{0};
-                                compute_stress_components(
-                                    this->params_, c[qp], epsi, stress_v, stress_dev, strain_v, strain_dev, el_v, el_d);
 
                                 fracture_value +=
                                     shape * weight *
@@ -1359,77 +1265,8 @@ namespace utopia {
                                 elastic_value +=
                                     shape * weight * elastic_energy(this->params_, c[qp], tr, el_strain.strain[qp]);
 
-                                elastic_pos += shape * weight * gc * elastic_pos_qp;
-
-                                elastic_vol += shape * weight * el_v;
-                                elastic_dev += shape * weight * el_d;
-
-                                if (elastic_vol + elastic_dev < 0.99 * elastic_value ||
-                                    elastic_vol + elastic_dev > 1.01 * elastic_value) {
-                                    utopia_error("Vol and Deviatoric energies do not add up to total energy");
-                                    double error = (elastic_vol + elastic_dev) / elastic_value;
-                                    utopia_error("Ratio: " + std::to_string(error)) utopia_error(
-                                        "el v: " + std::to_string(el_v) + "  el_d: " + std::to_string(el_d) +
-                                        "  el_en: " +
-                                        std::to_string(elastic_energy(this->params_, c[qp], tr, el_strain.strain[qp])));
-                                }
-
-                                if (el_v + el_d <
-                                        0.99 * elastic_energy(this->params_, c[qp], tr, el_strain.strain[qp]) ||
-                                    elastic_vol + elastic_dev > 1.01 * elastic_value) {
-                                    utopia_error("Vol and Deviatoric energies do not add up to total energy");
-                                    double error = (elastic_vol + elastic_dev) / elastic_value;
-                                    utopia_error("Ratio: " + std::to_string(error));
-                                }
-
-                                // for verification
-                                Scalar energy_dummy, gc_dummy, tr_dummy;
-                                auto &epsi_dummy = el_strain.strain[qp];
-                                compute_stress(this->params_,  // need kappa updated
-                                               c[qp],
-                                               epsi_dummy,
-                                               stress_dummy,  // gets stress (already degraded) at quadrature point
-                                               tr_dummy,
-                                               gc_dummy,
-                                               energy_dummy);
-
-                                //                                if ( std::pow( (stress_v + stress_dev -
-                                //                                stress_dummy)(0,0),
-                                //                                2)/std::max(std::numeric_limits<double>::epsilon(),stress_dummy(0,0))
-                                //                                > 0.1 ||
-                                //                                     std::pow( (stress_v + stress_dev -
-                                //                                     stress_dummy)(0,1),
-                                //                                     2)/std::max(std::numeric_limits<double>::epsilon(),stress_dummy(0,1))
-                                //                                     > 0.1|| std::pow( (stress_v + stress_dev -
-                                //                                     stress_dummy)(1,1),
-                                //                                     2)/std::max(std::numeric_limits<double>::epsilon(),stress_dummy(1,1))
-                                //                                     > 0.1 ){
-                                //                                       utopia_error("Vol and Deviatoric stress do not
-                                //                                       add up to total stress"); double error_xx =
-                                //                                       ((stress_v +
-                                //                                       stress_dev)(0,0))/((stress_dummy)(0,0)); double
-                                //                                       error_xy = ((stress_v +
-                                //                                       stress_dev)(0,1))/((stress_dummy)(0,1)); double
-                                //                                       error_yy = ((stress_v +
-                                //                                       stress_dev)(1,1))/((stress_dummy)(1,1));
-                                ////                                       utopia_error("error s_xx: " +
-                                /// std::to_string(error_xx) + / "\nerror s_xy: " + std::to_string(error_xy) + /
-                                /// "\nerror s_yy: " + std::to_string(error_yy) );
-                                //                                       utopia_error("comp s_xx: " +
-                                //                                       std::to_string((stress_v + stress_dev)(0,0)) +
-                                //                                       "  s_xx: " +
-                                //                                       std::to_string((stress_dummy)(0,0)) +
-                                //                                                    "\ncomp s_xy: " +
-                                //                                                    std::to_string((stress_v +
-                                //                                                    stress_dev)(0,1)) + "  s_xy: " +
-                                //                                                    std::to_string((stress_dummy)(0,1))
-                                //                                                    +
-                                //                                                    "\ncomp s_yy: " +
-                                //                                                    std::to_string((stress_v +
-                                //                                                    stress_dev)(1,1)) + "  s_yy: " +
-                                //                                                    std::to_string((stress_dummy)(1,1))
-                                //                                                    );
-                                //                                        }
+                                elastic_pos +=
+                                    shape * weight * PFFormulation::degradation(c[qp], this->params_) * elastic_pos_qp;
 
                                 // getting nodal weight for normalisation
                                 weight_el_vec[n] += shape * weight;
@@ -1439,10 +1276,7 @@ namespace utopia {
                             int offset = C_NDofs;
                             energies_vec[n] = elastic_value;
                             energies_vec[offset + n] = fracture_value;
-
                             energies_vec[2 * offset + n] = elastic_pos;
-                            energies_vec[3 * offset + n] = elastic_vol;
-                            energies_vec[4 * offset + n] = elastic_dev;
                         }
 
                         // now adding element contribution to global strain and weight vector
@@ -1692,232 +1526,6 @@ namespace utopia {
                                 nodal_offset + k);  // get k'th strain corresponding to node i with weight i
                             strain_and_stress_view.set(nodal_offset + k,
                                                        si / wi);  // normalise the strain value by the weight wi
-                        }
-                    });
-            }  // incase backed PETSC needs synchronisation (create view in scopes and destroy them when not needed)
-
-            rename("stress and strain", g);
-            output_path += "_strainstress_" + std::to_string(time) + ".vtr";
-            S.write(output_path, g);  // Function space knows how to write
-
-            UTOPIA_TRACE_REGION_END("PhaseFieldFracBase::strain");
-            return true;
-        }
-
-        bool export_volumetric_strain_stress(std::string output_path, const Vector &x_const, const Scalar time) const {
-            UTOPIA_TRACE_REGION_BEGIN("VolDevGenericPhaseField::export_strain_stress_energy_components");
-
-            static const int strain_components = (Dim - 1) * 3;
-            static const int Total_components = strain_components * 2;
-
-            using WSpace = typename FunctionSpace::template Subspace<1>;
-            using SSpace = typename FunctionSpace::template Subspace<Total_components>;
-            using SElem = typename SSpace::ViewDevice::Elem;
-
-            Vector w;
-            Vector g;
-            // Getting displacement subspace
-            USpace U;
-            this->space_.subspace(1, U);
-
-            WSpace C(this->space_.mesh().clone(1));
-            CSpace CC = this->space_.subspace(0);
-
-            /// Creating strain subspace
-
-            // cloning mesh
-            auto strain_mesh = this->space_.mesh().clone(Total_components);
-            assert(strain_mesh->n_components() == Total_components);
-            // Creating Subspace with cloned mesh
-
-            SSpace S(std::move(strain_mesh));
-
-            assert(S.n_dofs() == C.n_dofs() * Total_components);
-
-            S.create_vector(g);
-            C.create_vector(w);
-
-            assert(g.size() == w.size() * Total_components);
-
-            ///////////////////////////////////////////////////////////////////////////
-
-            // update local vector x
-            this->space_.global_to_local(x_const, *this->local_x_);  // Gets the vector local to the MPI processor
-            auto u_coeff = std::make_shared<Coefficient<USpace>>(
-                U, this->local_x_);  // Sets stage for getting accessing the element node variables
-            auto c_coeff = std::make_shared<Coefficient<CSpace>>(CC, this->local_x_);
-
-            // getting FEFunction Space which contains objects for shape function manipulation
-            FEFunction<USpace> u_fun(u_coeff);
-            FEFunction<CSpace> c_fun(c_coeff);
-
-            {
-                ////////////////////////////////////////////////////////////////////////////
-
-                // Quadrature for shape function integration
-                Quadrature q;
-
-                // Creating objects for Nodal and Gradient interpolation
-                auto u_val = u_fun.value(q);
-                auto u_grad = u_fun.gradient(q);
-                auto c_val = c_fun.value(q);
-
-                // What is thAis for ???
-                auto differential = C.differential(q);
-
-                // auto v_grad_shape = U.shape_grad(q);
-                auto c_shape = C.shape(q);            // Getting shape functions from FunctionSpace
-                auto c_grad_shape = C.shape_grad(q);  // Getting derivative of shape functions from FunctionSpace
-
-                CoefStrain<USpace, Quadrature> strain(u_coeff, q);  // displacement coefficients
-                // Strain<USpace, Quadrature> ref_strain_u(U, q); //Test strains (just shape functions gradients for
-                // strain)
-
-                auto U_view = U.view_device();
-                auto C_view = C.view_device();
-                auto S_view = S.view_device();
-                auto CC_view = CC.view_device();  // EP
-
-                auto c_view = c_val.view_device();  // EP
-                auto u_view = u_val.view_device();
-
-                auto strain_view = strain.view_device();
-                auto differential_view = differential.view_device();
-
-                // auto v_grad_shape_view = v_grad_shape.view_device();
-                auto c_shape_view = c_shape.view_device();  // scalar shape functions
-                // auto c_grad_shape_view = c_grad_shape.view_device();
-
-                // Preparing the vector for which the Strain function space nows the dimensions (nodes*components), so
-                // that we can write on this later
-                auto g_view = S.assembly_view_device(g);
-                auto w_view = C.assembly_view_device(w);
-
-                // auto ref_strain_u_view = ref_strain_u.view_device();
-
-                Device::parallel_for(
-                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                        StaticMatrix<Scalar, Dim, Dim> strain_value, stress_value;
-                        StaticVector<Scalar, Total_components * C_NDofs> strain_and_stress_el_vec;
-                        StaticVector<Scalar, C_NDofs> weight_el_vec;
-                        StaticMatrix<Scalar, Dim, Dim> stress_v, stress_d, strain_v, strain_d;  //, strain_p;
-
-                        strain_and_stress_el_vec.set(0.0);
-                        weight_el_vec.set(0.0);
-
-                        ////////////////////////////////////////////
-
-                        UElem u_e;
-                        U_view.elem(i, u_e);
-                        auto el_strain =
-                            strain_view.make(u_e);  // el_strain.strain[qp] gives matrix of strain at int point
-
-                        SElem s_e;
-                        S_view.elem(i, s_e);  // just needed for add_vector into g
-
-                        // auto u_grad_shape_el = v_grad_shape_view.make(u_e);
-                        // auto &&u_strain_shape_el = ref_strain_u_view.make(u_e);
-
-                        ////////////////////////////////////////////
-
-                        CElem c_e;
-                        C_view.elem(i, c_e);  // getting element for storing wieghts in CSpace
-
-                        CElem cc_e;
-                        CC_view.elem(i, cc_e);  // getting element for storing wieghts in CSpace
-
-                        StaticVector<Scalar, NQuadPoints> c;
-                        c_view.get(cc_e, c);
-
-                        auto dx = differential_view.make(c_e);
-                        auto c_shape_fun_el = c_shape_view.make(c_e);  // shape functions (scalar)
-
-                        ////////////////////////////////////////////
-                        bool update_elast_tensor = true;
-                        Point centroid;
-                        c_e.centroid(centroid);
-                        this->non_const_params().update(centroid, update_elast_tensor);
-                        ////////////////////////////////////////////
-
-                        // loop over all nodes, and for each node, we integrate the strain at the int point weightwd by
-                        // the distance to the node (shape function)
-                        for (SizeType n = 0; n < C_NDofs; n++) {
-                            strain_value.set(0.0);
-                            stress_value.set(0.0);
-                            for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                                auto shape = c_shape_fun_el(n, qp);  // shape function at N and Quadrature point
-                                auto weight = dx(qp);                // no need for weights! we want length instead
-
-                                // Calculate strain at quadrature point
-                                const auto &epsi = el_strain.strain[qp];
-
-                                // calculate stress at quadrature
-                                Scalar el_v, el_d;
-                                compute_stress_components(
-                                    this->params_,  // need kappa updated
-                                    c[qp],
-                                    epsi,
-                                    stress_v,  // gets stress (already degraded) at quadrature point
-                                    stress_d,
-                                    strain_v,
-                                    strain_d,
-                                    el_v,
-                                    el_d);
-
-                                strain_value +=
-                                    strain_v * shape * weight;  // matrix of strains added to existing nodal strain (
-
-                                stress_value += stress_v * shape * weight;  // Sum stress at integration point
-
-                                if (std::pow((strain_v + strain_d - epsi)(0, 0), 2) > 1e-7 ||
-                                    std::pow((strain_v + strain_d - epsi)(0, 1), 2) > 1e-7 ||
-                                    std::pow((strain_v + strain_d - epsi)(1, 1), 2) > 1e-7)
-                                    utopia_error("Vol and Deviatoric strains do not add up to total strain");
-
-                                // getting nodal weight for normalisation
-                                weight_el_vec[n] += shape * weight;
-                            }
-
-                            // now we need to accumulate the matrix strain into engineering strain vector
-                            int offset = C_NDofs, idx{0};
-                            for (int r = 0; r < Dim; ++r) {
-                                for (int c = r; c < Dim; c++) {
-                                    strain_and_stress_el_vec[idx * offset + n] = stress_value(r, c);
-                                    if (strain_components < Total_components)
-                                        strain_and_stress_el_vec[(strain_components + idx) * offset + n] =
-                                            strain_value(r, c);
-                                    idx++;
-                                }
-                            }
-                        }
-
-                        // now adding element contribution to global strain and weight vector
-                        S_view.add_vector(s_e, strain_and_stress_el_vec, g_view);
-                        C_view.add_vector(c_e, weight_el_vec, w_view);
-                    });  // end of parallel for
-
-            }  // destruction of view activates MPI Synchronisation
-
-            //            int weight_index = (i - (i % strain_components) ) / strain_components;
-
-            {
-                // disp(g.size());
-                // disp(w.size());
-
-                // viewing strain vector we just created
-                auto strain_and_stress_view = local_view_device(g);
-                auto weight_view = local_view_device(w);
-                auto r = local_range_device(w);  // range of vector w (using primitivo di utopio)
-                parallel_for(
-                    r, UTOPIA_LAMBDA(int i) {
-                        auto wi = weight_view.get(i);  // extracts vector component
-                        for (int k = 0; k < Total_components; k++) {
-                            int nodal_offset =
-                                i * Total_components;  // vector g is 2*straincomponents bigger than vector of weights w
-                            auto si = strain_and_stress_view.get(
-                                nodal_offset + k);  // get k'th strain corresponding to node i with weight i
-                            strain_and_stress_view.set(nodal_offset + k,
-                                                       si / wi);  // normalise the strain value by the weight wi
 
                             //                            if (strain_components != total_components) {
                             //                                auto sig_i =
@@ -1936,8 +1544,8 @@ namespace utopia {
                     });
             }  // incase backed PETSC needs synchronisation (create view in scopes and destroy them when not needed)
 
-            rename("vol stress and strain", g);
-            output_path += "_volstrainstress_" + std::to_string(time) + ".vtr";
+            rename("stress and strain", g);
+            output_path += "_strainstress_" + std::to_string(time) + ".vtr";
             S.write(output_path, g);  // Function space knows how to write
 
             UTOPIA_TRACE_REGION_END("PhaseFieldFracBase::strain");
@@ -1949,11 +1557,8 @@ namespace utopia {
 
             // Post-processing functions
             // And write outputs
-
-            export_strain_and_stress(output_path, x, time);         // different for VolDev formulation
-            export_elast_frac_energies(output_path, x, time);       // diff for VolDev Dormulation
-            export_volumetric_strain_stress(output_path, x, time);  // different for VolDev formulation
-
+            export_strain_and_stress(output_path, x, time);    // different for VolDev formulation
+            export_elast_frac_energies(output_path, x, time);  // diff for VolDev Dormulation
             if (mpi_world_rank() == 0) std::cout << "Saving file: " << output_path << std::endl;
         }
     };

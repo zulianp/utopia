@@ -46,6 +46,8 @@
 
 #include "utopia_GenericPhaseFieldFormulation.hpp"
 #include "utopia_IsotropicGenericPhaseField.hpp"
+#include "utopia_PhaseFieldDerivativeCheck_Original.hpp"
+#include "utopia_TensionSplitGenericPhaseField.hpp"
 #include "utopia_VolDevGenericPhaseField.hpp"
 #include "utopia_petsc.hpp"
 #include "utopia_petsc_DM.hpp"
@@ -164,51 +166,6 @@ namespace utopia {
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // //
     // // // // // // // // //
-    static void HomogeneousBarPseudo1D_CHZ(Input &in) {
-        static const int Dim = 2;
-        static const int NVars = Dim + 1;
-
-        using Comm = utopia::PetscCommunicator;
-        using Mesh = utopia::PetscStructuredGrid<Dim>;
-        using Elem = utopia::PetscUniformQuad4;
-        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-
-        Comm world;
-
-        MPITimeStatistics stats(world);
-        stats.start();
-
-        FunctionSpace space;
-        space.read(in);
-        stats.stop_and_collect("space-creation");
-
-        if (mpi_world_rank() == 0)
-            std::cout << "Starting HomogeneousBarPseudo1D Model" << std::endl;
-
-        stats.start();
-
-        MLIncrementalLoading<FunctionSpace,
-                             utopia::IsotropicGenericPhaseField<FunctionSpace,Dim,CHZ_Linear>,
-                             UniaxialLoading2D<FunctionSpace>,
-                             HomogeneousBar<FunctionSpace>>
-            time_stepper(space);
-
-        time_stepper.read(in);
-        time_stepper.run();
-
-        stats.stop_collect_and_restart("end");
-
-        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
-        stats.stop_and_collect("output");
-        stats.describe(std::cout);
-
-    }
-
-    UTOPIA_REGISTER_APP(HomogeneousBarPseudo1D_CHZ);
-
-
-    // // // // // // // // // // // // // // // // // // // // // // // // // // //
-    // // // // // // // // //
     static void HomogeneousBarPseudo1DSingleLevel(Input &in) {
         static const int Dim = 2;
         static const int NVars = Dim + 1;
@@ -218,7 +175,12 @@ namespace utopia {
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
-        using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT1>;
+//         using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT1>; //works
+//        using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT2_CUBIC>; //works
+//        using ProblemType = utopia::IsotropicPhaseFieldForBrittleFractures<FunctionSpace, Dim>; //works
+        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1>;
+//        using ProblemType = utopia::PhaseFieldVolDevSplit<FunctionSpace, Dim>;
+//        using ProblemType = utopia::TensionSplitGenericPhaseField<FunctionSpace, Dim, AT1>;
 
         Comm world;
 
@@ -250,10 +212,9 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(HomogeneousBarPseudo1DSingleLevel);
 
-
     // // // // // // // // // // // // // // // // // // // // // // // // // // //
     // // // // // // // // //
-    static void HomogeneousBarPseudo1DSingleLevel_CHZ(Input &in) {
+    static void BoxForceTest(Input &in) {
         static const int Dim = 2;
         static const int NVars = Dim + 1;
 
@@ -262,7 +223,12 @@ namespace utopia {
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
-        using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, CHZ_Linear>;
+//         using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT1>; //works
+//        using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT2_CUBIC>; //works
+//        using ProblemType = utopia::IsotropicPhaseFieldForBrittleFractures<FunctionSpace, Dim>; //works
+        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1>;
+//        using ProblemType = utopia::PhaseFieldVolDevSplit<FunctionSpace, Dim>;
+//        using ProblemType = utopia::TensionSplitGenericPhaseField<FunctionSpace, Dim, AT1>;
 
         Comm world;
 
@@ -278,7 +244,9 @@ namespace utopia {
         stats.start();
 
         HomogeneousBar<FunctionSpace> IC_setup(space, 0.0);
-        UniaxialLoading2D<FunctionSpace> BC_setup(space, 0.0);
+
+        DirichletAndVolConstraints<FunctionSpace, BoxLoading<FunctionSpace>, NoDamage<FunctionSpace>>
+            BC_setup(space);
 
         IncrementalLoading<FunctionSpace, ProblemType> time_stepper(space, IC_setup, BC_setup);
 
@@ -292,7 +260,56 @@ namespace utopia {
         stats.describe(std::cout);
     }
 
-    UTOPIA_REGISTER_APP(HomogeneousBarPseudo1DSingleLevel_CHZ);
+    UTOPIA_REGISTER_APP(BoxForceTest);
+
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
+    static void HomogeneousBarDerivativeCheck(Input &in) {
+        static const int Dim = 2;
+        static const int NVars = Dim + 1;
+
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+//        using ProblemType = utopia::PhaseFieldDerivativeCheck_Original<FunctionSpace, Dim>;
+        using ProblemType = utopia::IsotropicPhaseFieldForBrittleFractures<FunctionSpace, Dim>;
+//        using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT1>; //Fixed
+//        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT2>; //Fixed
+//        using ProblemType = utopia::PhaseFieldVolDevSplit<FunctionSpace, Dim>; //Fixed
+//        using ProblemType = utopia::TensionSplitGenericPhaseField<FunctionSpace, Dim, AT1>; //Checking
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
+
+        if (mpi_world_rank() == 0) std::cout << "Starting HomogeneousBarDerivativeCheck Model" << std::endl;
+
+        stats.start();
+
+//        HomogeneousBar<FunctionSpace> IC_setup(space, 0.0);
+        SmoothQuadraticPhaseField<FunctionSpace> IC_setup(space, 0.0);
+        BiaxialLoading2D<FunctionSpace> BC_setup(space, 0.0);
+
+        IncrementalLoading<FunctionSpace, ProblemType> time_stepper(space, IC_setup, BC_setup);
+
+        time_stepper.read(in);
+        time_stepper.run();
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
+
+    UTOPIA_REGISTER_APP(HomogeneousBarDerivativeCheck);
 
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // //
@@ -307,6 +324,7 @@ namespace utopia {
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
         using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT1>;
+//        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1>;
 
         Comm world;
 
@@ -317,8 +335,7 @@ namespace utopia {
         space.read(in);
         stats.stop_and_collect("space-creation");
 
-        if (mpi_world_rank() == 0)
-            std::cout << "Starting TensionTest SL Model" << std::endl;
+        if (mpi_world_rank() == 0) std::cout << "Starting TensionTest SL Model" << std::endl;
 
         stats.start();
 
@@ -335,147 +352,9 @@ namespace utopia {
         space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
         stats.stop_and_collect("output");
         stats.describe(std::cout);
-
     }
 
     UTOPIA_REGISTER_APP(TensionTestSingleLevel);
-
-    // // // // // // // // // // // // // // // // // // // // // // // // // // //
-    // // // // // // // // //
-    static void TensionTestSingleLevel_VolDev(Input &in) {
-        static const int Dim = 2;
-        static const int NVars = Dim + 1;
-
-        using Comm = utopia::PetscCommunicator;
-        using Mesh = utopia::PetscStructuredGrid<Dim>;
-        using Elem = utopia::PetscUniformQuad4;
-        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        // using SizeType = FunctionSpace::SizeType;
-        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1>;
-
-        Comm world;
-
-        MPITimeStatistics stats(world);
-        stats.start();
-
-        FunctionSpace space;
-        space.read(in);
-        stats.stop_and_collect("space-creation");
-
-        if (mpi_world_rank() == 0)
-            std::cout << "Starting TensionTest SL Model Vol Dev" << std::endl;
-
-        stats.start();
-
-        InitialCondidtionPFTension<FunctionSpace> IC_setup(space, 0.0);
-        PFFracTension<FunctionSpace> BC_setup(space, 0.0);
-
-        IncrementalLoading<FunctionSpace, ProblemType> time_stepper(space, IC_setup, BC_setup);
-
-        time_stepper.read(in);
-        time_stepper.run();
-
-        stats.stop_collect_and_restart("end");
-
-        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
-        stats.stop_and_collect("output");
-        stats.describe(std::cout);
-
-    }
-
-    UTOPIA_REGISTER_APP(TensionTestSingleLevel_VolDev);
-
-
-    // // // // // // // // // // // // // // // // // // // // // // // // // // //
-    // // // // // // // // //
-    static void TensionTestSingleLevel_CHZ(Input &in) {
-        static const int Dim = 2;
-        static const int NVars = Dim + 1;
-
-        using Comm = utopia::PetscCommunicator;
-        using Mesh = utopia::PetscStructuredGrid<Dim>;
-        using Elem = utopia::PetscUniformQuad4;
-        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        // using SizeType = FunctionSpace::SizeType;
-        using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, CHZ_Linear>;
-
-        Comm world;
-
-        MPITimeStatistics stats(world);
-        stats.start();
-
-        FunctionSpace space;
-        space.read(in);
-        stats.stop_and_collect("space-creation");
-
-        if (mpi_world_rank() == 0)
-            std::cout << "Starting TensionTest SL Model" << std::endl;
-
-        stats.start();
-
-        InitialCondidtionPFTension<FunctionSpace> IC_setup(space, 0.0);
-        PFFracTension<FunctionSpace> BC_setup(space, 0.0);
-
-        IncrementalLoading<FunctionSpace, ProblemType> time_stepper(space, IC_setup, BC_setup);
-
-        time_stepper.read(in);
-        time_stepper.run();
-
-        stats.stop_collect_and_restart("end");
-
-        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
-        stats.stop_and_collect("output");
-        stats.describe(std::cout);
-
-    }
-
-    UTOPIA_REGISTER_APP(TensionTestSingleLevel_CHZ);
-
-    // // // // // // // // // // // // // // // // // // // // // // // // // // //
-    // // // // // // // // //
-    static void TensionTestSingleLevel_VolDev_CHZ(Input &in) {
-        static const int Dim = 2;
-        static const int NVars = Dim + 1;
-
-        using Comm = utopia::PetscCommunicator;
-        using Mesh = utopia::PetscStructuredGrid<Dim>;
-        using Elem = utopia::PetscUniformQuad4;
-        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        // using SizeType = FunctionSpace::SizeType;
-        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, CHZ_Linear>;
-
-        Comm world;
-
-        MPITimeStatistics stats(world);
-        stats.start();
-
-        FunctionSpace space;
-        space.read(in);
-        stats.stop_and_collect("space-creation");
-
-        if (mpi_world_rank() == 0)
-            std::cout << "Starting TensionTest SL Model" << std::endl;
-
-        stats.start();
-
-        InitialCondidtionPFTension<FunctionSpace> IC_setup(space, 0.0);
-        PFFracTension<FunctionSpace> BC_setup(space, 0.0);
-
-        IncrementalLoading<FunctionSpace, ProblemType> time_stepper(space, IC_setup, BC_setup);
-
-        time_stepper.read(in);
-        time_stepper.run();
-
-        stats.stop_collect_and_restart("end");
-
-        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
-        stats.stop_and_collect("output");
-        stats.describe(std::cout);
-
-    }
-
-    UTOPIA_REGISTER_APP(TensionTestSingleLevel_VolDev_CHZ);
-
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // //
     // // // // // // // // //
@@ -499,8 +378,7 @@ namespace utopia {
         space.read(in);
         stats.stop_and_collect("space-creation");
 
-        if (mpi_world_rank() == 0)
-            std::cout << "Starting TensionTest SL Model" << std::endl;
+        if (mpi_world_rank() == 0) std::cout << "Starting TensionTest SL Model" << std::endl;
 
         stats.start();
 
@@ -517,7 +395,6 @@ namespace utopia {
         space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
         stats.stop_and_collect("output");
         stats.describe(std::cout);
-
     }
 
     UTOPIA_REGISTER_APP(TensionTestSingleLevel_3D);
@@ -533,7 +410,9 @@ namespace utopia {
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
-        using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT1>;
+//        using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT2>;
+//        using ProblemType = utopia::IsotropicPhaseFieldForBrittleFractures<FunctionSpace, Dim>;
+        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1>;
 
         Comm world;
 
@@ -544,8 +423,7 @@ namespace utopia {
         space.read(in);
         stats.stop_and_collect("space-creation");
 
-        if (mpi_world_rank() == 0)
-            std::cout << "Starting TensionTest SL Model" << std::endl;
+        if (mpi_world_rank() == 0) std::cout << "Starting ShearTest SL Model ISO" << std::endl;
 
         stats.start();
 
@@ -562,15 +440,13 @@ namespace utopia {
         space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
         stats.stop_and_collect("output");
         stats.describe(std::cout);
-
     }
 
     UTOPIA_REGISTER_APP(ShearTestSingleLevel);
 
-
     // // // // // // // // // // // // // // // // // // // // // // // // // // //
     // // // // // // // // //
-    static void ShearTestSingleLevel_VolDev(Input &in) {
+    static void FaultTest(Input &in) {
         static const int Dim = 2;
         static const int NVars = Dim + 1;
 
@@ -579,7 +455,9 @@ namespace utopia {
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
-        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT2>;
+//        using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT2>;
+//        using ProblemType = utopia::IsotropicPhaseFieldForBrittleFractures<FunctionSpace, Dim>;
+        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1>;
 
         Comm world;
 
@@ -590,12 +468,11 @@ namespace utopia {
         space.read(in);
         stats.stop_and_collect("space-creation");
 
-        if (mpi_world_rank() == 0)
-            std::cout << "Starting ShearTest SL Model - VolDev" << std::endl;
+        if (mpi_world_rank() == 0) std::cout << "Starting ShearTest SL Model ISO" << std::endl;
 
         stats.start();
 
-        InitialCondidtionPFTension<FunctionSpace> IC_setup(space, 0.0);
+        SingleFault<FunctionSpace> IC_setup(space, 0.0);
         PFFracShear2D<FunctionSpace> BC_setup(space, 0.0);
 
         IncrementalLoading<FunctionSpace, ProblemType> time_stepper(space, IC_setup, BC_setup);
@@ -608,14 +485,13 @@ namespace utopia {
         space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
         stats.stop_and_collect("output");
         stats.describe(std::cout);
-
     }
 
-    UTOPIA_REGISTER_APP(ShearTestSingleLevel_VolDev);
+    UTOPIA_REGISTER_APP(FaultTest);
 
-    // // // // // // // // // // // // // // // // // // // // // // // // // // //
-    // // // // // // // // //
-    static void ShearTestSingleLevel_VolDev_Old(Input &in) {
+
+
+    static void SingleSedimentaryLayer(Input &in) {
         static const int Dim = 2;
         static const int NVars = Dim + 1;
 
@@ -624,7 +500,9 @@ namespace utopia {
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
-        using ProblemType = utopia::PhaseFieldVolDevSplit<FunctionSpace, Dim>;
+        // using ProblemType = utopia::TensionSplitGenericPhaseField<FunctionSpace, Dim, AT1>;
+        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1>;
+        // using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT1>;
 
         Comm world;
 
@@ -635,13 +513,13 @@ namespace utopia {
         space.read(in);
         stats.stop_and_collect("space-creation");
 
-        if (mpi_world_rank() == 0)
-            std::cout << "Starting ShearTest SL Model - VolDev Old" << std::endl;
+        if (mpi_world_rank() == 0) std::cout << "Starting Single Layer Model" << std::endl;
 
         stats.start();
 
-        InitialCondidtionPFTension<FunctionSpace> IC_setup(space, 0.0);
-        PFFracShear2D<FunctionSpace> BC_setup(space, 0.0);
+        DamagedSedimentaryLayers<FunctionSpace> IC_setup(space, 0.0);
+        DirichletAndVolConstraints<FunctionSpace, SedimentaryLayers_BC<FunctionSpace>, LayeredSubdomain<FunctionSpace>>
+            BC_setup(space);
 
         IncrementalLoading<FunctionSpace, ProblemType> time_stepper(space, IC_setup, BC_setup);
 
@@ -653,104 +531,11 @@ namespace utopia {
         space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
         stats.stop_and_collect("output");
         stats.describe(std::cout);
-
     }
 
-    UTOPIA_REGISTER_APP(ShearTestSingleLevel_VolDev_Old);
+    UTOPIA_REGISTER_APP(SingleSedimentaryLayer);
 
-    // // // // // // // // // // // // // // // // // // // // // // // // // // //
-    // // // // // // // // //
-    static void ShearTestSingleLevel_VolDev_CHZ(Input &in) {
-        static const int Dim = 2;
-        static const int NVars = Dim + 1;
-
-        using Comm = utopia::PetscCommunicator;
-        using Mesh = utopia::PetscStructuredGrid<Dim>;
-        using Elem = utopia::PetscUniformQuad4;
-        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        // using SizeType = FunctionSpace::SizeType;
-        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, CHZ_Linear>;
-
-        Comm world;
-
-        MPITimeStatistics stats(world);
-        stats.start();
-
-        FunctionSpace space;
-        space.read(in);
-        stats.stop_and_collect("space-creation");
-
-        if (mpi_world_rank() == 0)
-            std::cout << "Starting ShearTest SL Model - VolDev CHZ" << std::endl;
-
-        stats.start();
-
-        InitialCondidtionPFTension<FunctionSpace> IC_setup(space, 0.0);
-        PFFracShear2D<FunctionSpace> BC_setup(space, 0.0);
-
-        IncrementalLoading<FunctionSpace, ProblemType> time_stepper(space, IC_setup, BC_setup);
-
-        time_stepper.read(in);
-        time_stepper.run();
-
-        stats.stop_collect_and_restart("end");
-
-        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
-        stats.stop_and_collect("output");
-        stats.describe(std::cout);
-
-    }
-
-    UTOPIA_REGISTER_APP(ShearTestSingleLevel_VolDev_CHZ);
-
-
-    // // // // // // // // // // // // // // // // // // // // // // // // // // //
-    // // // // // // // // //
-    static void ShearTestSingleLevel_CHZ(Input &in) {
-        static const int Dim = 2;
-        static const int NVars = Dim + 1;
-
-        using Comm = utopia::PetscCommunicator;
-        using Mesh = utopia::PetscStructuredGrid<Dim>;
-        using Elem = utopia::PetscUniformQuad4;
-        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        // using SizeType = FunctionSpace::SizeType;
-        using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, CHZ_Linear>;
-
-        Comm world;
-
-        MPITimeStatistics stats(world);
-        stats.start();
-
-        FunctionSpace space;
-        space.read(in);
-        stats.stop_and_collect("space-creation");
-
-        if (mpi_world_rank() == 0)
-            std::cout << "Starting TensionTest SL Model" << std::endl;
-
-        stats.start();
-
-        InitialCondidtionPFTension<FunctionSpace> IC_setup(space, 0.0);
-        PFFracShear2D<FunctionSpace> BC_setup(space, 0.0);
-
-        IncrementalLoading<FunctionSpace, ProblemType> time_stepper(space, IC_setup, BC_setup);
-
-        time_stepper.read(in);
-        time_stepper.run();
-
-        stats.stop_collect_and_restart("end");
-
-        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
-        stats.stop_and_collect("output");
-        stats.describe(std::cout);
-
-    }
-
-    UTOPIA_REGISTER_APP(ShearTestSingleLevel_CHZ);
-
-
-    static void Hobbs(Input &in) {
+    static void DoubleSedimentaryLayer(Input &in) {
         static const int Dim = 2;
         static const int NVars = Dim + 1;
 
@@ -760,8 +545,7 @@ namespace utopia {
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
         using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1>;
-//        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1>;
-
+        //        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1>;
 
         Comm world;
 
@@ -776,8 +560,9 @@ namespace utopia {
 
         stats.start();
 
-        HomogeneousBar<FunctionSpace> IC_setup(space, 0.0);
-        SedimentaryLayers<FunctionSpace> BC_setup(space, 0.0);
+        DamagedSedimentaryLayers<FunctionSpace> IC_setup(space, 0.0);
+        DirichletAndVolConstraints<FunctionSpace, SedimentaryLayers_BC<FunctionSpace>, LayeredSubdomain<FunctionSpace>>
+            BC_setup(space);
 
         IncrementalLoading<FunctionSpace, ProblemType> time_stepper(space, IC_setup, BC_setup);
 
@@ -791,48 +576,9 @@ namespace utopia {
         stats.describe(std::cout);
     }
 
-    UTOPIA_REGISTER_APP(Hobbs);
+    UTOPIA_REGISTER_APP(DoubleSedimentaryLayer);
 
-    // // // // // // // // // // // // // // // // // // // // // // // // // // //
-    // // // // // // // // //
-    static void VolDevSplit(Input &in) {
-        static const int Dim = 2;
-        static const int NVars = Dim + 1;
 
-        using Comm = utopia::PetscCommunicator;
-        using Mesh = utopia::PetscStructuredGrid<Dim>;
-        using Elem = utopia::PetscUniformQuad4;
-        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        // using SizeType = FunctionSpace::SizeType;
-
-        Comm world;
-
-        MPITimeStatistics stats(world);
-        stats.start();
-
-        FunctionSpace space;
-        space.read(in);
-        stats.stop_and_collect("space-creation");
-
-        stats.start();
-
-        MLIncrementalLoading<FunctionSpace,
-                             utopia::PhaseFieldVolDevSplit<FunctionSpace>,
-                             BiaxialLoading2D<FunctionSpace>,
-                             SlantedCrack2D<FunctionSpace>>
-            time_stepper(space);
-
-        time_stepper.read(in);
-        time_stepper.run();
-
-        stats.stop_collect_and_restart("end");
-
-        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
-        stats.stop_and_collect("output");
-        stats.describe(std::cout);
-    }
-
-    UTOPIA_REGISTER_APP(VolDevSplit);
 
 }  // namespace utopia
 
