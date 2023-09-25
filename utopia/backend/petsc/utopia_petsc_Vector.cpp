@@ -125,7 +125,7 @@ namespace utopia {
 
         this->comm().set(comm);
 
-        UTOPIA_REPORT_ALLOC("PetscVector::repurpose");
+        UTOPIA_REPORT_ALLOC("PetscVector::init");
         check_error(VecCreate(comm, &vec_));
         check_error(VecSetFromOptions(vec_));
         check_error(VecSetType(vec_, type));
