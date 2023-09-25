@@ -2,7 +2,8 @@
 app: SingleSedimentaryLayer
 # Output 
 #output-path: Output/Hobb/HOBBS_PT_AT1_d2_Dirch_1E32_1nu05_2nu45_dt0003_W2_l2_m15_p01_Unif
-output-path: Output/SedimentaryLayer/Single_d60_L800_H240_Ef50_nuf25_Gcf20_En10_nun35_Gcn160_l015_m1_dt00001_p01_Com0
+output-path: Output/TestingFracEnergy
+#output-path: /home/edoardo/Data/sdd1/Results/SedimentaryLayer/Single_d60_L800_H240_Ef50_nuf15_Gcf20_En10_nun45_Gcn160_l015_m1_dt00001_p001_Com0_Checked
 save_output: true
 # Mesh specification -----------------------------------------
 nx: 801
@@ -32,7 +33,7 @@ neumann_bc:
 # Phase field formulation
 length_scale: 0.015e3
 use_penalty_irreversibility: true
-penalty_tol: 0.01
+penalty_tol: 0.001
 penalty_tol_non_neg: 1e9
 use_crack_set_irreversibiblity: true
 crack_set_tol: 0.9999999
@@ -52,18 +53,22 @@ top_layer_height2: -10e3 	#below zero ...
 interface_regularisation_length: 0.09e3
 E_1: 50	        	#Dolostone
 E_2: 10			#Shale
-nu_1: 0.25			#Dolostone
-nu_2: 0.35 			#Shale 	
+nu_1: 0.15			#Dolostone
+nu_2: 0.45 			#Shale 	
 Gc_1: 20e-6 			#Dolostone 48
 Gc_2: 160e-6		 	#Shale		
 ## Time stepping -------------------------------------------------------
-dt: 0.00001
-final_time: 0.05
+dt: 0.0001
+final_time: 0.0065 
+#Two time stepping scheme (safer if you know the right time)
+use_two_time_steps: true
+dt_secondphase: 0.00001
+time_secondphase: 0.0019
 # dynamic time stepping with fracture energy
-fracture_energy_time_stepping: true
+fracture_energy_time_stepping: false
 frac_energy_max_change: 1.05
 frac_energy_min_change: 1.01
-dt_min: 0.0000002
+dt_min: 0.000005
 dt_max: 0.00001
 increase_factor: 2
 adjust_dt_on_failure: false
