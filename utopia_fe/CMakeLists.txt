@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 # project(utopia_fe)
-
+cmake_policy(SET CMP0079 NEW)
 project(
     utopia_fe
     VERSION 0.1.0
@@ -10,71 +10,16 @@ project(
         "Library for portable finite element discretizations."
 )
 
-set(CMAKE_C_FLAGS_ASAN
-    "-fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -g -O1"
-    CACHE STRING "Flags used by the C compiler during AddressSanitizer builds."
-          FORCE)
 
-set(CMAKE_CXX_FLAGS_ASAN
-    "-fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -g -O1"
-    CACHE STRING
-          "Flags used by the C++ compiler during AddressSanitizer builds."
-          FORCE)
+# ##############################################################################
+# ######################## UTOPIA DEFAULT INCLUDES
+# ##############################################################################
+# ##############################################################################
 
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE
-        "Release"
-        CACHE STRING "Choose the type of build, options are: Debug Release
-RelWithDebInfo MinSizeRel." FORCE)
+include(cmake/UtopiaFEOptions.cmake)
+include(cmake/UtopiaFEFunctions.cmake)
+include(cmake/UtopiaFEDefaults.cmake)
 
-    message(STATUS "[Status] CMAKE_BUILD_TYPE=Release")
-endif(NOT CMAKE_BUILD_TYPE)
-
-# To kill the policy warning  (maybe not a good idea yet)
-set(CMAKE_MACOSX_RPATH 1)
-
-option(UTOPIA_ENABLE_SANITIZER "check for memory access problems" OFF)
-option(UTOPIA_ENABLE_BOOST "enable boost features" OFF)
-option(UTOPIA_ENABLE_MOONOLITH_PROFILER
-       "enable moonolith profiling capabilities" OFF)
-
-option(UTOPIA_ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
-option(UTOPIA_ENABLE_CXX17_FEATURES "Enable usage of cxx17 standard" ON)
-
-option(UTOPIA_ENABLE_MOOSE_ENV_MODE
-       "Allows to use the moose installation compilers" ON)
-option(UTOPIA_ENABLE_TRILINOS_ALGEBRA
-       "Allows to use the moose installation compilers" OFF)
-option(UTOPIA_ENABLE_MARS "Tries to use mars backend" OFF)
-option(UTOPIA_ENABLE_MARS_VTK "Enable vtk output for mars" OFF)
-option(UTOPIA_ENABLE_MARS_ADIOS2,  "Enable adios2 output for mars" ON)
-option(UTOPIA_ENABLE_INTREPID2 "Tries to use the intrepid2 related features"
-       OFF)
-option(UTOPIA_ENABLE_NEW_TRANSFER "Use new transfer features" ON)
-# option(UTOPIA_INSTALL_LIBMESH "install libmesh" OFF)
-option(UTOPIA_ENABLE_WARNINGS "Compiler warnings" ON)
-option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
-
-option(UTOPIA_ENABLE_LIBMESH "Enable the libmesh functionalities" ON)
-option(UTOPIA_ENABLE_LIBMESH_LEGACY "Enable the legacy utopia::libmesh functionalities" ON)
-option(UTOPIA_ENABLE_LIBMESH_KOKKOS "Enable the libmesh functionalities" OFF)
-
-option(UTOPIA_ENABLE_PETSC "Enable the PETSc DM functionalities" OFF)
-
-# Once we have cleaner separation between this and legacy turn OFF
-option(UTOPIA_ENABLE_LIBMESH_DEPRECATED "Enable the deprecated utopia::libmesh functionalities" ON)
-
-option(UTOPIA_ENABLE_STK "Enable the stk functionalities" OFF)
-option(UTOPIA_ENABLE_MOONOLITH "Enable the moonolith functionalities" ON)
-option(UTOPIA_ENABLE_ARBORX "Enable the ArborX backend" OFF)
-
-option(UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE "Removed trilinos deprecated code" OFF)
-
-option(UTOPIA_ENABLE_FLUYA_MODE "Create utopia_fe configuration required by Fluya (overrides everything else)" OFF)
-
-if(UTOPIA_ENABLE_TRILINOS OR UTOPIA_ENABLE_MARS OR UTOPIA_ENABLE_INTREPID2)
-    set(UTOPIA_ENABLE_KOKKOS TRUE)
-endif()
 
 # ##############################################################################
 # ##############################################################################
@@ -150,107 +95,7 @@ endforeach(funcLib)
 find_package(Utopia REQUIRED)
 add_definitions(${UTOPIA_DEFS})
 
-# ##############################################################################
-function(find_project_files rootPath dirPaths headers sources)
-    set(verbose TRUE)
-
-    set(theaders ${${headers}})
-    set(tsources ${${sources}})
-
-    foreach(INCLUDE_PATH ${dirPaths})
-        file(GLOB TEMP_HPPSRC "${rootPath}/${INCLUDE_PATH}/*.cpp")
-        file(GLOB TEMP_SRC "${rootPath}/${INCLUDE_PATH}/*.c")
-        file(GLOB TEMP_HPPDR "${rootPath}/${INCLUDE_PATH}/*.hpp")
-        file(GLOB TEMP_HDR "${rootPath}/${INCLUDE_PATH}/*.h")
-
-        source_group(
-            ${INCLUDE_PATH} FILES ${TEMP_HPPDR}; ${TEMP_HDR}; ${TEMP_HPPSRC};
-                                  ${TEMP_SRC}; ${TEMP_UI})
-
-        set(tsources ${tsources}; ${TEMP_SRC}; ${TEMP_HPPSRC})
-        set(theaders ${theaders}; ${TEMP_HDR}; ${TEMP_HPPDR})
-    endforeach(INCLUDE_PATH)
-
-    set(${headers}
-        ${theaders}
-        PARENT_SCOPE)
-    set(${sources}
-        ${tsources}
-        PARENT_SCOPE)
-endfunction()
-# ##############################################################################
-
-function(utopiafe_add_library libraryRootDir subDirs)
-    set(LOCAL_HEADERS "")
-    set(LOCAL_SOURCES "")
-    find_project_files(${libraryRootDir} "${subDirs}" LOCAL_HEADERS
-                       LOCAL_SOURCES)
-    target_sources(utopia_fe PRIVATE ${LOCAL_SOURCES})
-    install(FILES ${LOCAL_HEADERS} DESTINATION include)
-    foreach(MODULE ${subDirs})
-        target_include_directories(
-            utopia_fe BEFORE
-            PUBLIC $<BUILD_INTERFACE:${libraryRootDir}/${MODULE}>)
-    endforeach(MODULE)
-endfunction()
-
-function(utopiafe_add_module module_name libraryRootDir subDirs)
-    set(LOCAL_HEADERS "")
-    set(LOCAL_SOURCES "")
-
-    add_library(${module_name})
-    find_project_files(${libraryRootDir} "${subDirs}" LOCAL_HEADERS
-                       LOCAL_SOURCES)
-    target_sources(${module_name} PRIVATE ${LOCAL_SOURCES})
-    install(FILES ${LOCAL_HEADERS} DESTINATION include)
-    foreach(MODULE ${subDirs})
-        target_include_directories(
-            ${module_name} BEFORE
-            PUBLIC $<BUILD_INTERFACE:${libraryRootDir}/${MODULE}>)
-    endforeach(MODULE)
-
-    target_include_directories(
-        ${module_name} BEFORE
-        PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/base>)
-    target_include_directories(
-        ${module_name} BEFORE
-        PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
-    target_include_directories(${module_name} BEFORE
-                               PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>)
-
-    install(
-        TARGETS ${module_name}
-        EXPORT UtopiaFETargets
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)
-
-    target_link_libraries(utopia_fe PUBLIC ${module_name})
-    list(APPEND UTOPIA_FE_LIBRARIES "${module_name}")
-    set(UTOPIA_FE_LIBRARIES ${UTOPIA_FE_LIBRARIES} PARENT_SCOPE)
-endfunction()
-
-macro(add_utopiafe_app app_name)
-    add_library(${app_name} EXCLUDE_FROM_ALL STATIC ${LOCAL_SOURCES})
-    target_include_directories(
-        ${app_name} BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-                                  ${CMAKE_CURRENT_BINARY_DIR})
-    foreach(app_dependency ${ARGN})
-        target_link_libraries(${app_name} PUBLIC ${app_dependency})
-    endforeach()
-    # foreach(app_dependency ${ARGN}) target_include_directories(${app_name}
-    # PUBLIC $<TARGET_PROPERTY:${app_dependency},INTERFACE_INCLUDE_DIRECTORIES>)
-    # endforeach()
-    set_utopia_compiler_features(${app_name})
-    if(NOT TOP_LEVEL)
-        set(UTOPIA_FE_APPS
-            "${UTOPIA_FE_APPS};${app_name}"
-            PARENT_SCOPE)
-    endif()
-    # install(TARGETS ${app_name} RUNTIME DESTINATION bin LIBRARY DESTINATION
-    # lib ARCHIVE DESTINATION lib ) install(FILES ${LOCAL_HEADERS} DESTINATION
-    # include)
-endmacro(add_utopiafe_app)
+######################################################################
 
 list(APPEND UTOPIA_FE_MODULES frontend interoperability)
 
