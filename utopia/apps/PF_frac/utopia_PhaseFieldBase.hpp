@@ -32,7 +32,7 @@ namespace utopia {
     public:
         using Point = typename FunctionSpace::Point;
         using Scalar = typename FunctionSpace::Scalar;
-        using HeteroParamsFunction = std::function<void(const Point &, Scalar &, Scalar &, Scalar &, Scalar &)>;
+        using HeteroParamsFunction = std::function<void(const Point &, Scalar &, Scalar &, Scalar &, Scalar &, Scalar &, Scalar &)>;
 
         void read(Input &in) override {
             // Getting length of model (it is a material parameter too! - used in penalization)
@@ -90,74 +90,14 @@ namespace utopia {
             } else {
                 initialise_Young_Poisson_parameters();
             }
-            //            if (mpi_world_rank() == 0) {
-            //                utopia::out() << "E: " << E << "  nu: " << nu << "  Gc: " << fracture_toughness << " mu: "
-            //                << mu
-            //                              << "  lambda: " << lambda << " f_t: " << tensile_strength << "\n";
-            //            }
-
             // Must be done after lambda and mu
             fill_in_isotropic_elast_tensor();
-            kappa = lambda + (2.0 * mu / Dim);
-
             // END OF MATERIAL PARAMETERS =============================================
 
             std::string type;
             in.get("hetero_params", type);
 
-            if (type == "threelayer") {
-                Scalar bottom_layer_height;
-                Scalar top_layer_height;
-                Scalar tough_factor;
-                in.get("bottom_layer_height", bottom_layer_height);
-                in.get("top_layer_height", top_layer_height);
-                in.get("tough_factor", tough_factor);
-
-                const Scalar mu_in = mu;
-                const Scalar lambda_in = lambda;
-                const Scalar fracture_toughness_in = fracture_toughness;
-
-                bool boundary_protection(false);
-                Scalar layer_width(0);
-                Scalar xmin, xmax, ymin, ymax;
-                in.get("boundary_protection", boundary_protection);
-                in.get("layer_width", layer_width);
-                in.get("x_min", xmin);
-                in.get("x_max", xmax);
-                in.get("y_min", ymin);
-                in.get("y_max", ymax);
-
-                hetero_params =
-                    [mu_in,
-                     lambda_in,
-                     fracture_toughness_in,
-                     bottom_layer_height,
-                     top_layer_height,
-                     tough_factor,
-                     boundary_protection,
-                     xmin,
-                     xmax,
-                     ymin,
-                     ymax,
-                     layer_width](
-                        const Point &p, Scalar &mu_out, Scalar &lambda_out, Scalar &fracture_toughness_out, Scalar &) {
-                        if (p[1] < bottom_layer_height || p[1] > top_layer_height) {
-                            mu_out = mu_in;
-                            lambda_out = lambda_in;
-                            fracture_toughness_out = fracture_toughness_in;
-                        } else {
-                            mu_out = mu_in * tough_factor;  // modify middle layer to tougher
-                            lambda_out = lambda_in * tough_factor;
-                            fracture_toughness_out = fracture_toughness_in * 0.5;  //* tough_factor;
-                        }
-
-                        if (boundary_protection) {
-                            if (p[0] < xmin + layer_width || p[0] > xmax - layer_width || p[1] < ymin + layer_width ||
-                                p[1] > ymax - layer_width)
-                                fracture_toughness_out = fracture_toughness_in * 1000.0;
-                        }
-                    };
-            } else if (type == "HomogeneousBar") {
+            if (type == "HomogeneousBar") {
                 Scalar nx;  // mesh resoultion in x
                 in.get("nx", nx);
 
@@ -167,7 +107,7 @@ namespace utopia {
                 in.get("y_min", ymin);
                 in.get("y_max", ymax);
 
-                hetero_params = [](const Point &, Scalar &, Scalar &, Scalar &, Scalar &) {};
+                hetero_params = [](const Point &, Scalar &, Scalar &, Scalar &, Scalar &, Scalar &, Scalar &) {};
 
             } else if (type == "SingleSedimentaryLayer") {
                 Scalar bottom_layer_height_;
@@ -246,14 +186,17 @@ namespace utopia {
                                  use_random,
                                  distribution_E,
                                  distribution_G,
-                                 generator](const Point &p,
+                                 generator,this](const Point &p,
                                             Scalar &mu_out,
                                             Scalar &lambda_out,
                                             Scalar &fracture_toughness_out,
-                                            Scalar &tensile_strength) mutable {
+                                            Scalar &tensile_strength,
+                                            Scalar &E,
+                                            Scalar &nu) mutable {
                     if (p[1] < bottom_layer_height_ ||
                         p[1] > top_layer_height_) {  // Shale (stronger and more compliant)
-                        lambda_out = E2 * nu2 / ((1. + nu2) * (1. - 2. * nu2));
+                        E=E2; nu=nu2;
+                        lambda_out = initialise_lambda(E2,nu2);
                         mu_out = E2 / (2. * (1. + nu2));
                         if (p[1] < bottom_layer_height_ - 1.5 * l_ || p[1] > top_layer_height_ + 1.5 * l_) {
                             fracture_toughness_out = Gc2;
@@ -267,7 +210,8 @@ namespace utopia {
                         double noise_E = distribution_E(generator);
                         distribution_E.reset();
 
-                        lambda_out = E1 * nu1 / ((1. + nu1) * (1. - 2. * nu1)) + use_random*noise_E;
+                        E=E1;nu=nu1;
+                        lambda_out = initialise_lambda(E1,nu1) + use_random*noise_E;
                         mu_out = E1 / (2. * (1. + nu1));
 
                         generator.seed((1e6 * p[1] * p[1] + 1e6 * p[0] * p[0]));
@@ -341,15 +285,19 @@ namespace utopia {
                                  ymax,
                                  use_random,
                                  distribution,
-                                 generator](const Point &p,
+                                 generator,this](const Point &p,
                                             Scalar &mu_out,
                                             Scalar &lambda_out,
                                             Scalar &fracture_toughness_out,
-                                            Scalar &tensile_strength) mutable {
+                                            Scalar &tensile_strength,
+                                            Scalar &E,
+                                            Scalar &nu ) mutable {
                     if (p[1] <= top_layer_height_ - interface_regularisation_length / 2.0 &&
                         p[1] >= bottom_layer_height_ + interface_regularisation_length / 2.0) {  // stiffer layer
 
-                        lambda_out = E1 * nu1 / ((1. + nu1) * (1. - 2. * nu1));
+                        E = E1;
+                        nu = nu1;
+                        lambda_out = initialise_lambda(E1,nu1);
                         mu_out = E1 / (2. * (1. + nu1));
 
                         generator.seed((1e6 * p[1] * p[1] + 1e6 * p[0] * p[0]));
@@ -361,7 +309,9 @@ namespace utopia {
                                 p[1] <= top_layer_height_) ||
                                (p[1] <= bottom_layer_height_ + interface_regularisation_length / 2.0 &&
                                 p[1] >= bottom_layer_height_)) {
-                        lambda_out = E1 * nu1 / ((1. + nu1) * (1. - 2. * nu1));
+
+                        E = E1; nu = nu1;
+                        lambda_out = initialise_lambda(E1,nu1);
                         mu_out = E1 / (2. * (1. + nu1));
 
                         double dist_to_interf =
@@ -376,7 +326,8 @@ namespace utopia {
                                (p[1] >= bottom_layer_height_ - interface_regularisation_length / 2.0 &&
                                 p[1] <= bottom_layer_height_)) {  // Shale (stronger and more compliant)
 
-                        lambda_out = E2 * nu2 / ((1. + nu2) * (1. - 2. * nu2));
+                        E = E2; nu = nu2;
+                        lambda_out = initialise_lambda(E2,nu2);
                         mu_out = E2 / (2. * (1. + nu2));
                         double dist_to_interf =
                             std::min(std::fabs(p[1] - (bottom_layer_height_ - interface_regularisation_length / 2.0)),
@@ -386,7 +337,8 @@ namespace utopia {
                         fracture_toughness_out = Gc_mixed;
                         tensile_strength = ft2;
                     } else {
-                        lambda_out = E2 * nu2 / ((1. + nu2) * (1. - 2. * nu2));
+                        E = E2; nu = nu2;
+                        lambda_out = initialise_lambda(E2,nu2);
                         mu_out = E2 / (2. * (1. + nu2));
                         fracture_toughness_out = Gc2;
                         tensile_strength = ft2;
@@ -473,15 +425,18 @@ namespace utopia {
                                  layer_width,
                                  use_random,
                                  distribution,
-                                 generator](const Point &p,
+                                 generator,this](const Point &p,
                                             Scalar &mu_out,
                                             Scalar &lambda_out,
                                             Scalar &fracture_toughness_out,
-                                            Scalar &tensile_strength) mutable {
+                                            Scalar &tensile_strength,
+                                            Scalar &E,
+                                            Scalar &nu) mutable {
                     if ((p[1] < top_layer_height_ && p[1] > bottom_layer_height_) ||
                         (p[1] < top_layer_height2_ &&
                          p[1] > bottom_layer_height2_)) {  // Dolostone (weaker and stiffer)
-                        lambda_out = E1 * nu1 / ((1. + nu1) * (1. - 2. * nu1));
+                        E = E1; nu =nu1;
+                        lambda_out = initialise_lambda(E1,nu1);
                         mu_out = E1 / (2. * (1. + nu1));
 
                         generator.seed((1e6 * p[1] * p[1] + 1e6 * p[0] * p[0]));
@@ -490,7 +445,8 @@ namespace utopia {
                         fracture_toughness_out = Gc1 + use_random * noise;
                         tensile_strength = ft1;
                     } else {  // Shale (stronger and more compliant)
-                        lambda_out = E2 * nu2 / ((1. + nu2) * (1. - 2. * nu2));
+                        E=E2;nu=nu2;
+                        lambda_out = initialise_lambda(E2,nu2);
                         mu_out = E2 / (2. * (1. + nu2));
                         if (p[1] < bottom_layer_height_ - 1.5 * l_ || p[1] > top_layer_height_ + 1.5 * l_) {
                             fracture_toughness_out = Gc2;
@@ -515,7 +471,7 @@ namespace utopia {
                 Scalar FractureTough_base = this->fracture_toughness;
 
                 hetero_params = [xmin, xmax, ymin, ymax, mu_base, lambda_base, FractureTough_base](
-                                    const Point &p, Scalar &mu, Scalar &lambda, Scalar &fracture_tough, Scalar &) {
+                                    const Point &p, Scalar &mu, Scalar &lambda, Scalar &fracture_tough, Scalar &, Scalar &, Scalar& ) {
                     mu = mu_base * (1.0 + p(0) / xmax + p(1) / ymax);
                     lambda = lambda_base * (1.0 + p(0) / xmax + p(1) / ymax);
                     fracture_tough = FractureTough_base * (1.0 + p(0) / xmax + p(1) / ymax);
@@ -536,8 +492,6 @@ namespace utopia {
 
             // Must be done after lambda and mu
             fill_in_isotropic_elast_tensor();
-            kappa = lambda + (2.0 * mu / Dim);
-
         }  // end of read
 
         PFFracParameters()
@@ -576,30 +530,44 @@ namespace utopia {
               turn_off_cu_coupling(false)
 
         {
-            kappa = lambda + (2.0 * mu / Dim);
+            initialise_kappa();
         }
 
         void update(const Point &p, bool update_elastic_tensor) {
             if (hetero_params) {
-                hetero_params(p, mu, lambda, fracture_toughness, tensile_strength);
-                kappa = lambda + (2.0 * mu / Dim);
+                hetero_params(p, mu, lambda, fracture_toughness, tensile_strength, E, nu);
+                initialise_kappa();
+                //check_consistent_material_params();
             }
             if (update_elastic_tensor) fill_in_isotropic_elast_tensor();
         }
 
         void initialise_Lame_parameters() {
-            lambda = E * nu / ((1. + nu) * (1. - 2. * nu));
+            lambda = E * nu / ((1. + nu) * (1. - static_cast<double>(Dim-1) * nu));
             mu = E / (2. * (1. + nu));
         }
 
+        Scalar initialise_lambda( Scalar E, Scalar nu) {
+            return  E * nu / ((1. + nu) * (1. - static_cast<double>(Dim-1) * nu));
+        }
+
         void initialise_Young_Poisson_parameters() {
+            if constexpr(Dim== 3){
             E = mu * (3.0 * lambda + 2.0 * mu) / (lambda + mu);
             nu = lambda / (2.0 * (lambda + mu));
+        } else {
+            E = 4.0*mu * (lambda + mu) / (lambda + 2.0*mu);
+            nu = lambda / (lambda + 2.0* mu);
+            }
+        }
+
+        void initialise_kappa(){
+            kappa = lambda + (2.0 * mu / static_cast<double>(Dim));
         }
 
         std::pair<double, double> return_Lame_parameters(double E, double nu) {
             std::pair<double, double> lames;
-            lames.first = E * nu / ((1. + nu) * (1. - 2. * nu));
+            lames.first = initialise_lambda(E, nu);
             lames.second = E / (2. * (1. + nu));
             return lames;
         }
@@ -622,7 +590,48 @@ namespace utopia {
 
             I4sym.identity_sym_k();          // E.P Fixed i4sym to correct version for Kappa
             I4shear.identity_shearmod(Dim);  // E.P i4shear for mu identity contribution to elasticity tensor
-            kappa = lambda + (2.0 * mu / Dim);
+            initialise_kappa();
+        }
+
+
+        void check_consistent_material_params(){
+            //std::cout <<"checking material now"<< std::endl;
+            if (Dim == 2){
+
+                double E__mu_l = std::abs(this->E  - (4.0*this->mu * (this->lambda + this->mu) / (this->lambda + 2.0*this->mu)) );
+                double nu__l_mu = std::abs(this->nu - (this->lambda / (this->lambda + 2.0* this->mu)))  ;
+                double l__E_nu = std::abs(this->lambda - (this->E *this->nu / ( (1.0 + this->nu) * (1.0 - this->nu)) ));
+                double mu__E_nu = std::abs(this->mu - (this->E / (2.0 * (1.0 + this->nu))) );
+                double k__l_mu  = std::abs(this->kappa - ( this->lambda + this->mu )) ;
+                double k__E_nu =  std::abs(this->kappa - this->E/(2.0*(1-this->nu)));
+                double k__E_mu = std::abs(this->kappa - this->E*this->mu/(4.0*this->mu - this->E));
+                double k__l_nu = std::abs(this->kappa - this->lambda*(1+this->nu)/(2.0*this->nu) ) ;
+                double k__mu_nu = std::abs(this->kappa - this->mu*(1+this->nu)/(1.0 - this->nu) ) ;
+
+                if (  E__mu_l  <= 10.0*std::numeric_limits<double>::epsilon() &&
+                      nu__l_mu <= 10.0*std::numeric_limits<double>::epsilon()  &&
+                      l__E_nu  <= 10.0*std::numeric_limits<double>::epsilon()  &&
+                      mu__E_nu <= 10.0*std::numeric_limits<double>::epsilon()  &&
+                      k__l_mu  <= 10.0*std::numeric_limits<double>::epsilon()  &&
+                      k__E_nu  <= 10.0*std::numeric_limits<double>::epsilon()  &&
+                      k__E_mu <= 10.0*std::numeric_limits<double>::epsilon()  &&
+                      k__l_nu <= 10.0*std::numeric_limits<double>::epsilon()  &&
+                      k__mu_nu <= 10.0*std::numeric_limits<double>::epsilon() )
+                {
+                    //std::cout << "\nCheck Passed. Material parameters are consistent"<<std::endl;
+                }else {
+                    std::cout << "\nWARNING!!! Material parameters are not consistent!!\n"<<std::endl;
+                    utopia::out() << "E: " << this->E << "  nu: " << this->nu << " mu: " << this->mu
+                                  << "  lambda: " << this->lambda << "  kappa " << this->kappa << "\n";
+                    std::cout << E__mu_l << " " << nu__l_mu << " " << l__E_nu << " " << mu__E_nu << " " << k__l_mu << " " << k__E_nu << " " <<
+                                 k__E_mu << " " << k__l_nu << " " << k__mu_nu << " " << std::endl;
+                    exit(1);
+                }
+            } else {
+                std::cout <<"checking material for dim = 3 "<< std::endl;
+            }
+
+
         }
 
         Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda, kappa, nu, E, l_0, pressure0, tensile_strength;
