@@ -2,8 +2,8 @@
 app: SingleSedimentaryLayer
 # Output 
 #output-path: Output/Hobb/HOBBS_PT_AT1_d2_Dirch_1E32_1nu05_2nu45_dt0003_W2_l2_m15_p01_Unif
-output-path: Output/TestingFracEnergy
-#output-path: /home/edoardo/Data/sdd1/Results/SedimentaryLayer/Single_d60_L800_H240_Ef50_nuf15_Gcf20_En10_nun45_Gcn160_l015_m1_dt00001_p001_Com0_Checked
+#output-path: Output/TestingFracEnergy
+output-path: /home/edoardo/Data/sdd1/Results/SedimentaryLayer/Single_d60_L800_H240_Ef50_nuf15_Gcf20_En10_nun45_Gcn200_l015_m1_Twodt00001_p001_Com0_Checked
 save_output: true
 # Mesh specification -----------------------------------------
 nx: 801
@@ -56,10 +56,10 @@ E_2: 10			#Shale
 nu_1: 0.15			#Dolostone
 nu_2: 0.45 			#Shale 	
 Gc_1: 20e-6 			#Dolostone 48
-Gc_2: 160e-6		 	#Shale		
+Gc_2: 200e-6		 	#Shale		
 ## Time stepping -------------------------------------------------------
 dt: 0.0001
-final_time: 0.0065 
+final_time: 0.01065 #0.0065 
 #Two time stepping scheme (safer if you know the right time)
 use_two_time_steps: true
 dt_secondphase: 0.00001
