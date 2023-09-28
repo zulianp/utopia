@@ -110,16 +110,20 @@ namespace utopia {
                 hetero_params = [](const Point &, Scalar &, Scalar &, Scalar &, Scalar &, Scalar &, Scalar &) {};
 
             } else if (type == "SingleSedimentaryLayer") {
+
+                number_of_layers_ = 1;
+
                 Scalar bottom_layer_height_;
                 Scalar top_layer_height_;
                 Scalar interface_regularisation_length;
                 bool include_interface_layer{false};
 
+
                 in.get("bottom_layer_height", bottom_layer_height_);
                 in.get("top_layer_height", top_layer_height_);
                 in.get("interface_regularisation_length", interface_regularisation_length);
-                bottom_layer_height = bottom_layer_height_;
-                top_layer_height = top_layer_height_;
+                bottom_layer_heights_.push_back(bottom_layer_height_);
+                top_layer_heights_.push_back(top_layer_height_);
 
                 Scalar E1, E2, nu1, nu2, Gc1, Gc2, Gc_int, l_, ft1{1}, ft2{1}, ft_int{1};
                 in.get("E_1", E1);
@@ -207,14 +211,16 @@ namespace utopia {
                         }
                     } else {  // Dolostone (weaker and stiffer)
 
+                        generator.seed(2.0*(1e6 * p[1] * p[1] + 1e6 * p[0] * p[0]));
+
                         double noise_E = distribution_E(generator);
                         distribution_E.reset();
 
-                        E=E1;nu=nu1;
-                        lambda_out = initialise_lambda(E1,nu1) + use_random*noise_E;
-                        mu_out = E1 / (2. * (1. + nu1));
+                        E  = E1 + use_random*noise_E;
+                        nu = nu1;
+                        lambda_out = initialise_lambda(E,nu1);
+                        mu_out = E / (2. * (1. + nu1));
 
-                        generator.seed((1e6 * p[1] * p[1] + 1e6 * p[0] * p[0]));
                         double noise_G = distribution_G(generator);
                         distribution_G.reset();
 
@@ -222,7 +228,135 @@ namespace utopia {
                         tensile_strength = ft1;
                     }
                 };
+            } else if (type == "DoubleSedimentaryLayer") {
+
+                number_of_layers_ = 2;
+
+                Scalar bottom_layer_height_;
+                Scalar top_layer_height_;
+                Scalar bottom_layer_height2_;
+                Scalar top_layer_height2_;
+                bool include_interface_layer{false};
+
+                in.get("bottom_layer_height", bottom_layer_height_);
+                in.get("top_layer_height", top_layer_height_);
+                bottom_layer_heights_.push_back(bottom_layer_height_);
+                top_layer_heights_.push_back(top_layer_height_);
+                in.get("bottom_layer_height2", bottom_layer_height2_);
+                in.get("top_layer_height2", top_layer_height2_);
+                bottom_layer_heights_.push_back(bottom_layer_height2_);
+                top_layer_heights_.push_back(top_layer_height2_);
+
+                Scalar E1, E2, nu1, nu2, Gc1, Gc2, Gc_int, l_, ft1{1}, ft2{1}, ft_int{1};
+                in.get("E_1", E1);
+                in.get("E_2", E2);
+                in.get("nu_1", nu1);
+                in.get("nu_2", nu2);
+                in.get("Gc_1", Gc1);
+                in.get("Gc_2", Gc2);
+                l_ = length_scale;
+
+                in.get("ft_1", ft1);
+                in.get("ft_2", ft2);
+                tensile_strength = ft1;
+
+                in.get("include_interface_layer", include_interface_layer);
+                if (include_interface_layer) {
+                    in.get("Gc_int", Gc_int);
+                    in.get("ft_int", ft_int);
+                } else {  // interface layer same toughness as outer layer
+                    Gc_int = Gc2;
+                    ft_int = ft2;
+                }
+
+                E = E1;
+                nu = nu1;
+                fracture_toughness = Gc1;
+
+                // Random variation
+                bool random_variation{false};
+                Scalar toughness_deviation{1.0};
+                Scalar youngs_deviation{1.0};
+                in.get("random_variation", random_variation);
+                in.get("random_toughness_deviation", toughness_deviation);
+                in.get("random_youngs_deviation", youngs_deviation);
+
+                double use_random = random_variation ? 1.0 : 0.0;
+                std::normal_distribution<double> distribution_G(0., toughness_deviation);
+                std::normal_distribution<double> distribution_E(0., youngs_deviation);
+                std::default_random_engine generator;
+
+                Scalar xmin, xmax, ymin, ymax;
+                in.get("x_min", xmin);
+                in.get("x_max", xmax);
+                in.get("y_min", ymin);
+                in.get("y_max", ymax);
+
+                hetero_params = [E1,
+                                 E2,
+                                 nu1,
+                                 nu2,
+                                 Gc1,
+                                 Gc2,
+                                 Gc_int,
+                                 ft1,
+                                 ft2,
+                                 ft_int,
+                                 l_,
+                                 bottom_layer_height_,
+                                 top_layer_height_,
+                                 bottom_layer_height2_,
+                                 top_layer_height2_,
+                                 xmin,
+                                 xmax,
+                                 ymin,
+                                 ymax,
+                                 use_random,
+                                 distribution_E,
+                                 distribution_G,
+                                 generator,this](const Point &p,
+                                            Scalar &mu_out,
+                                            Scalar &lambda_out,
+                                            Scalar &fracture_toughness_out,
+                                            Scalar &tensile_strength,
+                                            Scalar &E,
+                                            Scalar &nu) mutable {
+                    if ((p[1] <= top_layer_height_ && p[1] >= bottom_layer_height_) ||
+                        (p[1] <= top_layer_height2_ && p[1] >= bottom_layer_height2_)){
+
+                        generator.seed(2.0*(1e6 * p[1] * p[1] + 1e6 * p[0] * p[0]));
+
+                        double noise_E = distribution_E(generator);
+                        distribution_E.reset();
+
+                        E  = E1 + use_random*noise_E;
+                        nu = nu1;
+                        lambda_out = initialise_lambda(E,nu1);
+                        mu_out = E / (2. * (1. + nu1));
+
+                        double noise_G = distribution_G(generator);
+                        distribution_G.reset();
+
+                        fracture_toughness_out = Gc1 + use_random * noise_G;
+                        tensile_strength = ft1;
+
+                   } else { // Shale (stronger and more compliant)
+                        E=E2; nu=nu2;
+                        lambda_out = initialise_lambda(E2,nu2);
+                        mu_out = E2 / (2. * (1. + nu2));
+                        if (p[1] < bottom_layer_height_ - 1.5 * l_ || p[1] > top_layer_height_ + 1.5 * l_) {
+                            fracture_toughness_out = Gc2;
+                            tensile_strength = ft2;
+                        } else {
+                            fracture_toughness_out = Gc_int;
+                            tensile_strength = ft_int;
+                        }
+                    } //end of double sedimentary layer function
+                };
             } else if (type == "RegularisedSingleLayer") {
+
+                number_of_layers_ = 1;
+
                 Scalar bottom_layer_height_;
                 Scalar top_layer_height_;
                 Scalar interface_regularisation_length;
@@ -231,8 +365,8 @@ namespace utopia {
                 in.get("bottom_layer_height", bottom_layer_height_);
                 in.get("top_layer_height", top_layer_height_);
                 in.get("interface_regularisation_length", interface_regularisation_length);
-                bottom_layer_height = bottom_layer_height_;
-                top_layer_height = top_layer_height_;
+                bottom_layer_heights_.push_back(bottom_layer_height_);
+                top_layer_heights_.push_back(top_layer_height_);
 
                 Scalar E1, E2, nu1, nu2, Gc1, Gc2, Gc_int, l_, ft1, ft2, ft_int;
                 in.get("E_1", E1);
@@ -345,6 +479,9 @@ namespace utopia {
                     }
                 };
             } else if (type == "DoubleLayer") {
+
+                number_of_layers_ = 2;
+
                 Scalar bottom_layer_height_, bottom_layer_height2_;
                 Scalar top_layer_height_, top_layer_height2_;
                 bool include_interface_layer{false};
@@ -353,10 +490,10 @@ namespace utopia {
                 in.get("bottom_layer_height2", bottom_layer_height2_);
                 in.get("top_layer_height", top_layer_height_);
                 in.get("top_layer_height2", top_layer_height2_);
-                bottom_layer_height = bottom_layer_height_;
-                top_layer_height = top_layer_height_;
-                bottom_layer_height2 = bottom_layer_height2_;
-                top_layer_height2 = top_layer_height2_;
+                bottom_layer_heights_.push_back(bottom_layer_height_);
+                top_layer_heights_.push_back(top_layer_height_);
+                bottom_layer_heights_.push_back(bottom_layer_height2_);
+                top_layer_heights_.push_back(top_layer_height2_);
 
                 Scalar E1, E2, nu1, nu2, Gc1, Gc2, Gc_int, l_, ft1, ft2, ft_int;
                 in.get("E_1", E1);
@@ -521,10 +658,6 @@ namespace utopia {
               Length_x(0),
               Length_y(0),
               Length_z(0),
-              top_layer_height(0),
-              bottom_layer_height(0),
-              top_layer_height2(0),
-              bottom_layer_height2(0),
               use_pressure(false),
               turn_off_uc_coupling(false),
               turn_off_cu_coupling(false)
@@ -638,8 +771,9 @@ namespace utopia {
         Scalar regularization, pressure, penalty_param_irreversible, penalty_param_non_neg, crack_set_tol, penalty_tol,
             penalty_tol_non_neg, mobility;
         Scalar Length_x, Length_y, Length_z;
-        Scalar top_layer_height, bottom_layer_height;
-        Scalar top_layer_height2, bottom_layer_height2;
+
+        int number_of_layers_{0};
+        std::vector<double> bottom_layer_heights_, top_layer_heights_;
 
         // Scalar E1, E2, nu1, nu2, Gc1, Gc2; //for hobbs three layer model
         bool use_penalty_irreversibility{false}, use_crack_set_irreversibiblity{false}, use_pressure{false};
@@ -735,6 +869,10 @@ namespace utopia {
 
         PFFracParameters &non_const_params() const { return const_cast<PhaseFieldFracBase *>(this)->params_; }
 
+        int number_of_layers(){ return params_.number_of_layers_; }
+        double bottom_layer_height(int i){ return params_.bottom_layer_heights_[i];}
+        double top_layer_height(int i){ return params_.top_layer_heights_[i];}
+
         void init_force_field(Input &in) {
             UTOPIA_TRACE_SCOPE("PhaseFieldFracBase::init_force_field");
 
@@ -813,7 +951,7 @@ namespace utopia {
         virtual bool elastic_energy(const Vector & /*x_const*/, Scalar & /*val*/) const = 0;
 
         // elastic energy specified by inherited class
-        virtual bool elastic_energy_in_middle_layer(const Vector & /*x_const*/, Scalar & /*val*/) const {
+        virtual bool elastic_energy_in_middle_layer(const Vector & /*x_const*/, Scalar & /*val*/, int ) const {
             std::cout << "PhaseFieldFracBase::elastic_energy_in_middle_layer(), Please define method in "
                          "derived class!"
                       << std::endl;
@@ -821,7 +959,7 @@ namespace utopia {
         }
 
         // elastic energy specified by inherited class
-        virtual bool fracture_energy_in_middle_layer(const Vector & /*x_const*/, Scalar & /*val*/) const {
+        virtual bool fracture_energy_in_middle_layer(const Vector & /*x_const*/, Scalar & /*val*/, int) const {
             std::cout << "PhaseFieldFracBase::fracture_energy_in_middle_layer(), Please define method in "
                          "derived class!"
                       << std::endl;

@@ -443,7 +443,7 @@ namespace utopia {
 
                     // Writing strain stress solution to file
                     fe_problem_->write_to_file(this->output_path_, this->solution_, this->time_);
-                    export_energies_csv(trial_fracture_energy);
+                    export_energies_csv();
 
                     // Advancing time step (no Second Phase - E.P Taken away )
                     this->time_ += this->dt_;  // increment time step
@@ -453,69 +453,79 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("IncrementalLoading::update_time_step(...)");
         }
 
-        void export_energies_csv(Scalar fracture_energy) {
-            if (!this->csv_file_name_.empty()) {
-                CSVWriter writer{};
-                Scalar elastic_energy = 0.0, ela_en_mid = 0.0, fra_en_mid = 0.0, tcv = 0.0, error_cod = 0.0,
-                       residual = 0.0, iterations = 0.0;
+//        void export_energies_csv(Scalar fracture_energy) {
+//            if (!this->csv_file_name_.empty()) {
+//                CSVWriter writer{};
+//                Scalar elastic_energy = 0.0, ela_en_mid = 0.0, fra_en_mid = 0.0, tcv = 0.0, error_cod = 0.0,
+//                       residual = 0.0, iterations = 0.0;
 
-                fe_problem_->elastic_energy(this->solution_, elastic_energy);
-                fe_problem_->elastic_energy_in_middle_layer(this->solution_, ela_en_mid);
-                fe_problem_->fracture_energy_in_middle_layer(this->solution_, fra_en_mid);
+//                fe_problem_->elastic_energy(this->solution_, elastic_energy);
+//                fe_problem_->elastic_energy_in_middle_layer(this->solution_, ela_en_mid);
+//                fe_problem_->fracture_energy_in_middle_layer(this->solution_, fra_en_mid);
 
-                fe_problem_->compute_tcv(this->solution_, tcv);
+//                fe_problem_->compute_tcv(this->solution_, tcv);
 
-                if (!use_box_constraints_) {
-                    residual = tr_solver_->get_gnorm();
-                    iterations = tr_solver_->get_iterations();
-                }
 
-                if (FunctionSpace::Dim == 3) {
-                    fe_problem_->compute_cod(this->solution_, error_cod);
-                }
+//                if (!use_box_constraints_) {
+//                    residual = tr_solver_->get_gnorm();
+//                    iterations = tr_solver_->get_iterations();
+//                }
 
-                if (mpi_world_rank() == 0) {
-                    if (!writer.file_exists(this->csv_file_name_)) {
-                        writer.open_file(this->csv_file_name_);
-                        writer.write_table_row<std::string>({"time step",
-                                                             "time",
-                                                             "elastic_energy",
-                                                             "fracture_energy",
-                                                             "elast_en_mid_layer",
-                                                             "frac_en_mid_layer",
-                                                             "total_crack_vol",
-                                                             "gnorm",
-                                                             "iterations"});
-                    } else {
-                        writer.open_file(this->csv_file_name_);
-                    }
+//                if (FunctionSpace::Dim == 3) {
+//                    fe_problem_->compute_cod(this->solution_, error_cod);
+//                }
 
-                    writer.write_table_row<Scalar>({Scalar(this->time_step_counter_),
-                                                    this->time_,
-                                                    elastic_energy,
-                                                    fracture_energy,
-                                                    ela_en_mid,
-                                                    fra_en_mid,
-                                                    tcv,
-                                                    residual,
-                                                    iterations});
-                    writer.close_file();
-                }
-            }
-        }
+//                if (mpi_world_rank() == 0) {
+//                    if (!writer.file_exists(this->csv_file_name_)) {
+//                        writer.open_file(this->csv_file_name_);
+//                        writer.write_table_row<std::string>({"time step",
+//                                                             "time",
+//                                                             "elastic_energy",
+//                                                             "fracture_energy",
+//                                                             "elast_en_mid_layer",
+//                                                             "frac_en_mid_layer",
+//                                                             "total_crack_vol",
+//                                                             "gnorm",
+//                                                             "iterations"});
+//                    } else {
+//                        writer.open_file(this->csv_file_name_);
+//                    }
+
+//                    writer.write_table_row<Scalar>({Scalar(this->time_step_counter_),
+//                                                    this->time_,
+//                                                    elastic_energy,
+//                                                    fracture_energy,
+//                                                    ela_en_mid,
+//                                                    fra_en_mid,
+//                                                    tcv,
+//                                                    residual,
+//                                                    iterations});
+//                    writer.close_file();
+//                }
+//            }
+//        }
 
         void export_energies_csv() {
             if (!this->csv_file_name_.empty()) {
                 CSVWriter writer{};
                 Scalar elastic_energy = 0.0,fracture_energy=0.0, ela_en_mid = 0.0, fra_en_mid = 0.0, tcv = 0.0, error_cod = 0.0,
-                       residual = 0.0, iterations = 0.0;
+                        residual = 0.0, iterations = 0.0, el_energy_in_layer{0}, fr_energy_in_layer{0};
 
                 fe_problem_->elastic_energy(this->solution_, elastic_energy);
                 fe_problem_->fracture_energy(this->solution_, fracture_energy);
-                fe_problem_->elastic_energy_in_middle_layer(this->solution_, ela_en_mid);
-                fe_problem_->fracture_energy_in_middle_layer(this->solution_, fra_en_mid);
 
                 fe_problem_->compute_tcv(this->solution_, tcv);
+
+                std::vector<std::string> layer_names;
+                std::vector<Scalar> layer_energies;
+                for (size_t i=0; i < fe_problem_->number_of_layers(); ++i){
+                    layer_names.push_back("el_energy_layer_" + std::to_string(i));
+                    layer_names.push_back("fr_energy_layer_" + std::to_string(i));
+                    fe_problem_->elastic_energy_in_middle_layer(this->solution_, el_energy_in_layer, i);
+                    fe_problem_->fracture_energy_in_middle_layer(this->solution_, fr_energy_in_layer, i);
+                    layer_energies.push_back(el_energy_in_layer);
+                    layer_energies.push_back(fr_energy_in_layer);
+                }
 
                 if (!use_box_constraints_) {
                     residual = tr_solver_->get_gnorm();
@@ -529,28 +539,25 @@ namespace utopia {
                 if (mpi_world_rank() == 0) {
                     if (!writer.file_exists(this->csv_file_name_)) {
                         writer.open_file(this->csv_file_name_);
-                        writer.write_table_row<std::string>({"time step",
+                        writer.write_table_row_and_append_vector<std::string>({"time step",
                                                              "time",
                                                              "elastic_energy",
                                                              "fracture_energy",
-                                                             "elast_en_mid_layer",
-                                                             "frac_en_mid_layer",
                                                              "total_crack_vol",
                                                              "gnorm",
-                                                             "iterations"});
+                                                             "iterations"}, layer_names );
+
                     } else {
                         writer.open_file(this->csv_file_name_);
                     }
 
-                    writer.write_table_row<Scalar>({Scalar(this->time_step_counter_),
+                    writer.write_table_row_and_append_vector<Scalar>({Scalar(this->time_step_counter_),
                                                     this->time_,
                                                     elastic_energy,
                                                     fracture_energy,
-                                                    ela_en_mid,
-                                                    fra_en_mid,
                                                     tcv,
                                                     residual,
-                                                    iterations});
+                                                    iterations}, layer_energies);
                     writer.close_file();
                 }
             }

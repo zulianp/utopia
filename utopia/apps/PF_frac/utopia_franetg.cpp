@@ -574,48 +574,48 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(SingleSedimentaryLayer3D);
 
-    static void DoubleSedimentaryLayer(Input &in) {
-        static const int Dim = 2;
-        static const int NVars = Dim + 1;
+//    static void DoubleSedimentaryLayer(Input &in) {
+//        static const int Dim = 2;
+//        static const int NVars = Dim + 1;
 
-        using Comm = utopia::PetscCommunicator;
-        using Mesh = utopia::PetscStructuredGrid<Dim>;
-        using Elem = utopia::PetscUniformQuad4;
-        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        // using SizeType = FunctionSpace::SizeType;
-        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1>;
-        //        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1>;
+//        using Comm = utopia::PetscCommunicator;
+//        using Mesh = utopia::PetscStructuredGrid<Dim>;
+//        using Elem = utopia::PetscUniformQuad4;
+//        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+//        // using SizeType = FunctionSpace::SizeType;
+//        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1>;
+//        //        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1>;
 
-        Comm world;
+//        Comm world;
 
-        MPITimeStatistics stats(world);
-        stats.start();
+//        MPITimeStatistics stats(world);
+//        stats.start();
 
-        FunctionSpace space;
-        space.read(in);
-        stats.stop_and_collect("space-creation");
+//        FunctionSpace space;
+//        space.read(in);
+//        stats.stop_and_collect("space-creation");
 
-        if (mpi_world_rank() == 0) std::cout << "Starting Hobbs Model" << std::endl;
+//        if (mpi_world_rank() == 0) std::cout << "Starting Hobbs Model" << std::endl;
 
-        stats.start();
+//        stats.start();
 
-        DamagedSedimentaryLayers<FunctionSpace> IC_setup(space, 0.0);
-        DirichletAndVolConstraints<FunctionSpace, SedimentaryLayers_BC<FunctionSpace>, LayeredSubdomain<FunctionSpace>>
-            BC_setup(space);
+//        DamagedSedimentaryLayers<FunctionSpace> IC_setup(space, 0.0);
+//        DirichletAndVolConstraints<FunctionSpace, SedimentaryLayers_BC<FunctionSpace>, LayeredSubdomain<FunctionSpace>>
+//            BC_setup(space);
 
-        IncrementalLoading<FunctionSpace, ProblemType> time_stepper(space, IC_setup, BC_setup);
+//        IncrementalLoading<FunctionSpace, ProblemType> time_stepper(space, IC_setup, BC_setup);
 
-        time_stepper.read(in);
-        time_stepper.run();
+//        time_stepper.read(in);
+//        time_stepper.run();
 
-        stats.stop_collect_and_restart("end");
+//        stats.stop_collect_and_restart("end");
 
-        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
-        stats.stop_and_collect("output");
-        stats.describe(std::cout);
-    }
+//        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+//        stats.stop_and_collect("output");
+//        stats.describe(std::cout);
+//    }
 
-    UTOPIA_REGISTER_APP(DoubleSedimentaryLayer);
+//    UTOPIA_REGISTER_APP(DoubleSedimentaryLayer);
 
 }  // namespace utopia
 

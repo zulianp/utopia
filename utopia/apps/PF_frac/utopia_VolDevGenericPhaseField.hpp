@@ -1082,7 +1082,7 @@ namespace utopia {
             return energy;
         }
 
-        bool elastic_energy_in_middle_layer(const Vector &x_const, Scalar &val) const override {
+        bool elastic_energy_in_middle_layer(const Vector &x_const, Scalar &val, int layer) const override {
             UTOPIA_TRACE_REGION_BEGIN("VolDevGenericPhaseField::elastic_energy_in_middle_layer");
 
             USpace U;
@@ -1164,8 +1164,8 @@ namespace utopia {
 
                         Scalar el_energy = 0.0;
 
-                        if (centroid[1] >= this->non_const_params().bottom_layer_height &&
-                            centroid[1] <= this->non_const_params().top_layer_height) {
+                        if (centroid[1] >= this->non_const_params().bottom_layer_heights_[layer] &&
+                            centroid[1] <= this->non_const_params().top_layer_heights_[layer]) {
                             // integrate element contribution in middle layer
                             for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                                 Scalar tr = trace(el_strain.strain[qp]);

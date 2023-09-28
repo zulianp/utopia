@@ -605,7 +605,7 @@ namespace utopia {
             return inner(gc * stress, strain_test);
         }
 
-        bool fracture_energy_in_middle_layer(const Vector &x_const, Scalar &val) const {
+        bool fracture_energy_in_middle_layer(const Vector &x_const, Scalar &val, int layer) const {
             UTOPIA_TRACE_REGION_BEGIN("GenericPhaseFieldFormulation::fracture_energy_in_middle_layer");
 
             USpace U;
@@ -683,8 +683,8 @@ namespace utopia {
 
                         Scalar el_energy = 0.0;
 
-                        if (centroid[1] >= this->non_const_params().bottom_layer_height &&
-                            centroid[1] <= this->non_const_params().top_layer_height) {
+                        if (centroid[1] >= this->non_const_params().bottom_layer_heights_[layer] &&
+                            centroid[1] <= this->non_const_params().top_layer_heights_[layer]) {
                             // only for middle layer
                             for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                                 el_energy +=
