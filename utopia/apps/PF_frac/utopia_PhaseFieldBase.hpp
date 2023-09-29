@@ -353,6 +353,132 @@ namespace utopia {
                         }
                     } //end of double sedimentary layer function
                 };
+            } else if (type == "MultiSedimentaryLayer") {
+
+                in.get("number_of_layers", number_of_layers_);
+
+                Scalar bottom_layer_height;
+                Scalar average_layer_spacing;
+                Scalar average_layer_height;
+                Scalar spacing_variation, height_variation;
+                bool include_interface_layer{false};
+
+                in.get("bottom_layer_height", bottom_layer_height);
+                in.get("average_layer_spacing", average_layer_spacing );
+                in.get("average_layer_height", average_layer_height );
+                in.get("layer_spacing_variation", spacing_variation);
+                in.get("layer_height_variation", height_variation);
+
+                bottom_layer_heights_.push_back(bottom_layer_height);
+                top_layer_heights_.push_back(bottom_layer_height + average_layer_height);
+                for (size_t i = 0; i < number_of_layers_ - 1 ; ++i){
+                    bottom_layer_heights_.push_back( top_layer_heights_[i] + average_layer_spacing + std::pow(-1.0,double(i))*spacing_variation );
+                    top_layer_heights_.push_back( bottom_layer_heights_[i+1] + average_layer_height + std::pow(-1.0,double(i))*height_variation );
+                }
+
+                Scalar E1, E2, nu1, nu2, Gc1, Gc2, Gc_int, l_, ft1{1}, ft2{1}, ft_int{1};
+                in.get("E_1", E1);
+                in.get("E_2", E2);
+                in.get("nu_1", nu1);
+                in.get("nu_2", nu2);
+                in.get("Gc_1", Gc1);
+                in.get("Gc_2", Gc2);
+                l_ = length_scale;
+
+                in.get("ft_1", ft1);
+                in.get("ft_2", ft2);
+                tensile_strength = ft1;
+
+                in.get("include_interface_layer", include_interface_layer);
+                if (include_interface_layer) {
+                    in.get("Gc_int", Gc_int);
+                    in.get("ft_int", ft_int);
+                } else {  // interface layer same toughness as outer layer
+                    Gc_int = Gc2;
+                    ft_int = ft2;
+                }
+
+                E = E1;
+                nu = nu1;
+                fracture_toughness = Gc1;
+
+                // Random variation
+                bool random_variation{false};
+                Scalar toughness_deviation{1.0};
+                Scalar youngs_deviation{1.0};
+                in.get("random_variation", random_variation);
+                in.get("random_toughness_deviation", toughness_deviation);
+                in.get("random_youngs_deviation", youngs_deviation);
+
+                double use_random = random_variation ? 1.0 : 0.0;
+                std::normal_distribution<double> distribution_G(0., toughness_deviation);
+                std::normal_distribution<double> distribution_E(0., youngs_deviation);
+                std::default_random_engine generator;
+
+                Scalar xmin, xmax, ymin, ymax;
+                in.get("x_min", xmin);
+                in.get("x_max", xmax);
+                in.get("y_min", ymin);
+                in.get("y_max", ymax);
+
+                hetero_params = [E1,
+                                 E2,
+                                 nu1,
+                                 nu2,
+                                 Gc1,
+                                 Gc2,
+                                 Gc_int,
+                                 ft1,
+                                 ft2,
+                                 ft_int,
+                                 l_,
+                                 xmin,
+                                 xmax,
+                                 ymin,
+                                 ymax,
+                                 use_random,
+                                 distribution_E,
+                                 distribution_G,
+                                 generator,this](const Point &p,
+                                            Scalar &mu_out,
+                                            Scalar &lambda_out,
+                                            Scalar &fracture_toughness_out,
+                                            Scalar &tensile_strength,
+                                            Scalar &E,
+                                            Scalar &nu) mutable {
+
+                    bool found_in_layer = false;
+                    for (size_t i =0; i < this->number_of_layers_ ; ++i){
+                        if (p[1] <= this->top_layer_heights_[i] && p[1] >= this->bottom_layer_heights_[i]) {
+                            found_in_layer = true;
+                        }
+                    }
+
+                    if (found_in_layer){
+                            generator.seed(2.0*(1e6 * p[1] * p[1] + 1e6 * p[0] * p[0]));
+
+                            double noise_E = distribution_E(generator);
+                            distribution_E.reset();
+
+                            E  = E1 + use_random*noise_E;
+                            nu = nu1;
+                            lambda_out = initialise_lambda(E,nu1);
+                            mu_out = E / (2. * (1. + nu1));
+
+                            double noise_G = distribution_G(generator);
+                            distribution_G.reset();
+
+                            fracture_toughness_out = Gc1 + use_random * noise_G;
+                            tensile_strength = ft1;
+
+                       } else { // Shale (stronger and more compliant)
+                            E=E2; nu=nu2;
+                            lambda_out = initialise_lambda(E2,nu2);
+                            mu_out = E2 / (2. * (1. + nu2));
+                            fracture_toughness_out = Gc2;
+                            tensile_strength = ft2;
+                        } //end of double sedimentary layer function
+                };
             } else if (type == "RegularisedSingleLayer") {
 
                 number_of_layers_ = 1;
