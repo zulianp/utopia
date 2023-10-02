@@ -52,7 +52,7 @@ public:
         UTOPIA_RUN_TEST(metis_decompose);
 #endif
 
-#ifdef UTOPIA_WITH_PARMETIS
+#ifdef UTOPIA_ENABLE_PARMETIS
         UTOPIA_RUN_TEST(parmetis_decompose);
         UTOPIA_RUN_TEST(parmetis_rebalance);
         UTOPIA_RUN_TEST(petsc_rebalanced_solver);

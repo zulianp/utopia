@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_WITH_PARMETIS
+#ifdef UTOPIA_ENABLE_PARMETIS
 
 #include "utopia_LinearSolver.hpp"
 

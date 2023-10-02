@@ -8,7 +8,7 @@
 // Cuda should have its own assert(...) function
 #define UTOPIA_DEVICE_ASSERT(expr) assert((expr))
 
-#ifdef WITH_CPP17
+#ifdef UTOPIA_ENABLE_CPP17
 /////////////////////////////
 //////// C++17 //////////////
 #define UTOPIA_IF_CONSTEXPR if constexpr
@@ -34,7 +34,7 @@
 
 /////////////////////////////
 #endif  // UTOPIA_ENABLE_CPP14
-#endif  // WITH_CPP17
+#endif  // UTOPIA_ENABLE_CPP17
 
 ////////////////////////////////////////
 #endif  // UTOPIA_CPP_MACROS_HPP

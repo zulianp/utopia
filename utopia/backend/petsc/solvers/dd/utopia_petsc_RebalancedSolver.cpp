@@ -1,6 +1,6 @@
 #include "utopia_petsc_RebalancedSolver.hpp"
 
-#ifdef UTOPIA_WITH_PARMETIS
+#ifdef UTOPIA_ENABLE_PARMETIS
 
 #include "utopia_ConjugateGradient.hpp"
 
@@ -156,4 +156,4 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_PARMETIS
+#endif  // UTOPIA_ENABLE_PARMETIS

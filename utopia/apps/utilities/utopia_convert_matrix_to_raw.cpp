@@ -1,8 +1,8 @@
 // include edsl components
 #include "utopia_AppRunner.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
-#ifdef UTOPIA_WITH_MATRIX_IO
+#ifdef UTOPIA_ENABLE_PETSC
+#ifdef UTOPIA_ENABLE_MATRIX_IO
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Vector.hpp"
 

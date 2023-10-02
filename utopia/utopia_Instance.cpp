@@ -204,7 +204,7 @@ namespace utopia {
 
             if (str == "--trace_root_log_regions") {
                 bool must_log = true;
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
                 int rank;
                 MPI_Comm_rank(MPI_COMM_WORLD, &rank);
                 must_log = !rank;

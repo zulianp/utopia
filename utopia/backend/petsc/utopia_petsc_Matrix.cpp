@@ -373,7 +373,7 @@ namespace utopia {
 #endif  // UTOPIA_ENABLE_MATRIX_IO
 
     bool PetscMatrix::write(const std::string &path) const {
-#ifdef UTOPIA_WITH_MATRIX_IO
+#ifdef UTOPIA_ENABLE_MATRIX_IO
         Path ppath = path;
         if (ppath.extension() == "raw") {
             Path folder = ppath.parent();

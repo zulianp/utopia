@@ -12,7 +12,7 @@ project(
 
 
 # ##############################################################################
-# ######################## UTOPIA DEFAULT INCLUDES
+# ######################## UTOPIA_FE DEFAULT INCLUDES
 # ##############################################################################
 # ##############################################################################
 
@@ -182,92 +182,6 @@ add_executable(utopia_fe_exec EXCLUDE_FROM_ALL main.cpp ${LOCAL_HEADERS})
 # --------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------
 
-function(append_list_to_string_for_makefile OUTPUT_STRING PRE_LIST POST_LIST
-         ITEM_PREFIX LIST_OF_STRINGS)
-    # http://stackoverflow.com/questions/5248749/passing-a-list-to-a-cmake-macro
-
-    list(REMOVE_DUPLICATES LIST_OF_STRINGS)
-
-    set(TEMPSTR ${${OUTPUT_STRING}} ${PRE_LIST})
-
-    foreach(LIST_EL ${LIST_OF_STRINGS})
-
-        string(REGEX MATCH "(.*)framework" IS_FRAME_WORK "${LIST_EL}")
-        if(IS_FRAME_WORK)
-            get_filename_component(FRAMEWORK_NAME "${LIST_EL}" NAME)
-            string(REGEX REPLACE "/${FRAMEWORK_NAME}" "" FRAMEWORK_PATH
-                                 "${LIST_EL}")
-            string(REGEX REPLACE ".framework" "" FRAMEWORK_NAME
-                                 "${FRAMEWORK_NAME}")
-
-            set(TEMPSTR
-                "${TEMPSTR}-F${FRAMEWORK_PATH} -framework ${FRAMEWORK_NAME} ")
-        else()
-            set(TEMPSTR "${TEMPSTR}${ITEM_PREFIX}${LIST_EL} ")
-        endif()
-    endforeach(LIST_EL)
-
-    set(TEMPSTR "${TEMPSTR} ${POST_LIST}")
-    set(${OUTPUT_STRING}
-        ${TEMPSTR}
-        PARENT_SCOPE)
-endfunction()
-
-function(
-    append_list_to_string_for_makefile_with_postfix
-    OUTPUT_STRING
-    PRE_LIST
-    POST_LIST
-    ITEM_PREFIX
-    ITEM_POSTFIX
-    LIST_OF_STRINGS)
-    # http://stackoverflow.com/questions/5248749/passing-a-list-to-a-cmake-macro
-
-    list(REMOVE_DUPLICATES LIST_OF_STRINGS)
-
-    set(TEMPSTR ${${OUTPUT_STRING}} ${PRE_LIST})
-
-    foreach(LIST_EL ${LIST_OF_STRINGS})
-
-        string(REGEX MATCH "(.*)framework" IS_FRAME_WORK "${LIST_EL}")
-        if(IS_FRAME_WORK)
-            get_filename_component(FRAMEWORK_NAME "${LIST_EL}" NAME)
-            string(REGEX REPLACE "/${FRAMEWORK_NAME}" "" FRAMEWORK_PATH
-                                 "${LIST_EL}")
-            string(REGEX REPLACE ".framework" "" FRAMEWORK_NAME
-                                 "${FRAMEWORK_NAME}")
-
-            set(TEMPSTR
-                "${TEMPSTR}-F${FRAMEWORK_PATH} -framework ${FRAMEWORK_NAME} ")
-        else()
-            set(TEMPSTR "${TEMPSTR}${ITEM_PREFIX}${LIST_EL}${ITEM_POSTFIX} ")
-        endif()
-    endforeach(LIST_EL)
-
-    set(TEMPSTR "${TEMPSTR} ${POST_LIST}")
-    set(${OUTPUT_STRING}
-        ${TEMPSTR}
-        PARENT_SCOPE)
-endfunction()
-
-# ##############################################################################
-
-function(append_list_to_string_for_cmake OUTPUT_STRING PRE_LIST POST_LIST
-         LIST_OF_STRINGS)
-    # http://stackoverflow.com/questions/5248749/passing-a-list-to-a-cmake-macro
-    list(REMOVE_DUPLICATES LIST_OF_STRINGS)
-
-    set(TEMPSTR ${${OUTPUT_STRING}} ${PRE_LIST})
-
-    foreach(LIST_EL ${LIST_OF_STRINGS})
-        set(TEMPSTR "${TEMPSTR}\t\"${LIST_EL}\"\n")
-    endforeach(LIST_EL)
-
-    set(TEMPSTR "${TEMPSTR} ${POST_LIST}")
-    set(${OUTPUT_STRING}
-        ${TEMPSTR}
-        PARENT_SCOPE)
-endfunction()
 
 if(UTOPIA_FE_LIBRARIES_TRAILING)
     list(APPEND UTOPIA_FE_LIBRARIES ${UTOPIA_FE_LIBRARIES_TRAILING})

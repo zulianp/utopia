@@ -71,9 +71,9 @@ namespace utopia {
         solvers_[Solver::gmres()] = utopia::make_unique<LSFactoryMethod<GMRES<PetscMatrix, PetscVector>>>();
         solvers_["amg"] = utopia::make_unique<LSFactoryMethod<AlgebraicMultigrid<PetscMatrix, PetscVector>>>();
         solvers_["bdd"] = utopia::make_unique<LSFactoryMethod<BDDLinearSolver<PetscMatrix, PetscVector>>>();
-#ifdef UTOPIA_WITH_PARMETIS
+#ifdef UTOPIA_ENABLE_PARMETIS
         solvers_["rebalanced"] = utopia::make_unique<LSFactoryMethod<RebalancedSolver>>();
-#endif  // UTOPIA_WITH_PARMETIS
+#endif  // UTOPIA_ENABLE_PARMETIS
     }
 
 }  // namespace utopia

@@ -14,7 +14,7 @@
 #include "utopia_ParMetis.hpp"
 #endif
 
-#ifdef UTOPIA_WITH_MATRIX_IO
+#ifdef UTOPIA_ENABLE_MATRIX_IO
 
 #include "matrixio_crs.h"
 #include "utils.h"
@@ -31,7 +31,7 @@
 
 namespace utopia {
 
-#ifndef UTOPIA_WITH_METIS
+#ifndef UTOPIA_ENABLE_METIS
 
     bool decompose(const PetscMatrix &, const int, int *) { return false; }
 

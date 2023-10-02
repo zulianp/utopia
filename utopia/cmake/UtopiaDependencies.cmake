@@ -68,6 +68,12 @@ if(UTOPIA_ENABLE_MPI)
   endif()
 endif()
 
+
+if(MPI_CXX_COMPILER)
+  set(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
+  set(CMAKE_CXX_COMPILER_DEBUG ${MPI_CXX_COMPILER})
+endif()
+
 # ##############################################################################
 # ##############################################################################
 # ##############################################################################
@@ -132,9 +138,9 @@ endif()
 # #################PARMETIS######################
 
 if(UTOPIA_ENABLE_PARMETIS)
-  find_package(PARMETIS REQUIRED)
+  find_package(ParMetis REQUIRED)
 
-  if(NOT PARMETIS_FOUND)
+  if(NOT ParMetis_FOUND)
     message(FATAL_ERROR "Unable to find ParMetis")
     # include(FetchContent) message(STATUS "Fetching parmetis, since it could
     # not be found.")
@@ -158,20 +164,11 @@ if(UTOPIA_ENABLE_PARMETIS)
     # target_include_directories(utopia PUBLIC ${PARMETIS_INCLUDES})
     # target_link_libraries(utopia PUBLIC ${PARMETIS_LIBRARIES})
 
-    list(APPEND UTOPIA_BUILD_INCLUDES ${PARMETIS_INCLUDES})
-    list(APPEND UTOPIA_DEP_LIBRARIES ${PARMETIS_LIBRARIES})
+    list(APPEND UTOPIA_BUILD_INCLUDES ${ParMetis_INCLUDES})
+    list(APPEND UTOPIA_DEP_LIBRARIES ${ParMetis_LIBRARIES})
 
   endif()
   add_subdirectory(backend/parmetis)
-endif()
-
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
-
-if(MPI_CXX_COMPILER)
-  set(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
-  set(CMAKE_CXX_COMPILER_DEBUG ${MPI_CXX_COMPILER})
 endif()
 
 # ##############################################################################
@@ -433,7 +430,7 @@ if(UTOPIA_ENABLE_POLYMORPHIC)
   add_subdirectory(backend/polymorphic)
 endif()
 
-# if(UTOPIA_ENABLE_PASSO_EXTENSIONS) set(WITH_PASSO_EXTENSIONS TRUE) endif()
+# if(UTOPIA_ENABLE_PASSO_EXTENSIONS) set(UTOPIA_ENABLE_PASSO_EXTENSIONS TRUE) endif()
 
 if(UTOPIA_ENABLE_CXX14_FEATURES)
   set(UTOPIA_ENABLE_CPP14 TRUE)
