@@ -114,10 +114,10 @@ namespace utopia {
             case KSP_CONVERGED_ITS: {
                 return "KSP_CONVERGED_ITS";
             }
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3, 19, 0)
             case KSP_CONVERGED_CG_NEG_CURVE: {
                 return "KSP_CONVERGED_CG_NEG_CURVE";
             }
-#if UTOPIA_PETSC_VERSION_LESS_THAN(3, 19, 0)
             // duplicate of KSP_CONVERGED_STEP_LENGTH (since version 3.19)
             case KSP_CONVERGED_CG_CONSTRAINED: {
                 return "KSP_CONVERGED_CG_CONSTRAINED";

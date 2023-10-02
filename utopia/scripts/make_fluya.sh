@@ -9,7 +9,7 @@ printf "Testing Cmake Script Fluya mode:\n"
 _fluya_mode(){
 	touch make_fluya.log
 
-	cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DUTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL=OFF -DCMAKE_INSTALL_PREFIX=/Users/dylan/Documents/Summer-Internship/Installations/utopia | tee make_fluya.log
+	cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DUTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL=OFF -DCMAKE_INSTALL_PREFIX=/Users/dylan/Documents/Summer-Internship/Installations/utopia_fluya | tee make_fluya.log
 
 	make -j6 | tee -a make_fluya.log
 	make install | tee -a make_fluya.log
