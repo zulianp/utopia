@@ -13,7 +13,7 @@ _local_install(){
 
 
 	#Make petsc	
-	make -j4 petsc | tee -a make_local_install.log
+	make -j$1 petsc | tee -a make_local_install.log
 
 	# Define ENV variables for Petsc. Should be defined in .bashrc.
 	export PETSC_DIR="$PWD/../../external/petsc"
@@ -21,22 +21,24 @@ _local_install(){
   	export SLEPC_DIR="$PWD/../../external/petsc"
 
   	#Make Trilinos
-	make -j4 trilinos | tee -a make_local_install.log
+	make -j$1 trilinos | tee -a make_local_install.log
 
 	# Another cmake to find dependencies.
 	cmake .. | tee -a make_local_install.log
 
-	make -j4 | tee make_local_install.log
+	make -j$1 | tee make_local_install.log
 	make install | tee make_local_install.log
-	make -j4 test_install | tee make_local_install.log
+	make -j$1 test_install | tee make_local_install.log
 
 }
+
+jobs=$@
 
 if [[ -d build_local_install ]]
 then
 	cd build_local_install
 	rm -rf *
-	_local_install
+	_local_install $jobs
 fi
 
 if [[ ! -d build_local_install ]]
@@ -44,5 +46,5 @@ then
 	mkdir build_local_install
 	cd build_local_install
 	rm -rf *
-	_local_install
+	_local_install $jobs
 fi

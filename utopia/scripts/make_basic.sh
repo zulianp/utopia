@@ -11,18 +11,21 @@ _basic_build(){
 	cmake .. -DUTOPIA_ENABLE_BLAS=ON -DUTOPIA_ENABLE_TRILINOS=OFF -DUTOPIA_ENABLE_PETSC=OFF -DUTOPIA_ENABLE_EXAMPLES=ON -DUTOPIA_ENABLE_TESTS=ON -DCMAKE_INSTALL_PREFIX=/Users/dylan/Documents/Summer-Internship/Installations/utopia_basic | tee make_basic.log
 
 
-	make -j4 complete | tee -a make_basic.log
+	make -j$1 complete | tee -a make_basic.log
 	./utopia_bench | tee -a make_basic.log
 	./utopia_test | tee -a make_basic.log
 	make install | tee -a make_basic.log
-	make -j4 test_install | tee -a make_basic.log
+	make -j$1 test_install | tee -a make_basic.log
 }
+
+
+jobs=$@
 
 if [[ -d build_basic ]]
 then
 	cd build_basic
 	rm -rf *
-	_basic_build
+	_basic_build $jobs
 fi
 
 if [[ ! -d build_basic ]]
@@ -30,5 +33,5 @@ then
 	mkdir build_basic
 	cd build_basic
 	rm -rf *
-	_basic_build
+	_basic_build $jobs
 fi

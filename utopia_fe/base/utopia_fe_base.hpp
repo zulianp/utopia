@@ -10,7 +10,7 @@ namespace utopia {
     using USparseMatrix = TpetraMatrixd;
     using UVector = TpetraVectord;
 #else
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     using USparseMatrix = PetscMatrix;
     using UVector = PetscVector;
 #else
