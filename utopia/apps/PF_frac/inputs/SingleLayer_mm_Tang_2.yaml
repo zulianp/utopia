@@ -3,7 +3,8 @@ app: SingleSedimentaryLayer
 # Output 
 #output-path: Output/Hobb/HOBBS_PT_AT1_d2_Dirch_1E32_1nu05_2nu45_dt0003_W2_l2_m15_p01_Unif
 #output-path: Output/TestingFracEnergy
-output-path: /home/edoardo/Data/sdd1/Results/SedimentaryLayer/Single_Solv_d60_L800_H240_Ef50_nuf25_Gcf20_En10_nun35_Gcn200_l015_m1_Twodt00001_p001_Com0_Checked
+#output-path: /home/edoardo/Data/sdd1/Results/SedimentaryLayer/Single_Solv_d60_L800_H240_Ef50_nuf25_Gcf20_En10_nun35_Gcn200_l015_m1_Twodt00001_p001_Com0_Checked
+output-path: SedimentaryLayer/Single_Solv_d60_L800_H240_Ef50_nuf25_Gcf20_En10_nun35_Gcn200_l015_m1_Twodt00001_p001_Com0_Checked
 save_output: true
 # Mesh specification -----------------------------------------
 nx: 801
