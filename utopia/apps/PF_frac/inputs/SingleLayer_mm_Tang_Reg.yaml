@@ -115,7 +115,7 @@ solver:
   max_QP_smoothing_it: 60
   max_QP_coarse_it: 1000
   linear_solver:
-    verbose: false
+    verbose: true
     atol: 1.0e-8
     max_it: 1200
     pc_type: hypre
