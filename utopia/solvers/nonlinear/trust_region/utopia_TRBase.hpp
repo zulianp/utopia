@@ -58,6 +58,13 @@ namespace utopia {
             in.get("eta2", eta2_);
             in.get("rho_tol", rho_tol_);
             in.get("eps", eps_);
+
+            bool verbose = false;
+            in.get("verbose", verbose);
+
+            if (verbose) {
+                printf("rho_tol=%g\n", rho_tol_);
+            }
         }
 
         void print_usage(std::ostream &os) const override {
