@@ -3,7 +3,8 @@ app: SingleSedimentaryLayer3D
 # Output 
 #output-path: Output/Hobb/HOBBS_PT_AT1_d2_Dirch_1E32_1nu05_2nu45_dt0003_W2_l2_m15_p01_Unif
 #output-path: Output/TestingTang3D
-output-path: /home/edoardo/Data/sdd1/Results/SedimentaryLayer/Single_d60_L800_H240_W50_Ef50_nuf25_Gcf20_En10_nun35_Gcn160_l015_m05_Twodt00001_p001_Com0
+# output-path: /home/edoardo/Data/sdd1/Results/SedimentaryLayer/Single_d60_L800_H240_W50_Ef50_nuf25_Gcf20_En10_nun35_Gcn160_l015_m05_Twodt00001_p001_Com0
+output-path: SedimentaryLayer
 save_output: true
 # Mesh specification -----------------------------------------
 nx: 401
@@ -95,7 +96,7 @@ diff_controller:
 use_mprgp: true  
 use_box_constraints: false  # TR method with penalty, run up to 5 cores
 solver:
-  verbose: false
+  # verbose: true
   mini_verbose: true
   max_it: 8000
   atol: 1e-8
@@ -115,7 +116,19 @@ solver:
   max_sucessful_smoothing_it: 1
   max_QP_smoothing_it: 60
   max_QP_coarse_it: 1000
+  # delta_max: 1.5
   linear_solver:
-    verbose: false
+    # verbose: true
     atol: 1.0e-8
     max_it: 1200
+    # pc_type: mg     # seems faster than hypre
+    # pc_type: gasm   # seems faster than hypre
+    # pc_type: hypre
+    # pc_type: ml     # could not test
+    # pc_type: pfmg   # requires MATHYPRESTRUCT
+    # pc_type: smg    # requires MATHYPRESTRUCT
+    # pc_type: gamg     # slower than hypre
+    # pc_type: deflation # Does not look well for this problem
+    pc_type: h2opus      # Not convinced
+
+
