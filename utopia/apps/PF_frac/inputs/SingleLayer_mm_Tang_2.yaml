@@ -36,9 +36,9 @@ neumann_bc:
 # Phase field formulation
 length_scale: 0.015e3
 
-shifted_penalty:
-  verbose: true
-  penalty_parameter: 0.01
+# shifted_penalty:
+#   verbose: true
+#   penalty_parameter: 0.01
 
 # use_penalty_irreversibility: true
 use_penalty_irreversibility: false
