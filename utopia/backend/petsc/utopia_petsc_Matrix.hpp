@@ -961,6 +961,8 @@ namespace utopia {
 
         void update_mirror();
 
+        void set_block_size(const int block_size);
+
     private:
         PetscCommunicator comm_;
         std::shared_ptr<PetscMatrixMemory> wrapper_;
