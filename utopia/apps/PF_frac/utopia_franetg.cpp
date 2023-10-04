@@ -530,6 +530,50 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(SingleSedimentaryLayer);
 
+    static void SingleSedimentaryLayer_Reg(Input &in) {
+        static const int Dim = 2;
+        static const int NVars = Dim + 1;
+
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        // using SizeType = FunctionSpace::SizeType;
+        // using ProblemType = utopia::TensionSplitGenericPhaseField<FunctionSpace, Dim, AT1>;
+        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1_Regularised>;
+        // using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT1>;
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
+
+        if (mpi_world_rank() == 0) std::cout << "Starting Single Layer Model" << std::endl;
+
+        stats.start();
+
+        DamagedSedimentaryLayers<FunctionSpace> IC_setup(space, 0.0);
+        DirichletAndVolConstraints<FunctionSpace, SedimentaryLayers_BC<FunctionSpace>, LayeredSubdomain<FunctionSpace>>
+            BC_setup(space);
+
+        IncrementalLoading<FunctionSpace, ProblemType> time_stepper(space, IC_setup, BC_setup);
+
+        time_stepper.read(in);
+        time_stepper.run();
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
+
+    UTOPIA_REGISTER_APP(SingleSedimentaryLayer_Reg);
+
     static void SingleSedimentaryLayer3D(Input &in) {
         static const int Dim = 3;
         static const int NVars = Dim + 1;
