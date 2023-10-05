@@ -16,6 +16,8 @@
 #include "utopia_Tracer.hpp"
 #include "utopia_petsc_NeumannBoundaryConditions.hpp"
 
+#include "utopia_ShiftedPenalty.hpp"
+
 #define UNROLL_FACTOR 4
 #define U_MIN(a, b) ((a) < (b) ? (a) : (b))
 
@@ -109,18 +111,15 @@ namespace utopia {
             return 0.5 * p.tensile_strength * p.tensile_strength / p.E;
         }
 
-
         template <class FunctionSpace>
-        static double TensileStrength( const PFFracParameters<FunctionSpace> &p ) {
+        static double TensileStrength(const PFFracParameters<FunctionSpace> &p) {
             return p.tensile_strength;
         }
 
         template <class FunctionSpace>
-        static double CriticalDisplacement( const PFFracParameters<FunctionSpace> &p ) {
-            return 0.0 ;
+        static double CriticalDisplacement(const PFFracParameters<FunctionSpace> &p) {
+            return 0.0;
         }
-
-
     };
 
     struct AT1 {
@@ -197,17 +196,103 @@ namespace utopia {
         }
 
         template <class FunctionSpace>
-        static double TensileStrength( const PFFracParameters<FunctionSpace> &p ) {
-            return std::pow( damage_normalisation(p)*p.E, 0.5);
+        static double TensileStrength(const PFFracParameters<FunctionSpace> &p) {
+            return std::pow(damage_normalisation(p) * p.E, 0.5);
         }
 
         template <class FunctionSpace>
-        static double CriticalDisplacement( const PFFracParameters<FunctionSpace> &p ) {
-            return std::pow( damage_normalisation(p)/p.E, 0.5)*p.Length_x;
+        static double CriticalDisplacement(const PFFracParameters<FunctionSpace> &p) {
+            return std::pow(damage_normalisation(p) / p.E, 0.5) * p.Length_x;
         }
-
     };
 
+    struct AT1_Regularised {
+    public:
+        template <class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static double damage_normalisation(const PFFracParameters<FunctionSpace> &p) {
+            return 3.0 / 8.0 * p.fracture_toughness / p.length_scale;
+        }
+
+        template <typename C>
+        UTOPIA_INLINE_FUNCTION static C local_dissipation(const C &c) {
+            return c;
+        }
+
+        template <typename C>
+        UTOPIA_INLINE_FUNCTION static C local_dissipation_deriv(const C &c) {
+            return 1.0;
+        }
+
+        template <typename C>
+        UTOPIA_INLINE_FUNCTION static C local_dissipation_deriv2(
+            const C &) {  // Governs hessian condition number..perhaps
+            double epsilon = 1.0;
+            return 2.0 * epsilon;  // regularisation of hessian term by added mass matrix
+        }
+
+        // E.P: Penalty for AT1 Model
+        // this computation follows eq. 60 from "On penalization in variational
+        // phase-field models of britlle fracture, Gerasimov, Lorenzis"
+        template <class FunctionSpace>
+        static void configure_penalty_irreversibility(PFFracParameters<FunctionSpace> &p) {
+            assert(p.use_penalty_irreversibility);
+            typename FunctionSpace::Scalar tol2 = p.penalty_tol * p.penalty_tol;
+            p.penalty_param_irreversible = p.fracture_toughness / p.length_scale * (27.0 / (64.0 * tol2));
+            if (mpi_world_rank() == 0)
+                utopia::out() << "Lengthscale: " << p.length_scale
+                              << "  Penalty AT1 Irrev: " << p.penalty_param_irreversible << std::endl;
+        }
+
+        template <class FunctionSpace>
+        static void configure_penalty_non_negative(PFFracParameters<FunctionSpace> &p) {
+            assert(p.use_penalty_irreversibility);
+            typename FunctionSpace::Scalar L = (p.Length_x + p.Length_y + p.Length_z) / FunctionSpace::Dim;
+            p.penalty_param_non_neg = p.fracture_toughness / p.length_scale * 9.0 / 64.0 * (L / p.length_scale - 2.0) /
+                                      (p.penalty_tol_non_neg);
+            if (mpi_world_rank() == 0)
+                utopia::out() << "Lengthscale: " << p.length_scale << "  Penalty AT1 n_neg: " << p.penalty_param_non_neg
+                              << std::endl;
+        }
+
+        template <typename C, class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static C degradation(const C &c, const PFFracParameters<FunctionSpace> &) {
+            C imc = 1.0 - c;
+            return imc * imc;
+        }
+
+        template <typename C, class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static C degradation_deriv(
+            const C &c,
+            const PFFracParameters<FunctionSpace> &) {  // Governs linear elastic response
+            C imc = 1.0 - c;
+            return -2.0 * imc;
+        }
+
+        template <typename C, class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static C degradation_deriv2(const C &, const PFFracParameters<FunctionSpace> &) {
+            return 2.0;
+        }
+
+        static const bool penalise_negative_phase_field_values =
+            false;  // NOT WORKING, but AT1 models need to penalise negative phase field values
+
+        static const bool enforce_min_crack_driving_force = false;
+
+        template <class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static double min_crack_driving_force(const PFFracParameters<FunctionSpace> &p) {
+            return 3.0 / 16.0 * p.fracture_toughness / p.length_scale;
+        }
+
+        template <class FunctionSpace>
+        static double TensileStrength(const PFFracParameters<FunctionSpace> &p) {
+            return std::pow(damage_normalisation(p) * p.E, 0.5);
+        }
+
+        template <class FunctionSpace>
+        static double CriticalDisplacement(const PFFracParameters<FunctionSpace> &p) {
+            return std::pow(damage_normalisation(p) / p.E, 0.5) * p.Length_x;
+        }
+    };
 
     struct AT1_CUBIC {
     public:
@@ -258,18 +343,18 @@ namespace utopia {
         template <typename C, class FunctionSpace>
         UTOPIA_INLINE_FUNCTION static C degradation(const C &c, const PFFracParameters<FunctionSpace> &) {
             C imc = 1.0 - c;
-            return 3.0*imc*imc - 2.0*imc*imc*imc;
+            return 3.0 * imc * imc - 2.0 * imc * imc * imc;
         }
 
         template <typename C, class FunctionSpace>
         UTOPIA_INLINE_FUNCTION static C degradation_deriv(const C &c, const PFFracParameters<FunctionSpace> &) {
             C imc = 1.0 - c;
-            return -6.0*c*imc;
+            return -6.0 * c * imc;
         }
 
         template <typename C, class FunctionSpace>
         UTOPIA_INLINE_FUNCTION static C degradation_deriv2(const C &c, const PFFracParameters<FunctionSpace> &) {
-            return 12.0*c-6.0;
+            return 12.0 * c - 6.0;
         }
 
         static const bool penalise_negative_phase_field_values =
@@ -283,15 +368,14 @@ namespace utopia {
         }
 
         template <class FunctionSpace>
-        static double TensileStrength( const PFFracParameters<FunctionSpace> &p ) {
-            return std::pow( damage_normalisation(p)*p.E, 0.5);
+        static double TensileStrength(const PFFracParameters<FunctionSpace> &p) {
+            return std::pow(damage_normalisation(p) * p.E, 0.5);
         }
 
         template <class FunctionSpace>
-        static double CriticalDisplacement( const PFFracParameters<FunctionSpace> &p ) {
-            return std::pow( damage_normalisation(p)/p.E, 0.5)*p.Length_x;
+        static double CriticalDisplacement(const PFFracParameters<FunctionSpace> &p) {
+            return std::pow(damage_normalisation(p) / p.E, 0.5) * p.Length_x;
         }
-
     };
 
     struct AT2 {
@@ -365,113 +449,96 @@ namespace utopia {
         }
 
         template <class FunctionSpace>
-        static double TensileStrength( const PFFracParameters<FunctionSpace> &p ) {
-            return 3.0/8.0 *std::pow(3.0/2.0 * damage_normalisation(p)*p.E, 0.5);
+        static double TensileStrength(const PFFracParameters<FunctionSpace> &p) {
+            return 3.0 / 8.0 * std::pow(3.0 / 2.0 * damage_normalisation(p) * p.E, 0.5);
         }
 
         template <class FunctionSpace>
-        static double CriticalDisplacement( const PFFracParameters<FunctionSpace> &p ) {
-            return 16.0*TensileStrength(p)*p.Length_x/(9.0*p.E) ;
+        static double CriticalDisplacement(const PFFracParameters<FunctionSpace> &p) {
+            return 16.0 * TensileStrength(p) * p.Length_x / (9.0 * p.E);
         }
-};
+    };
 
-        struct AT2_CUBIC {
-        public:
-            template <class FunctionSpace>
-            UTOPIA_INLINE_FUNCTION static double damage_normalisation(const PFFracParameters<FunctionSpace> &p) {
-                return 1.0 / 2.0 * p.fracture_toughness / p.length_scale;
-            }
+    struct AT2_CUBIC {
+    public:
+        template <class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static double damage_normalisation(const PFFracParameters<FunctionSpace> &p) {
+            return 1.0 / 2.0 * p.fracture_toughness / p.length_scale;
+        }
 
-            template <typename C>
-            UTOPIA_INLINE_FUNCTION static C local_dissipation(const C &c) {
-                return c * c;
-            }
+        template <typename C>
+        UTOPIA_INLINE_FUNCTION static C local_dissipation(const C &c) {
+            return c * c;
+        }
 
-            template <typename C>
-            UTOPIA_INLINE_FUNCTION static C local_dissipation_deriv(const C &c) {
-                return 2.0 * c;
-            }
+        template <typename C>
+        UTOPIA_INLINE_FUNCTION static C local_dissipation_deriv(const C &c) {
+            return 2.0 * c;
+        }
 
-            template <typename C>
-            UTOPIA_INLINE_FUNCTION static C local_dissipation_deriv2(const C &c) {
-                return 2.0;
-            }
+        template <typename C>
+        UTOPIA_INLINE_FUNCTION static C local_dissipation_deriv2(const C &c) {
+            return 2.0;
+        }
 
-            // E.P: AT2 Model
-            // this computation follows eq. 50 from "On penalization in variational
-            // phase-field models of britlle fracture, Gerasimov, Lorenzis"
-            template <class FunctionSpace>
-            static void configure_penalty_irreversibility(PFFracParameters<FunctionSpace> &p) {
-                assert(p.use_penalty_irreversibility);
-                typename FunctionSpace::Scalar tol2 = p.penalty_tol * p.penalty_tol;
-                p.penalty_param_irreversible = p.fracture_toughness / p.length_scale * (1.0 / tol2 - 1.0);
-                if (mpi_world_rank() == 0)
-                    utopia::out() << "Lengthscale: " << p.length_scale
-                                  << "  Penalty AT2 Irrev: " << p.penalty_param_irreversible << std::endl;
-            }
+        // E.P: AT2 Model
+        // this computation follows eq. 50 from "On penalization in variational
+        // phase-field models of britlle fracture, Gerasimov, Lorenzis"
+        template <class FunctionSpace>
+        static void configure_penalty_irreversibility(PFFracParameters<FunctionSpace> &p) {
+            assert(p.use_penalty_irreversibility);
+            typename FunctionSpace::Scalar tol2 = p.penalty_tol * p.penalty_tol;
+            p.penalty_param_irreversible = p.fracture_toughness / p.length_scale * (1.0 / tol2 - 1.0);
+            if (mpi_world_rank() == 0)
+                utopia::out() << "Lengthscale: " << p.length_scale
+                              << "  Penalty AT2 Irrev: " << p.penalty_param_irreversible << std::endl;
+        }
 
-            template <class FunctionSpace>
-            static void configure_penalty_non_negative(PFFracParameters<FunctionSpace> &p) {
-                p.penalty_param_non_neg = 0.0;  // not needed in AT2
-                if (mpi_world_rank() == 0)
-                    utopia::out() << "Lengthscale: " << p.length_scale << "  Penalty AT2 n_neg: " << p.penalty_param_non_neg
-                                  << std::endl;
-            }
+        template <class FunctionSpace>
+        static void configure_penalty_non_negative(PFFracParameters<FunctionSpace> &p) {
+            p.penalty_param_non_neg = 0.0;  // not needed in AT2
+            if (mpi_world_rank() == 0)
+                utopia::out() << "Lengthscale: " << p.length_scale << "  Penalty AT2 n_neg: " << p.penalty_param_non_neg
+                              << std::endl;
+        }
 
-            template <typename C, class FunctionSpace>
-            UTOPIA_INLINE_FUNCTION static C degradation(const C &c, const PFFracParameters<FunctionSpace> &) {
-                C imc = 1.0 - c;
-                return 3.0*imc*imc - 2.0*imc*imc*imc;
-            }
+        template <typename C, class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static C degradation(const C &c, const PFFracParameters<FunctionSpace> &) {
+            C imc = 1.0 - c;
+            return 3.0 * imc * imc - 2.0 * imc * imc * imc;
+        }
 
-            template <typename C, class FunctionSpace>
-            UTOPIA_INLINE_FUNCTION static C degradation_deriv(const C &c, const PFFracParameters<FunctionSpace> &) {
-                C imc = 1.0 - c;
-                return -6.0*c*imc;
-            }
+        template <typename C, class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static C degradation_deriv(const C &c, const PFFracParameters<FunctionSpace> &) {
+            C imc = 1.0 - c;
+            return -6.0 * c * imc;
+        }
 
-            template <typename C, class FunctionSpace>
-            UTOPIA_INLINE_FUNCTION static C degradation_deriv2(const C &c, const PFFracParameters<FunctionSpace> &) {
-                return 12.0*c-6.0;
-            }
+        template <typename C, class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static C degradation_deriv2(const C &c, const PFFracParameters<FunctionSpace> &) {
+            return 12.0 * c - 6.0;
+        }
 
-            static const bool penalise_negative_phase_field_values =
-                false;  // NOT WORKING, but AT1 models need to penalise negative phase field values
+        static const bool penalise_negative_phase_field_values =
+            false;  // NOT WORKING, but AT1 models need to penalise negative phase field values
 
-            static const bool enforce_min_crack_driving_force = false;
+        static const bool enforce_min_crack_driving_force = false;
 
-            template <class FunctionSpace>
-            UTOPIA_INLINE_FUNCTION static double min_crack_driving_force(const PFFracParameters<FunctionSpace> &p) {
-                return 3.0 / 16.0 * p.fracture_toughness / p.length_scale;
-            }
+        template <class FunctionSpace>
+        UTOPIA_INLINE_FUNCTION static double min_crack_driving_force(const PFFracParameters<FunctionSpace> &p) {
+            return 3.0 / 16.0 * p.fracture_toughness / p.length_scale;
+        }
 
-            template <class FunctionSpace>
-            static double TensileStrength( const PFFracParameters<FunctionSpace> &p ) {
-                return 3.0/8.0 *std::pow(3.0/2.0 * damage_normalisation(p)*p.E, 0.5);
-            }
+        template <class FunctionSpace>
+        static double TensileStrength(const PFFracParameters<FunctionSpace> &p) {
+            return 3.0 / 8.0 * std::pow(3.0 / 2.0 * damage_normalisation(p) * p.E, 0.5);
+        }
 
-            template <class FunctionSpace>
-            static double CriticalDisplacement( const PFFracParameters<FunctionSpace> &p ) {
-                return 16.0*TensileStrength(p)*p.Length_x/(9.0*p.E) ;
-            }
-
-        };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        template <class FunctionSpace>
+        static double CriticalDisplacement(const PFFracParameters<FunctionSpace> &p) {
+            return 16.0 * TensileStrength(p) * p.Length_x / (9.0 * p.E);
+        }
+    };
 
     template <class FunctionSpace, int Dim = FunctionSpace::Dim, class PFFormulation = AT1>
     class GenericPhaseFieldFormulation : public PhaseFieldFracBase<FunctionSpace, Dim> {
@@ -512,24 +579,47 @@ namespace utopia {
         double TensileStrength() {
             return PFFormulation::TensileStrength(this->params_);
             // sigma_c = Eo * Uc / L
-//            return this->params_.E * CriticalDisplacement() / this->params_.Length_x;
+            //            return this->params_.E * CriticalDisplacement() / this->params_.Length_x;
         }
 
         // For a 1D homogeneous Bar
         double CriticalDisplacement() {
-
             return PFFormulation::CriticalDisplacement(this->params_);
 
-//            const double c = PFFormulation::CriticalDamage();
-//            // Uc = L * sqrt( - 2 w'/E' )
-//            return this->params_.Length_x *
-//                   std::sqrt(-2.0 * PFFormulation::damage_normalisation(this->params_) *
-//                             PFFormulation::local_dissipation_deriv(c) /
-//                             (PFFormulation::degradation_deriv(c, this->params_) * this->params_.E));
+            //            const double c = PFFormulation::CriticalDamage();
+            //            // Uc = L * sqrt( - 2 w'/E' )
+            //            return this->params_.Length_x *
+            //                   std::sqrt(-2.0 * PFFormulation::damage_normalisation(this->params_) *
+            //                             PFFormulation::local_dissipation_deriv(c) /
+            //                             (PFFormulation::degradation_deriv(c, this->params_) * this->params_.E));
         }
 
         void read(Input &in) {
             PhaseFieldFracBase<FunctionSpace, Dim>::read(in);
+
+            in.get("shifted_penalty", [&](Input &node) {
+                std::cout << "Using: ShiftedPenalty\n";
+                penalty_ = std::make_shared<ShiftedPenalty<Matrix>>();
+                penalty_->read(node);
+
+                auto lobo = std::make_shared<Vector>();
+                this->space_.create_vector(*lobo);
+                lobo->set(-std::numeric_limits<Scalar>::max());
+
+                {
+                    auto lobo_view = local_view_device(*lobo);
+                    parallel_for(
+                        local_range_device(*lobo), UTOPIA_LAMBDA(const SizeType i) {
+                            if (i % (Dim + 1) == 0) {
+                                lobo_view.set(i, 0);
+                            }
+                        });
+                }
+
+                auto box = std::make_shared<BoxConstraints<Vector>>();
+                box->set(lobo, nullptr);
+                penalty_->set_box_constraints(box);
+            });
 
             if (this->params_.use_penalty_irreversibility) {
                 PFFormulation::configure_penalty_irreversibility(this->params_);
@@ -605,7 +695,7 @@ namespace utopia {
             return inner(gc * stress, strain_test);
         }
 
-        bool fracture_energy_in_middle_layer(const Vector &x_const, Scalar &val) const {
+        bool fracture_energy_in_middle_layer(const Vector &x_const, Scalar &val, int layer) const {
             UTOPIA_TRACE_REGION_BEGIN("GenericPhaseFieldFormulation::fracture_energy_in_middle_layer");
 
             USpace U;
@@ -683,8 +773,8 @@ namespace utopia {
 
                         Scalar el_energy = 0.0;
 
-                        if (centroid[1] > this->non_const_params().bottom_layer_height &&
-                            centroid[1] < this->non_const_params().top_layer_height) {
+                        if (centroid[1] >= this->non_const_params().bottom_layer_heights_[layer] &&
+                            centroid[1] <= this->non_const_params().top_layer_heights_[layer]) {
                             // only for middle layer
                             for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                                 el_energy +=
@@ -997,8 +1087,8 @@ namespace utopia {
                             Scalar Gc = this->params_.fracture_toughness;
                             Scalar mu = this->params_.mu;
                             Scalar l = this->params_.lambda;
-                            Scalar E = mu * (3. * l + 2. * mu) / (l + mu);
-                            Scalar nu = E / (2.0 * mu) - 1.;
+                            Scalar E = this->params_.E;
+                            Scalar nu = this->params_.nu;
                             Scalar tens_strength = TensileStrength();
                             Scalar crit_disp = CriticalDisplacement();
 
@@ -1042,6 +1132,10 @@ namespace utopia {
         }
 
     protected:
+        std::shared_ptr<Penalty<Matrix>> penalty() const { return penalty_; }
+
+    private:
+        std::shared_ptr<Penalty<Matrix>> penalty_;
     };
 
 }  // namespace utopia

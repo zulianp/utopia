@@ -180,6 +180,9 @@ namespace utopia {
         template <class T>
         void write_table_row(const std::vector<T> vars);
 
+        template <class T>
+        void write_table_row_and_append_vector(const std::vector<T> vars, std::vector<T> vars2);
+
         void close_file() {
             if (pFile != nullptr && mpi_world_rank() == 0) fclose(pFile);
         }
