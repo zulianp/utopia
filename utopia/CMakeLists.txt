@@ -22,7 +22,9 @@ include(cmake/UtopiaClangFormat.cmake)
 include(cmake/UtopiaFunctions.cmake)
 include(cmake/CodeCoverage.cmake)
 include(cmake/UtopiaDefaults.cmake)
+include(cmake/UtopiaCompilerFeatures.cmake)
 include(cmake/UtopiaDependencies.cmake)
+
 
 if(UTOPIA_ENABLE_FLUYA_MODE)
   include(EnableFluyaMode)
@@ -53,9 +55,6 @@ list(APPEND UTOPIA_HEADERS utopia.hpp utopia_Base.hpp utopia_Instance.hpp
 list(APPEND UTOPIA_SOURCES utopia.cpp utopia_Instance.cpp utopia_Base.cpp)
 
 add_library(utopia ${UTOPIA_SOURCES} ${UTOPIA_HEADERS})
-
-# PRINT OUT HEADERS message(STATUS "UTOPIA_HEADERS") foreach(header
-# ${UTOPIA_HEADERS}) message(STATUS "${header}") endforeach(header)
 
 # We use this to force c++14
 set_utopia_compiler_features(utopia)
@@ -245,28 +244,6 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/UtopiaConfig.cmake
         DESTINATION lib/cmake/)
 
 include(cmake/PostInstall.cmake)
-
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
-# TABLE PRINT
-
-# print_dependency_table()
-
-# FIGURE OUT Target "utopia" INTERFACE_INCLUDE_DIRECTORIES property contains
-# path:
-
-# "/Users/dylan/Documents/Summer-Internship/utopia/utopia/utils/."
-
-# which is prefixed in the source directory.
-
-# get_target_property(XX_LINK_DIRECTORIES utopia_exec LINK_DIRECTORIES)
-# get_target_property(XX_LINK_LIBRARIES utopia_exec LINK_INTERFACE_LIBRARIES)
-# get_target_property(XX_INCLUDE_DIRECTORIES utopia_exec
-# INTERFACE_INCLUDE_DIRECTORIES) message(STATUS
-# "LINK_DIRECTORIES=${XX_LINK_DIRECTORIES}") message(STATUS
-# "LINK_LIBRARIES=${XX_LINK_LIBRARIES}") message(STATUS
-# "INCLUDE_DIRECTORIES=${XX_INCLUDE_DIRECTORIES}")
 
 # ##############################################################################
 # ##############################################################################

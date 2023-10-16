@@ -18,30 +18,6 @@ function(create_absolute_paths root paths absolutePaths)
         PARENT_SCOPE)
 endfunction()
 
-# ##############################################################################
-macro(print_dependency_table)
-    set(DEP_TABLE
-        "\n__________________________________________________________\n\n   BACKENDS and STATUS TABLE\n"
-    )
-    set(DEP_TABLE
-        "${DEP_TABLE}----------------------------------------------------------\n")
-    set(DEP_TABLE
-        "${DEP_TABLE}backend\t\t| status| location\t\t| version\n----------------------------------------------------------\n"
-    )
-
-    set(DEP_TABLE "${DEP_TABLE}mpi\t\t| ${UTOPIA_ENABLE_MPI}| ${UTOPIA_MPI_DIR}| ${UTOPIA_MPI_VERSION}\n")
-    set(DEP_TABLE "${DEP_TABLE}petsc\t\t| ${UTOPIA_ENABLE_PETSC}| ${UTOPIA_PETSC_DIR}| ${UTOPIA_PETSC_VERSION}\n")
-    set(DEP_TABLE "${DEP_TABLE}slepc\t\t| ${UTOPIA_ENABLE_SLEPC}| ${UTOPIA_SLEPC_DIR}| ${UTOPIA_SLEPC_VERSION}\n")
-    set(DEP_TABLE "${DEP_TABLE}trilinos\t| ${UTOPIA_ENABLE_TRILINOS}| ${UTOPIA_TRILINOS_DIR}| ${UTOPIA_TRILINOS_VERSION}\n")
-    set(DEP_TABLE "${DEP_TABLE}blas\t\t| ${UTOPIA_ENABLE_BLAS}| ${UTOPIA_BLAS_DIR} ${UTOPIA_BLAS_DIR}|${UTOPIA_BLAS_VERSION}\n")
-    set(DEP_TABLE "${DEP_TABLE}lapack\t\t| ${UTOPIA_ENABLE_PETSC}| ${LAPACK_DIR}| ${LAPACK_VERSION}\n")
-    set(DEP_TABLE "${DEP_TABLE}umfpack\t\t| ${UTOPIA_ENABLE_PETSC}| ${UMFPACK_DIR}| ${UMFPACK_VERSION}\n")
-    set(DEP_TABLE "${DEP_TABLE}yaml\t\t| ${UTOPIA_ENABLE_YAML_CPP}| ${UTOPIA_YAML_CPP_DIR}| ${UTOPIA_YAML_CPP_VERSION}\n")
-    set(DEP_TABLE
-        "${DEP_TABLE}__________________________________________________________\n")
-    message(STATUS ${DEP_TABLE})
-endmacro()
-
 
 # ##############################################################################
 

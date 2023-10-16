@@ -60,8 +60,6 @@ endif()
 
 # include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/external/GSL/include)
 
-
-
 if(WIN32)
   set(CMAKE_CXX_FLAGS_DEBUG
       "${CMAKE_CXX_FLAGS_DEBUG}   -MP -DWIN32_LEAN_AND_MEAN -DNOMINMAX")

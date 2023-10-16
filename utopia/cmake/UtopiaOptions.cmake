@@ -4,6 +4,10 @@ option(UTOPIA_ENABLE_VC "SIMD wrapper" OFF)
 option(UTOPIA_STATIC_DEPENDENCIES_ONLY
        "Allows to restrict the linking to static libraries" OFF)
 
+option(UTOPIA_ENABLE_CODE_COVERAGE "Enable coverage reporting" OFF)
+
+option(UTOPIA_ENABLE_ENV_READ "Enable utopia to look at enviroment variables" ON)   
+
 option(UTOPIA_ENABLE_EXAMPLES "Enable utopia examples." OFF)
 option(UTOPIA_ENABLE_TESTS "Enable utopia tests." ON)
 option(UTOPIA_ENABLE_BENCHMARK "Enable utopia benchmarks." ON)

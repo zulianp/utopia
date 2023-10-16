@@ -1,5 +1,3 @@
-option(UTOPIA_ENABLE_CODE_COVERAGE "Enable coverage reporting" OFF)
-
 add_library(coverage_config INTERFACE)
 install(TARGETS coverage_config EXPORT UtopiaTargets)
 

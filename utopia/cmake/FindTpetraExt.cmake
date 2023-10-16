@@ -1,16 +1,22 @@
-# find_path(TRILINOS_TPETRAEXT_INCLUDE_DIR
-#   NAMES TpetraExt_TripleMatrixMultiply.hpp
-#   HINTS
-#     ${TRILINOS_DIR}
-#     ${TRILINOS_TPETRAEXT_DIR}
-#     $ENV{TRILINOS_TPETRAEXT_DIR}
-#     $ENV{TRILINOS_DIR}
-#   PATH_SUFFIXES
-#     include
-#   )
+set(TPETRA_SEARCH_PATHS
+    "${Trilinos_DIR}/../../../;${Trilinos_TPETRAEXT_DIR};${Trilinos_DIR};${TRILINOS_INSTALL_DIR}"
+)
 
-# if(TRILINOS_TPETRAEXT_INCLUDE_DIR)
-#   set(TRILINOS_TPETRAEXT_FOUND TRUE)
-# else()
-#   message(WARNING "TRILINOS_TPETRAEXT not found")
-# endif()
+if(UTOPIA_ENABLE_ENV_READ)
+  set(TPETRA_SEARCH_PATHS
+      "${TPETRA_SEARCH_PATHS};$ENV{Trilinos_TPETRAEXT_DIR};$ENV{Trilinos_DIR}")
+
+endif()
+
+find_path(
+  TRILINOS_TPETRAEXT_INCLUDE_DIR
+  NAMES TpetraExt_TripleMatrixMultiply.hpp
+  PATHS ${TPETRA_SEARCH_PATHS}
+  PATH_SUFFIXES include)
+
+if(TRILINOS_TPETRAEXT_INCLUDE_DIR)
+  set(TRILINOS_TPETRAEXT_FOUND TRUE)
+else()
+  # message(STATUS "Trilinos dir: ${TRILINOS_DIR}")
+  message(WARNING "TRILINOS_TPETRAEXT not found")
+endif()

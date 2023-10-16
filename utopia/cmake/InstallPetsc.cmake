@@ -19,6 +19,7 @@ if(NOT CYGWIN)
     set(MAKE_COMMAND "make")
 
     set(PETSC_CONFIG_ARGS $ENV{PETSC_CONFIG_ARGS})
+
     set(PETSC_CONFIG_ARGS
         ${PETSC_CONFIG_ARGS}
         --with-mpi=1
@@ -28,9 +29,8 @@ if(NOT CYGWIN)
         --download-mumps=yes
         --with-debugging=0)
 
-
     if(UTOPIA_ENABLE_SLEPC AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
-    set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --download-slepc=yes)
+      set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --download-slepc=yes)
     endif()
 
     if(UTOPIA_PETSC_ENABLE_SUPERLU)
@@ -90,28 +90,34 @@ if(NOT CYGWIN)
 
     # ##########################################################################
 
-    ExternalProject_Add(
-      petsc
-      UPDATE_COMMAND "" # FIXME
-      BUILD_IN_SOURCE 1
-      PREFIX ${STAGE_DIR}
-      GIT_REPOSITORY ${PETSC_URL}
-      GIT_TAG main
-      DOWNLOAD_DIR ${STAGE_DIR}
-      INSTALL_DIR ${PETSC_INSTALL_DIR}
-      LOG_CONFIGURE 1
-      LOG_BUILD 1
-      CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR>
-                        ${PETSC_CONFIG_ARGS}
-      BUILD_COMMAND ${MAKE_COMMAND}
-      INSTALL_COMMAND make install
-      # COMMAND       ${MAKE_COMMAND}
-    )
+    if(DEFINED ENV{PETSC_DIR})
+      message(FATAL_ERROR "Please unset PETSC_DIR, PETSC_ARCH to enable local petsc target install.")
+    else()
+      ExternalProject_Add(
+        petsc
+        UPDATE_COMMAND "" # FIXME
+        BUILD_IN_SOURCE 1
+        PREFIX ${STAGE_DIR}
+        GIT_REPOSITORY ${PETSC_URL}
+        GIT_TAG main
+        DOWNLOAD_DIR ${STAGE_DIR}
+        INSTALL_DIR ${PETSC_INSTALL_DIR}
+        LOG_CONFIGURE 1
+        LOG_BUILD 1
+        CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR>
+                          ${PETSC_CONFIG_ARGS}
+        BUILD_COMMAND ${MAKE_COMMAND}
+        INSTALL_COMMAND make install
+        # COMMAND       ${MAKE_COMMAND}
+      )
 
-    set_target_properties(petsc PROPERTIES EXCLUDE_FROM_ALL TRUE)
+      set_target_properties(petsc PROPERTIES EXCLUDE_FROM_ALL TRUE)
+      set(ENV{PETSC_DIR} "${PETSC_INSTALL_DIR}")
 
-    # set(PETSC_DIR ${PETSC_INSTALL_DIR})
-    # set(ENV{PETSC_DIR} ${PETSC_INSTALL_DIR})
+    endif()
+
+
+    # ${PETSC_INSTALL_DIR})
 
   endif()
 endif()

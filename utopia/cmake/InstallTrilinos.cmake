@@ -111,9 +111,7 @@ if(NOT Trilinos_FOUND)
     "-DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON"
     "-DTrilinos_ENABLE_Kokkos=ON"
     "-DTPL_ENABLE_HDF5=ON"
-    "-DTPL_HDF5_INCLUDE_DIRS=/usr/local/Cellar/hdf5/1.14.2/include"
-    "-DTPL_HDF5_LIBRARY_DIRS=/usr/local/Cellar/hdf5/1.14.2/lib"
-    "-DTrilinos_SET_GROUP_AND_PERMISSIONS_ON_INSTALL_BASE_DIR=/Users/dylan/Documents/Summer-Internship/utopia/external/"
+    "-DTrilinos_SET_GROUP_AND_PERMISSIONS_ON_INSTALL_BASE_DIR=${CMAKE_SOURCE_DIR}/../external/"
     "-DTrilinos_ENABLE_EXAMPLES=OFF")
 
 
@@ -150,12 +148,6 @@ if(NOT Trilinos_FOUND)
     COMMAND ${CMAKE_COMMAND} -E echo "$<CONFIG> build complete")
 
   set_target_properties(trilinos PROPERTIES EXCLUDE_FROM_ALL TRUE)
-
   set(Trilinos_DIR ${TRILINOS_INSTALL_DIR})
-  # list(APPEND UTOPIA_DEP_INCLUDES PRIVATE "${Trilinos_DIR}/include")
 
-  # list(APPEND UTOPIA_DEP_LIBRARIES ${UTOPIA_TRILINOS_DEPS})
-  # set(Trilinos_DIR
-  #     ${TRILINOS_INSTALL_DIR}
-  #     PARENT_SCOPE)
 endif()

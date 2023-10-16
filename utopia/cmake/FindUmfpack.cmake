@@ -7,12 +7,17 @@ find_package(BLAS)
 
 if(BLAS_FOUND)
 
+
+  set(UMFPACK_SEARCH_PATHS "${INCLUDE_INSTALL_DIR}")
+  if(UTOPIA_ENABLE_ENV_READ)
+    set(UMFPACK_SEARCH_PATHS "${UMFPACK_SEARCH_PATHS};$ENV{UMFPACKDIR}")
+  endif()
+
   find_path(UMFPACK_INCLUDES
     NAMES
     umfpack.h
     PATHS
-    $ENV{UMFPACKDIR}
-    ${INCLUDE_INSTALL_DIR}
+    ${UMFPACK_SEARCH_PATHS}
     PATH_SUFFIXES
     suitesparse
   )
