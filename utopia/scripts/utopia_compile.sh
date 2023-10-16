@@ -11,23 +11,23 @@ function display_help() {
 
 function basic_build() {
     echo "Running basic build"
-    ${SCRIPT_DIR}/make_basic.sh $1
+    ${SCRIPT_DIR}/make_basic.sh $1 $2
 }
 
 
 function all_build() {
     echo "Running all build"
-    ${SCRIPT_DIR}/make_all.sh $1
+    ${SCRIPT_DIR}/make_all.sh $1 $2
 }
 
 function fluya_build(){
     echo "Running fluya build"
-    ${SCRIPT_DIR}/make_fluya.sh $1
+    ${SCRIPT_DIR}/make_fluya.sh $1 $2
 }
 
 function local_build(){
     echo "Running local build"
-    ${SCRIPT_DIR}/make_local_install.sh $1
+    ${SCRIPT_DIR}/make_local_install.sh $1 $2
 }
 
 # Check if an argument was provided
@@ -37,8 +37,16 @@ if [ $# -eq 0 ]; then
 fi
 
 arg2="1"
+arg3="/usr/local/"
 
-while getopts ":b:j:h" opt; do
+if [[ "$OSTYPE" == "win32" ]]; then
+    arg3="c:/Program Files/utopia"
+fi
+
+
+
+
+while getopts ":b:j:h:p:" opt; do
   case $opt in
     b) arg1="$OPTARG"
     ;;
@@ -46,6 +54,8 @@ while getopts ":b:j:h" opt; do
     ;;
     h) display_help
         exit 0
+    ;;
+    p) arg3="$OPTARG"
     ;;
     \?) echo "Invalid option -$OPTARG" >&2
     ;;
@@ -55,16 +65,16 @@ done
 
 case $arg1 in
     basic)
-        basic_build $arg2
+        basic_build $arg2 $arg3
         ;;
     all)
-        all_build $arg2
+        all_build $arg2 $arg3
         ;;
     fluya)
-        fluya_build $arg2
+        fluya_build $arg2 $arg3
         ;;
     local)
-        local_build $arg2
+        local_build $arg2 $arg3
         ;;
     *)
         echo "Unknown build type: $build_type"

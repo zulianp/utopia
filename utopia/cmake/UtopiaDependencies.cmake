@@ -121,7 +121,7 @@ if(UTOPIA_ENABLE_BLAS)
     list(APPEND UTOPIA_DEP_LIBRARIES ${BLAS_LIBRARIES})
     list(APPEND UTOPIA_DEFS ${BLAS_DEFINITIONS})
 
-    set(UTOPIA_ENABLE_BLAS TRUE)
+    set(UTOPIA_ENABLE_BLAS ON)
 
   else()
     message(WARNING "[Warning] Blas not found")
@@ -381,7 +381,7 @@ if(UTOPIA_ENABLE_YAML_CPP)
 
   if(yaml-cpp_FOUND)
     # set(UTOPIA_ENABLE_YAML_CPP ON)
-    set(UTOPIA_ENABLE_YAML_CPP TRUE)
+    set(UTOPIA_ENABLE_YAML_CPP ON)
 
     set(UTOPIA_YAML_CPP_DIR ${yaml-cpp_DIR})
     set(UTOPIA_YAML_CPP_VERSION ${yaml-cpp_VERSION})

@@ -9,7 +9,7 @@ printf "Testing Cmake Script Fluya mode:\n"
 _fluya_mode(){
 	touch make_fluya.log
 
-	cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DUTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL=OFF -DCMAKE_INSTALL_PREFIX=/Users/dylan/Documents/Summer-Internship/Installations/utopia_fluya | tee make_fluya.log
+	cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DUTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL=OFF -DCMAKE_INSTALL_PREFIX=$2 | tee make_fluya.log
 
 	make -j$1 | tee -a make_fluya.log
 	make $1 install | tee -a make_fluya.log
@@ -18,13 +18,13 @@ _fluya_mode(){
 	make -j$1 test_install | tee -a make_fluya.log
 }
 
-jobs=$@
+jobs=$1
 
 if [[ -d build_fluya ]]
 then
 	cd build_fluya
 	rm -rf *
-	_fluya_mode $jobs
+	_fluya_mode $jobs $prefix
 fi
 
 if [[ ! -d build_fluya ]]
@@ -32,5 +32,5 @@ then
 	mkdir build_fluya
 	cd build_fluya
 	rm -rf *
-	_fluya_mode $jobs
+	_fluya_mode $jobs $prefix
 fi
