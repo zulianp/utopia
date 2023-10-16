@@ -11,7 +11,15 @@
 #include "utopia_moonolith_stk_Obstacle.hpp"
 #include "utopia_stk_intrepid2_OmniAssembler.hpp"
 
+#ifdef UTOPIA_ENABLE_SFEM
+#include "utopia_sfem_stk_SDFObstacle.hpp"
+#endif  // UTOPIA_ENABLE_SFEM
+
 void stk_obs(utopia::Input &in) {
+#ifdef UTOPIA_ENABLE_SFEM
+    register_sfem_stk_contact();
+#endif  // UTOPIA_ENABLE_SFEM
+
     utopia::ObstacleApp<utopia::stk::FunctionSpace> obs;
     obs.run(in);
 }

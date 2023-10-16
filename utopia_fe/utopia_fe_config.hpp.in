@@ -12,6 +12,7 @@
 #cmakedefine UTOPIA_WITH_MARS
 #cmakedefine UTOPIA_WITH_VTK
 #cmakedefine UTOPIA_WITH_PETSCDM
+#cmakedefine UTOPIA_ENABLE_SFEM
 
 #ifdef UTOPIA_WITH_TRILINOS
 #cmakedefine UTOPIA_WITH_TRILINOS_ALGEBRA

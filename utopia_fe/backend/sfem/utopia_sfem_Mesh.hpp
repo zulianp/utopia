@@ -27,6 +27,7 @@ namespace utopia {
             using Traits = utopia::Traits<Mesh>;
             using Communicator = Traits::Communicator;
             using Vector = Traits::Vector;
+            using SizeType = Traits::SizeType;
 
             class Impl;
 
@@ -42,6 +43,10 @@ namespace utopia {
             void describe(std::ostream &os) const override;
 
             void create_vector_nodal(Vector &out, int components = 1) const;
+
+            SizeType n_local_nodes() const;
+
+            ArrayView<const SizeType> node_mapping() const;
 
             void *raw_type() const;
 
