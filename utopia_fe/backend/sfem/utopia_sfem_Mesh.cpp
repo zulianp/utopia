@@ -6,8 +6,9 @@
 #include "read_mesh.h"
 #include "sfem_base.h"
 
-namespace utopia {
+#include <cassert>
 
+namespace utopia {
     namespace sfem {
 
         class Mesh::Impl {
@@ -36,9 +37,20 @@ namespace utopia {
             }
         }
 
+        void Mesh::create_vector_nodal(Vector &out, int ncomponents) const {
+            out.zeros(layout(impl_->comm, impl_->mesh.n_owned_nodes * ncomponents, impl_->mesh.nnodes * ncomponents));
+        }
+
+        void Mesh::write_nodal_field(const Path &path, const Vector &field) {
+            // TODO
+            assert(false);
+        }
+
         void Mesh::describe(std::ostream &os) const {
             // TODO
         }
+
+        void *Mesh::raw_type() const { return (void *)&impl_->mesh; }
 
     }  // namespace sfem
 }  // namespace utopia

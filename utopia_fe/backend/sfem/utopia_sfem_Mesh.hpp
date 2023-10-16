@@ -24,7 +24,9 @@ namespace utopia {
     namespace sfem {
         class Mesh final : public Configurable, public Describable {
         public:
-            using Communicator = Traits<Mesh>::Communicator;
+            using Traits = utopia::Traits<Mesh>;
+            using Communicator = Traits::Communicator;
+            using Vector = Traits::Vector;
 
             class Impl;
 
@@ -36,7 +38,12 @@ namespace utopia {
 
             bool read(const Path &path);
             void read(Input &in) override;
+            void write_nodal_field(const Path &path, const Vector &field);
             void describe(std::ostream &os) const override;
+
+            void create_vector_nodal(Vector &out, int components = 1) const;
+
+            void *raw_type() const;
 
         private:
             std::unique_ptr<Impl> impl_;
