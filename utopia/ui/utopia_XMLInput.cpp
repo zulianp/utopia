@@ -106,6 +106,14 @@ namespace utopia {
         }
     }
 
+    void XMLInput::get(float &val) {
+        if (impl_->is_invalid_subtree()) return;
+
+        if (impl_->current_node) {
+            val = atof(impl_->current_node->value());
+        }
+    }
+
     void XMLInput::get(int &val) {
         if (impl_->is_invalid_subtree()) return;
 
@@ -148,6 +156,12 @@ namespace utopia {
     }
 
     void XMLInput::get(const std::string &key, double &val) {
+        impl_->object_begin(key);
+        get(val);
+        impl_->object_end();
+    }
+
+    void XMLInput::get(const std::string &key, float &val) {
         impl_->object_begin(key);
         get(val);
         impl_->object_end();

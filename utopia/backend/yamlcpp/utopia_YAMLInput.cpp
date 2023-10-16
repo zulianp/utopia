@@ -73,6 +73,13 @@ namespace utopia {
         }
     }
 
+    void YAMLInput::get(const std::string &key, float &val) {
+        auto &node = impl_->root();
+        if (node[key]) {
+            val = node[key].as<float>();
+        }
+    }
+
     void YAMLInput::get(const std::string &key, int &val) {
         auto &node = impl_->root();
         if (node[key]) {
