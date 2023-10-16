@@ -112,6 +112,18 @@ if(UTOPIA_ENABLE_INTREPID2)
 
 endif()
 
+if(UTOPIA_ENABLE_SFEM)
+    list(
+        APPEND
+        INTEROP_MODULES
+        sfem_generic)
+
+    list(APPEND INTEROP_DEP utopia_sfem)
+
+    if(UTOPIA_ENABLE_STK)
+        list(APPEND INTEROP_MODULES sfem_stk)
+    endif()
+endif()
 
 if(UTOPIA_ENABLE_LIBMESH AND UTOPIA_ENABLE_KOKKOS AND UTOPIA_ENABLE_LIBMESH_KOKKOS)
     list(APPEND INTEROP_MODULES libmesh_kokkos)
