@@ -72,6 +72,8 @@ option(UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE "Removed trilinos deprecated code"
 
 option(UTOPIA_ENABLE_FLUYA_MODE "Create utopia_fe configuration required by Fluya (overrides everything else)" OFF)
 
+option(UTOPIA_ENABLE_SFEM "Enable experimental SFEM features" OFF)
+
 if(UTOPIA_ENABLE_TRILINOS OR UTOPIA_ENABLE_MARS OR UTOPIA_ENABLE_INTREPID2)
     set(UTOPIA_ENABLE_KOKKOS TRUE)
 endif()
@@ -270,6 +272,9 @@ if(UTOPIA_ENABLE_PETSC)
     list(APPEND UTOPIA_FE_MODULES backend/petsc)
 endif()
 
+if(UTOPIA_ENABLE_SFEM)
+    list(APPEND UTOPIA_FE_MODULES backend/sfem)
+endif()
 
 ##################################################
 
