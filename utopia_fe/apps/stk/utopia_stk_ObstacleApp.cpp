@@ -17,7 +17,7 @@
 
 void stk_obs(utopia::Input &in) {
 #ifdef UTOPIA_ENABLE_SFEM
-    register_sfem_stk_contact();
+    utopia::register_sfem_stk_contact();
 #endif  // UTOPIA_ENABLE_SFEM
 
     utopia::ObstacleApp<utopia::stk::FunctionSpace> obs;

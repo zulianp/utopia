@@ -33,8 +33,8 @@ namespace utopia {
             sdf.to_mesh(mesh, surface_gap, surface_normals);
 
             // Convert to space context
-            auto gap = std::make_shared<Field>();
-            auto normals = std::make_shared<GradientField>();
+            gap = std::make_shared<Field>();
+            normals = std::make_shared<GradientField>();
 
             space.create_field(*gap);
             space.create_field(*normals);
@@ -92,6 +92,7 @@ namespace utopia {
 
     template <class FunctionSpace>
     bool SDFObstacle<FunctionSpace>::assemble(FunctionSpace &space) {
+        UTOPIA_TRACE_SCOPE("SDFObstacle::assemble");
         impl_->resample_to_mesh_surface_of(space);
         return true;
     }
