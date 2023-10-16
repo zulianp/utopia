@@ -1,5 +1,5 @@
-#ifndef UTOPIA_ANALYTIC_OBSTACLE_HPP
-#define UTOPIA_ANALYTIC_OBSTACLE_HPP
+#ifndef UTOPIA_SDF_OBSTACLE_HPP
+#define UTOPIA_SDF_OBSTACLE_HPP
 
 #include "utopia_ContactInterface.hpp"
 #include "utopia_Field.hpp"
@@ -25,8 +25,6 @@ namespace utopia {
         void read(Input &in) override;
         void describe(std::ostream &os) const override;
 
-        bool init(const std::shared_ptr<FunctionSpace> &domain);
-
         bool assemble(FunctionSpace &space) override;
         void transform(const Matrix &in, Matrix &out) override;
         void transform(const Vector &in, Vector &out) override;
@@ -48,4 +46,4 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif  // UTOPIA_ANALYTIC_OBSTACLE_HPP
+#endif  // UTOPIA_SDF_OBSTACLE_HPP

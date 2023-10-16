@@ -120,8 +120,13 @@ if(UTOPIA_ENABLE_SFEM)
 
     list(APPEND INTEROP_DEP utopia_sfem)
 
-    if(UTOPIA_ENABLE_STK)
+    if(UTOPIA_ENABLE_STK AND UTOPIA_ENABLE_MOONOLITH)
         list(APPEND INTEROP_MODULES sfem_stk)
+
+        list(
+            APPEND
+            INTEROP_MODULES
+            utopia_moonolith)
     endif()
 endif()
 
