@@ -18,6 +18,10 @@ namespace utopia {
             geom_t *sdf{nullptr};
 
             Communicator comm;
+
+            ~Impl() {
+                if (sdf) free(sdf);
+            }
         };
 
         SDF::SDF() {}
@@ -44,7 +48,13 @@ namespace utopia {
             impl_->n = impl_->nglobal[0] * impl_->nglobal[1] * impl_->nglobal[2];
             impl_->sdf = (geom_t *)malloc(impl_->n * sizeof(geom_t));
 
-            if (ndarray_read(
+            // Invalid local sizes!
+            impl_->nlocal[0] = -1;
+            impl_->nlocal[1] = -1;
+            impl_->nlocal[2] = -1;
+
+            if (SFEM_OK !=
+                ndarray_read(
                     impl_->comm.get(), path.c_str(), SFEM_MPI_GEOM_T, 3, impl_->sdf, impl_->nlocal, impl_->nglobal)) {
                 utopia::err() << "Unable to read sdf file at " << path << "\n";
                 Utopia::Abort();

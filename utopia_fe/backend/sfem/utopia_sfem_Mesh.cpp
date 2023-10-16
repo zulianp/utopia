@@ -14,7 +14,8 @@ namespace utopia {
         public:
             Communicator comm;
             mesh_t mesh;
-            Impl() : comm(Communicator::get_default()) {}
+            Impl() : comm(Communicator::get_default()) { mesh_init(&mesh); }
+            ~Impl() { mesh_destroy(&mesh); }
         };
 
         Mesh::Mesh() : impl_(utopia::make_unique<Impl>()) {}
