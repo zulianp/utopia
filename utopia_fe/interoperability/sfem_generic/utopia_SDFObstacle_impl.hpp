@@ -23,14 +23,24 @@ namespace utopia {
         Matrix orthogonal_trafo;
         Vector is_contact;
         Scalar infinity{1e10};
+        Scalar shift{0};
         utopia::sfem::SDF sdf;
         utopia::sfem::Mesh mesh;
+        bool export_gap{false};
 
         void resample_to_mesh_surface_of(FunctionSpace &space) {
             typename FunctionSpace::Mesh surface_mesh;
             extract_surface(space.mesh(), mesh);
             Vector surface_gap, surface_normals;
             sdf.to_mesh(mesh, surface_gap, surface_normals);
+            surface_gap.shift(shift);
+
+            Scalar norm_gap = norm2(surface_gap);
+
+            if (!space.comm().rank()) {
+                utopia::out() << "Surface Mesh #nodes " << mesh.n_local_nodes() << "\n";
+                utopia::out() << "Norm Gap: " << norm_gap << "\n";
+            }
 
             // Convert to space context
             gap = std::make_shared<Field>();
@@ -69,6 +79,11 @@ namespace utopia {
 
             space.apply_zero_constraints(is_contact);
             HouseholderReflectionForContact<Matrix, Vector, 3>::build(is_contact, normals->data(), orthogonal_trafo);
+
+            if (export_gap) {
+                static int count = 0;
+                space.write("sdf_resample_" + std::to_string(count++) + ".e", gap->data());
+            }
         }
     };
 
@@ -81,6 +96,9 @@ namespace utopia {
     template <class FunctionSpace>
     void SDFObstacle<FunctionSpace>::read(Input &in) {
         impl_->sdf.read(in);
+        in.get("infinity", impl_->infinity);
+        in.get("export_gap", impl_->export_gap);
+        in.get("shift", impl_->shift);
         // in.get("field_rescale", impl_->field_rescale);
         // in.get("field_offset", impl_->field_offset);
     }

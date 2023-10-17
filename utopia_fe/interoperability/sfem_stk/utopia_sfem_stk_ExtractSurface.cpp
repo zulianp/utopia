@@ -124,6 +124,20 @@ namespace utopia {
         }
 
         mesh_ptr->node_mapping = (idx_t *)malloc(n_selected_nodes * sizeof(idx_t));
+        mesh_ptr->n_owned_nodes = n_selected_nodes;
+        mesh_ptr->n_owned_elements = n_selected_elements;
+
+        mesh_ptr->nelements = out.comm().sum(n_selected_elements);
+        mesh_ptr->nnodes = out.comm().sum(n_selected_nodes);
+        mesh_ptr->spatial_dim = spatial_dim;
+        mesh_ptr->comm = out.comm().get();
+
+        // FIXME (for the moment we do not need them but we will in the future)
+        mesh_ptr->n_owned_nodes_with_ghosts = 0;
+        mesh_ptr->n_owned_elements_with_ghosts = 0;
+        mesh_ptr->node_owner = nullptr;
+        mesh_ptr->node_offsets = nullptr;
+        mesh_ptr->ghosts = nullptr;
 
         ////////////////////////////////////////////////////////////////
         // Nodes
@@ -196,12 +210,10 @@ namespace utopia {
 
     void ExtractSurface<utopia::stk::Mesh, utopia::sfem::Mesh>::apply(const utopia::stk::Mesh &in,
                                                                       utopia::sfem::Mesh &out) {
+        UTOPIA_TRACE_SCOPE("ExtractSurface::apply");
+
         auto &meta_data = in.meta_data();
         auto &bulk_data = in.bulk_data();
-
-        const bool has_aura = in.has_aura();
-
-        auto *coords = meta_data.coordinate_field();
         auto topo = meta_data.side_rank();
 
         extract_selection(bulk_data, meta_data.locally_owned_part(), topo, out);
