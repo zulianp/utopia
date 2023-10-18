@@ -82,7 +82,27 @@ namespace utopia {
 
             if (export_gap) {
                 static int count = 0;
-                space.write("sdf_resample_" + std::to_string(count++) + ".e", gap->data());
+
+                Vector director = normals->data();
+
+                {
+                    // Scope for views
+                    auto gap_view = local_view_device(gap->data());
+                    auto director_view = local_view_device(director);
+                    auto is_contact_view = local_view_device(is_contact);
+
+                    parallel_for(
+                        local_range_device(director), UTOPIA_LAMBDA(const SizeType i) {
+                            const SizeType ii = (i / 3) * 3;
+                            const Scalar g = gap_view.get(ii);
+                            // const Scalar g = 1;
+                            const Scalar ind = is_contact_view.get(ii);
+
+                            director_view.set(i, director_view.get(i) * g * ind);
+                        });
+                }
+
+                space.write("director_" + std::to_string(count++) + ".e", director);
             }
         }
     };
