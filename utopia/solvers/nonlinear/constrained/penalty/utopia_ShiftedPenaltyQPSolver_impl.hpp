@@ -21,6 +21,8 @@ namespace utopia {
         std::shared_ptr<LinearSolver> linear_solver;
         bool debug{false};
         Scalar penalty_param{1e4};
+        // TODO use it to select nodes!
+        std::shared_ptr<Vector> boolean_selector;
     };
 
     template <class Matrix, class Vector, int Backend>
@@ -184,7 +186,7 @@ namespace utopia {
     template <class Matrix, class Vector, int Backend>
     void ShiftedPenaltyQPSolver<Matrix, Vector, Backend>::set_selection(
         const std::shared_ptr<Vector> &boolean_selector) {
-        // impl_->boolean_selector = boolean_selector;
+        impl_->boolean_selector = boolean_selector;
     }
 
 }  // namespace utopia

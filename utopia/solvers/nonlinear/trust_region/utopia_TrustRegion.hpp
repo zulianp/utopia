@@ -45,7 +45,7 @@ namespace utopia {
             bool converged = false;
             NumericalTollerance<Scalar> tol(this->atol(), this->rtol(), this->stol());
 
-            Scalar delta, product, ared, pred, rho, E_k, E_k1;
+            Scalar delta = 0, product = 0, ared = 0, pred = 0, rho = 0, E_k = 0, E_k1 = 0;
 
             SizeType it = 0;
             SizeType it_successful = 0;
