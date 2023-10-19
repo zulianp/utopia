@@ -24,9 +24,11 @@ namespace utopia {
         Vector is_contact;
         Scalar infinity{1e10};
         Scalar shift{0};
+        Scalar cutoff{1e8};
         utopia::sfem::SDF sdf;
         utopia::sfem::Mesh mesh;
         bool export_gap{false};
+        bool verbose{false};
 
         void resample_to_mesh_surface_of(FunctionSpace &space) {
             typename FunctionSpace::Mesh surface_mesh;
@@ -66,14 +68,22 @@ namespace utopia {
 
                 const int n_var = space.n_var();
                 for (ptrdiff_t i = 0; i < mesh.n_local_nodes(); i++) {
-                    SizeType node = node_mapping[i];
+                    const Scalar gg = surface_gap_view.get(i);
+                    if (gg > cutoff) continue;
 
-                    gap_view.set(node * n_var, surface_gap_view.get(i));
+                    SizeType node = node_mapping[i];
+                    gap_view.set(node * n_var, gg);
                     normals_view.set(node * n_var, surface_normals_view.get(i * 3));
                     normals_view.set(node * n_var + 1, surface_normals_view.get(i * 3 + 1));
                     normals_view.set(node * n_var + 2, surface_normals_view.get(i * 3 + 2));
-
                     is_contact_view.set(node * n_var, 1);
+                }
+            }
+
+            if (verbose) {
+                SizeType num_contacts = sum(is_contact);
+                if (!space.comm().rank()) {
+                    utopia::out() << "SDFObstacle: num_contacts = " << num_contacts << "\n";
                 }
             }
 
@@ -119,8 +129,8 @@ namespace utopia {
         in.get("infinity", impl_->infinity);
         in.get("export_gap", impl_->export_gap);
         in.get("shift", impl_->shift);
-        // in.get("field_rescale", impl_->field_rescale);
-        // in.get("field_offset", impl_->field_offset);
+        in.get("cutoff", impl_->cutoff);
+        in.get("verbose", impl_->verbose);
     }
 
     template <class FunctionSpace>

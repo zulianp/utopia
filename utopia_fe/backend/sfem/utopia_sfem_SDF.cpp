@@ -108,16 +108,10 @@ namespace utopia {
             auto field_view = local_view_device(field);
 
             if (impl_->interpolate) {
-                interpolate_gap(impl_->comm.get(),
-                                // Mesh
-                                (ElemType)m->element_type,
-                                m->nelements,
-                                m->nnodes,
-                                m->elements,
+                interpolate_gap(m->nnodes,
                                 m->points,
                                 // SDF
                                 impl_->nlocal,
-                                impl_->nglobal,
                                 impl_->stride,
                                 impl_->origin,
                                 impl_->delta,
@@ -128,25 +122,24 @@ namespace utopia {
                                 ynormal,
                                 znormal);
             } else {
-                resample_gap(impl_->comm.get(),
-                             // Mesh
-                             (ElemType)m->element_type,
-                             m->nelements,
-                             m->nnodes,
-                             m->elements,
-                             m->points,
-                             // SDF
-                             impl_->nlocal,
-                             impl_->nglobal,
-                             impl_->stride,
-                             impl_->origin,
-                             impl_->delta,
-                             impl_->sdf,
-                             // Output
-                             field_view.array().begin(),
-                             xnormal,
-                             ynormal,
-                             znormal);
+                resample_gap(
+                    // Mesh
+                    (ElemType)m->element_type,
+                    m->nelements,
+                    m->nnodes,
+                    m->elements,
+                    m->points,
+                    // SDF
+                    impl_->nlocal,
+                    impl_->stride,
+                    impl_->origin,
+                    impl_->delta,
+                    impl_->sdf,
+                    // Output
+                    field_view.array().begin(),
+                    xnormal,
+                    ynormal,
+                    znormal);
             }
 
             auto grad_field_view = local_view_device(grad_field);
