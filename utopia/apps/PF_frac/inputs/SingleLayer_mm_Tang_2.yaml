@@ -3,22 +3,21 @@ app: SingleSedimentaryLayer
 # Output 
 #output-path: Output/Hobb/HOBBS_PT_AT1_d2_Dirch_1E32_1nu05_2nu45_dt0003_W2_l2_m15_p01_Unif
 #output-path: Output/TestingFracEnergy
-#output-path: /home/edoardo/Data/sdd1/Results/SedimentaryLayer/Single_Solv_d60_L800_H240_Ef50_nuf25_Gcf20_En10_nun35_Gcn200_l015_m1_Twodt00001_p001_Com0_Checked
-output-path: SedimentaryLayer/Single_Solv_d60_L800_H240_Ef50_nuf25_Gcf20_En10_nun35_Gcn200_l015_m1_Twodt00001_p001_Com0_Checked
+output-path: /home/edoardo/Data/sdd1/Results/SedimentaryLayer/Single_d60_L1600_H500_Ef50_nuf25_Gcf20_En10_nun35_Gcn160_l015_m1_Twodt00001_p001_Com0_Second
 save_output: true
 # Mesh specification -----------------------------------------
-nx: 801
-ny: 241
+nx: 1601
+ny: 501
 #nz: 2
 x_min: 0
-x_max: 0.8e3
+x_max: 1.6e3
 y_min: 0
-y_max: 0.24e3 #1.6e3
+y_max: 0.5e3 #1.6e3
 n_levels: 1
 # Problem specification ------------------------------------------
 # Boundary Conditions
 disp_y: 0.0
-disp_x: 0.04e3
+disp_x: 0.08e3
 fix_phase_field_on_sides: true
 no_phase_field_outside_layer: false
 no_pf_length: 1
@@ -41,14 +40,14 @@ crack_set_tol: 0.9999999
 ## Material paramteters -------------------------------------------------
 hetero_params: SingleSedimentaryLayer
 random_variation: false
-random_toughness_deviation: 1e-6
-random_youngs_deviation: 1
+random_toughness_deviation: 6e-6
+random_youngs_deviation: 6
 random_damage: false 
 uniform_damage: false
 central_damage: false
 IC_number: 10 			#for uniform damage
-bottom_layer_height: 0.09e3	
-top_layer_height: 0.15e3
+bottom_layer_height: 0.22e3	
+top_layer_height: 0.28e3
 bottom_layer_height2: -10e3 	#below zero not modelled	
 top_layer_height2: -10e3 	#below zero ... 
 interface_regularisation_length: 0.09e3
@@ -57,14 +56,14 @@ E_2: 10			#Shale
 nu_1: 0.25			#Dolostone
 nu_2: 0.35 			#Shale 	
 Gc_1: 20e-6 			#Dolostone 48
-Gc_2: 200e-6		 	#Shale		
+Gc_2: 160e-6		 	#Shale		
 ## Time stepping -------------------------------------------------------
 dt: 0.0001
-final_time: 0.01065 #0.0065 
+final_time: 0.008 #0.0065 
 #Two time stepping scheme (safer if you know the right time)
 use_two_time_steps: true
 dt_secondphase: 0.00001
-time_secondphase: 0.0019
+time_secondphase: 0.0018
 # dynamic time stepping with fracture energy
 fracture_energy_time_stepping: false
 frac_energy_max_change: 1.05
