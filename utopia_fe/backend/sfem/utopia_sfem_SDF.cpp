@@ -59,8 +59,8 @@ namespace utopia {
                 }
 
                 stride[0] = 1;
-                stride[1] = nglobal[0];
-                stride[2] = nglobal[0] * nglobal[1];
+                stride[1] = nlocal[0];
+                stride[2] = nlocal[0] * nlocal[1];
 
                 in.get("interpolate", interpolate);
             }
@@ -107,15 +107,50 @@ namespace utopia {
 
             auto field_view = local_view_device(field);
 
+            geom_t *actual_sdf = nullptr;
+            geom_t *psdf = nullptr;
+
+            ptrdiff_t nlocal[3] = {impl_->nlocal[0], impl_->nlocal[1], impl_->nlocal[2]};
+            geom_t origin[3] = {impl_->origin[0], impl_->origin[1], impl_->origin[2]};
+
+            std::stringstream ss;
+            ss << "BEFORE\n";
+            ss << nlocal[0] << " " << nlocal[1] << " " << nlocal[2] << "\n";
+            ss << origin[0] << " " << origin[1] << " " << origin[2] << "\n";
+
+            if (mesh.comm().size() > 1) {
+                sdf_view(mesh.comm().get(),
+                         m->nnodes,
+                         m->points[2],
+                         impl_->nlocal,
+                         impl_->nglobal,
+                         impl_->stride,
+                         impl_->origin,
+                         impl_->delta,
+                         impl_->sdf,
+                         &psdf,
+                         &nlocal[2],
+                         &origin[2]);
+
+                actual_sdf = psdf;
+            } else {
+                actual_sdf = impl_->sdf;
+            }
+
+            ss << "AFTER\n";
+            ss << nlocal[0] << " " << nlocal[1] << " " << nlocal[2] << "\n";
+            ss << origin[0] << " " << origin[1] << " " << origin[2] << "\n";
+            mesh.comm().synched_print(ss.str());
+
             if (impl_->interpolate) {
-                interpolate_gap(m->nnodes,
+                interpolate_gap(m->n_owned_nodes,
                                 m->points,
                                 // SDF
-                                impl_->nlocal,
+                                nlocal,
                                 impl_->stride,
-                                impl_->origin,
+                                origin,
                                 impl_->delta,
-                                impl_->sdf,
+                                actual_sdf,
                                 // Output
                                 field_view.array().begin(),
                                 xnormal,
@@ -130,11 +165,11 @@ namespace utopia {
                     m->elements,
                     m->points,
                     // SDF
-                    impl_->nlocal,
+                    nlocal,
                     impl_->stride,
-                    impl_->origin,
+                    origin,
                     impl_->delta,
-                    impl_->sdf,
+                    actual_sdf,
                     // Output
                     field_view.array().begin(),
                     xnormal,
@@ -148,6 +183,10 @@ namespace utopia {
                 grad_field_view.set(i * 3 + 0, xnormal[i]);
                 grad_field_view.set(i * 3 + 1, ynormal[i]);
                 grad_field_view.set(i * 3 + 2, znormal[i]);
+            }
+
+            if (psdf) {
+                free(psdf);
             }
 
             free(xnormal);
