@@ -857,6 +857,9 @@ namespace utopia {
                 this->apply_zero_constraints_irreversibiblity(H, x_const);
             }
 
+            //rename("H", H);
+            //H.write("RegHessianNoPen.m");
+
             UTOPIA_TRACE_REGION_END("VolDevGenericPhaseField::hessian");
             return true;
         }
