@@ -58,6 +58,7 @@ namespace utopia {
             Vector g, p_k;
             Matrix H;
 
+            fun.update(x_k);
             fun.gradient(x_k, g);
             g0_norm = norm2(g);
             g_norm = g0_norm;
@@ -81,13 +82,9 @@ namespace utopia {
                                    "delta_k",
                                    "|| p_k || "});
                 PrintInfo::print_iter_status(it, {g_norm});
-            }
-            else if (this->mini_verbose_){
-                this->init_solver("TRUST_REGION_BASE",
-                                  { " it. ",
-                                   "|| g ||",
-                                    "J_k" });
-                PrintInfo::print_iter_status(it, {g_norm, E_k });
+            } else if (this->mini_verbose_) {
+                this->init_solver("TRUST_REGION_BASE", {" it. ", "|| g ||", "J_k"});
+                PrintInfo::print_iter_status(it, {g_norm, E_k});
             }
 
 #else
@@ -198,13 +195,15 @@ namespace utopia {
                 //      tr. radius update
                 //----------------------------------------------------------------------------
                 this->delta_update(rho, p_k, delta);
+                fun.update(x_k);
+
                 it++;
             }
 
             // some benchmarking
             TrustRegionBase::print_statistics(it, it_successful);
 
-            //E.P: setting solver metrics for later printing
+            // E.P: setting solver metrics for later printing
             gnorm_ = g_norm;
             iterations_ = it;
 
@@ -221,8 +220,8 @@ namespace utopia {
                 "set_trust_region_strateg... \n");
         }
 
-        Scalar get_gnorm(){return gnorm_;}
-        Scalar get_iterations(){return iterations_ ; }
+        Scalar get_gnorm() { return gnorm_; }
+        Scalar get_iterations() { return iterations_; }
 
     private:
         Scalar get_pred(const Vector &g_minus, const Matrix &B, const Vector &p_k) {

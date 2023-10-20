@@ -26,6 +26,7 @@ namespace utopia {
     template <class FunctionSpace, int Dim = FunctionSpace::Dim, class PFFormulation = AT1>
     class VolDevGenericPhaseField final : public GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation> {
     public:
+        using Super = utopia::GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation>;
         using Scalar = typename FunctionSpace::Scalar;
         using Point = typename FunctionSpace::Point;
         using SizeType = typename FunctionSpace::SizeType;
@@ -57,6 +58,17 @@ namespace utopia {
         VolDevGenericPhaseField(FunctionSpace &space, const Parameters &params)
             : GenericPhaseFieldFormulation<FunctionSpace, Dim, PFFormulation>(space, params) {
             this->params_.fill_in_isotropic_elast_tensor();
+        }
+
+        inline bool update(const Vector &x) override {
+            Super::update(x);
+
+            if (this->penalty()) {
+                Vector increment = x - this->x_old_;
+                this->penalty()->update(increment);
+            }
+
+            return true;
         }
 
         bool value(const Vector &x_const, Scalar &val) const override {
@@ -180,6 +192,15 @@ namespace utopia {
             if (!empty(this->force_field_)) {
                 // MAYBE -= dot(x_const, this->force_field_);
                 val -= dot(x_const, this->force_field_);
+            }
+
+            if (this->penalty()) {
+                // Probably not necessary
+                Vector increment = x_const - this->x_old_;
+
+                Scalar penalty_val = 0;
+                this->penalty()->value(increment, penalty_val);
+                val += penalty_val;
             }
 
             this->add_pf_constraints(x_const);  // TAKEN AWAY BUT STILL ACTIVE IN VOL DEV SPLIT -- CHECK
@@ -567,6 +588,12 @@ namespace utopia {
                 //                g += this->force_field_;
             }
 
+            if (this->penalty()) {
+                // Probably not necessary
+                Vector increment = x_const - this->x_old_;
+                this->penalty()->gradient(increment, g);
+            }
+
             this->space_.apply_zero_constraints(g);
 
             //             fully broken case is treated as Dirichlet BC
@@ -767,13 +794,15 @@ namespace utopia {
                                 for (SizeType j = l; j < U_NDofs; ++j) {
                                     // Varying stress tensor
 
-                                    Scalar val =
-                                        bilinear_uu_EP(this->params_,  // E.P Both bilinear_uu and bilienear_uu_EP work,
-                                                                       // however EP is more intuitive to understand
-                                                       c[qp],
-                                                       el_strain.strain[qp],
-                                                       u_strain_shape_el(j, qp),
-                                                       u_strain_shape_l) *
+                                    Scalar val =  //
+                                        bilinear_uu_EP
+                                        // bilinear_uu      //
+                                        (this->params_,  // E.P Both bilinear_uu and bilienear_uu_EP work,
+                                                         // however EP is more intuitive to understand
+                                         c[qp],
+                                         el_strain.strain[qp],
+                                         u_strain_shape_el(j, qp),
+                                         u_strain_shape_l) *
                                         dx(qp);
 
                                     val = (l == j) ? (0.5 * val) : val;
@@ -849,6 +878,12 @@ namespace utopia {
             // check before boundary conditions
             if (this->check_derivatives_) {
                 this->diff_ctrl_.check_hessian(*this, x_const, H);
+            }
+
+            if (this->penalty()) {
+                // Probably not necessary
+                Vector increment = x_const - this->x_old_;
+                this->penalty()->hessian(increment, H);
             }
 
             this->space_.apply_constraints(H);
@@ -1948,6 +1983,8 @@ namespace utopia {
         }
 
         void write_to_file(const std::string &output_path, const Vector &x, const Scalar time) override {
+            UTOPIA_TRACE_SCOPE("VolDevGenericPhaseField::write_to_file");
+
             PhaseFieldFracBase<FunctionSpace, Dim>::write_to_file(output_path, x, time);
 
             // Post-processing functions
