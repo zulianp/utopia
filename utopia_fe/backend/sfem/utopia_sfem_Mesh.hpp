@@ -38,6 +38,7 @@ namespace utopia {
             Communicator &comm();
 
             bool read(const Path &path);
+            bool write(const Path &path);
             void read(Input &in) override;
             void write_nodal_field(const Path &path, const Vector &field);
             void describe(std::ostream &os) const override;

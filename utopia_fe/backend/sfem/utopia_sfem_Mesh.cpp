@@ -1,10 +1,12 @@
 #include "utopia_sfem_Mesh.hpp"
 
 #include "utopia_IOStream.hpp"
+#include "utopia_Tracer.hpp"
 #include "utopia_make_unique.hpp"
 
 #include "read_mesh.h"
 #include "sfem_base.h"
+#include "sfem_mesh_write.h"
 
 #include <cassert>
 
@@ -44,6 +46,11 @@ namespace utopia {
         void Mesh::write_nodal_field(const Path &path, const Vector &field) {
             // TODO
             assert(false);
+        }
+
+        bool Mesh::write(const Path &path) {
+            UTOPIA_TRACE_SCOPE("sfem::Mesh::write");
+            return SFEM_OK == mesh_write(path.c_str(), &impl_->mesh);
         }
 
         void Mesh::describe(std::ostream &os) const {

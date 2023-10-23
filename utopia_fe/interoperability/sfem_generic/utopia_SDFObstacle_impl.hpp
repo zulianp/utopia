@@ -33,6 +33,12 @@ namespace utopia {
         void resample_to_mesh_surface_of(FunctionSpace &space) {
             typename FunctionSpace::Mesh surface_mesh;
             extract_surface(space.mesh(), mesh);
+
+            if (0) {
+                static int export_mesh = 0;
+                mesh.write("dbg_mesh" + std::to_string(export_mesh++));
+            }
+
             Vector surface_gap, surface_normals;
             sdf.to_mesh(mesh, surface_gap, surface_normals);
             surface_gap.shift(shift);
@@ -54,7 +60,9 @@ namespace utopia {
             gap->data().set(infinity);
             space.create_vector(is_contact);
 
-            {
+            auto &&local_to_global = space.dof_map().local_to_global();
+
+            if (!local_to_global.empty()) {
                 // Scope for views
                 auto surface_gap_view = const_local_view_device(surface_gap);
                 auto gap_view = local_view_device(gap->data());
@@ -63,6 +71,42 @@ namespace utopia {
                 auto normals_view = local_view_device(normals->data());
 
                 auto is_contact_view = local_view_device(is_contact);
+
+                auto node_mapping = mesh.node_mapping();
+
+                auto rr = gap->data().range();
+                const int n_var = space.n_var();
+                const SizeType local_size = gap->data().local_size();
+                for (ptrdiff_t i = 0; i < mesh.n_local_nodes(); i++) {
+                    const Scalar gg = surface_gap_view.get(i);
+                    if (gg > cutoff) continue;
+
+                    SizeType node = node_mapping[i];
+                    node = local_to_global(node, 0) - rr.begin();
+
+                    if (node >= local_size || node < 0) {
+                        // Skip ghost nodes!
+                        continue;
+                    }
+
+                    assert(node + 2 < is_contact.local_size());
+                    assert(node + 2 < gap->data().local_size());
+                    assert(node + 2 < normals->data().local_size());
+
+                    gap_view.set(node, gg);
+                    normals_view.set(node, surface_normals_view.get(i * 3));
+                    normals_view.set(node + 1, surface_normals_view.get(i * 3 + 1));
+                    normals_view.set(node + 2, surface_normals_view.get(i * 3 + 2));
+                    is_contact_view.set(node, 1);
+                }
+            } else {
+                auto surface_gap_view = const_local_view_device(surface_gap);
+                auto gap_view = local_view_device(gap->data());
+
+                auto surface_normals_view = const_view_device(surface_normals);
+                auto normals_view = view_device(normals->data());
+
+                auto is_contact_view = view_device(is_contact);
 
                 auto node_mapping = mesh.node_mapping();
 

@@ -7,6 +7,8 @@
 
 #include "utopia_sfem_stk_ExtractSurface.hpp"
 
+#include "utopia_stk_DofMap.hpp"
+
 namespace utopia {
     template class SDFObstacle<utopia::stk::FunctionSpace>;
 }

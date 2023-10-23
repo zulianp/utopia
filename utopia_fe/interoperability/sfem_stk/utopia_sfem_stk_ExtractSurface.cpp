@@ -128,7 +128,7 @@ namespace utopia {
         mesh_ptr->n_owned_elements = n_selected_elements;
 
         mesh_ptr->nelements = out.comm().sum(n_selected_elements);
-        mesh_ptr->nnodes = out.comm().sum(n_selected_nodes);
+        mesh_ptr->nnodes = n_selected_nodes;  // out.comm().sum(n_selected_nodes);
         mesh_ptr->spatial_dim = spatial_dim;
         mesh_ptr->comm = out.comm().get();
 
@@ -180,22 +180,12 @@ namespace utopia {
 
             auto sfem_type = convert_elem_type(b.topology());
             mesh_ptr->element_type = sfem_type;
-
             const Bucket_t::size_type length = b.size();
-
             int block_id = utopia::stk::extract_set_id_from_bucket(b, topo);
 
             for (Bucket_t::size_type k = 0; k < length; ++k) {
                 Entity_t elem = b[k];
                 const Size_t n_nodes = bulk_data.num_nodes(elem);
-
-                // auto &e = out.elem(selected_elem_idx);
-                // e.type = sfem_type;
-                // e.block = block_id;
-                // e.is_affine = true;  /// elem.has_affine_map();
-                // e.global_idx = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(elem));
-                // e.nodes.resize(n_nodes);
-
                 auto node_ids = bulk_data.begin_nodes(elem);
 
                 for (Size_t i = 0; i < n_nodes; ++i) {
