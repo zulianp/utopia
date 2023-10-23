@@ -167,6 +167,7 @@ namespace utopia {
             in.get("damping", damping_);
             in.get("allow_projection", allow_projection_);
             in.get("non_smooth_projection", non_smooth_projection_);
+            in.get("update_constraints_each_nonlinear_step", update_constraints_each_nonlinear_step_);
 
             if (!obstacle_) {
                 std::string type;
@@ -239,9 +240,10 @@ namespace utopia {
             // this->velocity_old().zeros(vlo);
             // this->acceleration_old().zeros(vlo);
 
+            // update_constraints(x);
+            // return Super::setup_IVP(x);
 
-            update_constraints(x);
-            return Super::setup_IVP(x);
+            return Super::setup_IVP(x) && update_constraints(make_ref(this->x_old()));
         }
 
         bool time_derivative(const Vector_t &x, Vector_t &dfdt) const override {
@@ -249,8 +251,6 @@ namespace utopia {
         }
 
         bool non_smooth_project(Vector_t &x) {
-            
-
             MPRGP<Matrix_t, Vector_t> qp_solver;
 
             Matrix_t H;
@@ -300,7 +300,7 @@ namespace utopia {
 
             if (non_smooth_projection_) {
                 non_smooth_project(x);
-            } 
+            }
 
             if (x.has_nan_or_inf()) {
                 this->~ObstacleVelocityNewmark();
@@ -309,12 +309,28 @@ namespace utopia {
                 Utopia::Abort("update_IVP: NaN detected!");
             }
 
-            if (!trivial_obstacle_) {
-                update_constraints(x);
+            {
+                // OLD
+                // if (!trivial_obstacle_) {
+                //     update_constraints(x);
+                // }
+                // barrier_->reset();
+                // return Super::update_IVP(x);
             }
 
-            barrier_->reset();
-            return Super::update_IVP(x);
+            {  // NEW
+                bool ok = Super::update_IVP(x);
+
+                if (ok && !trivial_obstacle_) {
+                    ok = update_constraints(make_ref(this->x_old()));
+                }
+
+                if (ok) {
+                    barrier_->reset();
+                }
+
+                return ok;
+            }
         }
 
         void barrier_hessian(const Vector_t &x, Matrix_t &H) const {
@@ -439,6 +455,12 @@ namespace utopia {
                 Vector_t x, x_obs;
                 update_x(velocity, x);
 
+                if (update_constraints_each_nonlinear_step_) {
+                    // TODO
+                    auto x_copy = std::make_shared<Vector_t>(x);
+                    update_constraints(x_copy);
+                }
+
                 if (trivial_obstacle_) {
                     obstacle_->transform(x, x_obs);
                 } else {
@@ -508,6 +530,7 @@ namespace utopia {
         bool verbose_{false};
         bool zero_initial_guess_{true};
         bool non_smooth_projection_{false};
+        bool update_constraints_each_nonlinear_step_{false};
 
         Scalar_t damping_{0.98};
 
@@ -519,25 +542,25 @@ namespace utopia {
             x += (0.5 * this->delta_time()) * (this->velocity_old() + velocity);
         }
 
-        bool update_constraints(const Vector_t &x) {
-            x.comm().root_print("ObstacleVelocityNewmark::update_constraints\n");
+        bool update_constraints(const std::shared_ptr<Vector_t> &offset_vector) {
+            offset_vector->comm().root_print("ObstacleVelocityNewmark::update_constraints\n");
 
-            this->space()->displace(x);
+            this->space()->displace(*offset_vector);
             bool ok = obstacle_->assemble(*this->space());
 
             if (debug_) {
                 static int iter_debug = 0;
                 if (iter_debug >= debug_from_iteration_) {
-                    ouput_debug_data(iter_debug, x);
+                    ouput_debug_data(iter_debug, *offset_vector);
                 }
 
                 iter_debug++;
             }
 
-            this->space()->displace(-x);
+            this->space()->displace(-*offset_vector);
 
             if (!barrier_) {
-                x.comm().root_print("[Warning] no barrier!");
+                offset_vector->comm().root_print("[Warning] no barrier!");
                 barrier_ = std::make_shared<LogBarrier<Matrix_t, Vector_t>>();
             }
 
@@ -552,12 +575,12 @@ namespace utopia {
 
             if (enable_line_search_) {
                 if (!line_search_) {
-                    line_search_ = std::make_shared<LineSearchBoxProjection<Vector_t>>(box, make_ref(this->x_old()));
+                    line_search_ = std::make_shared<LineSearchBoxProjection<Vector_t>>(box, offset_vector);
                 } else {
                     line_search_->set_box_constraints(box);
 
                     if (!trivial_obstacle_) {
-                        line_search_->set_offset_vector(make_ref(this->x_old()));
+                        line_search_->set_offset_vector(offset_vector);
                     }
                 }
 
