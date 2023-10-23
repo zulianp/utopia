@@ -344,9 +344,9 @@ namespace utopia {
                 return;
             }
 
-            if (mpi_world_rank() == 0) {
-                describe(utopia::out().stream());
-            }
+            // if (mpi_world_rank() == 0) {
+            //     describe(utopia::out().stream());
+            // }
         }
 
         void describe(std::ostream &os) const {

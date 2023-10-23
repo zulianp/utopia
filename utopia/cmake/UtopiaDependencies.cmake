@@ -215,7 +215,7 @@ if(UTOPIA_ENABLE_PETSC)
   if(NOT UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
     find_package(PETSc REQUIRED)
   else()
-    find_package(PETSc)
+    find_package(PETSc NO_DEFAULT_PATH)
   endif()
 
   if(PETSC_FOUND)
@@ -257,7 +257,6 @@ if(UTOPIA_ENABLE_PETSC)
 
   else()
     message(WARNING "[Warning] Petsc not found")
-    set(UTOPIA_ENABLE_PETSC FALSE)
   endif()
 
   if(PETSC_FOUND AND UTOPIA_ENABLE_SLEPC)
@@ -271,8 +270,7 @@ if(UTOPIA_ENABLE_PETSC)
       set(UTOPIA_SLEPC_VERSION ${SLEPC_VERSION})
       # set(UTOPIA_ENABLE_SLEPC TRUE PARENT_SCOPE)
     else()
-      # message(WARNING "[Warning] Slepc not found") set(UTOPIA_ENABLE_SLEPC
-      # FALSE)
+      message(WARNING "[Warning] Slepc not found")
     endif()
   endif()
   add_subdirectory(backend/petsc)
@@ -410,7 +408,7 @@ if(UTOPIA_ENABLE_YAML_CPP)
 
     message(
       STATUS
-        "yaml-cpp found! Includes: ${YAML_CPP_INCLUDE_DIR}\nLibrary: ${YAML_CPP_LIBRARIES}\n"
+        "yaml-cpp found!\nIncludes: ${YAML_CPP_INCLUDE_DIR}\nLibrary: ${YAML_CPP_LIBRARIES}\n"
     )
 
     list(APPEND UTOPIA_BUILD_INCLUDES ${YAML_CPP_INCLUDE_DIR})
@@ -419,7 +417,7 @@ if(UTOPIA_ENABLE_YAML_CPP)
     set(UTOPIA_BUILD_INCLUDES ${UTOPIA_BUILD_INCLUDES})
     set(UTOPIA_DEP_LIBRARIES ${UTOPIA_DEP_LIBRARIES})
   else()
-    include(../../cmake/InstallYAMLCPP.cmake)
+    include(${CMAKE_SOURCE_DIR}/cmake/InstallYAMLCPP.cmake)
   endif()
   add_subdirectory(backend/yamlcpp)
 endif()

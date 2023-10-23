@@ -45,10 +45,10 @@ namespace utopia {
             in.get("suff_it", suff_it_);            //actual initilisation if params defined
             in.get("atol_suff", atol_suff_);
 
-            if (mpi_world_rank() == 0){
-                std::cout << "atol: " << atol_ << "\tmax_it: " << max_it_ << std::endl;
-                std::cout << "suff_tol: " << atol_suff_ << "\tsuff_it: " << suff_it_ << std::endl;
-            }
+            // if (mpi_world_rank() == 0){
+            //     utopia::out() << "atol: " << atol_ << "\tmax_it: " << max_it_ <<  "\n";
+            //     utopia::out() << "suff_tol: " << atol_suff_ << "\tsuff_it: " << suff_it_ <<  "\n";
+            // }
         }
 
         void print_usage(std::ostream &os) const override {

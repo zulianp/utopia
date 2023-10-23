@@ -31,7 +31,6 @@ option(UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL "Sets utopia to use current proj
 
 option(UTOPIA_ENABLE_NO_ALLOC_REGIONS"enables utopia alloc-check facilities"
        OFF)
-option(UTOPIA_ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 # option(UTOPIA_ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers
 # developed in the PASSO library" OFF)
 option(UTOPIA_ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)

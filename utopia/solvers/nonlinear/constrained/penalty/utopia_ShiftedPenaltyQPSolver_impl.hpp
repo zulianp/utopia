@@ -76,7 +76,7 @@ namespace utopia {
         assert(x.empty() || (x.size() == b.size() && b.comm().size() == x.comm().size()));
         assert(this->has_upper_bound());
 
-        this->verbose(true);
+        // this->verbose(true);
 
         if (this->verbose()) {
             this->init_solver("ShiftedPenaltyQPSolver comm.size = " + std::to_string(b.comm().size()),
@@ -97,7 +97,6 @@ namespace utopia {
         auto ub_ptr = this->upper_bound();
         auto a_ptr = this->get_operator();
         auto linear_solver = impl_->linear_solver;
-        linear_solver->verbose(true);
 
         const Scalar penalty_param = impl_->penalty_param;
 

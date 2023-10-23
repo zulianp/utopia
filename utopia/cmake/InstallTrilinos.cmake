@@ -46,6 +46,18 @@ if(NOT Trilinos_FOUND)
          "-DMPI_Fortan_COMPILER=${MPI_Fortan_COMPILER}")
   endif()
 
+  set(HDF5_INCLUDE_DIRS "")
+  set(HDF5_LIBRARY_DIRS "")
+  set(Boost_INCLUDE_DIRS "")
+  set(Boost_LIBRARY_DIRS "")
+
+  if(UTOPIA_ENABLE_ENV_READ)
+    set(HDF5_INCLUDE_DIRS $ENV{HDF5_INCLUDE_DIRS})
+    set(HDF5_LIBRARY_DIRS $ENV{HDF5_LIBRARY_DIRS})
+    set(Boost_INCLUDE_DIRS $ENV{Boost_INCLUDE_DIRS})
+    set(Boost_LIBRARY_DIRS $ENV{Boost_LIBRARY_DIRS})
+  endif()
+
   list(
     APPEND
     TRILINOS_CMAKE_ARGS
@@ -111,11 +123,12 @@ if(NOT Trilinos_FOUND)
     "-DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON"
     "-DTrilinos_ENABLE_Kokkos=ON"
     "-DTPL_ENABLE_HDF5=ON"
+    "-DTPL_HDF5_INCLUDE_DIRS=${HDF5_INCLUDE_DIRS}"
+    "-DTPL_HDF5_LIBRARY_DIRS=${HDF5_LIBRARY_DIRS}"
+    "-DTPL_Boost_INCLUDE_DIRS=${Boost_INCLUDE_DIRS}"
+    "-DTPL_Boost_LIBRARY_DIRS=${Boost_LIBRARY_DIRS}"
     "-DTrilinos_SET_GROUP_AND_PERMISSIONS_ON_INSTALL_BASE_DIR=${CMAKE_SOURCE_DIR}/../external/"
     "-DTrilinos_ENABLE_EXAMPLES=OFF")
-
-
-
 
   # For cuda
   if(UTOPIA_ENABLE_CUDA)
@@ -131,23 +144,33 @@ if(NOT Trilinos_FOUND)
       "-DKokkos_ARCH_PASCAL61=ON "
       "-DTpetra_INST_CUDA=ON")
   endif()
+  
+  if((EXISTS ${HDF5_INCLUDE_DIRS})
+     AND (EXISTS ${HDF5_LIBRARY_DIRS})
+     AND (EXISTS ${Boost_INCLUDE_DIRS})
+     AND (EXISTS ${Boost_LIBRARY_DIRS}))
+    ExternalProject_Add(
+      trilinos
+      UPDATE_COMMAND "" # FIXME
+      PREFIX ${STAGE_DIR}
+      GIT_REPOSITORY ${TRILINOS_URL}
+      DOWNLOAD_DIR ${STAGE_DIR}
+      INSTALL_DIR ${TRILINOS_INSTALL_DIR}
+      # BINARY_DIR                      ${TRILINOS_SOURCE_DIR}
+      CMAKE_ARGS "${TRILINOS_CMAKE_ARGS}"
+      LOG_CONFIGURE 1
+      LOG_BUILD 1
+      BUILD_COMMAND ${CMAKE_COMMAND} -E echo "Starting $<CONFIG> build"
+      COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config $<CONFIG>
+      COMMAND ${CMAKE_COMMAND} -E echo "$<CONFIG> build complete")
 
-  ExternalProject_Add(
-    trilinos
-    UPDATE_COMMAND "" # FIXME
-    PREFIX ${STAGE_DIR}
-    GIT_REPOSITORY ${TRILINOS_URL}
-    DOWNLOAD_DIR ${STAGE_DIR}
-    INSTALL_DIR ${TRILINOS_INSTALL_DIR}
-    # BINARY_DIR                      ${TRILINOS_SOURCE_DIR}
-    CMAKE_ARGS "${TRILINOS_CMAKE_ARGS}"
-    LOG_CONFIGURE 1
-    LOG_BUILD 1
-    BUILD_COMMAND ${CMAKE_COMMAND} -E echo "Starting $<CONFIG> build"
-    COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config $<CONFIG>
-    COMMAND ${CMAKE_COMMAND} -E echo "$<CONFIG> build complete")
-
-  set_target_properties(trilinos PROPERTIES EXCLUDE_FROM_ALL TRUE)
-  set(Trilinos_DIR ${TRILINOS_INSTALL_DIR})
+    set_target_properties(trilinos PROPERTIES EXCLUDE_FROM_ALL TRUE)
+    set(Trilinos_DIR ${TRILINOS_INSTALL_DIR})
+  else()
+    message(
+      FATAL_ERROR
+        "Please set the following variables for trilinos to install correctly:\nHDF5_INCLUDE_DIRS: Include folder of hdf5.\nHDF5_LIBRARY_DIRS: Library folder of hdf5.\nBoost_INCLUDE_DIRS: Include folder of boost.\nBoost_LIBRARY_DIRS: Library folder of boost.\n"
+    )
+  endif()
 
 endif()

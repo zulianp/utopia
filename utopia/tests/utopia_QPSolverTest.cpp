@@ -457,8 +457,8 @@ namespace utopia {
         void MPRGP_DD() {
             auto &&comm = Comm::get_default();
 
-            // static const bool verbose = false;
-            static const bool verbose = Traits::Backend == PETSC;
+            static const bool verbose = false;
+            // static const bool verbose = Traits::Backend == PETSC;
 
             Matrix A;
             Vector b;
@@ -666,7 +666,7 @@ namespace utopia {
 
         void monotone_amg_test() {
             // Does not work
-            const static bool verbose = true;
+            const static bool verbose = false;
             const static bool use_masks = false;
             int n_levels = 4;
             int n_coarse = 50;
