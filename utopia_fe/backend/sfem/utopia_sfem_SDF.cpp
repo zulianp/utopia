@@ -113,10 +113,10 @@ namespace utopia {
             ptrdiff_t nlocal[3] = {impl_->nlocal[0], impl_->nlocal[1], impl_->nlocal[2]};
             geom_t origin[3] = {impl_->origin[0], impl_->origin[1], impl_->origin[2]};
 
-            std::stringstream ss;
-            ss << "BEFORE\n";
-            ss << nlocal[0] << " " << nlocal[1] << " " << nlocal[2] << "\n";
-            ss << origin[0] << " " << origin[1] << " " << origin[2] << "\n";
+            // std::stringstream ss;
+            // ss << "BEFORE\n";
+            // ss << nlocal[0] << " " << nlocal[1] << " " << nlocal[2] << "\n";
+            // ss << origin[0] << " " << origin[1] << " " << origin[2] << "\n";
 
             if (mesh.comm().size() > 1) {
                 sdf_view(mesh.comm().get(),
@@ -137,10 +137,10 @@ namespace utopia {
                 actual_sdf = impl_->sdf;
             }
 
-            ss << "AFTER\n";
-            ss << nlocal[0] << " " << nlocal[1] << " " << nlocal[2] << "\n";
-            ss << origin[0] << " " << origin[1] << " " << origin[2] << "\n";
-            mesh.comm().synched_print(ss.str());
+            // ss << "AFTER\n";
+            // ss << nlocal[0] << " " << nlocal[1] << " " << nlocal[2] << "\n";
+            // ss << origin[0] << " " << origin[1] << " " << origin[2] << "\n";
+            // mesh.comm().synched_print(ss.str());
 
             if (impl_->interpolate) {
                 interpolate_gap(m->n_owned_nodes,
