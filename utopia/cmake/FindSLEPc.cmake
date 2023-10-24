@@ -29,6 +29,7 @@ endif()
 # ##############################################################################
 if(EXISTS "${SLEPC_DIR}/include" AND EXISTS
                                      "${SLEPC_DIR}/${PETSC_ARCH}/include")
+
   set(SLEPC_INCLUDES "${SLEPC_DIR}/include"
                      "${SLEPC_DIR}/${PETSC_ARCH}/include")
   set(SLEPC_FOUND TRUE)
@@ -53,7 +54,7 @@ endif()
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
   SLEPc
-  "SLEPc could not be found: be sure to set SLEPC_DIR in your environment variables"
+  "SLEPc could not be found: be sure to set SLEPC_DIR in your environment variables and/or set PETSC_ARCH as well."
   SLEPC_LIBRARIES
   SLEPC_INCLUDES
   SLEPC_DIR)

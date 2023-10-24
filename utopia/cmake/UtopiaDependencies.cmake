@@ -122,6 +122,7 @@ if(UTOPIA_ENABLE_BLAS)
     list(APPEND UTOPIA_DEFS ${BLAS_DEFINITIONS})
 
     set(UTOPIA_ENABLE_BLAS ON)
+    set(UTOPIA_BLAS_DIR ${BLAS_blas_LIBRARY})
 
   else()
     message(WARNING "[Warning] Blas not found")
@@ -132,6 +133,8 @@ if(UTOPIA_ENABLE_BLAS)
     list(APPEND UTOPIA_BUILD_INCLUDES ${LAPACK_INCLUDE_DIR})
     list(APPEND UTOPIA_DEP_LIBRARIES ${LAPACK_LIBRARIES})
     list(APPEND UTOPIA_DEFS ${LAPACK_DEFINITIONS})
+
+    set(UTOPIA_LAPACK_DIR ${LAPACK_LIBRARIES})
   else()
     message(WARNING "[Warning] Lapack not found")
   endif()
@@ -140,6 +143,8 @@ if(UTOPIA_ENABLE_BLAS)
   if(UMFPACK_FOUND)
     list(APPEND UTOPIA_BUILD_INCLUDES ${UMFPACK_INCLUDES})
     list(APPEND UTOPIA_DEP_LIBRARIES ${UMFPACK_LIBRARIES})
+
+    set(UTOPIA_UMFPACK_DIR ${UMFPACK_LIBDIR})
   else()
     message(WARNING "[Warning] Umfpack not found")
   endif()
@@ -215,7 +220,7 @@ if(UTOPIA_ENABLE_PETSC)
   if(NOT UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
     find_package(PETSc REQUIRED)
   else()
-    find_package(PETSc NO_DEFAULT_PATH)
+    find_package(PETSc QUIET)
   endif()
 
   if(PETSC_FOUND)
@@ -298,6 +303,9 @@ if(UTOPIA_ENABLE_TRILINOS)
     set(Trilinos_FOUND FALSE)
     set(Trilinos_SEARCH_PATHS
         "${CMAKE_SOURCE_DIR}/../external/Trilinos/lib/cmake/Trilinos")
+    if(NOT APPLE AND NOT WIN32)
+      set(Trilinos_SEARCH_PATHS "${CMAKE_SOURCE_DIR}/../external/Trilinos/lib64/cmake/Trilinos")
+    endif()
     find_package(Trilinos PATHS ${Trilinos_SEARCH_PATHS} NO_DEFAULT_PATH)
   endif()
   if(Trilinos_FOUND)
@@ -592,6 +600,15 @@ if(UTOPIA_ENABLE_SCRIPTING)
   endif()
 endif()
 
+
+
+
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+foreach (_variableName ${_variableNames})
+    message(STATUS "${_variableName}=${${_variableName}}")
+endforeach()
+
 # ##############################################################################
 macro(print_dependency_table)
   set(DEP_TABLE
@@ -601,32 +618,32 @@ macro(print_dependency_table)
       "${DEP_TABLE}----------------------------------------------------------\n"
   )
   set(DEP_TABLE
-      "${DEP_TABLE}backend\t\t| status| location\t\t| version\n----------------------------------------------------------\n"
+      "${DEP_TABLE}backend\t\t| status | location\t\t| version\n----------------------------------------------------------\n"
   )
 
   set(DEP_TABLE
-      "${DEP_TABLE}mpi\t\t| ${UTOPIA_ENABLE_MPI}| ${UTOPIA_MPI_DIR}| ${UTOPIA_MPI_VERSION}\n"
+      "${DEP_TABLE}mpi\t\t| ${UTOPIA_ENABLE_MPI} | ${UTOPIA_MPI_DIR}| ${UTOPIA_MPI_VERSION}\n"
   )
   set(DEP_TABLE
-      "${DEP_TABLE}petsc\t\t| ${UTOPIA_ENABLE_PETSC}| ${UTOPIA_PETSC_DIR}| ${UTOPIA_PETSC_VERSION}\n"
+      "${DEP_TABLE}petsc\t\t| ${UTOPIA_ENABLE_PETSC} | ${UTOPIA_PETSC_DIR}| ${UTOPIA_PETSC_VERSION}\n"
   )
   set(DEP_TABLE
-      "${DEP_TABLE}slepc\t\t| ${UTOPIA_ENABLE_SLEPC}| ${UTOPIA_SLEPC_DIR}| ${UTOPIA_SLEPC_VERSION}\n"
+      "${DEP_TABLE}slepc\t\t| ${UTOPIA_ENABLE_SLEPC} | ${UTOPIA_SLEPC_DIR}| ${UTOPIA_PETSC_VERSION}\n"
   )
   set(DEP_TABLE
-      "${DEP_TABLE}trilinos\t| ${UTOPIA_ENABLE_TRILINOS}| ${UTOPIA_TRILINOS_DIR}| ${UTOPIA_TRILINOS_VERSION}\n"
+      "${DEP_TABLE}trilinos\t| ${UTOPIA_ENABLE_TRILINOS} | ${UTOPIA_TRILINOS_DIR}| ${UTOPIA_TRILINOS_VERSION}\n"
   )
   set(DEP_TABLE
-      "${DEP_TABLE}blas\t\t| ${UTOPIA_ENABLE_BLAS}| ${UTOPIA_BLAS_DIR} ${UTOPIA_BLAS_DIR}|${UTOPIA_BLAS_VERSION}\n"
+      "${DEP_TABLE}blas\t\t| ${UTOPIA_ENABLE_BLAS} | ${UTOPIA_BLAS_DIR} ${UTOPIA_BLAS_DIR}|${UTOPIA_BLAS_VERSION}\n"
   )
   set(DEP_TABLE
-      "${DEP_TABLE}lapack\t\t| ${UTOPIA_ENABLE_PETSC}| ${LAPACK_DIR}| ${LAPACK_VERSION}\n"
+      "${DEP_TABLE}lapack\t\t| ${UTOPIA_ENABLE_PETSC} | ${UTOPIA_LAPACK_DIR}| ${LAPACK_VERSION}\n"
   )
   set(DEP_TABLE
-      "${DEP_TABLE}umfpack\t\t| ${UTOPIA_ENABLE_PETSC}| ${UMFPACK_DIR}| ${UMFPACK_VERSION}\n"
+      "${DEP_TABLE}umfpack\t\t| ${UTOPIA_ENABLE_PETSC} | ${UTOPIA_UMFPACK_DIR}| ${UMFPACK_VERSION}\n"
   )
   set(DEP_TABLE
-      "${DEP_TABLE}yaml\t\t| ${UTOPIA_ENABLE_YAML_CPP}| ${UTOPIA_YAML_CPP_DIR}| ${UTOPIA_YAML_CPP_VERSION}\n"
+      "${DEP_TABLE}yaml\t\t| ${UTOPIA_ENABLE_YAML_CPP} | ${UTOPIA_YAML_CPP_DIR}| ${UTOPIA_YAML_CPP_VERSION}\n"
   )
   set(DEP_TABLE
       "${DEP_TABLE}__________________________________________________________\n"

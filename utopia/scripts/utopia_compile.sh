@@ -6,7 +6,7 @@ set -e
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 function display_help() {
-    printf "This is the general utopia build script:\n ARGUMENTS:\n\t-h: Displays this information.\n\t-b <build_type>: Run the preferred build type.\n\t\t<build_type>: \n\t\tbasic: Compile utopia with only blas, lapack, umfpack\n\t\tall: Compile utopia with petsc, trilinos, blas, lapack, umfpack and other options.\n\t\tfluya: Compile utopia in fluya mode.\n\t\tlocal: Compile utopia and download/install petsc and trilinos locally in ../external/.\n\t-j <n_jobs>: Number of jobs to run in make.\n"
+    printf "This is the general utopia build script:\n ARGUMENTS:\n\t-h: Displays this information.\n\t-b <build_type>: Run the preferred build type.\n\t\t<build_type>: \n\t\tbasic: Compile utopia with only blas, lapack, umfpack\n\t\tall: Compile utopia with petsc, trilinos, blas, lapack, umfpack and other options.\n\t\tfluya: Compile utopia in fluya mode.\n\t\tlocal: Compile utopia and download/install petsc and trilinos locally in ../external/.\n\t-j <n_jobs>: Number of jobs to run in make.\n\t-p <install_prefix>: Path for utopia installation.\n"
 }
 
 function basic_build() {
@@ -46,7 +46,7 @@ fi
 
 
 
-while getopts ":b:j:h:p:" opt; do
+while getopts ":b:j:p:h" opt; do
   case $opt in
     b) arg1="$OPTARG"
     ;;
