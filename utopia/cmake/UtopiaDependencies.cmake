@@ -395,6 +395,7 @@ if(UTOPIA_ENABLE_YAML_CPP)
     list(APPEND YAMLCPP_MODULES .)
 
     # utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${YAMLCPP_MODULES}")
+    if(APPLE)
 
     get_target_property(YAML_CPP_INCLUDE_DIR yaml-cpp::yaml-cpp
                         INTERFACE_INCLUDE_DIRECTORIES)
@@ -413,6 +414,7 @@ if(UTOPIA_ENABLE_YAML_CPP)
       get_target_property(YAML_CPP_LIBRARIES yaml-cpp::yaml-cpp
                           IMPORTED_LOCATION_NOCONFIG)
     endif()
+  endif()
 
     message(
       STATUS
@@ -603,11 +605,11 @@ endif()
 
 
 
-get_cmake_property(_variableNames VARIABLES)
-list (SORT _variableNames)
-foreach (_variableName ${_variableNames})
-    message(STATUS "${_variableName}=${${_variableName}}")
-endforeach()
+# get_cmake_property(_variableNames VARIABLES)
+# list (SORT _variableNames)
+# foreach (_variableName ${_variableNames})
+#     message(STATUS "${_variableName}=${${_variableName}}")
+# endforeach()
 
 # ##############################################################################
 macro(print_dependency_table)
