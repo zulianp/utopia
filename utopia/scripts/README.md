@@ -13,6 +13,7 @@ While in "utopia/utopia/"
 ./scripts/utopia_compile.sh -h 
 ```
 Where:
+
 - build_type: basic, all, fluya, local.
 - n_jobs: number of jobs you want to run.
 - install_prefix: path to where you want to install utopia.
