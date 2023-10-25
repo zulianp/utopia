@@ -80,7 +80,7 @@ namespace utopia {
             PetscReal emax, emin;
             KSPComputeExtremeSingularValues(ksp, &emax, &emin);
             PetscPrintf(comm,
-                        "%D     %14.12e         %14.12e        %14.12e \n",
+                        "%d     %14.12e         %14.12e        %14.12e \n",
                         it,
                         rnorm,
                         conv_rate,
@@ -90,7 +90,7 @@ namespace utopia {
                 PetscPrintf(comm, "it           ||r||                   rho      \n");
             }
 
-            PetscPrintf(comm, "%D     %14.12e         %14.12e \n", it, rnorm, conv_rate);
+            PetscPrintf(comm, "%d     %14.12e         %14.12e \n", it, rnorm, conv_rate);
         }
 
         return 0;

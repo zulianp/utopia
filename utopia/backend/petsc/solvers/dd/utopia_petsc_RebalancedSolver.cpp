@@ -8,6 +8,8 @@
 
 #include "utopia_polymorphic_LinearSolver.hpp"
 
+#include "utopia_petsc_Matrix_impl.hpp"
+
 #include <vector>
 
 namespace utopia {
@@ -26,6 +28,8 @@ namespace utopia {
 
         int block_size{1};
         bool keep_symbolic_factorization{false};
+
+        bool empty() { return partitioning.empty(); }
 
         void clear() {
             op.clear();
@@ -61,7 +65,10 @@ namespace utopia {
         return ptr.release();
     }
 
-    void RebalancedSolver::clear() { impl_->clear(); }
+    void RebalancedSolver::clear() {
+        UTOPIA_TRACE_SCOPE("RebalancedSolver::clear");
+        impl_->clear();
+    }
 
     void RebalancedSolver::update(const std::shared_ptr<const PetscMatrix> &op) {
         UTOPIA_TRACE_SCOPE("RebalancedSolver::update");
@@ -71,10 +78,7 @@ namespace utopia {
         if (op->comm().size() == 1) {
             impl_->solver->update(op);
         } else {
-            // redist matrix
-            // op->write("mat.bin");
-
-            if (impl_->op.empty() || !impl_->keep_symbolic_factorization) {
+            if (impl_->empty() || !impl_->keep_symbolic_factorization) {
                 if (impl_->block_size == 1) {
                     initialize_rebalance(*op,
                                          impl_->partitioning,
@@ -99,38 +103,6 @@ namespace utopia {
                 ss << impl_->op.local_rows();
                 op->comm().synched_print(ss.str());
             }
-
-            // printf("%d DONE\n",  op->comm().rank());
-
-            // std::stringstream ss;
-
-            // ss << "[" << op->comm().rank() << "/" << op->comm().size() << "]\n";
-            // ss << "partitioning:\n";
-            // for (auto &p : impl_->partitioning) {
-            //     ss << p << " ";
-            // }
-            // ss << "\n";
-
-            // ss << "permutation:\n";
-            // for (auto &p : impl_->permutation) {
-            //     ss << p << " ";
-            // }
-            // ss << "\n";
-
-            // ss << "inverse_partitioning:\n";
-            // for (auto &p : impl_->inverse_partitioning) {
-            //     ss << p << " ";
-            // }
-            // ss << "\n";
-
-            // ss << "inverse_permutation:\n";
-            // for (auto &p : impl_->inverse_permutation) {
-            //     ss << p << " ";
-            // }
-            // ss << "\n";
-
-            // op->comm().synched_print(ss.str());
-            // op->comm().barrier();
 
             impl_->solver->update(make_ref(impl_->op));
         }

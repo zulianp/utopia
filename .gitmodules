@@ -13,3 +13,6 @@
 [submodule "utopia/external/isolver"]
 	path = utopia/external/isolver
 	url = https://zulianp@bitbucket.org/zulianp/isolver.git
+[submodule "utopia_fe/external/sfem"]
+	path = utopia_fe/external/sfem
+	url = https://zulianp@bitbucket.org/zulianp/sfem.git

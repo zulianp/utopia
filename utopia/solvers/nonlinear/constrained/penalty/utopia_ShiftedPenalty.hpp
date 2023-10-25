@@ -76,6 +76,8 @@ namespace utopia {
             Vector d;
             const Scalar penalty_parameter = penalty_parameter_current_;
 
+            auto a_view = local_view_device(*active);
+
             if (this->box()->has_upper_bound()) {
                 d = *this->box()->upper_bound() - x;
 
@@ -85,7 +87,7 @@ namespace utopia {
                 parallel_for(
                     local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
                         const Scalar di = d_view.get(i);
-                        const Scalar active = di <= 0;
+                        const Scalar active = a_view.get(i);
                         v_view.set(i, active * di * di * penalty_parameter);
                     });
             }
@@ -100,10 +102,21 @@ namespace utopia {
                 parallel_for(
                     local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
                         const Scalar di = d_view.get(i);
-                        const Scalar active = di >= 0;
+                        const Scalar active = a_view.get(i);
                         v_view.set(i, active * di * di * penalty_parameter);
                     });
             }
+
+            // if (this->box()->has_upper_bound() || this->box()->has_lower_bound()) {
+            //     auto d_view = const_local_view_device(*dps);
+            //     auto v_view = local_view_device(v);
+
+            //     parallel_for(
+            //         local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+            //             const Scalar di = d_view.get(i);
+            //             v_view.set(i, di * di * penalty_parameter);
+            //         });
+            // }
 
             return true;
         }
@@ -223,7 +236,7 @@ namespace utopia {
 
                 // Transform to problem base
                 this->transform()->inverse_transform_direction(v, work);
-                value = sum(v);
+                value += sum(v);
             } else {
                 if (!penalty_value(x, v)) {
                     return false;
@@ -233,9 +246,9 @@ namespace utopia {
 
                 if (this->has_scaling_matrix()) {
                     this->scaling_matrix()->apply(v, work);
-                    value = sum(work);
+                    value += sum(work);
                 } else {
-                    value = sum(v);
+                    value += sum(v);
                 }
             }
 
@@ -341,8 +354,50 @@ namespace utopia {
                     const Scalar shift_norm = norm2(*shift);
 
                     if (!x.comm().rank() && c > 0) {
-                        utopia::out() << "Active: " << c << ", penetration_norm: " << penetration_norm
+                        utopia::out() << "UB) Active: " << c << ", penetration_norm: " << penetration_norm
                                       << ", shift_norm: " << shift_norm << "\n";
+                    }
+                }
+            }
+
+            if (this->box()->has_lower_bound()) {
+                {
+                    auto lb_view = const_local_view_device(*this->box()->lower_bound());
+                    auto x_view = const_local_view_device(x);
+                    auto s_view = local_view_device(*shift);
+                    auto a_view = local_view_device(*active);
+                    auto dps_view = local_view_device(*dps);
+
+                    parallel_for(
+                        local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                            const auto lbi = lb_view.get(i);
+                            const auto xi = x_view.get(i);
+                            const auto di = lbi - xi;
+                            auto si = s_view.get(i);
+
+                            auto dps = di + si;
+                            const bool active = dps >= 0;
+
+                            si = active * dps;
+                            dps = active * (di + si);
+
+                            a_view.set(i, active);
+                            s_view.set(i, si);
+                            dps_view.set(i, dps);
+                        });
+                }
+
+                if (verbose_) {
+                    const SizeType c = sum(*active);
+                    Vector diff = *this->box()->lower_bound() - x;
+                    diff.e_max(0);
+                    const Scalar penetration_norm = norm2(diff);
+                    const Scalar shift_norm = norm2(*shift);
+                    const Scalar dps_norm = norm2(*dps);
+
+                    if (!x.comm().rank() && c > 0) {
+                        utopia::out() << "LB) Active: " << c << ", penetration_norm: " << penetration_norm
+                                      << ", shift_norm: " << shift_norm << ", dps norm:" << dps_norm << "\n";
                     }
                 }
             }

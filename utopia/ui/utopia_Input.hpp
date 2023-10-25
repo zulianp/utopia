@@ -55,6 +55,7 @@ namespace utopia {
         virtual void get(const std::string &key, Path &val) { get(key, val.raw_type()); }
         virtual void get(const std::string &key, bool &val) = 0;
         virtual void get(const std::string &key, double &val) = 0;
+        virtual void get(const std::string &key, float &val) = 0;
         virtual void get(const std::string &key, int &val) = 0;
         virtual void get(const std::string &key, long &val) = 0;
         virtual void get(const std::string &key, unsigned long &val) = 0;

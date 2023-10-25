@@ -333,7 +333,6 @@ namespace utopia {
 
             rowptr[0] = start;
 
-            
             for (ptrdiff_t i = 0; i < crs.lrows; i++) {
                 rowptr[i + 1] = (d_rowptr[i + 1] - d_rowptr[i]) + (o_rowptr[i + 1] - o_rowptr[i]) + rowptr[i];
 
@@ -1832,6 +1831,13 @@ namespace utopia {
 
         this->destroy_callback = destroy_callback;
         update_mirror();
+    }
+
+    void PetscMatrix::set_block_size(const int block_size) {
+        // int prev_block_size;
+        // MatGetBlockSize(raw_type(), &prev_block_size);
+        // printf("prev_block_size=%d\n", prev_block_size);
+        MatSetBlockSize(raw_type(), block_size);
     }
 
 }  // namespace utopia

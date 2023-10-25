@@ -26,6 +26,13 @@ namespace utopia {
     }
 
     template <class Matrix, class Vector>
+    void OmniLinearSolver<Matrix, Vector>::clear() {
+        if (impl_) {
+            impl_->clear();
+        }
+    }
+
+    template <class Matrix, class Vector>
     OmniLinearSolver<Matrix, Vector>::OmniLinearSolver()
         : impl_(LinearSolverFactory<Matrix, Vector>::default_linear_solver()) {}
 

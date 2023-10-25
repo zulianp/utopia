@@ -201,6 +201,7 @@ namespace utopia {
         if (log_regions_) {
             std::string indent(print_indent_level * 2, ' ');
             utopia::out() << indent << "BEGIN[" << mpi_world_rank() << "]: " << m.get_class() << "\n";
+            utopia::out().stream() << std::flush;
             print_indent_level++;
         }
 
@@ -222,6 +223,7 @@ namespace utopia {
             std::string indent(print_indent_level * 2, ' ');
             utopia::out() << indent << "END[" << mpi_world_rank() << "]: " << it->second.get_class() << " ("
                           << it->second.seconds() << " seconds)\n";
+            utopia::out().stream() << std::flush;
         }
 
         if (!full_trace_) {

@@ -251,6 +251,11 @@ namespace utopia {
         impl_->get(key, val);
     }
 
+    void JSONInput::get(const std::string &key, float &val) {
+        assert(impl_);
+        impl_->get(key, val);
+    }
+
     void JSONInput::get(const std::string &key, int &val) {
         assert(impl_);
         impl_->get(key, val);
