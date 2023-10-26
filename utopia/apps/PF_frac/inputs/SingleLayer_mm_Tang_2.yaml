@@ -3,7 +3,7 @@ app: SingleSedimentaryLayer
 # Output 
 #output-path: Output/Hobb/HOBBS_PT_AT1_d2_Dirch_1E32_1nu05_2nu45_dt0003_W2_l2_m15_p01_Unif
 #output-path: Output/TestingFracEnergy
-output-path: /home/edoardo/Data/sdd1/Results/SedimentaryLayer/Single_d60_L1600_H500_Ef50_nuf25_Gcf20_En10_nun35_Gcn160_l015_m1_Twodt00001_p001_Com0_Second
+output-path: /home/edoardo/Data/sdd1/Results/SedimentaryLayer/Single_d80_L1600_H500_Ef50_nuf25_Gcf20_En10_nun35_Gcn160_l015_m1_Twodt00001_p001_Com0_Second
 save_output: true
 # Mesh specification -----------------------------------------
 nx: 1601
@@ -46,8 +46,8 @@ random_damage: false
 uniform_damage: false
 central_damage: false
 IC_number: 10 			#for uniform damage
-bottom_layer_height: 0.22e3	
-top_layer_height: 0.28e3
+bottom_layer_height: 0.210e3	
+top_layer_height: 0.290e3
 bottom_layer_height2: -10e3 	#below zero not modelled	
 top_layer_height2: -10e3 	#below zero ... 
 interface_regularisation_length: 0.09e3

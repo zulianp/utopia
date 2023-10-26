@@ -599,6 +599,8 @@ namespace utopia {
 
             in.get("shifted_penalty", [&](Input &node) {
                 std::cout << "Using: ShiftedPenalty\n";
+                std::cout << "GenericPhaseFieldFormulation::read() - Shifted penalty NOT TESTED - STOP" << std::endl;
+                exit(1);
                 penalty_ = std::make_shared<ShiftedPenalty<Matrix>>();
                 penalty_->read(node);
 
