@@ -331,15 +331,15 @@ namespace utopia {
             vwgt = &actual_vwgts[0];
         }
 
-        if (0) {
-            write_parmetis_graph(matrix.comm(),
-                                 matrix.local_rows(),
-                                 matrix.rows(),
-                                 matrix.row_range().begin(),
-                                 &xadj[0],
-                                 &adjncy[0],
-                                 &tpwgts[0]);
-        }
+        // if (0) {
+        //     write_parmetis_graph(matrix.comm(),
+        //                          matrix.local_rows(),
+        //                          matrix.rows(),
+        //                          matrix.row_range().begin(),
+        //                          &xadj[0],
+        //                          &adjncy[0],
+        //                          &tpwgts[0]);
+        // }
 
         int ret = 0;
         {
