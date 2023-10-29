@@ -23,12 +23,10 @@
 #cmakedefine UTOPIA_ENABLE_CPP11
 #cmakedefine UTOPIA_ENABLE_UMFPACK
 #cmakedefine UTOPIA_ENABLE_MPI
-#cmakedefine UTOPIA_ENABLE_OPEN_BLAS
 #cmakedefine UTOPIA_ENABLE_PETSC_CRAY
 #cmakedefine UTOPIA_ENABLE_CUDA
 #cmakedefine UTOPIA_ENABLE_EIGEN_3
-#cmakedefine UTOPIA_ENABLE_TRACE
-#cmakedefine UTOPIA_ENABLE_TRACE_EXPR
+#cmakedefine UTOPIA_ENABLE_TRACE_EXPR_EXPR
 #cmakedefine UTOPIA_ENABLE_NO_ALLOC_REGIONS
 #cmakedefine UTOPIA_ENABLE_TINY_EXPR
 #cmakedefine UTOPIA_ENABLE_JSON
@@ -66,11 +64,6 @@
 #define UTOPIA_NVCC_PRIVATE
 #endif
 
-
-#ifdef UTOPIA_ENABLE_OPEN_BLAS
-#define UTOPIA_ENABLE_BLAS
-#endif
-
 #ifdef UTOPIA_ENABLE_PETSC_CRAY
 #define PETSC_CXX_STATIC_INLINE static inline
 #define PETSC_CXX_RESTRICT __restrict__
@@ -79,12 +72,12 @@
 
 #ifndef NDEBUG
 #include <assert.h>
-#cmakedefine ENABLE_LOCK_CHECK
-#ifdef ENABLE_LOCK_CHECK
+#cmakedefine UTOPIA_ENABLE_LOCK_CHECK
+#ifdef UTOPIA_ENABLE_LOCK_CHECK
 #define utopia_lock_check_assert(expr_) assert(expr_)
 #else
 #define utopia_lock_check_assert(expr_)
-#endif //ENABLE_LOCK_CHECK
+#endif //UTOPIA_ENABLE_LOCK_CHECK
 #else
 #define utopia_lock_check_assert(expr_)
 #endif //NDEBUG

@@ -3,10 +3,6 @@
 
 #include "utopia_Expressions.hpp"
 
-// #ifdef UTOPIA_ENABLE_OPENCL
-// #include "utopia_Evaluate.hpp"
-// #endif //WITH_OPENCL
-
 namespace utopia {
     template <class Action>
     class TreeNavigator {
@@ -110,7 +106,6 @@ namespace utopia {
             post_intercept(expr);
         }
 
-        // #ifdef UTOPIA_ENABLE_OPENCL
         template <class Expr, int Order>
         void visit(const Evaluate<Expr, Order> &expr) {
             pre_intercept(expr);
@@ -124,7 +119,6 @@ namespace utopia {
 
             post_intercept(expr);
         }
-        // #endif //WITH_OPENCL
 
         template <class InnerExpr, class Operation>
         void visit(const Reduce<InnerExpr, Operation> &expr) {

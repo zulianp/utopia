@@ -11,8 +11,6 @@
 
 #include <Trilinos_version.h>
 
-// #pragma message "Value of UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE is: " UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE
-
 #if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
 #include <Tpetra_Access.hpp>
 #endif

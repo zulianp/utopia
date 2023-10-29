@@ -4,9 +4,6 @@ if(NOT Trilinos_FOUND)
   # git clone https://github.com/trilinos/Trilinos.git
   include(ExternalProject)
 
-  # Create a basic list then populate it with the right args
-  # list(BASIC_TRILINOS_CMAKE_ARGS)
-
   if(UTOPIA_DEPENDENCIES_DIR)
     set(TRILINOS_INSTALL_DIR ${UTOPIA_DEPENDENCIES_DIR}/Trilinos)
   else()
@@ -24,7 +21,6 @@ if(NOT Trilinos_FOUND)
 
   if(MPI_DIR)
     set(TRILINOS_MPI_BASE_DIR ${MPI_DIR})
-    # message(STATUS "TRILINOS_MPI_BASE_DIR=${TRILINOS_MPI_BASE_DIR}")
     message(STATUS "MPI_CXX_COMPILER=${MPI_CXX_COMPILER}")
     message(STATUS "MPI_C_COMPILER=${MPI_C_COMPILER}")
   endif()

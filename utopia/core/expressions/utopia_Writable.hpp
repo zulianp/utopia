@@ -166,7 +166,7 @@ namespace utopia {
             set_matrix(vrows, vcols, vvalues);
         }
 
-#ifdef ENABLE_LOCK_CHECK
+#ifdef UTOPIA_ENABLE_LOCK_CHECK
         Writeable() : lock_active_(false) {}
 
         inline bool is_write_locked() const { return lock_active_; }
@@ -174,13 +174,13 @@ namespace utopia {
         inline void write_lock() { lock_active_ = true; }
 
         inline void write_unlock() { lock_active_ = false; }
-#endif  // ENABLE_LOCK_CHECK
+#endif  // UTOPIA_ENABLE_LOCK_CHECK
 
     private:
         DERIVED_CRT(Derived);
-#ifdef ENABLE_LOCK_CHECK
+#ifdef UTOPIA_ENABLE_LOCK_CHECK
         bool lock_active_;
-#endif  // ENABLE_LOCK_CHECK
+#endif  // UTOPIA_ENABLE_LOCK_CHECK
     };
 
     template <class Implementation, class Derived>
@@ -240,7 +240,7 @@ namespace utopia {
             Backend<Scalar, Traits<Implementation>::Backend>::add(derived().implementation(), indices, values);
         }
 
-#ifdef ENABLE_LOCK_CHECK
+#ifdef UTOPIA_ENABLE_LOCK_CHECK
         Writeable() : lock_active_(false) {}
 
         inline bool is_write_locked() const { return lock_active_; }
@@ -248,13 +248,13 @@ namespace utopia {
         inline void write_lock() { lock_active_ = true; }
 
         inline void write_unlock() { lock_active_ = false; }
-#endif  // ENABLE_LOCK_CHECK
+#endif  // UTOPIA_ENABLE_LOCK_CHECK
 
     private:
         DERIVED_CRT(Derived);
-#ifdef ENABLE_LOCK_CHECK
+#ifdef UTOPIA_ENABLE_LOCK_CHECK
         bool lock_active_;
-#endif  // ENABLE_LOCK_CHECK
+#endif  // UTOPIA_ENABLE_LOCK_CHECK
     };
 
     // enum WriteMode {
@@ -278,17 +278,17 @@ namespace utopia {
     //         Write(Tensor &tensor, WriteMode mode = utopia::AUTO)
     //         : _tensor(tensor), mode_(mode)
     //         {
-    // #ifdef ENABLE_LOCK_CHECK
+    // #ifdef UTOPIA_ENABLE_LOCK_CHECK
     //             _tensor.write_lock();
-    // #endif //ENABLE_LOCK_CHECK
+    // #endif //UTOPIA_ENABLE_LOCK_CHECK
     //             Backend<Scalar, Traits<Tensor>::Backend>::write_lock(_tensor.implementation(), mode_);
     //         }
 
     //         ~Write()
     //         {
-    // #ifdef ENABLE_LOCK_CHECK
+    // #ifdef UTOPIA_ENABLE_LOCK_CHECK
     //             _tensor.write_unlock();
-    // #endif //ENABLE_LOCK_CHECK
+    // #endif //UTOPIA_ENABLE_LOCK_CHECK
     //             Backend<Scalar, Traits<Tensor>::Backend>::write_unlock(_tensor.implementation(), mode_);
     //         }
 

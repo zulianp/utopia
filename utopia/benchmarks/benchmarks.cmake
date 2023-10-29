@@ -24,13 +24,6 @@ target_sources(
   PRIVATE ${LOCAL_SOURCES}
   PRIVATE ${LOCAL_HEADERS})
 
-
-# target_link_libraries(utopia_bench PRIVATE utopia)
-# utopia_link_default_targets(utopia_bench)
-
-# target_include_directories(utopia_bench PRIVATE ${UTOPIA_BENCH_DIR})
-# target_include_directories(utopia_bench PRIVATE .)
-
 foreach(MODULE ${TEST_MODULES})
   # deep dependency into the test module...
   target_include_directories(utopia_bench PRIVATE ${UTOPIA_BENCH_DIR}/${MODULE})
@@ -38,17 +31,10 @@ foreach(MODULE ${TEST_MODULES})
 
 endforeach()
 
-
-# target_include_directories(utopia_bench PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_problems)
-
 if(UTOPIA_ENABLE_EIGEN_3)
   find_package(Eigen3)
   if(EIGEN3_FOUND)
     set(UTOPIA_ENABLE_EIGEN_3 ON)
-    # set(UTOPIA_ENABLE_EIGEN_3 ON PARENT_SCOPE)
     target_include_directories(utopia_bench PRIVATE ${EIGEN3_INCLUDE_DIR})
   endif()
 endif()
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g ${UTOPIA_DEV_FLAGS}")

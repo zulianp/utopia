@@ -38,30 +38,6 @@ namespace utopia {
     }
 #endif
 
-#ifdef UTOPIA_ENABLE_OPENCL
-    void test_opencl_code() {
-        const int n = 30;
-
-        CLMatrixd m = identity(n, n);
-        CLVectord v1 = values(n, 0.1), v2 = values(n, 0.2), v3 = values(n, 0.3), v4 = values(n, 0.4);
-
-        CLVectord res = abs(m * pow2(v1) + sqrt(v2) - v3);
-
-        // utopia::out() <<"-------------------\n";
-        // disp(v1);
-        // utopia::out() <<"-------------------\n";
-        // disp(res);
-        // utopia::out() <<"-------------------\n";
-
-        CLMatrixd mat_res = transpose(abs(0.1 * (m * m) - m) * (m));  // inner transpose does not work yet.
-
-        // utopia::out() <<"-------------------\n";
-        // // disp(mat_res);
-        // utopia::out() <<"-------------------\n";
-    }
-
-#endif  // UTOPIA_ENABLE_OPENCL
-
 #ifdef UTOPIA_ENABLE_LAPACK
 #ifdef UTOPIA_ENABLE_BLAS
     void test_lapack_eigen_solver() {
@@ -206,10 +182,6 @@ namespace utopia {
 
 #ifdef UTOPIA_ENABLE_CUDA
         UTOPIA_RUN_TEST(cuda_hello_world);
-#endif
-
-#ifdef UTOPIA_ENABLE_OPENCL
-        UTOPIA_RUN_TEST(test_opencl_code);
 #endif
 
 #ifdef UTOPIA_ENABLE_LAPACK

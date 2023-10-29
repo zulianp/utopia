@@ -14,33 +14,20 @@ endif()
 
 if(${MPI_DIR})
   set(MPI_SEARCH_PATHS_LIBRARY
-      "${MPI_DIR}/lib
-          ${MPI_LIB_DIR}
-          /opt/local/lib/openmpi-mp/
-          /opt/local/lib/mpich-mp/
-          /opt/local/lib/mpich-clang/
-          /opt/local/lib)")
+      "${MPI_DIR}/lib;${MPI_LIB_DIR};/opt/local/lib/openmpi-mp/;/opt/local/lib/mpich-mp/;/opt/local/lib/mpich-clang/;/opt/local/lib"
+  )
 endif()
 
 if(${MPI_DIR})
   set(MPI_SEARCH_PATHS_HEADERS
-      "${MPI_DIR}/include
-            ${MPI_INCLUDE_DIR}
-            ${MPI_TEMP_LIBRARY}/../include
-            ${MPI_LIB_DIR}/../../include
-            ${MPI_LIB_DIR}/../include
-            /opt/local/include/openmpi-mp/
-            ${MPI_LIB_DIR}/../../include/openmpi-mp/
-            ${MPI_LIB_DIR}/../../include/mpich-clang
-            ${MPI_LIB_DIR}/../include/mpich-clang
-            /opt/local/include/mpich-clang")
+      "${MPI_DIR}/include;${MPI_INCLUDE_DIR};${MPI_TEMP_LIBRARY}/../include;${MPI_LIB_DIR}/../../include;${MPI_LIB_DIR}/../include;/opt/local/include/openmpi-mp/;${MPI_LIB_DIR}/../../include/openmpi-mp/;${MPI_LIB_DIR}/../../include/mpich-clang;${MPI_LIB_DIR}/../include/mpich-clang;/opt/local/include/mpich-clang"
+  )
 endif()
 
 if(UTOPIA_ENABLE_ENV_READ)
-  set(MPI_SEARCH_PATHS_LIBRARY
-      "${MPI_SEARCH_PATHS_LIBRARY} $ENV{MPI_DIR}/lib")
+  set(MPI_SEARCH_PATHS_LIBRARY "${MPI_SEARCH_PATHS_LIBRARY};$ENV{MPI_DIR}/lib")
   set(MPI_SEARCH_PATHS_HEADERS
-      "${MPI_SEARCH_PATHS_HEADERS} $ENV{MPI_DIR}/include $ENV{MPI_INCLUDE_DIR}")
+      "${MPI_SEARCH_PATHS_HEADERS};$ENV{MPI_DIR}/include;$ENV{MPI_INCLUDE_DIR}")
 endif()
 
 if(APPLE)

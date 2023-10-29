@@ -1,5 +1,5 @@
 cmake .. \
--DCMAKE_INSTALL_PREFIX=/Users/dylan/Documents/Summer-Internship/Installations/Trilinos \
+-DCMAKE_INSTALL_PREFIX= \
 -DCMAKE_BUILD_TYPE=Release \
 -DCMAKE_CXX_COMPILER=mpicxx \
 -DCMAKE_C_COMPILER=mpicc \
@@ -66,8 +66,7 @@ cmake .. \
 
 
 
-# Enable and specify HDF5 if linkage errors. 
-# Installed it with homebrew so maybe that's the problem. 
+# Enable and specify HDF5 if linkage errors.  
 # Trilinos compiled no problems afterwards.
 
 #  Warning, Trilinos_ASSERT_MISSING_PACKAGES='ON' is set and is no longer

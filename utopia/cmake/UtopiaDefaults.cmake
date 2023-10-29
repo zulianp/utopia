@@ -58,7 +58,6 @@ if(UTOPIA_PULL_REQUEST_MODE)
   # -Werror=unused-local-typedef ")
 endif()
 
-# include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/external/GSL/include)
 
 if(WIN32)
   set(CMAKE_CXX_FLAGS_DEBUG
@@ -69,16 +68,6 @@ endif()
 
 message(
   STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
-
-if(UTOPIA_ENABLE_SANITIZER)
-  # if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
-
-  set(UTOPIA_DEV_FLAGS
-      "${UTOPIA_DEV_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls "
-  )
-
-  # endif()
-endif()
 
 # ##############################################################################
 # ##############################################################################

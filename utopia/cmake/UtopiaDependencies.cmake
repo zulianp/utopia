@@ -23,10 +23,6 @@ if(UNIX AND NOT APPLE)
   set(LINUX TRUE)
 endif()
 
-if(UTOPIA_ENABLE_ISOLVER)
-  add_subdirectory(plug_in_and_out/isolver)
-endif()
-
 if(UTOPIA_ENABLE_VC)
   add_subdirectory(backend/vc)
 endif()
@@ -48,11 +44,7 @@ if(UTOPIA_ENABLE_DEPRECATED_API)
   set(UTOPIA_DEPRECATED_API ON)
 endif()
 
-if(UTOPIA_ENABLE_LOCK_CHECKING)
-  set(UTOPIA_ENABLE_LOCK_CHECK TRUE)
-endif()
-
-# weird stuff goes here
+# Static dependencies.
 if(UTOPIA_STATIC_DEPENDENCIES_ONLY)
   if(WIN32)
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
@@ -61,15 +53,12 @@ if(UTOPIA_STATIC_DEPENDENCIES_ONLY)
   endif()
 endif()
 
-if(UTOPIA_ENABLE_TRACE_EXPR)
-  set(UTOPIA_ENABLE_TRACE ON)
-endif()
 
 # #################  BACKENDS  ######################
 
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
+# ##########################################
+# ##########################################
+# ##########################################
 
 # #################MPI######################
 if(UTOPIA_ENABLE_MPI)
@@ -108,11 +97,11 @@ if(MPI_CXX_COMPILER)
   set(CMAKE_CXX_COMPILER_DEBUG ${MPI_CXX_COMPILER})
 endif()
 
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
+# ##########################################
+# ##########################################
+# ##########################################
 
-# #################BLAS, LAPACK, UMFPACK######################
+# ####BLAS, LAPACK, UMFPACK####
 
 if(UTOPIA_ENABLE_BLAS)
   find_package(BLAS REQUIRED)
@@ -152,11 +141,11 @@ if(UTOPIA_ENABLE_BLAS)
   add_subdirectory(backend/blas)
 endif()
 
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
+# ##########################################
+# ##########################################
+# ##########################################
 
-# #################METIS######################
+# #################METIS####################
 
 if(UTOPIA_ENABLE_METIS)
   find_package(METIS REQUIRED)
@@ -170,11 +159,11 @@ if(UTOPIA_ENABLE_METIS)
   add_subdirectory(backend/metis)
 endif()
 
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
+# ##########################################
+# ##########################################
+# ##########################################
 
-# #################PARMETIS######################
+# #################PARMETIS#################
 
 if(UTOPIA_ENABLE_PARMETIS)
   find_package(ParMetis REQUIRED)
@@ -188,10 +177,10 @@ if(UTOPIA_ENABLE_PARMETIS)
   add_subdirectory(backend/parmetis)
 endif()
 
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
-# #################LOCAL_INSTALL_OPTIONS######################
+# ##########################################
+# ##########################################
+# ##########################################
+# ####LOCAL_INSTALL_OPTIONS####
 
 if(UTOPIA_INSTALL_PETSC
    AND NOT CYGWIN
@@ -211,7 +200,7 @@ if(UTOPIA_INSTALL_SLEPC AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
   include(InstallSlepc)
 endif()
 
-# #################PETSC######################
+# #################PETSC####################
 if(UTOPIA_ENABLE_PETSC)
 
   set(PETSC_TEST_RUNS TRUE)
@@ -255,8 +244,6 @@ if(UTOPIA_ENABLE_PETSC)
       endif()
     endif()
 
-    # set(UTOPIA_ENABLE_PETSC ON)
-
     set(UTOPIA_PETSC_DIR ${PETSC_DIR})
     set(UTOPIA_PETSC_VERSION ${PETSC_VERSION})
 
@@ -273,7 +260,6 @@ if(UTOPIA_ENABLE_PETSC)
 
       set(UTOPIA_SLEPC_DIR ${SLEPC_DIR})
       set(UTOPIA_SLEPC_VERSION ${SLEPC_VERSION})
-      # set(UTOPIA_ENABLE_SLEPC TRUE PARENT_SCOPE)
     else()
       message(WARNING "[Warning] Slepc not found")
     endif()
@@ -281,11 +267,11 @@ if(UTOPIA_ENABLE_PETSC)
   add_subdirectory(backend/petsc)
 endif()
 
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
+# ##########################################
+# ##########################################
+# ##########################################
 
-# #################TRILINOS######################
+# #################TRILINOS#################
 
 if(UTOPIA_ENABLE_TRILINOS)
 
@@ -304,7 +290,8 @@ if(UTOPIA_ENABLE_TRILINOS)
     set(Trilinos_SEARCH_PATHS
         "${CMAKE_SOURCE_DIR}/../external/Trilinos/lib/cmake/Trilinos")
     if(NOT APPLE AND NOT WIN32)
-      set(Trilinos_SEARCH_PATHS "${CMAKE_SOURCE_DIR}/../external/Trilinos/lib64/cmake/Trilinos")
+      set(Trilinos_SEARCH_PATHS
+          "${CMAKE_SOURCE_DIR}/../external/Trilinos/lib64/cmake/Trilinos")
     endif()
     find_package(Trilinos PATHS ${Trilinos_SEARCH_PATHS} NO_DEFAULT_PATH)
   endif()
@@ -356,10 +343,8 @@ if(UTOPIA_ENABLE_TRILINOS)
       endif()
     endforeach()
 
-    # CHECK UTOPIA_THIRDPARTY_LIBRARIES: it is used in the makefile lines in main
-    # cmake.
-
-    # list(APPEND UTOPIA_DEP_INCLUDES ${Trilinos_INCLUDE_DIRS})
+    # CHECK UTOPIA_THIRDPARTY_LIBRARIES: it is used in the makefile lines in
+    # main cmake.
     list(APPEND UTOPIA_DEP_LIBRARIES ${UTOPIA_TRILINOS_DEPS})
 
     find_package(TpetraExt)
@@ -376,9 +361,9 @@ if(UTOPIA_ENABLE_TRILINOS)
   add_subdirectory(backend/trilinos)
 endif()
 
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
+# ###########################################
+# ###########################################
+# ###########################################
 
 # #################YAML######################
 
@@ -394,27 +379,27 @@ if(UTOPIA_ENABLE_YAML_CPP)
 
     list(APPEND YAMLCPP_MODULES .)
 
-    # utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${YAMLCPP_MODULES}")
     if(APPLE)
 
-    get_target_property(YAML_CPP_INCLUDE_DIR yaml-cpp::yaml-cpp
-                        INTERFACE_INCLUDE_DIRECTORIES)
+      get_target_property(YAML_CPP_INCLUDE_DIR yaml-cpp::yaml-cpp
+                          INTERFACE_INCLUDE_DIRECTORIES)
 
-    get_target_property(YAML_CPP_LIBRARIES yaml-cpp::yaml-cpp IMPORTED_LOCATION)
+      get_target_property(YAML_CPP_LIBRARIES yaml-cpp::yaml-cpp
+                          IMPORTED_LOCATION)
 
-    if(NOT YAML_CPP_LIBRARIES)
-      get_target_property(YAML_CPP_LIBRARIES yaml-cpp::yaml-cpp
-                          IMPORTED_LOCATION_RELEASE)
+      if(NOT YAML_CPP_LIBRARIES)
+        get_target_property(YAML_CPP_LIBRARIES yaml-cpp::yaml-cpp
+                            IMPORTED_LOCATION_RELEASE)
+      endif()
+      if(NOT YAML_CPP_LIBRARIES)
+        get_target_property(YAML_CPP_LIBRARIES yaml-cpp::yaml-cpp
+                            IMPORTED_LOCATION_DEBUG)
+      endif()
+      if(NOT YAML_CPP_LIBRARIES)
+        get_target_property(YAML_CPP_LIBRARIES yaml-cpp::yaml-cpp
+                            IMPORTED_LOCATION_NOCONFIG)
+      endif()
     endif()
-    if(NOT YAML_CPP_LIBRARIES)
-      get_target_property(YAML_CPP_LIBRARIES yaml-cpp::yaml-cpp
-                          IMPORTED_LOCATION_DEBUG)
-    endif()
-    if(NOT YAML_CPP_LIBRARIES)
-      get_target_property(YAML_CPP_LIBRARIES yaml-cpp::yaml-cpp
-                          IMPORTED_LOCATION_NOCONFIG)
-    endif()
-  endif()
 
     message(
       STATUS
@@ -432,42 +417,11 @@ if(UTOPIA_ENABLE_YAML_CPP)
   add_subdirectory(backend/yamlcpp)
 endif()
 
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
+# ##########################################
+# ##########################################
+# ##########################################
 
-# #################TINY-EXPR######################
-
-if(UTOPIA_ENABLE_TINY_EXPR)
-  set(EXTERNAL_DIR external)
-
-  find_path(
-    TINY_EXPR_DIR
-    NAMES tinyexpr.h
-    HINTS ${EXTERNAL_DIR}/tinyexpr ${TINY_EXPR_DIR} $ENV{TINY_EXPR_DIR}
-          ${INSTALL_DIR}/tinyexpr $ENV{INSTALL_DIR}/tinyexpr)
-
-  if(TINY_EXPR_DIR)
-
-    # Add headers and sources to global variables.
-    scan_directories(${TINY_EXPR_DIR} "." UTOPIA_BUILD_INCLUDES UTOPIA_HEADERS
-                     UTOPIA_SOURCES)
-    set(UTOPIA_BUILD_INCLUDES ${UTOPIA_BUILD_INCLUDES})
-
-    set(UTOPIA_HEADERS ${UTOPIA_HEADERS})
-
-    set(UTOPIA_SOURCES ${UTOPIA_SOURCES})
-
-    set(UTOPIA_ENABLE_TINY_EXPR ON)
-    set(UTOPIA_ADDITIONAL_COMPONENTS ";tinyexpr")
-  endif()
-endif()
-
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
-
-# #################GPERF-TOOLS######################
+# #################GPERF-TOOLS##############
 
 if(UTOPIA_ENABLE_GPERFTOOLS)
   find_package(Gperftools)
@@ -479,55 +433,11 @@ if(UTOPIA_ENABLE_GPERFTOOLS)
   endif()
 endif()
 
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
+# ##########################################
+# ##########################################
+# ##########################################
 
-# #################ISOLVER######################
-if(UTOPIA_ENABLE_ISOLVER)
-  find_path(
-    ISOLVER_LSOLVE_DIR
-    NAMES isolver_lsolve.h
-    HINTS ${ISOLVER_DIR}/interfaces/lsolve
-          $ENV{ISOLVER_DIR}/isolver/interfaces/lsolve
-          ${CMAKE_CURRENT_SOURCE_DIR}/external/isolver/interfaces/lsolve)
-
-  if(NOT ISOLVER_LSOLVE_DIR)
-    message(FATAL_ERROR "${ISOLVER_LSOLVE_DIR}")
-  endif()
-
-  scan_directories(${ISOLVER_LSOLVE_DIR} "." UTOPIA_BUILD_INCLUDES
-                   UTOPIA_HEADERS UTOPIA_SOURCES)
-  set(UTOPIA_BUILD_INCLUDES ${UTOPIA_BUILD_INCLUDES})
-
-  set(UTOPIA_HEADERS ${UTOPIA_HEADERS})
-
-  set(UTOPIA_SOURCES ${UTOPIA_SOURCES})
-
-  find_path(
-    ISOLVER_NLSOLVE_DIR
-    NAMES isolver_function.h
-    HINTS ${ISOLVER_DIR}/interfaces/nlsolve
-          $ENV{ISOLVER_DIR}/isolver/interfaces/nlsolve
-          ${CMAKE_CURRENT_SOURCE_DIR}/external/isolver/interfaces/nlsolve)
-
-  if(NOT ISOLVER_NLSOLVE_DIR)
-    message(FATAL_ERROR "${ISOLVER_NLSOLVE_DIR}")
-  endif()
-
-  scan_directories(${ISOLVER_NLSOLVE_DIR} "." UTOPIA_BUILD_INCLUDES
-                   UTOPIA_HEADERS UTOPIA_SOURCES)
-  set(UTOPIA_BUILD_INCLUDES ${UTOPIA_BUILD_INCLUDES})
-
-  set(UTOPIA_HEADERS ${UTOPIA_HEADERS})
-
-  set(UTOPIA_SOURCES ${UTOPIA_SOURCES})
-endif()
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
-
-# #################DOXYGEN######################
+# #################DOXYGEN##################
 
 find_package(Doxygen)
 if(NOT DOXYGEN_FOUND)
@@ -547,11 +457,11 @@ add_custom_target(
 # IF you do NOT want the documentation to be generated EVERY time you build the
 # project then leave out the 'ALL' keyword from the above command.
 
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
+# ##########################################
+# ##########################################
+# ##########################################
 
-# #################SWIG######################
+# #################SWIG#####################
 if(UTOPIA_ENABLE_SCRIPTING)
   find_package(SWIG REQUIRED)
 
@@ -602,16 +512,7 @@ if(UTOPIA_ENABLE_SCRIPTING)
   endif()
 endif()
 
-
-
-
-# get_cmake_property(_variableNames VARIABLES)
-# list (SORT _variableNames)
-# foreach (_variableName ${_variableNames})
-#     message(STATUS "${_variableName}=${${_variableName}}")
-# endforeach(
-# )
-# ##############################################################################
+# ##########################################
 macro(print_dependency_table)
   set(DEP_TABLE
       "\n__________________________________________________________\n\n   BACKENDS and STATUS TABLE\n"

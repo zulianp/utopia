@@ -15,11 +15,6 @@ _local_install(){
 	#Make petsc	
 	make -j$1 petsc | tee -a make_local_install.log
 
-	# Define ENV variables for Petsc. Should be defined in .bashrc.
-	export PETSC_DIR="$PWD/../../external/petsc"
-  	export PETSC_ARCH=arch-darwin-c-debug 
-  	export SLEPC_DIR="$PWD/../../external/petsc"
-
   	#Make Trilinos
 	make -j$1 trilinos | tee -a make_local_install.log
 

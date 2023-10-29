@@ -1,4 +1,4 @@
-// #include "utopia_PerformanceTest.hpp"
+// // #include "utopia_PerformanceTest.hpp"
 // #include "utopia.hpp"
 
 // #ifdef UTOPIA_ENABLE_EIGEN_3
@@ -324,25 +324,6 @@
 // 		//UTOPIA_UNIT_TEST_BEGIN("PerformanceTest");
 
 // 		const bool verbose = performance_test_verbose();
-
-// #ifdef UTOPIA_ENABLE_OPENCL
-
-// 		// CLContext::instance().set_current_device(2);
-
-// 		if(verbose) {
-// 			utopia::out() <<"------------------------------------\n";
-// 			utopia::out() <<"OpenCL: " << std::endl;
-// 			CLStats::instance().clear();
-// 			CLContext::instance().describe_current_setup();
-// 		}
-
-// 		test_program<CLMatrixd, CLVectord>("opencl");
-
-// 		if(verbose) {
-// 			CLStats::instance().describe(std::cout);
-// 		}
-
-// #endif //UTOPIA_ENABLE_OPENCL
 
 // #ifdef UTOPIA_ENABLE_BLAS
 // 		if(verbose) {
