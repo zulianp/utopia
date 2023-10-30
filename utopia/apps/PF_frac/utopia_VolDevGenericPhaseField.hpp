@@ -564,7 +564,7 @@ namespace utopia {
 
                                     if (PFFormulation::penalise_negative_phase_field_values) {
                                         auto c_at_qp = c[qp];
-                                        auto c_neg_bracket = c_at_qp < 0.0 ? -c_at_qp : 0.0;
+                                        auto c_neg_bracket = c_at_qp < 0.0 ? c_at_qp : 0.0;
                                         c_el_vec(j) +=
                                             this->params_.penalty_param_non_neg * c_neg_bracket * shape_test * dx(qp);
                                         // std::cout << "pen: " << this->params_.penalty_param_non_neg << std::endl;

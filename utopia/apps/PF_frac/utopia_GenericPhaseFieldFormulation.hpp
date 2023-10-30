@@ -186,7 +186,7 @@ namespace utopia {
         }
 
         static const bool penalise_negative_phase_field_values =
-            false;  // NOT WORKING, but AT1 models need to penalise negative phase field values
+            true;  // NOT WORKING, but AT1 models need to penalise negative phase field values
 
         static const bool enforce_min_crack_driving_force = false;
 
