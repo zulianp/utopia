@@ -115,8 +115,8 @@ if(NOT Trilinos_FOUND)
     "-DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON"
     "-DTrilinos_ENABLE_Kokkos=ON"
     "-DTPL_ENABLE_HDF5=ON"
-    "-DTPL_HDF5_INCLUDE_DIRS=${HDF5_INCLUDE_DIRS}"
-    "-DTPL_HDF5_LIBRARY_DIRS=${HDF5_LIBRARY_DIRS}"
+    "-DTPL_HDF5_INCLUDE_DIRS=${HDF5_DIR}/include/"
+    "-DTPL_HDF5_LIBRARY_DIRS=${HDF5_DIR}/lib/"
     "-DTrilinos_SET_GROUP_AND_PERMISSIONS_ON_INSTALL_BASE_DIR=${CMAKE_SOURCE_DIR}/../external/"
     "-DTrilinos_ENABLE_EXAMPLES=OFF")
 
@@ -135,8 +135,7 @@ if(NOT Trilinos_FOUND)
       "-DTpetra_INST_CUDA=ON")
   endif()
   
-  if((EXISTS ${HDF5_INCLUDE_DIRS})
-     AND (EXISTS ${HDF5_LIBRARY_DIRS}))
+  if(EXISTS ${HDF5_DIR})
     ExternalProject_Add(
       trilinos
       UPDATE_COMMAND "" # FIXME
@@ -157,8 +156,7 @@ if(NOT Trilinos_FOUND)
   else()
     message(
       FATAL_ERROR
-        "Please set the following variables for trilinos to install correctly:\nHDF5_INCLUDE_DIRS: Include folder of hdf5.\nHDF5_LIBRARY_DIRS: Library folder of hdf5."
-    )
+        "Please set the following variables for trilinos to install correctly:\nHDF5_DIR: Folder where HDF is located.")
   endif()
 
 endif()
