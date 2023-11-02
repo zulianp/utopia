@@ -496,8 +496,8 @@ namespace utopia {
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
         // using ProblemType = utopia::TensionSplitGenericPhaseField<FunctionSpace, Dim, AT1>;
-        using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1>;
-        // using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT1>;
+        //using ProblemType = utopia::VolDevGenericPhaseField<FunctionSpace, Dim, AT1>;
+        using ProblemType = utopia::IsotropicGenericPhaseField<FunctionSpace, Dim, AT1>;
 
         Comm world;
 
@@ -513,8 +513,7 @@ namespace utopia {
         stats.start();
 
         DamagedSedimentaryLayers<FunctionSpace> IC_setup(space, 0.0);
-        DirichletAndVolConstraints<FunctionSpace, SedimentaryLayers_BC<FunctionSpace>, LayeredSubdomain<FunctionSpace>>
-            BC_setup(space);
+        SedimentaryLayers_BC<FunctionSpace> BC_setup(space);
 
         IncrementalLoading<FunctionSpace, ProblemType> time_stepper(space, IC_setup, BC_setup);
 
