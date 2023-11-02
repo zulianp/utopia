@@ -67,7 +67,7 @@ namespace utopia {
 
             ptrafo->fun_inverse_transform_direction = [&](const Vector &grad_trafo, Vector &grad) {
                 Vector grad_temp;
-                grad_temp = problem.O * grad_trafo;
+                grad_temp = transpose(problem.O) * grad_trafo;
                 grad = transpose(problem.T) * grad_temp;
             };
 

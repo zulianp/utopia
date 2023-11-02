@@ -345,17 +345,17 @@ namespace utopia {
 
             if (this->box()->has_upper_bound()) {
                 {
-                    {
-                        std::stringstream ss;
-                        ss << "x: " << x.local_size() << " " << x.size() << "\n";
-                        ss << "shift: " << shift->local_size() << " " << shift->size() << "\n";
-                        ss << "active: " << active->local_size() << " " << active->size() << "\n";
-                        ss << "dps: " << dps->local_size() << " " << dps->size() << "\n";
-                        ss << "upper_bound: " << this->box()->upper_bound()->local_size() << " "
-                           << this->box()->upper_bound()->size() << "\n";
+                    // {
+                    //     std::stringstream ss;
+                    //     ss << "x: " << x.local_size() << " " << x.size() << "\n";
+                    //     ss << "shift: " << shift->local_size() << " " << shift->size() << "\n";
+                    //     ss << "active: " << active->local_size() << " " << active->size() << "\n";
+                    //     ss << "dps: " << dps->local_size() << " " << dps->size() << "\n";
+                    //     ss << "upper_bound: " << this->box()->upper_bound()->local_size() << " "
+                    //        << this->box()->upper_bound()->size() << "\n";
 
-                        x.comm().synched_print(ss.str());
-                    }
+                    //     x.comm().synched_print(ss.str());
+                    // }
 
                     auto ub_view = const_local_view_device(*this->box()->upper_bound());
                     auto x_view = const_local_view_device(x);
