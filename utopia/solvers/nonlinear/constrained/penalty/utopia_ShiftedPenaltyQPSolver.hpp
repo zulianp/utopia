@@ -3,6 +3,7 @@
 
 #include "utopia_Core.hpp"
 #include "utopia_QPSolver.hpp"
+#include "utopia_TransformedBoxConstraints.hpp"
 
 #include <memory>
 #include <vector>
