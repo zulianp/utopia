@@ -319,6 +319,14 @@ namespace utopia {
             //     utopia::out() << "Update active " << cc << "\n";
             // }
 
+            if (this->box()->has_upper_bound() && this->box()->has_lower_bound()) {
+                if (!x.comm().rank()) {
+                    m_utopia_warning_once(
+                        "Upper and Lower bound simultaneously is not supported yet!\n"
+                        "Enforcing upper bound only!\n");
+                }
+            }
+
             if (this->box()->has_upper_bound()) {
                 {
                     auto ub_view = const_local_view_device(*this->box()->upper_bound());
@@ -343,6 +351,8 @@ namespace utopia {
                             a_view.set(i, active);
                             s_view.set(i, si);
                             dps_view.set(i, dps);
+
+                            // printf("%d) %g %g\n", i, si, dps);
                         });
                 }
 
@@ -358,9 +368,7 @@ namespace utopia {
                                       << ", shift_norm: " << shift_norm << "\n";
                     }
                 }
-            }
-
-            if (this->box()->has_lower_bound()) {
+            } else if (this->box()->has_lower_bound()) {
                 {
                     auto lb_view = const_local_view_device(*this->box()->lower_bound());
                     auto x_view = const_local_view_device(x);
