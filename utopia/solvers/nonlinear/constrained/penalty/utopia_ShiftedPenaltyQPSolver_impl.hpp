@@ -99,12 +99,12 @@ namespace utopia {
                                "      || g_{k-1} ||, "});
         }
 
-        Vector c, g, H_penalty;
-        Matrix H;
+        Vector c, g, d;
+        Matrix H, H_penalty;
 
         H = *this->get_operator();
+        d = diag(H);
 
-        H_penalty.zeros(layout(b));
         c.zeros(layout(b));
         g.zeros(layout(b));
 
@@ -123,20 +123,24 @@ namespace utopia {
 
         const int max_it = this->max_it();
         for (int it = 1; it <= max_it; it++) {
-            H_penalty.set(0);
-            g.set(0);
+            g = *H_unconstrained_ptr * x - b;
+
+            // Set buffers to zero
+            if (!c.empty()) c.set(0);
+            if (!H_penalty.empty()) H_penalty *= 0;
 
             penalty->update(x);
-            penalty->gradient(x, g);
+            penalty->gradient(x, c);
             penalty->hessian(x, H_penalty);
-
-            c = *H_unconstrained_ptr * x - b;
 
             g += c;
             g = -g;
 
-            H.same_nnz_pattern_copy(*H_unconstrained_ptr);
-            H.shift_diag(H_penalty);
+            // TODO Find a way to be more efficient
+            H = *H_unconstrained_ptr;
+            H += H_penalty;
+
+            // disp(H_penalty);
 
             c.set(0);
             linear_solver->solve(H, g, c);

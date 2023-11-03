@@ -46,6 +46,12 @@ namespace utopia {
                 ss << "upper_bound: " << upper_bound.local_size() << " " << upper_bound.size() << "\n";
 
                 A.comm().synched_print(ss.str());
+
+                // disp(O);
+                // disp("T");
+                // disp("---------------------");
+                // disp(T);
+                // disp("---------------------");
             }
 
             Matrix A, T, O;
@@ -58,25 +64,41 @@ namespace utopia {
 
             ShiftedPenaltyQPSolver<Matrix> qp_solver;
             qp_solver.read(in);
-            auto ptrafo = std::make_shared<PrototypeTransformation<Matrix, Vector>>();
 
-            ptrafo->fun_transform_position = [&](const Vector &x, Vector &x_trafo) {
-                Vector x_temp = problem.T * x;
-                x_trafo = problem.O * x_temp;
-            };
+            bool use_trafo = true;
+            in.get("use_trafo", use_trafo);
 
-            ptrafo->fun_inverse_transform_direction = [&](const Vector &grad_trafo, Vector &grad) {
-                Vector grad_temp;
-                grad_temp = transpose(problem.O) * grad_trafo;
-                grad = transpose(problem.T) * grad_temp;
-            };
+            if (use_trafo) {
+                auto ptrafo = std::make_shared<PrototypeTransformation<Matrix, Vector>>();
 
-            qp_solver.set_transform(ptrafo);
+                ptrafo->fun_transform_position = [&](const Vector &x, Vector &x_trafo) {
+                    Vector x_temp = problem.T * x;
+                    x_trafo = transpose(problem.O) * x_temp;
+                };
+
+                ptrafo->fun_inverse_transform_direction = [&](const Vector &grad_trafo, Vector &grad) {
+                    Vector grad_temp;
+                    grad_temp = problem.O * grad_trafo;
+                    grad = transpose(problem.T) * grad_temp;
+                };
+
+                ptrafo->fun_transform_matrix = [&](const Matrix &penalty_matrix, Matrix &hessian_matrix) {
+                    Matrix temp = transpose(problem.O) * penalty_matrix * problem.O;
+                    hessian_matrix = transpose(problem.T) * temp * problem.T;
+                };
+
+                qp_solver.set_transform(ptrafo);
+            }
+
             BoxConstraints<Vector> box(nullptr, make_ref(problem.upper_bound));
             qp_solver.set_box_constraints(box);
 
             Vector x(layout(problem.rhs), 0);
             bool ok = qp_solver.solve(problem.A, problem.rhs, x);
+
+            Path output_path = "out.bin";
+            in.get("output_path", output_path);
+            x.write(output_path);
         }
     };
 

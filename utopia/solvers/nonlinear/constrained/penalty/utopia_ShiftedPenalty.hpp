@@ -199,11 +199,22 @@ namespace utopia {
                     h = work;
                 }
 
-                work.zeros(row_layout(H));
+                work.zeros(layout(x));
 
                 // Transform to problem base
-                this->transform()->inverse_transform_direction(h, work);
-                H.shift_diag(work);
+                // this->transform()->inverse_transform_direction(h, work);
+                // H.shift_diag(work);
+
+                Matrix diag_matrix = diag(h);
+                Matrix temp;
+                this->transform()->transform(diag_matrix, temp);
+
+                if (H.empty()) {
+                    H = temp;
+                } else {
+                    H += temp;
+                }
+
             } else {
                 h.zeros(layout(x));
                 if (!penalty_hessian(x, h)) {
