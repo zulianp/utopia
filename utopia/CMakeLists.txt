@@ -28,6 +28,9 @@ include(cmake/UtopiaSubmodules.cmake)
 
 
 if(UTOPIA_ENABLE_FLUYA_MODE)
+  if (NOT yaml-cpp_FOUND)
+    message(FATAL_ERROR "Fluya mode requires yaml-cpp.")
+  endif()
   include(EnableFluyaMode)
 endif()
 

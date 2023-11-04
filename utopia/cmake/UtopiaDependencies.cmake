@@ -368,6 +368,8 @@ endif()
 # #################YAML######################
 
 if(UTOPIA_ENABLE_YAML_CPP)
+
+  # Add search paths for finding yml for local install.
   find_package(yaml-cpp)
 
   if(yaml-cpp_FOUND)

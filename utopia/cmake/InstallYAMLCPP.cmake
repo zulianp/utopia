@@ -30,8 +30,6 @@ ExternalProject_Add(
     COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config $<CONFIG>
     COMMAND ${CMAKE_COMMAND} -E echo "$<CONFIG> build complete")
 
-# set(yaml-cpp_DIR "${YAMLCPP_INSTALL_DIR}/share/cmake/yaml-cpp")
-# set(yaml-cpp_DIR "${yaml-cpp_DIR}" PARENT_SCOPE)
 set_target_properties(yaml-cpp PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 

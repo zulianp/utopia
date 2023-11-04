@@ -42,12 +42,10 @@ if(NOT Trilinos_FOUND)
          "-DMPI_Fortan_COMPILER=${MPI_Fortan_COMPILER}")
   endif()
 
-  set(HDF5_INCLUDE_DIRS "")
-  set(HDF5_LIBRARY_DIRS "")
+  set(HDF5_DIR "")
 
   if(UTOPIA_ENABLE_ENV_READ)
-    set(HDF5_INCLUDE_DIRS $ENV{HDF5_INCLUDE_DIRS})
-    set(HDF5_LIBRARY_DIRS $ENV{HDF5_LIBRARY_DIRS})
+    set(HDF5_DIR $ENV{HDF5_DIR})
   endif()
 
   list(
