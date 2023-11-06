@@ -53,12 +53,11 @@ if(UTOPIA_STATIC_DEPENDENCIES_ONLY)
   endif()
 endif()
 
-
 # #################  BACKENDS  ######################
 
-# ##########################################
-# ##########################################
-# ##########################################
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
 
 # #################MPI######################
 if(UTOPIA_ENABLE_MPI)
@@ -97,9 +96,9 @@ if(MPI_CXX_COMPILER)
   set(CMAKE_CXX_COMPILER_DEBUG ${MPI_CXX_COMPILER})
 endif()
 
-# ##########################################
-# ##########################################
-# ##########################################
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
 
 # ####BLAS, LAPACK, UMFPACK####
 
@@ -141,9 +140,9 @@ if(UTOPIA_ENABLE_BLAS)
   add_subdirectory(backend/blas)
 endif()
 
-# ##########################################
-# ##########################################
-# ##########################################
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
 
 # #################METIS####################
 
@@ -159,9 +158,9 @@ if(UTOPIA_ENABLE_METIS)
   add_subdirectory(backend/metis)
 endif()
 
-# ##########################################
-# ##########################################
-# ##########################################
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
 
 # #################PARMETIS#################
 
@@ -177,9 +176,9 @@ if(UTOPIA_ENABLE_PARMETIS)
   add_subdirectory(backend/parmetis)
 endif()
 
-# ##########################################
-# ##########################################
-# ##########################################
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
 # ####LOCAL_INSTALL_OPTIONS####
 
 if(UTOPIA_INSTALL_PETSC
@@ -259,7 +258,7 @@ if(UTOPIA_ENABLE_PETSC)
       message(STATUS "Slepc FOUND")
 
       set(UTOPIA_SLEPC_DIR ${SLEPC_DIR})
-      set(UTOPIA_SLEPC_VERSION ${SLEPC_VERSION})
+      set(UTOPIA_SLEPC_VERSION ${PETSC_VERSION})
     else()
       message(WARNING "[Warning] Slepc not found")
     endif()
@@ -267,9 +266,9 @@ if(UTOPIA_ENABLE_PETSC)
   add_subdirectory(backend/petsc)
 endif()
 
-# ##########################################
-# ##########################################
-# ##########################################
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
 
 # #################TRILINOS#################
 
@@ -296,6 +295,7 @@ if(UTOPIA_ENABLE_TRILINOS)
     find_package(Trilinos PATHS ${Trilinos_SEARCH_PATHS} NO_DEFAULT_PATH)
   endif()
   if(Trilinos_FOUND)
+    set(Trilinos_FOUND TRUE)
     # These lines are needed so the utopia-config.makefile will be correctly
     # built. The UtopiaTargets.cmake file is populated automatically by cmake
     # ##########################################################################
@@ -361,19 +361,23 @@ if(UTOPIA_ENABLE_TRILINOS)
   add_subdirectory(backend/trilinos)
 endif()
 
-# ###########################################
-# ###########################################
-# ###########################################
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
 
 # #################YAML######################
 
 if(UTOPIA_ENABLE_YAML_CPP)
 
-  # Add search paths for finding yml for local install.
-  find_package(yaml-cpp)
+  set(YAML_CPP_SEARCH_PATHS "${YAMLCPP_INSTALL_DIR}")
+  if(UTOPIA_ENABLE_ENV_READ)
+    set(YAML_CPP_SEARCH_PATHS "${YAML_CPP_SEARCH_PATHS};$ENV{yaml-cpp_DIR}")
+  endif()
+
+  find_package(yaml-cpp HINTS ${YAML_CPP_SEARCH_PATHS})
 
   if(yaml-cpp_FOUND)
-    # set(UTOPIA_ENABLE_YAML_CPP ON)
+    set(yaml-cpp_FOUND TRUE)
     set(UTOPIA_ENABLE_YAML_CPP ON)
 
     set(UTOPIA_YAML_CPP_DIR ${yaml-cpp_DIR})
@@ -415,13 +419,19 @@ if(UTOPIA_ENABLE_YAML_CPP)
     set(UTOPIA_DEP_LIBRARIES ${UTOPIA_DEP_LIBRARIES})
   else()
     include(${CMAKE_SOURCE_DIR}/cmake/InstallYAMLCPP.cmake)
+    message(
+      FATAL_ERROR
+        "Help message:\n"
+        "---------------------------------------------------------------\n"
+        "yaml-cpp not found! To install locally in UTOPIA_DEPENDENCIES_DIR then run `make yaml-cpp` and re-run cmake with options `-Dyaml-cpp_DIR=${YAMLCPP_INSTALL_DIR}/lib/cmake/yaml-cpp. Otherwise just specify -Dyaml-cpp_DIR.`\n"
+        "---------------------------------------------------------------\n")
   endif()
   add_subdirectory(backend/yamlcpp)
 endif()
 
-# ##########################################
-# ##########################################
-# ##########################################
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
 
 # #################GPERF-TOOLS##############
 
@@ -435,9 +445,9 @@ if(UTOPIA_ENABLE_GPERFTOOLS)
   endif()
 endif()
 
-# ##########################################
-# ##########################################
-# ##########################################
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
 
 # #################DOXYGEN##################
 
@@ -459,9 +469,9 @@ add_custom_target(
 # IF you do NOT want the documentation to be generated EVERY time you build the
 # project then leave out the 'ALL' keyword from the above command.
 
-# ##########################################
-# ##########################################
-# ##########################################
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
 
 # #################SWIG#####################
 if(UTOPIA_ENABLE_SCRIPTING)
@@ -514,44 +524,82 @@ if(UTOPIA_ENABLE_SCRIPTING)
   endif()
 endif()
 
-# ##########################################
-macro(print_dependency_table)
-  set(DEP_TABLE
-      "\n__________________________________________________________\n\n   BACKENDS and STATUS TABLE\n"
-  )
-  set(DEP_TABLE
-      "${DEP_TABLE}----------------------------------------------------------\n"
-  )
-  set(DEP_TABLE
-      "${DEP_TABLE}backend\t\t| status | location\t\t| version\n----------------------------------------------------------\n"
-  )
+# ##############################################################################
 
-  set(DEP_TABLE
-      "${DEP_TABLE}mpi\t\t| ${UTOPIA_ENABLE_MPI} | ${UTOPIA_MPI_DIR}| ${UTOPIA_MPI_VERSION}\n"
+macro(print_dependency_table)
+
+  set(SMALL_DEP_TABLE
+      "\n_______________________________\n\n   BACKENDS and STATUS TABLE\n")
+  set(SMALL_DEP_TABLE "${SMALL_DEP_TABLE}-------------------------------\n")
+  set(SMALL_DEP_TABLE
+      "${SMALL_DEP_TABLE}backend|status|found\n-------------------------------\n"
   )
-  set(DEP_TABLE
-      "${DEP_TABLE}petsc\t\t| ${UTOPIA_ENABLE_PETSC} | ${UTOPIA_PETSC_DIR}| ${UTOPIA_PETSC_VERSION}\n"
+  set(SMALL_DEP_TABLE
+      "-${SMALL_DEP_TABLE}mpi|${UTOPIA_ENABLE_MPI}|${MPI_FOUND}\n")
+  set(SMALL_DEP_TABLE
+      "${SMALL_DEP_TABLE}petsc|${UTOPIA_ENABLE_PETSC}|${PETSC_FOUND}\n")
+  set(SMALL_DEP_TABLE
+      "${SMALL_DEP_TABLE}slepc|${UTOPIA_ENABLE_SLEPC}|${SLEPC_FOUND}\n")
+  set(SMALL_DEP_TABLE
+      "${SMALL_DEP_TABLE}trilinos|${UTOPIA_ENABLE_TRILINOS}|${Trilinos_FOUND}\n"
   )
-  set(DEP_TABLE
-      "${DEP_TABLE}slepc\t\t| ${UTOPIA_ENABLE_SLEPC} | ${UTOPIA_SLEPC_DIR}| ${UTOPIA_PETSC_VERSION}\n"
-  )
-  set(DEP_TABLE
-      "${DEP_TABLE}trilinos\t| ${UTOPIA_ENABLE_TRILINOS} | ${UTOPIA_TRILINOS_DIR}| ${UTOPIA_TRILINOS_VERSION}\n"
-  )
-  set(DEP_TABLE
-      "${DEP_TABLE}blas\t\t| ${UTOPIA_ENABLE_BLAS} | ${UTOPIA_BLAS_DIR} ${UTOPIA_BLAS_DIR}|${UTOPIA_BLAS_VERSION}\n"
-  )
-  set(DEP_TABLE
-      "${DEP_TABLE}lapack\t\t| ${UTOPIA_ENABLE_PETSC} | ${UTOPIA_LAPACK_DIR}| ${LAPACK_VERSION}\n"
-  )
-  set(DEP_TABLE
-      "${DEP_TABLE}umfpack\t\t| ${UTOPIA_ENABLE_PETSC} | ${UTOPIA_UMFPACK_DIR}| ${UMFPACK_VERSION}\n"
-  )
-  set(DEP_TABLE
-      "${DEP_TABLE}yaml\t\t| ${UTOPIA_ENABLE_YAML_CPP} | ${UTOPIA_YAML_CPP_DIR}| ${UTOPIA_YAML_CPP_VERSION}\n"
-  )
-  set(DEP_TABLE
-      "${DEP_TABLE}__________________________________________________________\n"
-  )
-  message(STATUS ${DEP_TABLE})
+  set(SMALL_DEP_TABLE
+      "${SMALL_DEP_TABLE}blas|${UTOPIA_ENABLE_BLAS}|${BLAS_FOUND}\n")
+  set(SMALL_DEP_TABLE
+      "${SMALL_DEP_TABLE}lapack|${UTOPIA_ENABLE_PETSC}|${LAPACK_FOUND}\n")
+  set(SMALL_DEP_TABLE
+      "${SMALL_DEP_TABLE}umfpack|${UTOPIA_ENABLE_PETSC}|${UMFPACK_FOUND}\n")
+  set(SMALL_DEP_TABLE
+      "${SMALL_DEP_TABLE}yaml|${UTOPIA_ENABLE_YAML_CPP}|${yaml-cpp_FOUND}\n")
+  set(SMALL_DEP_TABLE "${SMALL_DEP_TABLE}_______________________________\n")
+
+  message(STATUS ${SMALL_DEP_TABLE})
+endmacro()
+
+
+
+macro(log_dependency_table)
+
+  set(DEP_TABLE "backends:\n")
+  set(DEP_TABLE "${DEP_TABLE}\t- mpi:\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_ENABLE_MPI: ${UTOPIA_ENABLE_MPI}\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_MPI_DIR: ${UTOPIA_MPI_DIR}\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_MPI_VERSION: ${UTOPIA_MPI_VERSION}\n")
+
+  set(DEP_TABLE "${DEP_TABLE}\t- petsc:\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_ENABLE_PETSC: ${UTOPIA_ENABLE_PETSC}\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_PETSC_DIR: ${UTOPIA_PETSC_DIR}\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_PETSC_VERSION: ${UTOPIA_PETSC_VERSION}\n")
+
+  set(DEP_TABLE "${DEP_TABLE}\t- slepc:\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_ENABLE_SLEPC: ${UTOPIA_ENABLE_SLEPC}\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_SLEPC_DIR: ${UTOPIA_SLEPC_DIR}\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_SLEPC_VERSION: ${UTOPIA_SLEPC_VERSION}\n")
+
+  set(DEP_TABLE "${DEP_TABLE}\t- trilinos:\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_ENABLE_TRILINOS: ${UTOPIA_ENABLE_TRILINOS}\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_TRILINOS_DIR: ${UTOPIA_TRILINOS_DIR}\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_TRILINOS_VERSION: ${UTOPIA_TRILINOS_VERSION}\n")
+
+  set(DEP_TABLE "${DEP_TABLE}\t- blas:\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_ENABLE_BLAS: ${UTOPIA_ENABLE_BLAS}\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_BLAS_DIR: ${UTOPIA_BLAS_DIR}\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_BLAS_VERSION: ${UTOPIA_BLAS_VERSION}\n")
+
+  set(DEP_TABLE "${DEP_TABLE}\t- lapack:\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_ENABLE_LAPACK: ${UTOPIA_ENABLE_LAPACK}\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_LAPACK_DIR: ${UTOPIA_LAPACK_DIR}\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_LAPACK_VERSION: ${UTOPIA_LAPACK_VERSION}\n")
+
+  set(DEP_TABLE "${DEP_TABLE}\t- umfpack:\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_ENABLE_UMFPACK: ${UTOPIA_ENABLE_UMFPACK}\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_UMFPACK_DIR: ${UTOPIA_UMFPACK_DIR}\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_UMFPACK_VERSION: ${UTOPIA_UMFPACK_VERSION}\n")
+
+  set(DEP_TABLE "${DEP_TABLE}\t- yaml-cpp:\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_ENABLE_YAML_CPP: ${UTOPIA_ENABLE_YAML_CPP}\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_YAML_CPP_DIR: ${UTOPIA_YAML_CPP_DIR}\n")
+  set(DEP_TABLE "${DEP_TABLE}\t\tUTOPIA_YAML_CPP_VERSION: ${UTOPIA_YAML_CPP_VERSION}\n")
+
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/UtopiaDependencies.yaml" ${DEP_TABLE})
 endmacro()

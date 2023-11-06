@@ -4,6 +4,13 @@ today=$(date)
 printf "%s\n" "$today"
 printf "Testing Cmake Script Basic:.\n The output is logged in make_basic.log.\n"
 
+if [[ -z "$1" ]]
+then
+	N_THREADS=4
+else
+	N_THREADS=$1
+fi
+
 _basic_build(){
 
 	touch make_basic.log
@@ -11,11 +18,11 @@ _basic_build(){
 	cmake .. -DUTOPIA_ENABLE_BLAS=ON -DUTOPIA_ENABLE_TRILINOS=OFF -DUTOPIA_ENABLE_PETSC=OFF -DUTOPIA_ENABLE_EXAMPLES=ON -DUTOPIA_ENABLE_TESTS=ON -DCMAKE_INSTALL_PREFIX=$2 | tee make_basic.log
 
 
-	make -j$1 complete | tee -a make_basic.log
+	make -j$N_THREADS complete | tee -a make_basic.log
 	./utopia_bench | tee -a make_basic.log
 	./utopia_test | tee -a make_basic.log
 	make install | tee -a make_basic.log
-	make -j$1 test_install | tee -a make_basic.log
+	make -j$N_THREADS test_install | tee -a make_basic.log
 }
 
 

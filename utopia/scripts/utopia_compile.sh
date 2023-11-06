@@ -37,7 +37,7 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-arg2="1"
+# arg2=""
 arg3="/usr/local/"
 
 if [[ "$OSTYPE" == "win32" ]]; then

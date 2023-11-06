@@ -272,3 +272,4 @@ if(UTOPIA_ENABLE_EXAMPLES
 endif()
 
 print_dependency_table()
+log_dependency_table()
