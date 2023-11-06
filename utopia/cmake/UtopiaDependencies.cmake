@@ -612,10 +612,8 @@ macro(log_dependency_table)
   # OPTIONS
 
   set(DEP_TABLE "${DEP_TABLE}options:\n")
-
   getlistofvarsstartingwith("UTOPIA_" matchedVars)
   foreach(_var IN LISTS matchedVars)
-    message("${_var}=${${_var}}")
     set(DEP_TABLE "${DEP_TABLE}\t- ${_var}: ${${_var}}\n")  
   endforeach()
 
