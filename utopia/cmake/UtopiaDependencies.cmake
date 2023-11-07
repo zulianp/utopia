@@ -532,25 +532,25 @@ macro(print_dependency_table)
       "\n_______________________________\n\n   BACKENDS and STATUS TABLE\n")
   set(SMALL_DEP_TABLE "${SMALL_DEP_TABLE}-------------------------------\n")
   set(SMALL_DEP_TABLE
-      "${SMALL_DEP_TABLE}backend|status|found\n-------------------------------\n"
+      "${SMALL_DEP_TABLE}backend\t|status\t|found\n-------------------------------\n"
   )
   set(SMALL_DEP_TABLE
-      "-${SMALL_DEP_TABLE}mpi|${UTOPIA_ENABLE_MPI}|${MPI_FOUND}\n")
+      "-${SMALL_DEP_TABLE}mpi\t|${UTOPIA_ENABLE_MPI}\t|${MPI_FOUND}\n")
   set(SMALL_DEP_TABLE
-      "${SMALL_DEP_TABLE}petsc|${UTOPIA_ENABLE_PETSC}|${PETSC_FOUND}\n")
+      "${SMALL_DEP_TABLE}petsc\t|${UTOPIA_ENABLE_PETSC}\t|${PETSC_FOUND}\n")
   set(SMALL_DEP_TABLE
-      "${SMALL_DEP_TABLE}slepc|${UTOPIA_ENABLE_SLEPC}|${SLEPC_FOUND}\n")
+      "${SMALL_DEP_TABLE}slepc\t|${UTOPIA_ENABLE_SLEPC}\t|${SLEPC_FOUND}\n")
   set(SMALL_DEP_TABLE
-      "${SMALL_DEP_TABLE}trilinos|${UTOPIA_ENABLE_TRILINOS}|${Trilinos_FOUND}\n"
+      "${SMALL_DEP_TABLE}trilinos|${UTOPIA_ENABLE_TRILINOS}\t|${Trilinos_FOUND}\n"
   )
   set(SMALL_DEP_TABLE
-      "${SMALL_DEP_TABLE}blas|${UTOPIA_ENABLE_BLAS}|${BLAS_FOUND}\n")
+      "${SMALL_DEP_TABLE}blas\t|${UTOPIA_ENABLE_BLAS}\t|${BLAS_FOUND}\n")
   set(SMALL_DEP_TABLE
-      "${SMALL_DEP_TABLE}lapack|${UTOPIA_ENABLE_PETSC}|${LAPACK_FOUND}\n")
+      "${SMALL_DEP_TABLE}lapack\t|${UTOPIA_ENABLE_PETSC}\t|${LAPACK_FOUND}\n")
   set(SMALL_DEP_TABLE
-      "${SMALL_DEP_TABLE}umfpack|${UTOPIA_ENABLE_PETSC}|${UMFPACK_FOUND}\n")
+      "${SMALL_DEP_TABLE}umfpack\t|${UTOPIA_ENABLE_PETSC}\t|${UMFPACK_FOUND}\n")
   set(SMALL_DEP_TABLE
-      "${SMALL_DEP_TABLE}yaml|${UTOPIA_ENABLE_YAML_CPP}|${yaml-cpp_FOUND}\n")
+      "${SMALL_DEP_TABLE}yaml\t|${UTOPIA_ENABLE_YAML_CPP}\t|${yaml-cpp_FOUND}\n")
   set(SMALL_DEP_TABLE "${SMALL_DEP_TABLE}_______________________________\n")
 
   message(STATUS ${SMALL_DEP_TABLE})
@@ -614,8 +614,8 @@ macro(log_dependency_table)
   set(DEP_TABLE "${DEP_TABLE}options:\n")
   getlistofvarsstartingwith("UTOPIA_" matchedVars)
   foreach(_var IN LISTS matchedVars)
-    set(DEP_TABLE "${DEP_TABLE}\t- ${_var}: ${${_var}}\n")  
+    set(DEP_TABLE "${DEP_TABLE}\t- ${_var}: ${${_var}}\n")
   endforeach()
 
-  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/UtopiaDependencies.yaml" ${DEP_TABLE})
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/UtopiaConfig.yaml" ${DEP_TABLE})
 endmacro()

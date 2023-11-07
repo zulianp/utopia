@@ -37,15 +37,12 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-# arg2=""
+arg2=""
 arg3="/usr/local/"
 
 if [[ "$OSTYPE" == "win32" ]]; then
     arg3="c:/Program Files/utopia"
 fi
-
-
-
 
 while getopts ":b:j:p:h" opt; do
   case $opt in
@@ -62,7 +59,6 @@ while getopts ":b:j:p:h" opt; do
     ;;
   esac
 done
-
 
 case $arg1 in
     basic)
