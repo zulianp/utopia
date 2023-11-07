@@ -27,7 +27,7 @@ namespace utopia {
         std::shared_ptr<LinearSolver> linear_solver;
         std::shared_ptr<Vector> boolean_selector;
         std::shared_ptr<Matrix> scaling_matrix;
-        std::unique_ptr<ShiftedPenalty<Matrix, Vector>> penalty;
+        std::unique_ptr<Penalty<Matrix, Vector>> penalty;
         std::shared_ptr<Transformation> transform;
     };
 

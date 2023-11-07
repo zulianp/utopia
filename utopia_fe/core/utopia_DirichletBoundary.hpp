@@ -7,6 +7,9 @@
 #include "utopia_SymbolicFunction.hpp"
 #include "utopia_make_unique.hpp"
 
+#include "utopia_IOStream.hpp"
+#include "utopia_MPI.hpp"
+
 #include <string>
 #include <vector>
 
@@ -85,8 +88,15 @@ namespace utopia {
 
             std::unique_ptr<utopia::SymbolicFunction> expr_;
             double t_{0};
+            bool verbose_{false};
 
-            void update(const SimulationTime<double> &t) override { t_ = t.get(); }
+            void update(const SimulationTime<double> &t) override {
+                t_ = t.get();
+
+                if (verbose_ && mpi_world_rank() == 0) {
+                    utopia::out() << "VaryingCondition::update(" << t_ << ")\n";
+                }
+            }
 
             inline Scalar eval(const Scalar x, const Scalar y, const Scalar z) const {
                 return expr_->eval(x, y, z, t_);
@@ -106,6 +116,8 @@ namespace utopia {
                 if (!expr.empty()) {
                     *expr_ = utopia::symbolic(expr);
                 }
+
+                in.get("verbose", verbose_);
             }
 
             void describe(std::ostream &os) const override {

@@ -175,7 +175,9 @@ namespace utopia {
             }
         }
     }
+
 #endif
+
     static void print_stats(const MPICommunicator &comm,
                             const PetscInt rows,
                             PetscInt const local_rows,
