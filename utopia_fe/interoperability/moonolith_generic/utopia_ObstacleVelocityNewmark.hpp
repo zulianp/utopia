@@ -315,7 +315,7 @@ namespace utopia {
         }
 
         bool update_BVP() override {
-            this->space()->apply_constraints(x_old());
+            this->space()->apply_constraints(this->x_old());
             return true;
         }
 
