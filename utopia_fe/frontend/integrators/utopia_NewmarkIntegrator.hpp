@@ -55,6 +55,11 @@ namespace utopia {
             return true;
         }
 
+        bool update_BVP() override {
+            this->space()->apply_constraints(this->x_old());
+            return true;
+        }
+
         bool time_second_derivative(const Vector_t &x, Vector_t &acceleration) const {
             const Scalar_t dt = this->delta_time();
             const Scalar_t dt2 = dt * dt;
@@ -71,7 +76,7 @@ namespace utopia {
         }
 
         template <class... Args>
-        NewmarkIntegrator(Args &&... args) : Super(std::forward<Args>(args)...), state_(std::make_shared<State>()) {}
+        NewmarkIntegrator(Args &&...args) : Super(std::forward<Args>(args)...), state_(std::make_shared<State>()) {}
 
         virtual ~NewmarkIntegrator() = default;
 
