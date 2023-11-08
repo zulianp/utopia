@@ -8,6 +8,7 @@
 #include "utopia_make_unique.hpp"
 
 #include "utopia_IOStream.hpp"
+#include "utopia_Instance.hpp"
 #include "utopia_MPI.hpp"
 
 #include <string>
@@ -115,6 +116,10 @@ namespace utopia {
                 in.get("value", expr);
                 if (!expr.empty()) {
                     *expr_ = utopia::symbolic(expr);
+
+                    if (!expr_->valid()) {
+                        Utopia::Abort("VaryingCondition: invalid expression: " + expr);
+                    }
                 }
 
                 in.get("verbose", verbose_);
