@@ -551,6 +551,52 @@ namespace utopia {
             }
         }
 
+        bool FunctionSpace::read_with_fields(Input &in, std::vector<std::shared_ptr<Field<FunctionSpace>>> &val) {
+            MeshIO io(*impl_->mesh);
+            io.import_all_field_data(true);
+            in.get("mesh", io);
+
+            if (!io.load()) {
+                return false;
+            }
+
+            impl_->read_meta(in);
+            impl_->register_variables();
+            impl_->dof_map->init(*this->mesh_ptr(), impl_->print_map);
+
+            in.get("fields", [&](Input &array_node) {
+                array_node.get_all([&](Input &node) {
+                    FEVar var;
+                    var.read(node);
+
+                    SizeType n_nodes = utopia::stk::count_universal_nodes(mesh().bulk_data());
+                    SizeType nn = n_nodes * var.n_components;
+                    Vector lv(layout(Comm::self(), nn, nn), 0.0);
+                    lv.set_block_size(var.n_components);
+
+                    impl_->nodal_field_to_local_vector({var}, lv);
+
+                    auto gv = std::make_shared<Vector>();
+
+                    gv->zeros(
+                        layout(comm(), mesh().n_local_nodes() * var.n_components, mesh().n_nodes() * var.n_components));
+                    gv->set_block_size(var.n_components);
+
+                    local_to_global(lv, *gv, OVERWRITE_MODE);
+
+                    auto field = std::make_shared<Field<FunctionSpace>>();
+                    field->set_data(gv);
+                    field->set_space(make_ref(*this));
+
+                    field->set_name(var.name);
+
+                    val.push_back(field);
+                });
+            });
+
+            return true;
+        }
+
         bool FunctionSpace::read_with_state(Input &in, Field<FunctionSpace> &field) {
             MeshIO io(*impl_->mesh);
             io.import_all_field_data(true);
