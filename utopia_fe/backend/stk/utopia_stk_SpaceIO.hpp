@@ -45,6 +45,8 @@ namespace utopia {
 
             bool load_time_step(const Scalar t);
             void register_output_field(const std::string &var_name);
+            void register_output_field(const Field<FunctionSpace> &field);
+            void update_output_field(const Field<FunctionSpace> &field);
 
         public:
             class Impl;

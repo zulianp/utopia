@@ -103,5 +103,14 @@ namespace utopia {
 
         void SpaceIO::register_output_field(const std::string &var_name) { impl_->io.register_output_field(var_name); }
 
+        void SpaceIO::register_output_field(const Field<FunctionSpace> &field) {
+            this->update_output_field(field);
+            impl_->io.register_output_field(field.name());
+        }
+
+        void SpaceIO::update_output_field(const Field<FunctionSpace> &field) {
+            impl_->space.backend_set_nodal_field(field);
+        }
+
     }  // namespace stk
 }  // namespace utopia
