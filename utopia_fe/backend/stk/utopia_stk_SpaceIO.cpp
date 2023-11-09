@@ -55,6 +55,14 @@ namespace utopia {
             auto &node_buckets = utopia::stk::universal_nodes(bulk_data);
             ::stk::mesh::FieldBase *stk_field = ::stk::mesh::get_field_by_name(field.name(), meta_data);
 
+            if (!stk_field) {
+                if (!space->comm().rank()) {
+                    utopia::err() << "SpaceIO: could not find stk field with name \"" << field.name() << "\"\n";
+                }
+
+                Utopia::Abort("Fatal error!");
+            }
+
             int n_comp = -1;
             Vector local_vector;
             for (const auto &ib : node_buckets) {
