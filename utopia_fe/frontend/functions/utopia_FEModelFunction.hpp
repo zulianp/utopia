@@ -88,6 +88,11 @@ namespace utopia {
         virtual bool update_BVP() { return false; }
         virtual bool update_IVP(const Vector_t &) { return false; }
         virtual bool setup_IVP(Vector_t &) { return false; }
+        virtual bool setup_IVP(IO<FunctionSpace> &) {
+            Utopia::Abort("setup_IVP(IO<FunctionSpace> &), not implemented!");
+            return false;
+        }
+
         virtual bool is_IVP_solved() { return true; }
 
         virtual bool set_initial_condition(const Vector_t &) {

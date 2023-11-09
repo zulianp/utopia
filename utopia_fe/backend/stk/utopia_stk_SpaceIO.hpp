@@ -23,6 +23,7 @@ namespace utopia {
             // One shot functions
             void read(Input &in) override;
             bool read_with_state(Input &in, Field<FunctionSpace> &field);
+            bool read_nodal(Field<FunctionSpace> &field);
             void import_all_field_data(const bool value);
 
             // Statefull functions

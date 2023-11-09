@@ -20,11 +20,28 @@ namespace utopia {
 
         class State {
         public:
-            Vector_t x, velocity, acceleration;
+            Field<FunctionSpace> x{"disp"}, velocity{"velocity"}, acceleration{"acceleration"};
             bool has_zero_density{false};
         };
 
         void read(Input &in) override { Super::read(in); }
+
+        bool setup_IVP(IO<FunctionSpace> &input) override {
+            if (!this->assemble_mass_matrix()) {
+                return false;
+            }
+
+            assert(this->mass_matrix());
+            Scalar_t sum_mm = sum(*this->mass_matrix());
+            state_->has_zero_density = sum_mm == 0.0;
+
+            state_->x.set_space(this->space());
+            state_->velocity.set_space(this->space());
+            state_->acceleration.set_space(this->space());
+
+            return input.read_nodal(state_->x) && input.read_nodal(state_->velocity) &&
+                   input.read_nodal(state_->acceleration);
+        }
 
         bool setup_IVP(Vector_t &x) override {
             if (!this->assemble_mass_matrix()) {
@@ -37,10 +54,18 @@ namespace utopia {
 
             auto vlo = layout(x);
 
-            // x_old_.zeros(vlo);
-            x_old() = x;
-            velocity_old().zeros(vlo);
-            acceleration_old().zeros(vlo);
+            state_->x.set_space(this->space());
+            state_->velocity.set_space(this->space());
+            state_->acceleration.set_space(this->space());
+
+            state_->x.set_tensor_size(this->space()->n_var());
+            state_->velocity.set_tensor_size(this->space()->n_var());
+            state_->acceleration.set_tensor_size(this->space()->n_var());
+
+            state_->x.set_data(std::make_shared<Vector_t>(x));
+            state_->velocity.set_data(std::make_shared<Vector_t>(vlo, 0));
+            state_->acceleration.set_data(std::make_shared<Vector_t>(vlo, 0));
+
             return true;
         }
 
@@ -104,12 +129,15 @@ namespace utopia {
             this->space()->apply_constraints(H);
         }
 
-        inline Vector_t &x_old() { return state_->x; }
-        inline const Vector_t &x_old() const { return state_->x; }
+        inline Vector_t &x_old() { return state_->x.data(); }
+        inline const Vector_t &x_old() const { return state_->x.data(); }
 
         const Vector_t &solution() const override { return x_old(); }
-        const Vector_t &velocity() const { return state_->velocity; }
-        const Vector_t &acceleration() const { return state_->acceleration; }
+        const Vector_t &velocity() const { return state_->velocity.data(); }
+        const Vector_t &acceleration() const { return state_->acceleration.data(); }
+
+        Vector_t &velocity() { return state_->velocity.data(); }
+        Vector_t &acceleration() { return state_->acceleration.data(); }
 
         bool set_initial_condition(const Vector_t &x) override {
             x_old() = x;
@@ -120,10 +148,10 @@ namespace utopia {
         inline void set_state(const std::shared_ptr<State> &state) { state_ = state; }
 
     protected:
-        const Vector_t &velocity_old() const { return state_->velocity; }
-        Vector_t &velocity_old() { return state_->velocity; }
-        const Vector_t &acceleration_old() const { return state_->acceleration; }
-        Vector_t &acceleration_old() { return state_->acceleration; }
+        const Vector_t &velocity_old() const { return velocity(); }
+        Vector_t &velocity_old() { return velocity(); }
+        const Vector_t &acceleration_old() const { return acceleration(); }
+        Vector_t &acceleration_old() { return acceleration(); }
 
     private:
         std::shared_ptr<State> state_;
