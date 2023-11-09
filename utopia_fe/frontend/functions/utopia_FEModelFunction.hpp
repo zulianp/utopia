@@ -93,6 +93,16 @@ namespace utopia {
             return false;
         }
 
+        virtual bool register_output(IO<FunctionSpace> &) {
+            Utopia::Abort("register_output(IO<FunctionSpace> &), not implemented!");
+            return false;
+        }
+
+        virtual bool update_output(IO<FunctionSpace> &) {
+            Utopia::Abort("update_output(IO<FunctionSpace> &), not implemented!");
+            return false;
+        }
+
         virtual bool is_IVP_solved() { return true; }
 
         virtual bool set_initial_condition(const Vector_t &) {

@@ -24,7 +24,10 @@ namespace utopia {
             bool has_zero_density{false};
         };
 
-        void read(Input &in) override { Super::read(in); }
+        void read(Input &in) override {
+            Super::read(in);
+            in.get("enable_restart", enable_restart_);
+        }
 
         bool setup_IVP(IO<FunctionSpace> &input) override {
             if (!this->assemble_mass_matrix()) {
@@ -41,6 +44,30 @@ namespace utopia {
 
             return input.read_nodal(state_->x) && input.read_nodal(state_->velocity) &&
                    input.read_nodal(state_->acceleration);
+        }
+
+        bool register_output(IO<FunctionSpace> &output) override {
+            output.register_output_field(state_->x);
+
+            // We do not need all of this on disk if no restart is required
+            if (enable_restart_) {
+                output.register_output_field(state_->velocity);
+                output.register_output_field(state_->acceleration);
+            }
+
+            return true;
+        }
+
+        bool update_output(IO<FunctionSpace> &output) override {
+            output.update_output_field(state_->x);
+
+            // We do not need all of this on disk if no restart is required
+            if (enable_restart_) {
+                output.update_output_field(state_->velocity);
+                output.update_output_field(state_->acceleration);
+            }
+
+            return true;
         }
 
         bool setup_IVP(Vector_t &x) override {
@@ -154,6 +181,7 @@ namespace utopia {
         Vector_t &acceleration_old() { return acceleration(); }
 
     private:
+        bool enable_restart_{false};
         std::shared_ptr<State> state_;
     };
 
