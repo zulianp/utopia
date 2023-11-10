@@ -6,6 +6,10 @@
 #include "utopia_stk_SpaceIO.hpp"
 #include "utopia_ui.hpp"
 
+#include "utopia_NewmarkIntegrator.hpp"
+
+#include "utopia_stk_intrepid2_OmniAssembler.hpp"
+
 #include "utopia_RunParallelTest.hpp"
 
 #include "utopia_Traits.hpp"
@@ -89,7 +93,61 @@ namespace utopia {
             }
         }
 
-        void run() override { UTOPIA_RUN_TEST(test_write_and_read_back); }
+        void test_newmark_io() {
+            auto mesh = std::make_shared<Mesh>();
+            mesh->unit_cube(6, 6, 6);
+
+            FunctionSpace space(mesh);
+            space.set_n_var(3);
+            space.initialize();
+
+            Field<FunctionSpace> field("x");
+            space.create_nodal_vector_field(3, field);
+            field.data().set(1.0);
+
+            double t = 1;
+            {
+                // Write output
+                IO<FunctionSpace> output(space);
+                output.set_output_path("./restart_test.e");
+
+                // Create a Newmark scheme object and initialize the data
+                NewmarkIntegrator<FunctionSpace> newmark(make_ref(space));
+                // newmark.initialize();
+                newmark.setup_IVP(field.data());
+
+                // To be done only once
+                newmark.register_output(output);
+
+                // To be done every timestep
+                newmark.update_output(output);
+
+                utopia_test_assert(output.write(0, t));
+            }
+
+            {
+                // Read output
+                IO<FunctionSpace> input(space);
+                input.set_input_path("./restart_test.e");
+                input.import_all_field_data(true);
+                input.open_input();
+                input.load_time_step(t);
+
+                // Create a Newmark scheme object and initialize the data from disk
+                NewmarkIntegrator<FunctionSpace> newmark(make_ref(space));
+                // newmark.initialize();
+                newmark.setup_IVP(input);
+
+                const Scalar diff_sol = norm2(newmark.solution() - field.data());
+
+                utopia_test_assert(diff_sol == 0);
+            }
+        }
+
+        void run() override {
+            UTOPIA_RUN_TEST(test_write_and_read_back);
+            // UTOPIA_RUN_TEST(test_newmark_io); //FIXME
+        }
     };
 
 }  // namespace utopia

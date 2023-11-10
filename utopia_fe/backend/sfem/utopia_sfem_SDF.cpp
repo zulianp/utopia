@@ -62,6 +62,7 @@ namespace utopia {
                 stride[1] = nlocal[0];
                 stride[2] = nlocal[0] * nlocal[1];
 
+                interpolate = mpi_world_size() > 1;  // FIXME!
                 in.get("interpolate", interpolate);
             }
 
