@@ -30,6 +30,7 @@ namespace utopia {
             // virtual double value() const = 0;
 
             virtual bool is_uniform() const = 0;
+            virtual bool has_time_derivative() const { return false; }
 
             Condition() = default;
             Condition(std::string name, const int component) : name(std::move(name)), component(component) {}
@@ -88,8 +89,12 @@ namespace utopia {
             static constexpr const char *class_name() { return "VaryingCondition"; }
 
             std::unique_ptr<utopia::SymbolicFunction> expr_;
+            std::unique_ptr<utopia::SymbolicFunction> expr_time_derivative_;
+
             double t_{0};
             bool verbose_{false};
+
+            bool has_time_derivative() const override { return expr_time_derivative_ != nullptr; }
 
             void update(const SimulationTime<double> &t) override {
                 t_ = t.get();
@@ -100,29 +105,62 @@ namespace utopia {
             }
 
             inline Scalar eval(const Scalar x, const Scalar y, const Scalar z) const {
+                assert(expr_);
                 return expr_->eval(x, y, z, t_);
+            }
+
+            inline Scalar eval_time_derivative(const Scalar x, const Scalar y, const Scalar z) const {
+                assert(expr_time_derivative_);
+                return expr_time_derivative_->eval(x, y, z, t_);
             }
 
             bool is_uniform() const override { return false; }
 
-            VaryingCondition() : Super(), expr_(utopia::make_unique<SymbolicFunction>("0")) {}
+            VaryingCondition()
+                : Super(),
+                  expr_(utopia::make_unique<SymbolicFunction>("0")),
+                  expr_time_derivative_(utopia::make_unique<SymbolicFunction>("0")) {}
             VaryingCondition(std::string name, const int component)
                 : Super(std::move(name), component), expr_(utopia::make_unique<SymbolicFunction>("0")) {}
 
             void read(Input &in) override {
                 Super::read(in);
 
-                std::string expr;
-                in.get("value", expr);
-                if (!expr.empty()) {
-                    *expr_ = utopia::symbolic(expr);
+                in.get("verbose", verbose_);
 
-                    if (!expr_->valid()) {
-                        Utopia::Abort("VaryingCondition: invalid expression: " + expr);
+                {
+                    std::string expr;
+                    in.get("value", expr);
+
+                    if (verbose_ && mpi_world_rank() == 0) {
+                        utopia::out() << expr << "\n";
+                    }
+
+                    if (!expr.empty()) {
+                        *expr_ = utopia::symbolic(expr);
+
+                        if (!expr_->valid()) {
+                            Utopia::Abort("VaryingCondition: invalid expression: " + expr);
+                        }
                     }
                 }
 
-                in.get("verbose", verbose_);
+                {
+                    std::string dexpr;
+                    in.get("time_derivative", dexpr);
+
+                    if (verbose_ && mpi_world_rank() == 0) {
+                        utopia::out() << dexpr << "\n";
+                    }
+
+                    if (!dexpr.empty()) {
+                        *expr_time_derivative_ = utopia::symbolic(dexpr);
+
+                        if (!expr_time_derivative_->valid()) {
+                            Utopia::Abort("VaryingCondition: invalid expression: " + dexpr);
+                        }
+                    }
+                }
             }
 
             void describe(std::ostream &os) const override {
