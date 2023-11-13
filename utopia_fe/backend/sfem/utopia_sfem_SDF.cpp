@@ -259,12 +259,13 @@ namespace utopia {
 
                 auto weights_view = local_view_device(weights);
 
-                assemble_lumped_mass((ElemType)m->element_type,
-                                     m->nelements,
-                                     m->nnodes,
-                                     m->elements,
-                                     m->points,
-                                     weights_view.array().begin());
+                Utopia::Abort("...");
+                // assemble_lumped_mass((ElemType)m->element_type,
+                //                      m->nelements,
+                //                      m->nnodes,
+                //                      m->elements,
+                //                      m->points,
+                //                      weights_view.array().begin());
             }
 
             auto grad_field_view = local_view_device(grad_field);
