@@ -23,7 +23,7 @@ _basic_build(){
 
 
 	read -p "Continue ? y/n" -n 1 -r
-	echo "\n"    # (optional) move to a new line
+	echo    # (optional) move to a new line
 	if [[ $REPLY =~ ^[Yy]$ ]]
 	then
 	    # do dangerous stuff

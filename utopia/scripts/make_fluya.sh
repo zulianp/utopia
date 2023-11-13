@@ -23,7 +23,7 @@ _fluya_mode(){
 	cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DUTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL=OFF -DCMAKE_INSTALL_PREFIX=$prefix | tee make_fluya.log
 
 	read -p "Continue ? y/n" -n 1 -r
-	echo "\n"    # (optional) move to a new line
+	echo    # (optional) move to a new line
 	if [[ $REPLY =~ ^[Yy]$ ]]
 	then
 

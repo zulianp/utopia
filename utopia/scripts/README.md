@@ -21,6 +21,7 @@ Where:
 
 ## What the script actually does.
 - The script will create a build_<build_type> folder where to compile utopia. If local selected it will also build and install petsc and trilinos.
+- Will run a cmake configuration based on the type of build selected. Before proceeding to the next step it will prompt the user to ask if the configuration was correct.
 - Will run utopia_bench and utopia_test.
 - Will install utopia at <install_prefix> location.
 - Finally will test the installation by creating a folder inside build_<build_type> and try to find utopia and use it to compile some test executables.

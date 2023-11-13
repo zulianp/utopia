@@ -74,6 +74,7 @@ case $arg1 in
         local_build $arg2 $arg3
         ;;
     *)
-        echo "Unknown build type: $build_type"
+        echo "Unknown build type \"$arg1\"."
+        echo "Possible build types are: basic, all, fluya and local."
         ;;
 esac
