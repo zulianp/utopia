@@ -375,7 +375,7 @@ if(UTOPIA_ENABLE_YAML_CPP)
 
   set(YAML_CPP_SEARCH_PATHS "${YAMLCPP_INSTALL_DIR}")
   if(UTOPIA_ENABLE_ENV_READ)
-    set(YAML_CPP_SEARCH_PATHS "${YAML_CPP_SEARCH_PATHS};$ENV{yamlcpp_DIR}")
+    set(YAML_CPP_SEARCH_PATHS "${YAML_CPP_SEARCH_PATHS};$ENV{YAMLCPP_DIR}")
   endif()
 
   find_package(yaml-cpp HINTS ${YAML_CPP_SEARCH_PATHS})
@@ -427,7 +427,7 @@ if(UTOPIA_ENABLE_YAML_CPP)
       FATAL_ERROR
         "Help message:\n"
         "---------------------------------------------------------------\n"
-        "yaml-cpp not found! To install locally in UTOPIA_DEPENDENCIES_DIR then run `make yaml-cpp` and re-run cmake with options `-Dyaml-cpp_DIR=${YAMLCPP_INSTALL_DIR}/lib/cmake/yaml-cpp. Otherwise export yamlcpp_DIR.`\n"
+        "yaml-cpp not found! To install locally in UTOPIA_DEPENDENCIES_DIR then run `make yaml-cpp` and re-run cmake with options `-DYAMLCPP_DIR=${YAMLCPP_INSTALL_DIR}/lib/cmake/yaml-cpp. Otherwise export YAMLCPP_DIR.`\n"
         "---------------------------------------------------------------\n")
   endif()
   add_subdirectory(backend/yamlcpp)
