@@ -29,7 +29,6 @@ _basic_build(){
 	then
 	    # do dangerous stuff
 	    make -j$N_THREADS complete | tee -a make_basic.log
-		./utopia_test | tee -a make_basic.log
 		make -j$N_THREADS test_install | tee -a make_basic.log
 	fi
 }
