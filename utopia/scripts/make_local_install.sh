@@ -34,7 +34,7 @@ _local_install() {
 		make -j$N_THREADS trilinos | tee -a make_local_install.log
 
 		# Another cmake to find dependencies.
-		cmake .. | tee -a make_local_install.log
+		cmake $SCRIPT_DIR/../ | tee -a make_local_install.log
 
 		make -j$N_THREADS | tee make_local_install.log
 		make install | tee make_local_install.log

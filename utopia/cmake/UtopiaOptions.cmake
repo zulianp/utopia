@@ -22,7 +22,6 @@ option(UTOPIA_ENABLE_UMFPACK "Enable the umfpack backend" OFF)
 option(UTOPIA_ENABLE_LAPACK "Enable the lapack backend" OFF)
 # option(UTOPIA_ENABLE_KOKKOS_SIMD "Enable kokkos intriniscs wrapper" OFF)
 option(UTOPIA_ENABLE_BLAS "Enable the blas backend" ON)
-option(UTOPIA_ENABLE_MARS "Enable the mars backend" OFF)
 
 option(UTOPIA_ENABLE_TRACE_EXPR "enables utopia tracing facilities for regions" OFF)
 # option(UTOPIA_ENABLE_TRACE_EXPR_EXPR "enables utopia tracing facilities for every

@@ -411,11 +411,10 @@ if(UTOPIA_ENABLE_YAML_CPP)
       endif()
     endif()
 
-    message(
-      STATUS
-        "yaml-cpp found!\nIncludes: ${YAML_CPP_INCLUDE_DIR}\nLibrary: ${YAML_CPP_LIBRARIES}\n"
-    )
-
+    message(STATUS "yaml-cpp found!")
+    message(STATUS "Includes: ${YAML_CPP_INCLUDE_DIR}")
+    message(STATUS "Library: ${YAML_CPP_LIBRARIES}")
+    
     list(APPEND UTOPIA_BUILD_INCLUDES ${YAML_CPP_INCLUDE_DIR})
     list(APPEND UTOPIA_DEP_LIBRARIES ${YAML_CPP_LIBRARIES})
 
