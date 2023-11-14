@@ -6,7 +6,7 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 today=$(date)
 printf "%s\n" "$today"
-printf "Testing Cmake Script Basic:.\n The output is logged in make_basic.log.\n"
+printf "Testing Cmake Script Basic:.\nThe output is logged in make_basic.log.\n"
 
 if [[ -z "$1" ]]
 then
@@ -29,24 +29,29 @@ _basic_build(){
 	then
 	    # do dangerous stuff
 	    make -j$N_THREADS complete | tee -a make_basic.log
-		./utopia_bench | tee -a make_basic.log
 		./utopia_test | tee -a make_basic.log
-		make install | tee -a make_basic.log
 		make -j$N_THREADS test_install | tee -a make_basic.log
 	fi
 }
 
 if [[ -d build_basic ]]
 then
-	cd build_basic
-	rm -rf *
-	_basic_build
+	read -p "Build folder already exists. Do you want to delete and start over? y/n" -n 1 -r
+	echo 
+	if [[ $REPLY =~ ^[Yy]$ ]]
+	then
+		cd build_basic
+		rm -rf *
+		_basic_build
+	else
+		cd build_basic
+		_basic_build
+	fi
 else
 	if [[ ! -d build_basic ]]
 	then
 		mkdir build_basic
 		cd build_basic
-		rm -rf *
 		_basic_build
 	fi
 fi

@@ -31,8 +31,6 @@ _fluya_mode(){
 
 		make -j$N_THREADS | tee -a make_fluya.log
 		make $1 install | tee -a make_fluya.log
-		./utopia_bench | tee -a make_fluya.log
-		./utopia_test | tee -a make_fluya.log
 		make -j$N_THREADS test_install | tee -a make_fluya.log
 
 	fi
@@ -40,15 +38,22 @@ _fluya_mode(){
 
 if [[ -d build_fluya ]]
 then
-	cd build_fluya
-	rm -rf *
-	_fluya_mode
+	read -p "Build folder already exists. Do you want to delete and start over? y/n" -n 1 -r
+	echo 
+	if [[ $REPLY =~ ^[Yy]$ ]]
+	then
+		cd build_fluya
+		rm -rf *
+		_fluya_mode
+	else
+		cd build_fluya
+		_fluya_mode
+	fi
 else
 	if [[ ! -d build_fluya ]]
 	then
 		mkdir build_fluya
 		cd build_fluya
-		rm -rf *
 		_fluya_mode
 	fi
 fi

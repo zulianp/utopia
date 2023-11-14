@@ -32,7 +32,7 @@ function local_build(){
 
 # Check if an argument was provided
 if [ $# -eq 0 ]; then
-    echo "No arguments provided, try using ./utopia_compile help."
+    echo "No arguments provided, try using ./utopia_compile -h."
     exit 1
 fi
 

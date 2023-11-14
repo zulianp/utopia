@@ -44,15 +44,22 @@ _local_install() {
 
 if [[ -d build_local_install ]]
 then
-	cd build_local_install
-	rm -rf *
-	_local_install
+	read -p "Build folder already exists. Do you want to delete and start over? y/n" -n 1 -r
+	echo 
+	if [[ $REPLY =~ ^[Yy]$ ]]
+	then
+		cd build_local_install
+		rm -rf *
+		_local_install
+	else
+		cd build_local_install
+		_local_install
+	fi
 else
 	if [[ ! -d build_local_install ]]
 	then
 		mkdir build_local_install
 		cd build_local_install
-		rm -rf *
 		_local_install
 	fi
 fi

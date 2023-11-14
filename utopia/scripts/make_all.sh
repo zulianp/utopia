@@ -30,17 +30,24 @@ _build_all(){
 	then
 		make -j$N_THREADS complete | tee make_all.log
 		make install | tee make_all.log
-		./utopia_bench | tee make_all.log
-		./utopia_test | tee make_all.log
 		make -j$N_THREADS test_install | tee make_all.log
 	fi
 }
 
 if [[ -d build_all ]]
+then
+	read -p "Build folder already exists. Do you want to delete and start over? y/n" -n 1 -r
+	echo 
+	if [[ $REPLY =~ ^[Yy]$ ]]
 	then
 		cd build_all
+		rm -rf *
 		_build_all
 	else
+		cd build_all
+		_build_all
+	fi
+else
 	if [[ ! -d build_all ]]
 	then
 		mkdir build_all
