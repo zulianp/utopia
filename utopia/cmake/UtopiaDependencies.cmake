@@ -274,11 +274,15 @@ endif()
 
 if(UTOPIA_ENABLE_TRILINOS)
 
-  list(APPEND Trilinos_SEARCH_PATHS ${Trilinos_DIR})
+  list(APPEND Trilinos_SEARCH_PATHS "${Trilinos_DIR};${TRILINOS_DIR}")
 
   if(UTOPIA_ENABLE_ENV_READ)
-    list(APPEND Trilinos_SEARCH_PATHS $ENV{Trilinos_DIR})
+    list(APPEND Trilinos_SEARCH_PATHS "$ENV{Trilinos_DIR};$ENV{TRILINOS_DIR}")
   endif()
+
+  set(Trilinos_SEARCH_PATHS
+      "${Trilinos_SEARCH_PATHS};${TRILINOS_DIR}/lib/cmake/Trilinos;${Trilinos_DIR}/lib/cmake/Trilinos;${TRILINOS_DIR}/lib64/cmake/Trilinos;${Trilinos_DIR}/lib64/cmake/Trilinos"
+  )
 
   # find dependencies
   if(NOT UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
@@ -550,7 +554,8 @@ macro(print_dependency_table)
   set(SMALL_DEP_TABLE
       "${SMALL_DEP_TABLE}umfpack\t|${UTOPIA_ENABLE_PETSC}\t|${UMFPACK_FOUND}\n")
   set(SMALL_DEP_TABLE
-      "${SMALL_DEP_TABLE}yaml\t|${UTOPIA_ENABLE_YAML_CPP}\t|${yaml-cpp_FOUND}\n")
+      "${SMALL_DEP_TABLE}yaml\t|${UTOPIA_ENABLE_YAML_CPP}\t|${yaml-cpp_FOUND}\n"
+  )
   set(SMALL_DEP_TABLE "${SMALL_DEP_TABLE}_______________________________\n")
 
   message(STATUS ${SMALL_DEP_TABLE})
