@@ -2,6 +2,8 @@
 set -e
 set -o pipefail
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 today=$(date)
 printf "%s\n" "$today"
 printf "Testing Cmake Script Local Install of dependencies petsc and trilinos:\n"
@@ -19,14 +21,12 @@ prefix=$2
 _local_install() {
 	touch make_local_install.log
 
-	cmake .. -DUTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL=ON -DUTOPIA_ENABLE_PETSC=ON -DUTOPIA_ENABLE_TRILINOS=ON -DCMAKE_INSTALL_PREFIX=$prefix | tee make_local_install.log
+	cmake $SCRIPT_DIR/../ -DUTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL=ON -DUTOPIA_ENABLE_PETSC=ON -DUTOPIA_ENABLE_TRILINOS=ON -DCMAKE_INSTALL_PREFIX=$prefix | tee make_local_install.log
 
 	read -p "Continue ? y/n" -n 1 -r
 	echo    # (optional) move to a new line
 	if [[ $REPLY =~ ^[Yy]$ ]]
 	then
-
-		#TODO: Check petsc_found and if petsc_dir is in the right place i.e PWD/../../external/petsc.
 
 		#Make petsc	
 		make -j$N_THREADS petsc | tee -a make_local_install.log	

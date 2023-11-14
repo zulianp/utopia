@@ -2,6 +2,8 @@
 set -e
 set -o pipefail
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 today=$(date)
 printf "%s\n" "$today"
 printf "Testing Cmake Script Basic:.\n The output is logged in make_basic.log.\n"
@@ -19,8 +21,7 @@ _basic_build(){
 
 	touch make_basic.log
 
-	cmake .. -DUTOPIA_ENABLE_BLAS=ON -DUTOPIA_ENABLE_TRILINOS=OFF -DUTOPIA_ENABLE_PETSC=OFF -DUTOPIA_ENABLE_EXAMPLES=ON -DUTOPIA_ENABLE_TESTS=ON -DCMAKE_INSTALL_PREFIX=$prefix | tee make_basic.log
-
+	cmake $SCRIPT_DIR/../ -DUTOPIA_ENABLE_BLAS=ON -DUTOPIA_ENABLE_TRILINOS=OFF -DUTOPIA_ENABLE_PETSC=OFF -DUTOPIA_ENABLE_EXAMPLES=ON -DUTOPIA_ENABLE_TESTS=ON -DCMAKE_INSTALL_PREFIX=$prefix | tee make_basic.log
 
 	read -p "Continue ? y/n" -n 1 -r
 	echo    # (optional) move to a new line
