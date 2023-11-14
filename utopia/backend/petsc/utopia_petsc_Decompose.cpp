@@ -108,7 +108,7 @@ namespace utopia {
 
 #else
 
-#ifdef UTOPIA_WITH_MATRIX_IO
+#ifdef UTOPIA_ENABLE_MATRIX_IO
     void write_parmetis_graph(const PetscCommunicator &comm,
                               const ptrdiff_t local_rows,
                               const ptrdiff_t rows,
@@ -175,7 +175,9 @@ namespace utopia {
             }
         }
     }
+
 #endif
+
     static void print_stats(const MPICommunicator &comm,
                             const PetscInt rows,
                             PetscInt const local_rows,
@@ -331,15 +333,15 @@ namespace utopia {
             vwgt = &actual_vwgts[0];
         }
 
-        if (0) {
-            write_parmetis_graph(matrix.comm(),
-                                 matrix.local_rows(),
-                                 matrix.rows(),
-                                 matrix.row_range().begin(),
-                                 &xadj[0],
-                                 &adjncy[0],
-                                 &tpwgts[0]);
-        }
+        // if (0) {
+        //     write_parmetis_graph(matrix.comm(),
+        //                          matrix.local_rows(),
+        //                          matrix.rows(),
+        //                          matrix.row_range().begin(),
+        //                          &xadj[0],
+        //                          &adjncy[0],
+        //                          &tpwgts[0]);
+        // }
 
         int ret = 0;
         {

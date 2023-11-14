@@ -40,6 +40,8 @@ namespace utopia {
             bool write(const Path &path, const Vector &x) override;
             void read(Input &in) override;
             bool read_with_state(Input &in, Field<FunctionSpace> &val);
+            bool read_with_fields(Input &in, std::vector<std::shared_ptr<Field<FunctionSpace>>> &val);
+
             void describe(std::ostream &os) const override;
 
             std::shared_ptr<Mesh> mesh_ptr() const override;
@@ -62,8 +64,11 @@ namespace utopia {
 
             void apply_constraints(Matrix &m, const Scalar diag_value = 1.0) const override;
             void apply_constraints(Vector &v) const override;
+
             void apply_constraints(Matrix &m, Vector &v) const override;
             void apply_zero_constraints(Vector &vec) const override;
+            void apply_constraints_time_derivative(Vector &) const override;
+
             void copy_at_constrained_nodes(const Vector &, Vector &) const override;
 
             void overwrite_parts(const std::vector<std::string> &parts,

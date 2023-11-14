@@ -85,8 +85,24 @@ namespace utopia {
 
         virtual void initial_guess_for_solver(Vector_t &) {}
 
+        virtual bool update_BVP() { return false; }
         virtual bool update_IVP(const Vector_t &) { return false; }
         virtual bool setup_IVP(Vector_t &) { return false; }
+        virtual bool setup_IVP(IO<FunctionSpace> &) {
+            Utopia::Abort("setup_IVP(IO<FunctionSpace> &), not implemented!");
+            return false;
+        }
+
+        virtual bool register_output(IO<FunctionSpace> &) {
+            Utopia::Abort("register_output(IO<FunctionSpace> &), not implemented!");
+            return false;
+        }
+
+        virtual bool update_output(IO<FunctionSpace> &) {
+            Utopia::Abort("update_output(IO<FunctionSpace> &), not implemented!");
+            return false;
+        }
+
         virtual bool is_IVP_solved() { return true; }
 
         virtual bool set_initial_condition(const Vector_t &) {

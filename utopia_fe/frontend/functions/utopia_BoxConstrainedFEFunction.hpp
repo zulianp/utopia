@@ -121,12 +121,12 @@ namespace utopia {
             ensure_qp_solver();
 
             in.get("qp_solver", *qp_solver_);
-            in.get("update_factor", update_factor_);
             in.get("material_iter_tol", material_iter_tol_);
             in.get("max_constraints_iterations", max_constraints_iterations_);
             in.get("rescale", rescale_);
             in.get("inverse_diagonal_scaling", inverse_diagonal_scaling_);
             in.get("print_active_set", print_active_set_);
+            // in.get("damping", damping_);
         }
 
         void ensure_qp_solver() {
@@ -171,6 +171,11 @@ namespace utopia {
                 bool material_converged = false;
                 for (int material_iter = 1; material_iter <= max_material_iterations; ++material_iter, ++total_iter) {
                     fun.hessian_and_gradient(x, H, g);
+
+                    if (g.has_nan_or_inf()) {
+                        fun.space()->write("NaN.e", x);
+                        Utopia::Abort("BoxConstrainedFEFunction: NaN found in gradient!\n");
+                    }
 
                     if (rescale_ != 1.) {
                         // x.comm().root_print("Rescaling system with " + std::to_string(rescale_) + "\n");
@@ -217,9 +222,13 @@ namespace utopia {
 
                         qp_solver_converged = qp_solver_->solve(H_c, g_c, increment_c);
 
+                        // if (damping_ != 1) {
+                        //     increment_c *= damping_;
+                        // }
+
                         if (print_active_set_) {
                             // Count active nodes
-                            auto count_a = box.count_active(increment, 1e-16);
+                            auto count_a = box.count_active(increment_c, 1e-16);
                             if (increment.comm().rank() == 0) {
                                 utopia::out() << "Active dofs: " << count_a << "\n";
                             }
@@ -324,7 +333,7 @@ namespace utopia {
 
     public:
         int max_constraints_iterations_{10};
-        Scalar_t update_factor_{1};
+        // Scalar_t damping_{1};
         Scalar_t material_iter_tol_{1e-6};
         Scalar_t rescale_{1};
         bool inverse_diagonal_scaling_{false};
