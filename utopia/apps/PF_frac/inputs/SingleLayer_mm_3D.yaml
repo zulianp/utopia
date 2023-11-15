@@ -4,18 +4,18 @@ app: SingleSedimentaryLayer3D
 #output-path: Output/Hobb/HOBBS_PT_AT1_d2_Dirch_1E32_1nu05_2nu45_dt0003_W2_l2_m15_p01_Unif
 #output-path: Output/TestingTang3D
 # output-path: /home/edoardo/Data/sdd1/Results/SedimentaryLayer/Single_d60_L800_H240_W50_Ef50_nuf25_Gcf20_En10_nun35_Gcn160_l015_m05_Twodt00001_p001_Com0
-output-path: SedimentaryLayer
+output-path: SingleLayer3D
 save_output: true
 # Mesh specification -----------------------------------------
 nx: 401
 ny: 121
-nz: 26
+nz: 121
 x_min: 0
 x_max: 0.8e3
 y_min: 0
 y_max: 0.24e3 #1.6e3
 z_min: 0
-z_max: 0.05e3
+z_max: 0.24e3
 n_levels: 1
 # Problem specification ------------------------------------------
 # Boundary Conditions
@@ -36,8 +36,8 @@ neumann_bc:
 # Phase field formulation
 length_scale: 0.015e3
 use_penalty_irreversibility: true
-penalty_tol: 0.001
-penalty_tol_non_neg: 1e9
+penalty_tol: 0.01
+penalty_tol_non_neg: 0.02
 use_crack_set_irreversibiblity: true
 crack_set_tol: 0.9999999
 ## Material paramteters -------------------------------------------------
@@ -123,12 +123,10 @@ solver:
     max_it: 1200
     # pc_type: mg     # seems faster than hypre
     # pc_type: gasm   # seems faster than hypre
-    # pc_type: hypre
+    pc_type: hypre
     # pc_type: ml     # could not test
     # pc_type: pfmg   # requires MATHYPRESTRUCT
     # pc_type: smg    # requires MATHYPRESTRUCT
     # pc_type: gamg     # slower than hypre
     # pc_type: deflation # Does not look well for this problem
-    pc_type: h2opus      # Not convinced
-
 
