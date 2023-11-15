@@ -102,10 +102,12 @@ namespace utopia {
                 space.create_local_vector(local_gap);
                 space.create_local_vector(local_normals);
                 space.create_local_vector(local_is_contact);
+                space.create_local_vector(local_weights);
 
                 local_gap.set(infinity);
                 local_is_contact.set(0);
                 local_normals.set(0);
+                local_weights.set(0);
 
                 // Scope for views
                 {
@@ -143,6 +145,9 @@ namespace utopia {
                         is_contact_view.set(node, 1);
                     }
                 }
+
+                // space.comm().barrier();
+                // printf("CIAO!\n");
 
                 space.local_to_global(local_gap, gap->data(), utopia::ADD_MODE);
                 space.local_to_global(local_normals, normals->data(), utopia::ADD_MODE);

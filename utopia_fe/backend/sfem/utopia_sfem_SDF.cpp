@@ -264,7 +264,7 @@ namespace utopia {
                 auto weights_view = local_view_device(weights);
 
                 assemble_lumped_mass((ElemType)m->element_type,
-                                     m->nelements,
+                                     m->n_owned_elements,
                                      m->nnodes,
                                      m->elements,
                                      m->points,
