@@ -180,7 +180,7 @@ namespace utopia {
 
         bool SDF::project_to_mesh(const Mesh &mesh, Vector &field, Vector &grad_field, Vector &weights) {
             UTOPIA_TRACE_SCOPE("SDF::project_to_mesh");
-            
+
             clear();
 
             auto m = (mesh_t *)mesh.raw_type();
@@ -223,7 +223,7 @@ namespace utopia {
                 resample_gap(
                     // Mesh
                     (ElemType)m->element_type,
-                    m->nelements,
+                    m->n_owned_elements,
                     m->nnodes,
                     m->elements,
                     m->points,
@@ -243,7 +243,7 @@ namespace utopia {
                 resample_gap_local(
                     // Mesh
                     (ElemType)m->element_type,
-                    m->nelements,
+                    m->n_owned_elements,
                     m->nnodes,
                     m->elements,
                     m->points,
