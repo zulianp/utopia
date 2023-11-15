@@ -179,9 +179,6 @@ namespace utopia {
                         SizeType node = node_mapping[i];
                         node = local_to_global(node, 0) - rr.begin();
 
-                        // Offset for dof number
-                        node *= n_var;
-
                         if (node >= local_size || node < 0) {
                             // Skip ghost nodes!
                             continue;
