@@ -133,9 +133,9 @@ namespace utopia {
                         // Offset for dof number
                         node *= n_var;
 
-                        assert(node + 2 < is_contact.local_size());
-                        assert(node + 2 < gap->data().local_size());
-                        assert(node + 2 < normals->data().local_size());
+                        assert(node + 2 < local_is_contact.local_size());
+                        assert(node + 2 < local_gap.local_size());
+                        assert(node + 2 < local_normals.local_size());
 
                         gap_view.set(node, gg);
                         weights_view.set(node, surface_weights_view.get(i));
@@ -145,9 +145,6 @@ namespace utopia {
                         is_contact_view.set(node, 1);
                     }
                 }
-
-                // space.comm().barrier();
-                // printf("CIAO!\n");
 
                 space.local_to_global(local_gap, gap->data(), utopia::ADD_MODE);
                 space.local_to_global(local_normals, normals->data(), utopia::ADD_MODE);
