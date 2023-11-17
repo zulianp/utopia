@@ -31,6 +31,7 @@ namespace utopia {
         utopia::sfem::Mesh mesh;
         bool export_gap{false};
         bool verbose{false};
+        std::vector<std::string> exclude;
 
         void normalize(Vector &normal) {
             ReadAndWrite<Vector> rw_normal(normal);
@@ -61,7 +62,7 @@ namespace utopia {
 
         void resample_to_mesh_surface_of(FunctionSpace &space) {
             typename FunctionSpace::Mesh surface_mesh;
-            extract_surface(space.mesh(), mesh);
+            extract_surface(space.mesh(), mesh, exclude);
 
             if (0) {
                 static int export_mesh = 0;
@@ -278,6 +279,14 @@ namespace utopia {
         in.get("shift", impl_->shift);
         in.get("cutoff", impl_->cutoff);
         in.get("verbose", impl_->verbose);
+
+        in.get("exclude", [&](Input &list) {
+            list.get_all([&](Input &node) {
+                std::string name;
+                node.require("name", name);
+                impl_->exclude.push_back(name);
+            });
+        });
     }
 
     template <class FunctionSpace>
