@@ -7,6 +7,7 @@
 #include "utopia_stk_ForwardDeclarations.hpp"
 
 #include <vector>
+#include <string>
 
 namespace utopia {
     template <>
