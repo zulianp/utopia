@@ -229,16 +229,28 @@ namespace utopia {
         int size;
         MPI_Comm_size(comm, &size);
 
+        PetscInt lcols = 0;
+        PetscInt *colidx = (PetscInt *)crs.colidx;
+
+        for (ptrdiff_t i = 0; i < crs.lnnz; ++i) {
+            lcols = std::max(colidx[i], lcols);
+        }
+
+        lcols += 1;
+
         if (size == 1) {
             check_error(MatCreateSeqAIJWithArrays(
-                comm, crs.grows, crs.grows, rowptr, (PetscInt *)crs.colidx, (Scalar *)crs.values, &raw_type()));
+                comm, crs.grows, lcols, rowptr, (PetscInt *)crs.colidx, (Scalar *)crs.values, &raw_type()));
 
         } else {
+            PetscInt gcols = lcols;
+            MPI_Allreduce(MPI_IN_PLACE, &gcols, 1, MPIType<PetscInt>::value(), MPI_MAX, comm);
+
             check_error(MatCreateMPIAIJWithArrays(comm,
                                                   crs.lrows,
-                                                  crs.lrows,
+                                                  lcols,
                                                   crs.grows,
-                                                  crs.grows,
+                                                  gcols,
                                                   (PetscInt *)crs.rowptr,
                                                   (PetscInt *)crs.colidx,
                                                   (Scalar *)crs.values,
@@ -1763,7 +1775,11 @@ namespace utopia {
     }
 
     void PetscMatrix::shift_diag(const PetscVector &d) {
-        check_error(MatDiagonalSet(raw_type(), d.raw_type(), ADD_VALUES));
+        if (empty()) {
+            diag(d);
+        } else {
+            check_error(MatDiagonalSet(raw_type(), d.raw_type(), ADD_VALUES));
+        }
     }
 
     void PetscMatrix::set_diag(const PetscVector &d) {

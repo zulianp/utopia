@@ -117,7 +117,8 @@ namespace utopia {
         public Comparable<PetscMatrix>,
         public Operator<PetscVector>,
         public Tensor<PetscMatrix, 2>,
-        public Selectable<PetscMatrix, 2> {
+        public Selectable<PetscMatrix, 2>,
+        public Configurable {
     public:
         using Scalar = PetscScalar;
         using SizeType = PetscInt;
@@ -734,6 +735,17 @@ namespace utopia {
         bool write_matlab(const std::string &path) const;
 
         inline bool read(const std::string &path) { return read(comm().get(), path); }
+
+        void read(Input &in) override {
+            std::string path;
+            std::string type;
+
+            in.require("type", type);
+            if (type == "file") {
+                in.require("path", path);
+                this->read(path);
+            }
+        }
 
         bool read(MPI_Comm comm, const std::string &path);
 

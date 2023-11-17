@@ -46,6 +46,7 @@ namespace utopia {
             void create_vector_nodal(Vector &out, int components = 1) const;
 
             SizeType n_local_nodes() const;
+            int spatial_dimension() const;
 
             ArrayView<const SizeType> node_mapping() const;
 

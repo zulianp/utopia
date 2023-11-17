@@ -239,7 +239,6 @@ namespace utopia {
             // this->velocity_old().zeros(vlo);
             // this->acceleration_old().zeros(vlo);
 
-
             update_constraints(x);
             return Super::setup_IVP(x);
         }
@@ -249,8 +248,6 @@ namespace utopia {
         }
 
         bool non_smooth_project(Vector_t &x) {
-            
-
             MPRGP<Matrix_t, Vector_t> qp_solver;
 
             Matrix_t H;
@@ -300,7 +297,7 @@ namespace utopia {
 
             if (non_smooth_projection_) {
                 non_smooth_project(x);
-            } 
+            }
 
             if (x.has_nan_or_inf()) {
                 this->~ObstacleVelocityNewmark();
@@ -315,6 +312,11 @@ namespace utopia {
 
             barrier_->reset();
             return Super::update_IVP(x);
+        }
+
+        bool update_BVP() override {
+            this->space()->apply_constraints(this->x_old());
+            return true;
         }
 
         void barrier_hessian(const Vector_t &x, Matrix_t &H) const {

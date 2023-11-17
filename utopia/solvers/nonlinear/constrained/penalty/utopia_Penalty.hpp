@@ -197,6 +197,7 @@ namespace utopia {
         inline void set_scaling_matrix(const std::shared_ptr<Matrix> &scaling_matrix) {
             scaling_matrix_ = scaling_matrix;
         }
+
         inline const std::shared_ptr<Matrix> &scaling_matrix() const {
             assert(has_scaling_matrix());
             return scaling_matrix_;

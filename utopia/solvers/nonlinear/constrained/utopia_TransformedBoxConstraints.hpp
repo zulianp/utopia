@@ -18,6 +18,62 @@ namespace utopia {
     };
 
     template <class Matrix, class Vector>
+    class PrototypeTransformation final : public Transformation<Matrix, Vector> {
+    public:
+        using FunVector = std::function<void(const Vector &in, Vector &out)>;
+        using FunMatrix = std::function<void(const Matrix &in, Matrix &out)>;
+
+        ~PrototypeTransformation() = default;
+
+        void transform(const Vector &in, Vector &out) override {
+            if (fun_transform_position) {
+                fun_transform_position(in, out);
+            } else {
+                Utopia::Abort("Undefined functor in transform!");
+            }
+        }
+
+        void transform(const Matrix &in, Matrix &out) override {
+            if (fun_transform_matrix) {
+                fun_transform_matrix(in, out);
+            } else {
+                Utopia::Abort("Undefined functor in transform!");
+            }
+        }
+
+        void transform_direction(const Vector &in, Vector &out) override {
+            if (fun_transform_direction) {
+                fun_transform_direction(in, out);
+            } else {
+                Utopia::Abort("Undefined functor in transform_direction!");
+            }
+        }
+
+        void inverse_transform(const Vector &in, Vector &out) override {
+            if (fun_inverse_transform_position) {
+                fun_inverse_transform_position(in, out);
+            } else {
+                Utopia::Abort("Undefined functor in inverse_transform!");
+            }
+        }
+
+        void inverse_transform_direction(const Vector &in, Vector &out) override {
+            if (fun_inverse_transform_direction) {
+                fun_inverse_transform_direction(in, out);
+            } else {
+                Utopia::Abort("Undefined functor in inverse_transform_direction!");
+            }
+        }
+
+        FunVector fun_transform_position;
+        FunVector fun_transform_direction;
+        FunMatrix fun_transform_matrix;
+
+        FunVector fun_inverse_transform_position;
+        FunVector fun_inverse_transform_direction;
+    };
+
+    template <class Matrix, class Vector>
     class AffineTransformation : public Transformation<Matrix, Vector> {
     public:
         AffineTransformation(const std::shared_ptr<Matrix> &t,

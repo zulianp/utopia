@@ -8,7 +8,7 @@
 
 namespace utopia {
 
-    template <class Matrix, class Vector>
+    template <class Matrix, class Vector = typename Traits<Matrix>::Vector>
     class OmniLinearSolver : public LinearSolver<Matrix, Vector>, public Describable {
     public:
         using Scalar = typename utopia::Traits<Vector>::Scalar;
