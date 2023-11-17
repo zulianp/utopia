@@ -62,7 +62,7 @@ namespace utopia {
         void *Mesh::raw_type() const { return (void *)&impl_->mesh; }
 
         ArrayView<const Mesh::SizeType> Mesh::node_mapping() const {
-            return ArrayView<const SizeType>(impl_->mesh.node_mapping, impl_->mesh.n_owned_nodes);
+            return ArrayView<const SizeType>(impl_->mesh.node_mapping, impl_->mesh.nnodes);
         }
 
         Mesh::SizeType Mesh::n_local_nodes() const { return impl_->mesh.n_owned_nodes; }

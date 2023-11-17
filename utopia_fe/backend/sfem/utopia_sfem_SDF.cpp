@@ -222,7 +222,7 @@ namespace utopia {
             if (mesh.comm().size() == 1) {
                 resample_gap(
                     // Mesh
-                    (ElemType)m->element_type,
+                    shell_type((ElemType)m->element_type),
                     m->n_owned_elements,
                     m->nnodes,
                     m->elements,
@@ -242,7 +242,7 @@ namespace utopia {
             } else {
                 resample_gap_local(
                     // Mesh
-                    (ElemType)m->element_type,
+                    shell_type((ElemType)m->element_type),
                     m->n_owned_elements,
                     m->nnodes,
                     m->elements,
@@ -263,7 +263,7 @@ namespace utopia {
 
                 auto weights_view = local_view_device(weights);
 
-                assemble_lumped_mass((ElemType)m->element_type,
+                assemble_lumped_mass(shell_type((ElemType)m->element_type),
                                      m->n_owned_elements,
                                      m->nnodes,
                                      m->elements,
