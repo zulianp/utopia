@@ -66,6 +66,19 @@ endif()
 
 if(UTOPIA_ENABLE_LIBMESH)
     include(InstallLIBMESH)
+    find_package(LIBMESH REQUIRED)
+
+    if(LIBMESH_FOUND)
+      message(STATUS "Libmesh found.")
+    endif()
+endif()
+
+
+if(UTOPIA_ENABLE_MOONOLITH)
+  find_package(ParMoonolith REQUIRED)
+  if(ParMoonolith_FOUND)
+    message(STATUS "ParMoonolith found.")
+  endif()
 endif()
 
 

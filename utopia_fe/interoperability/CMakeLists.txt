@@ -118,8 +118,8 @@ endif()
 
 # set(UTOPIA_FE_LIBRARIES ${UTOPIA_FE_LIBRARIES} PARENT_SCOPE)
 
-scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "${INTEROP_MODULES}" UTOPIA_FE_BUILD_INCLUDES UTOPIA_FE_HEADERS UTOPIA_FE_SOURCES)
-
+scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "${INTEROP_MODULES}"
+                 UTOPIA_FE_BUILD_INCLUDES UTOPIA_FE_HEADERS UTOPIA_FE_SOURCES)
 
 set(UTOPIA_FE_BUILD_INCLUDES
     ${UTOPIA_FE_BUILD_INCLUDES}
@@ -132,7 +132,6 @@ set(UTOPIA_FE_HEADERS
 set(UTOPIA_FE_SOURCES
     ${UTOPIA_FE_SOURCES}
     PARENT_SCOPE)
-
 
 # ##############################################################################
 # ##############################################################################

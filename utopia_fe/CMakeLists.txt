@@ -39,9 +39,9 @@ if(UTOPIA_ENABLE_LIBMESH)
   list(APPEND UTOPIA_FE_MODULES backend/libmesh edsl)
 endif()
 
-# if(UTOPIA_ENABLE_MOONOLITH)
-#   list(APPEND UTOPIA_FE_MODULES backend/moonolith)
-# endif()
+if(UTOPIA_ENABLE_MOONOLITH)
+  list(APPEND UTOPIA_FE_MODULES backend/moonolith)
+endif()
 
 # if(UTOPIA_ENABLE_STK)
 #   list(APPEND UTOPIA_FE_MODULES backend/stk)
