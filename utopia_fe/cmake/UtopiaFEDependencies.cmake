@@ -1,14 +1,13 @@
 # #################UTOPIA###################
 
-set(UTOPIA_SEARCH_PATHS "/usr/local/;/usr/")
-
-if(UTOPIA_ENABLE_ENV_READ)
-  set(UTOPIA_SEARCH_PATHS "${UTOPIA_SEARCH_PATHS};$ENV{UTOPIA_DIR};$ENV{Utopia_DIR}")
-endif()
-
-find_package(Utopia HINTS ${UTOPIA_SEARCH_PATHS} REQUIRED)
+find_package(Utopia REQUIRED)
 if(Utopia_FOUND)
   message(STATUS "Utopia Found.")
+  add_definitions(${UTOPIA_DEFS})
+
+  list(APPEND UTOPIA_FE_BUILD_INCLUDES ${UTOPIA_INCLUDES})
+  list(APPEND UTOPIA_FE_DEP_LIBRARIES ${UTOPIA_LIBRARIES})
+  list(APPEND UTOPIA_FE_DEP_INCLUDES ${UTOPIA_INCLUDES})
 endif()
 
 # #################MPI######################
@@ -61,6 +60,12 @@ if(UTOPIA_ENABLE_ARBORX)
 	if(ArborX_FOUND)
 		# Add includes to build_includes, .... 
 	endif()
+endif()
+
+
+
+if(UTOPIA_ENABLE_LIBMESH)
+    include(InstallLIBMESH)
 endif()
 
 

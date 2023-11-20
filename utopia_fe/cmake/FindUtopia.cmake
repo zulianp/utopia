@@ -14,11 +14,15 @@
 #
 # #############################################################################
 
+set(UTOPIA_SEARCH_PATHS "/usr/local/;/usr/;${UTOPIA_DIR}
+        ${UTOPIA_INCLUDES}")
+
+if(UTOPIA_ENABLE_ENV_READ)
+  set(UTOPIA_SEARCH_PATHS "${UTOPIA_SEARCH_PATHS};$ENV{UTOPIA_DIR};$ENV{Utopia_DIR}")
+endif()
+
 find_package(Utopia CONFIG
-    HINTS
-        ${UTOPIA_DIR}
-        ${UTOPIA_INCLUDES}
-        $ENV{UTOPIA_DIR}
+    HINTS ${UTOPIA_SEARCH_PATHS}
     PATH_SUFFIXES lib/cmake
 )
 
