@@ -192,6 +192,9 @@ namespace utopia {
             mesh.create_vector_nodal(field, 1);
             mesh.create_vector_nodal(grad_field, 3);
 
+            field.set(0);
+            grad_field.set(0);
+
             auto field_view = local_view_device(field);
 
             geom_t *actual_sdf = nullptr;
