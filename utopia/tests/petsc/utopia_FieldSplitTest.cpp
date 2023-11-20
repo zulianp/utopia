@@ -91,9 +91,10 @@ public:
         tfa.set_transfers(f1_to_c12, f2_to_c12, c12_to_f1, c12_to_f2);
 
         tfa.verbose(verbose);
-        if (verbose) {
-            tfa.verbosity_level(VERBOSITY_LEVEL_DEBUG);
-        }
+
+        // if (verbose) {
+        //     tfa.verbosity_level(VERBOSITY_LEVEL_DEBUG);
+        // }
 
         Vector x = c12->initial_guess();
         tfa.solve(*c12, x);

@@ -23,7 +23,7 @@ namespace utopia {
 
         using LSStrategy = utopia::LSStrategy<Vector>;
 
-        typedef utopia::ExtendedFunction<Matrix, Vector> Fun;
+        typedef utopia::Function<Matrix, Vector> Fun;
         using FunPtr = std::shared_ptr<Fun>;
 
         using NonLinearSolver::check_convergence;
@@ -41,8 +41,11 @@ namespace utopia {
         bool solve(Function<Matrix, Vector> &fun_global, Vector &x_global) {
             using namespace utopia;
 
-            x_field1_ = fun_field1_->initial_guess();
-            x_field2_ = fun_field2_->initial_guess();
+            // x_field1_ = fun_field1_->initial_guess();
+            // x_field2_ = fun_field2_->initial_guess();
+
+            fun_field1_->create_vector(x_field1_);
+            fun_field2_->create_vector(x_field2_);
 
             init_memory(x_global, x_field1_, x_field2_);
             Scalar g_norm, r_norm, g0_norm, objective_val, diff_field_1, diff_field_2;

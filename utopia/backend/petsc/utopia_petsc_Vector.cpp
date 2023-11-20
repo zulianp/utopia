@@ -695,6 +695,19 @@ namespace utopia {
         update_mirror();
     }
 
+    void PetscVector::own(Vec &v) {
+        destroy();
+
+        assert(v);
+        vec_ = v;
+        owned_ = true;
+        // has to be
+        initialized_ = true;
+        immutable_ = false;
+
+        update_mirror();
+    }
+
     void PetscVector::unwrap(Vec &v) const {
         if (this->raw_type() == v) {
             return;

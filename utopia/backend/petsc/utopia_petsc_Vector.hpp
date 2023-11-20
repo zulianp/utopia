@@ -770,6 +770,7 @@ namespace utopia {
 
         void wrap(Vec &v);
         void unwrap(Vec &v) const;
+        void own(Vec &v);
 
         inline void ghosted(const SizeType &local_size,
                             const SizeType &global_size,
