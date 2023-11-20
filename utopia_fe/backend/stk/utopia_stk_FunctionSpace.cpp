@@ -1536,6 +1536,11 @@ namespace utopia {
         }
 
         void FunctionSpace::local_to_global(const Vector &local, Vector &global, AssemblyMode mode) const {
+            if (global.empty()) {
+                create_vector(global);
+                global.set(0);
+            }
+
             dof_map().local_to_global(local, global, mode);
         }
 

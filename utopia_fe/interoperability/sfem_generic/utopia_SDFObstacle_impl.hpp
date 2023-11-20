@@ -31,6 +31,7 @@ namespace utopia {
         utopia::sfem::Mesh mesh;
         bool export_gap{false};
         bool verbose{false};
+        std::vector<std::string> exclude;
 
         void normalize(Vector &normal) {
             ReadAndWrite<Vector> rw_normal(normal);
@@ -61,7 +62,7 @@ namespace utopia {
 
         void resample_to_mesh_surface_of(FunctionSpace &space) {
             typename FunctionSpace::Mesh surface_mesh;
-            extract_surface(space.mesh(), mesh);
+            extract_surface(space.mesh(), mesh, exclude);
 
             if (0) {
                 static int export_mesh = 0;
@@ -88,6 +89,7 @@ namespace utopia {
 
             gap->data().set(infinity);
             space.create_vector(is_contact);
+            is_contact.set(0);
 
             auto &&local_to_global = space.dof_map().local_to_global();
 
@@ -102,38 +104,41 @@ namespace utopia {
                 space.create_local_vector(local_gap);
                 space.create_local_vector(local_normals);
                 space.create_local_vector(local_is_contact);
+                space.create_local_vector(local_weights);
 
-                local_gap.set(infinity);
+                // local_gap.set(infinity);
+                local_gap.set(0);
                 local_is_contact.set(0);
                 local_normals.set(0);
+                local_weights.set(0);
 
                 // Scope for views
                 {
-                    auto surface_gap_view = const_local_view_device(surface_gap);
-                    auto surface_normals_view = const_local_view_device(surface_normals);
-                    auto surface_weights_view = local_view_device(sdf.weights());
+                    auto surface_gap_view = const_local_view_host(surface_gap);
+                    auto surface_normals_view = const_local_view_host(surface_normals);
+                    auto surface_weights_view = local_view_host(sdf.weights());
 
-                    auto gap_view = local_view_device(local_gap);
-                    auto normals_view = local_view_device(local_normals);
-                    auto weights_view = local_view_device(local_weights);
-                    auto is_contact_view = local_view_device(local_is_contact);
+                    auto gap_view = local_view_host(local_gap);
+                    auto normals_view = local_view_host(local_normals);
+                    auto weights_view = local_view_host(local_weights);
+                    auto is_contact_view = local_view_host(local_is_contact);
 
                     auto node_mapping = mesh.node_mapping();
 
                     auto rr = gap->data().range();
                     const int n_var = space.n_var();
-                    const SizeType local_size = gap->data().local_size();
-                    for (ptrdiff_t i = 0; i < mesh.n_local_nodes(); i++) {
+
+                    for (SizeType i = 0; i < surface_gap.size(); i++) {
                         const Scalar gg = surface_gap_view.get(i);
-                        if (gg > cutoff) continue;
+                        // if (gg > cutoff) continue;
 
                         SizeType node = node_mapping[i];
                         // Offset for dof number
                         node *= n_var;
 
-                        assert(node + 2 < is_contact.local_size());
-                        assert(node + 2 < gap->data().local_size());
-                        assert(node + 2 < normals->data().local_size());
+                        assert(node + 2 < local_is_contact.local_size());
+                        assert(node + 2 < local_gap.local_size());
+                        assert(node + 2 < local_normals.local_size());
 
                         gap_view.set(node, gg);
                         weights_view.set(node, surface_weights_view.get(i));
@@ -144,10 +149,21 @@ namespace utopia {
                     }
                 }
 
-                space.local_to_global(local_gap, gap->data(), utopia::ADD_MODE);
-                space.local_to_global(local_normals, normals->data(), utopia::ADD_MODE);
-                space.local_to_global(local_is_contact, is_contact, utopia::ADD_MODE);
-                space.local_to_global(local_weights, weights, utopia::ADD_MODE);
+                // As we add data to these vectors we have reset them to zero
+                gap->data().set(0);
+                normals->data().set(0);
+                is_contact.set(0);
+
+                // Temp vector needs to be created
+                space.create_vector(weights);
+                weights.set(0);
+
+                auto mode = utopia::ADD_MODE;
+                // auto mode = utopia::OVERWRITE_MODE;
+                space.local_to_global(local_gap, gap->data(), mode);
+                space.local_to_global(local_normals, normals->data(), mode);
+                space.local_to_global(local_is_contact, is_contact, mode);
+                space.local_to_global(local_weights, weights, mode);
 
                 // Clamp
                 is_contact.e_min(1);
@@ -155,17 +171,16 @@ namespace utopia {
                 // Divide by weight
                 e_pseudo_inv(gap->data(), weights, 1e-16);
                 normalize(normals->data());
-
             } else if (!local_to_global.empty()) {
                 // Scope for views
                 {
-                    auto surface_gap_view = const_local_view_device(surface_gap);
-                    auto gap_view = local_view_device(gap->data());
+                    auto surface_gap_view = const_local_view_host(surface_gap);
+                    auto gap_view = local_view_host(gap->data());
 
-                    auto surface_normals_view = const_local_view_device(surface_normals);
-                    auto normals_view = local_view_device(normals->data());
+                    auto surface_normals_view = const_local_view_host(surface_normals);
+                    auto normals_view = local_view_host(normals->data());
 
-                    auto is_contact_view = local_view_device(is_contact);
+                    auto is_contact_view = local_view_host(is_contact);
 
                     auto node_mapping = mesh.node_mapping();
 
@@ -178,9 +193,6 @@ namespace utopia {
 
                         SizeType node = node_mapping[i];
                         node = local_to_global(node, 0) - rr.begin();
-
-                        // Offset for dof number
-                        node *= n_var;
 
                         if (node >= local_size || node < 0) {
                             // Skip ghost nodes!
@@ -243,6 +255,7 @@ namespace utopia {
 
                 Vector director = normals->data();
 
+                // if (0)  //
                 {
                     // Scope for views
                     auto gap_view = local_view_device(gap->data());
@@ -255,7 +268,6 @@ namespace utopia {
                             const Scalar g = gap_view.get(ii);
                             // const Scalar g = 1;
                             const Scalar ind = is_contact_view.get(ii);
-
                             director_view.set(i, director_view.get(i) * g * ind);
                         });
                 }
@@ -279,6 +291,14 @@ namespace utopia {
         in.get("shift", impl_->shift);
         in.get("cutoff", impl_->cutoff);
         in.get("verbose", impl_->verbose);
+
+        in.get("exclude", [&](Input &list) {
+            list.get_all([&](Input &node) {
+                std::string name;
+                node.require("name", name);
+                impl_->exclude.push_back(name);
+            });
+        });
     }
 
     template <class FunctionSpace>

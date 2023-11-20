@@ -19,7 +19,7 @@ namespace utopia {
             ptrdiff_t nlocal[3];
             ptrdiff_t nglobal[3];
             ptrdiff_t stride[3];
-            ptrdiff_t n;
+            ptrdiff_t n{0};
 
             geom_t origin[3];
             geom_t delta[3];
@@ -48,14 +48,15 @@ namespace utopia {
                 in.require("dz", delta[2]);
 
                 n = nglobal[0] * nglobal[1] * nglobal[2];
-                sdf = (geom_t *)malloc(n * sizeof(geom_t));
+                sdf = nullptr;
 
                 // Invalid local sizes!
                 nlocal[0] = -1;
                 nlocal[1] = -1;
                 nlocal[2] = -1;
 
-                if (SFEM_OK != ndarray_read(comm.get(), path.c_str(), SFEM_MPI_GEOM_T, 3, sdf, nlocal, nglobal)) {
+                if (SFEM_OK != ndarray_create_from_file(
+                                   comm.get(), path.c_str(), SFEM_MPI_GEOM_T, 3, (void **)&sdf, nlocal, nglobal)) {
                     utopia::err() << "Unable to read sdf file at " << path << "\n";
                     Utopia::Abort();
                 }
@@ -64,7 +65,7 @@ namespace utopia {
                 stride[1] = nlocal[0];
                 stride[2] = nlocal[0] * nlocal[1];
 
-                // interpolate = mpi_world_size() > 1;  // FIXME!
+                interpolate = mpi_world_size() > 1;  // FIXME!
                 in.get("interpolate", interpolate);
             }
 
@@ -106,6 +107,7 @@ namespace utopia {
         void SDF::clear() { impl_->weights.clear(); }
 
         bool SDF::interpolate_to_mesh(const Mesh &mesh, Vector &field, Vector &grad_field) {
+            UTOPIA_TRACE_SCOPE("SDF::interpolate_to_mesh");
             clear();
 
             auto m = (mesh_t *)mesh.raw_type();
@@ -177,6 +179,8 @@ namespace utopia {
         }
 
         bool SDF::project_to_mesh(const Mesh &mesh, Vector &field, Vector &grad_field, Vector &weights) {
+            UTOPIA_TRACE_SCOPE("SDF::project_to_mesh");
+
             clear();
 
             auto m = (mesh_t *)mesh.raw_type();
@@ -218,8 +222,8 @@ namespace utopia {
             if (mesh.comm().size() == 1) {
                 resample_gap(
                     // Mesh
-                    (ElemType)m->element_type,
-                    m->nelements,
+                    shell_type((ElemType)m->element_type),
+                    m->n_owned_elements,
                     m->nnodes,
                     m->elements,
                     m->points,
@@ -238,8 +242,8 @@ namespace utopia {
             } else {
                 resample_gap_local(
                     // Mesh
-                    (ElemType)m->element_type,
-                    m->nelements,
+                    shell_type((ElemType)m->element_type),
+                    m->n_owned_elements,
                     m->nnodes,
                     m->elements,
                     m->points,
@@ -259,13 +263,12 @@ namespace utopia {
 
                 auto weights_view = local_view_device(weights);
 
-                Utopia::Abort("...");
-                // assemble_lumped_mass((ElemType)m->element_type,
-                //                      m->nelements,
-                //                      m->nnodes,
-                //                      m->elements,
-                //                      m->points,
-                //                      weights_view.array().begin());
+                assemble_lumped_mass(shell_type((ElemType)m->element_type),
+                                     m->n_owned_elements,
+                                     m->nnodes,
+                                     m->elements,
+                                     m->points,
+                                     weights_view.array().begin());
             }
 
             auto grad_field_view = local_view_device(grad_field);
