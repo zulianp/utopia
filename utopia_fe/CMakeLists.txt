@@ -19,80 +19,27 @@ project(
 include(cmake/UtopiaFEOptions.cmake)
 include(cmake/UtopiaFEFunctions.cmake)
 include(cmake/UtopiaFEDefaults.cmake)
-
+include(cmake/UtopiaFEDependencies.cmake)
+include(cmake/UtopiaCompilerFeatures.cmake)
 
 # ##############################################################################
 # ##############################################################################
 # ##############################################################################
-
-if(NOT UTOPIA_ENABLE_MARS)
-    if(UTOPIA_ENABLE_WARNINGS)
-
-        set(UTOPIA_FE_DEV_FLAGS
-            "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=return-type" # -Werror=uninitialized
-)
-
-        set(UTOPIA_FE_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
-
-    else()
-        set(UTOPIA_FE_DEV_FLAGS "-w -Wno-deprecated-declarations")
-    endif()
-
-endif()
-
-# More annoying set(UTOPIA_FE_DEV_FLAGS "${UTOPIA_FE_DEV_FLAGS} -Wextra
-# -Werror=uninitialized ")
-
-# More restrictive set(UTOPIA_FE_DEV_FLAGS "${UTOPIA_FE_DEV_FLAGS}
-# -Werror=unused-variable -Werror=unused-local-typedef
-# -Werror=deprecated-declarations ")
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_FE_DEV_FLAGS}")
-
-if(UNIX AND NOT APPLE)
-    set(LINUX TRUE)
-endif()
-
-if(LINUX)
-    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-endif()
-
-if(UTOPIA_ENABLE_TRILINOS_ALGEBRA)
-    set(UTOPIA_ENABLE_TRILINOS_ALGEBRA TRUE)
-endif()
-
-if(UTOPIA_ENABLE_NEW_TRANSFER)
-    set(UTOPIA_ENABLE_NEW_TRANSFER TRUE)
-endif()
-
-set(UTOPIA_FE_ROOT_PATH ${CMAKE_SOURCE_DIR})
-set(UTOPIA_FE_CMAKES_PATH ${UTOPIA_FE_ROOT_PATH}/libcmake)
-
-if(UTOPIA_ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
-        set(CMAKE_CXX_FLAGS_DEBUG
-            "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls "
-        )
-    endif()
-endif()
-
-
 
 # ################################# Include cmake functions and find modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_FE_ROOT_PATH}/cmake")
-include(${UTOPIA_FE_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
 
 if(UTOPIA_ENABLE_FLUYA_MODE)
 include(EnableFluyaMode)
 endif()
 
 
-file(GLOB_RECURSE FUNC_LIB "{UTOPIA_FE_ROOT_PATH}/cmake/utils")
-foreach(funcLib ${FUNC_LIB})
-    include(${funcLib})
-endforeach(funcLib)
+# file(GLOB_RECURSE FUNC_LIB "{UTOPIA_FE_ROOT_PATH}/cmake/utils")
+# foreach(funcLib ${FUNC_LIB})
+#     include(${funcLib})
+# endforeach(funcLib)
 
-find_package(Utopia REQUIRED)
+# find_package(Utopia REQUIRED)
 add_definitions(${UTOPIA_DEFS})
 
 ######################################################################

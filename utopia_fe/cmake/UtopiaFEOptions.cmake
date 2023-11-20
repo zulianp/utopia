@@ -36,3 +36,5 @@ option(UTOPIA_ENABLE_ARBORX "Enable the ArborX backend" OFF)
 option(UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE "Removed trilinos deprecated code" OFF)
 
 option(UTOPIA_ENABLE_FLUYA_MODE "Create utopia_fe configuration required by Fluya (overrides everything else)" OFF)
+
+option(UTOPIA_ENABLE_ENV_READ "Enable the installation to look for env variables." ON)
