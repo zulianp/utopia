@@ -11,7 +11,9 @@
 #include <cmath>
 #include <xtensor/xarray.hpp>
 #include <xtensor/xview.hpp>
-#include "hyperelasticity.h"
+
+#include "PhaseField.h"
+#include "PhaseFieldCoupled.h"
 
 #include "utopia.hpp"
 
@@ -23,26 +25,59 @@
 using namespace dolfinx;
 using T = PetscScalar;
 
-std::shared_ptr<DolfinxFunction> hyperelasticity(const std::shared_ptr<fem::FunctionSpace> &V,
-                        std::vector<std::shared_ptr<const fem::DirichletBC<T>>> boundary_conditions)
-{
+std::shared_ptr<DolfinxFunction> phase_field_displacement(
+    const std::shared_ptr<fem::FunctionSpace> &V,
+    std::vector<std::shared_ptr<const fem::DirichletBC<T>>> boundary_conditions) {
     auto u = std::make_shared<fem::Function<T>>(V);
 
     auto objective = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_hyperelasticity_Pi, {}, {{"u", u}}, {}, {}, V->mesh()));
+        fem::create_form<T>(*form_PhaseField_disp_objective, {}, {{"u", u}}, {}, {}, V->mesh()));
 
-    auto gradient =
-        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_hyperelasticity_F_form, {V}, {{"u", u}}, {}, {}));
+    auto gradient = std::make_shared<fem::Form<T>>(
+        fem::create_form<T>(*form_PhaseField_disp_gradient, {V}, {{"u", u}}, {}, {}));
 
     auto hessian = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_hyperelasticity_J_form, {V, V}, {{"u", u}}, {}, {}));
+        fem::create_form<T>(*form_PhaseField_disp_hessian, {V, V}, {{"u", u}}, {}, {}));
+
+    return std::make_shared<DolfinxFunction>(V, u, objective, gradient, hessian, boundary_conditions);
+}
+
+std::shared_ptr<DolfinxFunction> phase_field_phase(
+    const std::shared_ptr<fem::FunctionSpace> &V,
+    std::vector<std::shared_ptr<const fem::DirichletBC<T>>> boundary_conditions) {
+    auto u = std::make_shared<fem::Function<T>>(V);
+
+    auto objective = std::make_shared<fem::Form<T>>(
+        fem::create_form<T>(*form_PhaseField_phase_objective, {}, {{"u", u}}, {}, {}, V->mesh()));
+
+    auto gradient = std::make_shared<fem::Form<T>>(
+        fem::create_form<T>(*form_PhaseField_phase_gradient, {V}, {{"u", u}}, {}, {}));
+
+    auto hessian = std::make_shared<fem::Form<T>>(
+        fem::create_form<T>(*form_PhaseField_phase_hessian, {V, V}, {{"u", u}}, {}, {}));
+
+    return std::make_shared<DolfinxFunction>(V, u, objective, gradient, hessian, boundary_conditions);
+}
+
+std::shared_ptr<DolfinxFunction> phase_field_coupled(
+    const std::shared_ptr<fem::FunctionSpace> &V,
+    std::vector<std::shared_ptr<const fem::DirichletBC<T>>> boundary_conditions) {
+    auto u = std::make_shared<fem::Function<T>>(V);
+
+    auto objective = std::make_shared<fem::Form<T>>(
+        fem::create_form<T>(*form_PhaseFieldCoupled_objective, {}, {{"u", u}}, {}, {}, V->mesh()));
+
+    auto gradient = std::make_shared<fem::Form<T>>(
+        fem::create_form<T>(*form_PhaseFieldCoupled_gradient, {V}, {{"u", u}}, {}, {}));
+
+    auto hessian = std::make_shared<fem::Form<T>>(
+        fem::create_form<T>(*form_PhaseFieldCoupled_hessian, {V, V}, {{"u", u}}, {}, {}));
 
     return std::make_shared<DolfinxFunction>(V, u, objective, gradient, hessian, boundary_conditions);
 }
 
 int main(int argc, char *argv[]) {
     dolfinx::init_logging(argc, argv);
-    // PetscInitialize(&argc, &argv, nullptr, nullptr);
     utopia::Utopia::Init(argc, argv);
 
     // Set the logging thread name to show the process rank
@@ -69,7 +104,7 @@ int main(int argc, char *argv[]) {
                                                                   mesh::GhostMode::none));
 
         auto V = std::make_shared<fem::FunctionSpace>(
-            fem::create_functionspace(functionspace_form_hyperelasticity_F_form, "u", mesh));
+            fem::create_functionspace(functionspace_form_PhaseField_disp_gradient, "u", mesh));
 
         auto u_rotation = std::make_shared<fem::Function<T>>(V);
         u_rotation->interpolate([](auto &&x) {
@@ -106,18 +141,17 @@ int main(int argc, char *argv[]) {
         bool verbose = true;
 
         // Split-fields
-        auto f1 = hyperelasticity(V, bcs);
-        auto f2 = hyperelasticity(V, bcs);
+        auto f1 = phase_field_displacement(V, bcs);
+        auto f2 = phase_field_phase(V, bcs);
 
         // Global optimization problem (coupled fields)
-        auto c12 = hyperelasticity(V, bcs);
+        auto c12 = phase_field_coupled(V, bcs);
 
         auto nls1 = std::make_shared<utopia::Newton<utopia::PetscMatrix>>(
             std::make_shared<utopia::BiCGStab<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>());
 
         auto nls2 = std::make_shared<utopia::Newton<utopia::PetscMatrix>>(
             std::make_shared<utopia::BiCGStab<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>());
-
 
         nls1->linear_solver()->verbose(true);
         nls2->linear_solver()->verbose(true);
@@ -159,34 +193,9 @@ int main(int argc, char *argv[]) {
         }
 
         /////////////////////////////////////////////////////////
-
-        // Compute Cauchy stress
-        // Construct appropriate Basix element for stress
-        constexpr auto family = basix::element::family::P;
-        const auto cell_type = mesh::cell_type_to_basix_type(mesh->topology().cell_type());
-        constexpr auto variant = basix::element::lagrange_variant::equispaced;
-        constexpr int k = 0;
-        constexpr bool discontinuous = true;
-
-        const basix::FiniteElement S_element = basix::create_element(family, cell_type, k, variant, discontinuous);
-        auto S = std::make_shared<fem::FunctionSpace>(
-            fem::create_functionspace(mesh, S_element, pow(mesh->geometry().dim(), 2)));
-
-        const auto sigma_expression =
-            fem::create_expression<T>(*expression_hyperelasticity_sigma, {{"u", c12->u()}}, {}, mesh);
-
-        auto sigma = fem::Function<T>(S);
-        sigma.name = "cauchy_stress";
-        sigma.interpolate(sigma_expression);
-
         // Save solution in VTK format
         io::VTKFile file_u(mesh->comm(), "u.pvd", "w");
         file_u.write<T>({*c12->u()}, 0.0);
-
-        // Save Cauchy stress in XDMF format
-        io::XDMFFile file_sigma(mesh->comm(), "sigma.xdmf", "w");
-        file_sigma.write_mesh(*mesh);
-        file_sigma.write_function(sigma, 0.0);
     }
 
     // PetscFinalize();

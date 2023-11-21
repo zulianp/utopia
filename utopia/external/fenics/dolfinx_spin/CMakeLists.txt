@@ -4,7 +4,7 @@
 #
 cmake_minimum_required(VERSION 3.16)
 
-set(PROJECT_NAME demo_hyperelasticity)
+set(PROJECT_NAME demo_PhaseField)
 project(${PROJECT_NAME} LANGUAGES C CXX)
 
 # Set C++20 standard
@@ -26,14 +26,19 @@ if (PETSC_SCALAR_COMPLEX EQUAL 1)
 else()
   # Add target to compile UFL files
   add_custom_command(
-    OUTPUT hyperelasticity.c
-    COMMAND ffcx ${CMAKE_CURRENT_SOURCE_DIR}/hyperelasticity.py
-    VERBATIM DEPENDS hyperelasticity.py COMMENT "Compile hyperelasticity.py using FFCx")
+    OUTPUT PhaseField.c
+    COMMAND ffcx ${CMAKE_CURRENT_SOURCE_DIR}/PhaseField.py
+    VERBATIM DEPENDS PhaseField.py COMMENT "Compile PhaseField.py using FFCx")
+
+  add_custom_command(
+    OUTPUT PhaseFieldCoupled.c
+    COMMAND ffcx ${CMAKE_CURRENT_SOURCE_DIR}/PhaseFieldCoupled.py
+    VERBATIM DEPENDS PhaseField.py COMMENT "Compile PhaseFieldCoupled.py using FFCx")
 
   set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-  # add_executable(${PROJECT_NAME} main.cpp ${CMAKE_CURRENT_BINARY_DIR}/hyperelasticity.c utopia_DolfinxFunction.cpp)
-  add_executable(${PROJECT_NAME} main.cpp DolfinxFunction.cpp ${CMAKE_CURRENT_BINARY_DIR}/hyperelasticity.c)
+  # add_executable(${PROJECT_NAME} main.cpp ${CMAKE_CURRENT_BINARY_DIR}/PhaseField.c utopia_DolfinxFunction.cpp)
+  add_executable(${PROJECT_NAME} main.cpp DolfinxFunction.cpp ${CMAKE_CURRENT_BINARY_DIR}/PhaseField.c ${CMAKE_CURRENT_BINARY_DIR}/PhaseFieldCoupled.c)
   target_link_libraries(${PROJECT_NAME} dolfinx)
   target_link_libraries(${PROJECT_NAME} Utopia::utopia)
 
