@@ -96,6 +96,8 @@ public:
                 VecGetSize(x_local, &n);
                 const T *array = nullptr;
                 VecGetArrayRead(x_local, &array);
+
+                // FIXME Boundary conditions should be set to if x satisfies them (!!!)
                 fem::set_bc<T>(b, boundary_conditions, xtl::span<const T>(array, n), -1.0);
                 VecRestoreArrayRead(x, &array);
             };
@@ -137,7 +139,6 @@ public:
         x.wrap(v);
     }
 
-    /// Destructor
     virtual ~HyperElasticProblem() {}
 
     bool hessian(const utopia::PetscVector &x, utopia::PetscMatrix &H) const override {
@@ -157,8 +158,6 @@ public:
         impl_->form()(impl_->solution_vector.vec());
 
         H_fun(x.raw_type(), H.raw_type());
-
-        // utopia::disp(H);
         return true;
     }
 
@@ -270,7 +269,6 @@ int main(int argc, char *argv[]) {
         HyperElasticProblem problem(V, bcs);
 
         /////////////////////////////////////////////////////////
-        /// Plug-in Utopia HERE
 
         bool verbose = true;
 
@@ -287,11 +285,22 @@ int main(int argc, char *argv[]) {
         // auto nls2 = std::make_shared<utopia::Newton<utopia::PetscMatrix>>(
         //     std::make_shared<utopia::Factorization<utopia::PetscMatrix, utopia::PetscVector>>());
 
+        // auto nls1 = std::make_shared<utopia::Newton<utopia::PetscMatrix>>(
+        //     std::make_shared<utopia::ConjugateGradient<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>());
+
+        // auto nls2 = std::make_shared<utopia::Newton<utopia::PetscMatrix>>(
+        //     std::make_shared<utopia::ConjugateGradient<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>());
+
+
         auto nls1 = std::make_shared<utopia::Newton<utopia::PetscMatrix>>(
-            std::make_shared<utopia::ConjugateGradient<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>());
+            std::make_shared<utopia::BiCGStab<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>());
 
         auto nls2 = std::make_shared<utopia::Newton<utopia::PetscMatrix>>(
-            std::make_shared<utopia::ConjugateGradient<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>());
+            std::make_shared<utopia::BiCGStab<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>());
+
+
+        nls1->linear_solver()->verbose(true);
+        nls2->linear_solver()->verbose(true);
 
         nls1->verbose(verbose);
         nls2->verbose(verbose);
