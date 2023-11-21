@@ -193,6 +193,10 @@ public:
         auto v = temp.vec();
         assert(v);
         g.copy_from(v);
+
+        if (g.has_nan_or_inf()) {
+            utopia::Utopia::Abort("HyperElasticProblem::gradient: Detected NaN!");
+        }
         return true;
     }
 
@@ -277,11 +281,17 @@ int main(int argc, char *argv[]) {
         // Global optimization problem (coupled fields)
         auto c12 = std::make_shared<HyperElasticProblem>(V, bcs);
 
+        // auto nls1 = std::make_shared<utopia::Newton<utopia::PetscMatrix>>(
+        //     std::make_shared<utopia::Factorization<utopia::PetscMatrix, utopia::PetscVector>>());
+
+        // auto nls2 = std::make_shared<utopia::Newton<utopia::PetscMatrix>>(
+        //     std::make_shared<utopia::Factorization<utopia::PetscMatrix, utopia::PetscVector>>());
+
         auto nls1 = std::make_shared<utopia::Newton<utopia::PetscMatrix>>(
-            std::make_shared<utopia::Factorization<utopia::PetscMatrix, utopia::PetscVector>>());
+            std::make_shared<utopia::ConjugateGradient<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>());
 
         auto nls2 = std::make_shared<utopia::Newton<utopia::PetscMatrix>>(
-            std::make_shared<utopia::Factorization<utopia::PetscMatrix, utopia::PetscVector>>());
+            std::make_shared<utopia::ConjugateGradient<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>());
 
         nls1->verbose(verbose);
         nls2->verbose(verbose);
