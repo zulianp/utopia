@@ -301,24 +301,27 @@ int main(int argc, char *argv[]) {
             tfa.verbose(verbose);
             tfa.verbosity_level(utopia::VERBOSITY_LEVEL_DEBUG);
             tfa.solve(*c12, x);
-
         } else {
-            auto lsc12 =
-                std::make_shared<utopia::ConjugateGradient<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>();
-            lsc12->apply_gradient_descent_step(true);
-            // lsc12->set_preconditioner(std::make_shared<utopia::InvDiagPreconditioner<utopia::PetscMatrix, utopia::PetscVector>>());
-
             // auto lsc12 =
-            //   std::make_shared<utopia::KSP_MF<utopia::PetscMatrix, utopia::PetscVector>>();
-            // lsc12->verbose(verbose);
+            // std::make_shared<utopia::ConjugateGradient<utopia::PetscMatrix, utopia::PetscVector,
+            // utopia::HOMEMADE>>();
+            // lsc12->apply_gradient_descent_step(true);
+            // lsc12->set_preconditioner(std::make_shared<utopia::InvDiagPreconditioner<utopia::PetscMatrix,
+            // utopia::PetscVector>>());
 
+            auto lsc12 = std::make_shared<utopia::KSP_MF<utopia::PetscMatrix, utopia::PetscVector>>();
+            lsc12->ksp_type("gmres");
+            lsc12->pc_type("none");
+
+            lsc12->verbose(verbose);
             nls1->verbose(verbose);
             nls2->verbose(verbose);
 
             utopia::TwoFieldSPIN<utopia::PetscMatrix> tfs(lsc12, nls1, nls2);
             tfs.set_field_functions(f1, f2);
             tfs.set_transfers(f1_to_c12, f2_to_c12, c12_to_f1, c12_to_f2);
-            tfs.additive_precond(false);
+            // tfs.additive_precond(false);
+            tfs.additive_precond(true);
             tfs.verbosity_level(utopia::VERBOSITY_LEVEL_DEBUG);
             tfs.solve(*c12, x);
         }
