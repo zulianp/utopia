@@ -764,7 +764,7 @@ namespace utopia {
         bool is_consistent() const;
 
         void convert_from(const Vec &vec);
-        void convert_to(Vec &vec) const;
+        void convert_to(Vec vec) const;
         void copy_data_to(Vec vec) const;
         void copy_data_from(Vec vec);
 

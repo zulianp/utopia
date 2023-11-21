@@ -99,8 +99,6 @@ public:
         that->form()(x.raw_type());
 
         H_fun(x.raw_type(), H.raw_type());
-
-        // utopia::disp(H);
         return true;
     }
 
@@ -125,13 +123,6 @@ public:
         auto v = temp.vec();
         assert(v);
         g.copy_from(v);
-
-        // disp(g);
-
-        // auto f = that->form();
-        // f(g.raw_type());
-
-        // utopia::disp(g);
         return true;
     }
 
