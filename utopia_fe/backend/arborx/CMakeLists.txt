@@ -18,8 +18,10 @@
 
 # endif()
 
+list(APPEND ARBORX_MODULES .)
+
 if(ArborX_FOUND)
-  scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "."
+  scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "${ARBORX_MODULES}"
                    UTOPIA_FE_BUILD_INCLUDES UTOPIA_FE_HEADERS UTOPIA_FE_SOURCES)
 
   set(UTOPIA_FE_BUILD_INCLUDES

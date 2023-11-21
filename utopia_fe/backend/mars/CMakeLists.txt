@@ -1,3 +1,28 @@
+if(MARS_FOUND)
+    list(APPEND MARS_MODULES . assemblers io fe)
+
+  scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "${STK_MODULES}"
+                   UTOPIA_FE_BUILD_INCLUDES UTOPIA_FE_HEADERS UTOPIA_FE_SOURCES)
+
+  set(UTOPIA_FE_BUILD_INCLUDES
+      ${UTOPIA_FE_BUILD_INCLUDES}
+      PARENT_SCOPE)
+
+  set(UTOPIA_FE_HEADERS
+      ${UTOPIA_FE_HEADERS}
+      PARENT_SCOPE)
+
+  set(UTOPIA_FE_SOURCES
+      ${UTOPIA_FE_SOURCES}
+      PARENT_SCOPE)
+
+
+endif()
+
+
+
+
+
 if(UTOPIA_ENABLE_MARS)
     find_package(Mars 0 REQUIRED)
 

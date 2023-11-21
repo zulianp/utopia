@@ -1,3 +1,26 @@
+list(APPEND SFEM_MODULES .)
+
+  scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "${SFEM_MODULES}"
+                   UTOPIA_FE_BUILD_INCLUDES UTOPIA_FE_HEADERS UTOPIA_FE_SOURCES)
+
+  set(UTOPIA_FE_BUILD_INCLUDES
+      ${UTOPIA_FE_BUILD_INCLUDES}
+      PARENT_SCOPE)
+
+  set(UTOPIA_FE_HEADERS
+      ${UTOPIA_FE_HEADERS}
+      PARENT_SCOPE)
+
+  set(UTOPIA_FE_SOURCES
+      ${UTOPIA_FE_SOURCES}
+      PARENT_SCOPE)
+
+
+
+
+
+
+
 find_path(
     SFEM_DIR
     NAMES  base/sfem_base.h

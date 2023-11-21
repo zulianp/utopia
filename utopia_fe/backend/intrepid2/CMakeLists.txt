@@ -1,3 +1,24 @@
+if(Intrepid2_FOUND)
+    list(APPEND INTREPID_MODULES .)
+
+  scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "${INTREPID_MODULES}"
+                   UTOPIA_FE_BUILD_INCLUDES UTOPIA_FE_HEADERS UTOPIA_FE_SOURCES)
+
+  set(UTOPIA_FE_BUILD_INCLUDES
+      ${UTOPIA_FE_BUILD_INCLUDES}
+      PARENT_SCOPE)
+
+  set(UTOPIA_FE_HEADERS
+      ${UTOPIA_FE_HEADERS}
+      PARENT_SCOPE)
+
+  set(UTOPIA_FE_SOURCES
+      ${UTOPIA_FE_SOURCES}
+      PARENT_SCOPE)
+
+endif()
+
+
 find_package(Intrepid2 HINTS $ENV{TRILINOS_DIR}/lib/cmake/Intrepid2 ${Trilinos_DIR}/../Intrepid2 REQUIRED)
 
 utopiafe_add_module(utopia_intrepid2 ${CMAKE_CURRENT_SOURCE_DIR} ".")

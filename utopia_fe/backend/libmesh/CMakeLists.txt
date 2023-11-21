@@ -30,7 +30,6 @@ if(LIBMESH_FOUND)
             deprecated/materials
             deprecated/functions)
     endif()
-endif()
 
 
 
@@ -48,7 +47,7 @@ set(UTOPIA_FE_HEADERS
 set(UTOPIA_FE_SOURCES
     ${UTOPIA_FE_SOURCES}
     PARENT_SCOPE)
-
+endif()
 
 #     utopiafe_add_module(utopia_libmesh ${CMAKE_CURRENT_SOURCE_DIR}
 #                         "${UTOPIA_LIBMESH_MODULES}")
