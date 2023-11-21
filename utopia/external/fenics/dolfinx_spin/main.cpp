@@ -33,11 +33,11 @@ std::shared_ptr<DolfinxFunction> phase_field_displacement(
     auto objective = std::make_shared<fem::Form<T>>(
         fem::create_form<T>(*form_PhaseField_disp_objective, {}, {{"u", u}}, {}, {}, V->mesh()));
 
-    auto gradient = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_PhaseField_disp_gradient, {V}, {{"u", u}}, {}, {}));
+    auto gradient =
+        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_PhaseField_disp_gradient, {V}, {{"u", u}}, {}, {}));
 
-    auto hessian = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_PhaseField_disp_hessian, {V, V}, {{"u", u}}, {}, {}));
+    auto hessian =
+        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_PhaseField_disp_hessian, {V, V}, {{"u", u}}, {}, {}));
 
     return std::make_shared<DolfinxFunction>(V, u, objective, gradient, hessian, boundary_conditions);
 }
@@ -50,11 +50,11 @@ std::shared_ptr<DolfinxFunction> phase_field_phase(
     auto objective = std::make_shared<fem::Form<T>>(
         fem::create_form<T>(*form_PhaseField_phase_objective, {}, {{"u", u}}, {}, {}, V->mesh()));
 
-    auto gradient = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_PhaseField_phase_gradient, {V}, {{"u", u}}, {}, {}));
+    auto gradient =
+        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_PhaseField_phase_gradient, {V}, {{"u", u}}, {}, {}));
 
-    auto hessian = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_PhaseField_phase_hessian, {V, V}, {{"u", u}}, {}, {}));
+    auto hessian =
+        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_PhaseField_phase_hessian, {V, V}, {{"u", u}}, {}, {}));
 
     return std::make_shared<DolfinxFunction>(V, u, objective, gradient, hessian, boundary_conditions);
 }
@@ -67,13 +67,38 @@ std::shared_ptr<DolfinxFunction> phase_field_coupled(
     auto objective = std::make_shared<fem::Form<T>>(
         fem::create_form<T>(*form_PhaseFieldCoupled_objective, {}, {{"u", u}}, {}, {}, V->mesh()));
 
-    auto gradient = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_PhaseFieldCoupled_gradient, {V}, {{"u", u}}, {}, {}));
+    auto gradient =
+        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_PhaseFieldCoupled_gradient, {V}, {{"u", u}}, {}, {}));
 
     auto hessian = std::make_shared<fem::Form<T>>(
         fem::create_form<T>(*form_PhaseFieldCoupled_hessian, {V, V}, {{"u", u}}, {}, {}));
 
     return std::make_shared<DolfinxFunction>(V, u, objective, gradient, hessian, boundary_conditions);
+}
+
+auto disp_BC(const std::shared_ptr<fem::FunctionSpace> &V) {
+    auto bdofs_left = fem::locate_dofs_geometrical(
+        {*V}, [](auto &&x) -> xt::xtensor<bool, 1> { return xt::isclose(xt::row(x, 0), 0.0); });
+
+    auto bdofs_right = fem::locate_dofs_geometrical(
+        {*V}, [](auto &&x) -> xt::xtensor<bool, 1> { return xt::isclose(xt::row(x, 0), 1.0); });
+
+    return std::vector{std::make_shared<const fem::DirichletBC<T>>(xt::xarray<T>{0, 0, 0}, bdofs_left, V),
+                       std::make_shared<const fem::DirichletBC<T>>(xt::xarray<T>{1e-5, 0, 0}, bdofs_right, V)};
+}
+
+auto phase_BC(const std::shared_ptr<fem::FunctionSpace> &C) {
+    auto c_initial_damage = std::make_shared<fem::Function<T>>(C);
+    c_initial_damage->interpolate([](auto &&) -> xt::xtensor<double, 1> { return {1.0}; });
+
+    auto frac_locator = fem::locate_dofs_geometrical({*C}, [](auto &&p) -> xt::xtensor<bool, 1> {
+        auto x = xt::row(p, 0);
+        auto y = xt::row(p, 1);
+        auto z = xt::row(p, 2);
+        return 0.49 <= x <= 0.51 && y <= 0.5;
+    });
+
+    return std::vector{std::make_shared<const fem::DirichletBC<T>>(c_initial_damage, frac_locator)};
 }
 
 int main(int argc, char *argv[]) {
@@ -87,16 +112,6 @@ int main(int argc, char *argv[]) {
     loguru::set_thread_name(thread_name.c_str());
 
     {
-        // Inside the ``main`` function, we begin by defining a tetrahedral mesh
-        // of the domain and the function space on this mesh. Here, we choose to
-        // create a unit cube mesh with 25 ( = 24 + 1) vertices in one direction
-        // and 17 ( = 16 + 1) vertices in the other two directions. With this
-        // mesh, we initialize the (finite element) function space defined by the
-        // generated code.
-        //
-        // .. code-block:: cpp
-
-        // Create mesh and define function space
         auto mesh = std::make_shared<mesh::Mesh>(mesh::create_box(MPI_COMM_WORLD,
                                                                   {{{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}}},
                                                                   {10, 10, 10},
@@ -106,46 +121,37 @@ int main(int argc, char *argv[]) {
         auto V = std::make_shared<fem::FunctionSpace>(
             fem::create_functionspace(functionspace_form_PhaseField_disp_gradient, "u", mesh));
 
-        auto u_rotation = std::make_shared<fem::Function<T>>(V);
-        u_rotation->interpolate([](auto &&x) {
-            constexpr double scale = 0.1;
+        auto C = std::make_shared<fem::FunctionSpace>(
+            fem::create_functionspace(functionspace_form_PhaseField_phase_gradient, "c", mesh));
 
-            // Center of rotation
-            constexpr double x1_c = 0.5;
-            constexpr double x2_c = 0.5;
+        auto VC = std::make_shared<fem::FunctionSpace>(
+            fem::create_functionspace(functionspace_form_PhaseFieldCoupled_gradient, "mixed", mesh));
 
-            // Large angle of rotation (60 degrees)
-            constexpr double theta = 1.04719755;
-
-            // New coordinates
-            auto x1 = xt::row(x, 1);
-            auto x2 = xt::row(x, 2);
-            xt::xarray<double> values = xt::zeros_like(x);
-            xt::row(values, 1) = scale * (x1_c + (x1 - x1_c) * std::cos(theta) - (x2 - x2_c) * std::sin(theta) - x1);
-            xt::row(values, 2) = scale * (x2_c + (x1 - x1_c) * std::sin(theta) - (x2 - x2_c) * std::cos(theta) - x2);
-            return values;
-        });
-
+        ////////////////////////////////////////////////////////////////
         // Create Dirichlet boundary conditions
-        auto bdofs_left = fem::locate_dofs_geometrical(
-            {*V}, [](auto &&x) -> xt::xtensor<bool, 1> { return xt::isclose(xt::row(x, 0), 0.0); });
+        ////////////////////////////////////////////////////////////////
 
-        auto bdofs_right = fem::locate_dofs_geometrical(
-            {*V}, [](auto &&x) -> xt::xtensor<bool, 1> { return xt::isclose(xt::row(x, 0), 1.0); });
+        auto disp_bcs = disp_BC(V);
+        auto phase_bcs = phase_BC(C);
 
-        auto bcs = std::vector{std::make_shared<const fem::DirichletBC<T>>(xt::xarray<T>{0, 0, 0}, bdofs_left, V),
-                               std::make_shared<const fem::DirichletBC<T>>(u_rotation, bdofs_right)};
+        auto VC_disp = VC->sub({0});
+        auto VC_phase = VC->sub({1});
 
-        /////////////////////////////////////////////////////////
+        auto coupled_bcs = disp_BC(VC_disp);
+        auto VC_phase_bcs = phase_BC(VC_phase);
+
+        coupled_bcs.insert(coupled_bcs.end(), VC_phase_bcs.begin(), VC_phase_bcs.end());
+
+        ////////////////////////////////////////////////////////////////
 
         bool verbose = true;
 
         // Split-fields
-        auto f1 = phase_field_displacement(V, bcs);
-        auto f2 = phase_field_phase(V, bcs);
+        auto f1 = phase_field_displacement(V, disp_bcs);
+        auto f2 = phase_field_phase(C, phase_bcs);
 
         // Global optimization problem (coupled fields)
-        auto c12 = phase_field_coupled(V, bcs);
+        auto c12 = phase_field_coupled(VC, coupled_bcs);
 
         auto nls1 = std::make_shared<utopia::Newton<utopia::PetscMatrix>>(
             std::make_shared<utopia::BiCGStab<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>());
