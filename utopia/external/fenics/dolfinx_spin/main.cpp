@@ -141,19 +141,20 @@ public:
     virtual ~HyperElasticProblem() {}
 
     bool hessian(const utopia::PetscVector &x, utopia::PetscMatrix &H) const override {
-        if(x.raw_type() != impl_->solution_vector.vec()) {
-            x.convert_to( impl_->solution_vector.vec());
+        UTOPIA_TRACE_SCOPE("HyperElasticProblem::hessian");
+
+        if (x.raw_type() != impl_->solution_vector.vec()) {
+            x.convert_to(impl_->solution_vector.vec());
         }
 
         auto H_fun = impl_->J();
-
 
         if (H.empty()) {
             auto m = impl_->matrix.mat();
             H.wrap(m);
         }
 
-        impl_->form()(x.raw_type());
+        impl_->form()(impl_->solution_vector.vec());
 
         H_fun(x.raw_type(), H.raw_type());
 
@@ -162,26 +163,30 @@ public:
     }
 
     bool value(const utopia::PetscVector &x, PetscScalar &value) const override {
-        if(x.raw_type() != impl_->solution_vector.vec()) {
-            x.convert_to( impl_->solution_vector.vec());
+        UTOPIA_TRACE_SCOPE("HyperElasticProblem::value");
+
+        if (x.raw_type() != impl_->solution_vector.vec()) {
+            x.convert_to(impl_->solution_vector.vec());
         }
 
-        impl_->form()(x.raw_type());
+        impl_->form()(impl_->solution_vector.vec());
         value = fem::assemble_scalar<T>(*impl_->objective);
         value = x.comm().sum(value);
         return true;
     }
 
     bool gradient(const utopia::PetscVector &x, utopia::PetscVector &g) const override {
-        if(x.raw_type() != impl_->solution_vector.vec()) {
-            x.convert_to( impl_->solution_vector.vec());
+        UTOPIA_TRACE_SCOPE("HyperElasticProblem::gradient");
+
+        if (x.raw_type() != impl_->solution_vector.vec()) {
+            x.convert_to(impl_->solution_vector.vec());
         }
 
         auto grad_fun = impl_->F();
 
-        impl_->form()(x.raw_type());
+        impl_->form()(impl_->solution_vector.vec());
 
-        grad_fun(x.raw_type(), nullptr);
+        grad_fun(impl_->solution_vector.vec(), nullptr);
 
         la::petsc::Vector temp(la::petsc::create_vector_wrap(impl_->rhs), false);
 
@@ -251,10 +256,10 @@ int main(int argc, char *argv[]) {
         // Create Dirichlet boundary conditions
         auto bdofs_left = fem::locate_dofs_geometrical(
             {*V}, [](auto &&x) -> xt::xtensor<bool, 1> { return xt::isclose(xt::row(x, 0), 0.0); });
-       
+
         auto bdofs_right = fem::locate_dofs_geometrical(
             {*V}, [](auto &&x) -> xt::xtensor<bool, 1> { return xt::isclose(xt::row(x, 0), 1.0); });
-       
+
         auto bcs = std::vector{std::make_shared<const fem::DirichletBC<T>>(xt::xarray<T>{0, 0, 0}, bdofs_left, V),
                                std::make_shared<const fem::DirichletBC<T>>(u_rotation, bdofs_right)};
 
@@ -281,26 +286,42 @@ int main(int argc, char *argv[]) {
         nls1->verbose(verbose);
         nls2->verbose(verbose);
 
-        utopia::TwoFieldAlternateMinimization<utopia::PetscMatrix> tfa(nls1, nls2);
-
-        tfa.set_field_functions(f1, f2);
-
         auto f1_to_c12 = [](const utopia::PetscVector &in, utopia::PetscVector &out) { out = in; };
         auto f2_to_c12 = f1_to_c12;
         auto c12_to_f1 = f1_to_c12;
         auto c12_to_f2 = f1_to_c12;
 
-        tfa.set_transfers(f1_to_c12, f2_to_c12, c12_to_f1, c12_to_f2);
-        tfa.verbose(verbose);
-
-        utopia::PetscVector x;  
+        utopia::PetscVector x;
         c12->create_vector(x);
 
-        // utopia::Newton<utopia::PetscMatrix> newton(std::make_shared<utopia::Factorization<utopia::PetscMatrix, utopia::PetscVector>>());
-        // newton.solve(*c12, x);
+        if (0) {
+            utopia::TwoFieldAlternateMinimization<utopia::PetscMatrix> tfa(nls1, nls2);
+            tfa.set_field_functions(f1, f2);
+            tfa.set_transfers(f1_to_c12, f2_to_c12, c12_to_f1, c12_to_f2);
+            tfa.verbose(verbose);
+            tfa.verbosity_level(utopia::VERBOSITY_LEVEL_DEBUG);
+            tfa.solve(*c12, x);
 
-        tfa.verbosity_level(utopia::VERBOSITY_LEVEL_DEBUG);
-        tfa.solve(*c12, x);
+        } else {
+            auto lsc12 =
+                std::make_shared<utopia::ConjugateGradient<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>();
+            lsc12->apply_gradient_descent_step(true);
+            // lsc12->set_preconditioner(std::make_shared<utopia::InvDiagPreconditioner<utopia::PetscMatrix, utopia::PetscVector>>());
+
+            // auto lsc12 =
+            //   std::make_shared<utopia::KSP_MF<utopia::PetscMatrix, utopia::PetscVector>>();
+            // lsc12->verbose(verbose);
+
+            nls1->verbose(verbose);
+            nls2->verbose(verbose);
+
+            utopia::TwoFieldSPIN<utopia::PetscMatrix> tfs(lsc12, nls1, nls2);
+            tfs.set_field_functions(f1, f2);
+            tfs.set_transfers(f1_to_c12, f2_to_c12, c12_to_f1, c12_to_f2);
+            tfs.additive_precond(false);
+            tfs.verbosity_level(utopia::VERBOSITY_LEVEL_DEBUG);
+            tfs.solve(*c12, x);
+        }
 
         /////////////////////////////////////////////////////////
 
