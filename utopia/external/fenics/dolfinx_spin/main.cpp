@@ -50,13 +50,13 @@ std::shared_ptr<DolfinxFunction> phase_field_phase(
     std::vector<std::shared_ptr<const fem::DirichletBC<T>>> boundary_conditions) {
 
     auto objective = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_PhaseField_phase_objective, {}, {{"u", u}, {"c", c}}, {}, {}, V->mesh()));
+        fem::create_form<T>(*form_PhaseField_phase_objective, {}, { {"c", c}, {"u", u}}, {}, {}, V->mesh()));
 
     auto gradient =
-        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_PhaseField_phase_gradient, {V}, {{"u", u}, {"c", c}}, {}, {}));
+        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_PhaseField_phase_gradient, {V}, { {"c", c}, {"u", u}}, {}, {}));
 
     auto hessian =
-        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_PhaseField_phase_hessian, {V, V}, {{"u", u}, {"c", c}}, {}, {}));
+        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_PhaseField_phase_hessian, {V, V}, { {"c", c}, {"u", u}}, {}, {}));
 
     return std::make_shared<DolfinxFunction>(V, u, objective, gradient, hessian, boundary_conditions);
 }
@@ -132,6 +132,7 @@ int main(int argc, char *argv[]) {
     loguru::set_thread_name(thread_name.c_str());
 
     {
+        static int dims = 3;
         auto mesh = std::make_shared<mesh::Mesh>(mesh::create_box(MPI_COMM_WORLD,
                                                                   {{{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}}},
                                                                   {10, 10, 10},
@@ -191,10 +192,68 @@ int main(int argc, char *argv[]) {
         nls1->verbose(verbose);
         nls2->verbose(verbose);
 
-        auto f1_to_c12 = [](const utopia::PetscVector &in, utopia::PetscVector &out) { out = in; };
-        auto f2_to_c12 = f1_to_c12;
-        auto c12_to_f1 = f1_to_c12;
-        auto c12_to_f2 = f1_to_c12;
+        auto f1_to_c12 = [](const utopia::PetscVector &in, utopia::PetscVector &out) { 
+            utopia::out() << "f1_to_c12: " << in.size() << " -> " << out.size() << "\n";
+
+            using namespace utopia;
+
+            auto in_view = local_view_device(in);
+            auto out_view = local_view_device(out);
+
+            parallel_for(local_range_device(in), UTOPIA_LAMBDA(SizeType i) {
+                SizeType ii = i / dims;
+                int rmd = i - ii * dims;
+                auto v = in_view.get(i);
+                out_view.set(ii * (dims + 1) + rmd, v);
+
+            });
+
+        };
+
+        auto f2_to_c12 = [](const utopia::PetscVector &in, utopia::PetscVector &out) { 
+            utopia::out() << "f2_to_c12: " << in.size() << " -> " << out.size() << "\n";
+
+            using namespace utopia;
+
+            auto in_view = local_view_device(in);
+            auto out_view = local_view_device(out);
+
+            parallel_for(local_range_device(in), UTOPIA_LAMBDA(SizeType i) {
+                auto v = in_view.get(i);
+                out_view.set(i * (dims + 1) + dims, v);
+            });
+
+        };
+
+        auto c12_to_f1 = [](const utopia::PetscVector &in, utopia::PetscVector &out) { 
+            utopia::out() << "c12_to_f1: " << in.size() << " -> " << out.size() << "\n";
+
+            using namespace utopia;
+
+            auto in_view = local_view_device(in);
+            auto out_view = local_view_device(out);
+
+            parallel_for(local_range_device(out), UTOPIA_LAMBDA(SizeType i) {
+                SizeType ii = i / dims;
+                int rmd = i - ii * dims;
+                auto v = in_view.get(ii * (dims + 1) + rmd);
+                out_view.set(i, v);
+            });
+        };
+
+        auto c12_to_f2 = [](const utopia::PetscVector &in, utopia::PetscVector &out) { 
+            utopia::out() << "c12_to_f2: " << in.size() << " -> " << out.size() << "\n";
+
+            using namespace utopia;
+
+            auto in_view = local_view_device(in);
+            auto out_view = local_view_device(out);
+
+            parallel_for(local_range_device(out), UTOPIA_LAMBDA(SizeType i) {
+                auto v = in_view.get(i * (dims + 1) + dims);
+                out_view.set(i, v);
+            });
+        };
 
         utopia::PetscVector solution;
         c12->create_vector(solution);

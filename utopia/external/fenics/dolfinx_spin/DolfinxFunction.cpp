@@ -106,6 +106,8 @@ DolfinxFunction::~DolfinxFunction() {}
 void DolfinxFunction::create_vector(utopia::PetscVector &x) const {
     Vec v = impl_->solution_vector.vec();
     x.wrap(v);
+
+    utopia::out() << " DolfinxFunction::create_vector " << x.size() << "\n";
 }
 
 bool DolfinxFunction::hessian(const utopia::PetscVector &x, utopia::PetscMatrix &H) const {

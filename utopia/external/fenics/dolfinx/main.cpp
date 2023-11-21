@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
         // Create mesh and define function space
         auto mesh = std::make_shared<mesh::Mesh>(mesh::create_box(MPI_COMM_WORLD,
                                                                   {{{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}}},
-                                                                  {40, 40, 40},
+                                                                  {10, 10, 10},
                                                                   mesh::CellType::tetrahedron,
                                                                   mesh::GhostMode::none));
 
