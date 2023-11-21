@@ -10,7 +10,7 @@
 # trial and test functions on this space::
 from ufl import (Coefficient, Identity, TestFunctions, TrialFunctions,
                  FiniteElement, VectorElement, derivative, det, diff, dx, grad, ln,
-                 tetrahedron, tr, variable, sym, inner, MixedElement)
+                 tetrahedron, tr, variable, sym, inner, MixedElement, split)
 
 # Function spaces
 vector_element = VectorElement("Lagrange", tetrahedron, 1)
@@ -22,8 +22,10 @@ trial_u, trial_c = TrialFunctions(mixed)
 test_u, test_c = TestFunctions(mixed)
 
 # Functions
-u = Coefficient(vector_element)
-c = Coefficient(element)
+x = Coefficient(mixed)
+u, c = split(x)
+# u = Coefficient(vector_element)
+# c = Coefficient(element)
 
 # Kinematics
 d = len(u)

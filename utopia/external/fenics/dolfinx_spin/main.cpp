@@ -27,53 +27,55 @@ using T = PetscScalar;
 
 std::shared_ptr<DolfinxFunction> phase_field_displacement(
     const std::shared_ptr<fem::FunctionSpace> &V,
+    std::shared_ptr<dolfinx::fem::Function<T>> u,
+    std::shared_ptr<dolfinx::fem::Function<T>> c,
     std::vector<std::shared_ptr<const fem::DirichletBC<T>>> boundary_conditions) {
-    auto u = std::make_shared<fem::Function<T>>(V);
 
     auto objective = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_PhaseField_disp_objective, {}, {{"u", u}}, {}, {}, V->mesh()));
+        fem::create_form<T>(*form_PhaseField_disp_objective, {}, {{"u", u}, {"c", c}}, {}, {}, V->mesh()));
 
     auto gradient =
-        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_PhaseField_disp_gradient, {V}, {{"u", u}}, {}, {}));
+        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_PhaseField_disp_gradient, {V}, {{"u", u}, {"c", c}}, {}, {}));
 
     auto hessian =
-        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_PhaseField_disp_hessian, {V, V}, {{"u", u}}, {}, {}));
+        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_PhaseField_disp_hessian, {V, V}, {{"u", u}, {"c", c}}, {}, {}));
 
     return std::make_shared<DolfinxFunction>(V, u, objective, gradient, hessian, boundary_conditions);
 }
 
 std::shared_ptr<DolfinxFunction> phase_field_phase(
     const std::shared_ptr<fem::FunctionSpace> &V,
+    std::shared_ptr<dolfinx::fem::Function<T>> u,
+    std::shared_ptr<dolfinx::fem::Function<T>> c,
     std::vector<std::shared_ptr<const fem::DirichletBC<T>>> boundary_conditions) {
-    auto u = std::make_shared<fem::Function<T>>(V);
 
     auto objective = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_PhaseField_phase_objective, {}, {{"u", u}}, {}, {}, V->mesh()));
+        fem::create_form<T>(*form_PhaseField_phase_objective, {}, {{"u", u}, {"c", c}}, {}, {}, V->mesh()));
 
     auto gradient =
-        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_PhaseField_phase_gradient, {V}, {{"u", u}}, {}, {}));
+        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_PhaseField_phase_gradient, {V}, {{"u", u}, {"c", c}}, {}, {}));
 
     auto hessian =
-        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_PhaseField_phase_hessian, {V, V}, {{"u", u}}, {}, {}));
+        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_PhaseField_phase_hessian, {V, V}, {{"u", u}, {"c", c}}, {}, {}));
 
     return std::make_shared<DolfinxFunction>(V, u, objective, gradient, hessian, boundary_conditions);
 }
 
 std::shared_ptr<DolfinxFunction> phase_field_coupled(
     const std::shared_ptr<fem::FunctionSpace> &V,
+    std::shared_ptr<dolfinx::fem::Function<T>> x,
     std::vector<std::shared_ptr<const fem::DirichletBC<T>>> boundary_conditions) {
-    auto u = std::make_shared<fem::Function<T>>(V);
 
     auto objective = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_PhaseFieldCoupled_objective, {}, {{"u", u}}, {}, {}, V->mesh()));
+        fem::create_form<T>(*form_PhaseFieldCoupled_objective, {}, {{"x", x}}, {}, {}, V->mesh()));
 
     auto gradient =
-        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_PhaseFieldCoupled_gradient, {V}, {{"u", u}}, {}, {}));
+        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_PhaseFieldCoupled_gradient, {V}, {{"x", x}}, {}, {}));
 
     auto hessian = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_PhaseFieldCoupled_hessian, {V, V}, {{"u", u}}, {}, {}));
+        fem::create_form<T>(*form_PhaseFieldCoupled_hessian, {V, V}, {{"x", x}}, {}, {}));
 
-    return std::make_shared<DolfinxFunction>(V, u, objective, gradient, hessian, boundary_conditions);
+    return std::make_shared<DolfinxFunction>(V, x, objective, gradient, hessian, boundary_conditions);
 }
 
 auto disp_BC(const std::shared_ptr<fem::FunctionSpace> &V) {
@@ -88,9 +90,6 @@ auto disp_BC(const std::shared_ptr<fem::FunctionSpace> &V) {
 }
 
 auto phase_BC(const std::shared_ptr<fem::FunctionSpace> &C) {
-    auto c_initial_damage = std::make_shared<fem::Function<T>>(C);
-    c_initial_damage->interpolate([](auto &&) -> xt::xtensor<double, 1> { return {1.0}; });
-
     auto frac_locator = fem::locate_dofs_geometrical({*C}, [](auto &&p) -> xt::xtensor<bool, 1> {
         auto x = xt::row(p, 0);
         auto y = xt::row(p, 1);
@@ -98,7 +97,28 @@ auto phase_BC(const std::shared_ptr<fem::FunctionSpace> &C) {
         return 0.49 <= x <= 0.51 && y <= 0.5;
     });
 
-    return std::vector{std::make_shared<const fem::DirichletBC<T>>(c_initial_damage, frac_locator)};
+    return std::vector{std::make_shared<const fem::DirichletBC<T>>(1., frac_locator, C)};
+}
+
+auto coupled_BC(const std::shared_ptr<fem::FunctionSpace> &V)
+{
+    auto bdofs_left = fem::locate_dofs_geometrical(
+        {*V}, [](auto &&x) -> xt::xtensor<bool, 1> { return xt::isclose(xt::row(x, 0), 0.0); });
+
+    auto bdofs_right = fem::locate_dofs_geometrical(
+        {*V}, [](auto &&x) -> xt::xtensor<bool, 1> { return xt::isclose(xt::row(x, 0), 1.0); });
+
+    auto frac_locator = fem::locate_dofs_geometrical({*V}, [](auto &&p) -> xt::xtensor<bool, 1> {
+        auto x = xt::row(p, 0);
+        auto y = xt::row(p, 1);
+        auto z = xt::row(p, 2);
+        return 0.49 <= x <= 0.51 && y <= 0.5;
+    });
+
+    return std::vector{
+        std::make_shared<const fem::DirichletBC<T>>(xt::xarray<T>{0, 0, 0, 0}, bdofs_left, V),
+        std::make_shared<const fem::DirichletBC<T>>(xt::xarray<T>{1e-5, 0, 0, 0}, bdofs_right, V),
+        std::make_shared<const fem::DirichletBC<T>>(xt::xarray<T>{1e-5, 0, 0, 1}, frac_locator, V)};
 }
 
 int main(int argc, char *argv[]) {
@@ -124,8 +144,12 @@ int main(int argc, char *argv[]) {
         auto C = std::make_shared<fem::FunctionSpace>(
             fem::create_functionspace(functionspace_form_PhaseField_phase_gradient, "c", mesh));
 
-        auto VC = std::make_shared<fem::FunctionSpace>(
-            fem::create_functionspace(functionspace_form_PhaseFieldCoupled_gradient, "mixed", mesh));
+        auto X = std::make_shared<fem::FunctionSpace>(
+            fem::create_functionspace(functionspace_form_PhaseFieldCoupled_gradient, "x", mesh));
+
+        auto u = std::make_shared<fem::Function<T>>(V);
+        auto c = std::make_shared<fem::Function<T>>(C);
+        auto x = std::make_shared<fem::Function<T>>(X);
 
         ////////////////////////////////////////////////////////////////
         // Create Dirichlet boundary conditions
@@ -134,24 +158,26 @@ int main(int argc, char *argv[]) {
         auto disp_bcs = disp_BC(V);
         auto phase_bcs = phase_BC(C);
 
-        auto VC_disp = VC->sub({0});
-        auto VC_phase = VC->sub({1});
+        auto X_disp = X->sub({0})->collapse();
+        auto X_phase = X->sub({1})->collapse();
 
-        auto coupled_bcs = disp_BC(VC_disp);
-        auto VC_phase_bcs = phase_BC(VC_phase);
+        auto coupled_bcs = disp_BC(utopia::make_ref(X_disp.first));
+        auto X_phase_bcs = phase_BC(utopia::make_ref(X_phase.first));
+        coupled_bcs.insert(coupled_bcs.end(), X_phase_bcs.begin(), X_phase_bcs.end());
 
-        coupled_bcs.insert(coupled_bcs.end(), VC_phase_bcs.begin(), VC_phase_bcs.end());
+
+        // auto coupled_bcs = coupled_BC(X);
 
         ////////////////////////////////////////////////////////////////
 
         bool verbose = true;
 
         // Split-fields
-        auto f1 = phase_field_displacement(V, disp_bcs);
-        auto f2 = phase_field_phase(C, phase_bcs);
+        auto f1 = phase_field_displacement(V, u, c, disp_bcs);
+        auto f2 = phase_field_phase(C, u, c, phase_bcs);
 
         // Global optimization problem (coupled fields)
-        auto c12 = phase_field_coupled(VC, coupled_bcs);
+        auto c12 = phase_field_coupled(X, x, coupled_bcs);
 
         auto nls1 = std::make_shared<utopia::Newton<utopia::PetscMatrix>>(
             std::make_shared<utopia::BiCGStab<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>());
@@ -170,8 +196,8 @@ int main(int argc, char *argv[]) {
         auto c12_to_f1 = f1_to_c12;
         auto c12_to_f2 = f1_to_c12;
 
-        utopia::PetscVector x;
-        c12->create_vector(x);
+        utopia::PetscVector solution;
+        c12->create_vector(solution);
 
         if (0) {
             utopia::TwoFieldAlternateMinimization<utopia::PetscMatrix> tfa(nls1, nls2);
@@ -179,7 +205,7 @@ int main(int argc, char *argv[]) {
             tfa.set_transfers(f1_to_c12, f2_to_c12, c12_to_f1, c12_to_f2);
             tfa.verbose(verbose);
             tfa.verbosity_level(utopia::VERBOSITY_LEVEL_DEBUG);
-            tfa.solve(*c12, x);
+            tfa.solve(*c12, solution);
         } else {
             auto lsc12 = std::make_shared<utopia::KSP_MF<utopia::PetscMatrix, utopia::PetscVector>>();
             lsc12->ksp_type("gmres");
@@ -195,7 +221,7 @@ int main(int argc, char *argv[]) {
             // tfs.additive_precond(false);
             tfs.additive_precond(true);
             tfs.verbosity_level(utopia::VERBOSITY_LEVEL_DEBUG);
-            tfs.solve(*c12, x);
+            tfs.solve(*c12, solution);
         }
 
         /////////////////////////////////////////////////////////

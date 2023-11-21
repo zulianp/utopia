@@ -14,7 +14,6 @@
 #include <cmath>
 #include <xtensor/xarray.hpp>
 #include <xtensor/xview.hpp>
-#include "hyperelasticity.h"
 
 #include "utopia.hpp"
 
