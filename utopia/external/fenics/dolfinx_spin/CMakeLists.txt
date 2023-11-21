@@ -33,7 +33,7 @@ else()
   set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
   # add_executable(${PROJECT_NAME} main.cpp ${CMAKE_CURRENT_BINARY_DIR}/hyperelasticity.c utopia_DolfinxFunction.cpp)
-  add_executable(${PROJECT_NAME} main.cpp ${CMAKE_CURRENT_BINARY_DIR}/hyperelasticity.c)
+  add_executable(${PROJECT_NAME} main.cpp DolfinxFunction.cpp ${CMAKE_CURRENT_BINARY_DIR}/hyperelasticity.c)
   target_link_libraries(${PROJECT_NAME} dolfinx)
   target_link_libraries(${PROJECT_NAME} Utopia::utopia)
 
