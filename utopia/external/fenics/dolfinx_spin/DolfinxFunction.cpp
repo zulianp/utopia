@@ -53,6 +53,23 @@ public:
         };
     }
 
+    void set_BC(Vec x)
+    {
+        // Set bcs
+        // Vec x_local;
+        // VecGhostGetLocalForm(x, &x_local);
+        // PetscInt n = 0;
+        // VecGetSize(x_local, &n);
+        // T *array = nullptr;
+        // VecGetArray(x_local, &array);
+
+        // xtl::span<T> b(array, n);
+
+        // // FIXME Boundary conditions should be set to if x satisfies them (!!!)
+        // fem::set_bc<T>(b, boundary_conditions, xtl::span<const T>(array, n), 1.0);
+        // VecRestoreArray(x, &array);
+    }
+
     /// Compute F at current point x
     auto F() {
         return [&](const Vec x, Vec) {
@@ -73,6 +90,8 @@ public:
 
             // FIXME Boundary conditions should be set to if x satisfies them (!!!)
             fem::set_bc<T>(b, boundary_conditions, xtl::span<const T>(array, n), -1.0);
+            // fem::set_bc<T>(b, boundary_conditions, xtl::span<const T>(array, n), 1.0);
+            // fem::set_bc<T>(b, boundary_conditions, xtl::span<const T>(array, n), 0);
             VecRestoreArrayRead(x, &array);
         };
     }
@@ -105,6 +124,8 @@ DolfinxFunction::~DolfinxFunction() {}
 
 void DolfinxFunction::create_vector(utopia::PetscVector &x) const {
     Vec v = impl_->solution_vector.vec();
+
+    impl_->set_BC(v);
     x.wrap(v);
 
     utopia::out() << " DolfinxFunction::create_vector " << x.size() << "\n";

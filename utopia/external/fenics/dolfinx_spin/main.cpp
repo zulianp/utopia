@@ -82,8 +82,8 @@ auto disp_BC(const std::shared_ptr<fem::FunctionSpace> &V) {
     auto bdofs_right = fem::locate_dofs_geometrical(
         {*V}, [](auto &&x) -> xt::xtensor<bool, 1> { return xt::isclose(xt::row(x, 0), 1.0); });
 
-    return std::vector{std::make_shared<const fem::DirichletBC<T>>(xt::xarray<T>{0, 0, 0}, bdofs_left, V),
-                       std::make_shared<const fem::DirichletBC<T>>(xt::xarray<T>{1e-7, 0, 0}, bdofs_right, V)};
+    return std::vector{std::make_shared<const fem::DirichletBC<T>>(xt::xarray<T>{-1e-5, 0, 0}, bdofs_left, V),
+                       std::make_shared<const fem::DirichletBC<T>>(xt::xarray<T>{0, 0, 0}, bdofs_right, V)};
 }
 
 auto phase_BC(const std::shared_ptr<fem::FunctionSpace> &C) {
@@ -95,6 +95,7 @@ auto phase_BC(const std::shared_ptr<fem::FunctionSpace> &C) {
     });
 
     return std::vector{std::make_shared<const fem::DirichletBC<T>>(1., frac_locator, C)};
+    // return std::vector{std::make_shared<const fem::DirichletBC<T>>(0., frac_locator, C)};
 }
 
 // auto coupled_BC(const std::shared_ptr<fem::FunctionSpace> &V)
