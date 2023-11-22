@@ -1,16 +1,23 @@
-from ufl import (Coefficient, Identity, 
+from basix.ufl import element
+from ufl import (Coefficient, FunctionSpace, Mesh, Identity, 
                  TestFunction, TrialFunction, TestFunctions, TrialFunctions,
                  FiniteElement, VectorElement, derivative, det, diff, dx, grad, ln,
                  tetrahedron, tr, variable, sym, inner, MixedElement, split)
 
-vector_element = VectorElement("Lagrange", tetrahedron, 1)
-element = FiniteElement("Lagrange", tetrahedron, 1)
-mixed = MixedElement([vector_element, element])
+# Function spaces
+disp_element = element("Lagrange", "tetrahedron", 1, shape=(3,))
+phase_element = element("Lagrange", "tetrahedron", 1)
 
-trial = TrialFunction(mixed)
-test = TestFunction(mixed)
+mixed = MixedElement([disp_element, phase_element])
 
-x = Coefficient(mixed)
+mesh = Mesh(disp_element)
+
+X = FunctionSpace(mesh, mixed)
+
+trial = TrialFunction(X)
+test = TestFunction(X)
+
+x = Coefficient(X)
 u, c = split(x)
 
 # Kinematics

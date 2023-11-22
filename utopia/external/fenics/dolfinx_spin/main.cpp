@@ -1,4 +1,9 @@
+#include "PhaseField.h"
+#include "PhaseFieldCoupled.h"
+
 #include <basix/finite-element.h>
+#include <climits>
+#include <cmath>
 #include <dolfinx.h>
 #include <dolfinx/common/log.h>
 #include <dolfinx/fem/assembler.h>
@@ -7,11 +12,6 @@
 #include <dolfinx/la/Vector.h>
 #include <dolfinx/mesh/Mesh.h>
 #include <dolfinx/mesh/cell_types.h>
-#include <dolfinx/nls/NewtonSolver.h>
-#include <cmath>
-
-#include "PhaseField.h"
-#include "PhaseFieldCoupled.h"
 
 #include "utopia.hpp"
 
@@ -24,7 +24,7 @@ using namespace dolfinx;
 using T = PetscScalar;
 
 std::shared_ptr<DolfinxFunction> phase_field_displacement(
-    const std::shared_ptr<fem::FunctionSpace> &V,
+    const std::shared_ptr<fem::FunctionSpace<T>> &V,
     std::shared_ptr<dolfinx::fem::Function<T>> u,
     std::shared_ptr<dolfinx::fem::Function<T>> c,
     std::vector<std::shared_ptr<const fem::DirichletBC<T>>> boundary_conditions) {
@@ -41,7 +41,7 @@ std::shared_ptr<DolfinxFunction> phase_field_displacement(
 }
 
 std::shared_ptr<DolfinxFunction> phase_field_phase(
-    const std::shared_ptr<fem::FunctionSpace> &V,
+    const std::shared_ptr<fem::FunctionSpace<T>> &V,
     std::shared_ptr<dolfinx::fem::Function<T>> u,
     std::shared_ptr<dolfinx::fem::Function<T>> c,
     std::vector<std::shared_ptr<const fem::DirichletBC<T>>> boundary_conditions) {
@@ -58,7 +58,7 @@ std::shared_ptr<DolfinxFunction> phase_field_phase(
 }
 
 std::shared_ptr<DolfinxFunction> phase_field_coupled(
-    const std::shared_ptr<fem::FunctionSpace> &V,
+    const std::shared_ptr<fem::FunctionSpace<T>> &V,
     std::shared_ptr<dolfinx::fem::Function<T>> x,
     std::vector<std::shared_ptr<const fem::DirichletBC<T>>> boundary_conditions) {
     auto objective = std::make_shared<fem::Form<T>>(
@@ -73,8 +73,8 @@ std::shared_ptr<DolfinxFunction> phase_field_coupled(
     return std::make_shared<DolfinxFunction>(V, x, objective, gradient, hessian, boundary_conditions);
 }
 
-auto disp_BC(const std::shared_ptr<fem::FunctionSpace> &V) {
-    auto bdofs_left = fem::locate_dofs_geometrical({*V}, [](auto &&x) -> std::vector<std::int8_t> {
+auto disp_BC(const std::shared_ptr<fem::FunctionSpace<T>> &V) {
+    auto bdofs_left = fem::locate_dofs_geometrical(*V, [](auto x) -> std::vector<std::int8_t> {
         constexpr T eps = 1.0e-6;
         std::vector<std::int8_t> marker(x.extent(1), false);
         for (std::size_t p = 0; p < x.extent(1); ++p) {
@@ -83,7 +83,7 @@ auto disp_BC(const std::shared_ptr<fem::FunctionSpace> &V) {
         return marker;
     });
 
-    auto bdofs_right = fem::locate_dofs_geometrical({*V}, [](auto &&x) -> std::vector<std::int8_t> {
+    auto bdofs_right = fem::locate_dofs_geometrical(*V, [](auto x) -> std::vector<std::int8_t> {
         constexpr T eps = 1.0e-6;
         std::vector<std::int8_t> marker(x.extent(1), false);
         for (std::size_t p = 0; p < x.extent(1); ++p) {
@@ -96,8 +96,8 @@ auto disp_BC(const std::shared_ptr<fem::FunctionSpace> &V) {
                        std::make_shared<const fem::DirichletBC<T>>(std::vector<T>{0, 0, 0}, bdofs_right, V)};
 }
 
-auto phase_BC(const std::shared_ptr<fem::FunctionSpace> &C) {
-    auto frac_locator = fem::locate_dofs_geometrical({*C}, [](auto &&x) -> std::vector<std::int8_t> {
+auto phase_BC(const std::shared_ptr<fem::FunctionSpace<T>> &C) {
+    auto frac_locator = fem::locate_dofs_geometrical(*C, [](auto x) -> std::vector<std::int8_t> {
         std::vector<std::int8_t> marker(x.extent(1), false);
         for (std::size_t p = 0; p < x.extent(1); ++p) {
             marker[p] = 0.4 <= x(0, p) && x(0, p) <= 0.6 && x(1, p) <= 0.5;
@@ -143,19 +143,19 @@ int main(int argc, char *argv[]) {
     {
         static int dims = 3;
         auto mesh =
-            std::make_shared<mesh::Mesh>(mesh::create_box(MPI_COMM_WORLD,
+            std::make_shared<mesh::Mesh<T>>(mesh::create_box(MPI_COMM_WORLD,
                                                           {{{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}}},
-                                                          {10, 10, 10},
+                                                          {10, 10, 11},
                                                           mesh::CellType::tetrahedron,
                                                           mesh::create_cell_partitioner(mesh::GhostMode::none)));
 
-        auto V = std::make_shared<fem::FunctionSpace>(
+        auto V = std::make_shared<fem::FunctionSpace<T>>(
             fem::create_functionspace(functionspace_form_PhaseField_disp_gradient, "u", mesh));
 
-        auto C = std::make_shared<fem::FunctionSpace>(
+        auto C = std::make_shared<fem::FunctionSpace<T>>(
             fem::create_functionspace(functionspace_form_PhaseField_phase_gradient, "c", mesh));
 
-        auto X = std::make_shared<fem::FunctionSpace>(
+        auto X = std::make_shared<fem::FunctionSpace<T>>(
             fem::create_functionspace(functionspace_form_PhaseFieldCoupled_gradient, "x", mesh));
 
         auto u = std::make_shared<fem::Function<T>>(V);
@@ -336,11 +336,11 @@ int main(int argc, char *argv[]) {
             c12_to_f2(c12_temp, f2_temp);
         }
 
-        // io::VTKFile file_u(mesh->comm(), "u.pvd", "w");
-        // file_u.write<T>({*f1->u()}, 0.0);
+        io::VTKFile file_u(mesh->comm(), "u.pvd", "w");
+        file_u.write<T>({*f1->u()}, 0.0);
 
-        // io::VTKFile file_c(mesh->comm(), "c.pvd", "w");
-        // file_c.write<T>({*f2->u()}, 0.0);
+        io::VTKFile file_c(mesh->comm(), "c.pvd", "w");
+        file_c.write<T>({*f2->u()}, 0.0);
     }
 
     // PetscFinalize();

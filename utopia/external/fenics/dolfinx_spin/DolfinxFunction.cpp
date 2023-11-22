@@ -5,7 +5,7 @@ using T = PetscScalar;
 
 class DolfinxFunction::Impl {
 public:
-    Impl(std::shared_ptr<fem::FunctionSpace> V,
+    Impl(std::shared_ptr<fem::FunctionSpace<T>> V,
          std::shared_ptr<fem::Function<T>> u,
          std::shared_ptr<fem::Form<T>> objective,
          std::shared_ptr<fem::Form<T>> gradient,
@@ -38,7 +38,7 @@ public:
         if (rhs_petsc_) VecDestroy(&rhs_petsc_);
     }
 
-    std::shared_ptr<fem::FunctionSpace> V;
+    std::shared_ptr<fem::FunctionSpace<T>> V;
     std::shared_ptr<fem::Function<T>> u;
     std::shared_ptr<fem::Form<T>> objective, gradient, hessian;
     std::vector<std::shared_ptr<const fem::DirichletBC<T>>> boundary_conditions;
@@ -68,7 +68,7 @@ public:
         // fem::set_bc<T>(wrapped_array, boundary_conditions, std::span<const T>(array, n), 1.0);
         // VecRestoreArray(x, &array);
 
-        fem::set_bc(x, boundary_conditions, 1);
+        // fem::set_bc(x, boundary_conditions, 1);
     }
 
     /// Compute F at current point x
@@ -110,7 +110,7 @@ public:
     }
 };
 
-DolfinxFunction::DolfinxFunction(std::shared_ptr<fem::FunctionSpace> V,
+DolfinxFunction::DolfinxFunction(std::shared_ptr<fem::FunctionSpace<T>> V,
                                  std::shared_ptr<fem::Function<T>> u,
                                  std::shared_ptr<fem::Form<T>> objective,
                                  std::shared_ptr<fem::Form<T>> gradient,

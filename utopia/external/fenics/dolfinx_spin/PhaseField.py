@@ -1,21 +1,26 @@
-from ufl import (Coefficient, Identity, TestFunction, TrialFunction,
+from basix.ufl import element
+from ufl import (Coefficient,FunctionSpace, Identity, TestFunction, TrialFunction,
                  FiniteElement, VectorElement, derivative, det, diff, dx, grad, ln,
-                 tetrahedron, tr, variable, sym, inner)
+                 tetrahedron, hexahedron, tr, variable, sym, inner, Mesh)
 
 # Function spaces
-vector_element = VectorElement("Lagrange", tetrahedron, 1)
-element = FiniteElement("Lagrange", tetrahedron, 1)
+disp_element = element("Lagrange", "tetrahedron", 1, shape=(3,))
+phase_element = element("Lagrange", "tetrahedron", 1)
+
+mesh = Mesh(disp_element)
+C = FunctionSpace(mesh, phase_element)
+V = FunctionSpace(mesh, disp_element)
 
 # Trial and test functions
-trial_u = TrialFunction(vector_element)
-test_u = TestFunction(vector_element)
+trial_u = TrialFunction(V)
+test_u = TestFunction(V)
 
-trial_c = TrialFunction(element)
-test_c = TestFunction(element)
+trial_c = TrialFunction(C)
+test_c = TestFunction(C)
 
 # Functions
-u = Coefficient(vector_element)
-c = Coefficient(element)
+u = Coefficient(V)
+c = Coefficient(C)
 
 # Kinematics
 d = len(u)
@@ -72,4 +77,4 @@ phase_hessian = derivative(phase_gradient, c, trial_c)
 
 # All outputs
 forms = [disp_objective, disp_gradient, disp_hessian, phase_objective, phase_gradient, phase_hessian]
-elements = [(vector_element), (element)]
+elements = [(disp_element), (phase_element)]
