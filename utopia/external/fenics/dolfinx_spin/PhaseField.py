@@ -50,8 +50,6 @@ def omega(c):
 def c_omega(c):
     return 2
 
-
-
 term1 = 0.5*kappa*(mc_bracket_p(tr(epsilon(u))))**2
 dev_Epsilon = dev(epsilon(u))
 term2 = mu_lame*inner(dev_Epsilon, dev_Epsilon)

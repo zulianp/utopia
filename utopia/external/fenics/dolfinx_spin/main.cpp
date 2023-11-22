@@ -257,8 +257,29 @@ int main(int argc, char *argv[]) {
 
         utopia::PetscVector solution;
         c12->create_vector(solution);
+        solution.set(1);
 
-        if (1) {
+        if (true) {
+            // auto ls = std::make_shared<utopia::BiCGStab<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>();
+            // ls->verbose(true);
+
+            auto ls = std::make_shared<utopia::Factorization<utopia::PetscMatrix, utopia::PetscVector>>();
+
+            utopia::Newton<utopia::PetscMatrix> newton(ls);
+
+            auto params = utopia::param_list(   //
+                utopia::param("damping", 0.5),  //
+                utopia::param("max_it", 0),     //
+                utopia::param("verbose", true)  //
+            );
+
+            newton.read(params);
+            // newton.solve(*c12, solution);
+
+        } else if   //
+            (true)  //
+        // (false)  //
+        {
             utopia::TwoFieldAlternateMinimization<utopia::PetscMatrix> tfa(nls1, nls2);
             tfa.set_field_functions(f1, f2);
             tfa.set_transfers(f1_to_c12, f2_to_c12, c12_to_f1, c12_to_f2);

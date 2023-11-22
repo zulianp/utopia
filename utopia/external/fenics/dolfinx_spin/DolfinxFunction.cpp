@@ -29,6 +29,9 @@ public:
         std::int64_t size_global = bs * map->size_global();
         VecCreateGhostBlockWithArray(
             map->comm(), bs, size_local, size_global, ghosts.size(), ghosts.data(), rhs.array().data(), &rhs_petsc_);
+
+
+        // utopia::out() << "gradient->function_spaces().size() = " << gradient->function_spaces().size() << "\n";
     }
 
     ~Impl() {
@@ -90,8 +93,6 @@ public:
 
             // FIXME Boundary conditions should be set to if x satisfies them (!!!)
             fem::set_bc<T>(b, boundary_conditions, xtl::span<const T>(array, n), -1.0);
-            // fem::set_bc<T>(b, boundary_conditions, xtl::span<const T>(array, n), 1.0);
-            // fem::set_bc<T>(b, boundary_conditions, xtl::span<const T>(array, n), 0);
             VecRestoreArrayRead(x, &array);
         };
     }
