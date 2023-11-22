@@ -58,19 +58,17 @@ public:
 
     void set_BC(Vec x)
     {
-        // Set bcs
         // Vec x_local;
         // VecGhostGetLocalForm(x, &x_local);
         // PetscInt n = 0;
         // VecGetSize(x_local, &n);
         // T *array = nullptr;
         // VecGetArray(x_local, &array);
-
-        // xtl::span<T> b(array, n);
-
-        // // FIXME Boundary conditions should be set to if x satisfies them (!!!)
-        // fem::set_bc<T>(b, boundary_conditions, xtl::span<const T>(array, n), 1.0);
+        // xtl::span<T> wrapped_array(array, n);
+        // fem::set_bc<T>(wrapped_array, boundary_conditions, xtl::span<const T>(array, n), 1.0);
         // VecRestoreArray(x, &array);
+
+        fem::set_bc(x, boundary_conditions, 1);
     }
 
     /// Compute F at current point x

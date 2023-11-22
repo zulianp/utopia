@@ -12,8 +12,6 @@
 #include <dolfinx/mesh/cell_types.h>
 #include <dolfinx/nls/NewtonSolver.h>
 #include <cmath>
-#include <xtensor/xarray.hpp>
-#include <xtensor/xview.hpp>
 
 #include "utopia.hpp"
 

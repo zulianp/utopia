@@ -9,8 +9,6 @@
 #include <dolfinx/mesh/cell_types.h>
 #include <dolfinx/nls/NewtonSolver.h>
 #include <cmath>
-#include <xtensor/xarray.hpp>
-#include <xtensor/xview.hpp>
 
 #include "PhaseField.h"
 #include "PhaseFieldCoupled.h"
@@ -76,21 +74,33 @@ std::shared_ptr<DolfinxFunction> phase_field_coupled(
 }
 
 auto disp_BC(const std::shared_ptr<fem::FunctionSpace> &V) {
-    auto bdofs_left = fem::locate_dofs_geometrical(
-        {*V}, [](auto &&x) -> xt::xtensor<bool, 1> { return xt::isclose(xt::row(x, 0), 0.0); });
+    auto bdofs_left = fem::locate_dofs_geometrical({*V}, [](auto &&x) -> std::vector<std::int8_t> {
+        constexpr U eps = 1.0e-6;
+        std::vector<std::int8_t> marker(x.extent(1), false);
+        for (std::size_t p = 0; p < x.extent(1); ++p) {
+            if (std::abs(x(0, p)) < eps) marker[p] = true;
+        }
+        return marker;
+    });
 
-    auto bdofs_right = fem::locate_dofs_geometrical(
-        {*V}, [](auto &&x) -> xt::xtensor<bool, 1> { return xt::isclose(xt::row(x, 0), 1.0); });
+    auto bdofs_right = fem::locate_dofs_geometrical({*V}, [](auto &&x) -> std::vector<std::int8_t> {
+        constexpr U eps = 1.0e-6;
+        std::vector<std::int8_t> marker(x.extent(1), false);
+        for (std::size_t p = 0; p < x.extent(1); ++p) {
+            if (std::abs(x(0, p) - 1) < eps) marker[p] = true;
+        }
+        return marker;
+    });
 
-    return std::vector{std::make_shared<const fem::DirichletBC<T>>(xt::xarray<T>{-1e-5, 0, 0}, bdofs_left, V),
-                       std::make_shared<const fem::DirichletBC<T>>(xt::xarray<T>{0, 0, 0}, bdofs_right, V)};
+    return std::vector{std::make_shared<const fem::DirichletBC<T>>(std::vector<T>{-1e-5, 0, 0}, bdofs_left, V),
+                       std::make_shared<const fem::DirichletBC<T>>(std::vector<T>{0, 0, 0}, bdofs_right, V)};
 }
 
 auto phase_BC(const std::shared_ptr<fem::FunctionSpace> &C) {
     auto frac_locator = fem::locate_dofs_geometrical({*C}, [](auto &&p) -> xt::xtensor<bool, 1> {
-        auto x = xt::row(p, 0);
-        auto y = xt::row(p, 1);
-        auto z = xt::row(p, 2);
+        auto x = p(0);
+        auto y = p(1);
+        auto z = p(2);
         return 0.4 <= x && x <= 0.6 && y <= 0.5;
     });
 
@@ -260,8 +270,8 @@ int main(int argc, char *argv[]) {
         solution.set(1);
 
         if (true) {
-            // auto ls = std::make_shared<utopia::BiCGStab<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>();
-            // ls->verbose(true);
+            // auto ls = std::make_shared<utopia::BiCGStab<utopia::PetscMatrix, utopia::PetscVector,
+            // utopia::HOMEMADE>>(); ls->verbose(true);
 
             auto ls = std::make_shared<utopia::Factorization<utopia::PetscMatrix, utopia::PetscVector>>();
 
@@ -312,7 +322,7 @@ int main(int argc, char *argv[]) {
             // Save solution in VTK format
         }
 
-        { 
+        {
             // Make sure that we plot the global solution
             utopia::PetscVector c12_temp, f1_temp, f2_temp;
 
