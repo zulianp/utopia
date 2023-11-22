@@ -100,10 +100,7 @@ auto phase_BC(const std::shared_ptr<fem::FunctionSpace> &C) {
     auto frac_locator = fem::locate_dofs_geometrical({*C}, [](auto &&x) -> std::vector<std::int8_t> {
         std::vector<std::int8_t> marker(x.extent(1), false);
         for (std::size_t p = 0; p < x.extent(1); ++p) {
-            auto y = x(1, p);
-            auto z = x(2, p);
-
-            marker[p] = 0.4 <= x(0, p) && x(0, p) <= 0.6 && y <= 0.5;
+            marker[p] = 0.4 <= x(0, p) && x(0, p) <= 0.6 && x(1, p) <= 0.5;
         }
         return marker;
     });
