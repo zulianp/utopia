@@ -101,7 +101,9 @@ auto phase_BC(const std::shared_ptr<fem::FunctionSpace> &C) {
         auto x = p(0);
         auto y = p(1);
         auto z = p(2);
-        return {0.4 <= x && x <= 0.6 && y <= 0.5};
+        std::vector<std::int8_t> marker(1);
+        marker[0] = 0.4 <= x && x <= 0.6 && y <= 0.5;
+        return marker;
     });
 
     return std::vector{std::make_shared<const fem::DirichletBC<T>>(1., frac_locator, C)};
@@ -145,7 +147,7 @@ int main(int argc, char *argv[]) {
                                                                   {{{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}}},
                                                                   {10, 10, 10},
                                                                   mesh::CellType::tetrahedron,
-                                                                  mesh::GhostMode::none));
+                                                                  mesh::create_cell_partitioner(mesh::GhostMode::none)));
 
         auto V = std::make_shared<fem::FunctionSpace>(
             fem::create_functionspace(functionspace_form_PhaseField_disp_gradient, "u", mesh));
@@ -334,11 +336,11 @@ int main(int argc, char *argv[]) {
             c12_to_f2(c12_temp, f2_temp);
         }
 
-        io::VTKFile file_u(mesh->comm(), "u.pvd", "w");
-        file_u.write<T>({*f1->u()}, 0.0);
+        // io::VTKFile file_u(mesh->comm(), "u.pvd", "w");
+        // file_u.write<T>({*f1->u()}, 0.0);
 
-        io::VTKFile file_c(mesh->comm(), "c.pvd", "w");
-        file_c.write<T>({*f2->u()}, 0.0);
+        // io::VTKFile file_c(mesh->comm(), "c.pvd", "w");
+        // file_c.write<T>({*f2->u()}, 0.0);
     }
 
     // PetscFinalize();
