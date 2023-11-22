@@ -64,8 +64,8 @@ public:
         // VecGetSize(x_local, &n);
         // T *array = nullptr;
         // VecGetArray(x_local, &array);
-        // xtl::span<T> wrapped_array(array, n);
-        // fem::set_bc<T>(wrapped_array, boundary_conditions, xtl::span<const T>(array, n), 1.0);
+        // std::span<T> wrapped_array(array, n);
+        // fem::set_bc<T>(wrapped_array, boundary_conditions, std::span<const T>(array, n), 1.0);
         // VecRestoreArray(x, &array);
 
         fem::set_bc(x, boundary_conditions, 1);
@@ -75,7 +75,7 @@ public:
     auto F() {
         return [&](const Vec x, Vec) {
             // Assemble b and update ghosts
-            xtl::span<T> b(rhs.mutable_array());
+            std::span<T> b(rhs.mutable_array());
             std::fill(b.begin(), b.end(), 0.0);
             fem::assemble_vector<T>(b, *gradient);
             VecGhostUpdateBegin(rhs_petsc_, ADD_VALUES, SCATTER_REVERSE);
@@ -90,7 +90,7 @@ public:
             VecGetArrayRead(x_local, &array);
 
             // FIXME Boundary conditions should be set to if x satisfies them (!!!)
-            fem::set_bc<T>(b, boundary_conditions, xtl::span<const T>(array, n), -1.0);
+            fem::set_bc<T>(b, boundary_conditions, std::span<const T>(array, n), -1.0);
             VecRestoreArrayRead(x, &array);
         };
     }
