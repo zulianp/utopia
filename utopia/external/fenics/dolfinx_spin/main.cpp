@@ -97,13 +97,13 @@ auto disp_BC(const std::shared_ptr<fem::FunctionSpace> &V) {
 }
 
 auto phase_BC(const std::shared_ptr<fem::FunctionSpace> &C) {
-    auto frac_locator = fem::locate_dofs_geometrical({*C}, [](auto &&p) -> std::vector<std::int8_t> {
+    auto frac_locator = fem::locate_dofs_geometrical({*C}, [](auto &&x) -> std::vector<std::int8_t> {
         std::vector<std::int8_t> marker(x.extent(1), false);
         for (std::size_t p = 0; p < x.extent(1); ++p) {
             auto y = x(1, p);
-            auto z = x(2, p);  
+            auto z = x(2, p);
 
-            marker[p] = 0.4 <=  x(0, p) &&  x(0, p) <= 0.6 && y <= 0.5;
+            marker[p] = 0.4 <= x(0, p) && x(0, p) <= 0.6 && y <= 0.5;
         }
         return marker;
     });
@@ -145,11 +145,12 @@ int main(int argc, char *argv[]) {
 
     {
         static int dims = 3;
-        auto mesh = std::make_shared<mesh::Mesh>(mesh::create_box(MPI_COMM_WORLD,
-                                                                  {{{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}}},
-                                                                  {10, 10, 10},
-                                                                  mesh::CellType::tetrahedron,
-                                                                  mesh::create_cell_partitioner(mesh::GhostMode::none)));
+        auto mesh =
+            std::make_shared<mesh::Mesh>(mesh::create_box(MPI_COMM_WORLD,
+                                                          {{{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}}},
+                                                          {10, 10, 10},
+                                                          mesh::CellType::tetrahedron,
+                                                          mesh::create_cell_partitioner(mesh::GhostMode::none)));
 
         auto V = std::make_shared<fem::FunctionSpace>(
             fem::create_functionspace(functionspace_form_PhaseField_disp_gradient, "u", mesh));
