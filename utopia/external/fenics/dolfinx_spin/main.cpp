@@ -98,11 +98,14 @@ auto disp_BC(const std::shared_ptr<fem::FunctionSpace> &V) {
 
 auto phase_BC(const std::shared_ptr<fem::FunctionSpace> &C) {
     auto frac_locator = fem::locate_dofs_geometrical({*C}, [](auto &&p) -> std::vector<std::int8_t> {
-        auto x = p[0];
-        auto y = p[1];
-        auto z = p[2];
-        std::vector<std::int8_t> marker(1);
-        marker[0] = 0.4 <= x && x <= 0.6 && y <= 0.5;
+        std::vector<std::int8_t> marker(x.extent(1), false);
+        for (std::size_t p = 0; p < x.extent(1); ++p) {
+            auto x = p[0, p];
+            auto y = p[1, p];
+            auto z = p[2, p];  
+
+            marker[p] = 0.4 <= x && x <= 0.6 && y <= 0.5;
+        }
         return marker;
     });
 
