@@ -206,8 +206,8 @@ int main(int argc, char *argv[]) {
         // Create Dirichlet boundary conditions
         ////////////////////////////////////////////////////////////////
 
-        T disp_x = 0.001;
-        int n_steps = 100;
+        T disp_x = 0.012;
+        int n_steps = 500;
         
 
         auto disp_bcs = disp_BC(V, disp_x/n_steps);
@@ -335,7 +335,7 @@ int main(int argc, char *argv[]) {
             tfa->set_transfers(f1_to_c12, f2_to_c12, c12_to_f1, c12_to_f2);
             tfa->verbose(verbose);
             tfa->max_it(400);
-            // tfa->verbosity_level(utopia::VERBOSITY_LEVEL_DEBUG);
+            tfa->verbosity_level(utopia::VERBOSITY_LEVEL_DEBUG);
             // tfa->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
 
             tfa->field1_diff_tol(1e-14);
@@ -368,10 +368,12 @@ int main(int argc, char *argv[]) {
             [&](const utopia::PetscVector &x, utopia::PetscVector &g) -> bool { return c12->gradient(x, g); },
             [&](const utopia::PetscVector &x, utopia::PetscMatrix &H) -> bool { return c12->hessian(x, H); },
             [&](const T t) -> bool { 
-                file_u.write<T>({*f1->u()}, t);
-                file_c.write<T>({*f2->u()}, t);
+                const T actual_time = t*disp_x/n_steps;
 
-                auto disp_bcs = disp_BC(V, t*disp_x/n_steps);
+                file_u.write<T>({*f1->u()}, actual_time);
+                file_c.write<T>({*f2->u()}, actual_time);
+
+                auto disp_bcs = disp_BC(V, actual_time);
                 auto phase_bcs = phase_BC(C);
                 // auto coupled_bcs = coupled_BC(X, t*disp_x/n_steps);
                 f1->set_boundary_conditions(disp_bcs);
