@@ -7,6 +7,7 @@
 #include "utopia_Bratu1D.hpp"
 #include "utopia_SubCommUnitTest.hpp"
 
+#include "utopia_PseudoTimeStepper.hpp"
 #include "utopia_TwoFieldAlternateMinimization.hpp"
 #include "utopia_TwoFieldSPIN.hpp"
 
@@ -15,6 +16,24 @@
 #include "utopia_Poisson1D.hpp"
 
 using namespace utopia;
+
+template <class Matrix, class Vector = typename Traits<Matrix>::Vector>
+class TimeDependentPoisson1D : public TimeDependentFunction<Matrix, Vector> {
+public:
+    using Traits = utopia::Traits<Vector>;
+    using Scalar = typename Traits::Scalar;
+    using SizeType = typename Traits::SizeType;
+
+    TimeDependentPoisson1D(const int n) : fun_(std::make_shared<Poisson1D<Matrix>>(n)) {}
+
+    bool hessian(const Vector &x, Matrix &H) const override { return fun_->hessian(x, H); }
+    bool value(const Vector &x, Scalar &value) const override { return fun_->value(x, value); }
+    bool gradient(const Vector &x, Vector &g) const override { return fun_->gradient(x, g); }
+    void create_vector(Vector &x) const { fun_->create_vector(x); }
+    bool update(const Scalar t) override { return true; }
+
+    std::shared_ptr<Function<Matrix, Vector>> fun_;
+};
 
 template <class Matrix, class Vector>
 class FieldSplitTestTest : public SubCommUnitTest<Vector> {
@@ -60,7 +79,7 @@ public:
 
     void test_SPIN() {
         int n = 10;
-        bool verbose = true;
+        bool verbose = false;
 
         // Split-fields
         auto f1 = std::make_shared<Poisson1D<Matrix>>(n);
@@ -100,9 +119,25 @@ public:
         tfa.solve(*c12, x);
     }
 
+    void test_incremental_loading() {
+        bool verbose = true;
+
+        auto nlsolver = std::make_shared<Newton<Matrix>>();
+        nlsolver->verbose(verbose);
+
+        PseudoTimeStepper<Matrix, Vector> time_stepper(nlsolver);
+        auto poisson = std::make_shared<TimeDependentPoisson1D<Matrix>>(10);
+
+        Vector x;
+        poisson->create_vector(x);
+        time_stepper.set_end_time(10);
+        time_stepper.solve(*poisson, x);
+    }
+
     void run() {
         UTOPIA_RUN_TEST(test_aternate_minimization);
         UTOPIA_RUN_TEST(test_SPIN);
+        UTOPIA_RUN_TEST(test_incremental_loading);
     }
 };
 
