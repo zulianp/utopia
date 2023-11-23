@@ -2,8 +2,6 @@
 #include "PhaseFieldCoupled.h"
 
 #include <basix/finite-element.h>
-#include <climits>
-#include <cmath>
 #include <dolfinx.h>
 #include <dolfinx/common/log.h>
 #include <dolfinx/fem/assembler.h>
@@ -12,6 +10,8 @@
 #include <dolfinx/la/Vector.h>
 #include <dolfinx/mesh/Mesh.h>
 #include <dolfinx/mesh/cell_types.h>
+#include <climits>
+#include <cmath>
 
 #include "utopia.hpp"
 
@@ -70,16 +70,34 @@ std::shared_ptr<DolfinxFunction> phase_field_coupled(
     auto hessian = std::make_shared<fem::Form<T>>(
         fem::create_form<T>(*form_PhaseFieldCoupled_hessian, {V, V}, {{"x", x}}, {}, {}));
 
+    // if(0)
+    // {
+    //     // REMOVE ME
+    //     utopia::out() << "H: " << hessian->function_spaces().size() << "\n";
+    //     auto im = hessian->function_spaces().at(1)->dofmap()->index_map->local_range();
+            
+    //     utopia::out() << "0) bs:" << hessian->function_spaces().at(0)->dofmap()->bs() << "\n";
+    //     utopia::out() << "1) bs:" << hessian->function_spaces().at(1)->dofmap()->bs() << "\n";
+
+    //     for (auto dof : im) {
+    //         utopia::out() << dof << " ";
+    //     }
+
+    //     utopia::out() << "\n";
+    // }
+
     return std::make_shared<DolfinxFunction>(V, x, objective, gradient, hessian, boundary_conditions);
 }
 
 auto disp_BC(const std::shared_ptr<fem::FunctionSpace<T>> &V) {
+    // utopia::out() << "disp_BC\n";
     auto bdofs_left = fem::locate_dofs_geometrical(*V, [](auto x) -> std::vector<std::int8_t> {
         constexpr T eps = 1.0e-6;
         std::vector<std::int8_t> marker(x.extent(1), false);
         for (std::size_t p = 0; p < x.extent(1); ++p) {
             if (std::abs(x(0, p)) < eps) marker[p] = true;
         }
+        // utopia::out() << "left: " << marker.size() << "\n";
         return marker;
     });
 
@@ -89,6 +107,7 @@ auto disp_BC(const std::shared_ptr<fem::FunctionSpace<T>> &V) {
         for (std::size_t p = 0; p < x.extent(1); ++p) {
             if (std::abs(x(0, p) - 1) < eps) marker[p] = true;
         }
+        // utopia::out() << "right: " << marker.size() << "\n";
         return marker;
     });
 
@@ -100,35 +119,84 @@ auto phase_BC(const std::shared_ptr<fem::FunctionSpace<T>> &C) {
     auto frac_locator = fem::locate_dofs_geometrical(*C, [](auto x) -> std::vector<std::int8_t> {
         std::vector<std::int8_t> marker(x.extent(1), false);
         for (std::size_t p = 0; p < x.extent(1); ++p) {
-            marker[p] = 0.4 <= x(0, p) && x(0, p) <= 0.6 && x(1, p) <= 0.5;
+            marker[p] = (x(0, p) >= 0.4) && (x(0, p) <= 0.6) && (x(1, p) <= 0.5);
         }
         return marker;
     });
 
+    // utopia::out() << "frac_locator.size() == " << frac_locator.size() << "\n";
+
     return std::vector{std::make_shared<const fem::DirichletBC<T>>(1., frac_locator, C)};
-    // return std::vector{std::make_shared<const fem::DirichletBC<T>>(0., frac_locator, C)};
 }
 
-// auto coupled_BC(const std::shared_ptr<fem::FunctionSpace> &V)
-// {
-//     auto bdofs_left = fem::locate_dofs_geometrical(
-//         {*V}, [](auto &&x) -> xt::xtensor<bool, 1> { return xt::isclose(xt::row(x, 0), 0.0); });
+auto coupled_BC(const std::shared_ptr<fem::FunctionSpace<T>> &X) {
+    // utopia::out() << "coupled_BC\n";
 
-//     auto bdofs_right = fem::locate_dofs_geometrical(
-//         {*V}, [](auto &&x) -> xt::xtensor<bool, 1> { return xt::isclose(xt::row(x, 0), 1.0); });
+    auto VxDofs = X->sub({0})->collapse();
+    auto &V = VxDofs.first;
 
-//     auto frac_locator = fem::locate_dofs_geometrical({*V}, [](auto &&p) -> xt::xtensor<bool, 1> {
-//         auto x = xt::row(p, 0);
-//         auto y = xt::row(p, 1);
-//         auto z = xt::row(p, 2);
-//         return 0.49 <= x <= 0.51 && y <= 0.5;
-//     });
+    auto CxDofs = X->sub({1})->collapse();
+    auto &C = CxDofs.first;
 
-//     return std::vector{
-//         std::make_shared<const fem::DirichletBC<T>>(xt::xarray<T>{0, 0, 0, 0}, bdofs_left, V),
-//         std::make_shared<const fem::DirichletBC<T>>(xt::xarray<T>{1e-5, 0, 0, 0}, bdofs_right, V),
-//         std::make_shared<const fem::DirichletBC<T>>(xt::xarray<T>{1e-5, 0, 0, 1}, frac_locator, V)};
-// }
+    auto bdofs_left = fem::locate_dofs_geometrical(V, [](auto x) -> std::vector<std::int8_t> {
+        constexpr T eps = 1.0e-6;
+        std::vector<std::int8_t> marker(x.extent(1), false);
+        for (std::size_t p = 0; p < x.extent(1); ++p) {
+            if (std::abs(x(0, p)) < eps) marker[p] = true;
+        }
+
+        // utopia::out() << "left: " << marker.size() << "\n";
+        return marker;
+    });
+
+    // for(auto &dof : bdofs_left) {
+    //     dof = VxDofs.second[dof];
+    // }
+
+    auto bdofs_right = fem::locate_dofs_geometrical(V, [](auto x) -> std::vector<std::int8_t> {
+        constexpr T eps = 1.0e-6;
+        std::vector<std::int8_t> marker(x.extent(1), false);
+        for (std::size_t p = 0; p < x.extent(1); ++p) {
+            if (std::abs(x(0, p) - 1) < eps) marker[p] = true;
+        }
+        // utopia::out() << "right: " << marker.size() << "\n";
+        return marker;
+    });
+
+    // for(auto &dof : bdofs_right) {
+    //     dof = VxDofs.second[dof];
+    // }
+
+    auto frac_locator = fem::locate_dofs_geometrical(C, [](auto x) -> std::vector<std::int8_t> {
+        std::vector<std::int8_t> marker(x.extent(1), false);
+
+        int count = 0;
+        for (std::size_t p = 0; p < x.extent(1); ++p) {
+            marker[p] = (x(0, p) >= 0.4) && (x(0, p) <= 0.6) && (x(1, p) <= 0.5);
+            count += marker[p];
+        }
+        // utopia::out() << "frac: " << marker.size() << "(" << count << ")" << "\n";
+        return marker;
+    });
+
+    // utopia::out() << "HEY\n";
+
+    // for(auto &dof : frac_locator) {
+    //     utopia::out() << dof << "->"  << CxDofs.second[dof] << "\n";
+    //     dof = CxDofs.second[dof];
+    // }
+
+    // utopia::out() << "frac_locator.size() == " << frac_locator.size() << "\n";
+
+
+    // auto bc1 = std::make_shared<const fem::DirichletBC<T>>(std::vector<T>{0, 0, 0}, bdofs_left, X->sub({0}));
+    // auto bc2 = std::make_shared<const fem::DirichletBC<T>>(std::vector<T>{1e-5, 0, 0}, bdofs_right, X->sub({0}));
+    // auto bc3 = std::make_shared<const fem::DirichletBC<T>>(1., frac_locator, X->sub({1}));
+    // return std::vector{bc1, bc2, bc3};
+
+    auto bc3 = std::make_shared<const fem::DirichletBC<T>>(1., frac_locator, X->sub({1}));
+    return std::vector{bc3};
+}
 
 int main(int argc, char *argv[]) {
     dolfinx::init_logging(argc, argv);
@@ -144,10 +212,10 @@ int main(int argc, char *argv[]) {
         static int dims = 3;
         auto mesh =
             std::make_shared<mesh::Mesh<T>>(mesh::create_box(MPI_COMM_WORLD,
-                                                          {{{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}}},
-                                                          {10, 10, 11},
-                                                          mesh::CellType::tetrahedron,
-                                                          mesh::create_cell_partitioner(mesh::GhostMode::none)));
+                                                             {{{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}}},
+                                                             {10, 10, 10},
+                                                             mesh::CellType::tetrahedron,
+                                                             mesh::create_cell_partitioner(mesh::GhostMode::none)));
 
         auto V = std::make_shared<fem::FunctionSpace<T>>(
             fem::create_functionspace(functionspace_form_PhaseField_disp_gradient, "u", mesh));
@@ -169,14 +237,13 @@ int main(int argc, char *argv[]) {
         auto disp_bcs = disp_BC(V);
         auto phase_bcs = phase_BC(C);
 
-        auto X_disp = X->sub({0})->collapse();
-        auto X_phase = X->sub({1})->collapse();
+        // auto X_disp = X->sub({0})->collapse();
+        // auto X_phase = X->sub({1})->collapse();
+        // auto coupled_bcs = disp_BC(utopia::make_ref(X_disp.first));
+        // auto X_phase_bcs = phase_BC_4(utopia::make_ref(X_phase.first));
+        // coupled_bcs.insert(coupled_bcs.end(), X_phase_bcs.begin(), X_phase_bcs.end());
 
-        auto coupled_bcs = disp_BC(utopia::make_ref(X_disp.first));
-        auto X_phase_bcs = phase_BC(utopia::make_ref(X_phase.first));
-        coupled_bcs.insert(coupled_bcs.end(), X_phase_bcs.begin(), X_phase_bcs.end());
-
-        // auto coupled_bcs = coupled_BC(X);
+        auto coupled_bcs = coupled_BC(X);
 
         ////////////////////////////////////////////////////////////////
 
@@ -269,19 +336,18 @@ int main(int argc, char *argv[]) {
 
         utopia::PetscVector solution;
         c12->create_vector(solution);
-        solution.set(1);
 
         if (true) {
-            // auto ls = std::make_shared<utopia::BiCGStab<utopia::PetscMatrix, utopia::PetscVector,
-            // utopia::HOMEMADE>>(); ls->verbose(true);
+            auto ls = std::make_shared<utopia::BiCGStab<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>();
+            ls->verbose(true);
 
-            auto ls = std::make_shared<utopia::Factorization<utopia::PetscMatrix, utopia::PetscVector>>();
+            // auto ls = std::make_shared<utopia::Factorization<utopia::PetscMatrix, utopia::PetscVector>>();
 
             utopia::Newton<utopia::PetscMatrix> newton(ls);
 
             auto params = utopia::param_list(   //
                 utopia::param("damping", 0.5),  //
-                utopia::param("max_it", 0),     //
+                utopia::param("max_it", 10),    //
                 utopia::param("verbose", true)  //
             );
 

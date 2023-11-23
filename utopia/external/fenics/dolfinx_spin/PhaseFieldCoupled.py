@@ -7,10 +7,11 @@ from ufl import (Coefficient, FunctionSpace, Mesh, Identity,
 # Function spaces
 disp_element = element("Lagrange", "tetrahedron", 1, shape=(3,))
 phase_element = element("Lagrange", "tetrahedron", 1)
+geom_element = disp_element
 
 mixed = MixedElement([disp_element, phase_element])
 
-mesh = Mesh(disp_element)
+mesh = Mesh(geom_element)
 
 X = FunctionSpace(mesh, mixed)
 

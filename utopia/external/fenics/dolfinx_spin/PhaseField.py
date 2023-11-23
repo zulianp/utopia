@@ -6,8 +6,9 @@ from ufl import (Coefficient,FunctionSpace, Identity, TestFunction, TrialFunctio
 # Function spaces
 disp_element = element("Lagrange", "tetrahedron", 1, shape=(3,))
 phase_element = element("Lagrange", "tetrahedron", 1)
+geom_element = disp_element
 
-mesh = Mesh(disp_element)
+mesh = Mesh(geom_element)
 C = FunctionSpace(mesh, phase_element)
 V = FunctionSpace(mesh, disp_element)
 

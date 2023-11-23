@@ -58,15 +58,15 @@ public:
 
     void set_BC(Vec x)
     {
-        // Vec x_local;
-        // VecGhostGetLocalForm(x, &x_local);
-        // PetscInt n = 0;
-        // VecGetSize(x_local, &n);
-        // T *array = nullptr;
-        // VecGetArray(x_local, &array);
-        // std::span<T> wrapped_array(array, n);
-        // fem::set_bc<T>(wrapped_array, boundary_conditions, std::span<const T>(array, n), 1.0);
-        // VecRestoreArray(x, &array);
+        Vec x_local;
+        VecGhostGetLocalForm(x, &x_local);
+        PetscInt n = 0;
+        VecGetSize(x_local, &n);
+        T *array = nullptr;
+        VecGetArray(x_local, &array);
+        std::span<T> wrapped_array(array, n);
+        fem::set_bc<T>(wrapped_array, boundary_conditions, std::span<const T>(array, n), 1.0);
+        VecRestoreArray(x, &array);
 
         // fem::set_bc(x, boundary_conditions, 1);
     }
