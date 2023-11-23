@@ -56,20 +56,18 @@ public:
         };
     }
 
-    void set_BC(Vec x)
-    {
-        Vec x_local;
-        VecGhostGetLocalForm(x, &x_local);
-        PetscInt n = 0;
-        VecGetSize(x_local, &n);
-        T *array = nullptr;
-        VecGetArray(x_local, &array);
-        std::span<T> wrapped_array(array, n);
-        fem::set_bc<T>(wrapped_array, boundary_conditions, std::span<const T>(array, n), 1.0);
-        VecRestoreArray(x, &array);
-
-        // fem::set_bc(x, boundary_conditions, 1);
-    }
+    // void set_BC(Vec x)
+    // {
+    //     Vec x_local;
+    //     VecGhostGetLocalForm(x, &x_local);
+    //     PetscInt n = 0;
+    //     VecGetSize(x_local, &n);
+    //     T *array = nullptr;
+    //     VecGetArray(x_local, &array);
+    //     std::span<T> wrapped_array(array, n);
+    //     fem::set_bc<T>(wrapped_array, boundary_conditions, std::span<const T>(array, n), 1.0);
+    //     VecRestoreArray(x, &array);
+    // }
 
     /// Compute F at current point x
     auto F() {
@@ -89,7 +87,6 @@ public:
             const T *array = nullptr;
             VecGetArrayRead(x_local, &array);
 
-            // FIXME Boundary conditions should be set to if x satisfies them (!!!)
             fem::set_bc<T>(b, boundary_conditions, std::span<const T>(array, n), -1.0);
             VecRestoreArrayRead(x, &array);
         };
@@ -124,7 +121,7 @@ DolfinxFunction::~DolfinxFunction() {}
 void DolfinxFunction::create_vector(utopia::PetscVector &x) const {
     Vec v = impl_->solution_vector.vec();
 
-    impl_->set_BC(v);
+    // impl_->set_BC(v);
     x.wrap(v);
 
     utopia::out() << " DolfinxFunction::create_vector " << x.size() << "\n";

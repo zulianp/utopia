@@ -23,6 +23,8 @@
 using namespace dolfinx;
 using T = PetscScalar;
 
+static const T disp_x = 1e-6;
+
 std::shared_ptr<DolfinxFunction> phase_field_displacement(
     const std::shared_ptr<fem::FunctionSpace<T>> &V,
     std::shared_ptr<dolfinx::fem::Function<T>> u,
@@ -70,132 +72,102 @@ std::shared_ptr<DolfinxFunction> phase_field_coupled(
     auto hessian = std::make_shared<fem::Form<T>>(
         fem::create_form<T>(*form_PhaseFieldCoupled_hessian, {V, V}, {{"x", x}}, {}, {}));
 
-    // if(0)
-    // {
-    //     // REMOVE ME
-    //     utopia::out() << "H: " << hessian->function_spaces().size() << "\n";
-    //     auto im = hessian->function_spaces().at(1)->dofmap()->index_map->local_range();
-            
-    //     utopia::out() << "0) bs:" << hessian->function_spaces().at(0)->dofmap()->bs() << "\n";
-    //     utopia::out() << "1) bs:" << hessian->function_spaces().at(1)->dofmap()->bs() << "\n";
-
-    //     for (auto dof : im) {
-    //         utopia::out() << dof << " ";
-    //     }
-
-    //     utopia::out() << "\n";
-    // }
-
     return std::make_shared<DolfinxFunction>(V, x, objective, gradient, hessian, boundary_conditions);
 }
 
-auto disp_BC(const std::shared_ptr<fem::FunctionSpace<T>> &V) {
-    // utopia::out() << "disp_BC\n";
-    auto bdofs_left = fem::locate_dofs_geometrical(*V, [](auto x) -> std::vector<std::int8_t> {
-        constexpr T eps = 1.0e-6;
-        std::vector<std::int8_t> marker(x.extent(1), false);
-        for (std::size_t p = 0; p < x.extent(1); ++p) {
-            if (std::abs(x(0, p)) < eps) marker[p] = true;
-        }
-        // utopia::out() << "left: " << marker.size() << "\n";
-        return marker;
-    });
-
-    auto bdofs_right = fem::locate_dofs_geometrical(*V, [](auto x) -> std::vector<std::int8_t> {
-        constexpr T eps = 1.0e-6;
-        std::vector<std::int8_t> marker(x.extent(1), false);
-        for (std::size_t p = 0; p < x.extent(1); ++p) {
-            if (std::abs(x(0, p) - 1) < eps) marker[p] = true;
-        }
-        // utopia::out() << "right: " << marker.size() << "\n";
-        return marker;
-    });
-
-    return std::vector{std::make_shared<const fem::DirichletBC<T>>(std::vector<T>{-1e-5, 0, 0}, bdofs_left, V),
-                       std::make_shared<const fem::DirichletBC<T>>(std::vector<T>{0, 0, 0}, bdofs_right, V)};
-}
-
-auto phase_BC(const std::shared_ptr<fem::FunctionSpace<T>> &C) {
-    auto frac_locator = fem::locate_dofs_geometrical(*C, [](auto x) -> std::vector<std::int8_t> {
+auto create_frac_locator(const fem::FunctionSpace<T> &C) {
+    return fem::locate_dofs_geometrical(C, [](auto x) -> std::vector<std::int8_t> {
         std::vector<std::int8_t> marker(x.extent(1), false);
         for (std::size_t p = 0; p < x.extent(1); ++p) {
             marker[p] = (x(0, p) >= 0.4) && (x(0, p) <= 0.6) && (x(1, p) <= 0.5);
         }
         return marker;
     });
+}
 
-    // utopia::out() << "frac_locator.size() == " << frac_locator.size() << "\n";
+auto create_left_boundary_locator(const fem::FunctionSpace<T> &V) {
+    return fem::locate_dofs_geometrical(V, [](auto x) -> std::vector<std::int8_t> {
+        constexpr T eps = 1.0e-6;
+        std::vector<std::int8_t> marker(x.extent(1), false);
+        for (std::size_t p = 0; p < x.extent(1); ++p) {
+            if (std::abs(x(0, p)) < eps) marker[p] = true;
+        }
 
+        return marker;
+    });
+}
+
+auto create_right_boundary_locator(const fem::FunctionSpace<T> &V) {
+    return fem::locate_dofs_geometrical(V, [](auto x) -> std::vector<std::int8_t> {
+        constexpr T eps = 1.0e-6;
+        std::vector<std::int8_t> marker(x.extent(1), false);
+        for (std::size_t p = 0; p < x.extent(1); ++p) {
+            if (std::abs(x(0, p) - 1) < eps) marker[p] = true;
+        }
+
+        return marker;
+    });
+}
+
+auto disp_BC(const std::shared_ptr<fem::FunctionSpace<T>> &V) {
+    auto bdofs_left = create_left_boundary_locator(*V);
+    auto bdofs_right = create_right_boundary_locator(*V);
+
+    return std::vector{std::make_shared<const fem::DirichletBC<T>>(std::vector<T>{0, 0, 0}, bdofs_left, V),
+                       std::make_shared<const fem::DirichletBC<T>>(std::vector<T>{disp_x, 0, 0}, bdofs_right, V)};
+}
+
+auto phase_BC(const std::shared_ptr<fem::FunctionSpace<T>> &C) {
+    auto frac_locator = create_frac_locator(*C);
     return std::vector{std::make_shared<const fem::DirichletBC<T>>(1., frac_locator, C)};
 }
 
 auto coupled_BC(const std::shared_ptr<fem::FunctionSpace<T>> &X) {
-    // utopia::out() << "coupled_BC\n";
+    std::vector<std::shared_ptr<const fem::DirichletBC<T>>> bcs;
 
-    auto VxDofs = X->sub({0})->collapse();
-    auto &V = VxDofs.first;
+    static const int dim = 3;
+    T imposed_disp[3] = {disp_x, 0, 0};
 
-    auto CxDofs = X->sub({1})->collapse();
-    auto &C = CxDofs.first;
+    // Displacement BCs
+    for (int d = 0; d < dim; d++) {
+        auto X_sub = X->sub({0})->sub({d});
+        auto VxDofs = X_sub->collapse();
+        auto &V = VxDofs.first;
 
-    auto bdofs_left = fem::locate_dofs_geometrical(V, [](auto x) -> std::vector<std::int8_t> {
-        constexpr T eps = 1.0e-6;
-        std::vector<std::int8_t> marker(x.extent(1), false);
-        for (std::size_t p = 0; p < x.extent(1); ++p) {
-            if (std::abs(x(0, p)) < eps) marker[p] = true;
+        auto bdofs_left = create_left_boundary_locator(V);
+
+        for (auto &dof : bdofs_left) {
+            dof = VxDofs.second[dof];
         }
 
-        // utopia::out() << "left: " << marker.size() << "\n";
-        return marker;
-    });
+        auto bdofs_right = create_right_boundary_locator(V);
 
-    // for(auto &dof : bdofs_left) {
-    //     dof = VxDofs.second[dof];
-    // }
-
-    auto bdofs_right = fem::locate_dofs_geometrical(V, [](auto x) -> std::vector<std::int8_t> {
-        constexpr T eps = 1.0e-6;
-        std::vector<std::int8_t> marker(x.extent(1), false);
-        for (std::size_t p = 0; p < x.extent(1); ++p) {
-            if (std::abs(x(0, p) - 1) < eps) marker[p] = true;
+        for (auto &dof : bdofs_right) {
+            dof = VxDofs.second[dof];
         }
-        // utopia::out() << "right: " << marker.size() << "\n";
-        return marker;
-    });
 
-    // for(auto &dof : bdofs_right) {
-    //     dof = VxDofs.second[dof];
-    // }
+        auto bc1 = std::make_shared<const fem::DirichletBC<T>>(0, bdofs_left, X_sub);
+        auto bc2 = std::make_shared<const fem::DirichletBC<T>>(imposed_disp[d], bdofs_right, X_sub);
 
-    auto frac_locator = fem::locate_dofs_geometrical(C, [](auto x) -> std::vector<std::int8_t> {
-        std::vector<std::int8_t> marker(x.extent(1), false);
+        bcs.push_back(bc1);
+        bcs.push_back(bc2);
+    }
 
-        int count = 0;
-        for (std::size_t p = 0; p < x.extent(1); ++p) {
-            marker[p] = (x(0, p) >= 0.4) && (x(0, p) <= 0.6) && (x(1, p) <= 0.5);
-            count += marker[p];
+    // Phase BCs
+    {
+        auto CxDofs = X->sub({1})->collapse();
+        auto &C = CxDofs.first;
+        auto frac_locator = create_frac_locator(C);
+
+        for (auto &dof : frac_locator) {
+            dof = CxDofs.second[dof];
         }
-        // utopia::out() << "frac: " << marker.size() << "(" << count << ")" << "\n";
-        return marker;
-    });
 
-    // utopia::out() << "HEY\n";
+        auto phase_field_BC = std::make_shared<const fem::DirichletBC<T>>(1., frac_locator, X->sub({1}));
+        bcs.push_back(phase_field_BC);
+    }
 
-    // for(auto &dof : frac_locator) {
-    //     utopia::out() << dof << "->"  << CxDofs.second[dof] << "\n";
-    //     dof = CxDofs.second[dof];
-    // }
-
-    // utopia::out() << "frac_locator.size() == " << frac_locator.size() << "\n";
-
-
-    // auto bc1 = std::make_shared<const fem::DirichletBC<T>>(std::vector<T>{0, 0, 0}, bdofs_left, X->sub({0}));
-    // auto bc2 = std::make_shared<const fem::DirichletBC<T>>(std::vector<T>{1e-5, 0, 0}, bdofs_right, X->sub({0}));
-    // auto bc3 = std::make_shared<const fem::DirichletBC<T>>(1., frac_locator, X->sub({1}));
-    // return std::vector{bc1, bc2, bc3};
-
-    auto bc3 = std::make_shared<const fem::DirichletBC<T>>(1., frac_locator, X->sub({1}));
-    return std::vector{bc3};
+    return bcs;
 }
 
 int main(int argc, char *argv[]) {
@@ -236,13 +208,6 @@ int main(int argc, char *argv[]) {
 
         auto disp_bcs = disp_BC(V);
         auto phase_bcs = phase_BC(C);
-
-        // auto X_disp = X->sub({0})->collapse();
-        // auto X_phase = X->sub({1})->collapse();
-        // auto coupled_bcs = disp_BC(utopia::make_ref(X_disp.first));
-        // auto X_phase_bcs = phase_BC_4(utopia::make_ref(X_phase.first));
-        // coupled_bcs.insert(coupled_bcs.end(), X_phase_bcs.begin(), X_phase_bcs.end());
-
         auto coupled_bcs = coupled_BC(X);
 
         ////////////////////////////////////////////////////////////////
@@ -262,6 +227,12 @@ int main(int argc, char *argv[]) {
         auto nls2 = std::make_shared<utopia::Newton<utopia::PetscMatrix>>(
             std::make_shared<utopia::BiCGStab<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>());
 
+        // auto nls1 = std::make_shared<utopia::Newton<utopia::PetscMatrix>>(
+        //     std::make_shared<utopia::Factorization<utopia::PetscMatrix, utopia::PetscVector>>());
+
+        // auto nls2 = std::make_shared<utopia::Newton<utopia::PetscMatrix>>(
+        //     std::make_shared<utopia::Factorization<utopia::PetscMatrix, utopia::PetscVector>>());
+
         // nls1->linear_solver()->verbose(true);
         // nls2->linear_solver()->verbose(true);
 
@@ -269,8 +240,6 @@ int main(int argc, char *argv[]) {
         // nls2->verbose(verbose);
 
         auto f1_to_c12 = [](const utopia::PetscVector &in, utopia::PetscVector &out) {
-            // utopia::out() << "f1_to_c12: " << in.size() << " -> " << out.size() << "\n";
-
             using namespace utopia;
 
             auto in_view = local_view_device(in);
@@ -288,8 +257,6 @@ int main(int argc, char *argv[]) {
         };
 
         auto f2_to_c12 = [](const utopia::PetscVector &in, utopia::PetscVector &out) {
-            // utopia::out() << "f2_to_c12: " << in.size() << " -> " << out.size() << "\n";
-
             using namespace utopia;
 
             auto in_view = local_view_device(in);
@@ -303,8 +270,6 @@ int main(int argc, char *argv[]) {
         };
 
         auto c12_to_f1 = [](const utopia::PetscVector &in, utopia::PetscVector &out) {
-            // utopia::out() << "c12_to_f1: " << in.size() << " -> " << out.size() << "\n";
-
             using namespace utopia;
 
             auto in_view = local_view_device(in);
@@ -320,8 +285,6 @@ int main(int argc, char *argv[]) {
         };
 
         auto c12_to_f2 = [](const utopia::PetscVector &in, utopia::PetscVector &out) {
-            // utopia::out() << "c12_to_f2: " << in.size() << " -> " << out.size() << "\n";
-
             using namespace utopia;
 
             auto in_view = local_view_device(in);
@@ -337,33 +300,35 @@ int main(int argc, char *argv[]) {
         utopia::PetscVector solution;
         c12->create_vector(solution);
 
-        if (true) {
+        if  //
+            // (true)  //
+            (false)  //
+        {
             auto ls = std::make_shared<utopia::BiCGStab<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>();
-            ls->verbose(true);
-
-            // auto ls = std::make_shared<utopia::Factorization<utopia::PetscMatrix, utopia::PetscVector>>();
+            // ls->verbose(true);
+            ls->max_it(5000);
 
             utopia::Newton<utopia::PetscMatrix> newton(ls);
 
             auto params = utopia::param_list(   //
                 utopia::param("damping", 0.5),  //
-                utopia::param("max_it", 10),    //
+                utopia::param("max_it", 50),    //
                 utopia::param("verbose", true)  //
             );
 
             newton.read(params);
-            // newton.solve(*c12, solution);
+            newton.solve(*c12, solution);
 
-        } else if   //
-            (true)  //
-        // (false)  //
+        } else if  //
+                   (true)  //
+            // (false)  //
         {
             utopia::TwoFieldAlternateMinimization<utopia::PetscMatrix> tfa(nls1, nls2);
             tfa.set_field_functions(f1, f2);
             tfa.set_transfers(f1_to_c12, f2_to_c12, c12_to_f1, c12_to_f2);
             tfa.verbose(verbose);
             tfa.max_it(400);
-            // tfa.verbosity_level(utopia::VERBOSITY_LEVEL_DEBUG);
+            tfa.verbosity_level(utopia::VERBOSITY_LEVEL_DEBUG);
             // tfa.verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
 
             tfa.field1_diff_tol(1e-14);
@@ -371,7 +336,7 @@ int main(int argc, char *argv[]) {
             tfa.solve(*c12, solution);
         } else {
             auto lsc12 = std::make_shared<utopia::KSP_MF<utopia::PetscMatrix, utopia::PetscVector>>();
-            lsc12->ksp_type("gmres");
+            lsc12->ksp_type("fgmres");
             lsc12->pc_type("none");
 
             lsc12->verbose(verbose);
@@ -381,34 +346,33 @@ int main(int argc, char *argv[]) {
             utopia::TwoFieldSPIN<utopia::PetscMatrix> tfs(lsc12, nls1, nls2);
             tfs.set_field_functions(f1, f2);
             tfs.set_transfers(f1_to_c12, f2_to_c12, c12_to_f1, c12_to_f2);
-            // tfs.additive_precond(false);
-            tfs.additive_precond(true);
-            tfs.verbosity_level(utopia::VERBOSITY_LEVEL_DEBUG);
+            tfs.additive_precond(false);
+            // tfs.additive_precond(true);
+            // tfs.verbosity_level(utopia::VERBOSITY_LEVEL_DEBUG);
             tfs.solve(*c12, solution);
+        }
 
-            /////////////////////////////////////////////////////////
-            // Save solution in VTK format
+        // if (0) 
+        {
+            // Subproblems
+            io::VTKFile file_u(mesh->comm(), "sub_u.pvd", "w");
+            file_u.write<T>({*f1->u()}, 0.0);
+
+            io::VTKFile file_c(mesh->comm(), "sub_c.pvd", "w");
+            file_c.write<T>({*f2->u()}, 0.0);
         }
 
         {
-            // Make sure that we plot the global solution
-            utopia::PetscVector c12_temp, f1_temp, f2_temp;
+            // main problem
+            auto u = c12->u()->sub({0}).collapse();
+            io::VTKFile file_u(mesh->comm(), "u.pvd", "w");
+            file_u.write<T>({u}, 0.0);
 
-            f1->create_vector(f1_temp);
-            f2->create_vector(f2_temp);
-            c12->create_vector(c12_temp);
-
-            c12_to_f1(c12_temp, f1_temp);
-            c12_to_f2(c12_temp, f2_temp);
+            auto c = c12->u()->sub({1}).collapse();
+            io::VTKFile file_c(mesh->comm(), "c.pvd", "w");
+            file_c.write<T>({c}, 0.0);
         }
-
-        io::VTKFile file_u(mesh->comm(), "u.pvd", "w");
-        file_u.write<T>({*f1->u()}, 0.0);
-
-        io::VTKFile file_c(mesh->comm(), "c.pvd", "w");
-        file_c.write<T>({*f2->u()}, 0.0);
     }
 
-    // PetscFinalize();
     return utopia::Utopia::Finalize();
 }
