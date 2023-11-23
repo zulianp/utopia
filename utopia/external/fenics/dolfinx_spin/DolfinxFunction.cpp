@@ -185,4 +185,9 @@ bool DolfinxFunction::gradient(const utopia::PetscVector &x, utopia::PetscVector
     return true;
 }
 
+void DolfinxFunction::set_boundary_conditions(const std::vector<std::shared_ptr<const dolfinx::fem::DirichletBC<T>>> &boundary_conditions)
+{
+    impl_->boundary_conditions = boundary_conditions;
+}
+
 std::shared_ptr<fem::Function<T>> DolfinxFunction::u() { return impl_->u; }

@@ -11,13 +11,14 @@
 namespace utopia {
 
     template <class Matrix, class Vector = typename Traits<Matrix>::Vector>
-    class TwoFieldAlternateMinimization final : public NonLinearSolver<Vector> {
+    class TwoFieldAlternateMinimization final : public NewtonInterface<Matrix, Vector> {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
 
         using LinearSolver = utopia::MatrixFreeLinearSolver<Vector>;
-        using NonLinearSolver = utopia::NonLinearSolver<Vector>;
+
+        using NewtonInterface = utopia::NewtonInterface<Matrix, Vector>;
 
         using FieldNonLinearSolver = utopia::NewtonBase<Matrix, Vector>;
 
@@ -26,14 +27,14 @@ namespace utopia {
         typedef utopia::Function<Matrix, Vector> Fun;
         using FunPtr = std::shared_ptr<Fun>;
 
-        using NonLinearSolver::check_convergence;
+        using NewtonInterface::check_convergence;
 
     public:
         TwoFieldAlternateMinimization(const std::shared_ptr<FieldNonLinearSolver> &nonlinear_solver_field1 =
                                           std::make_shared<Newton<Matrix, Vector>>(),
                                       const std::shared_ptr<FieldNonLinearSolver> &nonlinear_solver_field2 =
                                           std::make_shared<Newton<Matrix, Vector>>())
-            : NonLinearSolver(),
+            : NewtonInterface(),
               nonlinear_solver_field1_(std::move(nonlinear_solver_field1)),
               nonlinear_solver_field2_(std::move(nonlinear_solver_field2)),
               sol_status_spin_(this->solution_status_global()) {}
@@ -108,7 +109,7 @@ namespace utopia {
         }
 
         void read(Input &in) override {
-            NonLinearSolver::read(in);
+            NewtonInterface::read(in);
 
             in.get("field1_diff_tol", field1_diff_tol_);
             in.get("field2_diff_tol", field2_diff_tol_);
@@ -123,7 +124,7 @@ namespace utopia {
         }
 
         void print_usage(std::ostream &os) const override {
-            NonLinearSolver::print_usage(os);
+            NewtonInterface::print_usage(os);
 
             this->print_param_usage(os,
                                     "nonlinear_solver_field1",
@@ -223,11 +224,11 @@ namespace utopia {
                                const Scalar &s_norm,
                                const Scalar &diff_field_1,
                                const Scalar &diff_field_2) {
-            bool converged = NonLinearSolver::check_convergence(it, g_norm, r_norm, 1.0);
+            bool converged = NewtonInterface::check_convergence(it, g_norm, r_norm, 1.0);
 
             if (!converged and ((diff_field_1 <= field1_diff_tol_) or (diff_field_2 <= field2_diff_tol_))) {
                 converged = true;
-                NonLinearSolver::check_convergence(it, g_norm, r_norm, 1e-15);
+                NewtonInterface::check_convergence(it, g_norm, r_norm, 1e-15);
             }
 
             return converged;

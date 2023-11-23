@@ -42,13 +42,13 @@ namespace utopia {
     };
 
     template <class Matrix, class Vector = typename Traits<Matrix>::Vector>
-    class TwoFieldSPIN final : public NonLinearSolver<Vector>, public InexactNewtonInterface<Vector> {
+    class TwoFieldSPIN final : public NewtonInterface<Matrix, Vector>, public InexactNewtonInterface<Vector> {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
 
         using LinearSolver = utopia::MatrixFreeLinearSolver<Vector>;
-        using NonLinearSolver = utopia::NonLinearSolver<Vector>;
+        using NewtonInterface = utopia::NewtonInterface<Matrix, Vector>;
 
         using FieldNonLinearSolver = utopia::Newton<Matrix, Vector>;
 
@@ -106,7 +106,7 @@ namespace utopia {
                          std::make_shared<Newton<Matrix, Vector>>(),
                      const std::shared_ptr<FieldNonLinearSolver> &nonlinear_solver_field2 =
                          std::make_shared<Newton<Matrix, Vector>>())
-            : NonLinearSolver(),
+            : NewtonInterface(),
               InexactNewtonInterface<Vector>(),
               alpha_(1.0),
               additive_(true),
@@ -471,7 +471,7 @@ namespace utopia {
         }
 
         void read(Input &in) override {
-            NonLinearSolver::read(in);
+            NewtonInterface::read(in);
             in.get("dumping", alpha_);
             in.get("additive", additive_);
             in.get("use_switch", use_switch_);
@@ -494,7 +494,7 @@ namespace utopia {
         }
 
         void print_usage(std::ostream &os) const override {
-            NonLinearSolver::print_usage(os);
+            NewtonInterface::print_usage(os);
 
             this->print_param_usage(os, "dumping", "real", "Default step size.", "1.0");
             this->print_param_usage(os, "aditive", "bool", "Type of preconditioner (additive/multiplicative)", "true");

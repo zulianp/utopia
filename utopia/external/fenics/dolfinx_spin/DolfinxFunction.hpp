@@ -41,6 +41,8 @@ public:
 
     std::shared_ptr<dolfinx::fem::Function<T>> u();
 
+    void set_boundary_conditions(const std::vector<std::shared_ptr<const dolfinx::fem::DirichletBC<T>>> &boundary_conditions);
+
 private:
     std::unique_ptr<Impl> impl_;
 };

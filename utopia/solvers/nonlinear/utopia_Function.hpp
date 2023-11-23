@@ -31,7 +31,7 @@ namespace utopia {
             return this->value(x, val) && this->gradient(x, grad);
         }
 
-        virtual void create_vector(Vector &x) const {}
+        virtual void create_vector(Vector &) const {}
     };
 
     template <class Matrix, class Vector, int Backend = Traits<Vector>::Backend>

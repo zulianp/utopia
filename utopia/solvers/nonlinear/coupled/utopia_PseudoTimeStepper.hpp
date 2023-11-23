@@ -17,6 +17,32 @@ namespace utopia {
         virtual bool update(const Scalar t) = 0;
     };
 
+    template <class Matrix, class Vector>
+    class PrototypeFunction : public TimeDependentFunction<Matrix, Vector> {
+    public:
+        using Traits = utopia::Traits<Matrix>;
+        using Scalar = typename Traits::Scalar;
+
+        PrototypeFunction(std::function<bool(const Vector &, Scalar &)> value,
+                          std::function<bool(const Vector &, Vector &)> gradient,
+                          std::function<bool(const Vector &, Matrix &)> hessian,
+                          std::function<bool(const Scalar)> update,
+                          std::function<void(Vector &x)> create_vector)
+            : value_(value), gradient_(gradient), hessian_(hessian), update_(update), create_vector_(create_vector) {}
+
+        bool hessian(const Vector &x, Matrix &H) const override { return hessian_(x, H); }
+        bool value(const Vector &x, Scalar &value) const override { return value_(x, value); }
+        bool gradient(const Vector &x, Vector &g) const override { return gradient_(x, g); }
+        void create_vector(Vector &x) const { create_vector_(x); }
+        bool update(const Scalar t) override { return update_(t); }
+
+        std::function<bool(const Vector &, Scalar &)> value_;
+        std::function<bool(const Vector &, Vector &)> gradient_;
+        std::function<bool(const Vector &, Matrix &)> hessian_;
+        std::function<bool(const Scalar)> update_;
+        std::function<void(Vector &x)> create_vector_;
+    };
+
     template <class Matrix, class Vector = typename Traits<Matrix>::Vector>
     class PseudoTimeStepper : public Configurable {
     public:
@@ -30,7 +56,7 @@ namespace utopia {
             in.get("end_time", end_time_);
         }
 
-        PseudoTimeStepper(const std::shared_ptr<NewtonBase<Matrix, Vector>> &nonlinear_solver)
+        PseudoTimeStepper(const std::shared_ptr<NewtonInterface<Matrix, Vector>> &nonlinear_solver)
             : nonlinear_solver_(nonlinear_solver) {}
 
         void set_delta_time(const Scalar dt) { delta_time_ = dt; }
@@ -39,7 +65,7 @@ namespace utopia {
 
         bool solve(TimeDependentFunction<Matrix, Vector> &fun, Vector &x) {
             bool ok = false;
-            for (Scalar t = start_time_; t < end_time_; t += delta_time_) {
+            for (Scalar t = start_time_; t <= end_time_; t += delta_time_) {
                 fun.update(t);
                 ok = nonlinear_solver_->solve(fun, x);
             }
@@ -48,7 +74,7 @@ namespace utopia {
         }
 
     private:
-        std::shared_ptr<NewtonBase<Matrix, Vector>> nonlinear_solver_;
+        std::shared_ptr<NewtonInterface<Matrix, Vector>> nonlinear_solver_;
         Scalar delta_time_{1};
         Scalar start_time_{0};
         Scalar end_time_{1};

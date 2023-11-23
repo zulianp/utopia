@@ -15,6 +15,7 @@
 
 #include "utopia.hpp"
 
+#include "utopia_PseudoTimeStepper.hpp"
 #include "utopia_TwoFieldAlternateMinimization.hpp"
 #include "utopia_TwoFieldSPIN.hpp"
 
@@ -23,7 +24,6 @@
 using namespace dolfinx;
 using T = PetscScalar;
 
-static const T disp_x = 1e-6;
 
 std::shared_ptr<DolfinxFunction> phase_field_displacement(
     const std::shared_ptr<fem::FunctionSpace<T>> &V,
@@ -109,7 +109,7 @@ auto create_right_boundary_locator(const fem::FunctionSpace<T> &V) {
     });
 }
 
-auto disp_BC(const std::shared_ptr<fem::FunctionSpace<T>> &V) {
+auto disp_BC(const std::shared_ptr<fem::FunctionSpace<T>> &V, const T disp_x) {
     auto bdofs_left = create_left_boundary_locator(*V);
     auto bdofs_right = create_right_boundary_locator(*V);
 
@@ -122,7 +122,7 @@ auto phase_BC(const std::shared_ptr<fem::FunctionSpace<T>> &C) {
     return std::vector{std::make_shared<const fem::DirichletBC<T>>(1., frac_locator, C)};
 }
 
-auto coupled_BC(const std::shared_ptr<fem::FunctionSpace<T>> &X) {
+auto coupled_BC(const std::shared_ptr<fem::FunctionSpace<T>> &X, const T disp_x) {
     std::vector<std::shared_ptr<const fem::DirichletBC<T>>> bcs;
 
     static const int dim = 3;
@@ -206,11 +206,17 @@ int main(int argc, char *argv[]) {
         // Create Dirichlet boundary conditions
         ////////////////////////////////////////////////////////////////
 
-        auto disp_bcs = disp_BC(V);
+        T disp_x = 0.001;
+        int n_steps = 100;
+        
+
+        auto disp_bcs = disp_BC(V, disp_x/n_steps);
         auto phase_bcs = phase_BC(C);
-        auto coupled_bcs = coupled_BC(X);
+        auto coupled_bcs = coupled_BC(X, disp_x/n_steps);
 
         ////////////////////////////////////////////////////////////////
+
+
 
         bool verbose = true;
 
@@ -300,15 +306,16 @@ int main(int argc, char *argv[]) {
         utopia::PetscVector solution;
         c12->create_vector(solution);
 
+        std::shared_ptr<utopia::NewtonInterface<utopia::PetscMatrix, utopia::PetscVector>> nlsolver;
+
         if  //
             // (true)  //
             (false)  //
         {
             auto ls = std::make_shared<utopia::BiCGStab<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>();
-            // ls->verbose(true);
             ls->max_it(5000);
 
-            utopia::Newton<utopia::PetscMatrix> newton(ls);
+            auto newton = std::make_shared<utopia::Newton<utopia::PetscMatrix>>(ls);
 
             auto params = utopia::param_list(   //
                 utopia::param("damping", 0.5),  //
@@ -316,24 +323,25 @@ int main(int argc, char *argv[]) {
                 utopia::param("verbose", true)  //
             );
 
-            newton.read(params);
-            newton.solve(*c12, solution);
+            newton->read(params);
+            nlsolver = newton;
 
-        } else if  //
-                   (true)  //
-            // (false)  //
+        } else if   //
+            (true)  //
+        // (false)  //
         {
-            utopia::TwoFieldAlternateMinimization<utopia::PetscMatrix> tfa(nls1, nls2);
-            tfa.set_field_functions(f1, f2);
-            tfa.set_transfers(f1_to_c12, f2_to_c12, c12_to_f1, c12_to_f2);
-            tfa.verbose(verbose);
-            tfa.max_it(400);
-            tfa.verbosity_level(utopia::VERBOSITY_LEVEL_DEBUG);
-            // tfa.verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+            auto tfa = std::make_shared<utopia::TwoFieldAlternateMinimization<utopia::PetscMatrix>>(nls1, nls2);
+            tfa->set_field_functions(f1, f2);
+            tfa->set_transfers(f1_to_c12, f2_to_c12, c12_to_f1, c12_to_f2);
+            tfa->verbose(verbose);
+            tfa->max_it(400);
+            // tfa->verbosity_level(utopia::VERBOSITY_LEVEL_DEBUG);
+            // tfa->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
 
-            tfa.field1_diff_tol(1e-14);
-            tfa.field2_diff_tol(1e-14);
-            tfa.solve(*c12, solution);
+            tfa->field1_diff_tol(1e-14);
+            tfa->field2_diff_tol(1e-14);
+            nlsolver = tfa;
+
         } else {
             auto lsc12 = std::make_shared<utopia::KSP_MF<utopia::PetscMatrix, utopia::PetscVector>>();
             lsc12->ksp_type("fgmres");
@@ -343,35 +351,50 @@ int main(int argc, char *argv[]) {
             nls1->verbose(verbose);
             nls2->verbose(verbose);
 
-            utopia::TwoFieldSPIN<utopia::PetscMatrix> tfs(lsc12, nls1, nls2);
-            tfs.set_field_functions(f1, f2);
-            tfs.set_transfers(f1_to_c12, f2_to_c12, c12_to_f1, c12_to_f2);
-            tfs.additive_precond(false);
+            auto tfs = std::make_shared<utopia::TwoFieldSPIN<utopia::PetscMatrix>>(lsc12, nls1, nls2);
+            tfs->set_field_functions(f1, f2);
+            tfs->set_transfers(f1_to_c12, f2_to_c12, c12_to_f1, c12_to_f2);
+            tfs->additive_precond(false);
             // tfs.additive_precond(true);
             // tfs.verbosity_level(utopia::VERBOSITY_LEVEL_DEBUG);
-            tfs.solve(*c12, solution);
+            nlsolver = tfs;
         }
 
-        // if (0) 
-        {
-            // Subproblems
-            io::VTKFile file_u(mesh->comm(), "sub_u.pvd", "w");
-            file_u.write<T>({*f1->u()}, 0.0);
+        io::VTKFile file_u(mesh->comm(), "sub_u.pvd", "w");
+        io::VTKFile file_c(mesh->comm(), "sub_c.pvd", "w");
 
-            io::VTKFile file_c(mesh->comm(), "sub_c.pvd", "w");
-            file_c.write<T>({*f2->u()}, 0.0);
-        }
+        utopia::PrototypeFunction<utopia::PetscMatrix, utopia::PetscVector> f(
+            [&](const utopia::PetscVector &x, T &value) -> bool { return c12->value(x, value); },
+            [&](const utopia::PetscVector &x, utopia::PetscVector &g) -> bool { return c12->gradient(x, g); },
+            [&](const utopia::PetscVector &x, utopia::PetscMatrix &H) -> bool { return c12->hessian(x, H); },
+            [&](const T t) -> bool { 
+                file_u.write<T>({*f1->u()}, t);
+                file_c.write<T>({*f2->u()}, t);
 
-        {
-            // main problem
-            auto u = c12->u()->sub({0}).collapse();
-            io::VTKFile file_u(mesh->comm(), "u.pvd", "w");
-            file_u.write<T>({u}, 0.0);
+                auto disp_bcs = disp_BC(V, t*disp_x/n_steps);
+                auto phase_bcs = phase_BC(C);
+                // auto coupled_bcs = coupled_BC(X, t*disp_x/n_steps);
+                f1->set_boundary_conditions(disp_bcs);
+                f2->set_boundary_conditions(phase_bcs);
 
-            auto c = c12->u()->sub({1}).collapse();
-            io::VTKFile file_c(mesh->comm(), "c.pvd", "w");
-            file_c.write<T>({c}, 0.0);
-        }
+                return true; },
+            [=](utopia::PetscVector &x) { c12->create_vector(x); });
+
+        utopia::PseudoTimeStepper<utopia::PetscMatrix, utopia::PetscVector> time_stepper(nlsolver);
+        time_stepper.set_end_time(n_steps);
+        time_stepper.solve(f, solution);
+
+
+        // {
+        //     // main problem
+        //     auto u = c12->u()->sub({0}).collapse();
+        //     io::VTKFile file_u(mesh->comm(), "u.pvd", "w");
+        //     file_u.write<T>({u}, 0.0);
+
+        //     auto c = c12->u()->sub({1}).collapse();
+        //     io::VTKFile file_c(mesh->comm(), "c.pvd", "w");
+        //     file_c.write<T>({c}, 0.0);
+        // }
     }
 
     return utopia::Utopia::Finalize();
