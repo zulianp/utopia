@@ -9,6 +9,8 @@
 #include <dolfinx/mesh/cell_types.h>
 #include <dolfinx/nls/NewtonSolver.h>
 
+#include "DolfinxFunction.hpp"
+
 #include <climits>
 #include <cmath>
 #include "hyperelasticity.h"
@@ -18,125 +20,21 @@
 using namespace dolfinx;
 using T = PetscScalar;
 
-class HyperElasticProblem : public utopia::Function<utopia::PetscMatrix, utopia::PetscVector> {
-public:
-    HyperElasticProblem(std::shared_ptr<fem::Form<T>> e,
-                        std::shared_ptr<fem::Form<T>> L,
-                        std::shared_ptr<fem::Form<T>> J,
-                        std::vector<std::shared_ptr<const fem::DirichletBC<T>>> bcs)
-        : _e(e),
-          _l(L),
-          _j(J),
-          _bcs(bcs),
-          _b(L->function_spaces()[0]->dofmap()->index_map, L->function_spaces()[0]->dofmap()->index_map_bs()),
-          _matA(la::petsc::Matrix(fem::petsc::create_matrix(*J, "baij"), false)) {
-        auto map = L->function_spaces()[0]->dofmap()->index_map;
-        const int bs = L->function_spaces()[0]->dofmap()->index_map_bs();
-        std::int32_t size_local = bs * map->size_local();
+std::shared_ptr<DolfinxFunction> hyperelasticity(
+    const std::shared_ptr<fem::FunctionSpace<T>> &V,
+    std::shared_ptr<dolfinx::fem::Function<T>> u,
+    std::vector<std::shared_ptr<const fem::DirichletBC<T>>> boundary_conditions) {
+    auto objective = std::make_shared<fem::Form<T>>(
+        fem::create_form<T>(*form_hyperelasticity_Pi, {}, {{"u", u}}, {}, {}, V->mesh()));
 
-        std::vector<PetscInt> ghosts(map->ghosts().begin(), map->ghosts().end());
-        std::int64_t size_global = bs * map->size_global();
-        VecCreateGhostBlockWithArray(
-            map->comm(), bs, size_local, size_global, ghosts.size(), ghosts.data(), _b.array().data(), &_b_petsc);
-    }
+    auto gradient =
+        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_hyperelasticity_F_form, {V}, {{"u", u}}, {}, {}));
 
-    /// Destructor
-    virtual ~HyperElasticProblem() {
-        if (_b_petsc) VecDestroy(&_b_petsc);
-    }
+    auto hessian =
+        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_hyperelasticity_J_form, {V, V}, {{"u", u}}, {}, {}));
 
-    auto form() {
-        return [](Vec x) {
-            VecGhostUpdateBegin(x, INSERT_VALUES, SCATTER_FORWARD);
-            VecGhostUpdateEnd(x, INSERT_VALUES, SCATTER_FORWARD);
-        };
-    }
-
-    /// Compute F at current point x
-    auto F() {
-        return [&](const Vec x, Vec) {
-            // Assemble b and update ghosts
-            std::span<T> b(_b.mutable_array());
-            std::fill(b.begin(), b.end(), 0.0);
-            fem::assemble_vector<T>(b, *_l);
-            VecGhostUpdateBegin(_b_petsc, ADD_VALUES, SCATTER_REVERSE);
-            VecGhostUpdateEnd(_b_petsc, ADD_VALUES, SCATTER_REVERSE);
-
-            // Set bcs
-            Vec x_local;
-            VecGhostGetLocalForm(x, &x_local);
-            PetscInt n = 0;
-            VecGetSize(x_local, &n);
-            const T *array = nullptr;
-            VecGetArrayRead(x_local, &array);
-            fem::set_bc<T>(b, _bcs, std::span<const T>(array, n), -1.0);
-            VecRestoreArrayRead(x, &array);
-        };
-    }
-
-    /// Compute J = F' at current point x
-    auto J() {
-        return [&](const Vec, Mat A) {
-            MatZeroEntries(A);
-            fem::assemble_matrix(la::petsc::Matrix::set_block_fn(A, ADD_VALUES), *_j, _bcs);
-            MatAssemblyBegin(A, MAT_FLUSH_ASSEMBLY);
-            MatAssemblyEnd(A, MAT_FLUSH_ASSEMBLY);
-            fem::set_diagonal(la::petsc::Matrix::set_fn(A, INSERT_VALUES), *_j->function_spaces()[0], _bcs);
-            MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);
-            MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);
-        };
-    }
-
-    bool hessian(const utopia::PetscVector &x, utopia::PetscMatrix &H) const override {
-        auto that = const_cast<HyperElasticProblem *>(this);
-        auto H_fun = that->J();
-
-        if (H.empty()) {
-            auto m = that->matrix();
-            H.wrap(m);
-        }
-
-        that->form()(x.raw_type());
-
-        H_fun(x.raw_type(), H.raw_type());
-        return true;
-    }
-
-    bool value(const utopia::PetscVector &x, PetscScalar &value) const override {
-        auto that = const_cast<HyperElasticProblem *>(this);
-        that->form()(x.raw_type());
-        value = fem::assemble_scalar<T>(*_e);
-        value = x.comm().sum(value);
-        return true;
-    }
-
-    bool gradient(const utopia::PetscVector &x, utopia::PetscVector &g) const override {
-        auto that = const_cast<HyperElasticProblem *>(this);
-        auto grad_fun = that->F();
-
-        that->form()(x.raw_type());
-
-        grad_fun(x.raw_type(), nullptr);
-
-        la::petsc::Vector temp(la::petsc::create_vector_wrap(_b), false);
-
-        auto v = temp.vec();
-        assert(v);
-        g.copy_from(v);
-        return true;
-    }
-
-    Vec vector() const { return _b_petsc; }
-
-    Mat matrix() const { return _matA.mat(); }
-
-private:
-    std::shared_ptr<fem::Form<T>> _e, _l, _j;
-    std::vector<std::shared_ptr<const fem::DirichletBC<T>>> _bcs;
-    la::Vector<T> _b;
-    Vec _b_petsc = nullptr;
-    la::petsc::Matrix _matA;
-};
+    return std::make_shared<DolfinxFunction>(V, u, objective, gradient, hessian, boundary_conditions);
+}
 
 int main(int argc, char *argv[]) {
     dolfinx::init_logging(argc, argv);
@@ -172,15 +70,6 @@ int main(int argc, char *argv[]) {
 
         // Define solution function
         auto u = std::make_shared<fem::Function<T>>(V);
-
-        auto e = std::make_shared<fem::Form<T>>(
-            fem::create_form<T>(*form_hyperelasticity_Pi, {}, {{"u", u}}, {}, {}, V->mesh()));
-
-        auto a = std::make_shared<fem::Form<T>>(
-            fem::create_form<T>(*form_hyperelasticity_J_form, {V, V}, {{"u", u}}, {}, {}));
-
-        auto L =
-            std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_hyperelasticity_F_form, {V}, {{"u", u}}, {}, {}));
 
         auto u_rotation = std::make_shared<fem::Function<T>>(V);
         u_rotation->interpolate([](auto x) -> std::pair<std::vector<T>, std::vector<std::size_t>> {
@@ -229,36 +118,22 @@ int main(int argc, char *argv[]) {
         auto bcs = std::vector{std::make_shared<const fem::DirichletBC<T>>(std::vector<T>{0, 0, 0}, bdofs_left, V),
                                std::make_shared<const fem::DirichletBC<T>>(u_rotation, bdofs_right)};
 
-        HyperElasticProblem problem(e, L, a, bcs);
+        auto problem = hyperelasticity(V, u, bcs);
 
         la::petsc::Vector _u(la::petsc::create_vector_wrap(*u->x()), false);
 
         /////////////////////////////////////////////////////////
         /// Plug-in Utopia HERE
 
-        // if (true)  //
-        if (false)  //
-        {
-            nls::petsc::NewtonSolver newton_solver(mesh->comm());
-            newton_solver.setF(problem.F(), problem.vector());
-            newton_solver.setJ(problem.J(), problem.matrix());
-            newton_solver.set_form(problem.form());
-            newton_solver.solve(_u.vec());
-        } else {
-            utopia::Newton<utopia::PetscMatrix, utopia::PetscVector> newton(
-                std::make_shared<utopia::BiCGStab<utopia::PetscMatrix, utopia::PetscVector>>());
-            newton.verbose(true);
-            // auto params = utopia::param_list(utopia::param("damping", 0.5));
-            // newton.read(params);
+        utopia::Newton<utopia::PetscMatrix, utopia::PetscVector> newton(
+            std::make_shared<utopia::ConjugateGradient<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>()
+            // std::make_shared<utopia::BiCGStab<utopia::PetscMatrix, utopia::PetscVector>>()
+        );
 
-            utopia::PetscVector uvec;
-            {
-                auto u_ = _u.vec();
-                uvec.wrap(u_);
-            }
-
-            newton.solve(problem, uvec);
-        }
+        newton.verbose(true);
+        utopia::PetscVector solution;
+        problem->create_vector(solution);
+        newton.solve(*problem, solution);
 
         /////////////////////////////////////////////////////////
 
