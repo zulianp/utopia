@@ -424,9 +424,8 @@ if(UTOPIA_ENABLE_YAML_CPP)
   else()
     message(
       WARNING
-        "Help message:\n"
         "---------------------------------------------------------------\n"
-        "yaml-cpp not found! To install locally in UTOPIA_DEPENDENCIES_DIR then run `make yaml-cpp` and re-run cmake with options `-DYAMLCPP_DIR=${YAMLCPP_INSTALL_DIR}/lib/cmake/yaml-cpp. Otherwise export YAMLCPP_DIR.`\n"
+        "yaml-cpp not found! yaml-cpp is required by utopia to build correctly. To install locally in UTOPIA_DEPENDENCIES_DIR run `make yaml-cpp` and re-run cmake. Otherwise export YAMLCPP_DIR.`\n"
         "---------------------------------------------------------------\n")
   endif()
 endif()
