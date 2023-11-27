@@ -29,7 +29,7 @@ if(NOT CYGWIN)
         --download-mumps=yes
         --with-debugging=0)
 
-    if(UTOPIA_ENABLE_SLEPC AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
+    if(UTOPIA_ENABLE_SLEPC)
       set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --download-slepc=yes)
     endif()
 

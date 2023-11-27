@@ -27,7 +27,7 @@ Where:
 - Finally will test the installation by creating a folder inside build_<build_type> and try to find utopia and use it to compile some test executables.
 
 ## Extra
-You can also run the different build scripts individually if you want. For example:
+You can also run the different build scripts individually. For example:
 ```
 ./scripts/make_all.sh <n_jobs> <prefix>
 ```

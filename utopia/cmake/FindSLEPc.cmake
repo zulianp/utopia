@@ -17,7 +17,7 @@
 # SLEPC_LIBRARIES) else() message(WARNING "SLEPc not found!" ) endif()
 
 
-if(UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
+if(UTOPIA_INSTALL_PETSC)
   set(SLEPC_DIR "${CMAKE_SOURCE_DIR}/../external/petsc")
 endif()
 

@@ -59,9 +59,11 @@ option(UTOPIA_BUILD_DOCUMENTATION
 option(UTOPIA_ENABLE_SCRIPTING
        "Enable exports for other languages (C, Python, etc...)" OFF)
 
-option(UTOPIA_INSTALL_TRILINOS "Install trilinos directly" ON)
-option(UTOPIA_INSTALL_PETSC "Install petsc directly" ON)
-option(UTOPIA_INSTALL_YAML_CPP "Install yaml-cpp directly" ON)
+option(UTOPIA_INSTALL_TRILINOS "Install trilinos directly" OFF)
+option(UTOPIA_INSTALL_PETSC "Install petsc directly" OFF)
+option(UTOPIA_INSTALL_SLEPC "Install slepc directly" OFF)
+option(UTOPIA_INSTALL_YAML_CPP "Install yaml-cpp directly" OFF)
+
 option(
   UTOPIA_ENABLE_GPERFTOOLS
   "use Google perf tools (https://gperftools.github.io/gperftools/cpuprofile.html)"
@@ -77,6 +79,8 @@ option(UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE
        "Removed trilinos deprecated code" ON)
 
 option(UTOPIA_ENABLE_FLUYA_MODE "Create utopia configuration required by Fluya"
+       OFF)
+option(UTOPIA_ENABLE_LOCAL_MODE "Create utopia configuration for local dep install."
        OFF)
 
 option(UTOPIA_ENABLE_ISOLVER "Enable ISolver" OFF)

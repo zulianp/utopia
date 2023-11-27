@@ -182,21 +182,24 @@ endif()
 # ####LOCAL_INSTALL_OPTIONS####
 
 if(UTOPIA_INSTALL_PETSC
-   AND NOT CYGWIN
-   AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
+   AND NOT CYGWIN)
   include(InstallPetsc)
 endif()
 
-if(UTOPIA_INSTALL_TRILINOS AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
+if(UTOPIA_INSTALL_TRILINOS)
   include(InstallTrilinos)
 endif()
 
-if(UTOPIA_INSTALL_SLEPC AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
+if(UTOPIA_INSTALL_SLEPC)
   include(InstallSlepc)
 endif()
 
 if(UTOPIA_INSTALL_YAML_CPP)
   include(InstallYAMLCPP)
+endif() 
+
+if(UTOPIA_ENABLE_LOCAL_MODE)
+  include(EnableLocalMode)
 endif() 
 
 # #################PETSC####################
@@ -205,7 +208,7 @@ if(UTOPIA_ENABLE_PETSC)
   set(PETSC_TEST_RUNS TRUE)
   set(PETSC_EXECUTABLE_RUNS TRUE) # On daint we cannot run them
 
-  if(NOT UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
+  if(NOT UTOPIA_INSTALL_PETSC)
     find_package(PETSc REQUIRED)
   else()
     find_package(PETSc QUIET)
@@ -251,7 +254,7 @@ if(UTOPIA_ENABLE_PETSC)
   endif()
 
   if(PETSC_FOUND AND UTOPIA_ENABLE_SLEPC)
-    find_package(SLEPc QUIET)
+    find_package(SLEPc REQUIRED)
     if(SLEPC_FOUND)
       list(APPEND UTOPIA_BUILD_INCLUDES ${SLEPC_INCLUDES})
       list(APPEND UTOPIA_DEP_LIBRARIES ${SLEPC_LIBRARIES})
@@ -285,18 +288,16 @@ if(UTOPIA_ENABLE_TRILINOS)
   )
 
   # find dependencies
-  if(NOT UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
-    set(Trilinos_FOUND FALSE)
+  if(NOT UTOPIA_INSTALL_TRILINOS)
     find_package(Trilinos PATHS ${Trilinos_SEARCH_PATHS} REQUIRED)
   else()
-    set(Trilinos_FOUND FALSE)
     set(Trilinos_SEARCH_PATHS
-        "${CMAKE_SOURCE_DIR}/../external/Trilinos/lib/cmake/Trilinos")
+        "${Trilinos_SEARCH_PATHS};${CMAKE_SOURCE_DIR}/../external/Trilinos/lib/cmake/Trilinos")
     if(NOT APPLE AND NOT WIN32)
       set(Trilinos_SEARCH_PATHS
-          "${CMAKE_SOURCE_DIR}/../external/Trilinos/lib64/cmake/Trilinos")
+          "${Trilinos_SEARCH_PATHS};${CMAKE_SOURCE_DIR}/../external/Trilinos/lib64/cmake/Trilinos")
     endif()
-    find_package(Trilinos PATHS ${Trilinos_SEARCH_PATHS} NO_DEFAULT_PATH)
+    find_package(Trilinos PATHS ${Trilinos_SEARCH_PATHS})
   endif()
   if(Trilinos_FOUND)
     set(Trilinos_FOUND TRUE)
@@ -373,13 +374,18 @@ endif()
 
 if(UTOPIA_ENABLE_YAML_CPP)
 
-  set(YAML_CPP_SEARCH_PATHS "${YAMLCPP_INSTALL_DIR};${CMAKE_SOURCE_DIR}/../external/yaml-cpp/")
+  set(YAML_CPP_SEARCH_PATHS "${YAMLCPP_INSTALL_DIR}")
   if(UTOPIA_ENABLE_ENV_READ)
     set(YAML_CPP_SEARCH_PATHS "${YAML_CPP_SEARCH_PATHS};$ENV{YAMLCPP_DIR}")
   endif()
 
-  find_package(yaml-cpp HINTS ${YAML_CPP_SEARCH_PATHS})
 
+  if(NOT UTOPIA_INSTALL_YAML_CPP)
+    find_package(yaml-cpp HINTS ${YAML_CPP_SEARCH_PATHS} REQUIRED)
+  else()
+    set(YAML_CPP_SEARCH_PATHS "${YAMLCPP_INSTALL_DIR};${CMAKE_SOURCE_DIR}/../external/yaml-cpp/")
+    find_package(yaml-cpp HINTS ${YAML_CPP_SEARCH_PATHS})
+  endif()
   if(yaml-cpp_FOUND)
     set(yaml-cpp_FOUND TRUE)
     set(UTOPIA_ENABLE_YAML_CPP ON)
