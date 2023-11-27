@@ -26,34 +26,33 @@ namespace utopia {
 
         TpetraOperator(const std::shared_ptr<Operator<Vector>> &op) : op_(op) { assert(op); }
 
+        static void wrap_mv(MultiVectorType &in, Vector &out) {
+            Teuchos::RCP<VectorType> yy;
+            auto sub_ptr = dynamic_cast<VectorType *>(&in);
+            if (!sub_ptr) {
+                assert(in.getNumVectors() == 1);
+                yy = Teuchos::RCP<VectorType>(new VectorType(in, 0), true);
+            } else {
+                yy = Teuchos::RCP<VectorType>(sub_ptr, false);
+            }
+
+            out.wrap(yy);
+        }
+
         void apply(const MultiVectorType &X,
                    MultiVectorType &Y,
                    Teuchos::ETransp mode = Teuchos::NO_TRANS,
                    Scalar alpha = Teuchos::ScalarTraits<Scalar>::one(),
                    Scalar beta = Teuchos::ScalarTraits<Scalar>::zero()) const override {
-            //
             Vector wx, wy;
 
-            auto sub_x_ptr = dynamic_cast<VectorType *>(const_cast<MultiVectorType *>(&X));
-            auto sub_y_ptr = dynamic_cast<VectorType *>(&Y);
-
-            assert(sub_x_ptr);
-            assert(sub_y_ptr);
-
-            if (!sub_x_ptr || !sub_y_ptr) {
-                Utopia::Abort("TpetraOperator: MultiVector cannot be converted to Vector!");
-            }
-
-            auto xx = Teuchos::RCP<VectorType>(sub_x_ptr, false);
-            auto yy = Teuchos::RCP<VectorType>(sub_y_ptr, false);
-
-            wx.wrap(xx);
-            wy.wrap(yy);
+            wrap_mv(const_cast<MultiVectorType &>(X), wx);
+            wrap_mv(Y, wy);
 
             op_->apply(wx, wy);
 
-            wx.unwrap(xx);
-            wy.unwrap(yy);
+            wx.unwrap(Teuchos::RCP<VectorType>());
+            wy.unwrap(Teuchos::RCP<VectorType>());
         }
 
         Teuchos::RCP<const Tpetra::Map<LocalSizeType, SizeType, Node>> getDomainMap() const override {
@@ -82,16 +81,9 @@ namespace utopia {
     };
 
     template <class Vector>
-    inline std::shared_ptr<TpetraOperator<Vector>> tpetra_operator(const std::shared_ptr<Operator<Vector>> &op) {
-        return std::make_shared<TpetraOperator<Vector>>(op);
+    inline Teuchos::RCP<TpetraOperator<Vector>> tpetra_operator(const std::shared_ptr<Operator<Vector>> &op) {
+        return Teuchos::rcp(new TpetraOperator<Vector>(op));
     }
-
-    template <class Vector>
-    inline std::shared_ptr<TpetraOperator<Vector>> tpetra_operator(const std::shared_ptr<TpetraOperator<Vector>> &op) {
-        return op;
-    }
-
-    inline std::shared_ptr<TpetraMatrix> tpetra_operator(const std::shared_ptr<TpetraMatrix> &op) { return op; }
 
 }  // namespace utopia
 

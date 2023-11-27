@@ -513,6 +513,7 @@ namespace utopia {
     }
 
     void TpetraVector::wrap(const RCPVectorType &x) {
+        assert(x->getMap());
         comm_ = x->getMap()->getComm();
         vec_ = x;
     }

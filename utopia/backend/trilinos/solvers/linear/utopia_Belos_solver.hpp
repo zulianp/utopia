@@ -2,6 +2,7 @@
 #define UTOPIA_BELOS_SOLVERS_HPP
 
 #include "utopia_Config.hpp"
+#include "utopia_MatrixFreeLinearSolver.hpp"
 #include "utopia_PreconditionedSolver.hpp"
 
 #ifdef UTOPIA_WITH_TRILINOS_BELOS
@@ -16,13 +17,14 @@ namespace utopia {
     class BelosSolver {};
 
     template <typename Matrix, typename Vector>
-    class BelosSolver<Matrix, Vector, TRILINOS> : public PreconditionedSolver<Matrix, Vector> {
+    class BelosSolver<Matrix, Vector, TRILINOS> : public OperatorBasedLinearSolver<Matrix, Vector> {
     public:
         typedef UTOPIA_SCALAR(Vector) Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         typedef utopia::Preconditioner<Vector> Preconditioner;
-        typedef utopia::PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
+        // typedef utopia::PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
+        using Super = utopia::OperatorBasedLinearSolver<Matrix, Vector>;
 
         struct Param {
             enum Key {
@@ -52,6 +54,9 @@ namespace utopia {
         void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec) override;
         void update(const std::shared_ptr<const Matrix> &op) override;
         bool apply(const Vector &rhs, Vector &lhs) override;
+
+        bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override;
+        void update(const Operator<Vector> &A) override;
 
         void print_usage(std::ostream &os = std::cout) const override;
         void read(Input &in) override;

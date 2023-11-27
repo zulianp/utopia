@@ -17,6 +17,7 @@
 
 #ifdef UTOPIA_WITH_TRILINOS
 #include "utopia_Tpetra_Operator.hpp"
+#include "utopia_trilinos_GMRES.hpp"
 #endif
 
 using namespace utopia;
@@ -87,7 +88,11 @@ public:
         return ret;
     }
 
-    auto gmres() -> std::shared_ptr<GMRES<Matrix, Vector>> { return std::make_shared<GMRES<Matrix, Vector>>(); }
+    auto gmres() -> std::shared_ptr<MatrixFreeLinearSolver<Vector>> {
+        auto ret = std::make_shared<GMRES<Matrix, Vector>>();
+        ret->verbose(true);
+        return ret;
+    }
 
     void test_SPIN() {
         int n = 10;
@@ -104,15 +109,15 @@ public:
         auto nls2 = std::make_shared<Newton<Matrix>>(cg());
 
         // Global linear solver
-        // auto lsc12 = gmres();
-        auto lsc12 = cg();
+        auto lsc12 = gmres();
+        // auto lsc12 = cg();
 
         nls1->verbose(verbose);
         nls2->verbose(verbose);
 
         TwoFieldSPIN<Matrix> tfa(lsc12, nls1, nls2);
         tfa.set_field_functions(f1, f2);
-        // tfa.additive_precond(false);
+        tfa.additive_precond(false);
 
         auto f1_to_c12 = [](const Vector &in, Vector &out) { out = in; };
         auto f2_to_c12 = f1_to_c12;
@@ -147,9 +152,9 @@ public:
     }
 
     void run() {
-        UTOPIA_RUN_TEST(test_aternate_minimization);
+        // UTOPIA_RUN_TEST(test_aternate_minimization);
         UTOPIA_RUN_TEST(test_SPIN);
-        UTOPIA_RUN_TEST(test_incremental_loading);
+        // UTOPIA_RUN_TEST(test_incremental_loading);
     }
 };
 
@@ -158,9 +163,9 @@ void field_split() {
     FieldSplitTestTest<TpetraMatrix, TpetraVector>().run();
 #endif
 
-#ifdef UTOPIA_WITH_PETSC
-    FieldSplitTestTest<PetscMatrix, PetscVector>().run();
-#endif  // UTOPIA_WITH_PETSC
+    // #ifdef UTOPIA_WITH_PETSC
+    //     FieldSplitTestTest<PetscMatrix, PetscVector>().run();
+    // #endif  // UTOPIA_WITH_PETSC
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(field_split);

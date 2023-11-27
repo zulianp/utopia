@@ -25,6 +25,8 @@
 #warning "Trilinos was built without Ifpack2 support. Direct preconditioners cannot be used with the Belos solver."
 #endif  // UTOPIA_WITH_TRILINOS_IFPACK2
 
+#include "utopia_Tpetra_Operator.hpp"
+
 namespace utopia {
 
     template <typename Matrix, typename Vector>
@@ -61,7 +63,7 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     BelosSolver<Matrix, Vector, TRILINOS>::BelosSolver(const BelosSolver &other)
         : PreconditionedSolverInterface<Vector>(other),
-          PreconditionedSolver(other),
+          Super(other),
           solver_type_(other.solver_type_),
           solver_params_(other.solver_params_),
           impl_(utopia::make_unique<Impl>(*other.impl_)) {}
@@ -76,18 +78,18 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     void BelosSolver<Matrix, Vector, TRILINOS>::update(const std::shared_ptr<const Matrix> &op,
                                                        const std::shared_ptr<const Matrix> &prec) {
-        PreconditionedSolver::update(op, prec);
+        Super::update(op, prec);
         // set_problem(*op);
     }
 
     template <typename Matrix, typename Vector>
     void BelosSolver<Matrix, Vector, TRILINOS>::update(const std::shared_ptr<const Matrix> &op) {
-        PreconditionedSolver::update(op);
-        // set_problem(*op);
+        Super::update(op);
     }
 
     template <typename Matrix, typename Vector>
     bool BelosSolver<Matrix, Vector, TRILINOS>::apply(const Vector &rhs, Vector &lhs) {
+        UTOPIA_TRACE_SCOPE("BelosSolver::apply(...)");
         if (empty(lhs)) {
             lhs.zeros(layout(rhs));
         }
@@ -108,7 +110,7 @@ namespace utopia {
 
     template <typename Matrix, typename Vector>
     void BelosSolver<Matrix, Vector, TRILINOS>::print_usage(std::ostream &os) const {
-        PreconditionedSolver::print_usage(os);
+        Super::print_usage(os);
         for (const auto &param : solver_params_) {
             this->print_param_usage(
                 os, params_[param].name, params_[param].type, params_[param].description, params_[param].default_value);
@@ -117,7 +119,7 @@ namespace utopia {
 
     template <typename Matrix, typename Vector>
     void BelosSolver<Matrix, Vector, TRILINOS>::read(Input &in) {
-        PreconditionedSolver::read(in);
+        Super::read(in);
         set_programmatic_config();
 
         // The solver_params sublist is created by the call to set_programmatic_config
@@ -152,8 +154,15 @@ namespace utopia {
     }
 
     template <typename Matrix, typename Vector>
-    void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner(const std::shared_ptr<Preconditioner> &) {
-        assert(false && "IMPLEMENT ME");
+    void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner(const std::shared_ptr<Preconditioner> &prec) {
+        auto op = std::dynamic_pointer_cast<Operator<Vector>>(prec);
+
+        if (!op) {
+            assert(false && "IMPLEMENT ME");
+        } else {
+            auto tpetra_op = utopia::tpetra_operator(op);
+            impl_->linear_problem->setLeftPrec(tpetra_op);
+        }
     }
 
     template <typename Matrix, typename Vector>
@@ -261,6 +270,38 @@ namespace utopia {
             std::cout << "Parameter list for '" << solver_type_ << "' solver:" << std::endl;
             impl_->belos_solver->getCurrentParameters()->print();
         }
+    }
+
+    template <typename Matrix, typename Vector>
+    bool BelosSolver<Matrix, Vector, TRILINOS>::solve(const Operator<Vector> &op, const Vector &rhs, Vector &sol) {
+        UTOPIA_TRACE_SCOPE("BelosSolver::solve(op)");
+
+        if (empty(sol)) {
+            sol.zeros(layout(rhs));
+        }
+
+        assert(!rhs.has_nan_or_inf());
+
+        auto tpetra_op = tpetra_operator(utopia::make_ref(const_cast<Operator<Vector> &>(op)));
+
+        impl_->linear_problem = Teuchos::rcp(new typename Impl::ProblemType(tpetra_op, raw_type(sol), raw_type(rhs)));
+
+        set_programmatic_config();
+        set_problem();
+        // set_preconditioner(this->get_operator());
+
+        assert(!(impl_->belos_solver.is_null()));
+        impl_->belos_solver->solve();
+        return true;
+    }
+
+    template <typename Matrix, typename Vector>
+    void BelosSolver<Matrix, Vector, TRILINOS>::update(const Operator<Vector> &op) {
+        // const auto layout_rhs = row_layout(op);
+
+        // if (!initialized_ || !layout_rhs.same(layout_)) {
+        //     init_memory(layout_rhs);
+        // }
     }
 
 }  // namespace utopia
