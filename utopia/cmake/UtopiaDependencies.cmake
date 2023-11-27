@@ -187,10 +187,6 @@ if(UTOPIA_INSTALL_PETSC
   include(InstallPetsc)
 endif()
 
-if(UTOPIA_INSTALL_PETSC_DEBUG AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
-  include(InstallPetscDebug)
-endif()
-
 if(UTOPIA_INSTALL_TRILINOS AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
   include(InstallTrilinos)
 endif()
@@ -198,6 +194,10 @@ endif()
 if(UTOPIA_INSTALL_SLEPC AND UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
   include(InstallSlepc)
 endif()
+
+if(UTOPIA_INSTALL_YAML_CPP)
+  include(InstallYAMLCPP)
+endif() 
 
 # #################PETSC####################
 if(UTOPIA_ENABLE_PETSC)
@@ -373,7 +373,7 @@ endif()
 
 if(UTOPIA_ENABLE_YAML_CPP)
 
-  set(YAML_CPP_SEARCH_PATHS "${YAMLCPP_INSTALL_DIR}")
+  set(YAML_CPP_SEARCH_PATHS "${YAMLCPP_INSTALL_DIR};${CMAKE_SOURCE_DIR}/../external/yaml-cpp/")
   if(UTOPIA_ENABLE_ENV_READ)
     set(YAML_CPP_SEARCH_PATHS "${YAML_CPP_SEARCH_PATHS};$ENV{YAMLCPP_DIR}")
   endif()
@@ -420,16 +420,15 @@ if(UTOPIA_ENABLE_YAML_CPP)
 
     set(UTOPIA_BUILD_INCLUDES ${UTOPIA_BUILD_INCLUDES})
     set(UTOPIA_DEP_LIBRARIES ${UTOPIA_DEP_LIBRARIES})
+    add_subdirectory(backend/yamlcpp)
   else()
-    include(${CMAKE_SOURCE_DIR}/cmake/InstallYAMLCPP.cmake)
     message(
-      FATAL_ERROR
+      WARNING
         "Help message:\n"
         "---------------------------------------------------------------\n"
         "yaml-cpp not found! To install locally in UTOPIA_DEPENDENCIES_DIR then run `make yaml-cpp` and re-run cmake with options `-DYAMLCPP_DIR=${YAMLCPP_INSTALL_DIR}/lib/cmake/yaml-cpp. Otherwise export YAMLCPP_DIR.`\n"
         "---------------------------------------------------------------\n")
   endif()
-  add_subdirectory(backend/yamlcpp)
 endif()
 
 # ##############################################################################

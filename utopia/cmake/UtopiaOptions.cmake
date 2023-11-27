@@ -61,7 +61,7 @@ option(UTOPIA_ENABLE_SCRIPTING
 
 option(UTOPIA_INSTALL_TRILINOS "Install trilinos directly" ON)
 option(UTOPIA_INSTALL_PETSC "Install petsc directly" ON)
-option(UTOPIA_INSTALL_PETSC_DEBUG "Install petsc directly" OFF)
+option(UTOPIA_INSTALL_YAML_CPP "Install yaml-cpp directly" ON)
 option(
   UTOPIA_ENABLE_GPERFTOOLS
   "use Google perf tools (https://gperftools.github.io/gperftools/cpuprofile.html)"

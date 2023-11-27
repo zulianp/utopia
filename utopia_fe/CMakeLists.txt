@@ -146,6 +146,8 @@ endif()
 
 add_library(utopia_fe utopia_fe.cpp)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+
 # if(UTOPIA_ENABLE_MARS_ADIOS2)
 #     find_package(adios2 REQUIRED)
 #     target_link_libraries(utopia_fe PUBLIC adios2::adios2)
