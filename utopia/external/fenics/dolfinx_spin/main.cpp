@@ -24,7 +24,6 @@
 using namespace dolfinx;
 using T = PetscScalar;
 
-
 std::shared_ptr<DolfinxFunction> phase_field_displacement(
     const std::shared_ptr<fem::FunctionSpace<T>> &V,
     std::shared_ptr<dolfinx::fem::Function<T>> u,
@@ -208,15 +207,12 @@ int main(int argc, char *argv[]) {
 
         T disp_x = 0.012;
         int n_steps = 500;
-        
 
-        auto disp_bcs = disp_BC(V, disp_x/n_steps);
+        auto disp_bcs = disp_BC(V, disp_x / n_steps);
         auto phase_bcs = phase_BC(C);
-        auto coupled_bcs = coupled_BC(X, disp_x/n_steps);
+        auto coupled_bcs = coupled_BC(X, disp_x / n_steps);
 
         ////////////////////////////////////////////////////////////////
-
-
 
         bool verbose = true;
 
@@ -307,12 +303,13 @@ int main(int argc, char *argv[]) {
         c12->create_vector(solution);
 
         std::shared_ptr<utopia::NewtonInterface<utopia::PetscMatrix, utopia::PetscVector>> nlsolver;
-
-        if  //
-            // (true)  //
-            (false)  //
+        bool is_monolithic = false;
+        if          //
+            (true)  //
+        // (false)  //
         {
-            auto ls = std::make_shared<utopia::BiCGStab<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>();
+            auto ls = std::make_shared<utopia::BiCGStab<utopia::PetscMatrix, utopia::PetscVector>>();
+            ls->pc_type("bjacobi");
             ls->max_it(5000);
 
             auto newton = std::make_shared<utopia::Newton<utopia::PetscMatrix>>(ls);
@@ -321,10 +318,12 @@ int main(int argc, char *argv[]) {
                 utopia::param("damping", 0.5),  //
                 utopia::param("max_it", 50),    //
                 utopia::param("verbose", true)  //
+                utopia::param("atol", 1e-14)    //
             );
 
             newton->read(params);
             nlsolver = newton;
+            is_monolithic = true;
 
         } else if   //
             (true)  //
@@ -363,29 +362,39 @@ int main(int argc, char *argv[]) {
         io::VTKFile file_u(mesh->comm(), "sub_u.pvd", "w");
         io::VTKFile file_c(mesh->comm(), "sub_c.pvd", "w");
 
+        io::VTKFile mono_file_u(mesh->comm(), "u.pvd", "w");
+        io::VTKFile mono_file_c(mesh->comm(), "c.pvd", "w");
+
         utopia::PrototypeFunction<utopia::PetscMatrix, utopia::PetscVector> f(
             [&](const utopia::PetscVector &x, T &value) -> bool { return c12->value(x, value); },
             [&](const utopia::PetscVector &x, utopia::PetscVector &g) -> bool { return c12->gradient(x, g); },
             [&](const utopia::PetscVector &x, utopia::PetscMatrix &H) -> bool { return c12->hessian(x, H); },
-            [&](const T t) -> bool { 
-                const T actual_time = t*disp_x/n_steps;
+            [&](const T t) -> bool {
+                const T actual_time = t * disp_x / n_steps;
 
                 file_u.write<T>({*f1->u()}, actual_time);
                 file_c.write<T>({*f2->u()}, actual_time);
+
+                if (is_monolithic) {
+                    auto u = c12->u()->sub({0}).collapse();
+                    mono_file_u.write<T>({u}, actual_time);
+
+                    auto c = c12->u()->sub({1}).collapse();
+                    mono_file_c.write<T>({c}, actual_time);
+                }
 
                 auto disp_bcs = disp_BC(V, actual_time);
                 auto phase_bcs = phase_BC(C);
                 // auto coupled_bcs = coupled_BC(X, t*disp_x/n_steps);
                 f1->set_boundary_conditions(disp_bcs);
                 f2->set_boundary_conditions(phase_bcs);
-
-                return true; },
+                return true;
+            },
             [=](utopia::PetscVector &x) { c12->create_vector(x); });
 
         utopia::PseudoTimeStepper<utopia::PetscMatrix, utopia::PetscVector> time_stepper(nlsolver);
         time_stepper.set_end_time(n_steps);
         time_stepper.solve(f, solution);
-
 
         // {
         //     // main problem

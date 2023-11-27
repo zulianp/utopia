@@ -47,7 +47,7 @@ namespace utopia {
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
 
-        using LinearSolver = utopia::MatrixFreeLinearSolver<Vector>;
+        using MatrixFreeLinearSolver = utopia::MatrixFreeLinearSolver<Vector>;
         using NewtonInterface = utopia::NewtonInterface<Matrix, Vector>;
 
         using FieldNonLinearSolver = utopia::Newton<Matrix, Vector>;
@@ -100,7 +100,7 @@ namespace utopia {
             std::function<void(const Vector &, Vector &)> operator_action_;
         };
 
-        TwoFieldSPIN(const std::shared_ptr<LinearSolver> &linear_solver =
+        TwoFieldSPIN(const std::shared_ptr<MatrixFreeLinearSolver> &linear_solver =
                          std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>(),
                      const std::shared_ptr<FieldNonLinearSolver> &nonlinear_solver_field1 =
                          std::make_shared<Newton<Matrix, Vector>>(),
@@ -158,7 +158,15 @@ namespace utopia {
                     auto precond = this->build_linear_preconditioner_operator();
                     linear_solver_global2_->set_preconditioner(precond);
                 } else {
-                    linear_solver_global2_->pc_type("hypre");
+                    // FIXME for Trilinos backend!
+
+                    if (Traits<Matrix>::Backend == TRILINOS) {
+                        auto params = param_list(param("pc_type", "MueLu"));
+                        linear_solver_global2_->read(params);
+                    } else if (Traits<Matrix>::Backend == PETSC) {
+                        auto params = param_list(param("pc_type", "hypre"));
+                        linear_solver_global2_->read(params);
+                    }
                 }
 
                 linear_solver_global2_->verbose(false);
@@ -922,7 +930,7 @@ namespace utopia {
         Scalar eps1_{0.2};
         Scalar eps2_{0.8};
 
-        std::shared_ptr<LinearSolver> global_linear_solver_;
+        std::shared_ptr<MatrixFreeLinearSolver> global_linear_solver_;
         std::shared_ptr<GMRES<Matrix, Vector>> linear_solver_global2_;
 
         std::shared_ptr<FieldNonLinearSolver> nonlinear_solver_field1_;

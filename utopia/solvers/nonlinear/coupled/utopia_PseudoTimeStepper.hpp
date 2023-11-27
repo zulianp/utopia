@@ -13,6 +13,8 @@ namespace utopia {
         using Traits = utopia::Traits<Matrix>;
         using Scalar = typename Traits::Scalar;
 
+        using Function<Matrix, Vector>::update;
+
         virtual ~TimeDependentFunction() {}
         virtual bool update(const Scalar t) = 0;
     };

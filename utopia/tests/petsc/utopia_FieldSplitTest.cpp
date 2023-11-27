@@ -15,6 +15,10 @@
 
 #include "utopia_Poisson1D.hpp"
 
+#ifdef UTOPIA_WITH_TRILINOS
+#include "utopia_Tpetra_Operator.hpp"
+#endif
+
 using namespace utopia;
 
 template <class Matrix, class Vector = typename Traits<Matrix>::Vector>
@@ -29,7 +33,7 @@ public:
     bool hessian(const Vector &x, Matrix &H) const override { return fun_->hessian(x, H); }
     bool value(const Vector &x, Scalar &value) const override { return fun_->value(x, value); }
     bool gradient(const Vector &x, Vector &g) const override { return fun_->gradient(x, g); }
-    void create_vector(Vector &x) const { fun_->create_vector(x); }
+    void create_vector(Vector &x) const override { fun_->create_vector(x); }
     bool update(const Scalar t) override { return true; }
 
     std::shared_ptr<Function<Matrix, Vector>> fun_;
@@ -77,9 +81,17 @@ public:
         tfa.solve(*c12, x);
     }
 
+    auto cg() -> std::shared_ptr<ConjugateGradient<Matrix, Vector, HOMEMADE>> {
+        auto ret = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+        ret->apply_gradient_descent_step(true);
+        return ret;
+    }
+
+    auto gmres() -> std::shared_ptr<GMRES<Matrix, Vector>> { return std::make_shared<GMRES<Matrix, Vector>>(); }
+
     void test_SPIN() {
         int n = 10;
-        bool verbose = false;
+        bool verbose = true;
 
         // Split-fields
         auto f1 = std::make_shared<Poisson1D<Matrix>>(n);
@@ -88,19 +100,19 @@ public:
         // Global optimization problem (coupled fields)
         auto c12 = std::make_shared<Poisson1D<Matrix>>(n);
 
-        auto nls1 = std::make_shared<Newton<Matrix>>();
-        auto nls2 = std::make_shared<Newton<Matrix>>();
+        auto nls1 = std::make_shared<Newton<Matrix>>(cg());
+        auto nls2 = std::make_shared<Newton<Matrix>>(cg());
 
         // Global linear solver
-        auto lsc12 = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
-        lsc12->apply_gradient_descent_step(true);
+        // auto lsc12 = gmres();
+        auto lsc12 = cg();
 
         nls1->verbose(verbose);
         nls2->verbose(verbose);
 
         TwoFieldSPIN<Matrix> tfa(lsc12, nls1, nls2);
         tfa.set_field_functions(f1, f2);
-        tfa.additive_precond(false);
+        // tfa.additive_precond(false);
 
         auto f1_to_c12 = [](const Vector &in, Vector &out) { out = in; };
         auto f2_to_c12 = f1_to_c12;
@@ -142,6 +154,10 @@ public:
 };
 
 void field_split() {
+#ifdef UTOPIA_WITH_TRILINOS
+    FieldSplitTestTest<TpetraMatrix, TpetraVector>().run();
+#endif
+
 #ifdef UTOPIA_WITH_PETSC
     FieldSplitTestTest<PetscMatrix, PetscVector>().run();
 #endif  // UTOPIA_WITH_PETSC

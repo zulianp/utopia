@@ -88,6 +88,12 @@ namespace utopia {
 
     template <typename Matrix, typename Vector>
     bool BelosSolver<Matrix, Vector, TRILINOS>::apply(const Vector &rhs, Vector &lhs) {
+        if (empty(lhs)) {
+            lhs.zeros(layout(rhs));
+        }
+
+        assert(!rhs.has_nan_or_inf());
+
         impl_->linear_problem =
             Teuchos::rcp(new typename Impl::ProblemType(raw_type(*this->get_operator()), raw_type(lhs), raw_type(rhs)));
 
