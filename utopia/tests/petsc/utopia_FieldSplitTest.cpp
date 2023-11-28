@@ -1,5 +1,6 @@
 #include "utopia.hpp"
 #include "utopia_Assert.hpp"
+#include "utopia_Base.hpp"
 #include "utopia_Testing.hpp"
 
 #include "utopia_InputParameters.hpp"
