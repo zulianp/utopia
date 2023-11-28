@@ -19,11 +19,10 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     class BelosSolver<Matrix, Vector, TRILINOS> : public OperatorBasedLinearSolver<Matrix, Vector> {
     public:
-        typedef UTOPIA_SCALAR(Vector) Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-        typedef utopia::Preconditioner<Vector> Preconditioner;
-        // typedef utopia::PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
+        using Preconditioner = utopia::Preconditioner<Vector>;
         using Super = utopia::OperatorBasedLinearSolver<Matrix, Vector>;
 
         struct Param {

@@ -39,7 +39,7 @@ namespace utopia {
               nonlinear_solver_field2_(std::move(nonlinear_solver_field2)),
               sol_status_spin_(this->solution_status_global()) {}
 
-        bool solve(Function<Matrix, Vector> &fun_global, Vector &x_global) {
+        bool solve(Function<Matrix, Vector> &fun_global, Vector &x_global) override {
             using namespace utopia;
 
             // x_field1_ = fun_field1_->initial_guess();

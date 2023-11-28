@@ -20,6 +20,10 @@
 #include "utopia_trilinos_GMRES.hpp"
 #endif
 
+#ifdef UTOPIA_WITH_PETSC
+#include "utopia_petsc_GMRES.hpp"
+#endif
+
 using namespace utopia;
 
 template <class Matrix, class Vector = typename Traits<Matrix>::Vector>
@@ -88,10 +92,15 @@ public:
         return ret;
     }
 
-    auto gmres() -> std::shared_ptr<MatrixFreeLinearSolver<Vector>> {
-        auto ret = std::make_shared<GMRES<Matrix, Vector>>();
-        ret->verbose(true);
-        return ret;
+    auto mf_solver() -> std::shared_ptr<MatrixFreeLinearSolver<Vector>> {
+        if constexpr (utopia::Traits<Matrix>::Backend == TRILINOS) {
+            auto ret = std::make_shared<GMRES<Matrix, Vector>>();
+            ret->verbose(true);
+            return ret;
+        } else if constexpr (utopia::Traits<Matrix>::Backend == PETSC) {
+            auto ret = std::make_shared<utopia::BiCGStab<Matrix, Vector, HOMEMADE>>();
+            return ret;
+        }
     }
 
     void test_SPIN() {
@@ -109,7 +118,7 @@ public:
         auto nls2 = std::make_shared<Newton<Matrix>>(cg());
 
         // Global linear solver
-        auto lsc12 = gmres();
+        auto lsc12 = mf_solver();
         // auto lsc12 = cg();
 
         nls1->verbose(verbose);
@@ -137,7 +146,7 @@ public:
     }
 
     void test_incremental_loading() {
-        bool verbose = true;
+        bool verbose = false;
 
         auto nlsolver = std::make_shared<Newton<Matrix>>();
         nlsolver->verbose(verbose);
@@ -149,23 +158,24 @@ public:
         poisson->create_vector(x);
         time_stepper.set_end_time(10);
         time_stepper.solve(*poisson, x);
+        disp(x);
     }
 
     void run() {
-        // UTOPIA_RUN_TEST(test_aternate_minimization);
+        UTOPIA_RUN_TEST(test_aternate_minimization);
         UTOPIA_RUN_TEST(test_SPIN);
-        // UTOPIA_RUN_TEST(test_incremental_loading);
+        UTOPIA_RUN_TEST(test_incremental_loading);
     }
 };
 
 void field_split() {
+#ifdef UTOPIA_WITH_PETSC
+    FieldSplitTestTest<PetscMatrix, PetscVector>().run();
+#endif  // UTOPIA_WITH_PETSC
+
 #ifdef UTOPIA_WITH_TRILINOS
     FieldSplitTestTest<TpetraMatrix, TpetraVector>().run();
 #endif
-
-    // #ifdef UTOPIA_WITH_PETSC
-    //     FieldSplitTestTest<PetscMatrix, PetscVector>().run();
-    // #endif  // UTOPIA_WITH_PETSC
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(field_split);
