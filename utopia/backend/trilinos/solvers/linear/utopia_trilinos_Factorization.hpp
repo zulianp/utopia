@@ -20,7 +20,7 @@ namespace utopia {
     public:
         Factorization() : Super("KLU2", {{"trans", {"Trans", "One of NOTRANS, TRANS, CONJ", "NOTRANS"}}}) {}
 
-        Factorization *clone() const override { return new Factorization(*this); }
+        auto clone() const -> Factorization* override { return new Factorization(*this); }
     };
 #endif  // UTOPIA_WITH_TRILINOS_AMESOS2
 }  // namespace utopia
