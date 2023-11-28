@@ -343,7 +343,7 @@ namespace utopia {
 
     void PetscVector::convert_from(const Vec &vec) { copy_from(vec); }
 
-    void PetscVector::convert_to(Vec &vec) const { check_error(VecCopy(raw_type(), vec)); }
+    void PetscVector::convert_to(Vec vec) const { check_error(VecCopy(raw_type(), vec)); }
 
     bool PetscVector::read(MPI_Comm comm, const std::string &path) {
 #ifdef UTOPIA_WITH_MATRIX_IO
@@ -688,6 +688,19 @@ namespace utopia {
         assert(v);
         vec_ = v;
         owned_ = false;
+        // has to be
+        initialized_ = true;
+        immutable_ = false;
+
+        update_mirror();
+    }
+
+    void PetscVector::own(Vec &v) {
+        destroy();
+
+        assert(v);
+        vec_ = v;
+        owned_ = true;
         // has to be
         initialized_ = true;
         immutable_ = false;

@@ -16,9 +16,9 @@ namespace utopia {
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
         using Preconditioner = utopia::Preconditioner<Vector>;
-        typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
-        typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
-        typedef utopia::PreconditionedSolverInterface<Vector> PreconditionedSolverInterface;
+        using IterativeSolver = utopia::IterativeSolver<Matrix, Vector>;
+        using LinearSolver = utopia::LinearSolver<Matrix, Vector>;
+        using PreconditionedSolverInterface = utopia::PreconditionedSolverInterface<Vector>;
 
         using PreconditionedSolverInterface::update;
 

@@ -764,12 +764,13 @@ namespace utopia {
         bool is_consistent() const;
 
         void convert_from(const Vec &vec);
-        void convert_to(Vec &vec) const;
+        void convert_to(Vec vec) const;
         void copy_data_to(Vec vec) const;
         void copy_data_from(Vec vec);
 
         void wrap(Vec &v);
         void unwrap(Vec &v) const;
+        void own(Vec &v);
 
         inline void ghosted(const SizeType &local_size,
                             const SizeType &global_size,

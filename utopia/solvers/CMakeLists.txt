@@ -23,6 +23,7 @@ list(
     nonlinear/trust_region
     nonlinear/trust_region/QP_subproblems
     nonlinear/hessian_approximations
+    nonlinear/coupled
     preconditioners
     saddlepoint)
 
