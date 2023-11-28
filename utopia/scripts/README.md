@@ -29,5 +29,5 @@ Where:
 ## Extra
 You can also run the different build scripts individually. For example:
 ```
-./scripts/make_all.sh <n_jobs> <prefix>
+./scripts/make_all.sh <n_jobs> <install_prefix>
 ```
