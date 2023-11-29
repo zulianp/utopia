@@ -11,6 +11,8 @@
 #include "utopia_Instance.hpp"
 #include "utopia_MPI.hpp"
 
+#include <filesystem>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -65,6 +67,7 @@ namespace utopia {
 
             // inline double value() const override { return value_; }
             virtual double value() const { return value_; }
+            virtual double time_derivative() const { return 0; }
             bool is_uniform() const override { return true; }
 
             UniformCondition() = default;
@@ -203,6 +206,139 @@ namespace utopia {
                 os << "value:\t" << expr_->to_string() << '\n';
             }
         };
+
+        class SignalCondition : public TimeDependentCondition {
+        public:
+            using Super = TimeDependentCondition;
+            static constexpr const char *class_name() { return "SignalCondition"; }
+
+            std::vector<float> time_;
+            std::vector<float> signal_;
+            double t_{0};
+            bool verbose_{false};
+            double derivative_{0};
+
+            double interpolate(const double t) const {
+                auto iter = std::lower_bound(time_.begin(), time_.end(), t_);
+                if (iter == time_.end() || iter - 1 < time_.begin()) {
+                    if (!mpi_world_rank()) {
+                        utopia::err() << "Requested time: " << t_ << "\n";
+                        utopia::err() << "Found index: " << std::distance(time_.begin(), iter) << "\n";
+                    }
+
+                    Utopia::Abort("SignalCondition! Invalid time query!");
+                }
+
+#ifndef NDEBUG
+                const ptrdiff_t n = time_.size();
+#endif
+
+                const ptrdiff_t i0 = std::distance(time_.begin(), iter - 1);
+                const ptrdiff_t i1 = std::distance(time_.begin(), iter);
+
+                assert(i0 >= 0);
+                assert(i0 < n);
+
+                assert(i1 >= 0);
+                assert(i1 < n);
+
+                double t0 = time_[i0];
+                double t1 = time_[i1];
+
+                assert(t0 != t1);
+
+                double w0 = (t1 - t) / (t1 - t0);
+                double w1 = (t - t0) / (t1 - t0);
+
+                double f0 = signal_[i0];
+                double f1 = signal_[i1];
+
+                double f = f0 * w0 + f1 * w1;
+
+                if (verbose_ && !mpi_world_rank()) {
+                    utopia::out() << "SignalCondition::value(" << t_ << ") = " << f << "\n";
+                    utopia::out() << "t0 " << t0 << "\n";
+                    utopia::out() << "t1 " << t1 << "\n";
+                    utopia::out() << "w0 " << w0 << "\n";
+                    utopia::out() << "w1 " << w1 << "\n";
+                    utopia::out() << "f0 " << f0 << "\n";
+                    utopia::out() << "f1 " << f1 << "\n";
+                }
+
+                return f;
+            }
+
+            void update(const SimulationTime<double> &t) override {
+                t_ = t.get();
+
+                const double f = interpolate(t_);
+                const double fp1 = interpolate(t_ + t.delta());
+                this->value_ = f;
+                this->derivative_ = (fp1 - f) / t.delta();
+            }
+
+            double time_derivative() const override { return this->derivative_; }
+
+            bool has_time_derivative() const override { return true; }
+
+            SignalCondition() : Super() {}
+
+            SignalCondition(std::string name, const int component) : Super(std::move(name), "1", component) {}
+
+            static void read_file(const std::string &path, std::vector<float> &data)
+
+            {
+                std::ifstream is(path, std::ios::binary);
+                if (!is.good()) {
+                    if (!mpi_world_rank()) {
+                        utopia::err() << "Unable to read file " << path << "\n";
+                    }
+                    Utopia::Abort("Aborting..");
+                }
+
+                std::streamsize size = static_cast<std::streamsize>(std::filesystem::file_size(path));
+                data.resize(size / sizeof(float));
+                is.read((char *)&data[0], size);
+                is.close();
+            }
+            void read(Input &in) override {
+                Super::read(in);
+
+                std::string time_file;
+                in.require("time", time_file);
+
+                std::string signal_file;
+                in.require("signal", signal_file);
+
+                read_file(time_file, time_);
+                read_file(signal_file, signal_);
+
+                if (time_.size() != signal_.size()) {
+                    if (!mpi_world_rank()) {
+                        utopia::err() << "Time and signal have different sizes! " << time_.size() << " != "
+                                      << "\n";
+                    }
+
+                    Utopia::Abort("Aborting..");
+                }
+
+                in.get("verbose", verbose_);
+                if (verbose_ && !mpi_world_rank()) {
+                    size_t n = time_.size();
+
+                    utopia::out() << "time\tsignal\n";
+
+                    for (size_t i = 0; i < n; i++) {
+                        utopia::out() << time_[i] << "\t" << signal_[i] << "\n";
+                    }
+                }
+            }
+
+            void describe(std::ostream &os) const override {
+                Super::describe(os);
+                os << "signal with size " << signal_.size() << "\n";
+            }
+        };
 #endif  // UTOPIA_WITH_TINY_EXPR
 
         class OverwriteCondition : public Condition {
@@ -251,6 +387,8 @@ namespace utopia {
                 } else if (type == VaryingCondition::class_name()) {
                     // printf("VaryingCondition\n");
                     c = std::make_shared<VaryingCondition>();
+                } else if (type == SignalCondition::class_name()) {
+                    c = std::make_shared<SignalCondition>();
                 } else
 #endif  // UTOPIA_WITH_TINY_EXPR
                     if (type.empty() || type == UniformCondition::class_name()) {
@@ -276,8 +414,9 @@ namespace utopia {
                 if (type == TimeDependentCondition::class_name()) {
                     c = std::make_shared<TimeDependentCondition>();
                 } else if (type == VaryingCondition::class_name()) {
-                    // printf("VaryingCondition\n");
                     c = std::make_shared<VaryingCondition>();
+                } else if (type == SignalCondition::class_name()) {
+                    c = std::make_shared<SignalCondition>();
                 } else
 #endif  // UTOPIA_WITH_TINY_EXPR
                     if (type.empty() || type == UniformCondition::class_name()) {
@@ -294,7 +433,7 @@ namespace utopia {
         }
 
         void describe(std::ostream &os) const override {
-            os << "DirichletBoundary:\n";
+            os << "DirichletBoundary(" << conditions.size() << "):\n";
             for (auto &c : conditions) {
                 if (c) c->describe(os);
             }

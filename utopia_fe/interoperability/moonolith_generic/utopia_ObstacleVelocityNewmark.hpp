@@ -167,6 +167,7 @@ namespace utopia {
             in.get("damping", damping_);
             in.get("allow_projection", allow_projection_);
             in.get("non_smooth_projection", non_smooth_projection_);
+            in.get("max_projection_iterations", max_projection_iterations_);
 
             if (!obstacle_) {
                 std::string type;
@@ -277,6 +278,7 @@ namespace utopia {
 
             Matrix_t H_c;
             obstacle_->transform(H, H_c);
+            qp_solver.max_it(max_projection_iterations_);
             qp_solver.solve(H_c, buff_2, buff_1);
 
             Scalar_t diff_x = norm2(buff_1);
@@ -510,6 +512,7 @@ namespace utopia {
         bool verbose_{false};
         bool zero_initial_guess_{true};
         bool non_smooth_projection_{false};
+        int max_projection_iterations_{10000};
 
         Scalar_t damping_{0.98};
 
