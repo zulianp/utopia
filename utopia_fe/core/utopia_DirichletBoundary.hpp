@@ -285,9 +285,7 @@ namespace utopia {
 
             SignalCondition(std::string name, const int component) : Super(std::move(name), "1", component) {}
 
-            static void read_file(const std::string &path, std::vector<float> &data)
-
-            {
+            static void read_file(const std::string &path, std::vector<float> &data) {
                 std::ifstream is(path, std::ios::binary);
                 if (!is.good()) {
                     if (!mpi_world_rank()) {
@@ -301,6 +299,7 @@ namespace utopia {
                 is.read((char *)&data[0], size);
                 is.close();
             }
+
             void read(Input &in) override {
                 Super::read(in);
 
