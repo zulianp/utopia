@@ -1,6 +1,6 @@
-if(KOKKOS_FOUND)
+if(Kokkos_FOUND)
 
-  list(APPEND KOKKOS_MODULES . assembly fe geom kernels mesh sampler utils)
+  list(APPEND KOKKOS_MODULES . assembly fe geom kernels mesh sampler utils assembly/old)
   message(STATUS "KOKKOS_MODULES:${KOKKOS_MODULES}")
 
   scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "${KOKKOS_MODULES}"

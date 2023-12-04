@@ -1,4 +1,4 @@
-if(PETSC_FOUND)
+# if(PETSc_FOUND)
   list(APPEND PETSC_MODULES .)
 
   scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "${PETSC_MODULES}"
@@ -15,7 +15,7 @@ if(PETSC_FOUND)
   set(UTOPIA_FE_SOURCES
       ${UTOPIA_FE_SOURCES}
       PARENT_SCOPE)
-endif()
+# endif()
 
 
 # utopiafe_add_module(utopia_petsc_dm ${CMAKE_CURRENT_SOURCE_DIR} ".")

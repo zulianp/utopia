@@ -69,31 +69,17 @@ if(UTOPIA_ENABLE_INTREPID2)
     $ENV{TRILINOS_DIR}/lib/cmake/Kokkos
     ${Trilinos_DIR}/../Kokkos
     REQUIRED)
-
-  if(Kokkos_FOUND)
-    list(APPEND UTOPIA_FE_MODULES backend/kokkos)
-  endif()
 endif()
 
 if(UTOPIA_ENABLE_MARS)
   find_package(Mars 0 REQUIRED)
 
-  message(STATUS "MARS_LIBRARIES=${MARS_LIBRARIES}")
+  message(STATUS "MARS_LIBRARIES=${Mars_LIBRARIES}")
   if(UTOPIA_ENABLE_MARS_VTK)
     find_package(
       VTK
       COMPONENTS vtkCommonCore vtkCommonDataModel vtkFiltersGeneral vtkIOXML
                  vtkIOParallel vtkIOParallelXML
       REQUIRED)
-
-    if(VTK_FOUND)
-      # target_link_libraries(utopia_mars PUBLIC ${VTK_LIBRARIES})
-
-      # set(UTOPIA_ENABLE_VTK TRUE PARENT_SCOPE)
-
-    else()
-      message(FATAL_ERROR "VTK not FOUND")
-    endif()
   endif()
-
 endif()
