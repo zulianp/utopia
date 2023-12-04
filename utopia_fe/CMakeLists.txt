@@ -71,6 +71,13 @@ endif()
 #   list(APPEND UTOPIA_FE_MODULES backend/arborx)
 # endif()
 
+get_cmake_property(_variableNames VARIABLES)
+  list (SORT _variableNames)
+  foreach (_variableName ${_variableNames})
+      message(STATUS "${_variableName}=${${_variableName}}")
+  endforeach()
+
+
 
 foreach(MODULE ${UTOPIA_FE_MODULES})
   add_subdirectory("${MODULE}")
@@ -85,12 +92,6 @@ list(APPEND UTOPIA_FE_HEADERS utopia_fe.hpp)
 # message(STATUS "UTOPIA_FE_SOURCES:${UTOPIA_FE_SOURCES}")
 # message(STATUS "UTOPIA_FE_HEADERS:${UTOPIA_FE_HEADERS}")
 # message(STATUS "UTOPIA_FE_BUILD_INCLUDES:${UTOPIA_FE_BUILD_INCLUDES}")
-
-# get_cmake_property(_variableNames VARIABLES)
-#   list (SORT _variableNames)
-#   foreach (_variableName ${_variableNames})
-#       message(STATUS "${_variableName}=${${_variableName}}")
-#   endforeach()
 
 add_library(utopia_fe ${UTOPIA_FE_SOURCES} ${UTOPIA_FE_HEADERS})
 
