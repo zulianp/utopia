@@ -26,6 +26,12 @@ namespace utopia {
         virtual bool gradient(const Vector & /*x*/, Vector & /*g*/) const = 0;
         virtual bool update(const Vector & /*x*/) { return true; }
         virtual bool project_onto_feasibile_region(Vector & /*x*/) const { return true; }
+
+        virtual bool value_and_gradient(const Vector &x, Scalar &val, Vector &grad) const {
+            return this->value(x, val) && this->gradient(x, grad);
+        }
+
+        virtual void create_vector(Vector &) const {}
     };
 
     template <class Matrix, class Vector, int Backend = Traits<Vector>::Backend>

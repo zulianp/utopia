@@ -198,15 +198,42 @@ namespace utopia {
         }
     }
 
+    // void ExtractSurface<utopia::stk::Mesh, utopia::sfem::Mesh>::apply(const utopia::stk::Mesh &in,
+    //                                                                   utopia::sfem::Mesh &out) {
+    //     UTOPIA_TRACE_SCOPE("ExtractSurface::apply");
+
+    //     auto &meta_data = in.meta_data();
+    //     auto &bulk_data = in.bulk_data();
+    //     auto topo = meta_data.side_rank();
+
+    //     extract_selection(bulk_data, meta_data.locally_owned_part(), topo, out);
+    // }
+
     void ExtractSurface<utopia::stk::Mesh, utopia::sfem::Mesh>::apply(const utopia::stk::Mesh &in,
-                                                                      utopia::sfem::Mesh &out) {
+                                                                      utopia::sfem::Mesh &out,
+                                                                      const std::vector<std::string> &exclude) {
         UTOPIA_TRACE_SCOPE("ExtractSurface::apply");
 
         auto &meta_data = in.meta_data();
         auto &bulk_data = in.bulk_data();
         auto topo = meta_data.side_rank();
 
-        extract_selection(bulk_data, meta_data.locally_owned_part(), topo, out);
+        if (exclude.empty()) {
+            extract_selection(bulk_data, meta_data.locally_owned_part(), topo, out);
+            return;
+
+        } else {
+            ::stk::mesh::Selector selector = meta_data.locally_owned_part();
+
+            for (auto &name : exclude) {
+                auto *part = meta_data.get_part(name);
+                if (part) {
+                    selector &= !*part;
+                }
+            }
+
+            extract_selection(bulk_data, selector, topo, out);
+        }
     }
 
 }  // namespace utopia

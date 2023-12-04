@@ -5,8 +5,13 @@
 #if (TRILINOS_MAJOR_MINOR_VERSION >= 140000)
 #include <Tpetra_KokkosCompat_DefaultNode.hpp>
 #else
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130500)
+#include <KokkosCompat_DefaultNode.hpp>
+#else
 #include <Kokkos_DefaultNode.hpp>
 #endif
+#endif
+
 #include <Tpetra_Operator.hpp>
 #include <vector>
 #include "utopia_Base.hpp"
