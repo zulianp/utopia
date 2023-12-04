@@ -13,25 +13,26 @@
 
 #include <climits>
 #include <cmath>
-#include "hyperelasticity.h"
+#include "NLViscoElast.h"
 
 #include "utopia.hpp"
 
 using namespace dolfinx;
 using T = PetscScalar;
 
-std::shared_ptr<DolfinxFunction> hyperelasticity(
+std::shared_ptr<DolfinxFunction> NLViscoElast(
     const std::shared_ptr<fem::FunctionSpace<T>> &V,
     std::shared_ptr<dolfinx::fem::Function<T>> u,
+    std::shared_ptr<dolfinx::fem::Function<T>> u_old,
     std::vector<std::shared_ptr<const fem::DirichletBC<T>>> boundary_conditions) {
     auto objective = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_hyperelasticity_Pi, {}, {{"u", u}}, {}, {}, V->mesh()));
+        fem::create_form<T>(*form_NLViscoElast_energy, {}, {{"u", u}, {"u_old", u_old}}, {}, {}, V->mesh()));
 
-    auto gradient =
-        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_hyperelasticity_F_form, {V}, {{"u", u}}, {}, {}));
+    auto gradient = std::make_shared<fem::Form<T>>(
+        fem::create_form<T>(*form_NLViscoElast_gradient, {V}, {{"u", u}, {"u_old", u_old}}, {}, {}));
 
-    auto hessian =
-        std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_hyperelasticity_J_form, {V, V}, {{"u", u}}, {}, {}));
+    auto hessian = std::make_shared<fem::Form<T>>(
+        fem::create_form<T>(*form_NLViscoElast_hessian, {V, V}, {{"u", u}, {"u_old", u_old}}, {}, {}));
 
     return std::make_shared<DolfinxFunction>(V, u, objective, gradient, hessian, boundary_conditions);
 }
@@ -66,37 +67,39 @@ int main(int argc, char *argv[]) {
                                                              mesh::create_cell_partitioner(mesh::GhostMode::none)));
 
         auto V = std::make_shared<fem::FunctionSpace<T>>(
-            fem::create_functionspace(functionspace_form_hyperelasticity_F_form, "u", mesh));
+            fem::create_functionspace(functionspace_form_NLViscoElast_gradient, "u", mesh));
 
         // Define solution function
         auto u = std::make_shared<fem::Function<T>>(V);
+        auto u_old = std::make_shared<fem::Function<T>>(V);
 
-        auto u_rotation = std::make_shared<fem::Function<T>>(V);
-        u_rotation->interpolate([](auto x) -> std::pair<std::vector<T>, std::vector<std::size_t>> {
-            constexpr T scale = 0.005;
 
-            // Center of rotation
-            constexpr T x1_c = 0.5;
-            constexpr T x2_c = 0.5;
+        // auto u_rotation = std::make_shared<fem::Function<T>>(V);
+        // u_rotation->interpolate([](auto x) -> std::pair<std::vector<T>, std::vector<std::size_t>> {
+        //     constexpr T scale = 0.005;
 
-            // Large angle of rotation (60 degrees)
-            constexpr T theta = 1.04719755;
+        //     // Center of rotation
+        //     constexpr T x1_c = 0.5;
+        //     constexpr T x2_c = 0.5;
 
-            // New coordinates
-            std::vector<T> fdata(3 * x.extent(1), 0.0);
-            MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<
-                T,
-                MDSPAN_IMPL_STANDARD_NAMESPACE::extents<std::size_t, 3, MDSPAN_IMPL_STANDARD_NAMESPACE::dynamic_extent>>
-                f(fdata.data(), 3, x.extent(1));
-            for (std::size_t p = 0; p < x.extent(1); ++p) {
-                T x1 = x(1, p);
-                T x2 = x(2, p);
-                f(1, p) = scale * (x1_c + (x1 - x1_c) * std::cos(theta) - (x2 - x2_c) * std::sin(theta) - x1);
-                f(2, p) = scale * (x2_c + (x1 - x1_c) * std::sin(theta) - (x2 - x2_c) * std::cos(theta) - x2);
-            }
+        //     // Large angle of rotation (60 degrees)
+        //     constexpr T theta = 1.04719755;
 
-            return {std::move(fdata), {3, x.extent(1)}};
-        });
+        //     // New coordinates
+        //     std::vector<T> fdata(3 * x.extent(1), 0.0);
+        //     MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<
+        //         T,
+        //         MDSPAN_IMPL_STANDARD_NAMESPACE::extents<std::size_t, 3, MDSPAN_IMPL_STANDARD_NAMESPACE::dynamic_extent>>
+        //         f(fdata.data(), 3, x.extent(1));
+        //     for (std::size_t p = 0; p < x.extent(1); ++p) {
+        //         T x1 = x(1, p);
+        //         T x2 = x(2, p);
+        //         f(1, p) = scale * (x1_c + (x1 - x1_c) * std::cos(theta) - (x2 - x2_c) * std::sin(theta) - x1);
+        //         f(2, p) = scale * (x2_c + (x1 - x1_c) * std::sin(theta) - (x2 - x2_c) * std::cos(theta) - x2);
+        //     }
+
+        //     return {std::move(fdata), {3, x.extent(1)}};
+        // });
 
         // Create Dirichlet boundary conditions
         auto bdofs_left = fem::locate_dofs_geometrical(*V, [](auto x) {
@@ -116,14 +119,11 @@ int main(int argc, char *argv[]) {
             return marker;
         });
         auto bcs = std::vector{std::make_shared<const fem::DirichletBC<T>>(std::vector<T>{0, 0, 0}, bdofs_left, V),
-                               std::make_shared<const fem::DirichletBC<T>>(u_rotation, bdofs_right)};
+                               // std::make_shared<const fem::DirichletBC<T>>(u_rotation, bdofs_right)
+                               std::make_shared<const fem::DirichletBC<T>>(std::vector<T>{0.5, 0, 0}, bdofs_right, V)
+                           };
 
-        auto problem = hyperelasticity(V, u, bcs);
-
-        la::petsc::Vector _u(la::petsc::create_vector_wrap(*u->x()), false);
-
-        /////////////////////////////////////////////////////////
-        /// Plug-in Utopia HERE
+        auto problem = NLViscoElast(V, u, u_old, bcs);
 
         utopia::Newton<utopia::PetscMatrix, utopia::PetscVector> newton(
             std::make_shared<utopia::ConjugateGradient<utopia::PetscMatrix, utopia::PetscVector, utopia::HOMEMADE>>()
@@ -133,37 +133,20 @@ int main(int argc, char *argv[]) {
         newton.verbose(true);
         utopia::PetscVector solution;
         problem->create_vector(solution);
-        newton.solve(*problem, solution);
 
-        /////////////////////////////////////////////////////////
-
-        // Compute Cauchy stress
-        // Construct appropriate Basix element for stress
-        // constexpr auto family = basix::element::family::P;
-        // const auto cell_type = mesh::cell_type_to_basix_type(mesh->topology().cell_type());
-        // constexpr auto variant = basix::element::lagrange_variant::equispaced;
-        // constexpr int k = 0;
-        // constexpr bool discontinuous = true;
-
-        // const basix::FiniteElement S_element = basix::create_element(family, cell_type, k, variant, discontinuous);
-        // auto S = std::make_shared<fem::FunctionSpace<T>>(
-        //     fem::create_functionspace(mesh, S_element, pow(mesh->geometry().dim(), 2)));
-
-        // const auto sigma_expression =
-        //     fem::create_expression<T>(*expression_hyperelasticity_sigma, {{"u", u}}, {}, mesh);
-
-        // auto sigma = fem::Function<T>(S);
-        // sigma.name = "cauchy_stress";
-        // sigma.interpolate(sigma_expression);
-
-        // Save solution in VTK format
+        // io::VTKFile file_u(mesh->comm(), "steady.pvd", "w");
         io::VTKFile file_u(mesh->comm(), "u.pvd", "w");
-        file_u.write<T>({*u}, 0.0);
 
-        // Save Cauchy stress in XDMF format
-        // io::XDMFFile file_sigma(mesh->comm(), "sigma.xdmf", "w");
-        // file_sigma.write_mesh(*mesh);
-        // file_sigma.write_function(sigma, 0.0);
+        Vec u_petsc = la::petsc::create_vector_wrap(*u->x());
+        Vec u_old_petsc = la::petsc::create_vector_wrap(*u_old->x());
+
+        for(int t = 0; t < 100; t++) {
+            newton.solve(*problem, solution);
+            file_u.write<T>({*u}, t * 0.01);
+
+            VecCopy(u_petsc, u_old_petsc);
+
+        }
     }
 
     // PetscFinalize();

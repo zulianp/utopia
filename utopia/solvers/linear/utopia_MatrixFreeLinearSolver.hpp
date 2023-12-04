@@ -46,8 +46,10 @@ namespace utopia {
 
         OperatorBasedLinearSolver() = default;
 
-        OperatorBasedLinearSolver<Matrix, Vector>(const OperatorBasedLinearSolver<Matrix, Vector> &other)
-            : PreconditionedSolverInterface<Vector>(other), MatrixFreeLinearSolver<Vector>(other), PreconditionedSolver<Matrix, Vector>(other) {}
+        OperatorBasedLinearSolver(const OperatorBasedLinearSolver &other)
+            : PreconditionedSolverInterface<Vector>(other),
+              MatrixFreeLinearSolver<Vector>(other),
+              PreconditionedSolver<Matrix, Vector>(other) {}
 
         bool solve(const Matrix &A, const Vector &b, Vector &x) override {
             update(make_ref(A));
@@ -80,10 +82,10 @@ namespace utopia {
             return solve(operator_cast<Vector>(*this->get_operator()), b, x);
         }
 
-        virtual OperatorBasedLinearSolver *clone() const = 0;
-        OperatorBasedLinearSolver &operator=(const OperatorBasedLinearSolver &other)
-        {
-            if(this == &other) return *this;
+        OperatorBasedLinearSolver *clone() const override = 0;
+
+        OperatorBasedLinearSolver &operator=(const OperatorBasedLinearSolver &other) {
+            if (this == &other) return *this;
             MatrixFreeLinearSolver<Vector>::operator=(other);
             PreconditionedSolver<Matrix, Vector>::operator=(other);
             return *this;
