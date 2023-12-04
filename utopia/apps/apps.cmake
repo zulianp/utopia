@@ -1,7 +1,7 @@
 set(APPS_MODULES "")
 set(UTOPIA_APPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/apps)
 
-if(UTOPIA_PETSC)
+if(UTOPIA_ENABLE_PETSC)
     list(
         APPEND
         APPS_MODULES
@@ -18,8 +18,6 @@ if(UTOPIA_PETSC)
         qp_solve
         nlsolve
         utilities)
-
-    message(STATUS "HI: ${APPS_MODULES}")
 
     if(UTOPIA_ENABLE_VC)
         # Requires petsc
