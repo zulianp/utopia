@@ -20,7 +20,7 @@ prefix=$2
 
 # Should check env for trilinos_dir but for now leave like this.
 _avflow_mode(){
-	cmake $SCRIPT_DIR/../ -DUTOPIA_ENABLE_TRILINOS=OFF -DUTOPIA_ENABLE_PETSC=ON -DUTOPIA_ENABLE_LIBMESH=ON -DCMAKE_INSTALL_PREFIX=$prefix
+	cmake $SCRIPT_DIR/../ -DUTOPIA_ENABLE_PETSC=ON -DUTOPIA_ENABLE_LIBMESH=ON -DCMAKE_INSTALL_PREFIX=$prefix
 	make -j$N_THREADS
 	./utopia_test
 	./utopia_bench

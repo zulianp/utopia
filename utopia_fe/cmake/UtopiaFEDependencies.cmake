@@ -72,7 +72,28 @@ if(UTOPIA_ENABLE_INTREPID2)
 endif()
 
 if(UTOPIA_ENABLE_MARS)
-  find_package(Mars 0 REQUIRED)
+  set(MARS_SEARCH_PATHS "/usr/local/;/usr/;${MARS_DIR}
+        ${MARS_INCLUDES}")
+
+  if(UTOPIA_ENABLE_ENV_READ)
+    set(MARS_SEARCH_PATHS "${MARS_SEARCH_PATHS};$ENV{MARS_DIR};$ENV{Mars_DIR}")
+  endif()
+
+  find_package(
+    Mars
+    CONFIG
+    HINTS
+    ${MARS_SEARCH_PATHS}
+    PATH_SUFFIXES
+    lib/cmake
+    REQUIRED)
+
+  if(Mars_FOUND)
+    message(STATUS "Mars found.")
+    list(APPEND UTOPIA_FE_BUILD_INCLUDES ${Mars_INCLUDES})
+    list(APPEND UTOPIA_FE_DEP_LIBRARIES ${Mars_LIBRARIES})
+    list(APPEND UTOPIA_FE_DEP_INCLUDES ${Mars_INCLUDES})
+  endif()
 
   message(STATUS "MARS_LIBRARIES=${Mars_LIBRARIES}")
   if(UTOPIA_ENABLE_MARS_VTK)

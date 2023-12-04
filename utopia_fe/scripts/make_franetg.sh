@@ -20,7 +20,7 @@ prefix=$2
 
 # Should check env for trilinos_dir but for now leave like this.
 _franetg_mode(){
-	cmake .. -DUTOPIA_ENABLE_TRILINOS=ON -DUTOPIA_ENABLE_MARS=ON -DCMAKE_INSTALL_PREFIX=$prefix
+	cmake .. -DUTOPIA_ENABLE_MARS=ON -DCMAKE_INSTALL_PREFIX=$prefix
 
 	read -p "Continue ? y/n" -n 1 -r
 	echo    # (optional) move to a new line

@@ -1,4 +1,4 @@
-if(MARS_FOUND)
+if(Mars_FOUND)
     list(APPEND MARS_MODULES . assemblers io fe)
 
   scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "${MARS_MODULES}"

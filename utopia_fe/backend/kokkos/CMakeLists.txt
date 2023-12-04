@@ -20,7 +20,6 @@ if(Kokkos_FOUND)
     fe
     fe/generated
     fe/lagrange
-
     geom
     kernels
     kernels/mech
@@ -28,6 +27,7 @@ if(Kokkos_FOUND)
     mesh
     sampler
     utils)
+  
   message(STATUS "KOKKOS_MODULES:${KOKKOS_MODULES}")
 
   scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "${KOKKOS_MODULES}"
