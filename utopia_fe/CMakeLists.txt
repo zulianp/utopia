@@ -43,9 +43,9 @@ if(UTOPIA_ENABLE_MOONOLITH)
   list(APPEND UTOPIA_FE_MODULES backend/moonolith)
 endif()
 
-# if(UTOPIA_ENABLE_STK)
-#   list(APPEND UTOPIA_FE_MODULES backend/stk)
-# endif()
+if(UTOPIA_ENABLE_STK)
+  list(APPEND UTOPIA_FE_MODULES backend/stk)
+endif()
 
 # if(UTOPIA_ENABLE_PETSC)
 #   list(APPEND UTOPIA_FE_MODULES backend/petsc)
@@ -53,29 +53,24 @@ endif()
 
 # # ##############################################################################
 
-# if(UTOPIA_ENABLE_INTREPID2
-#    OR UTOPIA_ENABLE_MARS
-#    OR UTOPIA_ENABLE_LIBMESH_KOKKOS)
-#   list(APPEND UTOPIA_FE_MODULES backend/kokkos)
-# endif()
+if(UTOPIA_ENABLE_INTREPID2)
+  list(APPEND UTOPIA_FE_MODULES backend/intrepid2)
+endif()
 
-# if(UTOPIA_ENABLE_INTREPID2)
-#   list(APPEND UTOPIA_FE_MODULES backend/intrepid2)
-# endif()
 
-# if(UTOPIA_ENABLE_MARS)
-#   list(APPEND UTOPIA_FE_MODULES backend/mars)
-# endif()
+if(UTOPIA_ENABLE_MARS)
+  list(APPEND UTOPIA_FE_MODULES backend/mars)
+endif()
 
 # if(UTOPIA_ENABLE_ARBORX)
 #   list(APPEND UTOPIA_FE_MODULES backend/arborx)
 # endif()
 
-get_cmake_property(_variableNames VARIABLES)
-  list (SORT _variableNames)
-  foreach (_variableName ${_variableNames})
-      message(STATUS "${_variableName}=${${_variableName}}")
-  endforeach()
+# get_cmake_property(_variableNames VARIABLES)
+#   list (SORT _variableNames)
+#   foreach (_variableName ${_variableNames})
+#       message(STATUS "${_variableName}=${${_variableName}}")
+#   endforeach()
 
 
 

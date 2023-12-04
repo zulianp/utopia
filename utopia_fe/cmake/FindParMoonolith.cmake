@@ -2,14 +2,18 @@
 
 if(UTOPIA_ENABLE_MOONOLITH)
 
+    set(UTOPIA_MOONOLITH_SEARCH_PATHS "${MOONOLITH_DIR};${MOONOLITH_DIR}/lib/cmake")
+
+    if(UTOPIA_ENABLE_ENV_READ)
+        set(UTOPIA_MOONOLITH_SEARCH_PATHS "${UTOPIA_MOONOLITH_SEARCH_PATHS};$ENV{MOONOLITH_DIR};$ENV{MOONOLITH_DIR}/lib/cmake")
+    endif()
+
     find_package(
         ParMoonolith
         CONFIG
         HINTS
-        ${MOONOLITH_DIR}
-        ${MOONOLITH_DIR}/lib/cmake
-        $ENV{MOONOLITH_DIR}
-        $ENV{MOONOLITH_DIR}/lib/cmake)
+        ${UTOPIA_MOONOLITH_SEARCH_PATHS}
+        )
 
     if(ParMoonolith_FOUND)
         message(STATUS "Found ParMoonolith by config file")
