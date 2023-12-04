@@ -292,6 +292,11 @@ namespace utopia {
             return false;
         }
 
+        bool SDF::to_mesh(const Mesh &mesh, Vector &field) {
+            Vector dump;
+            return to_mesh(mesh, field, dump);
+        }
+
         bool SDF::to_mesh(const Mesh &mesh, Vector &field, Vector &grad_field) {
             if (interpolate()) {
                 return interpolate_to_mesh(mesh, field, grad_field);
