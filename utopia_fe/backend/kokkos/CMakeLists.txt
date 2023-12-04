@@ -1,6 +1,33 @@
 if(Kokkos_FOUND)
 
-  list(APPEND KOKKOS_MODULES . assembly fe geom kernels mesh sampler utils assembly/old)
+  list(
+    APPEND
+    KOKKOS_MODULES
+    .
+    assembly
+    assembly/flow
+    assembly/generated
+    assembly/mech
+    assembly/mech/old
+    assembly/mech/generated
+    assembly/mech/generated/2D
+    assembly/mech/generated/3D
+    assembly/old
+    assembly/phase_field
+    assembly/phase_field/old
+    assembly/thermo_elasticity
+    assembly/thermo_elasticity/old
+    fe
+    fe/generated
+    fe/lagrange
+
+    geom
+    kernels
+    kernels/mech
+    kernels/thermo_elasticity
+    mesh
+    sampler
+    utils)
   message(STATUS "KOKKOS_MODULES:${KOKKOS_MODULES}")
 
   scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "${KOKKOS_MODULES}"
