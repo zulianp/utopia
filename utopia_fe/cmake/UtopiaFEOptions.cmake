@@ -17,6 +17,7 @@ option(UTOPIA_ENABLE_INTREPID2 "Tries to use the intrepid2 related features"
        OFF)
 option(UTOPIA_ENABLE_NEW_TRANSFER "Use new transfer features" ON)
 # option(UTOPIA_INSTALL_LIBMESH "install libmesh" OFF)
+option(UTOPIA_INSTALL_MOONOLITH "Local install of par_moonolith." OFF)
 option(UTOPIA_ENABLE_WARNINGS "Compiler warnings" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
 
