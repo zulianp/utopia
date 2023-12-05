@@ -1,6 +1,7 @@
 #ifndef UTOPIA_SDF_RESAMPLE_IMPL_HPP
 #define UTOPIA_SDF_RESAMPLE_IMPL_HPP
 
+#include <petscvec.h>
 #include "utopia_Epsilon.hpp"
 #include "utopia_Input.hpp"
 #include "utopia_fe_Core.hpp"
@@ -11,6 +12,7 @@
 #include "utopia_make_unique.hpp"
 #include "utopia_stk_DofMap.hpp"
 
+#include <utopia_Enums.hpp>
 #include <vector>
 
 namespace utopia {
@@ -24,12 +26,14 @@ namespace utopia {
         std::vector<std::string> exclude;
 
         Scalar shift{0};
+        Scalar infinity{1e10};
 
         void read(Input &in) override {
             sdf.read(in);
 
             in.get("verbose", verbose);
             in.get("shift", shift);
+            in.get("infinity", infinity);
 
             in.get("exclude", [&](Input &list) {
                 list.get_all([&](Input &node) {
@@ -43,6 +47,12 @@ namespace utopia {
         void resample_to_mesh_surface_of(FunctionSpace &space, Vector &out) {
             typename FunctionSpace::Mesh surface_mesh;
             extract_surface(space.mesh(), mesh, exclude);
+
+            if (false)  //
+            {
+                static int export_mesh = 0;
+                mesh.write("dbg_mesh" + std::to_string(export_mesh++));
+            }
 
             Vector surface_field;
             sdf.to_mesh(mesh, surface_field);
@@ -61,89 +71,53 @@ namespace utopia {
 
             if (sdf.has_weights()) {
                 Vector weights;
+                space.create_vector(weights);
 
-                Vector local_field;
-                Vector local_weights;
-
-                space.create_local_vector(local_field);
-                space.create_local_vector(local_weights);
-
-                local_field.set(0);
-                local_weights.set(0);
+                weights.set(0);
+                out.set(0);
 
                 // Scope for views
                 {
                     auto surface_field_view = const_local_view_host(surface_field);
                     auto surface_weights_view = local_view_host(sdf.weights());
-
-                    auto field_view = local_view_host(local_field);
-                    auto weights_view = local_view_host(local_weights);
-
                     auto node_mapping = mesh.node_mapping();
 
+                    Write<Vector> w_out(out, utopia::GLOBAL_ADD);
+                    Write<Vector> w_weights(weights, utopia::GLOBAL_ADD);
+
                     auto rr = out.range();
-                    const int n_var = space.n_var();
-
                     for (SizeType i = 0; i < surface_field.size(); i++) {
-                        const Scalar gg = surface_field_view.get(i);
-                        // if (gg > cutoff) continue;
-
+                        const Scalar value = surface_field_view.get(i);
                         SizeType node = node_mapping[i];
-                        // Offset for dof number
-                        node *= n_var;
-
-                        assert(node + 2 < local_is_contact.local_size());
-                        assert(node + 2 < local_field.local_size());
-                        assert(node + 2 < local_normals.local_size());
-
-                        field_view.set(node, gg);
-                        weights_view.set(node, surface_weights_view.get(i));
+                        SizeType globalid = local_to_global(node, 0);
+                        out.c_add(globalid, value);
+                        weights.c_add(globalid, surface_weights_view.get(i));
                     }
                 }
 
-                // As we add data to these vectors we have reset them to zero
-                out.set(0);
-
-                // Temp vector needs to be created
-                space.create_vector(weights);
-                weights.set(0);
-
-                auto mode = utopia::ADD_MODE;
-                // auto mode = utopia::OVERWRITE_MODE;
-                space.local_to_global(local_field, out, mode);
-                space.local_to_global(local_weights, weights, mode);
-
                 // Divide by weight
-                e_pseudo_inv(out, weights, device::Epsilon<Scalar>::value());
+                e_pseudo_inv(weights, weights, device::Epsilon<Scalar>::value());
+                out = e_mul(out, weights);
             } else if (!local_to_global.empty()) {
+                out.set(infinity);
                 // Scope for views
                 {
                     auto surface_field_view = const_local_view_host(surface_field);
-                    auto field_view = local_view_host(out);
                     auto node_mapping = mesh.node_mapping();
+                    Write<Vector> w(out, utopia::GLOBAL_INSERT);
 
                     auto rr = out.range();
-                    const SizeType local_size = out.local_size();
-                    for (ptrdiff_t i = 0; i < mesh.n_local_nodes(); i++) {
-                        const Scalar gg = surface_field_view.get(i);
+                    for (ptrdiff_t i = 0; i < node_mapping.size(); i++) {
+                        const Scalar value = surface_field_view.get(i);
 
                         SizeType node = node_mapping[i];
-                        node = local_to_global(node, 0) - rr.begin();
-
-                        if (node >= local_size || node < 0) {
-                            // Skip ghost nodes!
-                            continue;
-                        }
-
-                        assert(node + 2 < is_contact.local_size());
-                        assert(node + 2 < sdf->data().local_size());
-                        assert(node + 2 < normals->data().local_size());
-
-                        field_view.set(node, gg);
+                        SizeType globalid = local_to_global(node, 0);
+                        out.c_set(globalid, value);
                     }
                 }
 
             } else {
+                out.set(infinity);
                 // Serial case
                 auto surface_field_view = const_local_view_device(surface_field);
                 auto field_view = local_view_device(out);
@@ -156,7 +130,6 @@ namespace utopia {
                     SizeType node = node_mapping[i];
                     // Offset for dof number
                     node *= n_var;
-
                     field_view.set(node, gg);
                 }
             }

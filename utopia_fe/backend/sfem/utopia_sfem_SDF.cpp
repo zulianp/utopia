@@ -1,4 +1,5 @@
 #include "utopia_sfem_SDF.hpp"
+#include <utopia_MPI.hpp>
 
 #include "matrixio_array.h"
 #include "matrixio_ndarray.h"
@@ -65,8 +66,15 @@ namespace utopia {
                 stride[1] = nlocal[0];
                 stride[2] = nlocal[0] * nlocal[1];
 
-                interpolate = mpi_world_size() > 1;  // FIXME!
+                // interpolate = mpi_world_size() > 1;  // FIXME!
                 in.get("interpolate", interpolate);
+
+                bool verbose = false;
+                in.get("verbose", verbose);
+
+                if (verbose && !mpi_world_rank()) {
+                    utopia::out() << "utopia::sfem::SDF: interpolate = " << interpolate << '\n';
+                }
             }
 
             ~Impl() {
@@ -185,9 +193,9 @@ namespace utopia {
 
             auto m = (mesh_t *)mesh.raw_type();
 
-            real_t *xnormal = (real_t *)malloc(m->nnodes * sizeof(real_t));
-            real_t *ynormal = (real_t *)malloc(m->nnodes * sizeof(real_t));
-            real_t *znormal = (real_t *)malloc(m->nnodes * sizeof(real_t));
+            real_t *xnormal = (real_t *)calloc(m->nnodes, sizeof(real_t));
+            real_t *ynormal = (real_t *)calloc(m->nnodes, sizeof(real_t));
+            real_t *znormal = (real_t *)calloc(m->nnodes, sizeof(real_t));
 
             mesh.create_vector_nodal(field, 1);
             mesh.create_vector_nodal(grad_field, 3);
@@ -275,7 +283,8 @@ namespace utopia {
             }
 
             auto grad_field_view = local_view_device(grad_field);
-            for (ptrdiff_t i = 0; i < m->n_owned_nodes; i++) {
+            // for (ptrdiff_t i = 0; i < m->n_owned_nodes; i++) {
+            for (ptrdiff_t i = 0; i < m->nnodes; i++) {
                 // Convert to the vector
                 grad_field_view.set(i * 3 + 0, xnormal[i]);
                 grad_field_view.set(i * 3 + 1, ynormal[i]);
