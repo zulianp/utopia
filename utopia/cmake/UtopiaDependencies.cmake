@@ -189,7 +189,7 @@ endif()
 
 if(UTOPIA_INSTALL_TRILINOS)
   include(InstallTrilinos)
-  add_dependencies(utopia trilnos)
+  add_dependencies(utopia trilinos)
 endif()
 
 if(UTOPIA_INSTALL_SLEPC)
