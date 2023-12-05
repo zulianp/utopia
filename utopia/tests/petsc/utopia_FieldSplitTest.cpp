@@ -127,7 +127,7 @@ public:
 
         TwoFieldSPIN<Matrix> tfa(lsc12, nls1, nls2);
         tfa.set_field_functions(f1, f2);
-        tfa.additive_precond(false);
+        // tfa.additive_precond(false);
 
         auto f1_to_c12 = [](const Vector &in, Vector &out) { out = in; };
         auto f2_to_c12 = f1_to_c12;
