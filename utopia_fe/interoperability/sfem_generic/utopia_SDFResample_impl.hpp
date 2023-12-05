@@ -58,11 +58,18 @@ namespace utopia {
             sdf.to_mesh(mesh, surface_field);
             surface_field.shift(shift);
 
-            Scalar norm_sdf = norm2(surface_field);
+        
+            if (verbose) {
+                Scalar sum_gap = sum(surface_field);
+                Scalar max_gap = max(surface_field);
+                Scalar min_gap = min(surface_field);
 
-            if (!space.comm().rank()) {
-                utopia::out() << "Surface Mesh #nodes " << mesh.n_local_nodes() << "\n";
-                utopia::out() << "Norm Gap: " << norm_sdf << "\n";
+                std::stringstream ss;
+                ss << "Surface Mesh #nodes " << mesh.n_local_nodes() << "\n";
+                ss << "sum_gap: " << sum_gap << "\n";
+                ss << "min_gap: " << min_gap << "\n";
+                ss << "max_gap: " << max_gap << "\n";
+                space.comm().root_print(ss.str());
             }
 
             space.create_vector(out);
@@ -88,8 +95,9 @@ namespace utopia {
                     auto rr = out.range();
                     for (SizeType i = 0; i < surface_field.size(); i++) {
                         const Scalar value = surface_field_view.get(i);
-                        SizeType node = node_mapping[i];
-                        SizeType globalid = local_to_global(node, 0);
+                        const SizeType node = node_mapping[i];
+                        const SizeType globalid = local_to_global(node, 0);
+
                         out.c_add(globalid, value);
                         weights.c_add(globalid, surface_weights_view.get(i));
                     }

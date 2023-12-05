@@ -75,13 +75,19 @@ namespace utopia {
 
             Vector surface_gap, surface_normals;
             sdf.to_mesh(mesh, surface_gap, surface_normals);
-            surface_gap.shift(shift);
 
-            Scalar norm_gap = norm2(surface_gap);
+            if (verbose) {
+                Scalar sum_gap = sum(surface_gap);
+                Scalar max_gap = max(surface_gap);
+                Scalar min_gap = min(surface_gap);
 
-            if (!space.comm().rank()) {
-                utopia::out() << "Surface Mesh #nodes " << mesh.n_local_nodes() << "\n";
-                utopia::out() << "Norm Gap: " << norm_gap << "\n";
+                std::stringstream ss;
+                ss << "Surface Mesh #nodes " << mesh.n_local_nodes() << "\n";
+                ss << "sum_gap: " << sum_gap << "\n";
+                ss << "min_gap: " << min_gap << "\n";
+                ss << "max_gap: " << max_gap << "\n";
+                ss << "shift: " << shift << "\n";
+                space.comm().root_print(ss.str());
             }
 
             // Convert to space context
@@ -108,7 +114,7 @@ namespace utopia {
                 {
                     auto surface_gap_view = const_local_view_host(surface_gap);
                     auto surface_normals_view = const_local_view_host(surface_normals);
-                    auto surface_weights_view = local_view_host(sdf.weights());
+                    auto surface_weights_view = const_local_view_host(sdf.weights());
                     auto node_mapping = mesh.node_mapping();
 
                     Write<Vector>                                   //
@@ -117,15 +123,20 @@ namespace utopia {
                         w_w(weights, utopia::GLOBAL_ADD),           //
                         w_ic(is_contact, utopia::GLOBAL_ADD);
 
+                    auto &g = gap->data();
+                    auto &n = normals->data();
+
                     auto rr = gap->data().range();
                     for (SizeType i = 0; i < surface_gap.size(); i++) {
-                        const Scalar gg = surface_gap_view.get(i);
-                        const SizeType globalid = local_to_global(node_mapping[i], 0);
-                        gap->data().c_add(globalid, gg);
+                        const Scalar value = surface_gap_view.get(i);
+                        const SizeType node = node_mapping[i];
+                        const SizeType globalid = local_to_global(node, 0);
+
+                        g.c_add(globalid, value);
+                        n.c_add(globalid + 0, surface_normals_view.get(i * 3 + 0));
+                        n.c_add(globalid + 1, surface_normals_view.get(i * 3 + 1));
+                        n.c_add(globalid + 2, surface_normals_view.get(i * 3 + 2));
                         weights.c_add(globalid, surface_weights_view.get(i));
-                        normals->data().c_add(globalid, surface_normals_view.get(i * 3));
-                        normals->data().c_add(globalid + 1, surface_normals_view.get(i * 3 + 1));
-                        normals->data().c_add(globalid + 2, surface_normals_view.get(i * 3 + 2));
                         is_contact.c_add(globalid, 1);
                     }
                 }
@@ -135,7 +146,7 @@ namespace utopia {
                 gap->data() = e_mul(gap->data(), weights);
                 normalize(normals->data());
 
-                // if (0) //
+                // if (0)  //
                 {
                     RangeDevice<Vector> block_range(0, gap->data().local_size() / 3);
 
@@ -160,6 +171,9 @@ namespace utopia {
                                 // Clamp to 1
                                 is_contact_view.set(i, 1);
                             }
+
+                            gap_view.set(i + 1, infinity);
+                            gap_view.set(i + 2, infinity);
                         });
                 }
 
@@ -233,6 +247,8 @@ namespace utopia {
                 }
             }
 
+            gap->data().shift(-shift);
+
             space.apply_zero_constraints(is_contact);
             HouseholderReflectionForContact<Matrix, Vector, 3>::build(is_contact, normals->data(), orthogonal_trafo);
 
@@ -257,8 +273,8 @@ namespace utopia {
                         });
                 }
 
-                // Vector filtered_gap = e_mul(is_contact, gap->data());
-                Vector filtered_gap = gap->data();
+                Vector filtered_gap = e_mul(is_contact, gap->data());
+                // Vector filtered_gap = gap->data();
 
                 space.write("gap_" + std::to_string(count) + ".e", filtered_gap);
                 space.write("director_" + std::to_string(count++) + ".e", director);
