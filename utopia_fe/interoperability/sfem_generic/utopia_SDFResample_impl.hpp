@@ -56,9 +56,7 @@ namespace utopia {
 
             Vector surface_field;
             sdf.to_mesh(mesh, surface_field);
-            surface_field.shift(shift);
 
-        
             if (verbose) {
                 Scalar sum_gap = sum(surface_field);
                 Scalar max_gap = max(surface_field);
@@ -141,6 +139,8 @@ namespace utopia {
                     field_view.set(node, gg);
                 }
             }
+
+            out.shift(-shift);
         }
     };
 
