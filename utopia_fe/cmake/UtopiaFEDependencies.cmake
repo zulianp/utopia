@@ -90,12 +90,21 @@ if(UTOPIA_ENABLE_MARS)
 
   if(Mars_FOUND)
     message(STATUS "Mars found.")
-    list(APPEND UTOPIA_FE_BUILD_INCLUDES ${Mars_INCLUDES})
+
+    get_target_property(Mars_INCLUDE_DIR Mars::mars
+                          INTERFACE_INCLUDE_DIRECTORIES)
+
+    get_target_property(Mars_LIBRARIES Mars::mars
+                          IMPORTED_LOCATION_RELEASE)
+
+    # message(STATUS "MARS_LIBRARIES=${Mars_LIBRARIES}")
+    # message(STATUS "MARS_INCLUDE=${Mars_INCLUDE_DIR}")
+
+    list(APPEND UTOPIA_FE_BUILD_INCLUDES ${Mars_INCLUDE_DIR})
     list(APPEND UTOPIA_FE_DEP_LIBRARIES ${Mars_LIBRARIES})
-    list(APPEND UTOPIA_FE_DEP_INCLUDES ${Mars_INCLUDES})
+    list(APPEND UTOPIA_FE_DEP_INCLUDES ${Mars_INCLUDE_DIR})
   endif()
 
-  message(STATUS "MARS_LIBRARIES=${Mars_LIBRARIES}")
   if(UTOPIA_ENABLE_MARS_VTK)
     find_package(
       VTK
