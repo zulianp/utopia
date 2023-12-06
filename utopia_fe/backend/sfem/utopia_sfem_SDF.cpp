@@ -35,6 +35,7 @@ namespace utopia {
 
             // Sharp feature stuff
             bool geometry_aware_resampling{false};
+            bool super_imposed{false};
             geom_t angle_threshold{0.15};
 
             void read(Input &in) {
@@ -75,6 +76,7 @@ namespace utopia {
                 in.get("interpolate", interpolate);
                 in.get("angle_threshold", angle_threshold);
                 in.get("geometry_aware_resampling", geometry_aware_resampling);
+                in.get("super_imposed", super_imposed);
 
                 bool verbose = false;
                 in.get("verbose", verbose);
@@ -241,12 +243,7 @@ namespace utopia {
             }
 
             auto edges_ptr = mesh.sharp_edges(impl_->angle_threshold);
-            auto faces_ptr = mesh.disconnected_faces_from_sharp_edges(*edges_ptr);
-            auto corners_ptr = mesh.separate_corners_from_sharp_edges(*edges_ptr, true);
-
             auto edge_elements = edges_ptr->elements().reinterpret<idx_t *>();
-            auto face_elements = faces_ptr->elements().reinterpret<idx_t *>();
-            auto corner_elements = corners_ptr->elements().reinterpret<idx_t *>();
 
             weights.zeros(layout(field));
             auto weights_view = local_view_device(weights);
@@ -282,35 +279,64 @@ namespace utopia {
 
             {
                 // Faces
-                resample_gap_local(
-                    // Mesh
-                    shell_type((ElemType)faces_ptr->element_type()),
-                    faces_ptr->n_elements(),
-                    m->nnodes,
-                    face_elements.begin(),
-                    m->points,
-                    // SDF
-                    nlocal,
-                    impl_->stride,
-                    origin,
-                    impl_->delta,
-                    actual_sdf,
-                    // Output
-                    field_view.array().begin(),
-                    xnormal,
-                    ynormal,
-                    znormal);
+                if (impl_->super_imposed) {
+                    // Faces (all)
+                    resample_gap_local(
+                        // Mesh
+                        shell_type((ElemType)m->element_type),
+                        m->n_owned_elements,
+                        m->nnodes,
+                        m->elements,
+                        m->points,
+                        // SDF
+                        nlocal,
+                        impl_->stride,
+                        origin,
+                        impl_->delta,
+                        actual_sdf,
+                        // Output
+                        field_view.array().begin(),
+                        xnormal,
+                        ynormal,
+                        znormal);
+                } else {
+                    // Faces (disconnected)
+                    auto faces_ptr = mesh.disconnected_faces_from_sharp_edges(*edges_ptr);
+                    auto face_elements = faces_ptr->elements().reinterpret<idx_t *>();
 
-                assemble_lumped_mass(shell_type((ElemType)faces_ptr->element_type()),
-                                     faces_ptr->n_elements(),
-                                     m->nnodes,
-                                     face_elements.begin(),
-                                     m->points,
-                                     weights_view.array().begin());
+                    resample_gap_local(
+                        // Mesh
+                        shell_type((ElemType)faces_ptr->element_type()),
+                        faces_ptr->n_elements(),
+                        m->nnodes,
+                        face_elements.begin(),
+                        m->points,
+                        // SDF
+                        nlocal,
+                        impl_->stride,
+                        origin,
+                        impl_->delta,
+                        actual_sdf,
+                        // Output
+                        field_view.array().begin(),
+                        xnormal,
+                        ynormal,
+                        znormal);
+
+                    assemble_lumped_mass(shell_type((ElemType)faces_ptr->element_type()),
+                                         faces_ptr->n_elements(),
+                                         m->nnodes,
+                                         face_elements.begin(),
+                                         m->points,
+                                         weights_view.array().begin());
+                }
             }
 
             {
                 // Corners
+                auto corners_ptr = mesh.separate_corners_from_sharp_edges(*edges_ptr, !impl_->super_imposed);
+                auto corner_elements = corners_ptr->elements().reinterpret<idx_t *>();
+
                 real_t *p_g = (real_t *)calloc(corners_ptr->n_elements(), sizeof(real_t));
                 real_t *p_xnormal = (real_t *)calloc(corners_ptr->n_elements(), sizeof(real_t));
                 real_t *p_ynormal = (real_t *)calloc(corners_ptr->n_elements(), sizeof(real_t));
