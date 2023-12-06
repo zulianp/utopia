@@ -34,6 +34,7 @@ namespace utopia {
             bool normalize_gradient{true};
 
             // Sharp feature stuff
+            bool geometry_aware_resampling{false};
             geom_t angle_threshold{0.15};
 
             void read(Input &in) {
@@ -73,6 +74,7 @@ namespace utopia {
                 // interpolate = mpi_world_size() > 1;  // FIXME!
                 in.get("interpolate", interpolate);
                 in.get("angle_threshold", angle_threshold);
+                in.get("geometry_aware_resampling", geometry_aware_resampling);
 
                 bool verbose = false;
                 in.get("verbose", verbose);
@@ -374,6 +376,10 @@ namespace utopia {
 
         bool SDF::project_to_mesh(const Mesh &mesh, Vector &field, Vector &grad_field, Vector &weights) {
             UTOPIA_TRACE_SCOPE("SDF::project_to_mesh");
+
+            if (impl_->geometry_aware_resampling) {
+                return project_to_mesh_with_sharp_features(mesh, field, grad_field, weights);
+            }
 
             clear();
 
