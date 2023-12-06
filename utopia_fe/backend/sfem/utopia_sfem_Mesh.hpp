@@ -1,6 +1,7 @@
 #ifndef UTOPIA_SFEM_MESH_HPP
 #define UTOPIA_SFEM_MESH_HPP
 
+#include <algorithm>
 #include <memory>
 
 #include "utopia_fe_base.hpp"
@@ -22,12 +23,25 @@ namespace utopia {
     };
 
     namespace sfem {
+        class MeshView final {
+        public:
+            MeshView();
+            ~MeshView();
+
+            class Impl;
+            Impl &impl();
+
+        private:
+            std::shared_ptr<Impl> impl_;
+        };
+
         class Mesh final : public Configurable, public Describable {
         public:
             using Traits = utopia::Traits<Mesh>;
             using Communicator = Traits::Communicator;
             using Vector = Traits::Vector;
             using SizeType = Traits::SizeType;
+            using Scalar = Traits::Scalar;
 
             class Impl;
 
@@ -51,6 +65,11 @@ namespace utopia {
             ArrayView<const SizeType> node_mapping() const;
 
             void *raw_type() const;
+
+            std::shared_ptr<MeshView> sharp_edges(const Scalar angle_threshold);
+            std::shared_ptr<MeshView> disconnected_faces_from_sharp_edges(MeshView &sharp_edges);
+            std::shared_ptr<MeshView> separate_corners_from_sharp_edges(MeshView &sharp_edges,
+                                                                        const bool remove_edges = true);
 
         private:
             std::unique_ptr<Impl> impl_;
