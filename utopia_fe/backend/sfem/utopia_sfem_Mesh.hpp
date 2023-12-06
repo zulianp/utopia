@@ -31,6 +31,14 @@ namespace utopia {
             class Impl;
             Impl &impl();
 
+            int element_type() const;
+            
+            [[nodiscard]] ArrayView<void *> elements() const;
+            [[nodiscard]] ArrayView<void *> points() const;
+
+            [[nodiscard]] ptrdiff_t n_elements() const;
+            [[nodiscard]] ptrdiff_t n_nodes() const;
+
         private:
             std::shared_ptr<Impl> impl_;
         };
@@ -66,10 +74,10 @@ namespace utopia {
 
             void *raw_type() const;
 
-            std::shared_ptr<MeshView> sharp_edges(const Scalar angle_threshold);
-            std::shared_ptr<MeshView> disconnected_faces_from_sharp_edges(MeshView &sharp_edges);
+            std::shared_ptr<MeshView> sharp_edges(const Scalar angle_threshold) const;
+            std::shared_ptr<MeshView> disconnected_faces_from_sharp_edges(MeshView &sharp_edges) const;
             std::shared_ptr<MeshView> separate_corners_from_sharp_edges(MeshView &sharp_edges,
-                                                                        const bool remove_edges = true);
+                                                                        const bool remove_edges = true) const;
 
         private:
             std::unique_ptr<Impl> impl_;

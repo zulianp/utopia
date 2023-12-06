@@ -37,7 +37,30 @@ namespace utopia {
         MeshView::MeshView() : impl_(std::make_shared<Impl>()) {}
         MeshView::~MeshView() = default;
 
+        int MeshView::element_type() const
+        {
+            return impl_->element_type;
+        }
+
         MeshView::Impl &MeshView::impl() { return *impl_; }
+
+        ArrayView<void *> MeshView::elements() const
+        {
+            return impl_->elements.reinterpret<void*>();
+        }
+        ArrayView<void *> MeshView::points() const
+        {
+            return impl_->points.reinterpret<void*>();
+        }
+
+        ptrdiff_t MeshView::n_elements() const
+        {
+            return impl_->nelements;
+        }
+        ptrdiff_t MeshView::n_nodes() const
+        {
+            return impl_->nnodes;
+        }
 
         class Mesh::Impl {
         public:
@@ -93,7 +116,7 @@ namespace utopia {
 
         Mesh::SizeType Mesh::n_local_nodes() const { return impl_->mesh.n_owned_nodes; }
 
-        std::shared_ptr<MeshView> Mesh::sharp_edges(const Scalar angle_threshold) {
+        std::shared_ptr<MeshView> Mesh::sharp_edges(const Scalar angle_threshold) const {
             ptrdiff_t n_sharp_edges = 0;
             idx_t *e0 = 0;
             idx_t *e1 = 0;
@@ -146,7 +169,7 @@ namespace utopia {
             return view;
         }
 
-        std::shared_ptr<MeshView> Mesh::disconnected_faces_from_sharp_edges(MeshView &sharp_edges) {
+        std::shared_ptr<MeshView> Mesh::disconnected_faces_from_sharp_edges(MeshView &sharp_edges) const {
             auto &se = sharp_edges.impl();
 
             ptrdiff_t n_disconnected_elements = 0;
@@ -189,7 +212,7 @@ namespace utopia {
             }
         }
         std::shared_ptr<MeshView> Mesh::separate_corners_from_sharp_edges(MeshView &sharp_edges,
-                                                                          const bool remove_edges) {
+                                                                          const bool remove_edges) const {
             auto &se = sharp_edges.impl();
             ptrdiff_t n_corners = 0;
             idx_t *corners = nullptr;
