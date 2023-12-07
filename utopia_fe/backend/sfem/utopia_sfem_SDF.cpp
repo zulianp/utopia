@@ -299,18 +299,69 @@ namespace utopia {
                         xnormal,
                         ynormal,
                         znormal);
+
+                    assemble_lumped_mass(shell_type((ElemType)m->element_type),
+                                         m->n_owned_elements,
+                                         m->nnodes,
+                                         m->elements,
+                                         m->points,
+                                         weights_view.array().begin());
                 } else {
                     // Faces (disconnected)
                     auto faces_ptr = mesh.disconnected_faces_from_sharp_edges(*edges_ptr);
-                    auto face_elements = faces_ptr->elements().reinterpret<idx_t *>();
 
-                    resample_gap_local(
+                    if (faces_ptr) {
+                        auto face_elements = faces_ptr->elements().reinterpret<idx_t *>();
+
+                        resample_gap_local(
+                            // Mesh
+                            shell_type((ElemType)faces_ptr->element_type()),
+                            faces_ptr->n_elements(),
+                            m->nnodes,
+                            face_elements.begin(),
+                            m->points,
+                            // SDF
+                            nlocal,
+                            impl_->stride,
+                            origin,
+                            impl_->delta,
+                            actual_sdf,
+                            // Output
+                            field_view.array().begin(),
+                            xnormal,
+                            ynormal,
+                            znormal);
+
+                        assemble_lumped_mass(shell_type((ElemType)faces_ptr->element_type()),
+                                             faces_ptr->n_elements(),
+                                             m->nnodes,
+                                             face_elements.begin(),
+                                             m->points,
+                                             weights_view.array().begin());
+                    }
+                }
+            }
+
+            {
+                // Corners
+                auto corners_ptr = mesh.separate_corners_from_sharp_edges(*edges_ptr, !impl_->super_imposed);
+
+                if (corners_ptr) {
+                    auto corner_elements = corners_ptr->elements().reinterpret<idx_t *>();
+
+                    real_t *p_g = (real_t *)calloc(corners_ptr->n_elements(), sizeof(real_t));
+                    real_t *p_xnormal = (real_t *)calloc(corners_ptr->n_elements(), sizeof(real_t));
+                    real_t *p_ynormal = (real_t *)calloc(corners_ptr->n_elements(), sizeof(real_t));
+                    real_t *p_znormal = (real_t *)calloc(corners_ptr->n_elements(), sizeof(real_t));
+
+                    geom_t **corner_points = allocate_points(m->spatial_dim, corners_ptr->n_elements());
+                    select_points(
+                        m->spatial_dim, corners_ptr->n_elements(), corner_elements[0], m->points, corner_points);
+
+                    interpolate_gap(
                         // Mesh
-                        shell_type((ElemType)faces_ptr->element_type()),
-                        faces_ptr->n_elements(),
-                        m->nnodes,
-                        face_elements.begin(),
-                        m->points,
+                        corners_ptr->n_elements(),
+                        corner_points,
                         // SDF
                         nlocal,
                         impl_->stride,
@@ -318,67 +369,30 @@ namespace utopia {
                         impl_->delta,
                         actual_sdf,
                         // Output
-                        field_view.array().begin(),
-                        xnormal,
-                        ynormal,
-                        znormal);
+                        p_g,
+                        p_xnormal,
+                        p_ynormal,
+                        p_znormal);
 
-                    assemble_lumped_mass(shell_type((ElemType)faces_ptr->element_type()),
-                                         faces_ptr->n_elements(),
-                                         m->nnodes,
-                                         face_elements.begin(),
-                                         m->points,
-                                         weights_view.array().begin());
+                    // Add to complete array
+
+                    auto mass_vector = weights_view.array();
+                    auto g = field_view.array();
+
+                    for (ptrdiff_t i = 0; i < corners_ptr->n_elements(); i++) {
+                        g[corner_elements[0][i]] += p_g[i];
+                        xnormal[corner_elements[0][i]] += p_xnormal[i];
+                        ynormal[corner_elements[0][i]] += p_ynormal[i];
+                        znormal[corner_elements[0][i]] += p_znormal[i];
+                        mass_vector[corner_elements[0][i]] += 1;
+                    }
+
+                    free_points(m->spatial_dim, corner_points);
+                    free(p_g);
+                    free(p_xnormal);
+                    free(p_ynormal);
+                    free(p_znormal);
                 }
-            }
-
-            {
-                // Corners
-                auto corners_ptr = mesh.separate_corners_from_sharp_edges(*edges_ptr, !impl_->super_imposed);
-                auto corner_elements = corners_ptr->elements().reinterpret<idx_t *>();
-
-                real_t *p_g = (real_t *)calloc(corners_ptr->n_elements(), sizeof(real_t));
-                real_t *p_xnormal = (real_t *)calloc(corners_ptr->n_elements(), sizeof(real_t));
-                real_t *p_ynormal = (real_t *)calloc(corners_ptr->n_elements(), sizeof(real_t));
-                real_t *p_znormal = (real_t *)calloc(corners_ptr->n_elements(), sizeof(real_t));
-
-                geom_t **corner_points = allocate_points(m->spatial_dim, corners_ptr->n_elements());
-                select_points(m->spatial_dim, corners_ptr->n_elements(), corner_elements[0], m->points, corner_points);
-
-                interpolate_gap(
-                    // Mesh
-                    corners_ptr->n_elements(),
-                    corner_points,
-                    // SDF
-                    nlocal,
-                    impl_->stride,
-                    origin,
-                    impl_->delta,
-                    actual_sdf,
-                    // Output
-                    p_g,
-                    p_xnormal,
-                    p_ynormal,
-                    p_znormal);
-
-                // Add to complete array
-
-                auto mass_vector = weights_view.array();
-                auto g = field_view.array();
-
-                for (ptrdiff_t i = 0; i < corners_ptr->n_elements(); i++) {
-                    g[corner_elements[0][i]] += p_g[i];
-                    xnormal[corner_elements[0][i]] += p_xnormal[i];
-                    ynormal[corner_elements[0][i]] += p_ynormal[i];
-                    znormal[corner_elements[0][i]] += p_znormal[i];
-                    mass_vector[corner_elements[0][i]] += 1;
-                }
-
-                free_points(m->spatial_dim, corner_points);
-                free(p_g);
-                free(p_xnormal);
-                free(p_ynormal);
-                free(p_znormal);
             }
 
             auto grad_field_view = local_view_device(grad_field);

@@ -126,11 +126,20 @@ namespace utopia {
                     auto &g = gap->data();
                     auto &n = normals->data();
 
+                    const bool has_l2g = !local_to_global.empty();
+                    const int n_var = space.n_var();
+
                     auto rr = gap->data().range();
                     for (SizeType i = 0; i < surface_gap.size(); i++) {
                         const Scalar value = surface_gap_view.get(i);
                         const SizeType node = node_mapping[i];
-                        const SizeType globalid = local_to_global(node, 0);
+                        SizeType globalid;
+
+                        if (has_l2g) {
+                            globalid = local_to_global(node, 0);
+                        } else {
+                            globalid = node * n_var;
+                        }
 
                         g.c_add(globalid, value);
                         n.c_add(globalid + 0, surface_normals_view.get(i * 3 + 0));
