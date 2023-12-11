@@ -14,6 +14,12 @@ namespace utopia {
         const YAML::Node &root() const { return root_; }
     };
 
+    std::shared_ptr<YAMLInput> YAMLInput::FromString(const std::string &str) {
+        auto ret = std::make_shared<YAMLInput>();
+        ret->impl_->root_ = YAML::Load(str);
+        return ret;
+    }
+
     YAMLInput::YAMLInput(const YAML::Node &node) : impl_(utopia::make_unique<Impl>()) { impl_->root_ = node; }
     YAMLInput::YAMLInput(YAML::Node &&node) : impl_(utopia::make_unique<Impl>()) { impl_->root_ = std::move(node); }
 
@@ -47,6 +53,48 @@ namespace utopia {
 
         for (std::size_t i = 0; i < node.size(); i++) {
             values.push_back(std::make_shared<Convertible<std::string>>(node[i].as<std::string>()));
+        }
+    }
+
+    void YAMLInput::get(const std::string &key, std::vector<std::string> &v) {
+        v.clear();
+        auto &node = impl_->root();
+
+        if (node[key]) {
+            auto &&child = node[key];
+
+            for (std::size_t i = 0; i < child.size(); i++) {
+                // std::cout << i << ")" << child[i] << "\n";
+                v.push_back(child[i].as<std::string>());
+            }
+        }
+    }
+
+    void YAMLInput::get(const std::string &key, std::vector<float> &v) {
+        v.clear();
+        auto &node = impl_->root();
+
+        if (node[key]) {
+            auto &&child = node[key];
+
+            for (std::size_t i = 0; i < child.size(); i++) {
+                // std::cout << i << ")" << child[i] << "\n";
+                v.push_back(child[i].as<float>());
+            }
+        }
+    }
+
+    void YAMLInput::get(const std::string &key, std::vector<double> &v) {
+        v.clear();
+        auto &node = impl_->root();
+
+        if (node[key]) {
+            auto &&child = node[key];
+
+            for (std::size_t i = 0; i < child.size(); i++) {
+                // std::cout << i << ")" << child[i] << "\n";
+                v.push_back(child[i].as<double>());
+            }
         }
     }
 
