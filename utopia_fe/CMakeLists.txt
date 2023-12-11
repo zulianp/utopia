@@ -12,6 +12,7 @@ project(
 # ##############################################################################
 # ##############################################################################
 
+include(cmake/CodeCoverage.cmake)
 include(cmake/UtopiaFEOptions.cmake)
 include(cmake/UtopiaFEFunctions.cmake)
 include(cmake/UtopiaFEDefaults.cmake)
@@ -68,9 +69,6 @@ endif()
 
 # if(UTOPIA_ENABLE_ARBORX) list(APPEND UTOPIA_FE_MODULES backend/arborx) endif()
 
-# get_cmake_property(_variableNames VARIABLES) list (SORT _variableNames)
-# foreach (_variableName ${_variableNames}) message(STATUS
-# "${_variableName}=${${_variableName}}") endforeach()
 
 foreach(MODULE ${UTOPIA_FE_MODULES})
   add_subdirectory("${MODULE}")
@@ -120,13 +118,13 @@ target_link_libraries(utopia_fe PUBLIC ${UTOPIA_FE_DEP_LIBRARIES})
 # ##############################################################################
 # INSTALL
 
-add_executable(utopia_fe_exec EXCLUDE_FROM_ALL main.cpp ${UTOPIA_FE_HEADERS})
-target_link_libraries(utopia_fe_exec PRIVATE utopia_fe)
-include(apps/apps.cmake)
-utopia_fe_link_default_targets(utopia_exec)
+# add_executable(utopia_fe_exec EXCLUDE_FROM_ALL main.cpp ${UTOPIA_FE_HEADERS})
+# target_link_libraries(utopia_fe_exec PRIVATE utopia_fe)
+# include(apps/apps.cmake)
+# utopia_fe_link_default_targets(utopia_fe_exec)
 
 install(
-  TARGETS utopia_fe utopia_fe_exec
+  TARGETS utopia_fe
   EXPORT UtopiaFETargets
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
@@ -145,8 +143,8 @@ install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp DESTINATION include)
 # test suite
 if(UTOPIA_ENABLE_TESTS)
   add_executable(utopia_fe_test test.cpp)
-  utopia_link_default_targets(utopia_fe_test)
-  target_link_libraries(utopia_fe_test utopia_fe)
+  utopia_fe_link_default_targets(utopia_fe_test)
+  target_link_libraries(utopia_fe_test PUBLIC utopia_fe)
   include(tests/tests.cmake)
 endif()
 
@@ -177,7 +175,7 @@ append_list_to_string_for_makefile(
 append_list_to_string_for_makefile(CONFIG_CONTENT "" "\n" "-I"
                                    "${MOONOLITH_INCLUDES}")
 
-message("MOONOLITH_INCLUDES=${MOONOLITH_INCLUDES}")
+# message("MOONOLITH_INCLUDES=${MOONOLITH_INCLUDES}")
 
 append_list_to_string_for_makefile(
   CONFIG_CONTENT
@@ -249,8 +247,8 @@ list(JOIN CONFIG_CONTENT "\n" OLD_CMAKE_CONFIG_CONTENT)
 install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.makefile DESTINATION config)
 install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.cmake DESTINATION config)
 
-# new style exported targets, this allows to use
-# target_link_libraries(my_target UtopiaFE::utopia_fe)
+# new style exported targets, this allows to use target_link_libraries(my_target
+# UtopiaFE::utopia_fe)
 
 install(
   EXPORT UtopiaFETargets
@@ -258,19 +256,20 @@ install(
   NAMESPACE UtopiaFE::
   DESTINATION lib/cmake)
 
-# include(CMakePackageConfigHelpers) 
-# generate the config file that is includes
-# the exports 
+include(CMakePackageConfigHelpers) 
+#generate the config file that is includes the exports
 configure_package_config_file(
-${CMAKE_CURRENT_SOURCE_DIR}/cmake/UtopiaFEConfig.cmake.in
-"${CMAKE_CURRENT_BINARY_DIR}/UtopiaFEConfig.cmake" INSTALL_DESTINATION
-"lib/cmake")
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/UtopiaFEConfig.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/UtopiaFEConfig.cmake"
+  INSTALL_DESTINATION "lib/cmake")
 # generate the version file for the config file
 write_basic_package_version_file(
-"${CMAKE_CURRENT_BINARY_DIR}/UtopiaFEConfigVersion.cmake" VERSION
-"${UtopiaFE_VERSION_MAJOR}.${UtopiaFE_VERSION_MINOR}" COMPATIBILITY
-AnyNewerVersion) # install the configuration file install(FILES
-${CMAKE_CURRENT_BINARY_DIR}/UtopiaFEConfig.cmake DESTINATION lib/cmake/)
+  "${CMAKE_CURRENT_BINARY_DIR}/UtopiaFEConfigVersion.cmake"
+  VERSION "${UtopiaFE_VERSION_MAJOR}.${UtopiaFE_VERSION_MINOR}"
+  COMPATIBILITY AnyNewerVersion)
+
+# install the configuration file install(FILES
+# ${CMAKE_CURRENT_BINARY_DIR}/UtopiaFEConfig.cmake DESTINATION lib/cmake/)
 
 # # add_executable(utopia_fe_exec EXCLUDE_FROM_ALL main.cpp
 # ${UTOPIA_FE_HEADERS}) add_executable(utopia_fe_test test.cpp)

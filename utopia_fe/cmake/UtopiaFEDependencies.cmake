@@ -1,9 +1,24 @@
 # #################UTOPIA###################
 
+# get_cmake_property(_variableNames VARIABLES)
+# list(SORT _variableNames)
+# foreach(_variableName ${_variableNames})
+#   message(STATUS "${_variableName}=${${_variableName}}")
+# endforeach()
+
+
+# message(STATUS "################################################################################################################")
+
 find_package(Utopia REQUIRED)
 if(Utopia_FOUND)
   message(STATUS "Utopia Found.")
   add_definitions(${UTOPIA_DEFS})
+
+  # get_cmake_property(_variableNames VARIABLES)
+  # list(SORT _variableNames)
+  # foreach(_variableName ${_variableNames})
+  #   message(STATUS "${_variableName}=${${_variableName}}")
+  # endforeach()
 
   if(NOT UTOPIA_ENABLE_PETSC OR NOT UTOPIA_ENABLE_TRILINOS)
     message(FATAL_ERROR "Utopia needs to be installed with petsc and trilinos enabled as backends.")
@@ -39,7 +54,7 @@ if(UTOPIA_ENABLE_LIBMESH)
     list(APPEND UTOPIA_FE_DEP_LIBRARIES ${LIBMESH_LIBRARIES})
     list(APPEND UTOPIA_FE_DEP_INCLUDES ${LIBMESH_INCLUDE_DIR})
 
-    message(STATUS "UTOPIA_FE_DEP_LIBRARIES:${UTOPIA_FE_DEP_LIBRARIES}")
+    # message(STATUS "UTOPIA_FE_DEP_LIBRARIES:${UTOPIA_FE_DEP_LIBRARIES}")
   endif()
 endif()
 
@@ -117,3 +132,82 @@ if(UTOPIA_ENABLE_MARS)
       REQUIRED)
   endif()
 endif()
+
+
+
+# ##############################################################################
+
+macro(print_dependency_table)
+
+  set(SMALL_DEP_TABLE
+      "\n_______________________________\n\n   BACKENDS and STATUS TABLE\n")
+  set(SMALL_DEP_TABLE "${SMALL_DEP_TABLE}-------------------------------\n")
+  set(SMALL_DEP_TABLE
+      "${SMALL_DEP_TABLE}backend\t|status\t|found\n-------------------------------\n"
+  )
+  set(SMALL_DEP_TABLE
+      "-${SMALL_DEP_TABLE}mpi\t|${UTOPIA_ENABLE_MPI}\t|${MPI_FOUND}\n")
+
+  set(SMALL_DEP_TABLE
+      "-${SMALL_DEP_TABLE}Utopia\t|ALWAYS ON\t|${Utopia_FOUND}\n")
+
+  set(SMALL_DEP_TABLE
+      "-${SMALL_DEP_TABLE}Libmesh\t|${UTOPIA_ENABLE_LIBMESH}\t|${LIBMESH_FOUND}\n")
+
+  set(SMALL_DEP_TABLE
+      "-${SMALL_DEP_TABLE}Moonolith\t|${UTOPIA_ENABLE_MOONOLITH}\t|${MOONOLITH_FOUND}\n")
+
+  set(SMALL_DEP_TABLE
+      "-${SMALL_DEP_TABLE}Intrepid2\t|${UTOPIA_ENABLE_INTREPID_2}\t|${INTREPID_2_FOUND}\n")
+
+  set(SMALL_DEP_TABLE
+      "-${SMALL_DEP_TABLE}Mars\t|${UTOPIA_ENABLE_MARS}\t|${Mars_FOUND}\n")
+
+  )
+  set(SMALL_DEP_TABLE "${SMALL_DEP_TABLE}_______________________________\n")
+
+  message(STATUS ${SMALL_DEP_TABLE})
+endmacro()
+
+macro(log_dependency_table)
+
+  set(DEP_TABLE "backends:\n")
+  set(DEP_TABLE "${DEP_TABLE}  - mpi:\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_ENABLE_MPI: ${UTOPIA_ENABLE_MPI}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_MPI_DIR: ${UTOPIA_MPI_DIR}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_MPI_VERSION: ${UTOPIA_MPI_VERSION}\n")
+
+  set(DEP_TABLE "${DEP_TABLE}  - Utopia:\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_DIR: ${UTOPIA_DIR}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_VERSION: ${UTOPIA_VERSION}\n")
+
+  set(DEP_TABLE "${DEP_TABLE}  - Libmesh:\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_ENABLE_LIBMESH: ${UTOPIA_ENABLE_LIBMESH}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_LIBMESH_DIR: ${UTOPIA_LIBMESH_DIR}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_LIBMESH_VERSION: ${UTOPIA_LIBMESH_VERSION}\n")
+
+  set(DEP_TABLE "${DEP_TABLE}  - Moonolith:\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_ENABLE_MOONOLITH: ${UTOPIA_ENABLE_MOONOLITH}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_MOONOLITH_DIR: ${UTOPIA_MOONOLITH_DIR}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_MOONOLITH_VERSION: ${UTOPIA_MOONOLITH_VERSION}\n")
+
+  set(DEP_TABLE "${DEP_TABLE}  - Intrepid2:\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_ENABLE_INTREPID_2: ${UTOPIA_ENABLE_INTREPID_2}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_INTREPID_2_DIR: ${UTOPIA_INTREPID_2_DIR}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_INTREPID_2_VERSION: ${UTOPIA_INTREPID_2_VERSION}\n")
+
+  set(DEP_TABLE "${DEP_TABLE}  - Mars:\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_ENABLE_MARS: ${UTOPIA_ENABLE_MARS}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_MARS_DIR: ${UTOPIA_MARS_DIR}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_MARS_VERSION: ${UTOPIA_MARS_VERSION}\n")
+
+  # OPTIONS
+
+  set(DEP_TABLE "${DEP_TABLE}options:\n")
+  getlistofvarsstartingwith("UTOPIA_" matchedVars)
+  foreach(_var IN LISTS matchedVars)
+    set(DEP_TABLE "${DEP_TABLE}  - ${_var}: ${${_var}}\n")
+  endforeach()
+
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/UtopiaConfig.yaml" ${DEP_TABLE})
+endmacro()
