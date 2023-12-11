@@ -12,7 +12,7 @@ option(UTOPIA_ENABLE_TRILINOS_ALGEBRA
        "Allows to use the moose installation compilers" OFF)
 option(UTOPIA_ENABLE_MARS "Tries to use mars backend" OFF)
 option(UTOPIA_ENABLE_MARS_VTK "Enable vtk output for mars" OFF)
-option(UTOPIA_ENABLE_MARS_ADIOS2,  "Enable adios2 output for mars" ON)
+option(UTOPIA_ENABLE_MARS_ADIOS2,  "Enable adios2 output for mars" OFF)
 option(UTOPIA_ENABLE_INTREPID2 "Tries to use the intrepid2 related features"
        OFF)
 option(UTOPIA_ENABLE_NEW_TRANSFER "Use new transfer features" ON)
@@ -29,6 +29,9 @@ option(UTOPIA_ENABLE_PETSC "Enable the PETSc DM functionalities" OFF)
 
 # Once we have cleaner separation between this and legacy turn OFF
 option(UTOPIA_ENABLE_LIBMESH_DEPRECATED "Enable the deprecated utopia::libmesh functionalities" ON)
+
+
+option(UTOPIA_ENABLE_TESTS "Enable utopia_fe testing." OFF)
 
 option(UTOPIA_ENABLE_STK "Enable the stk functionalities" OFF)
 option(UTOPIA_ENABLE_MOONOLITH "Enable the moonolith functionalities" ON)
