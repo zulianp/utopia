@@ -57,19 +57,6 @@ namespace utopia {
             Vector surface_field;
             sdf.to_mesh(mesh, surface_field);
 
-            if (verbose) {
-                Scalar sum_gap = sum(surface_field);
-                Scalar max_gap = max(surface_field);
-                Scalar min_gap = min(surface_field);
-
-                std::stringstream ss;
-                ss << "Surface Mesh #nodes " << mesh.n_local_nodes() << "\n";
-                ss << "sum_gap: " << sum_gap << "\n";
-                ss << "min_gap: " << min_gap << "\n";
-                ss << "max_gap: " << max_gap << "\n";
-                space.comm().root_print(ss.str());
-            }
-
             space.create_vector(out);
 
             auto &&local_to_global = space.dof_map().local_to_global();
