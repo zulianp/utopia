@@ -76,20 +76,6 @@ namespace utopia {
             Vector surface_gap, surface_normals;
             sdf.to_mesh(mesh, surface_gap, surface_normals);
 
-            if (verbose) {
-                Scalar sum_gap = sum(surface_gap);
-                Scalar max_gap = max(surface_gap);
-                Scalar min_gap = min(surface_gap);
-
-                std::stringstream ss;
-                ss << "Surface Mesh #nodes " << mesh.n_local_nodes() << "\n";
-                ss << "sum_gap: " << sum_gap << "\n";
-                ss << "min_gap: " << min_gap << "\n";
-                ss << "max_gap: " << max_gap << "\n";
-                ss << "shift: " << shift << "\n";
-                space.comm().root_print(ss.str());
-            }
-
             // Convert to space context
             gap = std::make_shared<Field>();
             normals = std::make_shared<GradientField>();
