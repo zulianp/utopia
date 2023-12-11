@@ -30,7 +30,6 @@ _franetg_mode(){
 		make install | tee make_all.log
 		make -j$N_THREADS test_install | tee make_all.log
 	fi
-	
 }
 if [[ -d build_franetg ]]
 then
