@@ -26,8 +26,15 @@ namespace utopia {
             ~SDF();
             void read(Input &in) override;
             void describe(std::ostream &os) const override;
+            bool to_mesh(const Mesh &mesh, Vector &field);
             bool to_mesh(const Mesh &mesh, Vector &field, Vector &grad_field);
             bool interpolate_to_mesh(const Mesh &mesh, Vector &field, Vector &grad_field);
+
+            bool project_to_mesh_with_sharp_features(const Mesh &mesh,
+                                                     Vector &field,
+                                                     Vector &grad_field,
+                                                     Vector &weights);
+
             bool project_to_mesh(const Mesh &mesh, Vector &field, Vector &grad_field, Vector &weights);
             bool interpolate() const;
             bool has_weights() const;

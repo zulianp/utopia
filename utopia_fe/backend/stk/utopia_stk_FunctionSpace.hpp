@@ -65,6 +65,9 @@ namespace utopia {
             void apply_constraints(Matrix &m, const Scalar diag_value = 1.0) const override;
             void apply_constraints(Vector &v) const override;
 
+            /// Set the value of in_out[i] to (bc_value - u[i]) * scale_factor
+            void apply_constraints(const Vector &u, const Scalar scale_factor, Vector &in_out) const;
+
             void apply_constraints(Matrix &m, Vector &v) const override;
             void apply_zero_constraints(Vector &vec) const override;
             void apply_constraints_time_derivative(Vector &) const override;
