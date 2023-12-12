@@ -20,9 +20,9 @@ if(Utopia_FOUND)
   #   message(STATUS "${_variableName}=${${_variableName}}")
   # endforeach()
 
-  if(NOT UTOPIA_ENABLE_PETSC OR NOT UTOPIA_ENABLE_TRILINOS)
-    message(FATAL_ERROR "Utopia needs to be installed with petsc and trilinos enabled as backends.")
-  endif()
+  # if(NOT UTOPIA_ENABLE_PETSC OR NOT UTOPIA_ENABLE_TRILINOS)
+  #   message(FATAL_ERROR "Utopia needs to be installed with petsc and trilinos enabled as backends.")
+  # endif()
 
   # list(APPEND UTOPIA_FE_BUILD_INCLUDES ${UTOPIA_INCLUDES})
   list(APPEND UTOPIA_FE_DEP_LIBRARIES ${UTOPIA_LIBRARIES})
@@ -120,8 +120,8 @@ if(UTOPIA_ENABLE_MARS)
                           IMPORTED_LOCATION_RELEASE)
     
     list(APPEND UTOPIA_FE_BUILD_INCLUDES ${Mars_INCLUDE_DIR})
-    # list(APPEND UTOPIA_FE_DEP_LIBRARIES ${Mars_LIBRARIES})
-    # list(APPEND UTOPIA_FE_DEP_INCLUDES ${Mars_INCLUDE_DIR})
+    list(APPEND UTOPIA_FE_DEP_LIBRARIES ${Mars_LIBRARIES})
+    list(APPEND UTOPIA_FE_DEP_INCLUDES ${Mars_INCLUDE_DIR})
   endif()
 
   if(UTOPIA_ENABLE_MARS_VTK)
@@ -133,6 +133,14 @@ if(UTOPIA_ENABLE_MARS)
   endif()
 endif()
 
+
+
+# NOT DOING MUCH
+# list(REMOVE_DUPLICATES UTOPIA_FE_DEP_LIBRARIES)
+# list(REMOVE_DUPLICATES UTOPIA_FE_DEP_INCLUDES)
+# list(REMOVE_DUPLICATES UTOPIA_FE_DEP_BUILD_INCLUDES)
+
+# message(STATUS "${UTOPIA_FE_BUILD_INCLUDES}")
 
 
 # ##############################################################################
@@ -163,7 +171,6 @@ macro(print_dependency_table)
   set(SMALL_DEP_TABLE
       "-${SMALL_DEP_TABLE}Mars\t|${UTOPIA_ENABLE_MARS}\t|${Mars_FOUND}\n")
 
-  )
   set(SMALL_DEP_TABLE "${SMALL_DEP_TABLE}_______________________________\n")
 
   message(STATUS ${SMALL_DEP_TABLE})
@@ -192,9 +199,9 @@ macro(log_dependency_table)
   set(DEP_TABLE "${DEP_TABLE}    UTOPIA_MOONOLITH_VERSION: ${UTOPIA_MOONOLITH_VERSION}\n")
 
   set(DEP_TABLE "${DEP_TABLE}  - Intrepid2:\n")
-  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_ENABLE_INTREPID_2: ${UTOPIA_ENABLE_INTREPID_2}\n")
-  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_INTREPID_2_DIR: ${UTOPIA_INTREPID_2_DIR}\n")
-  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_INTREPID_2_VERSION: ${UTOPIA_INTREPID_2_VERSION}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_ENABLE_INTREPID2: ${UTOPIA_ENABLE_INTREPID2}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_INTREPID2_DIR: ${UTOPIA_INTREPID2_DIR}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_INTREPID2_VERSION: ${UTOPIA_INTREPID2_VERSION}\n")
 
   set(DEP_TABLE "${DEP_TABLE}  - Mars:\n")
   set(DEP_TABLE "${DEP_TABLE}    UTOPIA_ENABLE_MARS: ${UTOPIA_ENABLE_MARS}\n")

@@ -94,6 +94,8 @@ set_utopia_compiler_features(utopia_fe)
 # ##############################################################################
 # ##############################################################################
 # INCLUDE
+
+# message(STATUS "${UTOPIA_FE_BUILD_INCLUDES}")
 foreach(include ${UTOPIA_FE_BUILD_INCLUDES})
   target_include_directories(utopia_fe BEFORE
                              PUBLIC $<BUILD_INTERFACE:${include}>)
@@ -296,3 +298,6 @@ write_basic_package_version_file(
 # include(cmake/PostInstall.cmake)
 
 # message(STATUS "UTOPIA_FE_LIBRARIES=${UTOPIA_FE_LIBRARIES}")
+
+print_dependency_table()
+log_dependency_table()
