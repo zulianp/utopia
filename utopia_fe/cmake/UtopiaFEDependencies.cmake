@@ -1,28 +1,33 @@
 # #################UTOPIA###################
 
-# get_cmake_property(_variableNames VARIABLES)
-# list(SORT _variableNames)
-# foreach(_variableName ${_variableNames})
-#   message(STATUS "${_variableName}=${${_variableName}}")
-# endforeach()
+# get_cmake_property(_variableNames VARIABLES) list(SORT _variableNames)
+# foreach(_variableName ${_variableNames}) message(STATUS
+# "${_variableName}=${${_variableName}}") endforeach()
 
+# message(STATUS
+# "################################################################################################################")
 
-# message(STATUS "################################################################################################################")
+# get_property(
+#   importTargets
+#   DIRECTORY "${CMAKE_SOURCE_DIR}"
+#   PROPERTY IMPORTED_TARGETS)
 
 find_package(Utopia REQUIRED)
 if(Utopia_FOUND)
   message(STATUS "Utopia Found.")
   add_definitions(${UTOPIA_DEFS})
 
-  # get_cmake_property(_variableNames VARIABLES)
-  # list(SORT _variableNames)
-  # foreach(_variableName ${_variableNames})
-  #   message(STATUS "${_variableName}=${${_variableName}}")
-  # endforeach()
+  # get_property(
+  #   importTargetsAfter
+  #   DIRECTORY "${CMAKE_SOURCE_DIR}"
+  #   PROPERTY IMPORTED_TARGETS)
+  # list(REMOVE_ITEM importTargetsAfter ${importTargets})
+
+  # message("${importTargetsAfter}")
 
   # if(NOT UTOPIA_ENABLE_PETSC OR NOT UTOPIA_ENABLE_TRILINOS)
-  #   message(FATAL_ERROR "Utopia needs to be installed with petsc and trilinos enabled as backends.")
-  # endif()
+  # message(FATAL_ERROR "Utopia needs to be installed with petsc and trilinos
+  # enabled as backends.") endif()
 
   # list(APPEND UTOPIA_FE_BUILD_INCLUDES ${UTOPIA_INCLUDES})
   list(APPEND UTOPIA_FE_DEP_LIBRARIES ${UTOPIA_LIBRARIES})
@@ -77,8 +82,8 @@ if(UTOPIA_ENABLE_INTREPID2)
   find_package(Intrepid2 HINTS ${UTOPIA_ENABLE_INTREPID2_SEARCH_PATHS} REQUIRED)
   if(Intrepid2_FOUND)
     message(STATUS "Intrepid2 found.")
-    # list(APPEND UTOPIA_FE_DEP_LIBRARIES ${MOONOLITH_LIBRARIES}) 
-    # list(APPEND UTOPIA_FE_DEP_INCLUDES ${MOONOLITH_INCLUDES})
+    # list(APPEND UTOPIA_FE_DEP_LIBRARIES ${MOONOLITH_LIBRARIES}) list(APPEND
+    # UTOPIA_FE_DEP_INCLUDES ${MOONOLITH_INCLUDES})
   endif()
 
   find_package(
@@ -101,25 +106,17 @@ if(UTOPIA_ENABLE_MARS)
     set(MARS_SEARCH_PATHS "${MARS_SEARCH_PATHS};$ENV{MARS_DIR};$ENV{Mars_DIR}")
   endif()
 
-  find_package(
-    Mars
-    CONFIG
-    HINTS
-    ${MARS_SEARCH_PATHS}
-    PATH_SUFFIXES
-    lib/cmake
-    REQUIRED)
+  find_package(Mars HINTS ${MARS_SEARCH_PATHS} PATH_SUFFIXES lib/cmake REQUIRED)
 
   if(Mars_FOUND)
     message(STATUS "Mars found.")
 
     get_target_property(Mars_INCLUDE_DIR Mars::mars
-                          INTERFACE_INCLUDE_DIRECTORIES)
+                        INTERFACE_INCLUDE_DIRECTORIES)
 
-    get_target_property(Mars_LIBRARIES Mars::mars
-                          IMPORTED_LOCATION_RELEASE)
-    
-    list(APPEND UTOPIA_FE_BUILD_INCLUDES ${Mars_INCLUDE_DIR})
+    get_target_property(Mars_LIBRARIES Mars::mars IMPORTED_LOCATION_RELEASE)
+
+    # list(APPEND UTOPIA_FE_BUILD_INCLUDES ${Mars_INCLUDE_DIR})
     list(APPEND UTOPIA_FE_DEP_LIBRARIES ${Mars_LIBRARIES})
     list(APPEND UTOPIA_FE_DEP_INCLUDES ${Mars_INCLUDE_DIR})
   endif()
@@ -132,16 +129,6 @@ if(UTOPIA_ENABLE_MARS)
       REQUIRED)
   endif()
 endif()
-
-
-
-# NOT DOING MUCH
-# list(REMOVE_DUPLICATES UTOPIA_FE_DEP_LIBRARIES)
-# list(REMOVE_DUPLICATES UTOPIA_FE_DEP_INCLUDES)
-# list(REMOVE_DUPLICATES UTOPIA_FE_DEP_BUILD_INCLUDES)
-
-# message(STATUS "${UTOPIA_FE_BUILD_INCLUDES}")
-
 
 # ##############################################################################
 
@@ -160,13 +147,16 @@ macro(print_dependency_table)
       "-${SMALL_DEP_TABLE}Utopia\t|ALWAYS ON\t|${Utopia_FOUND}\n")
 
   set(SMALL_DEP_TABLE
-      "-${SMALL_DEP_TABLE}Libmesh\t|${UTOPIA_ENABLE_LIBMESH}\t|${LIBMESH_FOUND}\n")
+      "-${SMALL_DEP_TABLE}Libmesh\t|${UTOPIA_ENABLE_LIBMESH}\t|${LIBMESH_FOUND}\n"
+  )
 
   set(SMALL_DEP_TABLE
-      "-${SMALL_DEP_TABLE}Moonolith\t|${UTOPIA_ENABLE_MOONOLITH}\t|${MOONOLITH_FOUND}\n")
+      "-${SMALL_DEP_TABLE}Moonolith\t|${UTOPIA_ENABLE_MOONOLITH}\t|${MOONOLITH_FOUND}\n"
+  )
 
   set(SMALL_DEP_TABLE
-      "-${SMALL_DEP_TABLE}Intrepid2\t|${UTOPIA_ENABLE_INTREPID_2}\t|${INTREPID_2_FOUND}\n")
+      "-${SMALL_DEP_TABLE}Intrepid2\t|${UTOPIA_ENABLE_INTREPID_2}\t|${INTREPID_2_FOUND}\n"
+  )
 
   set(SMALL_DEP_TABLE
       "-${SMALL_DEP_TABLE}Mars\t|${UTOPIA_ENABLE_MARS}\t|${Mars_FOUND}\n")
@@ -189,19 +179,27 @@ macro(log_dependency_table)
   set(DEP_TABLE "${DEP_TABLE}    UTOPIA_VERSION: ${UTOPIA_VERSION}\n")
 
   set(DEP_TABLE "${DEP_TABLE}  - Libmesh:\n")
-  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_ENABLE_LIBMESH: ${UTOPIA_ENABLE_LIBMESH}\n")
+  set(DEP_TABLE
+      "${DEP_TABLE}    UTOPIA_ENABLE_LIBMESH: ${UTOPIA_ENABLE_LIBMESH}\n")
   set(DEP_TABLE "${DEP_TABLE}    UTOPIA_LIBMESH_DIR: ${UTOPIA_LIBMESH_DIR}\n")
-  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_LIBMESH_VERSION: ${UTOPIA_LIBMESH_VERSION}\n")
+  set(DEP_TABLE
+      "${DEP_TABLE}    UTOPIA_LIBMESH_VERSION: ${UTOPIA_LIBMESH_VERSION}\n")
 
   set(DEP_TABLE "${DEP_TABLE}  - Moonolith:\n")
-  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_ENABLE_MOONOLITH: ${UTOPIA_ENABLE_MOONOLITH}\n")
-  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_MOONOLITH_DIR: ${UTOPIA_MOONOLITH_DIR}\n")
-  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_MOONOLITH_VERSION: ${UTOPIA_MOONOLITH_VERSION}\n")
+  set(DEP_TABLE
+      "${DEP_TABLE}    UTOPIA_ENABLE_MOONOLITH: ${UTOPIA_ENABLE_MOONOLITH}\n")
+  set(DEP_TABLE
+      "${DEP_TABLE}    UTOPIA_MOONOLITH_DIR: ${UTOPIA_MOONOLITH_DIR}\n")
+  set(DEP_TABLE
+      "${DEP_TABLE}    UTOPIA_MOONOLITH_VERSION: ${UTOPIA_MOONOLITH_VERSION}\n")
 
   set(DEP_TABLE "${DEP_TABLE}  - Intrepid2:\n")
-  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_ENABLE_INTREPID2: ${UTOPIA_ENABLE_INTREPID2}\n")
-  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_INTREPID2_DIR: ${UTOPIA_INTREPID2_DIR}\n")
-  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_INTREPID2_VERSION: ${UTOPIA_INTREPID2_VERSION}\n")
+  set(DEP_TABLE
+      "${DEP_TABLE}    UTOPIA_ENABLE_INTREPID2: ${UTOPIA_ENABLE_INTREPID2}\n")
+  set(DEP_TABLE
+      "${DEP_TABLE}    UTOPIA_INTREPID2_DIR: ${UTOPIA_INTREPID2_DIR}\n")
+  set(DEP_TABLE
+      "${DEP_TABLE}    UTOPIA_INTREPID2_VERSION: ${UTOPIA_INTREPID2_VERSION}\n")
 
   set(DEP_TABLE "${DEP_TABLE}  - Mars:\n")
   set(DEP_TABLE "${DEP_TABLE}    UTOPIA_ENABLE_MARS: ${UTOPIA_ENABLE_MARS}\n")
