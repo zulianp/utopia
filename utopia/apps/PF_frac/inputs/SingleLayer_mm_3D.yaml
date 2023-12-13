@@ -4,18 +4,18 @@ app: SingleSedimentaryLayer3D
 #output-path: Output/Hobb/HOBBS_PT_AT1_d2_Dirch_1E32_1nu05_2nu45_dt0003_W2_l2_m15_p01_Unif
 #output-path: Output/TestingTang3D
 # output-path: /home/edoardo/Data/sdd1/Results/SedimentaryLayer/Single_d60_L800_H240_W50_Ef50_nuf25_Gcf20_En10_nun35_Gcn160_l015_m05_Twodt00001_p001_Com0
-output-path: SingleLayer3D_d50_L1000_H500_W500_E50_nu25_Gc20_Es10_nus35_Gcs200_l015_m05_Twodt_p03_pn03_Com0
+output-path: SingleLayer3D_d50_L1000_H400_W400_E50_nu25_Gc20_Es10_nus35_Gcs200_l015_m05_Twodt_p03_pn03_Com0
 save_output: true
 # Mesh specification -----------------------------------------
 nx: 501
-ny: 251
-nz: 251
+ny: 201
+nz: 201
 x_min: 0
 x_max: 1.0e3
 y_min: 0
-y_max: 0.5e3 #1.6e3
+y_max: 0.4e3 #1.6e3
 z_min: 0
-z_max: 0.5e3
+z_max: 0.4e3
 n_levels: 1
 # Problem specification ------------------------------------------
 # Boundary Conditions
@@ -49,8 +49,8 @@ random_damage: false
 uniform_damage: false
 central_damage: false
 IC_number: 10 			#for uniform damage
-bottom_layer_height: 0.225e3	
-top_layer_height: 0.275e3
+bottom_layer_height: 0.175e3	
+top_layer_height: 0.225e3
 bottom_layer_height2: -10e3 	#below zero not modelled	
 top_layer_height2: -10e3 	#below zero ... 
 interface_regularisation_length: 0
