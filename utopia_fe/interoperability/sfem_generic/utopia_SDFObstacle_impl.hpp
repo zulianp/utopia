@@ -4,6 +4,7 @@
 #include <utopia_DeviceView.hpp>
 #include <utopia_Enums.hpp>
 #include <utopia_Epsilon.hpp>
+#include <utopia_MPI.hpp>
 #include <utopia_RangeDevice.hpp>
 #include "utopia.hpp"
 #include "utopia_IPTransfer.hpp"
@@ -141,6 +142,8 @@ namespace utopia {
                 gap->data() = e_mul(gap->data(), weights);
                 normalize(normals->data());
 
+                gap->data().shift(-shift);
+
                 // if (0)  //
                 {
                     RangeDevice<Vector> block_range(0, gap->data().local_size() / 3);
@@ -190,7 +193,7 @@ namespace utopia {
 
                     auto rr = gap->data().range();
                     for (ptrdiff_t i = 0; i < mesh.n_local_nodes(); i++) {
-                        const Scalar gg = surface_gap_view.get(i);
+                        const Scalar gg = surface_gap_view.get(i) - shift;
                         if (gg > cutoff) continue;
 
                         SizeType globalid = local_to_global(node_mapping[i], 0);
@@ -220,7 +223,7 @@ namespace utopia {
 
                 const int n_var = space.n_var();
                 for (ptrdiff_t i = 0; i < mesh.n_local_nodes(); i++) {
-                    const Scalar gg = surface_gap_view.get(i);
+                    const Scalar gg = surface_gap_view.get(i) - shift;
                     if (gg > cutoff) continue;
 
                     SizeType node = node_mapping[i];
@@ -242,10 +245,13 @@ namespace utopia {
                 }
             }
 
-            gap->data().shift(-shift);
-
             space.apply_zero_constraints(is_contact);
             HouseholderReflectionForContact<Matrix, Vector, 3>::build(is_contact, normals->data(), orthogonal_trafo);
+
+            const bool has_NaN = normals->data().has_nan_or_inf() || gap->data().has_nan_or_inf();
+            if (has_NaN) {
+                Utopia::Abort("Found NaN in SDFObstacle!");
+            }
 
             if (export_gap) {
                 static int count = 0;
@@ -272,6 +278,7 @@ namespace utopia {
                 // Vector filtered_gap = gap->data();
 
                 space.write("gap_" + std::to_string(count) + ".e", filtered_gap);
+                space.write("normals_" + std::to_string(count) + ".e", normals->data());
                 space.write("director_" + std::to_string(count++) + ".e", director);
             }
         }
@@ -299,6 +306,14 @@ namespace utopia {
                 impl_->exclude.push_back(name);
             });
         });
+
+        if (impl_->verbose && !mpi_world_rank()) {
+            utopia::out() << "infinity:\t" << impl_->infinity << "\n";
+            utopia::out() << "export_gap:\t" << impl_->export_gap << "\n";
+            utopia::out() << "shift:\t" << impl_->shift << "\n";
+            utopia::out() << "cutoff:\t" << impl_->cutoff << "\n";
+            utopia::out() << "verbose:\t" << impl_->verbose << "\n";
+        }
     }
 
     template <class FunctionSpace>
