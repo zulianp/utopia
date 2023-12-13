@@ -556,7 +556,10 @@ namespace utopia {
             if (!io_) {
                 io_ = std::make_shared<IO_t>(*this->space());
                 io_->set_output_path(output_path_);
+                this->register_output(*io_);
             }
+
+            this->update_output(*io_);
 
             return io_->write(x, this->time()->step(), this->time()->get());
         }

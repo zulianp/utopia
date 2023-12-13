@@ -47,12 +47,13 @@ namespace utopia {
             FunctionSpace space;
             Vector_t x;
             std::shared_ptr<FEFunctionInterface_t> fun;
+            std::shared_ptr<ObstacleFEFunction_t> obs_fun;
             bool restart = false;
             in.get("restart", restart);
 
             if (restart) {
                 IO<FunctionSpace> input_db(space);
-                in.require("space", input_db);
+                in.require("space", [&](Input &node) { input_db.open_input(node); });
 
                 Scalar_t t = 0;
                 in.require("restart_time", t);
@@ -62,7 +63,9 @@ namespace utopia {
                 auto newmark = std::make_shared<NewmarkIntegrator_t>(fun);
                 fun = newmark;
 
-                newmark->read(in);
+                obs_fun = std::make_shared<ObstacleFEFunction_t>(fun);
+                obs_fun->read(in);
+
                 newmark->time()->get() = t;  // Set-simulation time
                 newmark->setup_IVP(input_db);
                 x = newmark->solution();
@@ -121,6 +124,9 @@ namespace utopia {
                     fun = ObstacleFEFunctionFactory<FunctionSpace>::make_time_integrator(fun, integrator);
                 }
 
+                obs_fun = std::make_shared<ObstacleFEFunction_t>(fun);
+                obs_fun->read(in);
+
                 if (deformation.empty()) {
                     space.create_vector(x);
                 } else {
@@ -139,10 +145,6 @@ namespace utopia {
             }
 
             // Set up obstacle and solve
-
-            auto obs_fun = std::make_shared<ObstacleFEFunction_t>(fun);
-            obs_fun->read(in);
-
             BoxConstrainedFEFunctionSolver_t solver;
             in.get("solver", solver);
 
