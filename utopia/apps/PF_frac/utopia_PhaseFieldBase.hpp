@@ -766,6 +766,9 @@ namespace utopia {
                               << "  lambda: " << lambda << " f_t: " << tensile_strength << "\n";
             }
 
+            if (mpi_world_rank()==0)
+                 utopia::out() << "penalty non_neg set to: " << penalty_tol_non_neg << std::endl;
+
             // Must be done after lambda and mu
             fill_in_isotropic_elast_tensor();
         }  // end of read
