@@ -41,8 +41,11 @@ namespace utopia {
 
                     // auto x_kokkos = x.raw_type()->getLocalViewHost();
                     // return w.write_tpetra(path.to_string(), x_kokkos);
-
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+                    auto x_kokkos = x.raw_type()->getLocalViewHost(Tpetra::Access::ReadWrite);
+#else
                     auto x_kokkos = x.raw_type()->getLocalViewHost();
+#endif
                     w.add_field_tpetra("U", this->n_var, x_kokkos);
                     w.set_output_path(path);
                     return w.write();

@@ -34,6 +34,11 @@ namespace utopia {
             return Super::update_IVP(x);
         }
 
+        bool update_BVP() override {
+            this->space()->apply_constraints(this->x_old());
+            return true;
+        }
+
         bool hessian_and_gradient(const Vector_t &velocity, Matrix_t &H, Vector_t &g) const override {
             Vector_t x;
             update_x(velocity, x);

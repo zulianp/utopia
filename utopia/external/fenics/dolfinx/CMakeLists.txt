@@ -32,9 +32,11 @@ else()
 
   set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-  add_executable(${PROJECT_NAME} main.cpp ${CMAKE_CURRENT_BINARY_DIR}/hyperelasticity.c utopia_DolfinxFunction.cpp)
+  add_executable(${PROJECT_NAME} main.cpp ${CMAKE_CURRENT_BINARY_DIR}/hyperelasticity.c ${CMAKE_CURRENT_SOURCE_DIR}/../dolfinx_spin/DolfinxFunction.cpp)
   target_link_libraries(${PROJECT_NAME} dolfinx)
   target_link_libraries(${PROJECT_NAME} Utopia::utopia)
+
+  target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../dolfinx_spin)
 
   # Do not throw error for 'multi-line comments' (these are typical in
   # rst which includes LaTeX)

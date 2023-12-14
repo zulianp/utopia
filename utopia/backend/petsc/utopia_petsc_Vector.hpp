@@ -47,7 +47,8 @@ namespace utopia {
         public Comparable<PetscVector>,
         public BLAS1Tensor<PetscVector>,
         public Tensor<PetscVector, 1>,
-        public Selectable<PetscVector, 1> {
+        public Selectable<PetscVector, 1>,
+        public Configurable {
     public:
         using Scalar = PetscScalar;
         using SizeType = PetscInt;
@@ -738,6 +739,17 @@ namespace utopia {
 
         inline bool read(const std::string &path) { return read(comm().get(), path); }
 
+        void read(Input &in) override {
+            std::string path;
+            std::string type;
+
+            in.require("type", type);
+            if (type == "file") {
+                in.require("path", path);
+                this->read(path);
+            }
+        }
+
 #ifdef UTOPIA_WITH_MATRIX_IO
         bool read_raw(MPI_Comm comm, const std::string &path);
         bool write_raw(const std::string &path) const;
@@ -752,12 +764,13 @@ namespace utopia {
         bool is_consistent() const;
 
         void convert_from(const Vec &vec);
-        void convert_to(Vec &vec) const;
+        void convert_to(Vec vec) const;
         void copy_data_to(Vec vec) const;
         void copy_data_from(Vec vec);
 
         void wrap(Vec &v);
         void unwrap(Vec &v) const;
+        void own(Vec &v);
 
         inline void ghosted(const SizeType &local_size,
                             const SizeType &global_size,

@@ -744,6 +744,11 @@ namespace utopia {
         }
 
         inline void shift_diag(const BlasVector &v) {
+            if (empty()) {
+                diag(v);
+                return;
+            }
+
             auto n = std::min(rows_, cols_);
 
             for (SizeType i = 0; i < n; ++i) {

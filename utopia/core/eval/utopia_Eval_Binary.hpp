@@ -75,8 +75,14 @@ namespace utopia {
 
         template <class Left, class Right>
         static void apply(Left &&left, const Tensor<Right, Order> &right, const EMultiplies &, Result &result) {
-            result.construct(std::forward<Left>(left));
-            result.e_mul(right.derived());
+            if (result.is_alias(right)) {
+                result.e_mul(left.derived());
+            } else if (result.is_alias(left)) {
+                result.e_mul(right.derived());
+            } else {
+                result.construct(std::forward<Left>(left));
+                result.e_mul(right.derived());
+            }
         }
 
         template <class Left, class Right>

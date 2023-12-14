@@ -12,6 +12,8 @@
 #include "utopia_MultigridQR.hpp"
 #include "utopia_polymorphic_QPSolver.hpp"
 
+#include "utopia_ShiftedPenaltyQPSolver_impl.hpp"
+
 // std
 #include <cmath>
 
@@ -19,6 +21,96 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     class QPSolveApp {
+    public:
+        using Scalar = typename Traits<Vector>::Scalar;
+        using Communicator = typename Traits<Vector>::Communicator;
+
+        class Problem : public Configurable {
+        public:
+            void read(Input &in) override {
+                in.require("A", A);
+                in.require("T", T);
+
+                in.require("A", A);
+                in.require("O", O);
+                in.require("rhs", rhs);
+                in.require("upper_bound", upper_bound);
+                in.require("is_contact", is_contact);
+
+                std::stringstream ss;
+                ss << "A: " << A.local_size() << " " << A.size() << "\n";
+                ss << "T: " << T.local_size() << " " << T.size() << "\n";
+                ss << "O: " << O.local_size() << " " << O.size() << "\n";
+                ss << "rhs: " << rhs.local_size() << " " << rhs.size() << "\n";
+                ss << "is_contact: " << is_contact.local_size() << " " << is_contact.size() << "\n";
+                ss << "upper_bound: " << upper_bound.local_size() << " " << upper_bound.size() << "\n";
+
+                A.comm().synched_print(ss.str());
+
+                // disp(O);
+                // disp("T");
+                // disp("---------------------");
+                // disp(T);
+                // disp("---------------------");
+            }
+
+            Matrix A, T, O;
+            Vector rhs, upper_bound, is_contact;
+        };
+
+        void solve_with_shifted_penalty(Input &in) {
+            Problem problem;
+            problem.read(in);
+
+            ShiftedPenaltyQPSolver<Matrix> qp_solver;
+            qp_solver.read(in);
+
+            bool use_trafo = true;
+            in.get("use_trafo", use_trafo);
+
+            if (use_trafo) {
+                auto ptrafo = std::make_shared<PrototypeTransformation<Matrix, Vector>>();
+
+                ptrafo->fun_transform_position = [&](const Vector &x, Vector &x_trafo) {
+                    Vector x_temp = problem.T * x;
+                    x_trafo = transpose(problem.O) * x_temp;
+                };
+
+                ptrafo->fun_inverse_transform_direction = [&](const Vector &grad_trafo, Vector &grad) {
+                    Vector grad_temp;
+                    grad_temp = problem.O * grad_trafo;
+                    grad = transpose(problem.T) * grad_temp;
+                };
+
+                ptrafo->fun_transform_matrix = [&](const Matrix &penalty_matrix, Matrix &hessian_matrix) {
+                    Matrix temp = transpose(problem.O) * penalty_matrix * problem.O;
+                    hessian_matrix = transpose(problem.T) * temp * problem.T;
+                };
+
+                qp_solver.set_transform(ptrafo);
+            }
+
+            BoxConstraints<Vector> box(nullptr, make_ref(problem.upper_bound));
+            qp_solver.set_box_constraints(box);
+
+            Vector x(layout(problem.rhs), 0);
+            bool ok = qp_solver.solve(problem.A, problem.rhs, x);
+
+            Path output_path = "out.bin";
+            in.get("output_path", output_path);
+            x.write(output_path);
+        }
+    };
+
+    void qp_solve(Input &in) {
+        QPSolveApp<PetscMatrix, PetscVector> app;
+        app.solve_with_shifted_penalty(in);
+    }
+
+    UTOPIA_REGISTER_APP(qp_solve);
+
+    template <class Matrix, class Vector>
+    class MGQPSolveApp {
     public:
         using Scalar = typename Traits<Vector>::Scalar;
         using Communicator = typename Traits<Vector>::Communicator;
@@ -276,12 +368,12 @@ namespace utopia {
         }
     };
 
-    void qp_solve(Input &in) {
-        QPSolveApp<PetscMatrix, PetscVector> app;
+    void mg_qp_solve(Input &in) {
+        MGQPSolveApp<PetscMatrix, PetscVector> app;
         app.run_mg_qr(in);
     }
 
-    UTOPIA_REGISTER_APP(qp_solve);
+    UTOPIA_REGISTER_APP(mg_qp_solve);
 
 }  // namespace utopia
 

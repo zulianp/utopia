@@ -4,6 +4,12 @@
 
 #include "utopia_stk_DofMap.hpp"
 
+#include "utopia_stk_Commons.hpp"
+
+#include <stk_mesh/base/Comm.hpp>
+#include <stk_mesh/base/Field.hpp>
+#include <stk_mesh/base/MetaData.hpp>
+
 namespace utopia {
     namespace stk {
 
@@ -30,6 +36,85 @@ namespace utopia {
             register_output_field(field.name());
 
             return impl_->io.write(1, 1);
+        }
+
+        bool SpaceIO::read_nodal(Field<FunctionSpace> &field) {
+            using Bucket_t = ::stk::mesh::Bucket;
+            using Communicator = Traits<FunctionSpace>::Communicator;
+
+            auto space = field.space();
+            assert(space != nullptr);
+
+            if (!space) {
+                Utopia::Abort("Space in field must be set from outside for now!");
+            }
+
+            auto &&mesh = impl_->space.mesh();
+            auto &&bulk_data = mesh.bulk_data();
+            auto &&meta_data = mesh.meta_data();
+            auto &node_buckets = utopia::stk::universal_nodes(bulk_data);
+            ::stk::mesh::FieldBase *stk_field = ::stk::mesh::get_field_by_name(field.name(), meta_data);
+
+            if (!stk_field) {
+                if (!space->comm().rank()) {
+                    utopia::err() << "SpaceIO: could not find stk field with name \"" << field.name() << "\"\n";
+                }
+
+                Utopia::Abort("Fatal error!");
+            }
+
+            int n_comp = -1;
+            Vector local_vector;
+            for (const auto &ib : node_buckets) {
+                auto &&b = *ib;
+                n_comp = ::stk::mesh::field_scalars_per_entity(*stk_field, b);
+
+                // Resize vector
+                SizeType n_nodes = utopia::stk::count_universal_nodes(bulk_data);
+                SizeType nn = n_nodes * n_comp;
+                local_vector.zeros(layout(Communicator::self(), nn, nn));
+                local_vector.set_block_size(n_comp);
+                break;
+            }
+
+            // Make sure that even if we do not have local nodes we still know how many components we have
+            n_comp = space->comm().max(n_comp);
+
+            if (!local_vector.empty()) {
+                auto lv_view = local_view_device(local_vector);
+
+                for (const auto &ib : node_buckets) {
+                    auto &&b = *ib;
+                    const Bucket_t::size_type length = b.size();
+
+                    for (Bucket_t::size_type k = 0; k < length; ++k) {
+                        auto node = b[k];
+                        auto idx = utopia::stk::convert_entity_to_index(node);
+
+                        if (bulk_data.in_receive_ghost(node)) {
+                            idx = impl_->space.dof_map().shift_aura_idx(idx);
+                        }
+
+                        const Scalar *values = (const Scalar *)::stk::mesh::field_data(*stk_field, node);
+
+                        for (int d = 0; d < n_comp; ++d) {
+                            lv_view.set(idx * n_comp + d, values[d]);
+                        }
+                    }
+                }
+            }
+
+            auto field_data =
+                std::make_shared<Vector>(layout(space->comm(), mesh.n_local_nodes() * n_comp, mesh.n_nodes() * n_comp));
+            field_data->set_block_size(n_comp);
+
+            space->local_to_global(local_vector, *field_data, OVERWRITE_MODE);
+
+            field.set_data(field_data);
+            field.set_tensor_size(n_comp);
+            field.set_space(space);
+
+            return true;
         }
 
         bool SpaceIO::write(const Vector &v) { return impl_->space.write(impl_->io.output_path(), v); }
@@ -102,6 +187,15 @@ namespace utopia {
         }
 
         void SpaceIO::register_output_field(const std::string &var_name) { impl_->io.register_output_field(var_name); }
+
+        void SpaceIO::register_output_field(const Field<FunctionSpace> &field) {
+            this->update_output_field(field);
+            impl_->io.register_output_field(field.name());
+        }
+
+        void SpaceIO::update_output_field(const Field<FunctionSpace> &field) {
+            impl_->space.backend_set_nodal_field(field);
+        }
 
     }  // namespace stk
 }  // namespace utopia
