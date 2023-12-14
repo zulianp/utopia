@@ -552,7 +552,7 @@ namespace utopia {
         space.read(in);
         stats.stop_and_collect("space-creation");
 
-        if (mpi_world_rank() == 0) std::cout << "Starting Single Layer Model" << std::endl;
+        if (mpi_world_rank() == 0) std::cout << "Starting Single Layer Model REGULARISED" << std::endl;
 
         stats.start();
 
