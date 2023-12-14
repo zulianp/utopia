@@ -48,16 +48,23 @@ namespace utopia {
             Vector_t x;
             std::shared_ptr<FEFunctionInterface_t> fun;
             std::shared_ptr<ObstacleFEFunction_t> obs_fun;
-            bool restart = false;
-            in.get("restart", restart);
+            bool enable_restart = false;
+            in.get("enable_restart", enable_restart);
 
-            if (restart) {
+            if (enable_restart) {
                 IO<FunctionSpace> input_db(space);
+                input_db.set_import_all_data(true);
                 in.require("space", [&](Input &node) { input_db.open_input(node); });
 
-                Scalar_t t = 0;
-                in.require("restart_time", t);
-                input_db.load_time_step(t);
+                Scalar_t t = -1;
+                in.get("restart_time", t);
+
+                if (t < 0) {
+                    input_db.load_last_time_step();
+                    t = input_db.max_time();
+                } else {
+                    input_db.load_time_step(t);
+                }
 
                 fun = std::make_shared<FEModelFunction_t>(make_ref(space));
                 auto newmark = std::make_shared<NewmarkIntegrator_t>(fun);
