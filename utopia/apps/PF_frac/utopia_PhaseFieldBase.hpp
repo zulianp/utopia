@@ -979,6 +979,7 @@ namespace utopia {
             // reading parameters
             params_.read(in);
 
+            in.get("restart", restart_);
             in.get("checkpoint_each", checkpoint_each_);
             in.get("checkpoint_path", checkpoint_path_);
 
@@ -2037,17 +2038,15 @@ namespace utopia {
         }
 
         virtual void write_to_file(const std::string &output_path, const Vector &x, const Scalar time) {
-            if (!x.comm().rank()) {
-                utopia::out() << "Saving: " << (output_path + "_X_" + std::to_string(time) + ".vtr") << "\n";
-            }
-
             space_.write(output_path + "_X_" + std::to_string(time) + ".vtr", x);
 
-            if (write_count_ % checkpoint_each_ == 0 && write_count_ != 0) {
-                write_checkpoint(time, x);
-            }
+            if (restart_) {
+                if (write_count_ % checkpoint_each_ == 0 && write_count_ != 0) {
+                    write_checkpoint(time, x);
+                }
 
-            write_count_++;
+                write_count_++;
+            }
         }
 
         std::vector<double> WriteParametersToVector() {
@@ -2079,6 +2078,7 @@ namespace utopia {
         Scalar time_{0};
         std::vector<std::unique_ptr<NeumannBoundaryCondition<FunctionSpace>>> neumann_bcs;
 
+        bool restart_{false};
         ptrdiff_t checkpoint_each_{10};
         ptrdiff_t write_count_{0};
         Path checkpoint_path_{"checkpoint"};
