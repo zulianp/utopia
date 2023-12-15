@@ -51,8 +51,8 @@ top_layer_height: 0.290e3
 bottom_layer_height2: -10e3 	#below zero not modelled	
 top_layer_height2: -10e3 	#below zero ... 
 interface_regularisation_length: 0.09e3
-E_1: 50	        	#Dolostone
-E_2: 10			#Shale
+E_1: 50	        #Dolostone
+E_2: 10			    #Shale
 nu_1: 0.25			#Dolostone
 nu_2: 0.35 			#Shale 	
 Gc_1: 20e-6 			#Dolostone 48

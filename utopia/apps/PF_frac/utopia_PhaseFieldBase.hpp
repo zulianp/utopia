@@ -19,7 +19,13 @@
 
 #include "utopia_make_unique.hpp"
 
+#include "utopia_ui.hpp"
+
+#include <glob.h>
 #include <cmath>
+#include <cstddef>
+#include <cstdio>
+#include <fstream>
 #include <random>
 
 #define UNROLL_FACTOR 4
@@ -975,6 +981,10 @@ namespace utopia {
         void read(Input &in) override {
             // reading parameters
             params_.read(in);
+
+            in.get("restart", restart_);
+            in.get("checkpoint_each", checkpoint_each_);
+            in.get("checkpoint_path", checkpoint_path_);
 
             // Sets a length scale based on mesh size if it is not set in the Yaml file (NOT GOOD SINCE different
             // material properties for each level
@@ -1957,8 +1967,89 @@ namespace utopia {
 
         // Scalar get_dt() const { return dt_; }
 
+        class RestartFiles {
+        public:
+            std::string last_file;
+            int n_files;
+        };
+
+        inline static RestartFiles list_checkpoint_folder(const std::string &pattern) {
+            glob_t gl;
+            glob(pattern.c_str(), GLOB_MARK, NULL, &gl);
+
+            int n_files = gl.gl_pathc;
+
+            printf("n_files (%d):\n", n_files);
+            for (int np = 0; np < n_files; np++) {
+                printf("%s\n", gl.gl_pathv[np]);
+            }
+
+            RestartFiles ret;
+            ret.n_files = n_files;
+
+            if (n_files) {
+                ret.last_file = gl.gl_pathv[n_files - 1];
+            }
+
+            globfree(&gl);
+            return ret;
+        }
+
+        virtual bool restart_from_checkpoint(Vector &x, SizeType &time_step_counter, Scalar &time) {
+            // RestartFiles rf = list_checkpoint_folder(checkpoint_path_ / ("_X_" + "*.dat"));
+            // if (!rf.n_files) return false;
+            // std::string time_mark = rf.last_file.substr(0, path.size());
+            // time_mark = time_mark.substr(0, time_mark.size() - 4);
+            // time = atof(time_mark.c_str());
+            // time_step_counter = rf.n_files;
+            // return space_.read_field(rf.last_file, x);
+
+            Path check_file = checkpoint_path_ / "info.yaml";
+            if (!check_file.exists()) return false;
+
+            auto in = open_istream(check_file);
+            if (!in) {
+                return false;
+            }
+
+            Path last_checkpoint;
+            in->require("last_checkpoint", last_checkpoint);
+            in->require("time", time);
+            in->require("step_count", time_step_counter);
+
+            write_count_ = time_step_counter;
+            return x.load(last_checkpoint);
+        }
+
+        virtual bool write_checkpoint(const Scalar time, const Vector &x) const {
+            checkpoint_path_.make_dir();
+            Path last_checkpoint =
+                checkpoint_path_ / ("X_" + std::to_string(write_count_) + "_" + std::to_string(time) + ".dat");
+            x.write(last_checkpoint);
+
+            if (!x.comm().rank()) {
+                // Only root process
+                Path check_file = checkpoint_path_ / "info.yaml";
+                std::ofstream os(check_file.c_str());
+                os << "last_checkpoint: " << last_checkpoint << "\n";
+                os << "time: " << time << "\n";
+                os << "step_count: " << write_count_ << "\n";
+                os.close();
+            }
+
+            return true;
+        }
+
         virtual void write_to_file(const std::string &output_path, const Vector &x, const Scalar time) {
             space_.write(output_path + "_X_" + std::to_string(time) + ".vtr", x);
+
+            if (restart_) {
+                if (write_count_ % checkpoint_each_ == 0 && write_count_ != 0) {
+                    write_checkpoint(time, x);
+                }
+
+                write_count_++;
+            }
         }
 
         std::vector<double> WriteParametersToVector() {
@@ -1989,6 +2080,11 @@ namespace utopia {
         // Scalar dt_;
         Scalar time_{0};
         std::vector<std::unique_ptr<NeumannBoundaryCondition<FunctionSpace>>> neumann_bcs;
+
+        bool restart_{false};
+        ptrdiff_t checkpoint_each_{10};
+        ptrdiff_t write_count_{0};
+        Path checkpoint_path_{"checkpoint"};
     };
 
 }  // namespace utopia

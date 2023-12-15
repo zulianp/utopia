@@ -14,6 +14,7 @@
 #include <string>
 
 namespace utopia {
+
     namespace stk {
 
         class MeshIO : public Configurable {
@@ -23,6 +24,8 @@ namespace utopia {
             void read(Input &in) override;
             bool load();
             bool load_time_step(const Scalar t);
+            bool load_last_time_step();
+
             bool write(const Path &write_path);
             bool write(const int step, const Scalar t);
 
@@ -34,8 +37,15 @@ namespace utopia {
             ::stk::io::StkMeshIoBroker &raw_type();
 
             void set_output_path(const Path &path);
+            void set_output_mode(enum OutputMode output_mode);
+            void set_output_mode(const std::string &output_mode);
+
             void create_output_mesh();
             void register_output_field(const std::string &var_name);
+
+            int num_time_steps() const;
+            Scalar max_time() const;
+            void set_import_all_data(const bool val);
 
             MeshIO(Mesh &mesh);
             ~MeshIO();
