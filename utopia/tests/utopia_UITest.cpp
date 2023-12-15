@@ -8,6 +8,10 @@
 #include "utopia_SymbolicFunction.hpp"
 #include "utopia_ui.hpp"
 
+#ifdef UTOPIA_WITH_YAML_CPP
+#include "utopia_YAMLInput.hpp"
+#endif
+
 namespace utopia {
 
     void generic_stream(Input &is) {
@@ -48,6 +52,32 @@ namespace utopia {
     }
 
 #endif  // UTOPIA_WITH_TINY_EXPR
+
+#ifdef UTOPIA_WITH_YAML_CPP
+
+    void yaml_vector_test() {
+        std::string yaml = "vec: [1, 2, 3]";
+        auto in = YAMLInput::FromString(yaml);
+
+        {
+            std::vector<std::string> v;
+            in->get("vec", v);
+            utopia_test_assert(v.size() == 3);
+        }
+
+        {
+            std::vector<double> v;
+            in->get("vec", v);
+            utopia_test_assert(v.size() == 3);
+        }
+
+        {
+            std::vector<float> v;
+            in->get("vec", v);
+            utopia_test_assert(v.size() == 3);
+        }
+    }
+#endif
 
     void input_parameters() {
         InputParameters in;
@@ -96,6 +126,10 @@ namespace utopia {
 #ifdef UTOPIA_WITH_TINY_EXPR
         UTOPIA_RUN_TEST(symbolic_expr);
 #endif  // UTOPIA_WITH_TINY_EXPR
+
+#ifdef UTOPIA_WITH_YAML_CPP
+        UTOPIA_RUN_TEST(yaml_vector_test);
+#endif
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(ui);

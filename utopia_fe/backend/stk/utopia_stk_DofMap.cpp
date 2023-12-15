@@ -1284,8 +1284,8 @@ namespace utopia {
                 case OVERWRITE_MODE: {
                     auto l2g = this->local_to_global();
 
-                    auto l_view = const_local_view_device(local);
-                    auto g_view = local_view_device(global);
+                    auto l_view = const_local_view_host(local);
+                    auto g_view = local_view_host(global);
 
                     // TODO
                     // parallel_for(local_range_device(local), UTOPIA_LAMBDA(const SizeType){});
@@ -1311,6 +1311,26 @@ namespace utopia {
 
                                 g_view.set(g_id - r.begin(), l_view.get(l_id));
                             }
+                        }
+                    }
+
+                    break;
+                }
+                case ADD_MODE: {
+                    auto l2g = this->local_to_global();
+
+                    Write<Vector> w(global, utopia::GLOBAL_ADD);
+
+                    auto l_view = const_local_view_host(local);
+                    const SizeType nl = l2g.size();
+                    const int nv = local.local_size() / nl;
+                    assert(nv > 0);
+
+                    for (SizeType i = 0; i < nl; ++i) {
+                        for (int d = 0; d < nv; ++d) {
+                            const SizeType g_id = l2g(i, d);
+                            const SizeType l_id = i * nv + d;
+                            global.c_add(g_id, l_view.get(l_id));
                         }
                     }
 

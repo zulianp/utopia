@@ -434,6 +434,9 @@ namespace utopia {
         bool read(const Teuchos::RCP<const Teuchos::Comm<int> > &comm, const std::string &path);
         bool write(const std::string &path) const;
 
+        void wrap(const RCPVectorType &x);
+        void unwrap(const RCPVectorType &x);
+
         inline bool empty() const override { return vec_.is_null(); }
 
         void update_ghosts();

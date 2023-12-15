@@ -75,7 +75,8 @@ namespace utopia {
         virtual ~Path();
 
         bool is_dir() const;
-        bool make_dir(const int permissions = 0777);
+        bool exists() const;
+        bool make_dir(const int permissions = 0777) const;
 
         inline std::string &raw_type() { return path_; }
     };

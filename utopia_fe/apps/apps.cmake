@@ -28,6 +28,10 @@ if(UTOPIA_ENABLE_KOKKOS)
     list(APPEND APPS_MODULES kokkos)
 endif()
 
+if(UTOPIA_ENABLE_SFEM)
+    list(APPEND APPS_MODULES sfem)
+endif()
+
 find_project_files(${UTOPIA_APPS_DIR} "${APPS_MODULES}" LOCAL_HEADERS
                    LOCAL_SOURCES)
 target_sources(

@@ -6,6 +6,7 @@ find_path(METIS_INCLUDES
   NAMES 
   metis.h 
   PATHS 
+  $ENV{METIS_DIR} 
   $ENV{METISDIR} 
   ${INCLUDE_INSTALL_DIR} 
   PATH_SUFFIXES

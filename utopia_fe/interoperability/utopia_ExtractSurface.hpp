@@ -5,9 +5,9 @@ namespace utopia {
     template <class VolumeMesh, class SurfaceMesh>
     class ExtractSurface {};
 
-    template <class VolumeMesh, class SurfaceMesh>
-    inline void extract_surface(const VolumeMesh &in, SurfaceMesh &out) {
-        ExtractSurface<VolumeMesh, SurfaceMesh>::apply(in, out);
+    template <class VolumeMesh, class SurfaceMesh, typename... Args>
+    inline void extract_surface(const VolumeMesh &in, SurfaceMesh &out, Args... args) {
+        ExtractSurface<VolumeMesh, SurfaceMesh>::apply(in, out, args...);
     }
 }  // namespace utopia
 

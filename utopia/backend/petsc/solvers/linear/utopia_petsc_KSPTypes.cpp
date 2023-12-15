@@ -38,6 +38,9 @@ namespace utopia {
 #if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 8, 0)
                   PCCHOWILUVIENNACL, PCROWSCALINGVIENNACL, PCSAVIENNACL,
 #endif
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 16, 4)
+                  PCSMG,
+#endif
                   PCBDDC, PCKACZMARZ, PCTELESCOPE, PCNONE
           }),
           package_({

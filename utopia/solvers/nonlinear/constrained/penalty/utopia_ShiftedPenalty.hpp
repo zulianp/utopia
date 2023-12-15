@@ -19,6 +19,7 @@ namespace utopia {
         using Super = utopia::Penalty<Matrix, Vector>;
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
+        using Layout = typename Traits<Vector>::Layout;
         using BoxConstraints = utopia::BoxConstraints<Vector>;
         using Transformation = utopia::Transformation<Matrix, Vector>;
 
@@ -127,11 +128,12 @@ namespace utopia {
 
         bool hessian(const Vector &x, Vector &H) const override {
             UTOPIA_TRACE_SCOPE("ShiftedPenalty::hessian");
-            Vector work, h(layout(x), 0.);
+            Vector work, h;
 
             if (this->has_transform()) {
                 // Transform to constraint base
                 this->transform()->transform(x, work);
+                h.zeros(layout(work));
                 if (!penalty_hessian(work, h)) {
                     return false;
                 }
@@ -144,10 +146,13 @@ namespace utopia {
                     h = work;
                 }
 
+                work.zeros(layout(H));
+
                 // Transform to problem base
                 this->transform()->inverse_transform_direction(h, work);
                 H += (work);
             } else {
+                h.zeros(layout(x));
                 if (!penalty_hessian(x, h)) {
                     return false;
                 }
@@ -175,11 +180,13 @@ namespace utopia {
 
         bool hessian(const Vector &x, Matrix &H) const override {
             UTOPIA_TRACE_SCOPE("ShiftedPenalty::hessian");
-            Vector work, h(layout(x), 0.);
+            Vector work, h;
 
             if (this->has_transform()) {
                 // Transform to constraint base
                 this->transform()->transform(x, work);
+                h.zeros(layout(work));
+
                 if (!penalty_hessian(work, h)) {
                     return false;
                 }
@@ -192,10 +199,24 @@ namespace utopia {
                     h = work;
                 }
 
+                work.zeros(layout(x));
+
                 // Transform to problem base
-                this->transform()->inverse_transform_direction(h, work);
-                H.shift_diag(work);
+                // this->transform()->inverse_transform_direction(h, work);
+                // H.shift_diag(work);
+
+                Matrix diag_matrix = diag(h);
+                Matrix temp;
+                this->transform()->transform(diag_matrix, temp);
+
+                if (H.empty()) {
+                    H = temp;
+                } else {
+                    H += temp;
+                }
+
             } else {
+                h.zeros(layout(x));
                 if (!penalty_hessian(x, h)) {
                     return false;
                 }
@@ -217,11 +238,13 @@ namespace utopia {
         bool value(const Vector &x, Scalar &value) const override {
             UTOPIA_TRACE_SCOPE("ShiftedPenalty::value");
 
-            Vector work, v(layout(x), 0.);
+            Vector work, v;
 
             if (this->has_transform()) {
                 // Transform to constraint base
                 this->transform()->transform(x, work);
+                v.zeros(layout(work));
+
                 if (!penalty_value(work, v)) {
                     return false;
                 }
@@ -238,6 +261,8 @@ namespace utopia {
                 this->transform()->inverse_transform_direction(v, work);
                 value += sum(v);
             } else {
+                v.zeros(layout(x));
+
                 if (!penalty_value(x, v)) {
                     return false;
                 }
@@ -257,11 +282,13 @@ namespace utopia {
 
         bool gradient(const Vector &x, Vector &grad) const override {
             UTOPIA_TRACE_SCOPE("ShiftedPenalty::gradient");
-            Vector work, g(layout(x), 0.);
+            Vector work, g;
 
             if (this->has_transform()) {
                 // Transform to constraint base
                 this->transform()->transform(x, work);
+                g.zeros(layout(work));
+
                 if (!penalty_gradient(work, g)) {
                     return false;
                 }
@@ -274,10 +301,15 @@ namespace utopia {
                     g = work;
                 }
 
+                // if (!layout(work).same(layout(grad))) {
+                work.zeros(layout(grad));
+                // }
+
                 // Transform to problem base
                 this->transform()->inverse_transform_direction(g, work);
                 grad += work;
             } else {
+                g.zeros(layout(x));
                 if (!penalty_gradient(x, g)) {
                     return false;
                 }
@@ -314,13 +346,28 @@ namespace utopia {
         }
 
         void update_shift_aux(const Vector &x) {
-            // SizeType cc = count_active(x);
-            // if (!x.comm().rank()) {
-            //     utopia::out() << "Update active " << cc << "\n";
-            // }
+            if (this->box()->has_upper_bound() && this->box()->has_lower_bound()) {
+                if (!x.comm().rank()) {
+                    m_utopia_warning_once(
+                        "Upper and Lower bound simultaneously is not supported yet!\n"
+                        "Enforcing upper bound only!\n");
+                }
+            }
 
             if (this->box()->has_upper_bound()) {
                 {
+                    // {
+                    //     std::stringstream ss;
+                    //     ss << "x: " << x.local_size() << " " << x.size() << "\n";
+                    //     ss << "shift: " << shift->local_size() << " " << shift->size() << "\n";
+                    //     ss << "active: " << active->local_size() << " " << active->size() << "\n";
+                    //     ss << "dps: " << dps->local_size() << " " << dps->size() << "\n";
+                    //     ss << "upper_bound: " << this->box()->upper_bound()->local_size() << " "
+                    //        << this->box()->upper_bound()->size() << "\n";
+
+                    //     x.comm().synched_print(ss.str());
+                    // }
+
                     auto ub_view = const_local_view_device(*this->box()->upper_bound());
                     auto x_view = const_local_view_device(x);
                     auto s_view = local_view_device(*shift);
@@ -343,6 +390,8 @@ namespace utopia {
                             a_view.set(i, active);
                             s_view.set(i, si);
                             dps_view.set(i, dps);
+
+                            // printf("%d) %g %g\n", i, si, dps);
                         });
                 }
 
@@ -358,9 +407,7 @@ namespace utopia {
                                       << ", shift_norm: " << shift_norm << "\n";
                     }
                 }
-            }
-
-            if (this->box()->has_lower_bound()) {
+            } else if (this->box()->has_lower_bound()) {
                 {
                     auto lb_view = const_local_view_device(*this->box()->lower_bound());
                     auto x_view = const_local_view_device(x);
@@ -403,26 +450,30 @@ namespace utopia {
             }
         }
 
+        void reset_buffers(const Layout &l) {
+            if (!shift) {
+                active = std::make_shared<Vector>(l);
+                shift = std::make_shared<Vector>(l);
+                dps = std::make_shared<Vector>(l);
+            } else if (!l.same(layout(*shift))) {
+                active->zeros(l);
+                shift->zeros(l);
+                dps->zeros(l);
+            }
+        }
+
         void update_shift(const Vector &x) {
             UTOPIA_TRACE_SCOPE("ShiftedPenalty::shift");
 
-            if (!shift) {
-                active = std::make_shared<Vector>(layout(x));
-                shift = std::make_shared<Vector>(layout(x));
-                dps = std::make_shared<Vector>(layout(x));
-            } else if (!layout(x).same(layout(*shift))) {
-                active->zeros(layout(x));
-                shift->zeros(layout(x));
-                dps->zeros(layout(x));
-            }
-
             Vector work;
-
             if (this->has_transform()) {
                 // Transform to constraint base
                 this->transform()->transform(x, work);
+
+                reset_buffers(layout(work));
                 update_shift_aux(work);
             } else {
+                reset_buffers(layout(x));
                 update_shift_aux(x);
             }
 

@@ -1,8 +1,8 @@
 #ifndef UTOPIA_ARRAY_2D_HPP
 #define UTOPIA_ARRAY_2D_HPP
 
-#include <string>
 #include <array>
+#include <string>
 
 #include "utopia_Algorithms.hpp"
 #include "utopia_Base.hpp"
@@ -72,6 +72,11 @@ namespace utopia {
 
         inline void set_data(T *data) { data_ = data; }
         UTOPIA_INLINE_FUNCTION bool empty() const { return size_ == 0; }
+
+        template <typename OtherT>
+        ArrayView<OtherT> reinterpret() {
+            return ArrayView<OtherT>(reinterpret_cast<OtherT *>(data_), size_);
+        }
 
     private:
         T *data_;

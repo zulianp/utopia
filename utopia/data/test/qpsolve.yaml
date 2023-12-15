@@ -1,0 +1,32 @@
+app: qp_solve
+# use_trafo: false
+verbose: true
+penalty_parameter: 1e2
+linear_solver:
+  # verbose: true
+  ksp_type: bcgs
+  pc_type: bjacobi
+  stol: 1e-8
+  rtol: 1e-8
+  atol: 1e-16
+
+A: # N X N
+  type: file
+  path: A/rowptr.raw
+O: # M X M
+  type: file
+  path: O/rowptr.raw
+T: # M X N
+  type: file
+  path: T/rowptr.raw
+is_contact: # M
+  type: file
+  path: is_contact.raw
+rhs: # N
+  type: file
+  path: rhs.raw
+upper_bound: # M
+  type: file
+  path: upper_bound.raw
+
+output_path: out.raw

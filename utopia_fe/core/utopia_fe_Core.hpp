@@ -5,6 +5,8 @@
 
 #include "utopia_FEAssembler.hpp"
 
+#include "utopia_IOMode.hpp"
+
 namespace utopia {
     template <class FunctionSpace>
     class Obstacle {};

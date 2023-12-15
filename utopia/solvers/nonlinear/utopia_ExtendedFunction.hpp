@@ -41,6 +41,8 @@ namespace utopia {
         // Copy of vec...
         virtual Vector initial_guess() const { return _x_eq_values; }
 
+        void create_vector(Vector &x) const override { x = _x_eq_values; }
+
         virtual Layout layout() const { return utopia::layout(_x_eq_values); }
 
         bool hessian(const Vector &x, Matrix &H) const override = 0;

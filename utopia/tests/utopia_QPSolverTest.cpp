@@ -406,7 +406,19 @@ namespace utopia {
 
         void shifted_penalty_test() {
             ShiftedPenaltyQPSolver<Matrix> qp_solver;
-            auto params = param_list(param("penalty_param", 1e2));
+            auto params =                                   //
+                param_list(                                 //
+                    param("penalty_param", 1e2),            //
+                    param("verbose", true),                 //
+                    param("linear_solver",                  //
+                          param_list(                       //
+                              param("ksp_type", "bcgs"),    //
+                              param("pc_type", "bjacobi"),  //
+                              param("verbose", true)        //
+                              )                             //
+                          )                                 //
+                );
+
             qp_solver.read(params);
             run_qp_solver(qp_solver);
         }

@@ -113,6 +113,7 @@ namespace utopia {
             in.get("use_two_time_steps", use_two_time_steps_);
             in.get("time_secondphase", time_secondphase_);
             in.get("dt_secondphase", dt_secondphase_);
+            in.get("restart", restart_);
 
             csv_file_name_ = this->output_path_ + "_energies.csv";
         }
@@ -129,10 +130,12 @@ namespace utopia {
                 use_pressure_ = true;
             }
 
-            write_to_file(space, 0.0);
+            if (time_ == 0) {
+                write_to_file(space, 0.0);
+            }
 
             dt0_ = dt_;
-            time_ = dt_;
+            time_ += dt_;
 
             if (final_time_ == 0) {
                 final_time_ = num_time_steps_ * dt_;
@@ -177,9 +180,9 @@ namespace utopia {
     protected:
         Scalar dt_, dt0_;
         Scalar num_time_steps_;
-        Scalar time_;
-        Scalar final_time_;
-        SizeType time_step_counter_;
+        Scalar time_{0};
+        Scalar final_time_{0};
+        SizeType time_step_counter_{0};
         std::string output_path_;
         bool use_mprgp_{false};
         Scalar total_wall_clock_time_;
@@ -210,6 +213,7 @@ namespace utopia {
         // E.P For Exporting energy file and iterations
         std::string csv_file_name_;
         bool fracture_energy_time_stepping_ = false;
+        bool restart_{false};
     };
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -296,7 +300,20 @@ namespace utopia {
             space_.create_vector(this->lb_);
             rename("X", this->solution_);
 
-            IC_.init(this->solution_);
+            bool has_restart = false;
+            if (this->restart_) {
+                has_restart =
+                    fe_problem_->restart_from_checkpoint(this->solution_, this->time_step_counter_, this->time_);
+                if (has_restart && mpi_world_rank() == 0) {
+                    utopia::out() << "[Status] Resuming from previous run, time: " << this->time_
+                                  << ", time_step_count: " << this->time_step_counter_ << "\n";
+                }
+            }
+
+            if (!has_restart) {
+                IC_.init(this->solution_);
+            }
+
             if (this->use_pressure_ && !this->use_constant_pressure_) {
                 Vector &pressure_vec = fe_problem_->pressure_field();
                 IC_.init(this->solution_, pressure_vec);

@@ -107,6 +107,77 @@ namespace utopia {
     }
 
 #else
+
+#ifdef UTOPIA_WITH_MATRIX_IO
+    void write_parmetis_graph(const PetscCommunicator &comm,
+                              const ptrdiff_t local_rows,
+                              const ptrdiff_t rows,
+                              PetscInt row_offset,
+                              idx_t *rowptr,
+                              idx_t *colidx,
+                              real_t *values) {
+        UTOPIA_TRACE_SCOPE("write_parmetis_graph");
+
+        const idx_t rowptr0 = rowptr[0];
+
+        crs_t crs;
+        crs.lrows = local_rows;
+        crs.grows = rows;
+        crs.lnnz = rowptr[local_rows];
+        crs.gnnz = crs.lnnz;
+        MPI_Allreduce(MPI_IN_PLACE, &crs.gnnz, 1, MPI_LONG, MPI_SUM, comm.get());
+
+        std::stringstream ss;
+
+        ss << "local_rows: " << local_rows << "\n";
+        ss << "rows: " << rows << "\n";
+        ss << "rowptr[local_rows]: " << rowptr[local_rows] << "\n";
+
+        for (ptrdiff_t i = 0; i < 3; i++) {
+            ss << "---------------------------\n";
+            ss << row_offset + i << ")\n";
+            ss << "[" << rowptr[i] << ", " << rowptr[i + 1] << ")\n";
+            for (idx_t k = rowptr[i]; k < rowptr[i + 1]; k++) {
+                ss << colidx[k] << " ";
+            }
+
+            ss << "\n---------------------------\n";
+            ss << "\n";
+        }
+
+        comm.synched_print(ss.str());
+
+        long lnnz = crs.lnnz;
+        long start = 0;
+        MPI_Exscan(&lnnz, &start, 1, MPI_LONG, MPI_SUM, comm.get());
+        crs.start = start;
+        crs.rowoffset = row_offset;
+
+        crs.rowptr_type = string_to_mpi_datatype(TypeToString<idx_t>::get());
+        crs.colidx_type = string_to_mpi_datatype(TypeToString<idx_t>::get());
+        crs.values_type = string_to_mpi_datatype(TypeToString<real_t>::get());
+
+        if (!rowptr0) {
+            for (ptrdiff_t i = 0; i < local_rows + 1; i++) {
+                rowptr[i] += row_offset;
+            }
+        }
+
+        crs.rowptr = (char *)rowptr;
+        crs.colidx = (char *)colidx;
+        crs.values = (char *)colidx;
+
+        crs_write(comm.get(), "dbg/rowptr.raw", "dbg/colidx.raw", "dbg/values.raw", &crs);
+
+        if (!rowptr0) {
+            for (ptrdiff_t i = 0; i < local_rows + 1; i++) {
+                rowptr[i] -= row_offset;
+            }
+        }
+    }
+
+#endif
+
     static void print_stats(const MPICommunicator &comm,
                             const PetscInt rows,
                             PetscInt const local_rows,
@@ -195,7 +266,7 @@ namespace utopia {
 
         Mat d, o;
 
-        const PetscInt *colmap;
+        const PetscInt *colmap = nullptr;
         MatMPIAIJGetSeqAIJ(matrix.raw_type(), &d, &o, &colmap);
 
         PetscCrsView d_view(d);
@@ -262,6 +333,16 @@ namespace utopia {
             vwgt = &actual_vwgts[0];
         }
 
+        // if (0) {
+        //     write_parmetis_graph(matrix.comm(),
+        //                          matrix.local_rows(),
+        //                          matrix.rows(),
+        //                          matrix.row_range().begin(),
+        //                          &xadj[0],
+        //                          &adjncy[0],
+        //                          &tpwgts[0]);
+        // }
+
         int ret = 0;
         {
             UTOPIA_TRACE_SCOPE("ParMETIS_V3_PartKway");
@@ -294,70 +375,6 @@ namespace utopia {
             return false;
         }
     }
-
-#ifdef UTOPIA_WITH_MATRIX_IO
-    void write_parmetis_graph(const PetscCommunicator &comm,
-                              const ptrdiff_t local_rows,
-                              const ptrdiff_t rows,
-                              PetscInt row_offset,
-                              idx_t *rowptr,
-                              idx_t *colidx,
-                              real_t *values) {
-        UTOPIA_TRACE_SCOPE("write_parmetis_graph");
-
-        const idx_t rowptr0 = rowptr[0];
-
-        crs_t crs;
-        crs.lrows = local_rows;
-        crs.grows = rows;
-        crs.lnnz = rowptr[local_rows];
-
-        std::stringstream ss;
-
-        ss << "local_rows: " << local_rows << "\n";
-        ss << "rows: " << rows << "\n";
-        ss << "rowptr[local_rows]: " << rowptr[local_rows] << "\n";
-
-        for (ptrdiff_t i = 0; i < 3; i++) {
-            for (idx_t k = rowptr[i]; k < rowptr[i + 1]; k++) {
-                ss << colidx[k] << " ";
-            }
-
-            ss << "\n";
-        }
-
-        comm.synched_print(ss.str());
-
-        // long lnnz = crs.lnnz;
-        // long start = 0;
-        // MPI_Exscan(&lnnz, &start, 1, MPI_LONG, MPI_SUM, comm);
-        // crs.start = start;
-
-        // crs.rowoffset = row_offset;
-
-        // crs.rowptr_type = string_to_mpi_datatype(TypeToString<idx_t>::get());
-        // crs.colidx_type = string_to_mpi_datatype(TypeToString<idx_t>::get());
-        // crs.values_type = string_to_mpi_datatype(TypeToString<real_t>::get());
-
-        // if(!rowptr0) {
-        //     for(ptrdiff_t i = 0; i < local_rows + 1; i++) {
-        //         rowptr[i] += row_offset;
-        //     }
-        // }
-
-        // crs.rowptr = (char *)rowptr;
-        // crs.colidx = (char *)colidx;
-        // crs.values = (char *)values;
-
-        // crs_write(comm.get(), "dbg/rowptr.raw", "dbg/colidx.raw", "dbg/values.raw", &crs);
-
-        // if(!rowptr0) {
-        //     for(ptrdiff_t i = 0; i < local_rows + 1; i++) {
-        //         rowptr[i] -= row_offset;
-        //     }
-        // }
-    }
-#endif
 
 #if 0
     bool parallel_decompose_block(const int block_size,
@@ -1017,7 +1034,8 @@ namespace utopia {
     //                                            MatReuse reuse) {
     //     IS is_col = nullptr;
     //     PetscErrorCode err =
-    //         ISCreateGeneral(in.comm().raw_comm(), permutation.size(), &permutation[0], PETSC_USE_POINTER, &is_col);
+    //         ISCreateGeneral(in.comm().raw_comm(), permutation.size(), &permutation[0], PETSC_USE_POINTER,
+    //         &is_col);
 
     //     if (err != 0) {
     //         return false;

@@ -18,7 +18,15 @@
 #include "utopia_moonolith_stk_Contact.hpp"
 #include "utopia_moonolith_stk_Obstacle.hpp"
 
+#ifdef UTOPIA_ENABLE_SFEM
+#include "utopia_sfem_stk_SDFObstacle.hpp"
+#endif  // UTOPIA_ENABLE_SFEM
+
 void stk_nlsolve(utopia::Input &in) {
+#ifdef UTOPIA_ENABLE_SFEM
+    utopia::register_sfem_stk_contact();
+#endif  // UTOPIA_ENABLE_SFEM
+
     utopia::NLSolveApp<utopia::stk::FunctionSpace> app;
     app.read(in);
 

@@ -100,10 +100,20 @@ namespace utopia {
             // FIXME trilinos backend is buggy
             if (Traits<GlobalMatrix>::Backend == utopia::TRILINOS || empty(mat) || s_m.get(0) != dof_map.n_dofs() ||
                 s_m.get(1) != dof_map.n_dofs()) {
-                auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-                                          *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+                // auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
+                //                           *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
 
-                mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
+                // mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
+
+                auto ml = layout(
+                    mat.comm(), dof_map.n_local_dofs(), dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.n_dofs());
+
+                Traits<GlobalMatrix>::IndexSet d_nnz, o_nnz;
+                convert(dof_map.get_n_nz(), d_nnz);
+                convert(dof_map.get_n_oz(), o_nnz);
+
+                mat.sparse(ml, d_nnz, o_nnz);
+
                 // FIXME
                 // MatSetOption(mat.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
             } else {

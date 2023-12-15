@@ -2,6 +2,7 @@
 #define UTOPIA_PETSC_IO_HPP
 
 #include <memory>
+#include <string>
 
 namespace utopia {
 
@@ -15,10 +16,12 @@ namespace utopia {
     public:
         class Wrapper;
 
-        bool open(const PetscCommunicator &comm, const Path &path);
+        bool open(const PetscCommunicator &comm, const Path &path, const std::string &mode = "w");
 
         bool write(const PetscDMBase &dm);
         bool write(const PetscVector &x);
+        bool read(PetscDMBase &dm);
+        bool read(PetscVector &x);
 
         void close();
         PetscIO();

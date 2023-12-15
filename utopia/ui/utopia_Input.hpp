@@ -48,6 +48,11 @@ namespace utopia {
         virtual ~Input() = default;
 
         virtual SizeType size() const = 0;
+
+        virtual void get(const std::string & /*key*/, std::vector<std::string> & /*v*/) { assert(false); }
+        virtual void get(const std::string & /*key*/, std::vector<float> & /*v*/) { assert(false); }
+        virtual void get(const std::string & /*key*/, std::vector<double> & /*v*/) { assert(false); }
+
         virtual void get(std::vector<std::shared_ptr<IConvertible>> &values) = 0;
         virtual void get_all(std::function<void(Input &)> lambda) = 0;
         virtual bool is_collection() const = 0;
@@ -55,6 +60,7 @@ namespace utopia {
         virtual void get(const std::string &key, Path &val) { get(key, val.raw_type()); }
         virtual void get(const std::string &key, bool &val) = 0;
         virtual void get(const std::string &key, double &val) = 0;
+        virtual void get(const std::string &key, float &val) = 0;
         virtual void get(const std::string &key, int &val) = 0;
         virtual void get(const std::string &key, long &val) = 0;
         virtual void get(const std::string &key, unsigned long &val) = 0;

@@ -67,9 +67,9 @@ namespace utopia {
 
         Scalar get_time() { return _time.get_seconds(); }
 
-        IterativeSolver<Matrix, Vector> *clone() const override = 0;
+        IterativeSolver *clone() const override = 0;
 
-        IterativeSolver<Matrix, Vector>(const IterativeSolver<Matrix, Vector> &other)
+        IterativeSolver(const IterativeSolver &other)
             : LinearSolver<Matrix, Vector>(other),
               atol_(other.atol_),
               rtol_(other.rtol_),

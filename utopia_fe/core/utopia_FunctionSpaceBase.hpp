@@ -56,6 +56,7 @@ namespace utopia {
         virtual void apply_constraints(Vector &v) const = 0;
         virtual void apply_constraints_update(Vector &v) const { apply_constraints(v); }
         virtual void apply_constraints(Matrix &m, Vector &v) const = 0;
+        virtual void apply_constraints_time_derivative(Vector &) const { assert(false); }
         virtual void apply_zero_constraints(Vector &vec) const = 0;
 
         virtual void copy_at_constrained_nodes(const Vector &, Vector &) const {

@@ -8,7 +8,7 @@
 
 namespace utopia {
 
-    template <class Matrix, class Vector>
+    template <class Matrix, class Vector = typename Traits<Matrix>::Vector>
     class OmniLinearSolver : public LinearSolver<Matrix, Vector>, public Describable {
     public:
         using Scalar = typename utopia::Traits<Vector>::Scalar;
@@ -26,6 +26,7 @@ namespace utopia {
         void update(const std::shared_ptr<const Matrix> &mat) override;
         void read(Input &in) override;
         void verbose(const bool &verbose) override;
+        void clear() override;
 
     private:
         std::unique_ptr<LinearSolver<Matrix, Vector>> impl_;

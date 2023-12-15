@@ -5,8 +5,8 @@
 #include "utopia_DeviceView.hpp"
 #include "utopia_Instance.hpp"
 #include "utopia_Logger.hpp"
-//#include "utopia_kokkos_ParallelEach.hpp"
-// #include "utopia_trilinos_Each_impl.hpp"
+// #include "utopia_kokkos_ParallelEach.hpp"
+//  #include "utopia_trilinos_Each_impl.hpp"
 
 #include "utopia_trilinos_Utils.hpp"
 
@@ -720,6 +720,11 @@ namespace utopia {
     }
 
     void TpetraMatrix::shift_diag(const TpetraVector &d) {
+        if (empty()) {
+            diag(d);
+            return;
+        }
+
         auto d_view = const_view_device(d);
 
         // FIXME?

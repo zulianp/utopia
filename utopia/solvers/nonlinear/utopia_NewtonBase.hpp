@@ -14,9 +14,15 @@
 #include "utopia_PrintInfo.hpp"
 
 namespace utopia {
+    template <class Matrix, class Vector>
+    class NewtonInterface : public NonLinearSolver<Vector> {
+    public:
+        virtual ~NewtonInterface() {}
+        virtual bool solve(Function<Matrix, Vector> &fun, Vector &x) = 0;
+    };
 
     template <class Matrix, class Vector>
-    class NewtonBase : public NonLinearSolver<Vector>, public InexactNewtonInterface<Vector> {
+    class NewtonBase : public NewtonInterface<Matrix, Vector>, public InexactNewtonInterface<Vector> {
     public:
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
@@ -25,15 +31,15 @@ namespace utopia {
         using Solver = utopia::LinearSolver<Matrix, Vector>;
         using DiffController = utopia::DiffController<Matrix, Vector>;
 
+        using NewtonInterface<Matrix, Vector>::solve;
+
         NewtonBase(std::shared_ptr<Solver> linear_solver)
-            : NonLinearSolver<Vector>(),
+            : NewtonInterface<Matrix, Vector>(),
               InexactNewtonInterface<Vector>(),
               linear_solver_(std::move(linear_solver)),
               check_diff_(false) {}
 
         ~NewtonBase() override = default;
-
-        virtual bool solve(Function<Matrix, Vector> &fun, Vector &x) = 0;
 
         virtual bool solve(Function_rhs<Matrix, Vector> &fun, Vector &x, const Vector &rhs) {
             fun.set_rhs(rhs);
@@ -65,7 +71,7 @@ namespace utopia {
         }
 
         void read(Input &in) override {
-            NonLinearSolver<Vector>::read(in);
+            NewtonInterface<Matrix, Vector>::read(in);
             in.get("check_diff", check_diff_);
             in.get_deprecated("check-diff", "check_diff", check_diff_);
 
@@ -81,7 +87,7 @@ namespace utopia {
         }
 
         void print_usage(std::ostream &os) const override {
-            NonLinearSolver<Vector>::print_usage(os);
+            NewtonInterface<Matrix, Vector>::print_usage(os);
             this->print_param_usage(
                 os, "check_diff", "bool", "Enables finite difference controller", std::to_string(check_diff_));
 

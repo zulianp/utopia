@@ -369,6 +369,7 @@ namespace utopia {
         }
 
         bool write(const Path &path, const PetscVector &x) const { return mesh_->write(path, x); }
+        bool read_field(const Path &path, PetscVector &x) const { return mesh_->read_field(path, x); }
 
         inline bool empty() const { return static_cast<bool>(mesh_); }
 

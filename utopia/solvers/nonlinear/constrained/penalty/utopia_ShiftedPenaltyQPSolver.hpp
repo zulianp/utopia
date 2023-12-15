@@ -3,6 +3,7 @@
 
 #include "utopia_Core.hpp"
 #include "utopia_QPSolver.hpp"
+#include "utopia_TransformedBoxConstraints.hpp"
 
 #include <memory>
 #include <vector>
@@ -17,6 +18,7 @@ namespace utopia {
         using Layout = typename Traits<Vector>::Layout;
         using LinearSolver = utopia::LinearSolver<Matrix, Vector>;
         using Super = utopia::QPSolver<Matrix, Vector>;
+        using Transformation = utopia::Transformation<Matrix, Vector>;
 
     public:
         void set_linear_solver(const std::shared_ptr<LinearSolver> &linear_solver);
@@ -37,9 +39,10 @@ namespace utopia {
         void update(const std::shared_ptr<const Matrix> &op) override;
 
         void set_selection(const std::shared_ptr<Vector> &boolean_selector) override;
+        void set_scaling_matrix(const std::shared_ptr<Matrix> &scaling_matrix);
+        void set_transform(const std::shared_ptr<Transformation> &t);
 
-        UTOPIA_NVCC_PRIVATE
-        class Impl;
+        UTOPIA_NVCC_PRIVATE class Impl;
 
     private:
         std::unique_ptr<Impl> impl_;

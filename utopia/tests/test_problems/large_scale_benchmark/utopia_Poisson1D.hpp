@@ -6,7 +6,7 @@
 
 namespace utopia {
 
-    template <typename Matrix, typename Vector>
+    template <class Matrix, class Vector = typename Traits<Matrix>::Vector>
     class Poisson1D final : virtual public UnconstrainedExtendedTestFunction<Matrix, Vector>,
                             virtual public ConstrainedExtendedTestFunction<Matrix, Vector> {
     public:
