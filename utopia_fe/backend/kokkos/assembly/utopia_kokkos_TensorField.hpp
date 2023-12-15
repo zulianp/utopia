@@ -252,12 +252,14 @@ namespace utopia {
 
                 UTOPIA_INLINE_FUNCTION void init(int &val) const { val = 0; }
 
-#define UTOPIA_KOKKOS_JOIN_VOLATILE volatile
-
 #ifdef KOKKOS_VERSION_GREATER_EQUAL
 #if KOKKOS_VERSION_GREATER_EQUAL(4, 0, 1)
 #define UTOPIA_KOKKOS_JOIN_VOLATILE
 #endif
+#endif
+
+#ifndef UTOPIA_KOKKOS_JOIN_VOLATILE
+#define UTOPIA_KOKKOS_JOIN_VOLATILE volatile
 #endif
 
                 KOKKOS_INLINE_FUNCTION void join(UTOPIA_KOKKOS_JOIN_VOLATILE int &val,

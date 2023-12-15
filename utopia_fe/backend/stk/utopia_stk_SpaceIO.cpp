@@ -130,6 +130,9 @@ namespace utopia {
 
         void SpaceIO::set_output_path(const Path &path) { impl_->io.set_output_path(path); }
 
+        void SpaceIO::set_output_mode(const std::string &output_mode) { impl_->io.set_output_mode(output_mode); }
+        void SpaceIO::set_output_mode(enum OutputMode output_mode) { impl_->io.set_output_mode(output_mode); }
+
         bool SpaceIO::open_output() {
             if (!impl_->io.ensure_output()) {
                 return false;
@@ -152,6 +155,16 @@ namespace utopia {
             assert(impl_);
             return impl_->io.load_time_step(t);
         }
+
+        bool SpaceIO::load_last_time_step() {
+            assert(impl_);
+            return impl_->io.load_last_time_step();
+        }
+
+        int SpaceIO::num_time_steps() const { return impl_->io.num_time_steps(); }
+        SpaceIO::Scalar SpaceIO::max_time() const { return impl_->io.max_time(); }
+
+        void SpaceIO::set_import_all_data(const bool val) { impl_->io.set_import_all_data(val); }
 
         bool SpaceIO::write(const int step, const Scalar t) {
             assert(impl_);

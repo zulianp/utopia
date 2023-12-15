@@ -514,7 +514,7 @@ namespace utopia {
         bool non_smooth_projection_{false};
         int max_projection_iterations_{10000};
 
-        Scalar_t damping_{0.98};
+        Scalar_t damping_{1};
 
         std::shared_ptr<LineSearchBoxProjection<Vector_t>> line_search_;
         std::shared_ptr<BoxConstraints<Vector_t>> box_;
