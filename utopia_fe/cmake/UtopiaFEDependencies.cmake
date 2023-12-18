@@ -113,6 +113,15 @@ if(UTOPIA_ENABLE_MARS)
     # list(APPEND UTOPIA_FE_BUILD_INCLUDES ${Mars_INCLUDE_DIR})
     list(APPEND UTOPIA_FE_DEP_LIBRARIES ${Mars_LIBRARIES})
     list(APPEND UTOPIA_FE_DEP_INCLUDES ${Mars_INCLUDE_DIR})
+
+
+    # if(UTOPIA_ENABLE_MARS_ADIOS2) 
+    #   find_package(adios2 REQUIRED)
+    #   if(adios2_FOUND)
+    #     list(APPEND UTOPIA_FE_DEP_LIBRARIES ${adios2_LIBRARIES})
+    #     list(APPEND UTOPIA_FE_DEP_INCLUDES ${adios2_INCLUDE_DIR})
+    #   endif() 
+    # endif()
   endif()
 
   if(UTOPIA_ENABLE_MARS_VTK)

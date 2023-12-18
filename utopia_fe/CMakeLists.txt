@@ -85,9 +85,6 @@ list(APPEND UTOPIA_FE_HEADERS utopia_fe.hpp)
 
 add_library(utopia_fe ${UTOPIA_FE_SOURCES} ${UTOPIA_FE_HEADERS})
 
-# if(UTOPIA_ENABLE_MARS_ADIOS2) find_package(adios2 REQUIRED)
-# target_link_libraries(utopia_fe PUBLIC adios2::adios2) endif()
-
 set_utopia_compiler_features(utopia_fe)
 
 # ##############################################################################
