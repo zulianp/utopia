@@ -338,7 +338,7 @@ namespace utopia {
                 os << "signal with size " << signal_.size() << "\n";
             }
         };
-#endif  // UTOPIA_WITH_TINY_EXPR
+#endif  // UTOPIA_ENABLE_TINY_EXPR
 
         class OverwriteCondition : public Condition {
         public:

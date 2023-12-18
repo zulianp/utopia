@@ -31,7 +31,7 @@ option(UTOPIA_ENABLE_PETSC "Enable the PETSc DM functionalities" OFF)
 option(UTOPIA_ENABLE_LIBMESH_DEPRECATED "Enable the deprecated utopia::libmesh functionalities" ON)
 
 
-option(UTOPIA_ENABLE_TESTS "Enable utopia_fe testing." OFF)
+option(UTOPIA_ENABLE_TESTS "Enable utopia_fe testing." ON)
 
 option(UTOPIA_ENABLE_STK "Enable the stk functionalities" OFF)
 option(UTOPIA_ENABLE_MOONOLITH "Enable the moonolith functionalities" ON)

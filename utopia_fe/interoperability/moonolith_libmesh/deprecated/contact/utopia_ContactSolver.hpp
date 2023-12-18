@@ -243,9 +243,9 @@ namespace utopia {
         }
 
         bool solve_contact() {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             UTOPIA_PETSC_MEMUSAGE();
-#endif  // WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
             {
                 Vector old_sol = x_;
@@ -280,9 +280,9 @@ namespace utopia {
                 }
             }
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             UTOPIA_PETSC_MEMUSAGE();
-#endif  // WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
             return true;
         }
 
@@ -339,18 +339,18 @@ namespace utopia {
             synchronize(x_);
 
             if (contact_is_outdated_) {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
                 std::cout << "pre contact ";
                 UTOPIA_PETSC_MEMUSAGE();
-#endif  // WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
                 update_contact(x_);
                 xc_ *= 0.;
                 lagrange_multiplier_ *= 0.;
                 contact_is_outdated_ = false;
-#ifdef WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
                 std::cout << "post contact ";
                 UTOPIA_PETSC_MEMUSAGE();
-#endif  // WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
             }
 
             // maybe apply boundary conditions here???

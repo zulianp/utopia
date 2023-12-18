@@ -1,29 +1,9 @@
 # #################UTOPIA###################
 
-# get_cmake_property(_variableNames VARIABLES) list(SORT _variableNames)
-# foreach(_variableName ${_variableNames}) message(STATUS
-# "${_variableName}=${${_variableName}}") endforeach()
-
-# message(STATUS
-# "################################################################################################################")
-
-# get_property(
-#   importTargets
-#   DIRECTORY "${CMAKE_SOURCE_DIR}"
-#   PROPERTY IMPORTED_TARGETS)
-
 find_package(Utopia REQUIRED)
 if(Utopia_FOUND)
   message(STATUS "Utopia Found.")
   add_definitions(${UTOPIA_DEFS})
-
-  # get_property(
-  #   importTargetsAfter
-  #   DIRECTORY "${CMAKE_SOURCE_DIR}"
-  #   PROPERTY IMPORTED_TARGETS)
-  # list(REMOVE_ITEM importTargetsAfter ${importTargets})
-
-  # message("${importTargetsAfter}")
 
   # if(NOT UTOPIA_ENABLE_PETSC OR NOT UTOPIA_ENABLE_TRILINOS)
   # message(FATAL_ERROR "Utopia needs to be installed with petsc and trilinos
@@ -73,29 +53,38 @@ if(UTOPIA_ENABLE_MOONOLITH)
 endif()
 
 if(UTOPIA_ENABLE_INTREPID2)
-  set(UTOPIA_ENABLE_INTREPID2_SEARCH_PATHS "${Trilinos_DIR}/../Intrepid2")
+  set(UTOPIA_INTREPID2_SEARCH_PATHS "${Trilinos_DIR}/../Intrepid2")
   if(UTOPIA_ENABLE_ENV_READ)
-    set(UTOPIA_ENABLE_INTREPID2_SEARCH_PATHS
-        "${UTOPIA_ENABLE_INTREPID2_SEARCH_PATHS};$ENV{TRILINOS_DIR}/lib/cmake/Intrepid2"
+    set(UTOPIA_INTREPID2_SEARCH_PATHS
+        "${UTOPIA_INTREPID2_SEARCH_PATHS};$ENV{TRILINOS_DIR}/lib/cmake/Intrepid2"
     )
   endif()
-  find_package(Intrepid2 HINTS ${UTOPIA_ENABLE_INTREPID2_SEARCH_PATHS} REQUIRED)
+
+  find_package(Intrepid2 HINTS ${UTOPIA_INTREPID2_SEARCH_PATHS} REQUIRED)
   if(Intrepid2_FOUND)
     message(STATUS "Intrepid2 found.")
-    # list(APPEND UTOPIA_FE_DEP_LIBRARIES ${MOONOLITH_LIBRARIES}) list(APPEND
-    # UTOPIA_FE_DEP_INCLUDES ${MOONOLITH_INCLUDES})
+    if(Trilinos_Kokkos_FOUND)
+      list(APPEND UTOPIA_FE_DEP_LIBRARIES ${Intrepid2_LIBRARIES})
+      list(APPEND UTOPIA_FE_DEP_INCLUDES ${Trilinos_INCLUDE_DIRS})
+    else()
+      message(
+        FATAL_ERROR "UtopiaFE needs kokkos installed with utopia trilinos.")
+    endif()
+  endif()
+endif()
+
+if(UTOPIA_ENABLE_STK)
+  set(UTOPIA_STK_SEARCH_PATHS "${Trilinos_DIR}/../STK")
+  if(UTOPIA_ENABLE_ENV_READ)
+    set(UTOPIA_STK_SEARCH_PATHS
+        "${UTOPIA_STK_SEARCH_PATHS};$ENV{TRILINOS_DIR}/lib/cmake/STK")
+    find_package(STK HINTS ${UTOPIA_STK_SEARCH_PATHS} REQUIRED)
+    if(STK_FOUND)
+      list(APPEND UTOPIA_FE_DEP_LIBRARIES ${STK_LIBRARIES})
+      list(APPEND UTOPIA_FE_DEP_INCLUDES ${Trilinos_INCLUDE_DIRS})
+    endif()
   endif()
 
-  find_package(
-    Kokkos
-    NO_MODULE
-    NO_CMAKE_ENVIRONMENT_PATH
-    NO_SYSTEM_ENVIRONMENT_PATH
-    HINTS
-    $ENV{KOKKOS_DIR}
-    $ENV{TRILINOS_DIR}/lib/cmake/Kokkos
-    ${Trilinos_DIR}/../Kokkos
-    REQUIRED)
 endif()
 
 if(UTOPIA_ENABLE_MARS)

@@ -1057,7 +1057,7 @@ namespace utopia {
             // Default is zero
             apply_zero_constraints(in_out);
 
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
             auto &meta_data = mesh().meta_data();
             auto &bulk_data = mesh().bulk_data();
             auto &&local_to_global = dof_map().local_to_global();
@@ -1275,7 +1275,7 @@ namespace utopia {
             // Default is zero
             apply_zero_constraints(v);
 
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
             using Bucket_t = ::stk::mesh::Bucket;
 
             auto &meta_data = mesh().meta_data();

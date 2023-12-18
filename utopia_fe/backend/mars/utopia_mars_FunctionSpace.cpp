@@ -35,7 +35,7 @@ namespace utopia {
                 handler_impl->init(mesh_impl, n_var);
                 handler = handler_impl;
 
-#ifdef MARS_WITH_WITH_IO
+#ifdef MARS_ENABLE_IO
                 write = [handler_impl, this](const Path &path, const Vector &x) -> bool {
                     MarsIOImpl<typename FEHandler::FEDofMap> w(handler_impl->get_fe_dof_map());
 
