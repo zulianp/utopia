@@ -1,3 +1,11 @@
+# ##############################################################################
+# LOCAL INSTALLS
+
+if(UTOPIA_INSTALL_MOONOLITH)
+  include(InstallMoonolith)
+endif()
+# ##############################################################################
+
 # #################UTOPIA###################
 
 find_package(Utopia REQUIRED)
@@ -17,11 +25,6 @@ if(Utopia_FOUND)
   # them again.
 endif()
 
-if(UTOPIA_INSTALL_MOONOLITH)
-  include(InstallMoonolith)
-  # add_dependencies(utopia_fe par_moonolith)
-endif()
-
 # if(UTOPIA_ENABLE_ARBORX) set(ARBORX_SEARCH_PATHS "")
 
 # if(UTOPIA_ENABLE_ENV_READ) set(ARBORX_SEARCH_PATHS
@@ -35,16 +38,17 @@ if(UTOPIA_ENABLE_LIBMESH)
   find_package(LIBMESH REQUIRED)
   if(LIBMESH_FOUND)
     message(STATUS "Libmesh found.")
-    # list(APPEND UTOPIA_FE_BUILD_INCLUDES ${LIBMESH_INCLUDE_DIR})
     list(APPEND UTOPIA_FE_DEP_LIBRARIES ${LIBMESH_LIBRARIES})
     list(APPEND UTOPIA_FE_DEP_INCLUDES ${LIBMESH_INCLUDE_DIR})
-
-    # message(STATUS "UTOPIA_FE_DEP_LIBRARIES:${UTOPIA_FE_DEP_LIBRARIES}")
   endif()
 endif()
 
 if(UTOPIA_ENABLE_MOONOLITH)
-  find_package(ParMoonolith QUIET)
+  if(NOT UTOPIA_INSTALL_MOONOLITH)
+    find_package(ParMoonolith REQUIRED)
+  else()
+    find_package(ParMoonolith QUIET PATHS ${MOONOLITH_INSTALL_DIR})
+  endif()
   if(ParMoonolith_FOUND)
     message(STATUS "ParMoonolith found.")
     list(APPEND UTOPIA_FE_DEP_LIBRARIES ${MOONOLITH_LIBRARIES})
@@ -81,6 +85,7 @@ if(UTOPIA_ENABLE_STK)
     find_package(STK HINTS ${UTOPIA_STK_SEARCH_PATHS} REQUIRED)
     if(STK_FOUND)
       list(APPEND UTOPIA_FE_DEP_LIBRARIES ${STK_LIBRARIES})
+      message(STATUS "STK_LIBRARIES:${STK_LIBRARIES}")
       list(APPEND UTOPIA_FE_DEP_INCLUDES ${Trilinos_INCLUDE_DIRS})
     endif()
   endif()

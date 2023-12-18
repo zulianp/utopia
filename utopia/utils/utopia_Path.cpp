@@ -124,7 +124,6 @@ namespace utopia {
         int result = mkdir(path_.c_str(), permissions);
 
         return result == 0;
-        #endif
     }
 
     PathIterator::DirHandle::DirHandle(const std::string &path) { dir = opendir(path.c_str()); }

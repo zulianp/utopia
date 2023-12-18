@@ -107,14 +107,21 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
          $<INSTALL_INTERFACE:include>)
 
+
+
+
+list(REMOVE_DUPLICATES UTOPIE_FE_DEP_INCLUDES)
+list(REMOVE_DUPLICATES UTOPIE_FE_DEP_LIBRARIES)
+
 target_include_directories(utopia_fe PUBLIC ${UTOPIA_FE_DEP_INCLUDES})
-# message(STATUS "UTOPIA_DEP_INCLUDES: ${UTOPIA_DEP_INCLUDES}")
+# message(STATUS "UTOPIA_FE_DEP_INCLUDES: ${UTOPIA_FE_DEP_INCLUDES}")
 
 # ##############################################################################
 # ##############################################################################
 # ##############################################################################
 # LINK
 
+# message(STATUS "UTOPIA_FE_DEP_LIBRARIES: ${UTOPIA_FE_DEP_LIBRARIES}")
 target_link_libraries(utopia_fe PUBLIC ${UTOPIA_FE_DEP_LIBRARIES})
 
 # ##############################################################################
