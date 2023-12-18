@@ -7,6 +7,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <filesystem>
+
 
 // for windows looks for windows/dirent.h
 #include <dirent.h>
@@ -112,11 +114,13 @@ namespace utopia {
         }
     }
 
-    bool Path::make_dir(const int permissions) {
-        #ifdef WIN32
-        return
-        std::filesystem::create_directories(path_.c_str());
-        #else
+    bool Path::exists() const
+    {
+        const std::filesystem::path p{path_};
+        return std::filesystem::exists(p);
+    }
+
+    bool Path::make_dir(const int permissions) const {
         int result = mkdir(path_.c_str(), permissions);
 
         return result == 0;

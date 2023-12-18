@@ -519,6 +519,12 @@ namespace utopia {
             }
 
             in.get("output_path", output_path_);
+
+            in.get("output", [&](Input &node) {
+                std::string output_mode;
+                node.require("mode", output_mode_);
+                node.require("path", output_path_);
+            });
         }
 
         inline Scalar_t delta_time() const { return time()->delta(); }
@@ -556,7 +562,11 @@ namespace utopia {
             if (!io_) {
                 io_ = std::make_shared<IO_t>(*this->space());
                 io_->set_output_path(output_path_);
+                io_->set_output_mode(output_mode_);
+                this->register_output(*io_);
             }
+
+            this->update_output(*io_);
 
             return io_->write(x, this->time()->step(), this->time()->get());
         }
@@ -581,6 +591,7 @@ namespace utopia {
         bool must_apply_constraints_{true};
         bool export_tensors_{false};
         utopia::Path output_path_{"output.e"};
+        std::string output_mode_;
     };
 
 }  // namespace utopia

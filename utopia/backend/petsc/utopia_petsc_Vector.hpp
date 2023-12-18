@@ -739,6 +739,8 @@ namespace utopia {
 
         inline bool read(const std::string &path) { return read(comm().get(), path); }
 
+        bool load(const std::string &path);
+
         void read(Input &in) override {
             std::string path;
             std::string type;

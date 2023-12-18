@@ -371,7 +371,16 @@ namespace utopia {
         return err;
     }
 
-#ifdef UTOPIA_ENABLE_MATRIX_IO
+    bool PetscVector::load(const std::string &path) {
+        PetscViewer fd;
+
+        bool err = check_error(PetscViewerBinaryOpen(comm().get(), path.c_str(), FILE_MODE_READ, &fd));
+        err = err && check_error(VecLoad(implementation(), fd));
+        PetscViewerDestroy(&fd);
+        return err;
+    }
+
+#ifdef UTOPIA_WITH_MATRIX_IO
     bool PetscVector::read_raw(MPI_Comm comm, const std::string &path) {
         double *data;
         ptrdiff_t nlocal, nglobal;

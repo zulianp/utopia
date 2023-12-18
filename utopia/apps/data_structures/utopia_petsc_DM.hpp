@@ -126,6 +126,23 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("PetscDMbase::global_to_local(...)");
         }
 
+        bool read_field(const Path &path, PetscVector &x) {
+            PetscIO io;
+            if (!io.open(comm(), path, "r")) {
+                return false;
+            }
+
+            if (!io.read(*this)) {
+                return false;
+            }
+
+            if (!io.read(x)) {
+                return false;
+            }
+
+            return true;
+        }
+
         bool write(const Path &path, const PetscVector &x) const {
             // UTOPIA_TRACE_REGION_BEGIN("PetscDMbase::write(...)");
             PetscIO io;

@@ -33,6 +33,8 @@ namespace utopia {
             bool write(const int step, const Scalar t);
 
             void set_output_path(const Path &path);
+            void set_output_mode(OutputMode output_mode);
+            void set_output_mode(const std::string &output_mode);
             bool open_output();
 
             void set_input_path(const Path &path);
@@ -45,6 +47,11 @@ namespace utopia {
             void enable_interpolation_mode();
 
             bool load_time_step(const Scalar t);
+            bool load_last_time_step();
+            int num_time_steps() const;
+            Scalar max_time() const;
+            void set_import_all_data(const bool val);
+
             void register_output_field(const std::string &var_name);
             void register_output_field(const Field<FunctionSpace> &field);
             void update_output_field(const Field<FunctionSpace> &field);
