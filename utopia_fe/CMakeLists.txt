@@ -48,7 +48,9 @@ if(UTOPIA_ENABLE_STK)
   list(APPEND UTOPIA_FE_MODULES backend/stk)
 endif()
 
-# if(UTOPIA_ENABLE_PETSC) list(APPEND UTOPIA_FE_MODULES backend/petsc) endif()
+if(UTOPIA_ENABLE_PETSC) 
+  list(APPEND UTOPIA_FE_MODULES backend/petsc) 
+endif()
 
 # #
 # ##############################################################################
@@ -124,13 +126,13 @@ target_link_libraries(utopia_fe PUBLIC ${UTOPIA_FE_DEP_LIBRARIES})
 # ##############################################################################
 # INSTALL
 
-# add_executable(utopia_fe_exec EXCLUDE_FROM_ALL main.cpp ${UTOPIA_FE_HEADERS})
-# target_link_libraries(utopia_fe_exec PRIVATE utopia_fe)
-# include(apps/apps.cmake)
-# utopia_fe_link_default_targets(utopia_fe_exec)
+add_executable(utopia_fe_exec EXCLUDE_FROM_ALL main.cpp ${UTOPIA_FE_HEADERS})
+target_link_libraries(utopia_fe_exec PRIVATE utopia_fe)
+include(apps/apps.cmake)
+utopia_fe_link_default_targets(utopia_fe_exec)
 
 install(
-  TARGETS utopia_fe
+  TARGETS utopia_fe utopia_fe_exec
   EXPORT UtopiaFETargets
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
@@ -274,15 +276,8 @@ write_basic_package_version_file(
   VERSION "${UtopiaFE_VERSION_MAJOR}.${UtopiaFE_VERSION_MINOR}"
   COMPATIBILITY AnyNewerVersion)
 
-# install the configuration file install(FILES
-# ${CMAKE_CURRENT_BINARY_DIR}/UtopiaFEConfig.cmake DESTINATION lib/cmake/)
-
-# # add_executable(utopia_fe_exec EXCLUDE_FROM_ALL main.cpp
-# ${UTOPIA_FE_HEADERS}) add_executable(utopia_fe_test test.cpp)
-
-# target_link_libraries(utopia_fe_test utopia_fe)
-
-# include(tests/tests.cmake) # include(apps/apps.cmake)
+# install the configuration file 
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/UtopiaFEConfig.cmake DESTINATION lib/cmake/)
 
 # # if(UTOPIA_ENABLE_LIBMESH AND UTOPIA_ENABLE_LIBMESH_DEPRECATED) #
 # include(deprecated/apps/apps.cmake) endif()
@@ -290,18 +285,18 @@ write_basic_package_version_file(
 # #
 # ##############################################################################
 
-# # add_custom_target(apps) # add_dependencies(apps utopia_fe utopia_fe_exec)
+add_custom_target(apps) 
+add_dependencies(apps utopia_fe utopia_fe_exec)
 
 # #
 # ##############################################################################
 
-# add_custom_target(complete) add_dependencies(complete utopia_fe_test)
+add_custom_target(complete) 
+add_dependencies(complete utopia_fe_test)
 
 # ##############################################################################
 
 # include(cmake/PostInstall.cmake)
-
-# message(STATUS "UTOPIA_FE_LIBRARIES=${UTOPIA_FE_LIBRARIES}")
 
 print_dependency_table()
 log_dependency_table()

@@ -14,15 +14,12 @@ if(Utopia_FOUND)
   add_definitions(${UTOPIA_DEFS})
 
   # if(NOT UTOPIA_ENABLE_PETSC OR NOT UTOPIA_ENABLE_TRILINOS)
-  # message(FATAL_ERROR "Utopia needs to be installed with petsc and trilinos
-  # enabled as backends.") endif()
+  #   message(FATAL_ERROR "Utopia needs to be installed with petsc and trilinos
+  # enabled as backends.")
+  # endif()
 
-  # list(APPEND UTOPIA_FE_BUILD_INCLUDES ${UTOPIA_INCLUDES})
   list(APPEND UTOPIA_FE_DEP_LIBRARIES ${UTOPIA_LIBRARIES})
   list(APPEND UTOPIA_FE_DEP_INCLUDES ${UTOPIA_INCLUDES})
-
-  # Try to get all the variable information from UTOPIA, no sense trying to find
-  # them again.
 endif()
 
 # if(UTOPIA_ENABLE_ARBORX) set(ARBORX_SEARCH_PATHS "")
@@ -82,15 +79,15 @@ if(UTOPIA_ENABLE_STK)
   if(UTOPIA_ENABLE_ENV_READ)
     set(UTOPIA_STK_SEARCH_PATHS
         "${UTOPIA_STK_SEARCH_PATHS};$ENV{TRILINOS_DIR}/lib/cmake/STK")
+  endif()
     find_package(STK HINTS ${UTOPIA_STK_SEARCH_PATHS} REQUIRED)
     if(STK_FOUND)
       list(APPEND UTOPIA_FE_DEP_LIBRARIES ${STK_LIBRARIES})
       message(STATUS "STK_LIBRARIES:${STK_LIBRARIES}")
       list(APPEND UTOPIA_FE_DEP_INCLUDES ${Trilinos_INCLUDE_DIRS})
     endif()
-  endif()
-
 endif()
+
 
 if(UTOPIA_ENABLE_MARS)
   set(MARS_SEARCH_PATHS "/usr/local/;/usr/;${MARS_DIR}
@@ -110,18 +107,9 @@ if(UTOPIA_ENABLE_MARS)
 
     get_target_property(Mars_LIBRARIES Mars::mars IMPORTED_LOCATION_RELEASE)
 
-    # list(APPEND UTOPIA_FE_BUILD_INCLUDES ${Mars_INCLUDE_DIR})
     list(APPEND UTOPIA_FE_DEP_LIBRARIES ${Mars_LIBRARIES})
     list(APPEND UTOPIA_FE_DEP_INCLUDES ${Mars_INCLUDE_DIR})
 
-
-    # if(UTOPIA_ENABLE_MARS_ADIOS2) 
-    #   find_package(adios2 REQUIRED)
-    #   if(adios2_FOUND)
-    #     list(APPEND UTOPIA_FE_DEP_LIBRARIES ${adios2_LIBRARIES})
-    #     list(APPEND UTOPIA_FE_DEP_INCLUDES ${adios2_INCLUDE_DIR})
-    #   endif() 
-    # endif()
   endif()
 
   if(UTOPIA_ENABLE_MARS_VTK)
