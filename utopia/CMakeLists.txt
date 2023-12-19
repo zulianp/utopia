@@ -10,6 +10,23 @@ project(
     "Utopia is an open-source C++ library for parallel non-linear multilevel solution strategies"
 )
 
+
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
+# UTOPIA MODES
+
+if(UTOPIA_ENABLE_LOCAL_MODE)
+  include(EnableLocalMode)
+endif()
+
+if(UTOPIA_ENABLE_FLUYA_MODE)
+  if (NOT yaml-cpp_FOUND)
+    message(FATAL_ERROR "Fluya mode requires yaml-cpp.")
+  endif()
+  include(EnableFluyaMode)
+endif()
+
 # ##############################################################################
 # ######################## UTOPIA DEFAULT INCLUDES
 # ##############################################################################
@@ -25,14 +42,6 @@ include(cmake/UtopiaDefaults.cmake)
 include(cmake/UtopiaCompilerFeatures.cmake)
 include(cmake/UtopiaDependencies.cmake)
 include(cmake/UtopiaSubmodules.cmake)
-
-
-if(UTOPIA_ENABLE_FLUYA_MODE)
-  if (NOT yaml-cpp_FOUND)
-    message(FATAL_ERROR "Fluya mode requires yaml-cpp.")
-  endif()
-  include(EnableFluyaMode)
-endif()
 
 # ##############################################################################
 # ##############################################################################

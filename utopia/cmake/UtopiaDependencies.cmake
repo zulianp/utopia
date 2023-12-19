@@ -184,26 +184,18 @@ endif()
 if(UTOPIA_INSTALL_PETSC
    AND NOT CYGWIN)
   include(InstallPetsc)
-  add_dependencies(utopia petsc)
 endif()
 
 if(UTOPIA_INSTALL_TRILINOS)
   include(InstallTrilinos)
-  add_dependencies(utopia trilinos)
 endif()
 
 if(UTOPIA_INSTALL_SLEPC)
   include(InstallSlepc)
-  add_dependencies(utopia slepc)
 endif()
 
 if(UTOPIA_INSTALL_YAML_CPP)
   include(InstallYAMLCPP)
-  add_dependencies(utopia yaml-cpp)
-endif() 
-
-if(UTOPIA_ENABLE_LOCAL_MODE)
-  include(EnableLocalMode)
 endif() 
 
 # #################PETSC####################
