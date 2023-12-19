@@ -32,6 +32,9 @@ endif()
 # if(ArborX_FOUND) # Add includes to build_includes, .... endif() endif()
 
 if(UTOPIA_ENABLE_LIBMESH)
+  if(UTOPIA_ENABLE_STK)
+    message(FATAL_ERROR "UtopiaFE cannot be compiled with libmesh and stk enabled at the same time.")
+  endif()
   find_package(LIBMESH REQUIRED)
   if(LIBMESH_FOUND)
     message(STATUS "Libmesh found.")
@@ -61,6 +64,12 @@ if(UTOPIA_ENABLE_INTREPID2)
     )
   endif()
 
+
+  message(STATUS "kbjsdflkvhbskjdhfb${UTOPIA_INSTALL_TRILINOS}")
+  # if(UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
+  #   set(UTOPIA_INTREPID2_SEARCH_PATHS "")
+  # endif()
+
   find_package(Intrepid2 HINTS ${UTOPIA_INTREPID2_SEARCH_PATHS} REQUIRED)
   if(Intrepid2_FOUND)
     message(STATUS "Intrepid2 found.")
@@ -75,6 +84,9 @@ if(UTOPIA_ENABLE_INTREPID2)
 endif()
 
 if(UTOPIA_ENABLE_STK)
+  if(UTOPIA_ENABLE_LIBMESH)
+    message(FATAL_ERROR "UtopiaFE cannot be compiled with libmesh and stk enabled at the same time.")
+  endif()
   set(UTOPIA_STK_SEARCH_PATHS "${Trilinos_DIR}/../STK")
   if(UTOPIA_ENABLE_ENV_READ)
     set(UTOPIA_STK_SEARCH_PATHS

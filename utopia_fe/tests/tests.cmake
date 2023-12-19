@@ -1,6 +1,7 @@
 # tests.cmake
 
-if(UTOPIA_ENABLE_STK)
+# Added intrepid2 since utopia_stk_restartTest need intrepid.
+if(UTOPIA_ENABLE_STK AND UTOPIA_ENABLE_INTREPID2)
     list(APPEND TEST_MODULES stk)
 endif()
 
