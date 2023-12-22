@@ -339,7 +339,7 @@ namespace utopia {
         int MeshIO::num_time_steps() const { return impl_->io_broker->get_num_time_steps(); }
         MeshIO::Scalar MeshIO::max_time() const { return impl_->io_broker->get_max_time(); }
 
-        bool MeshIO::load_last_time_step() { load_time_step(max_time()); }
+        bool MeshIO::load_last_time_step() { return load_time_step(max_time()); }
 
         void MeshIO::set_import_all_data(const bool val) { impl_->import_all_field_data = val; }
 

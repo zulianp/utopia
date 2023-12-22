@@ -37,30 +37,15 @@ namespace utopia {
         MeshView::MeshView() : impl_(std::make_shared<Impl>()) {}
         MeshView::~MeshView() = default;
 
-        int MeshView::element_type() const
-        {
-            return impl_->element_type;
-        }
+        int MeshView::element_type() const { return impl_->element_type; }
 
         MeshView::Impl &MeshView::impl() { return *impl_; }
 
-        ArrayView<void *> MeshView::elements() const
-        {
-            return impl_->elements.reinterpret<void*>();
-        }
-        ArrayView<void *> MeshView::points() const
-        {
-            return impl_->points.reinterpret<void*>();
-        }
+        ArrayView<void *> MeshView::elements() const { return impl_->elements.reinterpret<void *>(); }
+        ArrayView<void *> MeshView::points() const { return impl_->points.reinterpret<void *>(); }
 
-        ptrdiff_t MeshView::n_elements() const
-        {
-            return impl_->nelements;
-        }
-        ptrdiff_t MeshView::n_nodes() const
-        {
-            return impl_->nnodes;
-        }
+        ptrdiff_t MeshView::n_elements() const { return impl_->nelements; }
+        ptrdiff_t MeshView::n_nodes() const { return impl_->nnodes; }
 
         class Mesh::Impl {
         public:
@@ -105,7 +90,12 @@ namespace utopia {
         }
 
         void Mesh::describe(std::ostream &os) const {
-            // TODO
+            if (!this->comm().rank()) {
+                os << "sfem::Mesh\n";
+            }
+
+            os << "n_local_nodes:    " << n_local_nodes() << "\n";
+            os << "n_owned_elements: " << n_owned_elements() << "\n";
         }
 
         void *Mesh::raw_type() const { return (void *)&impl_->mesh; }
@@ -113,6 +103,8 @@ namespace utopia {
         ArrayView<const Mesh::SizeType> Mesh::node_mapping() const {
             return ArrayView<const SizeType>(impl_->mesh.node_mapping, impl_->mesh.nnodes);
         }
+
+        Mesh::SizeType Mesh::n_owned_elements() const { return impl_->mesh.n_owned_elements; }
 
         Mesh::SizeType Mesh::n_local_nodes() const { return impl_->mesh.n_owned_nodes; }
 
