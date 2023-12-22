@@ -96,7 +96,7 @@ namespace utopia {
 
         SDF::~SDF() {}
 
-        bool SDF::has_weights() const { return !impl_->has_weights; }
+        bool SDF::has_weights() const { return impl_->has_weights; }
         const SDF::Vector &SDF::weights() const { return impl_->weights; }
 
         void SDF::read_from_file(const Path &path) {
