@@ -427,7 +427,6 @@ namespace utopia {
             }
 
             clear();
-            impl_->has_weights = true;
 
             auto m = (mesh_t *)mesh.raw_type();
 
@@ -489,6 +488,8 @@ namespace utopia {
                     znormal);
 
             } else {
+                impl_->has_weights = true;
+
                 resample_gap_local(
                     // Mesh
                     (ElemType)m->element_type,
