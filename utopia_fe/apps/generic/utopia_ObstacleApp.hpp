@@ -72,9 +72,9 @@ namespace utopia {
 
                 obs_fun = std::make_shared<ObstacleFEFunction_t>(fun);
                 obs_fun->read(in);
+                obs_fun->setup_IVP(input_db);
 
-                newmark->time()->get() = t;  // Set-simulation time
-                newmark->setup_IVP(input_db);
+                // Copy the solution that was loaded from disk
                 x = newmark->solution();
 
             } else {

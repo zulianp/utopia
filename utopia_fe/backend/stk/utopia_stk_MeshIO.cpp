@@ -257,12 +257,15 @@ namespace utopia {
         void MeshIO::set_output_mode(enum OutputMode output_mode) {
             switch (output_mode) {
                 case OUTPUT_MODE_OVERWRITE: {
-                    impl_->write_purpose = ::stk::io::WRITE_RESTART;
+                    impl_->write_purpose = ::stk::io::WRITE_RESULTS;
                     break;
                 }
-
                 case OUTPUT_MODE_APPEND: {
                     impl_->write_purpose = ::stk::io::APPEND_RESULTS;
+                    break;
+                }
+                case OUTPUT_MODE_RESTART: {
+                    impl_->write_purpose = ::stk::io::WRITE_RESTART;
                     break;
                 }
 
@@ -278,6 +281,8 @@ namespace utopia {
                 set_output_mode(OUTPUT_MODE_APPEND);
             } else if (output_mode == "OVERWRITE") {
                 set_output_mode(OUTPUT_MODE_OVERWRITE);
+            } else if (output_mode == "RESTART") {
+                set_output_mode(OUTPUT_MODE_RESTART);
             } else {
                 Utopia::Abort("Unsupported output mode: " + output_mode + "! Use APPEND or OVERWRITE");
             }
