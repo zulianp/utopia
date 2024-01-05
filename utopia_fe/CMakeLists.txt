@@ -8,6 +8,15 @@ project(
   DESCRIPTION "Library for portable finite element discretizations.")
 
 # ##############################################################################
+# ##############################################################################
+# ##############################################################################
+# MODES
+
+if(UTOPIA_ENABLE_FLUYA_MODE)
+  include(cmake/EnableFluyaMode.cmake)
+endif()
+
+# ##############################################################################
 # ######################## UTOPIA_FE DEFAULT INCLUDES
 # ##############################################################################
 # ##############################################################################
@@ -18,16 +27,6 @@ include(cmake/UtopiaFEFunctions.cmake)
 include(cmake/UtopiaFEDefaults.cmake)
 include(cmake/UtopiaFEDependencies.cmake)
 include(cmake/UtopiaCompilerFeatures.cmake)
-
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
-
-# ################################# Include cmake functions and find modules
-
-if(UTOPIA_ENABLE_FLUYA_MODE)
-  include(EnableFluyaMode)
-endif()
 
 # file(GLOB_RECURSE FUNC_LIB "{UTOPIA_FE_ROOT_PATH}/cmake/utils")
 # foreach(funcLib ${FUNC_LIB}) include(${funcLib}) endforeach(funcLib)
@@ -48,8 +47,8 @@ if(UTOPIA_ENABLE_STK)
   list(APPEND UTOPIA_FE_MODULES backend/stk)
 endif()
 
-if(UTOPIA_ENABLE_PETSC) 
-  list(APPEND UTOPIA_FE_MODULES backend/petsc) 
+if(UTOPIA_ENABLE_PETSC)
+  list(APPEND UTOPIA_FE_MODULES backend/petsc)
 endif()
 
 # #
@@ -70,7 +69,6 @@ if(UTOPIA_ENABLE_MARS)
 endif()
 
 # if(UTOPIA_ENABLE_ARBORX) list(APPEND UTOPIA_FE_MODULES backend/arborx) endif()
-
 
 foreach(MODULE ${UTOPIA_FE_MODULES})
   add_subdirectory("${MODULE}")
@@ -106,9 +104,6 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
          $<INSTALL_INTERFACE:include>)
 
-
-
-
 list(REMOVE_DUPLICATES UTOPIE_FE_DEP_INCLUDES)
 list(REMOVE_DUPLICATES UTOPIE_FE_DEP_LIBRARIES)
 
@@ -126,7 +121,7 @@ target_link_libraries(utopia_fe PUBLIC ${UTOPIA_FE_DEP_LIBRARIES})
 # ##############################################################################
 # INSTALL
 
-add_executable(utopia_fe_exec EXCLUDE_FROM_ALL main.cpp ${UTOPIA_FE_HEADERS})
+add_executable(utopia_fe_exec main.cpp ${UTOPIA_FE_HEADERS})
 target_link_libraries(utopia_fe_exec PRIVATE utopia_fe)
 include(apps/apps.cmake)
 utopia_fe_link_default_targets(utopia_fe_exec)
@@ -264,8 +259,8 @@ install(
   NAMESPACE UtopiaFE::
   DESTINATION lib/cmake)
 
-include(CMakePackageConfigHelpers) 
-#generate the config file that is includes the exports
+include(CMakePackageConfigHelpers)
+# generate the config file that is includes the exports
 configure_package_config_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/UtopiaFEConfig.cmake.in
   "${CMAKE_CURRENT_BINARY_DIR}/UtopiaFEConfig.cmake"
@@ -276,22 +271,29 @@ write_basic_package_version_file(
   VERSION "${UtopiaFE_VERSION_MAJOR}.${UtopiaFE_VERSION_MINOR}"
   COMPATIBILITY AnyNewerVersion)
 
-# install the configuration file 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/UtopiaFEConfig.cmake DESTINATION lib/cmake/)
+# install the configuration file
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/UtopiaFEConfig.cmake
+        DESTINATION lib/cmake/)
 
 # # if(UTOPIA_ENABLE_LIBMESH AND UTOPIA_ENABLE_LIBMESH_DEPRECATED) #
 # include(deprecated/apps/apps.cmake) endif()
 
-# #
+
+# POST-INSTALL
+# ##############################################################################
+include (cmake/PostInstall.cmake)
+
+
+# EXTRA TARGETS
 # ##############################################################################
 
-add_custom_target(apps) 
+add_custom_target(apps)
 add_dependencies(apps utopia_fe utopia_fe_exec)
 
 # #
 # ##############################################################################
 
-add_custom_target(complete) 
+add_custom_target(complete)
 add_dependencies(complete utopia_fe_test)
 
 # ##############################################################################

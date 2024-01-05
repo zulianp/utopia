@@ -13,10 +13,9 @@ if(Utopia_FOUND)
   message(STATUS "Utopia Found.")
   add_definitions(${UTOPIA_DEFS})
 
-  # if(NOT UTOPIA_ENABLE_PETSC OR NOT UTOPIA_ENABLE_TRILINOS)
-  #   message(FATAL_ERROR "Utopia needs to be installed with petsc and trilinos
-  # enabled as backends.")
-  # endif()
+  if(NOT UTOPIA_ENABLE_PETSC OR NOT UTOPIA_ENABLE_TRILINOS)
+    message(FATAL_ERROR "Utopia needs to be installed with petsc and trilinos enabled as backends.")
+  endif()
 
   list(APPEND UTOPIA_FE_DEP_LIBRARIES ${UTOPIA_LIBRARIES})
   list(APPEND UTOPIA_FE_DEP_INCLUDES ${UTOPIA_INCLUDES})
@@ -57,24 +56,12 @@ if(UTOPIA_ENABLE_MOONOLITH)
 endif()
 
 if(UTOPIA_ENABLE_INTREPID2)
-  set(UTOPIA_INTREPID2_SEARCH_PATHS "${Trilinos_DIR}/../Intrepid2")
-  if(UTOPIA_ENABLE_ENV_READ)
-    set(UTOPIA_INTREPID2_SEARCH_PATHS
-        "${UTOPIA_INTREPID2_SEARCH_PATHS};$ENV{TRILINOS_DIR}/lib/cmake/Intrepid2"
-    )
-  endif()
-
-
-  message(STATUS "kbjsdflkvhbskjdhfb${UTOPIA_INSTALL_TRILINOS}")
-  # if(UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL)
-  #   set(UTOPIA_INTREPID2_SEARCH_PATHS "")
-  # endif()
-
+  set(UTOPIA_INTREPID2_SEARCH_PATHS "${UTOPIA_TRILINOS_DIR}/../Intrepid2")
   find_package(Intrepid2 HINTS ${UTOPIA_INTREPID2_SEARCH_PATHS} REQUIRED)
   if(Intrepid2_FOUND)
     message(STATUS "Intrepid2 found.")
     if(Trilinos_Kokkos_FOUND)
-      list(APPEND UTOPIA_FE_DEP_LIBRARIES ${Intrepid2_LIBRARIES})
+      list(APPEND UTOPIA_FE_DEP_LIBRARIES ${Intrepid2_LIBRARIES}) 
       list(APPEND UTOPIA_FE_DEP_INCLUDES ${Trilinos_INCLUDE_DIRS})
     else()
       message(
@@ -134,6 +121,9 @@ if(UTOPIA_ENABLE_MARS)
 endif()
 
 # ##############################################################################
+
+
+message(STATUS "UTOPIA_DIR: ${UTOPIA_DIR}")
 
 macro(print_dependency_table)
 

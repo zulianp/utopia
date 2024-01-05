@@ -274,25 +274,27 @@ endif()
 if(UTOPIA_ENABLE_TRILINOS)
 
   list(APPEND Trilinos_SEARCH_PATHS "${Trilinos_DIR};${TRILINOS_DIR}")
-
-  if(UTOPIA_ENABLE_ENV_READ)
-    list(APPEND Trilinos_SEARCH_PATHS "$ENV{Trilinos_DIR};$ENV{TRILINOS_DIR}")
-  endif()
-
   set(Trilinos_SEARCH_PATHS
       "${Trilinos_SEARCH_PATHS};${TRILINOS_DIR}/lib/cmake/Trilinos;${Trilinos_DIR}/lib/cmake/Trilinos;${TRILINOS_DIR}/lib64/cmake/Trilinos;${Trilinos_DIR}/lib64/cmake/Trilinos"
   )
 
   # find dependencies
   if(NOT UTOPIA_INSTALL_TRILINOS)
+
+    if(UTOPIA_ENABLE_ENV_READ)
+      list(APPqEND Trilinos_SEARCH_PATHS "$ENV{Trilinos_DIR};$ENV{TRILINOS_DIR}")
+    endif()
+    
     find_package(Trilinos PATHS ${Trilinos_SEARCH_PATHS} REQUIRED)
   else()
     set(Trilinos_SEARCH_PATHS
-        "${Trilinos_SEARCH_PATHS};${CMAKE_SOURCE_DIR}/../external/Trilinos/lib/cmake/Trilinos")
+        "${CMAKE_SOURCE_DIR}/../external/Trilinos/lib/cmake/Trilinos")
     if(NOT APPLE AND NOT WIN32)
       set(Trilinos_SEARCH_PATHS
-          "${Trilinos_SEARCH_PATHS};${CMAKE_SOURCE_DIR}/../external/Trilinos/lib64/cmake/Trilinos")
+          "${CMAKE_SOURCE_DIR}/../external/Trilinos/lib64/cmake/Trilinos")
     endif()
+
+    message(STATUS "HELLO: ${Trilinos_SEARCH_PATHS}")
     find_package(Trilinos PATHS ${Trilinos_SEARCH_PATHS})
   endif()
   if(Trilinos_FOUND)
