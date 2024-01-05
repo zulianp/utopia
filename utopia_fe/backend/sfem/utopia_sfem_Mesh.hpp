@@ -32,7 +32,7 @@ namespace utopia {
             Impl &impl();
 
             int element_type() const;
-            
+
             [[nodiscard]] ArrayView<void *> elements() const;
             [[nodiscard]] ArrayView<void *> points() const;
 
@@ -67,6 +67,7 @@ namespace utopia {
 
             void create_vector_nodal(Vector &out, int components = 1) const;
 
+            SizeType n_owned_elements() const;
             SizeType n_local_nodes() const;
             int spatial_dimension() const;
 

@@ -69,6 +69,12 @@ namespace utopia {
             typename FunctionSpace::Mesh surface_mesh;
             extract_surface(space.mesh(), mesh, exclude);
 
+            if (verbose) {
+                std::stringstream ss;
+                mesh.describe(ss);
+                space.mesh().comm().synched_print(ss.str());
+            }
+
             if (0) {
                 static int export_mesh = 0;
                 mesh.write("dbg_mesh" + std::to_string(export_mesh++));
