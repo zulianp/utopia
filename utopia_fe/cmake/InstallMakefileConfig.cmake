@@ -9,7 +9,7 @@ add_custom_target(
   COMMAND ${CMAKE_COMMAND} -E remove_directory
           ${CMAKE_CURRENT_BINARY_DIR}/InstallMakefileConfig/CMakeFiles
   COMMAND
-    ${CMAKE_COMMAND} -DUtopia_fe_DIR=${CMAKE_INSTALL_PREFIX}/lib/cmake/
+    ${CMAKE_COMMAND} -DUtopiaFE_DIR=${CMAKE_INSTALL_PREFIX}/lib/cmake/
     -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
     ${CMAKE_SOURCE_DIR}/cmake/utils
   COMMAND ${CMAKE_COMMAND} --build . --target all

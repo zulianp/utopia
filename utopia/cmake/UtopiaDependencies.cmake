@@ -282,7 +282,7 @@ if(UTOPIA_ENABLE_TRILINOS)
   if(NOT UTOPIA_INSTALL_TRILINOS)
 
     if(UTOPIA_ENABLE_ENV_READ)
-      list(APPqEND Trilinos_SEARCH_PATHS "$ENV{Trilinos_DIR};$ENV{TRILINOS_DIR}")
+      list(APPEND Trilinos_SEARCH_PATHS "$ENV{Trilinos_DIR};$ENV{TRILINOS_DIR}")
     endif()
     
     find_package(Trilinos PATHS ${Trilinos_SEARCH_PATHS} REQUIRED)

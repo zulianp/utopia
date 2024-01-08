@@ -10,8 +10,7 @@ list(
     view
     view/expressions
     console
-    misc
-    traits)
+    misc)
 
 # utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${CORE_MODULES}")
 scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "${CORE_MODULES}" UTOPIA_BUILD_INCLUDES UTOPIA_HEADERS UTOPIA_SOURCES)

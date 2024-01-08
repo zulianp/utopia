@@ -16,7 +16,6 @@ list(
     nonlinear/constrained/barrier
     nonlinear/constrained/interior_point
     nonlinear/constrained/nras
-    nonlinear/constrained/smoothers
     nonlinear/constrained/penalty
     nonlinear/constrained/quadratic_programming
     nonlinear/line_search

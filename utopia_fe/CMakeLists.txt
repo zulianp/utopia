@@ -136,6 +136,7 @@ install(
 install(FILES utopia_fe.hpp DESTINATION include)
 configure_file(${UTOPIA_FE_ROOT_PATH}/utopia_fe_config.hpp.in
                ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp)
+install(FILES ${UTOPIA_FE_HEADERS} DESTINATION include)
 install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp DESTINATION include)
 
 # ##############################################################################
