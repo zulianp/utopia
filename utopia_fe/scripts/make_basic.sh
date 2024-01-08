@@ -18,10 +18,16 @@ fi
 prefix=$2
 
 _basic_build(){
+	cmake .. -DCMAKE_INSTALL_PREFIX=$prefix
 
-	touch make_basic.log
-
-	cmake $SCRIPT_DIR/../
+	read -p "Continue ? y/n" -n 1 -r
+	echo    # (optional) move to a new line
+	if [[ $REPLY =~ ^[Yy]$ ]]
+	then
+		make -j$N_THREADS | tee make_basic.log
+		make install | tee make_basic.log
+		make -j$N_THREADS test_install | tee make_basic.log
+	fi
 }
 
 if [[ -d build_basic ]]

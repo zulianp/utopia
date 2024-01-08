@@ -5,12 +5,12 @@ if(NOT LIBMESH_FOUND)
     # git clone git://github.com/libMesh/libmesh.git
     include(ExternalProject)
 
-    if(UTOPIA_DEPENDENCIES_DIR)
-        set(LIBMESH_INSTALL_DIR ${UTOPIA_DEPENDENCIES_DIR}/libmesh)
-    else()
-        get_filename_component(LIBMESH_INSTALL_DIR "${CMAKE_SOURCE_DIR}/../../external/libmesh" REALPATH)
-        message(STATUS "LIBMESH_INSTALL_DIR=${LIBMESH_INSTALL_DIR}")
-    endif()
+  if(UTOPIA_DEPENDENCIES_DIR)
+    set(LIBMESH_INSTALL_DIR ${UTOPIA_DEPENDENCIES_DIR}/libmesh)
+  else()
+    set(LIBMESH_INSTALL_DIR ${CMAKE_SOURCE_DIR}/../external/libmesh)
+    message(STATUS "LIBMESH_INSTALL_DIR=${LIBMESH_INSTALL_DIR}")
+  endif()
 
     set(STAGE_DIR "${CMAKE_BINARY_DIR}/stage")
     set(LIBMESH_URL https://github.com/libMesh/libmesh.git)
@@ -46,7 +46,7 @@ if(NOT LIBMESH_FOUND)
     set_target_properties(libmesh PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
     set(LIBMESH_DIR ${LIBMESH_INSTALL_DIR})
-    set(LIBMESH_DIR
-        ${LIBMESH_INSTALL_DIR}
-        PARENT_SCOPE)
+    # set(LIBMESH_DIR
+    #     ${LIBMESH_INSTALL_DIR}
+    #     PARENT_SCOPE)
 endif()

@@ -4,6 +4,11 @@
 if(UTOPIA_INSTALL_MOONOLITH)
   include(InstallMoonolith)
 endif()
+
+if(UTOPIA_INSTALL_LIBMESH)
+  include(InstallLIBMESH)
+endif()
+
 # ##############################################################################
 
 # #################UTOPIA###################
@@ -34,7 +39,11 @@ if(UTOPIA_ENABLE_LIBMESH)
   if(UTOPIA_ENABLE_STK)
     message(FATAL_ERROR "UtopiaFE cannot be compiled with libmesh and stk enabled at the same time.")
   endif()
-  find_package(LIBMESH REQUIRED)
+  if (NOT UTOPIA_INSTALL_LIBMESH)
+    find_package(LIBMESH REQUIRED)
+  else()
+    find_package(LIBMESH QUIET)
+  endif()
   if(LIBMESH_FOUND)
     message(STATUS "Libmesh found.")
     list(APPEND UTOPIA_FE_DEP_LIBRARIES ${LIBMESH_LIBRARIES})
