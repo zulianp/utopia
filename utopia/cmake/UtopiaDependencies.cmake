@@ -176,28 +176,6 @@ if(UTOPIA_ENABLE_PARMETIS)
   add_subdirectory(backend/parmetis)
 endif()
 
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
-# ####LOCAL_INSTALL_OPTIONS####
-
-if(UTOPIA_INSTALL_PETSC
-   AND NOT CYGWIN)
-  include(InstallPetsc)
-endif()
-
-if(UTOPIA_INSTALL_TRILINOS)
-  include(InstallTrilinos)
-endif()
-
-if(UTOPIA_INSTALL_SLEPC)
-  include(InstallSlepc)
-endif()
-
-if(UTOPIA_INSTALL_YAML_CPP)
-  include(InstallYAMLCPP)
-endif() 
-
 # #################PETSC####################
 if(UTOPIA_ENABLE_PETSC)
 
@@ -528,6 +506,27 @@ if(UTOPIA_ENABLE_SCRIPTING)
     message(WARNING "Could not find SWIG - Disabling scripting support")
   endif()
 endif()
+
+# ##############################################################################
+# ##############################################################################
+# ####LOCAL_INSTALL_OPTIONS####
+
+if(UTOPIA_INSTALL_PETSC
+   AND NOT CYGWIN)
+  include(InstallPetsc)
+endif()
+
+if(UTOPIA_INSTALL_TRILINOS)
+  include(InstallTrilinos)
+endif()
+
+if(UTOPIA_INSTALL_SLEPC)
+  include(InstallSlepc)
+endif()
+
+if(UTOPIA_INSTALL_YAML_CPP)
+  include(InstallYAMLCPP)
+endif() 
 
 # ##############################################################################
 
