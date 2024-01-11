@@ -3,9 +3,9 @@
 
 #include <memory>
 #include "utopia_Input.hpp"
+#include "utopia_SimulationTime.hpp"
 #include "utopia_Tracer.hpp"
 #include "utopia_Traits.hpp"
-#include "utopia_SimulationTime.hpp"
 
 // #include "utopia_StabilizeTransport.hpp"
 
@@ -65,14 +65,17 @@ namespace utopia {
         virtual void post_process(const Vector &rhs, Vector &x) const = 0;
     };
 
-    template <class Matrix>
-    class StabilizeTransport final : public MatrixTransformer<Matrix>,
-                                     public PostProcessor<typename Traits<Matrix>::Vector> {
+    template <class FunctionSpace>
+    class StabilizeTransport final : public MatrixTransformer<typename Traits<FunctionSpace>::Matrix>,
+                                     public PostProcessor<typename Traits<FunctionSpace>::Vector> {
     public:
-        using Scalar = typename Traits<Matrix>::Scalar;
-        using SizeType = typename Traits<Matrix>::SizeType;
-        using Vector = typename Traits<Matrix>::Vector;
+        using Scalar = typename Traits<FunctionSpace>::Scalar;
+        using SizeType = typename Traits<FunctionSpace>::SizeType;
+        using Matrix = typename Traits<FunctionSpace>::Matrix;
+        using Vector = typename Traits<FunctionSpace>::Vector;
         using IndexArray = typename Traits<Vector>::IndexArray;
+
+        StabilizeTransport(const std::shared_ptr<FunctionSpace> &space) : space_(space) {}
 
         static void create_matrices(Matrix &in_out, Matrix &diff) {
             Matrix mat_t = transpose(in_out);
@@ -113,7 +116,7 @@ namespace utopia {
 
         void apply_to_matrices(Matrix &mass_matrix, Matrix &op) override {
             UTOPIA_TRACE_SCOPE("StabilizeTransport::apply_to_matrices");
-            
+
             assert(!mass_matrix.empty());
             assert(!op.empty());
 
@@ -129,10 +132,7 @@ namespace utopia {
             initialize(make_ref(op), op_diff, make_ref(mass_matrix), mass_diff);
         }
 
-        void set_time(const std::shared_ptr<SimulationTime<Scalar>> &time) override
-        {
-            dt_ = time->delta();
-        }
+        void set_time(const std::shared_ptr<SimulationTime<Scalar>> &time) override { dt_ = time->delta(); }
 
         void initialize(const std::shared_ptr<Matrix> &A_corrected,
                         const std::shared_ptr<Matrix> &A_diff,
@@ -147,9 +147,9 @@ namespace utopia {
             inverse_mass_vector_ = 1. / inverse_mass_vector_;
         }
 
-        static void add_contrib(Matrix &A, const Vector &x, const Vector &x_ghosts, Matrix &out) {
-            auto x_view_d = local_view_host(x);
-            auto x_view_o = local_view_host(x_ghosts);
+        static void add_contrib(Matrix &A, const Vector &x, const Vector &x_ghosts, const Scalar factor, Matrix &out) {
+            auto x_d = local_view_host(x);
+            auto x_o = local_view_host(x_ghosts);
 
             PetscCrsView A_d, A_o;
             views_host(A, A_d, A_o);
@@ -159,7 +159,7 @@ namespace utopia {
 
             SizeType rows = A_d.rows();
             for (SizeType r = 0; r < rows; r++) {
-                Scalar xi = x_view_d.get(r);
+                Scalar xi = x_d.get(r);
 
                 {
                     auto row = A_d.row(r);
@@ -168,24 +168,63 @@ namespace utopia {
                     for (SizeType k = 0; k < row.length; k++) {
                         SizeType c = row.colidx(k);
                         Scalar Aij = row.value(k);
-                        Scalar xj = x_view_d.get(c);
+                        Scalar xj = x_d.get(c);
 
                         assert(out_row.colidx(k) == c);
-                        out_row.value(k) += Aij * (xi - xj);
+                        out_row.value(k) += factor * Aij * (xi - xj);
                     }
                 }
 
-                if(!empty(A_o))
-                {
+                if (!empty(A_o)) {
                     auto row = A_o.row(r);
                     auto out_row = out_o.row(r);
                     for (SizeType k = 0; k < row.length; k++) {
                         SizeType c = row.colidx(k);
                         Scalar Aij = row.value(k);
-                        Scalar xj = x_view_o.get(c);
+                        Scalar xj = x_o.get(c);
 
                         assert(out_row.colidx(k) == c);
-                        out_row.value(k) += Aij * (xi - xj);
+                        out_row.value(k) += factor * Aij * (xi - xj);
+                    }
+                }
+            }
+        }
+
+        // Eq (79)
+        static void pre_limiting_step(const Vector &x, const Vector &x_ghosts, Matrix &F) {
+            auto x_d = local_view_host(x);
+            auto x_o = local_view_host(x_ghosts);
+
+            PetscCrsView F_d, F_o;
+            views_host(F, F_d, F_o);
+
+            SizeType rows = F_d.rows();
+            for (SizeType r = 0; r < rows; r++) {
+                Scalar xi = x_d.get(r);
+
+                {
+                    auto F_row = F_d.row(r);
+                    for (SizeType k = 0; k < F_row.length; k++) {
+                        SizeType c = F_row.colidx(k);
+                        Scalar Fij = F_row.value(k);
+                        Scalar xj = x_d.get(c);
+
+                        if (Fij * (xj - xi) > 0) {
+                            F_row.value(k) = 0;
+                        }
+                    }
+                }
+
+                if (!empty(F_o)) {
+                    auto F_row = F_o.row(r);
+                    for (SizeType k = 0; k < F_row.length; k++) {
+                        SizeType c = F_row.colidx(k);
+                        Scalar Fij = F_row.value(k);
+                        Scalar xj = x_o.get(c);
+
+                        if (Fij * (xj - xi) > 0) {
+                            F_row.value(k) = 0;
+                        }
                     }
                 }
             }
@@ -193,8 +232,8 @@ namespace utopia {
 
         // Book_Kuzmin.pdf page 163 eq (80)
         static void negative_postive_antidiffusive_fluxes(Matrix &F, Vector &P_minus, Vector &P_plus) {
-            auto P_plus_view = local_view_host(P_plus);
-            auto P_minus_view = local_view_host(P_minus);
+            auto P_plus_d = local_view_host(P_plus);
+            auto P_minus_d = local_view_host(P_minus);
 
             PetscCrsView F_d, F_o;
             views_host(F, F_d, F_o);
@@ -213,8 +252,7 @@ namespace utopia {
                     }
                 }
 
-                if(!empty(F_o))
-                {
+                if (!empty(F_o)) {
                     auto row = F_o.row(r);
                     for (SizeType k = 0; k < row.length; k++) {
                         Scalar Fij = row.value(k);
@@ -223,8 +261,8 @@ namespace utopia {
                     }
                 }
 
-                P_plus_view.set(r, P_plus_i);
-                P_minus_view.set(r, P_minus_i);
+                P_plus_d.set(r, P_plus_i);
+                P_minus_d.set(r, P_minus_i);
             }
         }
 
@@ -235,19 +273,19 @@ namespace utopia {
                                   Vector &u_ghosts,
                                   Vector &Q_minus,
                                   Vector &Q_plus) {
-            auto u_view_d = local_view_host(u);
-            auto u_view_o = local_view_host(u_ghosts);
+            auto u_d = local_view_host(u);
+            auto u_o = local_view_host(u_ghosts);
 
-            auto Q_plus_view = local_view_host(Q_plus);
-            auto Q_minus_view = local_view_host(Q_minus);
+            auto Q_plus_d = local_view_host(Q_plus);
+            auto Q_minus_d = local_view_host(Q_minus);
 
             PetscCrsView M_d, M_o;
             views_host(M_corrected, M_d, M_o);
 
             const SizeType rows = M_d.rows();
             for (SizeType r = 0; r < rows; r++) {
-                Scalar u_max_i = u_view_d.get(r);
-                Scalar u_min_i = u_view_d.get(r);
+                Scalar u_max_i = u_d.get(r);
+                Scalar u_min_i = u_d.get(r);
                 Scalar Mii = 0;
 
                 {
@@ -260,23 +298,22 @@ namespace utopia {
                             Mii = Mij;
                         }
 
-                        u_max_i = std::max(u_max_i, u_view_d.get(c));
-                        u_min_i = std::min(u_min_i, u_view_d.get(c));
+                        u_max_i = std::max(u_max_i, u_d.get(c));
+                        u_min_i = std::min(u_min_i, u_d.get(c));
                     }
                 }
 
-                if(!empty(M_o))
-                {
+                if (!empty(M_o)) {
                     auto row = M_o.row(r);
                     for (SizeType k = 0; k < row.length; k++) {
                         const SizeType c = row.colidx(k);
-                        u_max_i = std::max(u_max_i, u_view_o.get(c));
-                        u_min_i = std::min(u_min_i, u_view_o.get(c));
+                        u_max_i = std::max(u_max_i, u_o.get(c));
+                        u_min_i = std::min(u_min_i, u_o.get(c));
                     }
                 }
 
-                Q_plus_view.set(r, (Mii / dt) * (u_max_i - u_view_d.get(r)));
-                Q_minus_view.set(r, (Mii / dt) * (u_min_i - u_view_d.get(r)));
+                Q_plus_d.set(r, (Mii / dt) * (u_max_i - u_d.get(r)));
+                Q_minus_d.set(r, (Mii / dt) * (u_min_i - u_d.get(r)));
             }
         }
 
@@ -287,13 +324,13 @@ namespace utopia {
                                   const Vector &R_plus,
                                   const Vector &R_plus_ghosts,
                                   Vector &f_bar) {
-            auto R_plus_view_d = local_view_host(R_plus);
-            auto R_minus_view_d = local_view_host(R_minus);
+            auto R_plus_d = local_view_host(R_plus);
+            auto R_minus_d = local_view_host(R_minus);
 
-            auto R_plus_view_o = local_view_host(R_plus_ghosts);
-            auto R_minus_view_o = local_view_host(R_minus_ghosts);
+            auto R_plus_o = local_view_host(R_plus_ghosts);
+            auto R_minus_o = local_view_host(R_minus_ghosts);
 
-            auto f_bar_view = local_view_host(f_bar);
+            auto f_bar_o = local_view_host(f_bar);
 
             PetscCrsView F_d, F_o;
             views_host(F, F_d, F_o);
@@ -312,17 +349,16 @@ namespace utopia {
                         Scalar alpha_ij = 0;
 
                         if (Fij > 0) {
-                            alpha_ij = std::min(R_plus_view_d.get(r), R_minus_view_d.get(c));
+                            alpha_ij = std::min(R_plus_d.get(r), R_minus_d.get(c));
                         } else {
-                            alpha_ij = std::min(R_minus_view_d.get(r), R_plus_view_d.get(c));
+                            alpha_ij = std::min(R_minus_d.get(r), R_plus_d.get(c));
                         }
 
                         fi += alpha_ij * Fij;
                     }
                 }
 
-                if(!empty(F_o))
-                {
+                if (!empty(F_o)) {
                     auto row = F_o.row(r);
                     for (SizeType k = 0; k < row.length; k++) {
                         const SizeType c = row.colidx(k);
@@ -332,23 +368,24 @@ namespace utopia {
                         Scalar alpha_ij = 0;
 
                         if (Fij > 0) {
-                            alpha_ij = std::min(R_plus_view_d.get(r), R_minus_view_o.get(c));
+                            alpha_ij = std::min(R_plus_d.get(r), R_minus_o.get(c));
                         } else {
-                            alpha_ij = std::min(R_minus_view_d.get(r), R_plus_view_o.get(c));
+                            alpha_ij = std::min(R_minus_d.get(r), R_plus_o.get(c));
                         }
 
                         fi += alpha_ij * Fij;
                     }
                 }
 
-                f_bar_view.set(r, fi);
+                f_bar_o.set(r, fi);
             }
         }
 
         void post_process(const Vector &g, Vector &x) const override {
             UTOPIA_TRACE_SCOPE("StabilizeTransport::post_process");
             //!!! -g instead of g because the rhs is = -g
-            Vector x_dot = (*A_corrected_) * x - g;
+            Vector x_dot = (*A_corrected_) * x + g;
+            x_dot = -x_dot;
             // Vector x_dot = (*A_corrected_) * x + g;
             x_dot = e_mul(inverse_mass_vector_, x_dot);
 
@@ -364,11 +401,14 @@ namespace utopia {
             x.select(ghosts, x_ghosts);
             x_dot.select(ghosts, x_dot_ghosts);
 
-            add_contrib(*A_diff_, x, x_ghosts, F);
-            add_contrib(*M_diff_, x, x_ghosts, F);
+            add_contrib(*A_diff_, x, x_ghosts, -1, F);
+            add_contrib(*M_diff_, x_dot, x_dot_ghosts, 1, F);
 
             Vector P_plus(layout(x), 0), P_minus(layout(x), 0);
             negative_postive_antidiffusive_fluxes(F, P_plus, P_minus);
+
+            // Check why not before P?
+            pre_limiting_step(x, x_ghosts, F);
 
             Vector Q_plus(layout(x), 0), Q_minus(layout(x), 0);
             min_max_bound(dt_, *M_corrected_, x, x_ghosts, Q_minus, Q_plus);
@@ -381,19 +421,32 @@ namespace utopia {
             R_minus = Q_minus / P_minus;
             R_minus.e_min(1);
 
+            // Dirichlet nodes should not change
+            space_->apply_value_constraints(1, R_plus);
+            space_->apply_value_constraints(1, R_minus);
+
             Vector R_plus_ghosts, R_minus_ghosts;
             R_plus.select(ghosts, R_plus_ghosts);
             R_minus.select(ghosts, R_minus_ghosts);
 
-            Vector f_bar(layout(x), 0);
-            create_update(F, R_minus, R_minus_ghosts, R_plus, R_minus_ghosts, f_bar);
+            Vector x_correction(layout(x), 0);
+            create_update(F, R_minus, R_minus_ghosts, R_plus, R_minus_ghosts, x_correction);
 
-            f_bar *= dt_;
-            f_bar = e_mul(inverse_mass_vector_, f_bar);
-            x += f_bar;
+            x_correction *= dt_;
+            x_correction = e_mul(inverse_mass_vector_, x_correction);
+
+            space_->apply_zero_constraints(x_correction);
+
+            Scalar norm_x_correction = norm2(x_correction);
+            if (!x.comm().rank()) {
+                utopia::out() << "norm_x_correction: " << norm_x_correction << "\n";
+            }
+
+            x += x_correction;
         }
 
     private:
+        std::shared_ptr<FunctionSpace> space_;
         std::shared_ptr<Matrix> A_corrected_;
         std::shared_ptr<Matrix> A_diff_;
         std::shared_ptr<Matrix> M_corrected_;
