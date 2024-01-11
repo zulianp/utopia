@@ -270,6 +270,7 @@ namespace utopia {
                         return false;
                     }
 
+                    function_->post_solve(x);
                     function_->update_IVP(x);
                     function_->report_solution(x);
                 } while (!function_->is_IVP_solved());

@@ -61,6 +61,7 @@ namespace utopia {
         virtual void create_solution_vector(Vector_t &x) = 0;
         virtual void apply_constraints(Vector_t &x) const = 0;
         virtual void set_environment(const std::shared_ptr<Environment_t> &env) = 0;
+        virtual void post_solve(Vector_t &) {}
 
         virtual const std::shared_ptr<Matrix_t> &mass_matrix() const = 0;
         virtual bool assemble_mass_matrix() = 0;
@@ -393,11 +394,15 @@ namespace utopia {
 
         void set_environment(const std::shared_ptr<Environment_t> &env) override { fe_function_->set_environment(env); }
 
-        bool update_IVP(const Vector_t &) override {
+        bool update_IVP(const Vector_t &x) override {
             time()->update();
             space()->update(*time());
+
+            if (fe_function_) fe_function_->update_IVP(x);
             return true;
         }
+
+        void post_solve(Vector_t &x) override { fe_function_->post_solve(x); }
 
         bool setup_IVP(Vector_t &x) override = 0;
 
