@@ -383,11 +383,19 @@ namespace utopia {
 
         void post_process(const Vector &g, Vector &x) const override {
             UTOPIA_TRACE_SCOPE("StabilizeTransport::post_process");
-            //!!! -g instead of g because the rhs is = -g
+            //!!! CHECK -g instead of g because the rhs is = -g
             Vector x_dot = (*A_corrected_) * x + g;
             x_dot = -x_dot;
+            space_->apply_zero_constraints(x_dot);
+
             // Vector x_dot = (*A_corrected_) * x + g;
             x_dot = e_mul(inverse_mass_vector_, x_dot);
+
+            if(debug_) {
+                space_->write("x_dot.e", x_dot);
+                Vector force = e_mul(inverse_mass_vector_, g);
+                space_->write("force.e", force);
+            }
 
             Matrix F = *A_corrected_;
             F *= 0;
@@ -401,17 +409,27 @@ namespace utopia {
             x.select(ghosts, x_ghosts);
             x_dot.select(ghosts, x_dot_ghosts);
 
-            add_contrib(*A_diff_, x, x_ghosts, -1, F);
+            add_contrib(*A_diff_, x, x_ghosts, 1, F);
             add_contrib(*M_diff_, x_dot, x_dot_ghosts, 1, F);
 
             Vector P_plus(layout(x), 0), P_minus(layout(x), 0);
             negative_postive_antidiffusive_fluxes(F, P_plus, P_minus);
+
+            if(debug_) {
+                space_->write("P_plus.e", P_plus);
+                space_->write("P_minus.e", P_minus);
+            }
 
             // Check why not before P?
             pre_limiting_step(x, x_ghosts, F);
 
             Vector Q_plus(layout(x), 0), Q_minus(layout(x), 0);
             min_max_bound(dt_, *M_corrected_, x, x_ghosts, Q_minus, Q_plus);
+
+            if(debug_) {
+                space_->write("Q_plus.e", Q_plus);
+                space_->write("Q_minus.e", Q_minus);
+            }
 
             // Book_Kuzmin.pdf page 163 eq (82)
             Vector R_plus(layout(x), 0), R_minus(layout(x), 0);
@@ -424,6 +442,11 @@ namespace utopia {
             // Dirichlet nodes should not change
             space_->apply_value_constraints(1, R_plus);
             space_->apply_value_constraints(1, R_minus);
+
+            if(debug_) {
+                space_->write("R_plus.e", R_plus);
+                space_->write("R_minus.e", R_minus);
+            }
 
             Vector R_plus_ghosts, R_minus_ghosts;
             R_plus.select(ghosts, R_plus_ghosts);
@@ -443,6 +466,11 @@ namespace utopia {
             }
 
             x += x_correction;
+
+            if(debug_) {
+                space_->write("x_correction.e", x_correction);
+                Utopia::Abort("Exiting for dbg purposes!");
+            }
         }
 
     private:
@@ -453,6 +481,7 @@ namespace utopia {
         std::shared_ptr<Matrix> M_diff_;
         Vector inverse_mass_vector_;
         Scalar dt_{1};
+        bool debug_{true};
     };
 
     template <class Matrix>
