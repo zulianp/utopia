@@ -71,7 +71,9 @@ namespace utopia {
             if (problem_type == "transport") {
                 auto st = std::make_shared<StabilizeTransport<FunctionSpace>>(porous_matrix);
                 problem->add_matrix_transformer(st);
-                problem->add_post_processor(st);
+
+                // FIXME uncomment after fix!
+                // problem->add_post_processor(st);
             }
 
             if (problem_type == "transport" || integrator == "ImplicitEuler") {
