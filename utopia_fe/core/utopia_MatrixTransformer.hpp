@@ -147,9 +147,9 @@ namespace utopia {
             inverse_mass_vector_ = 1. / inverse_mass_vector_;
         }
 
-        static void add_contrib(Matrix &A, const Vector &x, const Vector &x_ghosts, const Scalar factor, Matrix &out) {
+        static void add_contrib(Matrix &A, const Vector &x, const Vector &u_ghosts, const Scalar factor, Matrix &out) {
             auto x_d = local_view_host(x);
-            auto x_o = local_view_host(x_ghosts);
+            auto x_o = local_view_host(u_ghosts);
 
             PetscCrsView A_d, A_o;
             views_host(A, A_d, A_o);
@@ -191,9 +191,14 @@ namespace utopia {
         }
 
         // Eq (79)
-        static void pre_limiting_step(const Vector &x, const Vector &x_ghosts, Matrix &F) {
+        static void pre_limiting_step(const Vector &x, const Vector &u_ghosts, Matrix &F) {
             auto x_d = local_view_host(x);
-            auto x_o = local_view_host(x_ghosts);
+            auto x_o = local_view_host(u_ghosts);
+
+            // const Scalar tol = -1e-8;
+            // const Scalar tol = -1e-10;
+            const Scalar tol = -1e-12;
+            // const Scalar tol = 0;
 
             PetscCrsView F_d, F_o;
             views_host(F, F_d, F_o);
@@ -209,7 +214,7 @@ namespace utopia {
                         Scalar Fij = F_row.value(k);
                         Scalar xj = x_d.get(c);
 
-                        if (Fij * (xj - xi) > 0) {
+                        if (Fij * (xj - xi) > tol) {
                             F_row.value(k) = 0;
                         }
                     }
@@ -222,7 +227,7 @@ namespace utopia {
                         Scalar Fij = F_row.value(k);
                         Scalar xj = x_o.get(c);
 
-                        if (Fij * (xj - xi) > 0) {
+                        if (Fij * (xj - xi) > tol) {
                             F_row.value(k) = 0;
                         }
                     }
@@ -318,12 +323,76 @@ namespace utopia {
         }
 
         // Eq (66) + (82)
-        static void create_update(Matrix &F,
-                                  const Vector &R_minus,
-                                  const Vector &R_minus_ghosts,
-                                  const Vector &R_plus,
-                                  const Vector &R_plus_ghosts,
-                                  Vector &f_bar) {
+        // check Eq (115)
+        // static void create_update(Matrix &F,
+        //                           const Vector &R_minus,
+        //                           const Vector &R_minus_ghosts,
+        //                           const Vector &R_plus,
+        //                           const Vector &R_plus_ghosts,
+        //                           Vector &f_bar) {
+        //     auto R_plus_d = local_view_host(R_plus);
+        //     auto R_minus_d = local_view_host(R_minus);
+
+        //     auto R_plus_o = local_view_host(R_plus_ghosts);
+        //     auto R_minus_o = local_view_host(R_minus_ghosts);
+
+        //     auto f_bar_o = local_view_host(f_bar);
+
+        //     PetscCrsView F_d, F_o;
+        //     views_host(F, F_d, F_o);
+
+        //     SizeType rows = F_d.rows();
+        //     for (SizeType r = 0; r < rows; r++) {
+        //         Scalar fi = 0;
+
+        //         {
+        //             auto row = F_d.row(r);
+        //             for (SizeType k = 0; k < row.length; k++) {
+        //                 const SizeType c = row.colidx(k);
+        //                 if (c == r) continue;
+
+        //                 Scalar Fij = row.value(k);
+        //                 Scalar alpha_ij = 0;
+
+        //                 if (Fij > 0) {
+        //                     alpha_ij = std::min(R_plus_d.get(r), R_minus_d.get(c));
+        //                 } else {
+        //                     alpha_ij = std::min(R_minus_d.get(r), R_plus_d.get(c));
+        //                 }
+
+        //                 fi += alpha_ij * Fij;
+        //             }
+        //         }
+
+        //         if (!empty(F_o)) {
+        //             auto row = F_o.row(r);
+        //             for (SizeType k = 0; k < row.length; k++) {
+        //                 const SizeType c = row.colidx(k);
+
+        //                 Scalar Fij = row.value(k);
+
+        //                 Scalar alpha_ij = 0;
+
+        //                 if (Fij > 0) {
+        //                     alpha_ij = std::min(R_plus_d.get(r), R_minus_o.get(c));
+        //                 } else {
+        //                     alpha_ij = std::min(R_minus_d.get(r), R_plus_o.get(c));
+        //                 }
+
+        //                 fi += alpha_ij * Fij;
+        //             }
+        //         }
+
+        //         f_bar_o.set(r, fi);
+        //     }
+        // }
+
+        void create_update(Matrix &F,
+                           const Vector &R_minus,
+                           const Vector &R_minus_ghosts,
+                           const Vector &R_plus,
+                           const Vector &R_plus_ghosts,
+                           Vector &f_bar) const {
             auto R_plus_d = local_view_host(R_plus);
             auto R_minus_d = local_view_host(R_minus);
 
@@ -335,12 +404,19 @@ namespace utopia {
             PetscCrsView F_d, F_o;
             views_host(F, F_d, F_o);
 
+            Matrix alpha = F;
+            alpha *= 0.;
+
+            PetscCrsView alpha_d, alpha_o;
+            views_host(alpha, alpha_d, alpha_o);
+
             SizeType rows = F_d.rows();
             for (SizeType r = 0; r < rows; r++) {
                 Scalar fi = 0;
 
                 {
                     auto row = F_d.row(r);
+                    auto alpha_row = alpha_d.row(r);
                     for (SizeType k = 0; k < row.length; k++) {
                         const SizeType c = row.colidx(k);
                         if (c == r) continue;
@@ -355,11 +431,14 @@ namespace utopia {
                         }
 
                         fi += alpha_ij * Fij;
+
+                        alpha_row.value(k) = alpha_ij;
                     }
                 }
 
                 if (!empty(F_o)) {
                     auto row = F_o.row(r);
+                    auto alpha_row = alpha_o.row(r);
                     for (SizeType k = 0; k < row.length; k++) {
                         const SizeType c = row.colidx(k);
 
@@ -374,25 +453,34 @@ namespace utopia {
                         }
 
                         fi += alpha_ij * Fij;
+                        alpha_row.value(k) = alpha_ij;
                     }
                 }
 
                 f_bar_o.set(r, fi);
             }
+
+            if (debug_) {
+                rename("alpha", alpha);
+                write("load_alpha.m", alpha);
+            }
         }
 
-        void post_process(const Vector &g, Vector &x) const override {
+        void post_process(const Vector &g, Vector &u) const override {
             UTOPIA_TRACE_SCOPE("StabilizeTransport::post_process");
             //!!! CHECK -g instead of g because the rhs is = -g
-            Vector x_dot = (*A_corrected_) * x + g;
-            x_dot = -x_dot;
-            space_->apply_zero_constraints(x_dot);
+            Vector u_dot = (*A_corrected_) * u + g;
 
-            // Vector x_dot = (*A_corrected_) * x + g;
-            x_dot = e_mul(inverse_mass_vector_, x_dot);
+            // TODO check if +
+            // u_dot = -u_dot;
 
-            if(debug_) {
-                space_->write("x_dot.e", x_dot);
+            space_->apply_zero_constraints(u_dot);
+
+            // Vector u_dot = (*A_corrected_) * x + g;
+            u_dot = e_mul(inverse_mass_vector_, u_dot);
+
+            if (debug_) {
+                space_->write("u_dot.e", u_dot);
                 Vector force = e_mul(inverse_mass_vector_, g);
                 space_->write("force.e", force);
             }
@@ -405,34 +493,47 @@ namespace utopia {
 
             // Split vectors into local block and off diagonal block
             // retrieve ghost values of vectors
-            Vector x_ghosts, x_dot_ghosts;
-            x.select(ghosts, x_ghosts);
-            x_dot.select(ghosts, x_dot_ghosts);
+            Vector u_ghosts, u_dot_ghosts;
+            u.select(ghosts, u_ghosts);
+            u_dot.select(ghosts, u_dot_ghosts);
 
-            add_contrib(*A_diff_, x, x_ghosts, 1, F);
-            add_contrib(*M_diff_, x_dot, x_dot_ghosts, 1, F);
+            // TODO check if -1 or 1
+            add_contrib(*A_diff_, u, u_ghosts, -1, F);
+            add_contrib(*M_diff_, u_dot, u_dot_ghosts, 1, F);
+            pre_limiting_step(u, u_ghosts, F);
 
-            Vector P_plus(layout(x), 0), P_minus(layout(x), 0);
+            if (debug_) {
+                Matrix zeros = F + transpose(F);
+                Scalar norm_zeros = norm2(zeros);
+
+                if (!u.comm().rank()) {
+                    utopia::out() << "norm_zeros: " << norm_zeros << "\n";
+                }
+            }
+
+            if (debug_) {
+                rename("F", F);
+                write("load_F.m", F);
+            }
+
+            Vector P_plus(layout(u), 0), P_minus(layout(u), 0);
             negative_postive_antidiffusive_fluxes(F, P_plus, P_minus);
 
-            if(debug_) {
+            if (debug_) {
                 space_->write("P_plus.e", P_plus);
                 space_->write("P_minus.e", P_minus);
             }
 
-            // Check why not before P?
-            pre_limiting_step(x, x_ghosts, F);
+            Vector Q_plus(layout(u), 0), Q_minus(layout(u), 0);
+            min_max_bound(dt_, *M_corrected_, u, u_ghosts, Q_minus, Q_plus);
 
-            Vector Q_plus(layout(x), 0), Q_minus(layout(x), 0);
-            min_max_bound(dt_, *M_corrected_, x, x_ghosts, Q_minus, Q_plus);
-
-            if(debug_) {
+            if (debug_) {
                 space_->write("Q_plus.e", Q_plus);
                 space_->write("Q_minus.e", Q_minus);
             }
 
             // Book_Kuzmin.pdf page 163 eq (82)
-            Vector R_plus(layout(x), 0), R_minus(layout(x), 0);
+            Vector R_plus(layout(u), 0), R_minus(layout(u), 0);
             R_plus = Q_plus / P_plus;
             R_plus.e_min(1);
 
@@ -443,7 +544,7 @@ namespace utopia {
             space_->apply_value_constraints(1, R_plus);
             space_->apply_value_constraints(1, R_minus);
 
-            if(debug_) {
+            if (debug_) {
                 space_->write("R_plus.e", R_plus);
                 space_->write("R_minus.e", R_minus);
             }
@@ -452,23 +553,23 @@ namespace utopia {
             R_plus.select(ghosts, R_plus_ghosts);
             R_minus.select(ghosts, R_minus_ghosts);
 
-            Vector x_correction(layout(x), 0);
-            create_update(F, R_minus, R_minus_ghosts, R_plus, R_minus_ghosts, x_correction);
+            Vector u_correction(layout(u), 0);
+            create_update(F, R_minus, R_minus_ghosts, R_plus, R_minus_ghosts, u_correction);
 
-            x_correction *= dt_;
-            x_correction = e_mul(inverse_mass_vector_, x_correction);
+            u_correction *= dt_;
+            u_correction = e_mul(inverse_mass_vector_, u_correction);
 
-            space_->apply_zero_constraints(x_correction);
+            space_->apply_zero_constraints(u_correction);
 
-            Scalar norm_x_correction = norm2(x_correction);
-            if (!x.comm().rank()) {
-                utopia::out() << "norm_x_correction: " << norm_x_correction << "\n";
+            Scalar norm_u_correction = norm2(u_correction);
+            if (!u.comm().rank()) {
+                utopia::out() << "norm_u_correction: " << norm_u_correction << "\n";
             }
 
-            x += x_correction;
+            u += u_correction;
 
-            if(debug_) {
-                space_->write("x_correction.e", x_correction);
+            if (debug_) {
+                space_->write("u_correction.e", u_correction);
                 Utopia::Abort("Exiting for dbg purposes!");
             }
         }
@@ -482,6 +583,7 @@ namespace utopia {
         Vector inverse_mass_vector_;
         Scalar dt_{1};
         bool debug_{true};
+        // bool debug_{false};
     };
 
     template <class Matrix>

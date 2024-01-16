@@ -73,7 +73,7 @@ namespace utopia {
                 problem->add_matrix_transformer(st);
 
                 // FIXME uncomment after fix!
-                // problem->add_post_processor(st);
+                problem->add_post_processor(st);
             }
 
             if (problem_type == "transport" || integrator == "ImplicitEuler") {
