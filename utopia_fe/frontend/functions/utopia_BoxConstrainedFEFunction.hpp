@@ -78,6 +78,36 @@ namespace utopia {
         bool setup_IVP(IO<FunctionSpace> &input) override { return unconstrained_->setup_IVP(input); }
         bool is_IVP_solved() override { return unconstrained_->is_IVP_solved(); }
 
+        void set_output_db(const std::shared_ptr<IO<FunctionSpace>> &io) override {
+            assert(unconstrained_);
+
+            if (!unconstrained_) {
+                Utopia::Abort("BoxConstrainedFEFunction::set_output_db called on uninitialized object!");
+            }
+
+            unconstrained_->set_output_db(io);
+        }
+
+        bool register_output(IO<FunctionSpace> &io) override {
+            assert(unconstrained_);
+
+            if (!unconstrained_) {
+                Utopia::Abort("BoxConstrainedFEFunction::register_output called on uninitialized object!");
+            }
+
+            return unconstrained_->register_output(io);
+        }
+
+        bool update_output(IO<FunctionSpace> &io) override {
+            assert(unconstrained_);
+
+            if (!unconstrained_) {
+                Utopia::Abort("BoxConstrainedFEFunction::update_output called on uninitialized object!");
+            }
+
+            return unconstrained_->update_output(io);
+        }
+
         BoxConstrainedFEFunction(const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &unconstrained) {
             initialize(unconstrained);
         }
@@ -131,6 +161,7 @@ namespace utopia {
             in.get("inverse_diagonal_scaling", inverse_diagonal_scaling_);
             in.get("print_active_set", print_active_set_);
             in.get("damping", damping_);
+            in.get("export_sqp_system", export_sqp_system_);
         }
 
         void ensure_qp_solver() {
@@ -228,6 +259,38 @@ namespace utopia {
                             g_c = e_mul(g_c, d);
                         }
 
+                        if (export_sqp_system_) {
+                            static int sys_num = 0;
+                            rename("A", H_c);
+                            rename("b", g_c);
+
+                            Path dir("sqp");
+                            if (!dir.exists()) {
+                                dir.make_dir();
+                            }
+
+                            Path step_dir = dir / std::to_string(sys_num);
+
+                            if (!step_dir.exists()) {
+                                step_dir.make_dir();
+                            }
+
+                            write(step_dir / "load_A.m", H_c);
+                            write(step_dir / "load_b.m", g_c);
+
+                            if (box.upper_bound()) {
+                                rename("ub", *box.upper_bound());
+                                write(step_dir / "load_ub.m", *box.upper_bound());
+                            }
+
+                            if (box.lower_bound()) {
+                                rename("lb", *box.lower_bound());
+                                write(step_dir / "load_lb.m", *box.lower_bound());
+                            }
+
+                            sys_num++;
+                        }
+
                         qp_solver_converged = qp_solver_->solve(H_c, g_c, increment_c);
 
                         if (damping_ != 1) {
@@ -321,7 +384,7 @@ namespace utopia {
 
                 converged = this->check_convergence(constraints_iter, 1, 1, x_diff_norm_A);
 
-                if (converged) {
+                if (converged && this->verbose()) {
                     x.comm().root_print("Converged!");
                     break;
                 }
@@ -345,7 +408,8 @@ namespace utopia {
         Scalar_t material_iter_tol_{1e-6};
         Scalar_t rescale_{1};
         bool inverse_diagonal_scaling_{false};
-        bool print_active_set_{true};
+        bool print_active_set_{false};
+        bool export_sqp_system_{false};
 
         // FIXME move somewhere else
         static void register_fe_solvers() {

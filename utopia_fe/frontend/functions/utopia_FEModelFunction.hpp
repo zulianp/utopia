@@ -104,6 +104,10 @@ namespace utopia {
             return false;
         }
 
+        virtual void set_output_db(const std::shared_ptr<IO<FunctionSpace>> &) {
+            Utopia::Abort("set_output_db(IO<FunctionSpace> &), not implemented!");
+        }
+
         virtual bool is_IVP_solved() { return true; }
 
         virtual bool set_initial_condition(const Vector_t &) {
@@ -118,6 +122,7 @@ namespace utopia {
         }
 
         virtual void set_time(const std::shared_ptr<SimulationTime> &time) = 0;
+        virtual std::shared_ptr<SimulationTime> time() const { return nullptr; }
 
         virtual std::shared_ptr<LSStrategy<Vector_t>> line_search() { return nullptr; }
     };
@@ -514,7 +519,7 @@ namespace utopia {
 
             fe_function_->set_time(time_);
 
-            in.get("time", *time_);
+            in.require("time", *time_);
             in.get("export_tensors", export_tensors_);
 
             auto space_name = space()->name();
@@ -533,14 +538,17 @@ namespace utopia {
         }
 
         inline Scalar_t delta_time() const { return time()->delta(); }
+
         inline std::shared_ptr<SimulationTime> &time() {
             assert(time_);
             return time_;
         }
-        inline const std::shared_ptr<SimulationTime> &time() const {
+
+        inline std::shared_ptr<SimulationTime> time() const override {
             assert(time_);
             return time_;
         }
+
         bool is_time_dependent() const override { return true; }
 
         // inline const std::shared_ptr<OmniAssembler_t> &assembler() const override { return fe_function_->assembler();
@@ -577,6 +585,11 @@ namespace utopia {
         }
 
         virtual const Vector_t &solution() const = 0;
+
+        void set_output_db(const std::shared_ptr<IO_t> &io) override {
+            io_ = io;
+            this->register_output(*io_);
+        }
 
         void set_time(const std::shared_ptr<SimulationTime> &time) override {
             time_ = time;

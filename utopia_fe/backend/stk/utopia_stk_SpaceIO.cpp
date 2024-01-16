@@ -38,7 +38,7 @@ namespace utopia {
             return impl_->io.write(1, 1);
         }
 
-        bool SpaceIO::read_nodal(Field<FunctionSpace> &field) {
+        bool SpaceIO::read_nodal(Field<FunctionSpace> &field, const bool fail_if_not_found) {
             using Bucket_t = ::stk::mesh::Bucket;
             using Communicator = Traits<FunctionSpace>::Communicator;
 
@@ -60,7 +60,11 @@ namespace utopia {
                     utopia::err() << "SpaceIO: could not find stk field with name \"" << field.name() << "\"\n";
                 }
 
-                Utopia::Abort("Fatal error!");
+                if (fail_if_not_found) {
+                    Utopia::Abort("Fatal error!");
+                } else {
+                    return false;
+                }
             }
 
             int n_comp = -1;
