@@ -411,6 +411,11 @@ namespace utopia {
 
         bool setup_IVP(Vector_t &x) override = 0;
 
+        bool setup_IVP(IO<FunctionSpace> &) override {
+            Utopia::Abort("setup_IVP(IO<FunctionSpace> &), not implemented!");
+            return false;
+        }
+
         bool is_IVP_solved() override { return time()->finished(); }
 
         virtual void integrate_gradient(const Vector_t &x, Vector_t &g) const = 0;
@@ -531,8 +536,8 @@ namespace utopia {
             in.get("output_path", output_path_);
 
             in.get("output", [&](Input &node) {
-                std::string output_mode;
-                node.require("mode", output_mode_);
+                std::string output_mode = "OVERWRITE";
+                node.get("mode", output_mode_);
                 node.require("path", output_path_);
             });
         }
