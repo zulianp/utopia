@@ -166,8 +166,10 @@ namespace utopia {
             }
 
             do {
-                const Scalar_t t = fun->time()->get();
-                status("time: " + std::to_string(t));
+                if (fun->is_time_dependent()) {
+                    const Scalar_t t = fun->time()->get();
+                    status("time: " + std::to_string(t));
+                }
 
                 if (!solver.solve(*obs_fun, x)) {
                     space.comm().root_print("ObstacleApp[Warning] solver failed to converge!");
