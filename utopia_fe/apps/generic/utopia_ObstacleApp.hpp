@@ -23,6 +23,7 @@
 #include "utopia_MeshTransform.hpp"
 
 #include <memory>
+#include <string>
 
 namespace utopia {
 
@@ -72,11 +73,11 @@ namespace utopia {
 
                 obs_fun = std::make_shared<ObstacleFEFunction_t>(fun);
                 obs_fun->read(in);
+                newmark->time()->restart(t);
+                obs_fun->setup_IVP(input_db);
 
-                newmark->time()->get() = t;  // Set-simulation time
-                newmark->setup_IVP(input_db);
+                // Copy the solution that was loaded from disk
                 x = newmark->solution();
-
             } else {
                 Field<FunctionSpace> deformation;
                 bool use_state_as_initial_condition = false;
@@ -165,6 +166,9 @@ namespace utopia {
             }
 
             do {
+                const Scalar_t t = fun->time()->get();
+                status("time: " + std::to_string(t));
+
                 if (!solver.solve(*obs_fun, x)) {
                     space.comm().root_print("ObstacleApp[Warning] solver failed to converge!");
                 }
@@ -173,6 +177,12 @@ namespace utopia {
                 obs_fun->report_solution(x);
 
             } while (!fun->is_IVP_solved());
+        }
+
+        static void status(const std::string &message) {
+            if (!mpi_world_rank()) {
+                utopia::out() << message << "\n";
+            }
         }
     };
 
