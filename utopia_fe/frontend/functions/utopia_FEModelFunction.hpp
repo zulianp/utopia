@@ -520,11 +520,13 @@ namespace utopia {
 
             if (!time_) {
                 time_ = std::make_shared<SimulationTime>();
+                in.require("time", *time_);
+            } else {
+                in.get("time", *time_);
             }
 
             fe_function_->set_time(time_);
 
-            in.require("time", *time_);
             in.get("export_tensors", export_tensors_);
 
             auto space_name = space()->name();

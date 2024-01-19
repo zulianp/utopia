@@ -220,7 +220,7 @@ namespace utopia {
 
     private:
         bool enable_restart_{false};
-        bool export_time_integrator_fields_{false};
+        bool export_time_integrator_fields_{true};
         bool fail_on_field_not_found_{true};
         std::shared_ptr<State> state_;
     };
