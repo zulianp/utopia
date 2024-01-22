@@ -19,10 +19,6 @@ if(Mars_FOUND)
 
 endif()
 
-
-
-
-
 # if(UTOPIA_ENABLE_MARS)
 #     find_package(Mars 0 REQUIRED)
 

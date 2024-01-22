@@ -28,8 +28,6 @@ if(Trilinos_Kokkos_FOUND)
     sampler
     utils)
   
-  message(STATUS "KOKKOS_MODULES:${KOKKOS_MODULES}")
-
   scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "${KOKKOS_MODULES}"
                    UTOPIA_FE_BUILD_INCLUDES UTOPIA_FE_HEADERS UTOPIA_FE_SOURCES)
 

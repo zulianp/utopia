@@ -19,7 +19,10 @@ if(Utopia_FOUND)
   add_definitions(${UTOPIA_DEFS})
 
   if(NOT UTOPIA_ENABLE_PETSC OR NOT UTOPIA_ENABLE_TRILINOS)
-    message(FATAL_ERROR "Utopia needs to be installed with petsc and trilinos enabled as backends.")
+    message(
+      FATAL_ERROR
+        "Utopia needs to be installed with petsc and trilinos enabled as backends."
+    )
   endif()
 
   list(APPEND UTOPIA_FE_DEP_LIBRARIES ${UTOPIA_LIBRARIES})
@@ -37,9 +40,12 @@ endif()
 
 if(UTOPIA_ENABLE_LIBMESH)
   if(UTOPIA_ENABLE_STK)
-    message(FATAL_ERROR "UtopiaFE cannot be compiled with libmesh and stk enabled at the same time.")
+    message(
+      FATAL_ERROR
+        "UtopiaFE cannot be compiled with libmesh and stk enabled at the same time."
+    )
   endif()
-  if (NOT UTOPIA_INSTALL_LIBMESH)
+  if(NOT UTOPIA_INSTALL_LIBMESH)
     find_package(LIBMESH REQUIRED)
   else()
     find_package(LIBMESH QUIET)
@@ -70,7 +76,7 @@ if(UTOPIA_ENABLE_INTREPID2)
   if(Intrepid2_FOUND)
     message(STATUS "Intrepid2 found.")
     if(Trilinos_Kokkos_FOUND)
-      list(APPEND UTOPIA_FE_DEP_LIBRARIES ${Intrepid2_LIBRARIES}) 
+      list(APPEND UTOPIA_FE_DEP_LIBRARIES ${Intrepid2_LIBRARIES})
       list(APPEND UTOPIA_FE_DEP_INCLUDES ${Trilinos_INCLUDE_DIRS})
     else()
       message(
@@ -81,58 +87,33 @@ endif()
 
 if(UTOPIA_ENABLE_STK)
   if(UTOPIA_ENABLE_LIBMESH)
-    message(FATAL_ERROR "UtopiaFE cannot be compiled with libmesh and stk enabled at the same time.")
+    message(
+      FATAL_ERROR
+        "UtopiaFE cannot be compiled with libmesh and stk enabled at the same time."
+    )
   endif()
   set(UTOPIA_STK_SEARCH_PATHS "${Trilinos_DIR}/../STK")
   if(UTOPIA_ENABLE_ENV_READ)
     set(UTOPIA_STK_SEARCH_PATHS
         "${UTOPIA_STK_SEARCH_PATHS};$ENV{TRILINOS_DIR}/lib/cmake/STK")
   endif()
-    find_package(STK HINTS ${UTOPIA_STK_SEARCH_PATHS} REQUIRED)
-    if(STK_FOUND)
-      list(APPEND UTOPIA_FE_DEP_LIBRARIES ${STK_LIBRARIES})
-      # message(STATUS "STK_LIBRARIES:${STK_LIBRARIES}")
-      list(APPEND UTOPIA_FE_DEP_INCLUDES ${Trilinos_INCLUDE_DIRS})
+  find_package(STK HINTS ${UTOPIA_STK_SEARCH_PATHS} REQUIRED)
+  if(STK_FOUND)
+    list(APPEND UTOPIA_FE_DEP_LIBRARIES ${STK_LIBRARIES})
+    list(APPEND UTOPIA_FE_DEP_INCLUDES ${Trilinos_INCLUDE_DIRS})
+  endif()
+endif()
+
+if(UTOPIA_ENABLE_MARS)
+  find_package(Mars REQUIRED)
+    if(Mars_FOUND)
+      message(STATUS "Mars found!")
+      list(APPEND UTOPIA_FE_DEP_LIBRARIES ${MARS_LIBRARIES} ${ADIOS_LIBRARIES})
+      list(APPEND UTOPIA_FE_DEP_INCLUDES ${MARS_INCLUDES})
     endif()
 endif()
 
-
-if(UTOPIA_ENABLE_MARS)
-  set(MARS_SEARCH_PATHS "/usr/local/;/usr/;${MARS_DIR}
-        ${MARS_INCLUDES}")
-
-  if(UTOPIA_ENABLE_ENV_READ)
-    set(MARS_SEARCH_PATHS "${MARS_SEARCH_PATHS};$ENV{MARS_DIR};$ENV{Mars_DIR}")
-  endif()
-
-  find_package(Mars HINTS ${MARS_SEARCH_PATHS} PATH_SUFFIXES lib/cmake REQUIRED)
-
-  if(Mars_FOUND)
-    message(STATUS "Mars found.")
-
-    get_target_property(Mars_INCLUDE_DIR Mars::mars
-                        INTERFACE_INCLUDE_DIRECTORIES)
-
-    get_target_property(Mars_LIBRARIES Mars::mars IMPORTED_LOCATION_RELEASE)
-
-    list(APPEND UTOPIA_FE_DEP_LIBRARIES ${Mars_LIBRARIES})
-    list(APPEND UTOPIA_FE_DEP_INCLUDES ${Mars_INCLUDE_DIR})
-
-    message(STATUS "UTOPIA_FE_DEP_LIBRARIES:${UTOPIA_FE_DEP_LIBRARIES}")
-
-  endif()
-
-  if(UTOPIA_ENABLE_MARS_VTK)
-    find_package(
-      VTK
-      COMPONENTS vtkCommonCore vtkCommonDataModel vtkFiltersGeneral vtkIOXML
-                 vtkIOParallel vtkIOParallelXML
-      REQUIRED)
-  endif()
-endif()
-
 # ##############################################################################
-
 
 message(STATUS "UTOPIA_DIR: ${UTOPIA_DIR}")
 

@@ -11,10 +11,9 @@ option(UTOPIA_ENABLE_MOOSE_ENV_MODE
 option(UTOPIA_ENABLE_TRILINOS_ALGEBRA
        "Allows to use the moose installation compilers" OFF)
 option(UTOPIA_ENABLE_MARS "Tries to use mars backend" OFF)
-option(UTOPIA_ENABLE_MARS_VTK "Enable vtk output for mars" OFF)
-option(UTOPIA_ENABLE_MARS_ADIOS2 "Enable adios2 output for mars" OFF)
-option(UTOPIA_ENABLE_INTREPID2 "Tries to use the intrepid2 related features"
-       OFF)
+# option(UTOPIA_ENABLE_MARS_VTK "Enable vtk output for mars" OFF)
+# option(UTOPIA_ENABLE_MARS_ADIOS2 "Enable adios2 output for mars" OFF)
+option(UTOPIA_ENABLE_INTREPID2 "Tries to use the intrepid2 related features" OFF)
 option(UTOPIA_ENABLE_NEW_TRANSFER "Use new transfer features" ON)
 # option(UTOPIA_INSTALL_LIBMESH "install libmesh" OFF)
 option(UTOPIA_INSTALL_MOONOLITH "Local install of par_moonolith." OFF)

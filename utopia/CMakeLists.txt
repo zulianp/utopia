@@ -223,7 +223,7 @@ append_list_to_string_for_cmake(
   CONFIG_CONTENT "LIST(APPEND UTOPIA_CXX_COMPILER\n" "\n)\n\n"
   "${CMAKE_CXX_COMPILER}")
 file(WRITE ${CMAKE_BINARY_DIR}/utopia-config.cmake ${CONFIG_CONTENT})
-list(JOIN CONFIG_CONTENT "\n" OLD_CMAKE_CONFIG_CONTENT)
+# list(JOIN CONFIG_CONTENT "\n" OLD_CMAKE_CONFIG_CONTENT)
 # ##############################################################################
 # ##############################################################################
 # ##############################################################################
