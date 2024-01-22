@@ -15,6 +15,7 @@ endif()
 
 find_package(Utopia REQUIRED)
 if(Utopia_FOUND)
+  set(Utopia_FOUND TRUE)
   message(STATUS "Utopia Found.")
   add_definitions(${UTOPIA_DEFS})
 
@@ -64,6 +65,7 @@ if(UTOPIA_ENABLE_MOONOLITH)
     find_package(ParMoonolith QUIET)
   endif()
   if(ParMoonolith_FOUND)
+    set(ParMoonolith_FOUND TRUE)
     message(STATUS "ParMoonolith found.")
     list(APPEND UTOPIA_FE_DEP_LIBRARIES ${MOONOLITH_LIBRARIES})
     list(APPEND UTOPIA_FE_DEP_INCLUDES ${MOONOLITH_INCLUDES})
@@ -106,16 +108,18 @@ endif()
 
 if(UTOPIA_ENABLE_MARS)
   find_package(Mars REQUIRED)
-    if(Mars_FOUND)
-      message(STATUS "Mars found!")
-      list(APPEND UTOPIA_FE_DEP_LIBRARIES ${MARS_LIBRARIES} ${ADIOS_LIBRARIES})
-      list(APPEND UTOPIA_FE_DEP_INCLUDES ${MARS_INCLUDES})
-    endif()
+  if(Mars_FOUND)
+    set(Mars_FOUND TRUE)
+    message(STATUS "Mars found!")
+    list(APPEND UTOPIA_FE_DEP_LIBRARIES ${MARS_LIBRARIES} ${ADIOS_LIBRARIES})
+    list(APPEND UTOPIA_FE_DEP_INCLUDES ${MARS_INCLUDES})
+  endif()
 endif()
 
 # ##############################################################################
 
-message(STATUS "UTOPIA_DIR: ${UTOPIA_DIR}")
+# message(STATUS "UTOPIA_DIR: ${UTOPIA_DIR}")
+
 
 macro(print_dependency_table)
 
@@ -129,18 +133,18 @@ macro(print_dependency_table)
       "-${SMALL_DEP_TABLE}mpi\t|${UTOPIA_ENABLE_MPI}\t|${MPI_FOUND}\n")
 
   set(SMALL_DEP_TABLE
-      "-${SMALL_DEP_TABLE}Utopia\t|ALWAYS ON\t|${Utopia_FOUND}\n")
+      "-${SMALL_DEP_TABLE}Utopia\t|ON\t|${Utopia_FOUND}\n")
 
   set(SMALL_DEP_TABLE
       "-${SMALL_DEP_TABLE}Libmesh\t|${UTOPIA_ENABLE_LIBMESH}\t|${LIBMESH_FOUND}\n"
   )
 
   set(SMALL_DEP_TABLE
-      "-${SMALL_DEP_TABLE}Moonolith\t|${UTOPIA_ENABLE_MOONOLITH}\t|${MOONOLITH_FOUND}\n"
+      "-${SMALL_DEP_TABLE}ParMoon\t|${UTOPIA_ENABLE_MOONOLITH}\t|${ParMoonolith_FOUND}\n"
   )
 
   set(SMALL_DEP_TABLE
-      "-${SMALL_DEP_TABLE}Intrepid2\t|${UTOPIA_ENABLE_INTREPID_2}\t|${INTREPID_2_FOUND}\n"
+      "-${SMALL_DEP_TABLE}Intrep\t|${UTOPIA_ENABLE_INTREPID2}\t|${INTREPID_2_FOUND}\n"
   )
 
   set(SMALL_DEP_TABLE
@@ -164,27 +168,19 @@ macro(log_dependency_table)
   set(DEP_TABLE "${DEP_TABLE}    UTOPIA_VERSION: ${UTOPIA_VERSION}\n")
 
   set(DEP_TABLE "${DEP_TABLE}  - Libmesh:\n")
-  set(DEP_TABLE
-      "${DEP_TABLE}    UTOPIA_ENABLE_LIBMESH: ${UTOPIA_ENABLE_LIBMESH}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_ENABLE_LIBMESH: ${UTOPIA_ENABLE_LIBMESH}\n")
   set(DEP_TABLE "${DEP_TABLE}    UTOPIA_LIBMESH_DIR: ${UTOPIA_LIBMESH_DIR}\n")
-  set(DEP_TABLE
-      "${DEP_TABLE}    UTOPIA_LIBMESH_VERSION: ${UTOPIA_LIBMESH_VERSION}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_LIBMESH_VERSION: ${UTOPIA_LIBMESH_VERSION}\n")
 
   set(DEP_TABLE "${DEP_TABLE}  - Moonolith:\n")
-  set(DEP_TABLE
-      "${DEP_TABLE}    UTOPIA_ENABLE_MOONOLITH: ${UTOPIA_ENABLE_MOONOLITH}\n")
-  set(DEP_TABLE
-      "${DEP_TABLE}    UTOPIA_MOONOLITH_DIR: ${UTOPIA_MOONOLITH_DIR}\n")
-  set(DEP_TABLE
-      "${DEP_TABLE}    UTOPIA_MOONOLITH_VERSION: ${UTOPIA_MOONOLITH_VERSION}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_ENABLE_MOONOLITH: ${UTOPIA_ENABLE_MOONOLITH}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_MOONOLITH_DIR: ${UTOPIA_MOONOLITH_DIR}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_MOONOLITH_VERSION: ${UTOPIA_MOONOLITH_VERSION}\n")
 
   set(DEP_TABLE "${DEP_TABLE}  - Intrepid2:\n")
-  set(DEP_TABLE
-      "${DEP_TABLE}    UTOPIA_ENABLE_INTREPID2: ${UTOPIA_ENABLE_INTREPID2}\n")
-  set(DEP_TABLE
-      "${DEP_TABLE}    UTOPIA_INTREPID2_DIR: ${UTOPIA_INTREPID2_DIR}\n")
-  set(DEP_TABLE
-      "${DEP_TABLE}    UTOPIA_INTREPID2_VERSION: ${UTOPIA_INTREPID2_VERSION}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_ENABLE_INTREPID2: ${UTOPIA_ENABLE_INTREPID2}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_INTREPID2_DIR: ${UTOPIA_INTREPID2_DIR}\n")
+  set(DEP_TABLE "${DEP_TABLE}    UTOPIA_INTREPID2_VERSION: ${UTOPIA_INTREPID2_VERSION}\n")
 
   set(DEP_TABLE "${DEP_TABLE}  - Mars:\n")
   set(DEP_TABLE "${DEP_TABLE}    UTOPIA_ENABLE_MARS: ${UTOPIA_ENABLE_MARS}\n")
