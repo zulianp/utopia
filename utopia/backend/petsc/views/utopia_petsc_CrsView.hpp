@@ -17,6 +17,9 @@ namespace utopia {
         ~PetscCrsView();
         void set(Mat raw_mat);
         void clear();
+        bool empty() const;
+
+        inline friend bool empty(const PetscCrsView &mat) { return mat.empty(); }
 
         ArrayView<const PetscInt> row_ptr() const;
         ArrayView<const PetscInt> colidx() const;
@@ -25,12 +28,19 @@ namespace utopia {
 
         class RowView {
         public:
-            RowView(const PetscInt length, const PetscInt *colidx, const PetscScalar *values)
+            inline RowView() : length(0), colidx_(nullptr), values_(nullptr) {}
+
+            RowView(const PetscInt length, const PetscInt *colidx, PetscScalar *values)
                 : length(length), colidx_(colidx), values_(values) {}
 
             const PetscInt length{0};
 
             inline PetscScalar value(const PetscInt idx) const {
+                assert(idx < length);
+                return values_[idx];
+            }
+
+            inline PetscScalar &value(const PetscInt idx) {
                 assert(idx < length);
                 return values_[idx];
             }
@@ -42,7 +52,7 @@ namespace utopia {
 
         private:
             const PetscInt *colidx_;
-            const PetscScalar *values_;
+            PetscScalar *values_;
         };
 
         RowView row(const PetscInt row) const;
@@ -68,6 +78,8 @@ namespace utopia {
 
     PetscCrsView crs_view(PetscMatrix &mat);
     PetscCrsView crs_view(const PetscMatrix &mat);
+
+    void views_host(PetscMatrix &mat, PetscCrsView &d, PetscCrsView &o);
 }  // namespace utopia
 
 #endif  // UTOPIA_PETSC_PETSCCRSVIEW_HPP

@@ -1,6 +1,9 @@
 #include "utopia.hpp"
+#include "utopia_Base.hpp"
 #include "utopia_Device.hpp"
+#include "utopia_Operations.hpp"
 #include "utopia_QuadraticFunction.hpp"
+#include "utopia_TestMacros.hpp"
 #include "utopia_TestProblems.hpp"
 #include "utopia_Testing.hpp"
 #include "utopia_ZeroRowsToIdentity.hpp"
@@ -1590,6 +1593,26 @@ namespace utopia {
         utopia_test_assert(approxeq(actual, 4.0));
     }
 
+    void petsc_matrix_lump() {
+        auto n = 3;
+
+        auto &&comm = PetscCommunicator::get_default();
+        auto ml = layout(comm, n, n, PetscTraits::determine(), PetscTraits::determine());
+
+        PetscMatrix M;
+        M.sparse(ml, 3, 3);
+        assemble_laplacian_1D(M);
+        M.shift_diag(2);
+
+        M.lump();
+        PetscVector diag_M = diag(M);
+
+        PetscScalar sum_M = sum(M);
+        PetscScalar sum_diag_M = sum(diag_M);
+
+        utopia_test_assert(approxeq(sum_M, sum_diag_M));
+    }
+
     static void petsc_specific() {
         // UTOPIA_RUN_TEST(petsc_rectangular_block_mat_from_file);
         UTOPIA_RUN_TEST(petsc_rectangular_block_mat);
@@ -1634,6 +1657,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_get_col_test);
         UTOPIA_RUN_TEST(petsc_dense_mat_mult_test);
         UTOPIA_RUN_TEST(petsc_norm_test);
+        UTOPIA_RUN_TEST(petsc_matrix_lump);
 // FIXME(zulianp) this test causes Segmentation Violation when utopia is built with gpu support
 #ifdef PETSC_HAVE_CUDA
         utopia_warning("Skipping petsc_chop_test");

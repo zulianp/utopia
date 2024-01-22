@@ -1429,7 +1429,7 @@ namespace utopia {
             }
         }
 
-        void FunctionSpace::apply_zero_constraints(Vector &v) const {
+        void FunctionSpace::apply_value_constraints(const Scalar value, Vector &v) const {
             using Bucket_t = ::stk::mesh::Bucket;
 
             auto &meta_data = mesh().meta_data();
@@ -1460,7 +1460,7 @@ namespace utopia {
                                 auto node = b[k];
                                 // auto idx = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node));
                                 auto idx = utopia::stk::convert_entity_to_index(node);
-                                v_view.set(idx * nv + bc.component, 0.0);
+                                v_view.set(idx * nv + bc.component, value);
                             }
                         }
                     }
@@ -1487,13 +1487,15 @@ namespace utopia {
                                 auto local_idx = utopia::stk::convert_entity_to_index(node);
                                 assert(local_idx < local_to_global.size());
 
-                                v.c_set(local_to_global(local_idx, bc.component), 0.0);
+                                v.c_set(local_to_global(local_idx, bc.component), value);
                             }
                         }
                     }
                 }
             }
         }
+
+        void FunctionSpace::apply_zero_constraints(Vector &v) const { apply_value_constraints(0, v); }
 
         void FunctionSpace::apply_constraints(Matrix &m, Vector &v) const {
             apply_constraints(m);

@@ -816,6 +816,8 @@ namespace utopia {
         void diag(const PetscVector &other);
         void diag(const PetscMatrix &other) { other.build_diag(*this); }
 
+        void lump();
+
         void col(const SizeType id, PetscVector &result) const;
 
         inline void shift_diag(const Scalar factor) { check_error(MatShift(implementation(), factor)); }
@@ -957,6 +959,8 @@ namespace utopia {
 
         void diag_scale_right(const PetscVector &diag);
         void diag_scale_left(const PetscVector &diag);
+
+        void ghosts(IndexArray &ret) const;
 
         inline std::string get_class() const override { return "PetscMatrix"; }
 

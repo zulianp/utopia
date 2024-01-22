@@ -71,7 +71,10 @@ namespace utopia {
 
         void set_diffusivity(const Scalar diffusivity) { diffusivity_ = diffusivity; }
 
-        void set_ion_current_params(const Scalar alpha, const Scalar u_min, const Scalar u_max, const Scalar u_unst) {
+        void set_output_dbn_current_params(const Scalar alpha,
+                                           const Scalar u_min,
+                                           const Scalar u_max,
+                                           const Scalar u_unst) {
             alpha_ = alpha;
             u_min_ = u_min;
             u_max_ = u_max;
