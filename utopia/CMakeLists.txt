@@ -21,9 +21,6 @@ if(UTOPIA_ENABLE_LOCAL_MODE)
 endif()
 
 if(UTOPIA_ENABLE_FLUYA_MODE)
-  if (NOT yaml-cpp_FOUND)
-    message(WARNING "Fluya mode requires yaml-cpp.")
-  endif()
   include(EnableFluyaMode)
 endif()
 
