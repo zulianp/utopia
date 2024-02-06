@@ -84,33 +84,28 @@ You can use a pre-installed version of utopia in a Docker container. See [HERE](
 ## Contributions 
 
 ### Utopia Open-source repository (BSD 3-clause license)
-https://bitbucket.org/zulianp/utopia
-https://bitbucket.org/zulianp/par_moonolith (frontend and several integrations are in Utopia)
+
+1. https://bitbucket.org/zulianp/utopia
+2. https://bitbucket.org/zulianp/par_moonolith (frontend and several integrations are in Utopia)
+
 
 ###  Simulations realized with Utopia
 
 
-1. Large-scale simulation of pressure-induced phase-field fracture propagation using Utopia
-https://doi.org/10.1007/s42514-021-00069-6
-2. 3D non-conforming mesh model for flow in fractured porous media using Lagrange multipliers
-https://doi.org/10.1016/j.cageo.2019.06.014
-3. Comparison and application of non-conforming mesh models for flow in fractured porous media using dual Lagrange multipliers
-https://doi.org/10.1016/j.jcp.2021.110773
+1. [Large-scale simulation of pressure-induced phase-field fracture propagation using Utopia](https://doi.org/10.1007/s42514-021-00069-6)
+2. [3D non-conforming mesh model for flow in fractured porous media using Lagrange multipliers](https://doi.org/10.1016/j.cageo.2019.06.014)
+3. [Comparison and application of non-conforming mesh models for flow in fractured porous media using dual Lagrange multipliers](https://doi.org/10.1016/j.jcp.2021.110773)
 
 ###  Contributions to benchmarks
 
 
-1. Verification benchmarks for single-phase flow in three-dimensional fractured porous media
-https://doi.org/10.1016/j.advwatres.2020.103759
+1. [Verification benchmarks for single-phase flow in three-dimensional fractured porous media](https://doi.org/10.1016/j.advwatres.2020.103759)
 
 ###  Simulations using Utopia as a dependency
 
-1. Fully coupled dynamic simulations of bioprosthetic aortic valves based on an embedded strategy for fluid-structure interaction with contact
-https://doi.org/10.1093/europace/euaa398 (Interface adapter, FSI coupling, contact discretization, and contact time-integration scheme)
-2. An immersed boundary method for fluid-structure interaction based on variational transfer
-https://doi.org/10.1016/j.jcp.2019.108884 (Interface adapter, FSI coupling)
-3. Space-time multilevel Monte Carlo methods and their application to cardiac electrophysiology
-https://doi.org/10.1016/j.jcp.2021.110164 (Resampling, PDE formulation)
+1. [Fully coupled dynamic simulations of bioprosthetic aortic valves based on an embedded strategy for fluid-structure interaction with contact](https://doi.org/10.1093/europace/euaa398)
+2. [An immersed boundary method for fluid-structure interaction based on variational transfer](https://doi.org/10.1016/j.jcp.2019.108884)
+3. [Space-time multilevel Monte Carlo methods and their application to cardiac electrophysiology](https://doi.org/10.1016/j.jcp.2021.110164)
 
 
 # More details coming soon!
