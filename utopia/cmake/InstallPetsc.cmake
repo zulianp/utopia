@@ -99,7 +99,7 @@ if(NOT CYGWIN)
         BUILD_IN_SOURCE 1
         PREFIX ${STAGE_DIR}
         GIT_REPOSITORY ${PETSC_URL}
-        GIT_TAG main
+        GIT_TAG v3.20.2
         DOWNLOAD_DIR ${STAGE_DIR}
         INSTALL_DIR ${PETSC_INSTALL_DIR}
         LOG_CONFIGURE 1
