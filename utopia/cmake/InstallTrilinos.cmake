@@ -108,6 +108,8 @@ if(NOT Trilinos_FOUND)
     "-DTPL_ENABLE_SuperLU:BOOL=OFF"
     "-DXpetra_ENABLE_EXPLICIT_INSTANTIATION:BOOL=ON"
     "-DTPL_ENABLE_SuperLU:BOOL=ON"
+    "-DSuperLU_LIBRARY_DIRS=/capstor/scratch/cscs/dramelli/Installations/superlu/lib64"
+    "-DSuperLU_INCLUDE_DIRS=/capstor/scratch/cscs/dramelli/Installations/superlu/include"
     "-DTrilinos_ENABLE_Percept:BOOL=ON"
     "-DTPL_ENABLE_HDF5:BOOL=ON"
     "-DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON"

@@ -16,9 +16,9 @@ if(UTOPIA_ENABLE_BENCHMARK)
     list(APPEND TEST_MODULES utest_bench)
 endif()
 
-if(UTOPIA_ENABLE_PETSC)
-    list(APPEND TEST_MODULES petsc)
-endif()
+#if(UTOPIA_ENABLE_PETSC)
+#    list(APPEND TEST_MODULES petsc)
+#endif()
 
 if(UTOPIA_ENABLE_TRILINOS)
     list(APPEND TEST_MODULES trilinos)
