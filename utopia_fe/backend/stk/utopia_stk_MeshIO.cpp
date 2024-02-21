@@ -29,7 +29,8 @@ namespace utopia {
                 in.get("decomposition_method", decomposition_method);
                 in.get("verbose", verbose);
                 in.get("import_all_field_data", import_all_field_data);
-                in.get("time_step", time_step);
+                in.get("time_step_index", time_step_index);
+                in.get("time", time_);
                 in.get("output_path", output_path);
 
                 Scalar scale = 1.;
@@ -174,7 +175,11 @@ namespace utopia {
                     io_broker->populate_field_data();
 
                     if (import_all_field_data) {
-                        io_broker->read_defined_input_fields(time_step);
+                        if (time_ < 0) {
+                            io_broker->read_defined_input_fields(time_step_index);
+                        } else {
+                            io_broker->read_defined_input_fields(time_);
+                        }
                     }
 
                     mesh.wrap(meta_data, bulk_data);
@@ -229,7 +234,8 @@ namespace utopia {
             std::string decomposition_method;
             bool verbose{false};
             bool import_all_field_data{false};
-            int time_step{1};
+            int time_step_index{1};
+            double time_{-1};
             Path output_path{"./out.e"};
             int output_id{-1};
             int input_id{-1};

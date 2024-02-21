@@ -204,6 +204,7 @@ namespace utopia {
                 fun.constraints_gradient(x, box);
 
                 bool material_converged = false;
+                converged = false;
                 for (int material_iter = 1; material_iter <= max_material_iterations; ++material_iter, ++total_iter) {
                     fun.hessian_and_gradient(x, H, g);
 
@@ -356,7 +357,10 @@ namespace utopia {
                     if (fun.is_linear()) {
                         material_converged = qp_solver_converged;
                     } else {
-                        const Scalar_t material_inc_norm_A = std::sqrt(dot(increment, H * increment));
+                        Scalar_t material_inc_norm_A = std::sqrt(dot(increment, H * increment));
+
+                        // Make sure that we do not consider the damping params when checking for convergence
+                        material_inc_norm_A /= damping_;
 
                         if (this->verbose()) {
                             const Scalar_t material_inc_norm_2 = norm2(increment);
@@ -383,6 +387,10 @@ namespace utopia {
                 }
 
                 converged = this->check_convergence(constraints_iter, 1, 1, x_diff_norm_A);
+                if (converged) {
+                    // Consider material convergence for overall convergence check
+                    converged = material_converged;
+                }
 
                 if (converged && this->verbose()) {
                     x.comm().root_print("Converged!");
