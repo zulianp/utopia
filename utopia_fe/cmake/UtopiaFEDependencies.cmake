@@ -28,12 +28,12 @@ if(Utopia_FOUND)
 
   list(APPEND UTOPIA_FE_DEP_LIBRARIES ${UTOPIA_LIBRARIES})
   list(APPEND UTOPIA_FE_DEP_INCLUDES ${UTOPIA_INCLUDES})
-message(STATUS "UTOPIA_FE_DEP_LIBRARIES:${UTOPIA_FE_DEP_LIBRARIES}")
-  message(STATUS "UTOPIA_FE_DEP_INCLUDES:${UTOPIA_FE_DEP_INCLUDES}")
 endif()
 
-
-find_package(yaml-cpp HINTS ${UTOPIA_YAML_CPP_DIR})
+# ##############################################################################
+# Temporary fix to target import
+# #################YAML-CPP###################
+find_package(yaml-cpp HINTS ${UTOPIA_YAML_CPP_DIR} REQUIRED)
 
 # if(UTOPIA_ENABLE_ARBORX) set(ARBORX_SEARCH_PATHS "")
 
