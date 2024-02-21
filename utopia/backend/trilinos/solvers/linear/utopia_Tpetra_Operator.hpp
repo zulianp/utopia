@@ -7,6 +7,10 @@
 
 #include "utopia_Tpetra_Matrix.hpp"
 
+#include <cassert>
+
+#include "utopia_Instance.hpp"
+
 namespace utopia {
 
     template <class Vector>
