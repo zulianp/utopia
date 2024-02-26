@@ -13,6 +13,12 @@ if(MPI_CXX_INCLUDE_PATH AND MPI_CXX_LIBRARIES)
 endif()
 
 
+if(UTOPIA_ENABLE_ENV_READ)
+if(NOT MPI_DIR)
+  set(MPI_DIR $ENV{MPI_DIR})
+endif()
+endif()
+
 if(${MPI_DIR})
   set(MPI_SEARCH_PATHS_LIBRARY
       "${MPI_DIR}/lib;${MPI_LIB_DIR};/opt/local/lib/openmpi-mp/;/opt/local/lib/mpich-mp/;/opt/local/lib/mpich-clang/;/opt/local/lib"
@@ -77,7 +83,6 @@ endif(APPLE)
 # MESSAGE(STATUS "${MPI_TEMP_LIBRARY} ${MPI_TEMP_HEADERS} ${MPI_CXX_COMPILER}")
 
 if(NOT MPI_FOUND)
-  set(MPI_SKIP_COMPILER_WRAPPER TRUE)
-  find_package(MPI)
+  find_package(MPI PATHS ${MPI_DIR})
   set(MPIExtended_FOUND ${MPI_FOUND})
 endif()
