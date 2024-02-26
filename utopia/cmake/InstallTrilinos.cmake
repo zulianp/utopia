@@ -64,7 +64,6 @@ if(NOT Trilinos_FOUND)
     "-DMPI_BASE_DIR=${MPI_DIR}"
     "-DTPL_ENABLE_Netcdf:BOOL=ON"
     "-DTPL_ENABLE_Pnetcdf=OFF"
-    "-DMPI_INCLUDE_DIR=${MPI_DIR}/include"
     "-DTeuchos_ENABLE_EXPLICIT_INSTANTIATION=ON"
     "-DTpetraCore_ENABLE_EXPLICIT_INSTANTIATION=ON"
     "-DTpetra_ENABLE_EXPLICIT_INSTANTIATION=ON"
@@ -120,7 +119,8 @@ if(NOT Trilinos_FOUND)
     "-DTPL_HDF5_INCLUDE_DIRS=${HDF5_DIR}/include/"
     "-DTPL_HDF5_LIBRARY_DIRS=${HDF5_DIR}/lib/"
     "-DTrilinos_SET_GROUP_AND_PERMISSIONS_ON_INSTALL_BASE_DIR=${CMAKE_SOURCE_DIR}/../external/"
-    "-DTrilinos_ENABLE_EXAMPLES=OFF")
+    "-DTrilinos_ENABLE_EXAMPLES=OFF"
+    "-DMPI_Fortan_COMPILER=/opt/cray/pe/mpich/8.1.12/ofi/gnu/9.1/bin/mpif90")
 
   # For cuda
   if(UTOPIA_ENABLE_CUDA)
