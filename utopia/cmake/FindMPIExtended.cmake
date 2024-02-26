@@ -14,9 +14,7 @@ endif()
 
 
 if(UTOPIA_ENABLE_ENV_READ)
-if(NOT MPI_DIR)
   set(MPI_DIR $ENV{MPI_DIR})
-endif()
 endif()
 
 if(${MPI_DIR})
@@ -83,6 +81,6 @@ endif(APPLE)
 # MESSAGE(STATUS "${MPI_TEMP_LIBRARY} ${MPI_TEMP_HEADERS} ${MPI_CXX_COMPILER}")
 
 if(NOT MPI_FOUND)
-  find_package(MPI PATHS ${MPI_DIR})
+  find_package(MPI COMPONENTS CXX C)
   set(MPIExtended_FOUND ${MPI_FOUND})
 endif()
