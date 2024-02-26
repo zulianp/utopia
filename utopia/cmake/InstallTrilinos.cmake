@@ -49,7 +49,7 @@ if(NOT Trilinos_FOUND)
   endif()
 
   if(UTOPIA_ENABLE_EIGER)
-    list(APPEND TRILINOS_CMAKE_ARGS "-DSuperLU_LIBRARY_DIRS=${SCRATCH}/Installations/superlu/lib64" "-DSuperLU_INCLUDE_DIRS=${SCRATCH}/Installations/superlu/include")
+    list(APPEND TRILINOS_CMAKE_ARGS "-DSuperLU_LIBRARY_DIRS=$ENV{SCRATCH}/Installations/superlu/lib64" "-DSuperLU_INCLUDE_DIRS=$ENV{SCRATCH}/Installations/superlu/include")
   endif()
 
   list(
