@@ -30,9 +30,9 @@ namespace utopia {
             using Entity_t = ::stk::mesh::Entity;
             using Selector_t = ::stk::mesh::Selector;
             using IOBroker_t = ::stk::io::StkMeshIoBroker;
-            using VectorField_t = ::stk::mesh::Field<Scalar, ::stk::mesh::legacy::Cartesian>;
-            using MatrixField_t = ::stk::mesh::Field<Scalar, ::stk::mesh::legacy::Cartesian, ::stk::mesh::legacy::Cartesian>;
-            using MatrixField3x3_t = ::stk::mesh::Field<Scalar, ::stk::mesh::legacy::Cartesian3d, ::stk::mesh::legacy::Cartesian3d>;
+            using VectorField_t = ::stk::mesh::Field<Scalar, ::stk::mesh::Cartesian>;
+            using MatrixField_t = ::stk::mesh::Field<Scalar, ::stk::mesh::Cartesian, ::stk::mesh::Cartesian>;
+            using MatrixField3x3_t = ::stk::mesh::Field<Scalar, ::stk::mesh::Cartesian3d, ::stk::mesh::Cartesian3d>;
 
             std::string name{"main"};
             std::shared_ptr<Mesh> mesh;
