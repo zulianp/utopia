@@ -64,6 +64,9 @@ option(UTOPIA_INSTALL_PETSC "Install petsc directly" OFF)
 option(UTOPIA_INSTALL_SLEPC "Install slepc directly" OFF)
 option(UTOPIA_INSTALL_YAML_CPP "Install yaml-cpp directly" OFF)
 
+
+option(UTOPIA_ENABLE_EIGER "Enable cluster options, for now superlu compilation and installation." OFF)
+
 option(
   UTOPIA_ENABLE_GPERFTOOLS
   "use Google perf tools (https://gperftools.github.io/gperftools/cpuprofile.html)"

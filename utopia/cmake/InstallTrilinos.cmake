@@ -48,6 +48,10 @@ if(NOT Trilinos_FOUND)
     set(HDF5_DIR $ENV{HDF5_DIR})
   endif()
 
+  if(UTOPIA_ENABLE_EIGER)
+    list(APPEND TRILINOS_CMAKE_ARGS "-DSuperLU_LIBRARY_DIRS=${SCRATCH}/Installations/superlu/lib64" "-DSuperLU_INCLUDE_DIRS=${SCRATCH}/Installations/superlu/include")
+  endif()
+
   list(
     APPEND
     TRILINOS_CMAKE_ARGS
@@ -109,8 +113,6 @@ if(NOT Trilinos_FOUND)
     "-DTPL_ENABLE_SuperLU:BOOL=OFF"
     "-DXpetra_ENABLE_EXPLICIT_INSTANTIATION:BOOL=ON"
     "-DTPL_ENABLE_SuperLU:BOOL=ON"
-    "-DSuperLU_LIBRARY_DIRS=/capstor/scratch/cscs/dramelli/Installations/superlu/lib64"
-    "-DSuperLU_INCLUDE_DIRS=/capstor/scratch/cscs/dramelli/Installations/superlu/include"
     "-DTrilinos_ENABLE_Percept:BOOL=ON"
     "-DTPL_ENABLE_HDF5:BOOL=ON"
     "-DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON"
@@ -119,8 +121,7 @@ if(NOT Trilinos_FOUND)
     "-DTPL_HDF5_INCLUDE_DIRS=${HDF5_DIR}/include/"
     "-DTPL_HDF5_LIBRARY_DIRS=${HDF5_DIR}/lib/"
     "-DTrilinos_SET_GROUP_AND_PERMISSIONS_ON_INSTALL_BASE_DIR=${CMAKE_SOURCE_DIR}/../external/"
-    "-DTrilinos_ENABLE_EXAMPLES=OFF"
-    "-DMPI_Fortan_COMPILER=/opt/cray/pe/mpich/8.1.12/ofi/gnu/9.1/bin/mpif90")
+    "-DTrilinos_ENABLE_EXAMPLES=OFF")
 
   # For cuda
   if(UTOPIA_ENABLE_CUDA)
