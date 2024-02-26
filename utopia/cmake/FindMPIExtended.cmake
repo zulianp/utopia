@@ -12,6 +12,13 @@ if(MPI_CXX_INCLUDE_PATH AND MPI_CXX_LIBRARIES)
   return()
 endif()
 
+
+if(UTOPIA_ENABLE_ENV_READ)
+if(NOT MPI_DIR)
+  set(MPI_DIR $ENV{MPI_DIR})
+endif()
+endif()
+
 if(${MPI_DIR})
   set(MPI_SEARCH_PATHS_LIBRARY
       "${MPI_DIR}/lib;${MPI_LIB_DIR};/opt/local/lib/openmpi-mp/;/opt/local/lib/mpich-mp/;/opt/local/lib/mpich-clang/;/opt/local/lib"
