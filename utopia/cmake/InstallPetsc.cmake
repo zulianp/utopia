@@ -56,6 +56,10 @@ if(NOT CYGWIN)
         set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS}
                               --with-lapack-lib=${LAPACK_LIBRARIES})
       endif()
+    elseif(CrayLinuxEnvironment)
+      message(STATUS "Running on Cray System, Skipping blas and lapack pointers for PetscInstall.cmake")
+    elseif(Linux)
+      message(STATUS "Running on Linux System, Skipping blas and lapack pointers for PetscInstall.cmake")
     else()
       message(
         STATUS

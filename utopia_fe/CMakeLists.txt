@@ -154,7 +154,7 @@ endif()
 
 # # set(TOP_LEVEL 1)
 
-# # target_link_libraries(utopia_fe_exec PRIVATE utopia_fe ${UTOPIA_FE_APPS})
+target_link_libraries(utopia_fe_exec PRIVATE utopia_fe ${UTOPIA_FE_APPS})
 
 # #
 # --------------------------------------------------------------------------------------------------

@@ -30,26 +30,27 @@ if(UTOPIA_ENABLE_SFEM)
   list(APPEND APPS_MODULES sfem)
 endif()
 
-scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "${APPS_MODULES}"
-                 UTOPIA_FE_BUILD_INCLUDES UTOPIA_FE_HEADERS UTOPIA_FE_SOURCES)
+# scan_directories(${CMAKE_CURRENT_SOURCE_DIR}/apps "${APPS_MODULES}"
+#                  UTOPIA_FE_BUILD_INCLUDES UTOPIA_FE_HEADERS UTOPIA_FE_SOURCES)
 
-set(UTOPIA_FE_BUILD_INCLUDES
-    ${UTOPIA_FE_BUILD_INCLUDES})
+# set(UTOPIA_FE_BUILD_INCLUDES
+#     ${UTOPIA_FE_BUILD_INCLUDES})
 
-set(UTOPIA_FE_HEADERS
-    ${UTOPIA_FE_HEADERS})
+# set(UTOPIA_FE_HEADERS
+#     ${UTOPIA_FE_HEADERS})
 
-set(UTOPIA_FE_SOURCES
-    ${UTOPIA_FE_SOURCES})
+# set(UTOPIA_FE_SOURCES
+#     ${UTOPIA_FE_SOURCES})
 
-# find_project_files(${UTOPIA_APPS_DIR} "${APPS_MODULES}" LOCAL_HEADERS
-# LOCAL_SOURCES) target_sources( utopia_fe_exec PRIVATE ${LOCAL_SOURCES} PRIVATE
-# ${LOCAL_HEADERS})
+find_project_files(${UTOPIA_APPS_DIR} "${APPS_MODULES}" LOCAL_HEADERS
+LOCAL_SOURCES) 
+target_sources( utopia_fe_exec PRIVATE ${LOCAL_SOURCES} PRIVATE
+${LOCAL_HEADERS})
 
-# target_include_directories(utopia_fe_exec PRIVATE ${UTOPIA_APPS_DIR}
-# ${UTOPIA_APPS_DIR}/generic)
+target_include_directories(utopia_fe_exec PRIVATE ${UTOPIA_APPS_DIR} ${UTOPIA_APPS_DIR}/generic)
 
-# target_include_directories(utopia_fe_exec PRIVATE .)
+target_include_directories(utopia_fe_exec PRIVATE .)
 
-# foreach(MODULE ${APPS_MODULES}) target_include_directories(utopia_fe_exec
-# PRIVATE ${UTOPIA_APPS_DIR}/${MODULE}) endforeach()
+foreach(MODULE ${APPS_MODULES}) 
+  target_include_directories(utopia_fe_exec PRIVATE ${UTOPIA_APPS_DIR}/${MODULE}) 
+endforeach()
