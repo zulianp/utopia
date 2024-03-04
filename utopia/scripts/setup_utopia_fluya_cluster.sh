@@ -3,6 +3,7 @@ set -e
 # Module setup and superlu
 STAGE_DIR=$SCRATCH/code
 INSTALL_DIR=$STAGE_DIR/installations
+mkdir STAGE_DIR
 cd $STAGE_DIR
 source setup_fluya_env.sh
 
