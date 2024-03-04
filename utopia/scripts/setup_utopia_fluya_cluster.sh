@@ -1,11 +1,12 @@
 #!/bin/bash
 set -e
 # Module setup and superlu
+source setup_fluya_env.sh
 STAGE_DIR=$SCRATCH/code
 INSTALL_DIR=$STAGE_DIR/installations
 mkdir $STAGE_DIR
 cd $STAGE_DIR
-source setup_fluya_env.sh
+
 
 # Download Install SuperLU
 git clone https://github.com/xiaoyeli/superlu.git
