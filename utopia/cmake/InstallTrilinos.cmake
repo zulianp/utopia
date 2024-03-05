@@ -48,8 +48,17 @@ if(NOT Trilinos_FOUND)
     set(HDF5_DIR $ENV{HDF5_DIR})
   endif()
 
+  find_package(SuperLU REQUIRED)
+
+  if(SuperLU_FOUND)
+    message(STATUS "Superlu Found")
+  endif()
+
+  # set(SuperLU_PATHS )
+
+
   if(UTOPIA_ENABLE_EIGER)
-    list(APPEND TRILINOS_CMAKE_ARGS "-DSuperLU_LIBRARY_DIRS=$ENV{SCRATCH}/Installations/superlu/lib64" "-DSuperLU_INCLUDE_DIRS=$ENV{SCRATCH}/Installations/superlu/include")
+    list(APPEND TRILINOS_CMAKE_ARGS "-DSuperLU_LIBRARY_DIRS=$ENV{SCRATCH}/installations/superlu/lib64;" "-DSuperLU_INCLUDE_DIRS=$ENV{SCRATCH}/installations/superlu/include")
   endif()
 
   list(
