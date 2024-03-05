@@ -48,7 +48,7 @@ if(NOT Trilinos_FOUND)
     set(HDF5_DIR $ENV{HDF5_DIR})
   endif()
 
-  find_package(SuperLU REQUIRED)
+  find_package(SuperLU HINTS "$ENV{SCRATCH}/installations/superlu/lib64/cmake"REQUIRED)
 
   if(SuperLU_FOUND)
     message(STATUS "Superlu Found")
