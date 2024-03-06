@@ -4,6 +4,7 @@
 namespace utopia {
     enum OutputMode {
         OUTPUT_MODE_OVERWRITE = 0,
+        OUTPUT_MODE_RESTART = 1,
         OUTPUT_MODE_APPEND,
     };
 }

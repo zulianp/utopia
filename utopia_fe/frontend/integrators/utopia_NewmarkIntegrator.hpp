@@ -17,6 +17,7 @@ namespace utopia {
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+        using Layout_t = typename Traits<FunctionSpace>::Layout;
 
         class State {
         public:
@@ -27,6 +28,14 @@ namespace utopia {
         void read(Input &in) override {
             Super::read(in);
             in.get("enable_restart", enable_restart_);
+            export_time_integrator_fields_ = enable_restart_;
+
+            if (!export_time_integrator_fields_) {
+                in.get("output",
+                       [&](Input &node) { node.get("export_time_integrator_fields", export_time_integrator_fields_); });
+            }
+
+            in.get("fail_on_field_not_found", fail_on_field_not_found_);
         }
 
         bool setup_IVP(IO<FunctionSpace> &input) override {
@@ -42,15 +51,43 @@ namespace utopia {
             state_->velocity.set_space(this->space());
             state_->acceleration.set_space(this->space());
 
-            return input.read_nodal(state_->x) && input.read_nodal(state_->velocity) &&
-                   input.read_nodal(state_->acceleration);
+            bool ok = input.read_nodal(state_->x, fail_on_field_not_found_) &&
+                      input.read_nodal(state_->velocity, fail_on_field_not_found_) &&
+                      input.read_nodal(state_->acceleration, fail_on_field_not_found_);
+
+            if (!ok) {
+                auto vlo = layout(this->space()->comm(), this->space()->n_local_dofs(), this->space()->n_dofs());
+                init_vectors(vlo);
+            }
+
+            return ok;
+        }
+
+        void init_vectors(const Layout_t &vlo) {
+            if (state_->x.empty()) {
+                state_->x.set_space(this->space());
+                state_->x.set_tensor_size(this->space()->n_var());
+                state_->x.set_data(std::make_shared<Vector_t>(vlo, 0));
+            }
+
+            if (state_->velocity.empty()) {
+                state_->velocity.set_space(this->space());
+                state_->velocity.set_tensor_size(this->space()->n_var());
+                state_->velocity.set_data(std::make_shared<Vector_t>(vlo, 0));
+            }
+
+            if (state_->acceleration.empty()) {
+                state_->acceleration.set_space(this->space());
+                state_->acceleration.set_tensor_size(this->space()->n_var());
+                state_->acceleration.set_data(std::make_shared<Vector_t>(vlo, 0));
+            }
         }
 
         bool register_output(IO<FunctionSpace> &output) override {
             output.register_output_field(state_->x);
 
             // We do not need all of this on disk if no restart is required
-            if (enable_restart_) {
+            if (export_time_integrator_fields_) {
                 output.register_output_field(state_->velocity);
                 output.register_output_field(state_->acceleration);
             }
@@ -62,7 +99,7 @@ namespace utopia {
             output.update_output_field(state_->x);
 
             // We do not need all of this on disk if no restart is required
-            if (enable_restart_) {
+            if (export_time_integrator_fields_) {
                 output.update_output_field(state_->velocity);
                 output.update_output_field(state_->acceleration);
             }
@@ -80,6 +117,7 @@ namespace utopia {
             state_->has_zero_density = sum_mm == 0.0;
 
             auto vlo = layout(x);
+            // init_vectors(vlo);
 
             state_->x.set_space(this->space());
             state_->velocity.set_space(this->space());
@@ -92,7 +130,6 @@ namespace utopia {
             state_->x.set_data(std::make_shared<Vector_t>(x));
             state_->velocity.set_data(std::make_shared<Vector_t>(vlo, 0));
             state_->acceleration.set_data(std::make_shared<Vector_t>(vlo, 0));
-
             return true;
         }
 
@@ -183,6 +220,8 @@ namespace utopia {
 
     private:
         bool enable_restart_{false};
+        bool export_time_integrator_fields_{true};
+        bool fail_on_field_not_found_{true};
         std::shared_ptr<State> state_;
     };
 

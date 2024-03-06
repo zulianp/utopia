@@ -1856,6 +1856,56 @@ namespace utopia {
         MatSetBlockSize(raw_type(), block_size);
     }
 
+    void PetscMatrix::ghosts(IndexArray &ret) const {
+        PetscInt nghosts;
+        const PetscInt *ghosts = nullptr;
+        MatGetGhosts(this->raw_type(), &nghosts, &ghosts);
+
+        ret.resize(nghosts);
+        std::copy(ghosts, ghosts + nghosts, ret.begin());
+    }
+
+    void PetscMatrix::lump() {
+        PetscCrsView d, o;
+        views_host(*this, d, o);
+
+        SizeType rows = d.rows();
+        for (SizeType r = 0; r < rows; r++) {
+            Scalar row_sum = 0;
+
+            {
+                auto row = o.row(r);
+                for (SizeType k = 0; k < row.length; k++) {
+                    Scalar Aij = row.value(k);
+                    row_sum += Aij;
+                    row.value(k) = 0;
+                }
+            }
+
+            {
+                auto row = d.row(r);
+                SizeType k_diag = -1;
+                for (SizeType k = 0; k < row.length; k++) {
+                    SizeType c = row.colidx(k);
+                    Scalar Aij = row.value(k);
+
+                    row_sum += Aij;
+                    row.value(k) = 0;
+
+                    if (c == r) {
+                        k_diag = k;
+                    }
+                }
+
+                assert(k_diag >= 0);
+
+                if (k_diag >= 0) {
+                    row.value(k_diag) = row_sum;
+                }
+            }
+        }
+    }
+
 }  // namespace utopia
 
 // TODO(zulianp):

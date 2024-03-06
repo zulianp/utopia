@@ -117,6 +117,10 @@ namespace utopia {
             }
         }
 
+        void post_solve(Vector_t &x) override {
+            if (function_) function_->post_solve(x);
+        }
+
     public:
         std::shared_ptr<FEFunctionInterface<FunctionSpace>> function_;
 
