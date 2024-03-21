@@ -6,7 +6,7 @@ find_path(
 
 if(SFEM_DIR)
     utopiafe_add_module(utopia_dep_sfem ${SFEM_DIR} 
-        ".;algebra;base;baseline;eigen;matrix;mesh;operators;operators;operators/cvfem/;operators/kernels/;operators/tet10/;operators/tet4/;operators/macro_tet4/;operators/tri3/;operators/macro_tri3/;operators/tri6/;operators/trishell3;operators/beam2/;perf;pizzastack;resampling;solver")
+        ".;algebra;base;baseline;eigen;matrix;mesh;operators;operators;operators/cvfem/;operators/kernels/;operators/tet10/;operators/tet4/;operators/macro_tet4/;operators/cvfem_tet4;operators/tri3/;operators/macro_tri3/;operators/tri6/;operators/trishell3;operators/beam2/;perf;pizzastack;resampling;solver")
 
 
     file(GLOB SFEM_PYTHON_SCRIPTS_1 "${SFEM_DIR}/python/mesh/*.py")
