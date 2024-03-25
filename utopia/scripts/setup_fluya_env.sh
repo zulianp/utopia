@@ -1,3 +1,5 @@
+#!/bin/bash
+
 module load cray
 module load PrgEnv-gnu
 module load CMake

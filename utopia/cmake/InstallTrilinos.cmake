@@ -19,14 +19,8 @@ if(NOT Trilinos_FOUND)
     set(MPI_DIR $ENV{MPI_DIR})
   endif()
 
-  # if(MPI_DIR)
-  #   set(TRILINOS_MPI_BASE_DIR ${MPI_DIR})
-  #   message(STATUS "MPI_CXX_COMPILER=${MPI_CXX_COMPILER}")
-  #   message(STATUS "MPI_C_COMPILER=${MPI_C_COMPILER}")
-  # endif()
-
-  set(TRILINOS_CXX_COMPILER ${CMAKE_CXX_COMPILER})
-  set(TRILINOS_C_COMPILER ${CMAKE_C_COMPILER})
+  # set(TRILINOS_CXX_COMPILER ${CMAKE_CXX_COMPILER})
+  # set(TRILINOS_C_COMPILER ${CMAKE_C_COMPILER})
 
   if(MPI_CXX_COMPILER)
     list(APPEND TRILINOS_CMAKE_ARGS "-DMPI_USE_COMPILER_WRAPPERS=ON"
@@ -48,17 +42,8 @@ if(NOT Trilinos_FOUND)
     set(HDF5_DIR $ENV{HDF5_DIR})
   endif()
 
-  # find_package(SuperLU HINTS "$ENV{SCRATCH}/installations/superlu/lib64/cmake"REQUIRED)
-
-  # if(SuperLU_FOUND)
-  #   message(STATUS "Superlu Found")
-  # endif()
-
-  # set(SuperLU_PATHS )
-
-
   if(UTOPIA_ENABLE_EIGER)
-    list(APPEND TRILINOS_CMAKE_ARGS "-DSuperLU_LIBRARY_DIRS=$ENV{SCRATCH}/code/installations/superlu/lib64;" "-DSuperLU_INCLUDE_DIRS=$ENV{SCRATCH}/code/installations/superlu/include")
+    list(APPEND TRILINOS_CMAKE_ARGS "-DSuperLU_LIBRARY_DIRS=$ENV{SCRATCH}/code/installations/superlu/lib64;$ENV{SuperLU_DIR}/lib64" "-DSuperLU_INCLUDE_DIRS=$ENV{SCRATCH}/code/installations/superlu/include;$ENV{SuperLU_DIR}/include")
   endif()
 
   list(

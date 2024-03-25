@@ -30,6 +30,8 @@ if(Utopia_FOUND)
   list(APPEND UTOPIA_FE_DEP_INCLUDES ${UTOPIA_INCLUDES})
 endif()
 
+# message(STATUS "UTOPIA_FE_DEP_LIBRARIES:${UTOPIA_FE_DEP_LIBRARIES}")
+
 # ##############################################################################
 # Temporary fix to target import
 # #################YAML-CPP###################

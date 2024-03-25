@@ -19,8 +19,7 @@ RelWithDebInfo MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 # To kill the policy warning  (maybe not a good idea yet)
-set(CMAKE_MACOSX_RPATH 1)
-
+# set(CMAKE_MACOSX_RPATH 1)
 
 if(UTOPIA_ENABLE_TRILINOS OR UTOPIA_ENABLE_MARS OR UTOPIA_ENABLE_INTREPID2)
     set(UTOPIA_ENABLE_KOKKOS TRUE)

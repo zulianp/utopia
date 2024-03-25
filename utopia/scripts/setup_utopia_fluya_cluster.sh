@@ -16,6 +16,8 @@ cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/superlu
 make -j6 && make install
 
 
+# Define the install_dir of superlu.
+export SuperLU_DIR=$INSTALL_DIR/superlu
 
 cd $STAGE_DIR
 #Utopia
@@ -28,7 +30,7 @@ fi
 cd utopia/utopia
 git checkout cmake_refactor_fe
 mkdir build_fluya && cd build_fluya
-cmake .. -DUTOPIA_ENABLE_LOCAL_MODE=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fluya
+cmake .. -DUTOPIA_ENABLE_LOCAL_MODE=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fluya -DUTOPIA_ENABLE_EIGER=ON
 
 make -j12 petsc
 make -j12 trilinos

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.13...3.25)
 cmake_policy(SET CMP0079 NEW)
 project(
   utopia_fe
@@ -27,6 +27,35 @@ include(cmake/UtopiaFEFunctions.cmake)
 include(cmake/UtopiaFEDefaults.cmake)
 include(cmake/UtopiaFEDependencies.cmake)
 include(cmake/UtopiaCompilerFeatures.cmake)
+
+
+
+# set(BUILD_RPATH ${UTOPIA_FE_DEP_LIBRARIES})
+
+# set(CMAKE_BUILD_RPATH "${UTOPIA_PETSC_DIR}/lib")
+
+set(CMAKE_MACOSX_RPATH 1)
+
+# use, i.e. don't skip the full RPATH for the build tree
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+ 
+# when building, don't use the install RPATH already
+# (but later on when installing)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+ 
+# add the automatically determined parts of the RPATH
+# which point to directories outside the build tree to the install RPATH
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+# set(CMAKE_SKIP_RPATH 1)
+
+# set(CMAKE_INSTALL_RPATH_USE_LINK_PATH 1)
+
+# message(STATUS "CMAKE_BUILD_RPATH;${CMAKE_BUILD_RPATH}")
+
+
+
 
 # file(GLOB_RECURSE FUNC_LIB "{UTOPIA_FE_ROOT_PATH}/cmake/utils")
 # foreach(funcLib ${FUNC_LIB}) include(${funcLib}) endforeach(funcLib)
@@ -79,10 +108,6 @@ endforeach(MODULE)
 list(APPEND UTOPIA_FE_SOURCES utopia_fe.cpp)
 list(APPEND UTOPIA_FE_HEADERS utopia_fe.hpp)
 
-# message(STATUS "UTOPIA_FE_SOURCES:${UTOPIA_FE_SOURCES}") message(STATUS
-# "UTOPIA_FE_HEADERS:${UTOPIA_FE_HEADERS}") message(STATUS
-# "UTOPIA_FE_BUILD_INCLUDES:${UTOPIA_FE_BUILD_INCLUDES}")
-
 add_library(utopia_fe ${UTOPIA_FE_SOURCES} ${UTOPIA_FE_HEADERS})
 
 set_utopia_compiler_features(utopia_fe)
@@ -92,7 +117,6 @@ set_utopia_compiler_features(utopia_fe)
 # ##############################################################################
 # INCLUDE
 
-# message(STATUS "${UTOPIA_FE_BUILD_INCLUDES}")
 foreach(include ${UTOPIA_FE_BUILD_INCLUDES})
   target_include_directories(utopia_fe BEFORE
                              PUBLIC $<BUILD_INTERFACE:${include}>)
@@ -108,12 +132,16 @@ list(REMOVE_DUPLICATES UTOPIE_FE_DEP_INCLUDES)
 list(REMOVE_DUPLICATES UTOPIE_FE_DEP_LIBRARIES)
 
 target_include_directories(utopia_fe PUBLIC ${UTOPIA_FE_DEP_INCLUDES})
-# message(STATUS "UTOPIA_FE_DEP_INCLUDES: ${UTOPIA_FE_DEP_INCLUDES}")
 
 # ##############################################################################
 # ##############################################################################
 # ##############################################################################
 # LINK
+
+
+
+# set(CMAKE_SKIP_RPATH TRUE)
+# set(CMAKE_SKIP_INSTALL_RPATH TRUE)
 
 # message(STATUS "UTOPIA_FE_DEP_LIBRARIES: ${UTOPIA_FE_DEP_LIBRARIES}")
 target_link_libraries(utopia_fe PUBLIC ${UTOPIA_FE_DEP_LIBRARIES})
@@ -121,10 +149,12 @@ target_link_libraries(utopia_fe PUBLIC ${UTOPIA_FE_DEP_LIBRARIES})
 # ##############################################################################
 # INSTALL
 
-add_executable(utopia_fe_exec main.cpp ${UTOPIA_FE_HEADERS})
+add_executable(utopia_fe_exec main.cpp)
 target_link_libraries(utopia_fe_exec PRIVATE utopia_fe)
 include(apps/apps.cmake)
 utopia_fe_link_default_targets(utopia_fe_exec)
+# set_target_properties(utopia_fe_exec PROPERTIES INSTALL_RPATH "/Users/dylan/Documents/Summer-Internship/utopia/external/petsc/lib/libHYPRE.dylib")
+
 
 install(
   TARGETS utopia_fe utopia_fe_exec
@@ -148,13 +178,13 @@ install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp DESTINATION include)
 if(UTOPIA_ENABLE_TESTS)
   add_executable(utopia_fe_test test.cpp)
   utopia_fe_link_default_targets(utopia_fe_test)
-  target_link_libraries(utopia_fe_test PUBLIC utopia_fe)
+  target_link_libraries(utopia_fe_test PRIVATE utopia_fe)
   include(tests/tests.cmake)
+  # target_link_libraries(utopia_fe_exec PRIVATE utopia_fe ${TEST_MODULES})
 endif()
 
 # # set(TOP_LEVEL 1)
 
-target_link_libraries(utopia_fe_exec PRIVATE utopia_fe ${UTOPIA_FE_APPS})
 
 # #
 # --------------------------------------------------------------------------------------------------

@@ -22,7 +22,7 @@ prefix=$2
 _fluya_mode(){
 	touch make_fluya.log
 
-	cmake $SCRIPT_DIR/../ -DUTOPIA_ENABLE_FLUYA_MODE=ON -DUTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL=OFF -DCMAKE_INSTALL_PREFIX=$prefix | tee make_fluya.log
+	cmake $SCRIPT_DIR/../ -DUTOPIA_ENABLE_FLUYA_MODE=ON  -DCMAKE_INSTALL_PREFIX=$prefix | tee make_fluya.log
 
 	read -p "Continue ? y/n" -n 1 -r
 	echo    # (optional) move to a new line

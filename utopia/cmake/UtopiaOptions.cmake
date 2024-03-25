@@ -27,7 +27,7 @@ option(UTOPIA_ENABLE_TRACE_EXPR "enables utopia tracing facilities for regions" 
 # option(UTOPIA_ENABLE_TRACE_EXPR_EXPR "enables utopia tracing facilities for every
 # expression" OFF)
 
-option(UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL "Sets utopia to use current project installs of petsc and trilinos" OFF)
+# option(UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL "Sets utopia to use current project installs of petsc and trilinos" OFF)
 
 option(UTOPIA_ENABLE_NO_ALLOC_REGIONS"enables utopia alloc-check facilities"
        OFF)
@@ -123,7 +123,16 @@ RelWithDebInfo MinSizeRel." FORCE)
   message(STATUS "[Status] CMAKE_BUILD_TYPE=Release")
 endif(NOT CMAKE_BUILD_TYPE)
 
+
+
+##########RPATH#################################################################
+
 # To kill the policy warning  (maybe not a good idea yet)
 set(CMAKE_MACOSX_RPATH 1)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+
+##########RPATH#################################################################
+# message(STATUS "RPATH:${RPATH}")
 
 set(CMAKE_CXX_EXTENSIONS OFF)

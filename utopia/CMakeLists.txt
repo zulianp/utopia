@@ -85,12 +85,19 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
          $<INSTALL_INTERFACE:include>)
 
+
+# message(STATUS "UTOPIA_DEP_INCLUDES${UTOPIA_DEP_LIBRARIES}")
+
 target_include_directories(utopia PUBLIC ${UTOPIA_DEP_INCLUDES})
 
 # ##############################################################################
 # ##############################################################################
 # ##############################################################################
 # LINK
+
+# set(CMAKE_SKIP_RPATH TRUE)
+# set(CMAKE_SKIP_INSTALL_RPATH TRUE)
+
 
 target_link_libraries(utopia PUBLIC ${UTOPIA_DEP_LIBRARIES})
 
