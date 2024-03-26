@@ -87,6 +87,7 @@ if(UTOPIA_ENABLE_INTREPID2)
     if(Trilinos_Kokkos_FOUND)
       list(APPEND UTOPIA_FE_DEP_LIBRARIES ${Intrepid2_LIBRARIES})
       list(APPEND UTOPIA_FE_DEP_INCLUDES ${Trilinos_INCLUDE_DIRS})
+      # message(STATUS "Trilinos_INCLUDE_DIRS;${Trilinos_INCLUDE_DIRS}")
     else()
       message(
         FATAL_ERROR "UtopiaFE needs kokkos installed with utopia trilinos.")
