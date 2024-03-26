@@ -8,7 +8,7 @@ set -x
 #SBATCH --ntasks-per-core=1
 #SBATCH --ntasks-per-node=12
 #SBATCH --cpus-per-task=1
-#SBTACH -A u0
+#SBATCH --account=u0
 #SBATCH --constraint=gpu
 
 # export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
