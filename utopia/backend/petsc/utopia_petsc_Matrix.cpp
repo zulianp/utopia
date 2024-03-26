@@ -246,6 +246,12 @@ namespace utopia {
             PetscInt gcols = lcols;
             MPI_Allreduce(MPI_IN_PLACE, &gcols, 1, MPIType<PetscInt>::value(), MPI_MAX, comm);
 
+            if (gcols == crs.grows) {
+                lcols = (PetscInt)crs.lrows;
+            } else {
+                Utopia::Abort("read_raw does not support rectangular matrices!");
+            }
+
             check_error(MatCreateMPIAIJWithArrays(comm,
                                                   crs.lrows,
                                                   lcols,
