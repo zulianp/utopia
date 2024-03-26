@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 # Module setup and superlu
-source setup_fluya_env.sh
+# source setup_fluya_env_eiger.sh
+source setup_fluya_env_daint.sh
 STAGE_DIR=$SCRATCH/code
 INSTALL_DIR=$STAGE_DIR/installations
 mkdir $STAGE_DIR
