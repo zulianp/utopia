@@ -1,4 +1,4 @@
-if(Trilinos_FOUND)
+if(STK_FOUND)
   list(APPEND STK_MODULES .)
 
   scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "${STK_MODULES}"
