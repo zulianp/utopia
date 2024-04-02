@@ -24,6 +24,10 @@ namespace utopia {
             bool read_with_state(Input &in, Field<FunctionSpace> &field) { Utopia::Abort("IMPLEMENT ME!"); }
             void import_all_field_data(const bool value) { Utopia::Abort("IMPLEMENT ME!"); }
 
+
+
+            bool read_nodal(Field<FunctionSpace> &field, const bool fail_if_not_found) { Utopia::Abort("IMplement ME");}
+
             // Statefull functions
             // bool load() { Utopia::Abort("IMPLEMENT ME!");}
 
@@ -46,7 +50,14 @@ namespace utopia {
             void enable_interpolation_mode() { Utopia::Abort("IMPLEMENT ME!"); }
 
             bool load_time_step(const Scalar t) { Utopia::Abort("IMPLEMENT ME!"); }
-            void register_output_field(const std::string &var_name) { Utopia::Abort("IMPLEMENT ME!"); }
+            // void register_output_field(const std::string &var_name) { Utopia::Abort("IMPLEMENT ME!"); }
+            void register_output_field(const Field<FunctionSpace> &field){Utopia::Abort("IMPLEMENT ME!");};
+            void update_output_field(const Field<FunctionSpace> &field){Utopia::Abort("IMPLEMENT ME!");};
+
+            void apply_constraints_time_derivative(Vector &v){Utopia::Abort("IMPLEMENT ME!");};
+
+            void set_output_mode(enum OutputMode output_mode){Utopia::Abort("IMPLEMENT ME!");};
+            void set_output_mode(std::string output_mode){Utopia::Abort("IMPLEMENT ME!");};
 
         public:
             // class Impl;

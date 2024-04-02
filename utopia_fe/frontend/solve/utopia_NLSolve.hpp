@@ -146,13 +146,13 @@ namespace utopia {
             this->status("Solving linear problem");
             // Solve linear problem
 
-            if (this->verbose()) {
-                auto nnz = A.nnz(0);
+            // if (this->verbose()) {
+            //     auto nnz = A.nnz(0);
 
-                if (!A.comm().rank()) {
-                    utopia::out() << "nnz: " << nnz << "\n";
-                }
-            }
+            //     if (!A.comm().rank()) {
+            //         utopia::out() << "nnz: " << nnz << "\n";
+            //     }
+            // }
 
             UTOPIA_TRACE_REGION_BEGIN("Linear solve");
             ok = solver_->linear_solver()->solve(A, rhs, x);
@@ -183,13 +183,13 @@ namespace utopia {
             Vector_t c(layout(x), 0.0);  // Correction
 
             this->status("Solving linear problem (pseudo-Newton)");
-            if (this->verbose()) {
-                auto nnz = H.nnz(0);
+            // if (this->verbose()) {
+            //     auto nnz = H.nnz(0);
 
-                if (!H.comm().rank()) {
-                    utopia::out() << "nnz: " << nnz << "\n";
-                }
-            }
+            //     if (!H.comm().rank()) {
+            //         utopia::out() << "nnz: " << nnz << "\n";
+            //     }
+            // }
 
             // Solve linear problem
             ok = solver_->linear_solver()->solve(H, g, c);
