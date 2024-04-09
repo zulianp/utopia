@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-# Module setup and superlu
 # source setup_fluya_env_eiger.sh
 source setup_fluya_env_daint.sh
 
@@ -21,6 +20,17 @@ make -j6 && make install
 # Define the install_dir of superlu.
 export SuperLU_DIR=$INSTALL_DIR/superlu
 
+
+# Download Install adios2
+git clone https://github.com/ornladios/ADIOS2.git
+cd ADIOS2
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/adios2
+make -j6 && make install
+
+export ADIOS2_DIR=$INSTALL_DIR/adios2/lib/cmake/adios2
+
+
 cd $STAGE_DIR
 #Utopia
 # Download utopia if not present
@@ -28,6 +38,7 @@ if [[ ! -d utopia ]]
 	then
 		git clone --recurse-submodules https://bitbucket.org/zulianp/utopia.git
 fi
+
 
 cd utopia/utopia
 git checkout cmake_refactor_fe

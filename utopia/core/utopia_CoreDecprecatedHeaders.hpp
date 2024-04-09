@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_DEPRECATED_API
+#ifdef UTOPIA_ENABLE_DEPRECATED_API
 #include "utopia_Each.hpp"
 #include "utopia_Eval_Factory.hpp"
 #include "utopia_Factory.hpp"
@@ -188,5 +188,5 @@ namespace utopia {
     /** @}*/
 }  // namespace utopia
 
-#endif  // UTOPIA_DEPRECATED_API
+#endif  // UTOPIA_ENABLE_DEPRECATED_API
 #endif  // UTOPIA_CORE_DECPRECATED_HEADERS_HPP

@@ -3,10 +3,10 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_DEPRECATED_API
+#ifdef UTOPIA_ENABLE_DEPRECATED_API
 
 #include "utopia_CoreDecprecatedHeaders.hpp"
 
-#endif  // UTOPIA_DEPRECATED_API
+#endif  // UTOPIA_ENABLE_DEPRECATED_API
 
 #endif  // UTOPIA_DEPRECATED_HEADERS_HPP

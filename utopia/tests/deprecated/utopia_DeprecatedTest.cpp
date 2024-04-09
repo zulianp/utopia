@@ -1,6 +1,6 @@
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_DEPRECATED_API
+#ifdef UTOPIA_ENABLE_DEPRECATED_API
 
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
@@ -149,4 +149,4 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif  // UTOPIA_DEPRECATED_API
+#endif  // UTOPIA_ENABLE_DEPRECATED_API
