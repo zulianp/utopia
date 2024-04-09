@@ -112,6 +112,10 @@ if(NOT Trilinos_FOUND)
     "-DTPL_ENABLE_HDF5=ON"
     "-DTPL_HDF5_INCLUDE_DIRS=${HDF5_DIR}/include/"
     "-DTPL_HDF5_LIBRARY_DIRS=${HDF5_DIR}/lib/"
+    "-DTPL_Netcdf_INCLUDE_DIRS=${Netcdf_DIR}/include/"
+    "-DTPL_Netcdf_LIBRARY_DIRS=${Netcdf_DIR}/lib/"
+    "-DSuperLU_INCLUDE_DIRS=$ENV{SuperLU_DIR}/include"
+    "-DSuperLU_LIBRARY_DIRS=$ENV{SuperLU_DIR}/lib64"
     "-DTrilinos_SET_GROUP_AND_PERMISSIONS_ON_INSTALL_BASE_DIR=${CMAKE_SOURCE_DIR}/../external/"
     "-DTrilinos_ENABLE_EXAMPLES=OFF")
 
@@ -124,7 +128,7 @@ if(NOT Trilinos_FOUND)
       "-DKokkos_ENABLE_CUDA=ON"
       "-DKokkos_ENABLE_CUDA_CONSTEXPR=ON"
       "-DKokkos_ENABLE_CUDA_LAMBDA=ON"
-      "-DCMAKE_CXX_STANDARD=14"
+      "-DCMAKE_CXX_STANDARD=17"
       "-DKokkos_ARCH_PASCAL61=ON "
       "-DTpetra_INST_CUDA=ON")
   endif()
