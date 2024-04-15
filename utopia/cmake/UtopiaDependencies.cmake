@@ -258,7 +258,7 @@ if(UTOPIA_ENABLE_TRILINOS)
     if(UTOPIA_ENABLE_ENV_READ)
       list(APPEND Trilinos_SEARCH_PATHS "$ENV{Trilinos_DIR};$ENV{TRILINOS_DIR}")
     endif()
-    
+
     find_package(Trilinos PATHS ${Trilinos_SEARCH_PATHS} REQUIRED)
   else()
     set(Trilinos_SEARCH_PATHS
@@ -351,11 +351,11 @@ if(UTOPIA_ENABLE_YAML_CPP)
     set(YAML_CPP_SEARCH_PATHS "${YAML_CPP_SEARCH_PATHS};$ENV{YAMLCPP_DIR}")
   endif()
 
-
   if(NOT UTOPIA_INSTALL_YAML_CPP)
     find_package(yaml-cpp HINTS ${YAML_CPP_SEARCH_PATHS} REQUIRED)
   else()
-    set(YAML_CPP_SEARCH_PATHS "${YAMLCPP_INSTALL_DIR};${CMAKE_SOURCE_DIR}/../external/yaml-cpp/")
+    set(YAML_CPP_SEARCH_PATHS
+        "${YAMLCPP_INSTALL_DIR};${CMAKE_SOURCE_DIR}/../external/yaml-cpp/")
     find_package(yaml-cpp HINTS ${YAML_CPP_SEARCH_PATHS})
   endif()
   if(yaml-cpp_FOUND)
@@ -392,7 +392,7 @@ if(UTOPIA_ENABLE_YAML_CPP)
     message(STATUS "yaml-cpp found!")
     message(STATUS "Includes: ${YAML_CPP_INCLUDE_DIR}")
     message(STATUS "Library: ${YAML_CPP_LIBRARIES}")
-    
+
     list(APPEND UTOPIA_BUILD_INCLUDES ${YAML_CPP_INCLUDE_DIR})
     list(APPEND UTOPIA_DEP_LIBRARIES ${YAML_CPP_LIBRARIES})
 
@@ -507,8 +507,7 @@ endif()
 # ##############################################################################
 # ####LOCAL_INSTALL_OPTIONS####
 
-if(UTOPIA_INSTALL_PETSC
-   AND NOT CYGWIN)
+if(UTOPIA_INSTALL_PETSC AND NOT CYGWIN)
   include(InstallPetsc)
 endif()
 
@@ -522,7 +521,7 @@ endif()
 
 if(UTOPIA_INSTALL_YAML_CPP)
   include(InstallYAMLCPP)
-endif() 
+endif()
 
 # ##############################################################################
 

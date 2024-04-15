@@ -43,7 +43,11 @@ if(NOT Trilinos_FOUND)
   endif()
 
   if(UTOPIA_ENABLE_EIGER)
-    list(APPEND TRILINOS_CMAKE_ARGS "-DSuperLU_LIBRARY_DIRS=$ENV{SCRATCH}/code/installations/superlu/lib64;$ENV{SuperLU_DIR}/lib64" "-DSuperLU_INCLUDE_DIRS=$ENV{SCRATCH}/code/installations/superlu/include;$ENV{SuperLU_DIR}/include")
+    message(STATUS "On Cray System: Adding extra variables to find Netcdf, Pnetcdf and local install of SuperLU.")
+    list(APPEND TRILINOS_CMAKE_ARGS "-DNetcdf_INCLUDE_DIRS=$ENV{NETCDF_DIR}/include/;$ENV{PNETCDF_DIR}/include"
+    "-DNetcdf_LIBRARY_DIRS=$ENV{NETCDF_DIR}/lib/;$ENV{PNETCDF_DIR}/lib"
+    "-DSuperLU_INCLUDE_DIRS=$ENV{SuperLU_DIR}/include"
+    "-DSuperLU_LIBRARY_DIRS=$ENV{SuperLU_DIR}/lib64"))
   endif()
 
   list(
@@ -112,10 +116,6 @@ if(NOT Trilinos_FOUND)
     "-DTPL_ENABLE_HDF5=ON"
     "-DHDF5_INCLUDE_DIRS=$ENV{HDF5_DIR}/include/"
     "-DHDF5_LIBRARY_DIRS=$ENV{HDF5_DIR}/lib/"
-    # "-DNetcdf_INCLUDE_DIRS=$ENV{Netcdf_DIR}/include/;"
-    # "-DNetcdf_LIBRARY_DIRS=$ENV{Netcdf_DIR}/lib/"
-    "-DSuperLU_INCLUDE_DIRS=$ENV{SuperLU_DIR}/include"
-    "-DSuperLU_LIBRARY_DIRS=$ENV{SuperLU_DIR}/lib64"
     "-DTrilinos_SET_GROUP_AND_PERMISSIONS_ON_INSTALL_BASE_DIR=${CMAKE_SOURCE_DIR}/../external/"
     "-DTrilinos_ENABLE_EXAMPLES=OFF")
 
@@ -124,6 +124,7 @@ if(NOT Trilinos_FOUND)
     list(
       APPEND
       TRILINOS_CMAKE_ARGS
+      "-DCMAKE_CXX_COMPILER=$ENV{TRILINOS_DIR}/bin/nvcc_wrapper"
       "-DKokkos_ENABLE_CUDA=ON"
       "-DKokkos_ENABLE_CUDA_CONSTEXPR=ON"
       "-DKokkos_ENABLE_CUDA_LAMBDA=ON"

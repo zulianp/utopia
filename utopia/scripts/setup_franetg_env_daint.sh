@@ -22,7 +22,9 @@ export UTOPIA_FE_EXEC=$INSTALL_DIR/utopia_fe_franetg/bin/utopia_fe_exec
 export TRILINOS_DIR=$STAGE_DIR/utopia/external/Trilinos
 export ADIOS_DIR=$INSTALL_DIR/adios2
 export SuperLU_DIR=$INSTALL_DIR/superlu
-#export CXX=$TRILINOS_DIR/bin/nvcc_wrapper
 export CRAYPE_LINK_TYPE=dynamic
-export Netcdf_DIR=/opt/cray/pe/parallel-netcdf/1.12.1.4/gnu/8.2
+export PNETCDF_DIR=/opt/cray/pe/parallel-netcdf/1.12.1.4/gnu/8.2
 export HDF5_DIR=$HDF5_ROOT
+
+
+#export CXX=$TRILINOS_DIR/bin/nvcc_wrapper
