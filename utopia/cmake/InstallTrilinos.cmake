@@ -53,7 +53,8 @@ if(NOT Trilinos_FOUND)
       "-DNetcdf_INCLUDE_DIRS=$ENV{NETCDF_DIR}/include/;$ENV{PNETCDF_DIR}/include"
       "-DNetcdf_LIBRARY_DIRS=$ENV{NETCDF_DIR}/lib/;$ENV{PNETCDF_DIR}/lib"
       "-DSuperLU_INCLUDE_DIRS=$ENV{SuperLU_DIR}/include"
-      "-DSuperLU_LIBRARY_DIRS=$ENV{SuperLU_DIR}/lib64")
+      "-DSuperLU_LIBRARY_DIRS=$ENV{SuperLU_DIR}/lib64"
+      "-DMPI_BASE_DIR=$ENV{CRAY_MPICH_BASEDIR}")
   endif()
 
   message(STATUS "MPI_DIR:${MPI_DIR}")
