@@ -19,8 +19,8 @@ if(NOT Trilinos_FOUND)
     set(MPI_DIR $ENV{MPI_DIR})
   endif()
 
-  # set(TRILINOS_CXX_COMPILER ${CMAKE_CXX_COMPILER})
-  # set(TRILINOS_C_COMPILER ${CMAKE_C_COMPILER})
+  # set(TRILINOS_CXX_COMPILER ${CMAKE_CXX_COMPILER}) set(TRILINOS_C_COMPILER
+  # ${CMAKE_C_COMPILER})
 
   if(MPI_CXX_COMPILER)
     list(APPEND TRILINOS_CMAKE_ARGS "-DMPI_USE_COMPILER_WRAPPERS=ON"
@@ -43,12 +43,20 @@ if(NOT Trilinos_FOUND)
   endif()
 
   if(UTOPIA_ENABLE_EIGER)
-    message(STATUS "On Cray System: Adding extra variables to find Netcdf, Pnetcdf and local install of SuperLU.")
-    list(APPEND TRILINOS_CMAKE_ARGS "-DNetcdf_INCLUDE_DIRS=$ENV{NETCDF_DIR}/include/;$ENV{PNETCDF_DIR}/include"
-    "-DNetcdf_LIBRARY_DIRS=$ENV{NETCDF_DIR}/lib/;$ENV{PNETCDF_DIR}/lib"
-    "-DSuperLU_INCLUDE_DIRS=$ENV{SuperLU_DIR}/include"
-    "-DSuperLU_LIBRARY_DIRS=$ENV{SuperLU_DIR}/lib64"))
+    message(
+      STATUS
+        "On Cray System: Adding extra variables to find Netcdf, Pnetcdf and local install of SuperLU."
+    )
+    list(
+      APPEND
+      TRILINOS_CMAKE_ARGS
+      "-DNetcdf_INCLUDE_DIRS=$ENV{NETCDF_DIR}/include/;$ENV{PNETCDF_DIR}/include"
+      "-DNetcdf_LIBRARY_DIRS=$ENV{NETCDF_DIR}/lib/;$ENV{PNETCDF_DIR}/lib"
+      "-DSuperLU_INCLUDE_DIRS=$ENV{SuperLU_DIR}/include"
+      "-DSuperLU_LIBRARY_DIRS=$ENV{SuperLU_DIR}/lib64")
   endif()
+
+  message(STATUS "MPI_DIR:${MPI_DIR}")
 
   list(
     APPEND
@@ -132,7 +140,7 @@ if(NOT Trilinos_FOUND)
       "-DKokkos_ARCH_PASCAL61=ON "
       "-DTpetra_INST_CUDA=ON")
   endif()
-  
+
   if(EXISTS $ENV{HDF5_DIR})
     ExternalProject_Add(
       trilinos
@@ -154,7 +162,8 @@ if(NOT Trilinos_FOUND)
   else()
     message(
       FATAL_ERROR
-        "Please set the following variables for trilinos to install correctly:\nHDF5_DIR: Folder where HDF is located.")
+        "Please set the following variables for trilinos to install correctly:\nHDF5_DIR: Folder where HDF is located."
+    )
   endif()
 
 endif()
