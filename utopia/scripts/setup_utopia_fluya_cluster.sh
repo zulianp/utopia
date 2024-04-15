@@ -3,6 +3,7 @@ set -e
 # Module setup and superlu
 # source setup_fluya_env_eiger.sh
 source setup_fluya_env_daint.sh
+
 STAGE_DIR=$SCRATCH/code
 INSTALL_DIR=$STAGE_DIR/installations
 mkdir $STAGE_DIR
@@ -68,3 +69,4 @@ mkdir build_fluya && cd build_fluya
 cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fe_fluya
 make -j12
 make install
+

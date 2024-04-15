@@ -134,6 +134,5 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 
 ##########RPATH#################################################################
-# message(STATUS "RPATH:${RPATH}")
 
 set(CMAKE_CXX_EXTENSIONS OFF)

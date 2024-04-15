@@ -18,3 +18,4 @@ export UTOPIA_DIR=$INSTALL_DIR/utopia_fluya
 export MOONOLITH_DIR=$INSTALL_DIR/par_moonolith
 export UTOPIA_FE_EXEC=$INSTALL_DIR/utopia_fe_fluya/bin/utopia_fe_exec
 export TRILINOS_DIR=$STAGE_DIR/utopia/external/Trilinos
+# export KOKKO_DIR=$TRILINOS_DIR/lib/cmake/Kokkos

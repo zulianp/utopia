@@ -109,8 +109,6 @@ target_link_libraries(utopia_exec PRIVATE utopia)
 include(apps/apps.cmake)
 utopia_link_default_targets(utopia_exec)
 
-# message(STATUS "${UTOPIA_HEADERS}")
-
 install(
   TARGETS utopia utopia_exec
   EXPORT UtopiaTargets
