@@ -1,5 +1,6 @@
 ## About
 utopia_compile.sh is an easy to use script for quickly setting up utopia. There are four different types of builds supported:
+
 - basic: Build utopia with basic functionalities and with blas as backend.
 - all: Build utopia with complete functionalities leveraginf PETSC and Trilinos as backend. This case assumes that you have these two dependencies already installed somewhere on your machine.
 - fluya: Builds utopia in fluya mode.
