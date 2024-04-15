@@ -124,7 +124,6 @@ if(NOT Trilinos_FOUND)
     list(
       APPEND
       TRILINOS_CMAKE_ARGS
-      "-DCMAKE_CXX_COMPILER=/home/zulian/bin/bin/nvcc_wrapper"
       "-DKokkos_ENABLE_CUDA=ON"
       "-DKokkos_ENABLE_CUDA_CONSTEXPR=ON"
       "-DKokkos_ENABLE_CUDA_LAMBDA=ON"
