@@ -110,12 +110,12 @@ if(NOT Trilinos_FOUND)
     "-DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON"
     "-DTrilinos_ENABLE_Kokkos=ON"
     "-DTPL_ENABLE_HDF5=ON"
-    "-DTPL_HDF5_INCLUDE_DIRS=${HDF5_DIR}/include/"
-    "-DTPL_HDF5_LIBRARY_DIRS=${HDF5_DIR}/lib/"
-    "-DNetcdf_INCLUDE_DIRS=$ENV{Netcdf_DIR}/include/"
-    "-DNetcdf_LIBRARY_DIRS=$ENV{Netcdf_DIR}/lib/"
-    "-DSuperLU_INCLUDE_DIRS=$ENV{SuperLU_DIR}/include"
-    "-DSuperLU_LIBRARY_DIRS=$ENV{SuperLU_DIR}/lib64"
+    # "-DHDF5_INCLUDE_DIRS=$ENV{HDF5_DIR}/include/"
+    # "-DHDF5_LIBRARY_DIRS=$ENV{HDF5_DIR}/lib/"
+    # "-DNetcdf_INCLUDE_DIRS=$ENV{Netcdf_DIR}/include/;"
+    # "-DNetcdf_LIBRARY_DIRS=$ENV{Netcdf_DIR}/lib/"
+    # "-DSuperLU_INCLUDE_DIRS=$ENV{SuperLU_DIR}/include"
+    # "-DSuperLU_LIBRARY_DIRS=$ENV{SuperLU_DIR}/lib64"
     "-DTrilinos_SET_GROUP_AND_PERMISSIONS_ON_INSTALL_BASE_DIR=${CMAKE_SOURCE_DIR}/../external/"
     "-DTrilinos_ENABLE_EXAMPLES=OFF")
 
@@ -132,7 +132,7 @@ if(NOT Trilinos_FOUND)
       "-DTpetra_INST_CUDA=ON")
   endif()
   
-  if(EXISTS ${HDF5_DIR})
+  if(EXISTS $ENV{HDF5_ROOT})
     ExternalProject_Add(
       trilinos
       UPDATE_COMMAND "" # FIXME
