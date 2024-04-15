@@ -24,3 +24,4 @@ export ADIOS_DIR=$INSTALL_DIR/adios2
 #export CXX=$TRILINOS_DIR/bin/nvcc_wrapper
 export CRAYPE_LINK_TYPE=dynamic
 export Netcdf_DIR=/opt/cray/pe/netcdf-hdf5parallel/4.7.4.4/GNU/8.2
+export HDF5_DIR=$CRAY_NETCDF_DIR
