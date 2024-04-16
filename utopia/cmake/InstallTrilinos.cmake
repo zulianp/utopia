@@ -53,8 +53,8 @@ if(NOT Trilinos_FOUND)
     list(
       APPEND
       TRILINOS_CMAKE_ARGS
-      # "-DNetcdf_INCLUDE_DIRS=$ENV{NETCDF_DIR}/include/;$ENV{PNETCDF_DIR}/include"
-      # "-DNetcdf_LIBRARY_DIRS=$ENV{NETCDF_DIR}/lib/;$ENV{PNETCDF_DIR}/lib"
+      "-DNetcdf_INCLUDE_DIRS=$ENV{NETCDF_DIR}/include/;$ENV{PNETCDF_DIR}/include"
+      "-DNetcdf_LIBRARY_DIRS=$ENV{NETCDF_DIR}/lib/;$ENV{PNETCDF_DIR}/lib"
       "-DSuperLU_INCLUDE_DIRS=$ENV{SuperLU_DIR}/include"
       "-DSuperLU_LIBRARY_DIRS=$ENV{SuperLU_DIR}/lib64")
   endif()
@@ -123,8 +123,8 @@ if(NOT Trilinos_FOUND)
     "-DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON"
     "-DTrilinos_ENABLE_Kokkos=ON"
     "-DTPL_ENABLE_HDF5=ON"
-    "-DHDF5_INCLUDE_DIRS=$ENV{HDF5_DIR}/include/"
-    "-DHDF5_LIBRARY_DIRS=$ENV{HDF5_DIR}/lib/"
+    "-DHDF5_INCLUDE_DIRS=${HDF5_DIR}/include/"
+    "-DHDF5_LIBRARY_DIRS=${HDF5_DIR}/lib/"
     "-DTrilinos_SET_GROUP_AND_PERMISSIONS_ON_INSTALL_BASE_DIR=${CMAKE_SOURCE_DIR}/../external/"
     "-DTrilinos_ENABLE_EXAMPLES=OFF")
 
@@ -133,7 +133,7 @@ if(NOT Trilinos_FOUND)
     list(
       APPEND
       TRILINOS_CMAKE_ARGS
-      "-DCMAKE_CXX_COMPILER=${TRILINOS_SOURCE_DIR}/packages/kokkos/config/nvcc_wrapper"
+      "-DCMAKE_CXX_COMPILER=${STAGE_DIR}/src/trilinos/packages/kokkos/config/nvcc_wrapper"
       "-DKokkos_ENABLE_CUDA=ON"
       "-DKokkos_ENABLE_CUDA_CONSTEXPR=ON"
       "-DKokkos_ENABLE_CUDA_LAMBDA=ON"
@@ -142,12 +142,13 @@ if(NOT Trilinos_FOUND)
       "-DTpetra_INST_CUDA=ON")
   endif()
 
-  if(EXISTS $ENV{HDF5_DIR})
+  if(EXISTS ${HDF5_DIR})
     ExternalProject_Add(
       trilinos
       UPDATE_COMMAND "" # FIXME
       PREFIX ${STAGE_DIR}
       GIT_REPOSITORY ${TRILINOS_URL}
+      GIT_TAG trilinos-release-14-0-0
       DOWNLOAD_DIR ${STAGE_DIR}
       INSTALL_DIR ${TRILINOS_INSTALL_DIR}
       # BINARY_DIR                      ${TRILINOS_SOURCE_DIR}
