@@ -47,7 +47,9 @@ if(NOT Trilinos_FOUND)
       STATUS
         "On Cray System: Adding extra variables to find Netcdf, Pnetcdf and local install of SuperLU."
     )
+
     set(MPI_DIR $ENV{CRAY_MPICH_BASEDIR})
+
     list(
       APPEND
       TRILINOS_CMAKE_ARGS
@@ -56,8 +58,6 @@ if(NOT Trilinos_FOUND)
       "-DSuperLU_INCLUDE_DIRS=$ENV{SuperLU_DIR}/include"
       "-DSuperLU_LIBRARY_DIRS=$ENV{SuperLU_DIR}/lib64")
   endif()
-
-  message(STATUS "MPI_DIR:${MPI_DIR}")
 
   list(
     APPEND
@@ -72,8 +72,7 @@ if(NOT Trilinos_FOUND)
     "-DTPL_ENABLE_MPI=ON"
     "-DMPI_BASE_DIR=${MPI_DIR}"
     "-DTPL_ENABLE_Netcdf:BOOL=ON"
-    "-DTPL_ENABLE_Pnetcdf=OFF"
-    "-DTPL_Netcdf_PARALLEL=OFF"
+    "-DTPL_ENABLE_Pnetcdf:BOOL=OFF"
     "-DTeuchos_ENABLE_EXPLICIT_INSTANTIATION=ON"
     "-DTpetraCore_ENABLE_EXPLICIT_INSTANTIATION=ON"
     "-DTpetra_ENABLE_EXPLICIT_INSTANTIATION=ON"
