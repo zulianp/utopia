@@ -133,7 +133,7 @@ if(NOT Trilinos_FOUND)
     list(
       APPEND
       TRILINOS_CMAKE_ARGS
-      "-DCMAKE_CXX_COMPILER=${STAGE_DIR}/src/trilinos/packages/kokkos/config/nvcc_wrapper"
+      "-DCMAKE_CXX_COMPILER=${STAGE_DIR}/src/trilinos/packages/kokkos/bin/nvcc_wrapper"
       "-DKokkos_ENABLE_CUDA=ON"
       "-DKokkos_ENABLE_CUDA_CONSTEXPR=ON"
       "-DKokkos_ENABLE_CUDA_LAMBDA=ON"
@@ -148,7 +148,7 @@ if(NOT Trilinos_FOUND)
       UPDATE_COMMAND "" # FIXME
       PREFIX ${STAGE_DIR}
       GIT_REPOSITORY ${TRILINOS_URL}
-      GIT_TAG trilinos-release-14-0-0
+      GIT_TAG trilinos-release-13-4-0
       DOWNLOAD_DIR ${STAGE_DIR}
       INSTALL_DIR ${TRILINOS_INSTALL_DIR}
       # BINARY_DIR                      ${TRILINOS_SOURCE_DIR}
