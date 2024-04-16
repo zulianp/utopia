@@ -75,7 +75,7 @@ namespace utopia {
 
         bool hasTransposeApply() const override { return false; }
         bool hasDiagonal() const override { return false; }
-        void getLocalDiagCopy(Tpetra::Vector<Scalar, LocalSizeType, SizeType, Node> & /*diag*/) const override {
+        void getLocalDiagCopy(Tpetra::Vector<Scalar, LocalSizeType, SizeType, Node> & /*diag*/) const {
             assert(false);
             Utopia::Abort("TpetraOperator: IMPLEMENT ME!");
         }

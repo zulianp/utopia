@@ -55,10 +55,6 @@ more information and tutorials.
 #include "utopia_petsc_impl.hpp"
 #endif  // UTOPIA_ENABLE_PETSC
 
-#ifdef UTOPIA_ENABLE_CUDA
-#include "utopia_cuda.hpp"
-#endif  // UTOPIA_ENABLE_CUDA
-
 #ifdef UTOPIA_ENABLE_VC
 #include "utopia_Vc.hpp"
 #endif  // UTOPIA_ENABLE_VC
