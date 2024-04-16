@@ -137,7 +137,7 @@ if(NOT Trilinos_FOUND)
       "-DKokkos_ENABLE_CUDA=ON"
       "-DKokkos_ENABLE_CUDA_CONSTEXPR=ON"
       "-DKokkos_ENABLE_CUDA_LAMBDA=ON"
-      "-DCMAKE_CXX_STANDARD=17"
+      "-DCMAKE_CXX_STANDARD=14"
       "-DKokkos_ARCH_PASCAL61=ON "
       "-DTpetra_INST_CUDA=ON")
   endif()
