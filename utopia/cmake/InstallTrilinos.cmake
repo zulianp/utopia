@@ -53,8 +53,8 @@ if(NOT Trilinos_FOUND)
     list(
       APPEND
       TRILINOS_CMAKE_ARGS
-      "-DNetcdf_INCLUDE_DIRS=$ENV{NETCDF_DIR}/include/;$ENV{PNETCDF_DIR}/include"
-      "-DNetcdf_LIBRARY_DIRS=$ENV{NETCDF_DIR}/lib/;$ENV{PNETCDF_DIR}/lib"
+      # "-DNetcdf_INCLUDE_DIRS=$ENV{NETCDF_DIR}/include/;$ENV{PNETCDF_DIR}/include"
+      # "-DNetcdf_LIBRARY_DIRS=$ENV{NETCDF_DIR}/lib/;$ENV{PNETCDF_DIR}/lib"
       "-DSuperLU_INCLUDE_DIRS=$ENV{SuperLU_DIR}/include"
       "-DSuperLU_LIBRARY_DIRS=$ENV{SuperLU_DIR}/lib64")
   endif()
@@ -133,7 +133,7 @@ if(NOT Trilinos_FOUND)
     list(
       APPEND
       TRILINOS_CMAKE_ARGS
-      "-DCMAKE_CXX_COMPILER=$ENV{TRILINOS_DIR}/bin/nvcc_wrapper"
+      "-DCMAKE_CXX_COMPILER=${TRILINOS_SOURCE_DIR}/packages/kokkos/config/nvcc_wrapper"
       "-DKokkos_ENABLE_CUDA=ON"
       "-DKokkos_ENABLE_CUDA_CONSTEXPR=ON"
       "-DKokkos_ENABLE_CUDA_LAMBDA=ON"
