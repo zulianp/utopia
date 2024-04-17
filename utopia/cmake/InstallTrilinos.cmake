@@ -129,7 +129,7 @@ if(NOT Trilinos_FOUND)
     "-DTrilinos_ENABLE_EXAMPLES=OFF")
 
   # For cuda
-  if(UTOPIA_ENABLE_CUDA)
+  if(UTOPIA_ENABLE_EIGER)
     list(
       APPEND
       TRILINOS_CMAKE_ARGS

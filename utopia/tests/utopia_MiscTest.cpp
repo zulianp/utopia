@@ -20,24 +20,6 @@ namespace utopia {
         utopia_test_assert(4 == block_mat.nnz());
     }
 
-#ifdef UTOPIA_ENABLE_CUDA
-    void cuda_hello_world() {
-        // For the moment no hybrid
-        if (utopia::mpi_world_size() != 1) return;
-
-        const int n = 100;
-        CUMatrixd m = identity(n, n);
-        CUVectord v = values(n, 1.0 / 3.0);
-        const double r = dot(v, v);
-        CUVectord mv = m * v;
-
-        const double mvr = dot(mv, mv);
-
-        // disp(r);
-        // disp(mvr);
-    }
-#endif
-
 #ifdef UTOPIA_ENABLE_LAPACK
 #ifdef UTOPIA_ENABLE_BLAS
     void test_lapack_eigen_solver() {
@@ -180,9 +162,6 @@ namespace utopia {
     static void misc() {
         UTOPIA_RUN_TEST(crs_matrix);
 
-#ifdef UTOPIA_ENABLE_CUDA
-        UTOPIA_RUN_TEST(cuda_hello_world);
-#endif
 
 #ifdef UTOPIA_ENABLE_LAPACK
 #ifdef UTOPIA_ENABLE_BLAS

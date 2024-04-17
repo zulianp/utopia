@@ -10,7 +10,6 @@ project(
     "Utopia is an open-source C++ library for parallel non-linear multilevel solution strategies"
 )
 
-
 # ##############################################################################
 # ##############################################################################
 # ##############################################################################
@@ -100,10 +99,12 @@ target_link_libraries(utopia PUBLIC ${UTOPIA_DEP_LIBRARIES})
 # INSTALL
 
 # apps suite
-add_executable(utopia_exec main.cpp)
-target_link_libraries(utopia_exec PRIVATE utopia)
-include(apps/apps.cmake)
-utopia_link_default_targets(utopia_exec)
+if(NOT UTOPIA_ENABLE_EIGER)
+  add_executable(utopia_exec main.cpp)
+  target_link_libraries(utopia_exec PRIVATE utopia)
+  include(apps/apps.cmake)
+  utopia_link_default_targets(utopia_exec)
+endif()
 
 install(
   TARGETS utopia utopia_exec

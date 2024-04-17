@@ -44,7 +44,7 @@ fi
 cd utopia/utopia
 git checkout cmake_refactor_fe
 mkdir build_franetg && cd build_franetg
-cmake .. -DUTOPIA_INSTALL_TRILINOS=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_franetg -DUTOPIA_ENABLE_EIGER=ON -DUTOPIA_ENABLE_CUDA=ON
+cmake .. -DUTOPIA_INSTALL_TRILINOS=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_franetg -DUTOPIA_ENABLE_EIGER=ON
 
 make -j12 trilinos
 export CXX=$TRILINOS_DIR/bin/nvcc_wrapper
@@ -71,23 +71,7 @@ cmake .. -DUTOPIA_ENABLE_TRILINOS=ON -DCMAKE_CXX_COMPILER=$TRILINOS_DIR/bin/nvcc
 make -j12
 make install
 
-# ParMoonolith
-cd $STAGE_DIR
-# Download ParMoonolith if not present
-if [[ ! -d par_moonolith ]]
-	then
-		git clone https://bitbucket.org/zulianp/par_moonolith.git
-fi
-cd par_moonolith
-mkdir build
-cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/par_moonolith -DCMAKE_BUILD_TYPE=Release -DMOONOLITH_ENABLE_BENCHMARK=OFF -DMOONOLITH_ENABLE_TESTING=OFF
-make -j12
-make install
-
-
 export UTOPIA_DIR=$INSTALL_DIR/utopia_franetg
-export MOONOLITH_DIR=$INSTALL_DIR/par_moonolith
 
 cd $STAGE_DIR
 #UtopiaFE
