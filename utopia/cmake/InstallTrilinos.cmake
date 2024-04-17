@@ -148,7 +148,7 @@ if(NOT Trilinos_FOUND)
       UPDATE_COMMAND "" # FIXME
       PREFIX ${STAGE_DIR}
       GIT_REPOSITORY ${TRILINOS_URL}
-      GIT_TAG trilinos-release-13-4-0
+      GIT_TAG trilinos-release-15-2-0
       DOWNLOAD_DIR ${STAGE_DIR}
       INSTALL_DIR ${TRILINOS_INSTALL_DIR}
       # BINARY_DIR                      ${TRILINOS_SOURCE_DIR}

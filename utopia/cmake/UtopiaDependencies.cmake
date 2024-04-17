@@ -268,7 +268,6 @@ if(UTOPIA_ENABLE_TRILINOS)
           "${CMAKE_SOURCE_DIR}/../external/Trilinos/lib64/cmake/Trilinos")
     endif()
 
-    message(STATUS "HELLO: ${Trilinos_SEARCH_PATHS}")
     find_package(Trilinos PATHS ${Trilinos_SEARCH_PATHS})
   endif()
   if(Trilinos_FOUND)
