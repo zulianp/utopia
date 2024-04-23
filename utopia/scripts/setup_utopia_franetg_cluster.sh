@@ -5,7 +5,12 @@ source setup_franetg_env_daint.sh
 
 STAGE_DIR=$SCRATCH/code
 INSTALL_DIR=$STAGE_DIR/installations
-mkdir $STAGE_DIR
+
+if [[ ! -d $STAGE_DIR ]]
+	then
+	mkdir $STAGE_DIR
+fi
+
 cd $STAGE_DIR
 
 
@@ -14,7 +19,6 @@ if [[ ! -d superlu ]]
 	then
 		git clone https://github.com/xiaoyeli/superlu.git
 fi
-git clone https://github.com/xiaoyeli/superlu.git
 cd superlu
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/superlu
@@ -39,13 +43,11 @@ if [[ ! -d METIS ]]
 	then
 		git clone https://github.com/KarypisLab/METIS.git
 fi
-git clone https://github.com/KarypisLab/METIS.git
 cd METIS
-make config prefix=$INSTALL_DIR/metis gklib=$INSTALL_DIR/gklib
+make config prefix=$INSTALL_DIR/metis gklib_path=$INSTALL_DIR/gklib
 make install
 
 export METIS_DIR=$INSTALL_DIR/metis
-
 
 cd $STAGE_DIR
 # Download Install adios2
@@ -55,11 +57,10 @@ if [[ ! -d ADIOS2 ]]
 fi
 cd ADIOS2
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/adios2 -DADIOS2_USE_CUDA=ON -DCMAKE_CXX_COMPILER=$TRILINOS_DIR/bin/nvcc_wrapper
+cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/adios2_gpu -DADIOS2_USE_CUDA=ON -DCMAKE_CXX_COMPILER=$TRILINOS_DIR/bin/nvcc_wrapper
 make -j10 && make install
 
-export ADIOS2_DIR=$INSTALL_DIR/adios2/lib/cmake/adios2_gpu
-
+export ADIOS2_DIR=$INSTALL_DIR/adios2_gpu/lib64/cmake/adios2
 
 cd $STAGE_DIR
 
