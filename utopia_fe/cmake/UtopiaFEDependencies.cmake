@@ -35,7 +35,7 @@ endif()
 # ##############################################################################
 # Temporary fix to target import
 # #################YAML-CPP###################
-# find_package(yaml-cpp HINTS ${UTOPIA_YAML_CPP_DIR} REQUIRED)
+find_package(yaml-cpp HINTS ${UTOPIA_YAML_CPP_DIR} REQUIRED)
 
 # if(UTOPIA_ENABLE_ARBORX) set(ARBORX_SEARCH_PATHS "")
 
