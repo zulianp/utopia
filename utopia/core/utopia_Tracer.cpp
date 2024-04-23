@@ -4,7 +4,7 @@
 #include <fstream>
 #include <numeric>
 
-#ifdef UTOPIA_ENABLE_TRACE_EXPR
+#ifdef UTOPIA_ENABLE_TRACE
 
 namespace utopia {
 
@@ -164,4 +164,4 @@ namespace utopia {
     }
 }  // namespace utopia
 
-#endif  // UTOPIA_ENABLE_TRACE_EXPR
+#endif  // UTOPIA_ENABLE_TRACE

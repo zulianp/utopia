@@ -25,9 +25,9 @@ option(UTOPIA_ENABLE_LAPACK "Enable the lapack backend" OFF)
 # option(UTOPIA_ENABLE_KOKKOS_SIMD "Enable kokkos intriniscs wrapper" OFF)
 option(UTOPIA_ENABLE_BLAS "Enable the blas backend" ON)
 
-option(UTOPIA_ENABLE_TRACE_EXPR "enables utopia tracing facilities for regions"
+option(UTOPIA_ENABLE_TRACE "enables utopia tracing facilities for regions"
        OFF)
-# option(UTOPIA_ENABLE_TRACE_EXPR_EXPR "enables utopia tracing facilities for
+# option(UTOPIA_ENABLE_TRACE_EXPR "enables utopia tracing facilities for
 # every expression" OFF)
 
 # option(UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL "Sets utopia to use current
