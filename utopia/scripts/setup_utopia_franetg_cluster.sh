@@ -94,22 +94,16 @@ git checkout cmake_refactor_fe
 mkdir build_franetg && cd build_franetg
 cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_franetg -DUTOPIA_ENABLE_FRANETG_MODE=ON
 
-
-cd $STAGE_DIR
-
-
-cd $STAGE_DIR/utopia/utopia/build_franetg
-
 make -j12
 make install
 
-export UTOPIA_DIR=$INSTALL_DIR/utopia_franetg
+export UTOPIA_DIR=$INSTALL_DIR/utopia_franetg_gpu
 
-# cd $STAGE_DIR
-# #UtopiaFE
-# cd utopia/utopia_fe
-# mkdir build_franetg && cd build_franetg
-# cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fe_franetg
-# make -j12
-# make install
+cd $STAGE_DIR
+#UtopiaFE
+cd utopia/utopia_fe
+mkdir build_franetg && cd build_franetg
+cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fe_franetg_gpu
+make -j10
+make install
 
