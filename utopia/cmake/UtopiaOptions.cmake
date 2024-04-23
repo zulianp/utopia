@@ -6,7 +6,8 @@ option(UTOPIA_STATIC_DEPENDENCIES_ONLY
 
 option(UTOPIA_ENABLE_CODE_COVERAGE "Enable coverage reporting" OFF)
 
-option(UTOPIA_ENABLE_ENV_READ "Enable utopia to look at enviroment variables" ON)   
+option(UTOPIA_ENABLE_ENV_READ "Enable utopia to look at enviroment variables"
+       ON)
 
 option(UTOPIA_ENABLE_EXAMPLES "Enable utopia examples." OFF)
 option(UTOPIA_ENABLE_TESTS "Enable utopia tests." ON)
@@ -24,11 +25,13 @@ option(UTOPIA_ENABLE_LAPACK "Enable the lapack backend" OFF)
 # option(UTOPIA_ENABLE_KOKKOS_SIMD "Enable kokkos intriniscs wrapper" OFF)
 option(UTOPIA_ENABLE_BLAS "Enable the blas backend" ON)
 
-option(UTOPIA_ENABLE_TRACE_EXPR "enables utopia tracing facilities for regions" OFF)
-# option(UTOPIA_ENABLE_TRACE_EXPR_EXPR "enables utopia tracing facilities for every
-# expression" OFF)
+option(UTOPIA_ENABLE_TRACE_EXPR "enables utopia tracing facilities for regions"
+       OFF)
+# option(UTOPIA_ENABLE_TRACE_EXPR_EXPR "enables utopia tracing facilities for
+# every expression" OFF)
 
-# option(UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL "Sets utopia to use current project installs of petsc and trilinos" OFF)
+# option(UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL "Sets utopia to use current
+# project installs of petsc and trilinos" OFF)
 
 option(UTOPIA_ENABLE_NO_ALLOC_REGIONS"enables utopia alloc-check facilities"
        OFF)
@@ -65,8 +68,9 @@ option(UTOPIA_INSTALL_PETSC "Install petsc directly" OFF)
 option(UTOPIA_INSTALL_SLEPC "Install slepc directly" OFF)
 option(UTOPIA_INSTALL_YAML_CPP "Install yaml-cpp directly" OFF)
 
-
-option(UTOPIA_ENABLE_EIGER "Enable cluster options, for now superlu compilation and installation." OFF)
+option(UTOPIA_ENABLE_EIGER
+       "Enable cluster options, for now superlu compilation and installation."
+       OFF)
 
 option(
   UTOPIA_ENABLE_GPERFTOOLS
@@ -84,8 +88,10 @@ option(UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE
 
 option(UTOPIA_ENABLE_FLUYA_MODE "Create utopia configuration required by Fluya"
        OFF)
-option(UTOPIA_ENABLE_LOCAL_MODE "Create utopia configuration for local dep install."
-       OFF)
+option(UTOPIA_ENABLE_LOCAL_MODE
+       "Create utopia configuration for local dep install." OFF)
+option(UTOPIA_ENABLE_FRANETG_MODE
+       "Create utopia configuration required by Franetg." OFF)
 
 option(UTOPIA_ENABLE_ISOLVER "Enable ISolver" OFF)
 
@@ -124,15 +130,15 @@ RelWithDebInfo MinSizeRel." FORCE)
   message(STATUS "[Status] CMAKE_BUILD_TYPE=Release")
 endif(NOT CMAKE_BUILD_TYPE)
 
-
-
-##########RPATH#################################################################
+# #########RPATH#################################################################
 
 # To kill the policy warning  (maybe not a good idea yet)
-set(CMAKE_MACOSX_RPATH 1)
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
+if(APPLE)
+  set(CMAKE_MACOSX_RPATH 1)
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+endif()
 
-##########RPATH#################################################################
+# #########RPATH#################################################################
 
 set(CMAKE_CXX_EXTENSIONS OFF)

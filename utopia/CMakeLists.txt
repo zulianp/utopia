@@ -23,6 +23,9 @@ if(UTOPIA_ENABLE_FLUYA_MODE)
   include(EnableFluyaMode)
 endif()
 
+if(UTOPIA_ENABLE_FRANETG_MODE)
+  include(EnableFranetgMode)
+endif()
 # ##############################################################################
 # ######################## UTOPIA DEFAULT INCLUDES
 # ##############################################################################
@@ -99,12 +102,14 @@ target_link_libraries(utopia PUBLIC ${UTOPIA_DEP_LIBRARIES})
 # INSTALL
 
 # apps suite
+add_executable(utopia_exec main.cpp)
+target_link_libraries(utopia_exec PRIVATE utopia)
 if(NOT UTOPIA_ENABLE_EIGER)
-  add_executable(utopia_exec main.cpp)
-  target_link_libraries(utopia_exec PRIVATE utopia)
   include(apps/apps.cmake)
-  utopia_link_default_targets(utopia_exec)
 endif()
+utopia_link_default_targets(utopia_exec)
+
+
 
 install(
   TARGETS utopia utopia_exec

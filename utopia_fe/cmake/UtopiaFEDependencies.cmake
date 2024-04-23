@@ -22,7 +22,7 @@ if(Utopia_FOUND)
   if(NOT UTOPIA_ENABLE_PETSC OR NOT UTOPIA_ENABLE_TRILINOS)
     message(
       FATAL_ERROR
-        "Utopia needs to be installed with petsc and trilinos enabled as backends."
+        "Utopia needs to be installed with petsc or trilinos enabled as backends."
     )
   endif()
 
@@ -35,7 +35,7 @@ endif()
 # ##############################################################################
 # Temporary fix to target import
 # #################YAML-CPP###################
-find_package(yaml-cpp HINTS ${UTOPIA_YAML_CPP_DIR} REQUIRED)
+# find_package(yaml-cpp HINTS ${UTOPIA_YAML_CPP_DIR} REQUIRED)
 
 # if(UTOPIA_ENABLE_ARBORX) set(ARBORX_SEARCH_PATHS "")
 

@@ -16,6 +16,10 @@ if(UTOPIA_ENABLE_FLUYA_MODE)
   include(cmake/EnableFluyaMode.cmake)
 endif()
 
+if(UTOPIA_ENABLE_FRANETG_MODE)
+  include(cmake/EnableFranetgMode.cmake)
+endif()
+
 # ##############################################################################
 # ######################## UTOPIA_FE DEFAULT INCLUDES
 # ##############################################################################
@@ -27,35 +31,6 @@ include(cmake/UtopiaFEFunctions.cmake)
 include(cmake/UtopiaFEDefaults.cmake)
 include(cmake/UtopiaFEDependencies.cmake)
 include(cmake/UtopiaCompilerFeatures.cmake)
-
-
-
-# set(BUILD_RPATH ${UTOPIA_FE_DEP_LIBRARIES})
-
-# set(CMAKE_BUILD_RPATH "${UTOPIA_PETSC_DIR}/lib")
-
-set(CMAKE_MACOSX_RPATH 1)
-
-# use, i.e. don't skip the full RPATH for the build tree
-set(CMAKE_SKIP_BUILD_RPATH FALSE)
- 
-# when building, don't use the install RPATH already
-# (but later on when installing)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
- 
-# add the automatically determined parts of the RPATH
-# which point to directories outside the build tree to the install RPATH
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
-# set(CMAKE_SKIP_RPATH 1)
-
-# set(CMAKE_INSTALL_RPATH_USE_LINK_PATH 1)
-
-# message(STATUS "CMAKE_BUILD_RPATH;${CMAKE_BUILD_RPATH}")
-
-
-
 
 # file(GLOB_RECURSE FUNC_LIB "{UTOPIA_FE_ROOT_PATH}/cmake/utils")
 # foreach(funcLib ${FUNC_LIB}) include(${funcLib}) endforeach(funcLib)
@@ -153,8 +128,6 @@ add_executable(utopia_fe_exec main.cpp)
 target_link_libraries(utopia_fe_exec PRIVATE utopia_fe)
 include(apps/apps.cmake)
 utopia_fe_link_default_targets(utopia_fe_exec)
-# set_target_properties(utopia_fe_exec PROPERTIES INSTALL_RPATH "/Users/dylan/Documents/Summer-Internship/utopia/external/petsc/lib/libHYPRE.dylib")
-
 
 install(
   TARGETS utopia_fe utopia_fe_exec

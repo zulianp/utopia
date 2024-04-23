@@ -70,7 +70,7 @@ if(NOT Trilinos_FOUND)
     "-DIfpack2_ENABLE_EXPLICIT_INSTANTIATION=ON"
     "-DMueLu_ENABLE_EXPLICIT_INSTANTIATION=ON"
     "-DTPL_ENABLE_MPI=ON"
-    "-DMPI_BASE_DIR=${MPI_DIR}"
+    # "-DMPI_BASE_DIR=${MPI_DIR}"
     "-DTPL_ENABLE_Netcdf:BOOL=ON"
     "-DTPL_ENABLE_Pnetcdf:BOOL=OFF"
     "-DTeuchos_ENABLE_EXPLICIT_INSTANTIATION=ON"
@@ -137,7 +137,7 @@ if(NOT Trilinos_FOUND)
       "-DKokkos_ENABLE_CUDA=ON"
       "-DKokkos_ENABLE_CUDA_CONSTEXPR=ON"
       "-DKokkos_ENABLE_CUDA_LAMBDA=ON"
-      "-DCMAKE_CXX_STANDARD=14"
+      "-DCMAKE_CXX_STANDARD=17"
       "-DKokkos_ARCH_PASCAL61=ON "
       "-DTpetra_INST_CUDA=ON")
   endif()
@@ -148,7 +148,7 @@ if(NOT Trilinos_FOUND)
       UPDATE_COMMAND "" # FIXME
       PREFIX ${STAGE_DIR}
       GIT_REPOSITORY ${TRILINOS_URL}
-      GIT_TAG trilinos-release-15-2-0
+      GIT_TAG trilinos-release-15-0-0
       DOWNLOAD_DIR ${STAGE_DIR}
       INSTALL_DIR ${TRILINOS_INSTALL_DIR}
       # BINARY_DIR                      ${TRILINOS_SOURCE_DIR}
