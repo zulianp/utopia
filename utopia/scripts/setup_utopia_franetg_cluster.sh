@@ -93,7 +93,7 @@ fi
 cd utopia/utopia
 git checkout cmake_refactor_fe
 mkdir build_franetg && cd build_franetg
-cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_franetg_gpu -DUTOPIA_ENABLE_FRANETG_MODE=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_franetg_gpu -DUTOPIA_ENABLE_FRANETG_MODE=ON -DCMAKE_CXX_COMPILER=$TRILINOS_DIR/bin/nvcc_wrapper
 make yaml-cpp
 
 export YAML_CPP_DIR=$STAGE/utopia/external/yaml-cpp/lib64/cmake/yaml-cpp
