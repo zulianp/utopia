@@ -6,12 +6,20 @@ source setup_fluya_env_eiger.sh
 
 STAGE_DIR=$SCRATCH/code
 INSTALL_DIR=$STAGE_DIR/installations
-mkdir $STAGE_DIR
+
+if [[ ! -d $STAGE_DIR ]]
+	then
+		mkdir $STAGE_DIR
+fi
+
 cd $STAGE_DIR
 
-
 # Download Install SuperLU
-git clone https://github.com/xiaoyeli/superlu.git
+if [[ ! -d superlu ]]
+	then
+		git clone https://github.com/xiaoyeli/superlu.git
+fi
+# Download Install SuperLU
 cd superlu
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/superlu
