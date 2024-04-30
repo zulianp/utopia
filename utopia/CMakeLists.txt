@@ -59,7 +59,7 @@ set(UTOPIA_ENABLE_CPP11 ON)
 # LIBRARY
 
 # Could take out backend. core modules
-set(UTOPIA_MODULES interoperability solvers differentiable core ui utils)
+set(UTOPIA_MODULES interoperability solvers differentiable utopia_core ui utils)
 
 foreach(MODULE ${UTOPIA_MODULES})
   add_subdirectory("${MODULE}")

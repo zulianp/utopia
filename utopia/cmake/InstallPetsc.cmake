@@ -94,7 +94,7 @@ if(NOT CYGWIN)
 
     # ##########################################################################
 
-    if(DEFINED ENV{PETSC_DIR})
+    if(DEFINED $ENV{PETSC_DIR})
       message(FATAL_ERROR "Please unset PETSC_DIR, PETSC_ARCH to enable local petsc target install.")
     else()
       ExternalProject_Add(
@@ -116,7 +116,7 @@ if(NOT CYGWIN)
       )
 
       set_target_properties(petsc PROPERTIES EXCLUDE_FROM_ALL TRUE)
-      set(ENV{PETSC_DIR} "${PETSC_INSTALL_DIR}")
+      set($ENV{PETSC_DIR} "${PETSC_INSTALL_DIR}")
 
     endif()
 

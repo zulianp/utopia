@@ -47,10 +47,10 @@ if [[ ! -d build_fluya ]]
 		mkdir build_fluya
 fi
 cd build_fluya
-cmake .. -DUTOPIA_ENABLE_LOCAL_MODE=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fluya -DUTOPIA_ENABLE_CLUSTER=ON -DUTOPIA_ENABLE_GPU=ON
+cmake .. -DUTOPIA_ENABLE_LOCAL_MODE=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fluya -DUTOPIA_ENABLE_CLUSTER=ON -DUTOPIA_ENABLE_GPU=ON -DCMAKE_CXX_COMPILER=$TRILINOS_DIR/bin/nvcc_wrapper
 
-make -j12 petsc
-make -j12 trilinos
+# make -j12 petsc
+# make -j12 trilinos
 make yaml-cpp
 
 cmake ..
@@ -73,7 +73,7 @@ if [[ ! -d build ]]
 	mkdir build
 fi
 cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/par_moonolith -DCMAKE_BUILD_TYPE=Release -DMOONOLITH_ENABLE_BENCHMARK=OFF -DMOONOLITH_ENABLE_TESTING=OFF
+cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/par_moonolith -DCMAKE_BUILD_TYPE=Release -DMOONOLITH_ENABLE_BENCHMARK=OFF -DMOONOLITH_ENABLE_TESTING=OFF -DCMAKE_CXX_COMPILER=$TRILINOS_DIR/bin/nvcc_wrappers
 make -j12
 make install
 
@@ -90,7 +90,7 @@ if [[ ! -d build_fluya ]]
 		mkdir build_fluya
 fi
 cd build_fluya
-cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fe_fluya
+cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fe_fluya -DCMAKE_CXX_COMPILER=$TRILINOS_DIR/bin/nvcc_wrapper
 make -j12
 make install
 
