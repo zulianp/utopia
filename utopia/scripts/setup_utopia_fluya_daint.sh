@@ -90,7 +90,7 @@ if [[ ! -d build_fluya ]]
 		mkdir build_fluya
 fi
 cd build_fluya
-cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fe_fluya -DCMAKE_CXX_COMPILER=$TRILINOS_DIR/bin/nvcc_wrapper
+cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fe_fluya -DCMAKE_CXX_COMPILER=$TRILINOS_DIR/bin/nvcc_wrapper 
 make -j12
 make install
 
