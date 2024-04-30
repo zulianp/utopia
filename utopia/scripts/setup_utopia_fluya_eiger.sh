@@ -21,7 +21,11 @@ if [[ ! -d superlu ]]
 fi
 # Download Install SuperLU
 cd superlu
-mkdir build && cd build
+if [[ ! -d build ]]
+	then
+		mkdir build
+fi
+cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/superlu
 make -j6 && make install
 
@@ -39,7 +43,11 @@ fi
 
 cd utopia/utopia
 git checkout cmake_refactor_fe
-mkdir build_fluya && cd build_fluya
+if [[ ! -d build_fluya ]]
+	then
+		mkdir build_fluya
+fi
+cd build_fluya
 cmake .. -DUTOPIA_ENABLE_LOCAL_MODE=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fluya -DUTOPIA_ENABLE_EIGER=ON
 
 make -j12 petsc
@@ -60,7 +68,11 @@ if [[ ! -d par_moonolith ]]
 		git clone https://bitbucket.org/zulianp/par_moonolith.git
 fi
 cd par_moonolith
-mkdir build
+
+if [[ ! -d build ]]
+	then
+	mkdir build
+fi
 cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/par_moonolith -DCMAKE_BUILD_TYPE=Release -DMOONOLITH_ENABLE_BENCHMARK=OFF -DMOONOLITH_ENABLE_TESTING=OFF
 make -j12
@@ -73,7 +85,12 @@ export MOONOLITH_DIR=$INSTALL_DIR/par_moonolith
 cd $STAGE_DIR
 #UtopiaFE
 cd utopia/utopia_fe
-mkdir build_fluya && cd build_fluya
+
+if [[ ! -d build_fluya ]]
+	then
+		mkdir build_fluya
+fi
+cd build_fluya
 cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fe_fluya
 make -j12
 make install
