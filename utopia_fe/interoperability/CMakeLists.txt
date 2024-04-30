@@ -29,7 +29,7 @@ if(UTOPIA_ENABLE_MOONOLITH)
     list(APPEND INTEROP_MODULES moonolith_stk)
   endif()
 
-  if(UTOPIA_ENABLE_PETSC)
+  if(UTOPIA_ENABLE_PETSCDM)
     list(APPEND INTEROP_MODULES moonolith_petsc)
   endif()
 
@@ -78,7 +78,7 @@ if(UTOPIA_ENABLE_INTREPID2)
 
   endif()
 
-  if(UTOPIA_ENABLE_PETSC)
+  if(UTOPIA_ENABLE_PETSCDM)
     list(APPEND INTEROP_MODULES petsc_intrepid2)
 
   endif()

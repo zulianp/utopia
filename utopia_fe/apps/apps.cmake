@@ -18,7 +18,7 @@ if(UTOPIA_ENABLE_MARS)
   list(APPEND APPS_MODULES mars mars/papers/bddsqp)
 endif()
 
-if(UTOPIA_ENABLE_PETSC)
+if(UTOPIA_ENABLE_PETSCDM)
   list(APPEND APPS_MODULES petsc)
 endif()
 

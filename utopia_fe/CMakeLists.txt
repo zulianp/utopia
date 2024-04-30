@@ -54,7 +54,7 @@ if(UTOPIA_ENABLE_STK)
   list(APPEND UTOPIA_FE_MODULES backend/stk)
 endif()
 
-if(UTOPIA_ENABLE_PETSC)
+if(UTOPIA_ENABLE_PETSCDM)
   list(APPEND UTOPIA_FE_MODULES backend/petsc)
 endif()
 

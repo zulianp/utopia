@@ -25,7 +25,7 @@ if(UTOPIA_ENABLE_MARS)
     list(APPEND TEST_MODULES mars)
 endif()
 
-if(UTOPIA_ENABLE_PETSC)
+if(UTOPIA_ENABLE_PETSCDM)
     list(APPEND TEST_MODULES petsc)
 endif()
 
