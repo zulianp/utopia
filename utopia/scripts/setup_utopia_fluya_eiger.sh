@@ -48,7 +48,7 @@ if [[ ! -d build_fluya ]]
 		mkdir build_fluya
 fi
 cd build_fluya
-cmake .. -DUTOPIA_ENABLE_LOCAL_MODE=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fluya -DUTOPIA_ENABLE_EIGER=ON
+cmake .. -DUTOPIA_ENABLE_LOCAL_MODE=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fluya -DUTOPIA_ENABLE_CLUSTER=ON
 
 make -j12 petsc
 make -j12 trilinos
