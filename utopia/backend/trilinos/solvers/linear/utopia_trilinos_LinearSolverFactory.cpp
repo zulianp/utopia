@@ -18,7 +18,7 @@ namespace utopia {
     LinearSolverFactory<TpetraMatrix, TpetraVector, TRILINOS>::new_linear_solver(const std::string &tag) {
         auto it = instance().solvers_.find(tag);
         if (it == instance().solvers_.end()) {
-            return utopia::make_unique<ConjugateGradient<TpetraMatrix, TpetraVector>>();
+            return utopia::make_unique<ConjugateGradient<TpetraMatrix, TpetraVector, HOMEMADE>>();
         } else {
             return it->second->make();
         }

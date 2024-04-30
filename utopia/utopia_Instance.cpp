@@ -64,7 +64,7 @@ namespace utopia {
     }
 
     int Utopia::Finalize() {
-#ifdef UTOPIA_ENABLE_TRACE_EXPR
+#ifdef UTOPIA_ENABLE_TRACE
         Tracer::instance().save_collected_log();
 #endif
 
@@ -187,7 +187,7 @@ namespace utopia {
 
 #endif  // ENABLE_NO_ALLOC_REGIONS
 
-#ifdef UTOPIA_ENABLE_TRACE_EXPR
+#ifdef UTOPIA_ENABLE_TRACE
             if (str == "-intercept") {
                 if (i + 1 < argc) {
                     Tracer::instance().interceptor().expr(argv[i + 1]);
@@ -213,7 +213,7 @@ namespace utopia {
             } else if (str == "--trace_log_regions") {
                 Tracer::instance().log_regions(true);
             }
-#endif  // UTOPIA_ENABLE_TRACE_EXPR
+#endif  // UTOPIA_ENABLE_TRACE
         }
 
         if (verbose()) {
