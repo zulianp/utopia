@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Setup environment for franetg.
+# Setup environment for daint fluya.
 source /apps/daint/UES/anfink/gpu_2023-04-17_Release/environment
 
 # Temporary.
