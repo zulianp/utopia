@@ -105,7 +105,9 @@ target_link_libraries(utopia PUBLIC ${UTOPIA_DEP_LIBRARIES})
 # apps suite
 add_executable(utopia_exec main.cpp)
 target_link_libraries(utopia_exec PRIVATE utopia)
-if(NOT UTOPIA_ENABLE_EIGER)
+# Check if nvcc_wrapper is used. 
+if(CMAKE_CXX_COMPILER MATCHES "nvcc_wrapper")
+  message(STATUS "Disabling apps since we are using CUDA.")
   include(apps/apps.cmake)
 endif()
 utopia_link_default_targets(utopia_exec)

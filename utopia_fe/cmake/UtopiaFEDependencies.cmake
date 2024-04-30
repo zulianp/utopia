@@ -19,7 +19,7 @@ if(Utopia_FOUND)
   message(STATUS "Utopia Found.")
   add_definitions(${UTOPIA_DEFS})
 
-  if(NOT UTOPIA_ENABLE_PETSC AND NOT UTOPIA_ENABLE_TRILINOS)
+  if(NOT UTOPIA_ENABLE_PETSC_DM AND NOT UTOPIA_ENABLE_TRILINOS)
     message(
       FATAL_ERROR
         "Utopia needs to be installed with petsc or trilinos enabled as backends."
