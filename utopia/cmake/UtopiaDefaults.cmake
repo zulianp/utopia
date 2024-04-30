@@ -2,15 +2,13 @@
 # ##############################################################################
 # ##############################################################################
 # FLAGS
-if (WIN32)
-set(UTOPIA_DEV_FLAGS
-"-Wall"
-)
+if(WIN32)
+  set(UTOPIA_DEV_FLAGS "-Wall")
 else()
 
-set(UTOPIA_DEV_FLAGS
-    "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=return-type" # -Werror=uninitialized
-)
+  set(UTOPIA_DEV_FLAGS
+      "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=return-type" # -Werror=uninitialized
+  )
 endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
@@ -49,7 +47,7 @@ endif()
 
 # More annoying
 if(NOT WIN32)
-set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
+  set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
 endif()
 # More restrictive
 if(UTOPIA_PULL_REQUEST_MODE)
@@ -58,10 +56,11 @@ if(UTOPIA_PULL_REQUEST_MODE)
   # -Werror=unused-local-typedef ")
 endif()
 
-if(UTOPIA_ENABLE_EIGER)
-  set(CMAKE_CXX_FLAGS "-g -lineinfo -Xcudafe --diag_suppress=conversion_function_not_usable -Xcudafe --diag_suppress=cc_clobber_ignored -Xcudafe --diag_suppress=code_is_unreachable")
-endif()
-
+# if(UTOPIA_ENABLE_EIGER)
+#   set(CMAKE_CXX_FLAGS
+#       "-g -lineinfo -Xcudafe --diag_suppress=conversion_function_not_usable -Xcudafe --diag_suppress=cc_clobber_ignored -Xcudafe --diag_suppress=code_is_unreachable"
+#   )
+# endif()
 
 if(WIN32)
   set(CMAKE_CXX_FLAGS_DEBUG

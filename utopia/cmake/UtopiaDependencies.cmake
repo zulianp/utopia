@@ -15,12 +15,12 @@ if(CYGWIN)
   include(InstallPetscCygwin)
 endif()
 
-if(LINUX)
-  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-endif()
-
 if(UNIX AND NOT APPLE)
   set(LINUX TRUE)
+endif()
+
+if(LINUX)
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
 if(UTOPIA_ENABLE_VC)

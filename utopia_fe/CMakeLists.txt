@@ -113,12 +113,6 @@ target_include_directories(utopia_fe PUBLIC ${UTOPIA_FE_DEP_INCLUDES})
 # ##############################################################################
 # LINK
 
-
-
-# set(CMAKE_SKIP_RPATH TRUE)
-# set(CMAKE_SKIP_INSTALL_RPATH TRUE)
-
-# message(STATUS "UTOPIA_FE_DEP_LIBRARIES: ${UTOPIA_FE_DEP_LIBRARIES}")
 target_link_libraries(utopia_fe PUBLIC ${UTOPIA_FE_DEP_LIBRARIES})
 
 # ##############################################################################
@@ -157,7 +151,6 @@ if(UTOPIA_ENABLE_TESTS)
 endif()
 
 # # set(TOP_LEVEL 1)
-
 
 # #
 # --------------------------------------------------------------------------------------------------
@@ -279,14 +272,13 @@ write_basic_package_version_file(
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/UtopiaFEConfig.cmake
         DESTINATION lib/cmake/)
 
-# # if(UTOPIA_ENABLE_LIBMESH AND UTOPIA_ENABLE_LIBMESH_DEPRECATED) #
-# include(deprecated/apps/apps.cmake) endif()
-
+if(UTOPIA_ENABLE_LIBMESH AND UTOPIA_ENABLE_LIBMESH_DEPRECATED)
+  include(deprecated/apps/apps.cmake)
+endif()
 
 # POST-INSTALL
 # ##############################################################################
-include (cmake/PostInstall.cmake)
-
+include(cmake/PostInstall.cmake)
 
 # EXTRA TARGETS
 # ##############################################################################
