@@ -20,6 +20,9 @@ if(UTOPIA_ENABLE_FRANETG_MODE)
   include(cmake/EnableFranetgMode.cmake)
 endif()
 
+if(UTOPIA_ENABLE_AVFLOW_MODE)
+  include(cmake/EnableAvflowMode.cmake)
+endif()
 # ##############################################################################
 # ######################## UTOPIA_FE DEFAULT INCLUDES
 # ##############################################################################

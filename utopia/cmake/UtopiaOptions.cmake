@@ -67,9 +67,10 @@ option(UTOPIA_INSTALL_PETSC "Install petsc directly" OFF)
 option(UTOPIA_INSTALL_SLEPC "Install slepc directly" OFF)
 option(UTOPIA_INSTALL_YAML_CPP "Install yaml-cpp directly" OFF)
 
-option(UTOPIA_ENABLE_EIGER
+option(UTOPIA_ENABLE_CLUSTER
        "Enable cluster options, for now superlu compilation and installation."
        OFF)
+option(UTOPIA_ENABLE_GPU "Enable gpu support for utopia." OFF)
 
 option(
   UTOPIA_ENABLE_GPERFTOOLS
@@ -91,6 +92,8 @@ option(UTOPIA_ENABLE_LOCAL_MODE
        "Create utopia configuration for local dep install." OFF)
 option(UTOPIA_ENABLE_FRANETG_MODE
        "Create utopia configuration required by Franetg." OFF)
+option(UTOPIA_ENABLE_AVFLOW_MODE
+       "Create utopia configuration required by AVFlow." OFF)
 
 option(UTOPIA_ENABLE_ISOLVER "Enable ISolver" OFF)
 

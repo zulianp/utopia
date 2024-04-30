@@ -42,7 +42,7 @@ if(NOT Trilinos_FOUND)
     set(HDF5_DIR $ENV{HDF5_DIR})
   endif()
 
-  if(UTOPIA_ENABLE_EIGER)
+  if(UTOPIA_ENABLE_CLUSTER)
     message(
       STATUS
         "On Cray System: Adding extra variables to find Netcdf, Pnetcdf and local install of SuperLU."
@@ -129,7 +129,7 @@ if(NOT Trilinos_FOUND)
     "-DTrilinos_ENABLE_EXAMPLES=OFF")
 
   # For cuda
-  if(UTOPIA_ENABLE_EIGER)
+  if(UTOPIA_ENABLE_GPU)
     list(
       APPEND
       TRILINOS_CMAKE_ARGS

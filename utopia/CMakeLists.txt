@@ -26,6 +26,10 @@ endif()
 if(UTOPIA_ENABLE_FRANETG_MODE)
   include(EnableFranetgMode)
 endif()
+
+if(UTOPIA_ENABLE_AVFLOW_MODE)
+  include(EnableAvflowMode)
+endif()
 # ##############################################################################
 # ######################## UTOPIA DEFAULT INCLUDES
 # ##############################################################################

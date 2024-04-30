@@ -8,11 +8,10 @@ INSTALL_DIR=$STAGE_DIR/installations
 
 if [[ ! -d $STAGE_DIR ]]
 	then
-	mkdir $STAGE_DIR
+		mkdir $STAGE_DIR
 fi
 
 cd $STAGE_DIR
-
 
 # Download Install SuperLU
 if [[ ! -d superlu ]]
@@ -73,10 +72,10 @@ if [[ ! -d mars ]]
 fi
 
 cd mars
-# TEMPORARY
+# TEMPORARY ADIOS off for now.
 git checkout cmake_refactor
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/mars -DMARS_ENABLE_ADIOS2=OFF -DADIOS2_DIR=$ADIOS2_DIR -DMARS_ENABLE_CUDA=ON -DMARS_ENABLE_CUDAUVM=OFF
+cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/mars -DMARS_ENABLE_ADIOS2=OFF -DADIOS2_DIR=$ADIOS2_DIR -DMARS_ENABLE_CUDA=ON -DMARS_ENABLE_CUDAUVM=OFF -DCMAKE_CXX_COMPILER=$TRILINOS_DIR/bin/nvcc_wrapper
 make -j10 && make install
 
 export Mars_DIR=$INSTALL_DIR/mars
