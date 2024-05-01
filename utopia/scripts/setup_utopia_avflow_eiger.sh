@@ -70,6 +70,10 @@ if [[ ! -d build_avflow ]]
 fi
 cd build_avflow
 cmake .. -DUTOPIA_ENABLE_AVFLOW_MODE=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fe_avflow
+make -j12 libmesh
+
+cmake ..
+
 make -j12
 make install
 

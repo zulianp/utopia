@@ -16,7 +16,7 @@ if(NOT LIBMESH_FOUND)
     set(LIBMESH_URL https://github.com/libMesh/libmesh.git)
     set(LIBMESH_SOURCE_DIR ${STAGE_DIR}/libmesh)
     set(LIBMESH_BIN_DIR ${STAGE_DIR}/libmesh/bin)
-    set(LIBMESH_MPI_BASE_DIR $ENV{MPI_DIR})
+    set(LIBMESH_MPI_BASE_DIR ${UTOPIA_MPI_DIR})
     set(MAKE_COMMAND "make")
 
     set(LIBMESH_CONFIG_ARGS "${LIBMESH_CONFIG_ARGS}")
