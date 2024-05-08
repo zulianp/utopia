@@ -141,7 +141,7 @@ namespace utopia {
 
             // const Scalar tol = -1e-8;
             // const Scalar tol = -1e-10;
-            const Scalar tol = -1e-12;
+            const Scalar tol = -1e-15;
             // const Scalar tol = 0;
 
             PetscCrsView F_d, F_o;
@@ -368,9 +368,9 @@ namespace utopia {
                         Scalar Fij = row.value(k);
                         Scalar alpha_ij = 0;
 
-                        if (Fij > 0) {
+                        if (Fij < 0) {
                             alpha_ij = std::min(R_plus_d.get(r), R_minus_d.get(c));
-                        } else {
+                        } else if (Fij > 0) {
                             alpha_ij = std::min(R_minus_d.get(r), R_plus_d.get(c));
                         }
 
@@ -390,9 +390,9 @@ namespace utopia {
 
                         Scalar alpha_ij = 0;
 
-                        if (Fij > 0) {
+                        if (Fij < 0) {
                             alpha_ij = std::min(R_plus_d.get(r), R_minus_o.get(c));
-                        } else {
+                        } else if (Fij > 0) {
                             alpha_ij = std::min(R_minus_d.get(r), R_plus_o.get(c));
                         }
 
@@ -412,15 +412,9 @@ namespace utopia {
 
         void post_process(const Vector &g, Vector &u) const override {
             UTOPIA_TRACE_SCOPE("StabilizeTransport::post_process");
-            //!!! CHECK -g instead of g because the rhs is = -g
+
             Vector u_dot = (*A_corrected_) * u + g;
-
-            // TODO check if +
-            // u_dot = -u_dot;
-
             space_->apply_zero_constraints(u_dot);
-
-            // Vector u_dot = (*A_corrected_) * x + g;
             u_dot = e_mul(inverse_mass_vector_, u_dot);
 
             if (debug_) {
@@ -441,8 +435,7 @@ namespace utopia {
             u.select(ghosts, u_ghosts);
             u_dot.select(ghosts, u_dot_ghosts);
 
-            // TODO check if -1 or 1
-            add_contrib(*A_diff_, u, u_ghosts, -1, F);
+            add_contrib(*A_diff_, u, u_ghosts, 1, F);
             add_contrib(*M_diff_, u_dot, u_dot_ghosts, 1, F);
             pre_limiting_step(u, u_ghosts, F);
 
@@ -500,7 +493,6 @@ namespace utopia {
             Vector u_correction(layout(u), 0);
             create_update(F, R_minus, R_minus_ghosts, R_plus, R_minus_ghosts, u_correction);
 
-            u_correction *= dt_;
             u_correction = e_mul(inverse_mass_vector_, u_correction);
 
             space_->apply_zero_constraints(u_correction);
@@ -526,8 +518,8 @@ namespace utopia {
         std::shared_ptr<Matrix> M_diff_;
         Vector inverse_mass_vector_;
         Scalar dt_{1};
-        bool debug_{true};
-        // bool debug_{false};
+        // bool debug_{true};
+        bool debug_{false};
     };
 
     template <class FunctionSpace>
