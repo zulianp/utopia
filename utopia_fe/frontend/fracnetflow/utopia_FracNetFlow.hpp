@@ -586,10 +586,11 @@ namespace utopia {
                 auto st = std::make_shared<StabilizeTransport<FunctionSpace>>(porous_matrix);
                 problem->add_matrix_transformer(st);
 
-                bool use_buggy_post_processor = false;
-                in.get("use_buggy_post_processor", use_buggy_post_processor);
+                // bool use_flux_post_processor = true;
+                bool use_flux_post_processor = false;
+                in.get("use_flux_post_processor", use_flux_post_processor);
 
-                if (use_buggy_post_processor) {
+                if (use_flux_post_processor) {
                     problem->add_post_processor(st);
                 }
             }
