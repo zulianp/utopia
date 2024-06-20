@@ -211,26 +211,6 @@ namespace utopia {
                 // function_->space()->create_field(*solution_); // FIXME
             }
 
-            // {
-            //     Matrix_t hessian;
-            //     Vector_t grad;
-            //     Vector_t x0;
-
-            //     function_->space()->create_matrix(hessian);
-            //     function_->space()->create_vector(grad);
-            //     function_->space()->create_vector(x0);
-
-            //     function_->space()->apply_constraints(x0);
-
-            //     function_->hessian_and_gradient(x0, hessian, grad);
-
-            //     rename("expected_hessian", hessian);
-            //     rename("expected_grad", grad);
-
-            //     write("load_He.m", hessian);
-            //     write("load_ge.m", grad);
-            // }
-
             if (function_->is_linear() && !function_->is_time_dependent()) {
                 // Tivial problem, lets keep it simple
                 if (use_pseudo_newton_) {
@@ -270,6 +250,7 @@ namespace utopia {
                         return false;
                     }
 
+                    function_->post_solve(x);
                     function_->update_IVP(x);
                     function_->report_solution(x);
                 } while (!function_->is_IVP_solved());

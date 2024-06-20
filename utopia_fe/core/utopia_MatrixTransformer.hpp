@@ -1,7 +1,9 @@
 #ifndef UTOPIA_MATRIX_TRANSFORMER_HPP
 #define UTOPIA_MATRIX_TRANSFORMER_HPP
 
+#include <memory>
 #include "utopia_Input.hpp"
+#include "utopia_SimulationTime.hpp"
 #include "utopia_Tracer.hpp"
 #include "utopia_Traits.hpp"
 
@@ -11,9 +13,12 @@ namespace utopia {
     template <class Matrix>
     class MatrixTransformer : public Configurable {
     public:
+        using Scalar = typename Traits<Matrix>::Scalar;
         using MatrixTransformerPtr = std::unique_ptr<MatrixTransformer>;
         virtual ~MatrixTransformer() = default;
-        virtual void apply(Matrix &mat) const = 0;
+        virtual void apply(Matrix &mat) = 0;
+        virtual void apply_to_matrices(Matrix &mass_matrix, Matrix &op) = 0;
+        virtual void set_time(const std::shared_ptr<SimulationTime<Scalar>> &time) = 0;
         void read(Input &) override {}
 
         class Registry {
@@ -53,57 +58,22 @@ namespace utopia {
         }
     };
 
-    template <class Matrix>
-    class StabilizeTransport final : public MatrixTransformer<Matrix> {
+    template <class Vector>
+    class PostProcessor {
     public:
-        virtual void apply(Matrix &mat) const {
-            UTOPIA_TRACE_REGION_BEGIN("StabilizeTransport::apply");
-
-            using Scalar = typename Traits<Matrix>::Scalar;
-            using SizeType = typename Traits<Matrix>::SizeType;
-            using Vector = typename Traits<Matrix>::Vector;
-
-            Matrix mat_t = transpose(mat);
-
-            /////////////////////////////////////////////////
-            Matrix stab = mat;
-            stab.transform([&](const SizeType i, const SizeType j, const Scalar &value) {
-                if (i == j) {
-                    return 0.0;
-                } else {
-                    const Scalar value_t = mat_t.get(i, j);
-                    Scalar max_val = std::max(value, value_t);
-
-                    if (max_val > 0.0) {
-                        max_val *= -1.0;
-                        return max_val;
-                    } else {
-                        return 0.0;
-                    }
-                }
-            });
-
-            Vector diag_elem = -1.0 * sum(stab, 1);
-            stab += diag(diag_elem);
-            /////////////////////////////////////////////////
-
-            // Matrix stab;
-            // transport_stabilization(mat, stab);
-            mat += stab;
-
-            UTOPIA_TRACE_REGION_END("StabilizeTransport::apply");
-        }
+        virtual ~PostProcessor() = default;
+        virtual void post_process(const Vector &rhs, Vector &x) const = 0;
     };
 
-    template <class Matrix>
-    void register_transfomers() {
-        static bool once = false;
+    // template <class Matrix>
+    // void register_transfomers() {
+    //     static bool once = false;
 
-        if (!once) {
-            MatrixTransformer<Matrix>::template Register<StabilizeTransport<Matrix>>("StabilizeTransport");
-            once = true;
-        }
-    }
+    //     if (!once) {
+    //         MatrixTransformer<Matrix>::template Register<StabilizeTransport<Matrix>>("StabilizeTransport");
+    //         once = true;
+    //     }
+    // }
 
 }  // namespace utopia
 

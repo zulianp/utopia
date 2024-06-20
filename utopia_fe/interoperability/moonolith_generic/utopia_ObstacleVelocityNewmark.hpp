@@ -167,6 +167,7 @@ namespace utopia {
             in.get("damping", damping_);
             in.get("allow_projection", allow_projection_);
             in.get("non_smooth_projection", non_smooth_projection_);
+            in.get("max_projection_iterations", max_projection_iterations_);
 
             if (!obstacle_) {
                 std::string type;
@@ -239,7 +240,6 @@ namespace utopia {
             // this->velocity_old().zeros(vlo);
             // this->acceleration_old().zeros(vlo);
 
-
             update_constraints(x);
             return Super::setup_IVP(x);
         }
@@ -249,8 +249,6 @@ namespace utopia {
         }
 
         bool non_smooth_project(Vector_t &x) {
-            
-
             MPRGP<Matrix_t, Vector_t> qp_solver;
 
             Matrix_t H;
@@ -280,6 +278,7 @@ namespace utopia {
 
             Matrix_t H_c;
             obstacle_->transform(H, H_c);
+            qp_solver.max_it(max_projection_iterations_);
             qp_solver.solve(H_c, buff_2, buff_1);
 
             Scalar_t diff_x = norm2(buff_1);
@@ -300,7 +299,7 @@ namespace utopia {
 
             if (non_smooth_projection_) {
                 non_smooth_project(x);
-            } 
+            }
 
             if (x.has_nan_or_inf()) {
                 this->~ObstacleVelocityNewmark();
@@ -315,6 +314,11 @@ namespace utopia {
 
             barrier_->reset();
             return Super::update_IVP(x);
+        }
+
+        bool update_BVP() override {
+            this->space()->apply_constraints(this->x_old());
+            return true;
         }
 
         void barrier_hessian(const Vector_t &x, Matrix_t &H) const {
@@ -508,8 +512,9 @@ namespace utopia {
         bool verbose_{false};
         bool zero_initial_guess_{true};
         bool non_smooth_projection_{false};
+        int max_projection_iterations_{10000};
 
-        Scalar_t damping_{0.98};
+        Scalar_t damping_{1};
 
         std::shared_ptr<LineSearchBoxProjection<Vector_t>> line_search_;
         std::shared_ptr<BoxConstraints<Vector_t>> box_;

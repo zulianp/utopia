@@ -16,7 +16,7 @@ namespace utopia {
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
 
         template <class... Args>
-        ImplicitEulerIntegrator(Args &&... args) : Super(std::forward<Args>(args)...) {}
+        ImplicitEulerIntegrator(Args &&...args) : Super(std::forward<Args>(args)...) {}
 
         virtual ~ImplicitEulerIntegrator() = default;
 
@@ -70,6 +70,10 @@ namespace utopia {
             x_old_ = x;
             return true;
         }
+
+        bool register_output(IO<FunctionSpace> & /*output*/) override { return true; }
+
+        bool update_output(IO<FunctionSpace> & /*output*/) override { return true; }
 
     private:
         Vector_t x_old_;

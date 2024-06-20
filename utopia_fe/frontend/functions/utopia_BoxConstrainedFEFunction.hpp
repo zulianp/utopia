@@ -47,6 +47,9 @@ namespace utopia {
         void create_solution_vector(Vector_t &x) override { return unconstrained_->create_solution_vector(x); }
 
         void apply_constraints(Vector_t &x) const override { return unconstrained_->apply_constraints(x); }
+        void apply_constraints(const Vector_t &u, const Scalar_t scale_factor, Vector_t &in_out) {
+            return unconstrained()->space().apply_constraints(u, scale_factor, in_out);
+        }
 
         void set_environment(const std::shared_ptr<Environment_t> &env) override {
             unconstrained_->set_environment(env);
@@ -72,7 +75,38 @@ namespace utopia {
 
         bool update_IVP(const Vector_t &x) override { return unconstrained_->update_IVP(x); }
         bool setup_IVP(Vector_t &x) override { return unconstrained_->setup_IVP(x); }
+        bool setup_IVP(IO<FunctionSpace> &input) override { return unconstrained_->setup_IVP(input); }
         bool is_IVP_solved() override { return unconstrained_->is_IVP_solved(); }
+
+        void set_output_db(const std::shared_ptr<IO<FunctionSpace>> &io) override {
+            assert(unconstrained_);
+
+            if (!unconstrained_) {
+                Utopia::Abort("BoxConstrainedFEFunction::set_output_db called on uninitialized object!");
+            }
+
+            unconstrained_->set_output_db(io);
+        }
+
+        bool register_output(IO<FunctionSpace> &io) override {
+            assert(unconstrained_);
+
+            if (!unconstrained_) {
+                Utopia::Abort("BoxConstrainedFEFunction::register_output called on uninitialized object!");
+            }
+
+            return unconstrained_->register_output(io);
+        }
+
+        bool update_output(IO<FunctionSpace> &io) override {
+            assert(unconstrained_);
+
+            if (!unconstrained_) {
+                Utopia::Abort("BoxConstrainedFEFunction::update_output called on uninitialized object!");
+            }
+
+            return unconstrained_->update_output(io);
+        }
 
         BoxConstrainedFEFunction(const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &unconstrained) {
             initialize(unconstrained);
@@ -121,12 +155,13 @@ namespace utopia {
             ensure_qp_solver();
 
             in.get("qp_solver", *qp_solver_);
-            in.get("update_factor", update_factor_);
             in.get("material_iter_tol", material_iter_tol_);
             in.get("max_constraints_iterations", max_constraints_iterations_);
             in.get("rescale", rescale_);
             in.get("inverse_diagonal_scaling", inverse_diagonal_scaling_);
             in.get("print_active_set", print_active_set_);
+            in.get("damping", damping_);
+            in.get("export_sqp_system", export_sqp_system_);
         }
 
         void ensure_qp_solver() {
@@ -169,8 +204,14 @@ namespace utopia {
                 fun.constraints_gradient(x, box);
 
                 bool material_converged = false;
+                converged = false;
                 for (int material_iter = 1; material_iter <= max_material_iterations; ++material_iter, ++total_iter) {
                     fun.hessian_and_gradient(x, H, g);
+
+                    if (g.has_nan_or_inf()) {
+                        fun.space()->write("NaN.e", x);
+                        Utopia::Abort("BoxConstrainedFEFunction: NaN found in gradient!\n");
+                    }
 
                     if (rescale_ != 1.) {
                         // x.comm().root_print("Rescaling system with " + std::to_string(rescale_) + "\n");
@@ -181,13 +222,17 @@ namespace utopia {
                     // Use negative gradient instead
                     g *= -1;
 
+                    fun.space()->apply_constraints(x, 1, g);
+                    fun.space()->apply_constraints(H);
+
                     if (first) {
-                        fun.space()->apply_constraints(H, g);
+                        // fun.space()->apply_constraints(H, g);
                         first = false;
-                    } else {
-                        fun.space()->apply_constraints(H);
-                        fun.space()->apply_zero_constraints(g);
                     }
+                    // else {
+                    //     fun.space()->apply_constraints(H);
+                    //     fun.space()->apply_zero_constraints(g);
+                    // }
 
                     qp_solver_->set_box_constraints(box);
 
@@ -215,11 +260,47 @@ namespace utopia {
                             g_c = e_mul(g_c, d);
                         }
 
+                        if (export_sqp_system_) {
+                            static int sys_num = 0;
+                            rename("A", H_c);
+                            rename("b", g_c);
+
+                            Path dir("sqp");
+                            if (!dir.exists()) {
+                                dir.make_dir();
+                            }
+
+                            Path step_dir = dir / std::to_string(sys_num);
+
+                            if (!step_dir.exists()) {
+                                step_dir.make_dir();
+                            }
+
+                            write(step_dir / "load_A.m", H_c);
+                            write(step_dir / "load_b.m", g_c);
+
+                            if (box.upper_bound()) {
+                                rename("ub", *box.upper_bound());
+                                write(step_dir / "load_ub.m", *box.upper_bound());
+                            }
+
+                            if (box.lower_bound()) {
+                                rename("lb", *box.lower_bound());
+                                write(step_dir / "load_lb.m", *box.lower_bound());
+                            }
+
+                            sys_num++;
+                        }
+
                         qp_solver_converged = qp_solver_->solve(H_c, g_c, increment_c);
+
+                        if (damping_ != 1) {
+                            increment_c *= damping_;
+                        }
 
                         if (print_active_set_) {
                             // Count active nodes
-                            auto count_a = box.count_active(increment, 1e-16);
+                            auto count_a = box.count_active(increment_c, 1e-16);
                             if (increment.comm().rank() == 0) {
                                 utopia::out() << "Active dofs: " << count_a << "\n";
                             }
@@ -276,7 +357,10 @@ namespace utopia {
                     if (fun.is_linear()) {
                         material_converged = qp_solver_converged;
                     } else {
-                        const Scalar_t material_inc_norm_A = std::sqrt(dot(increment, H * increment));
+                        Scalar_t material_inc_norm_A = std::sqrt(dot(increment, H * increment));
+
+                        // Make sure that we do not consider the damping params when checking for convergence
+                        material_inc_norm_A /= damping_;
 
                         if (this->verbose()) {
                             const Scalar_t material_inc_norm_2 = norm2(increment);
@@ -303,8 +387,12 @@ namespace utopia {
                 }
 
                 converged = this->check_convergence(constraints_iter, 1, 1, x_diff_norm_A);
-
                 if (converged) {
+                    // Consider material convergence for overall convergence check
+                    converged = material_converged;
+                }
+
+                if (converged && this->verbose()) {
                     x.comm().root_print("Converged!");
                     break;
                 }
@@ -324,11 +412,12 @@ namespace utopia {
 
     public:
         int max_constraints_iterations_{10};
-        Scalar_t update_factor_{1};
+        Scalar_t damping_{1};
         Scalar_t material_iter_tol_{1e-6};
         Scalar_t rescale_{1};
         bool inverse_diagonal_scaling_{false};
-        bool print_active_set_{true};
+        bool print_active_set_{false};
+        bool export_sqp_system_{false};
 
         // FIXME move somewhere else
         static void register_fe_solvers() {

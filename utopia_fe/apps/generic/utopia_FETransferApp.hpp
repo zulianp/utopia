@@ -77,8 +77,25 @@ namespace utopia {
                 in.get("displace", displace);
 
                 if (displace) {
-                    Field<FunctionSpace> displacement_field;
-                    to_space.read_with_state(in, displacement_field);
+                    IO<FunctionSpace> input_db(to_space);
+                    input_db.set_import_all_data(true);
+                    input_db.open_input(in);
+
+                    double time = 0;
+                    in.get("load_time", time);
+                    input_db.load_time_step(time);
+
+                    Field<FunctionSpace> displacement_field{"disp"};
+                    displacement_field.set_space(make_ref(to_space));
+
+                    int sd = to_space.mesh().spatial_dimension();
+                    displacement_field.set_tensor_size(sd);
+
+                    auto vlo =
+                        layout(to_space.comm(), to_space.mesh().n_local_nodes() * sd, to_space.mesh().n_nodes() * sd);
+                    displacement_field.set_data(std::make_shared<Vector_t>(vlo, 0));
+                    input_db.read_nodal(displacement_field, true);
+
                     to_space.displace(displacement_field.data());
 
                     const Scalar_t norm_displacement_field = norm2(displacement_field.data());
@@ -246,7 +263,7 @@ namespace utopia {
         Path output_path{"./out.e"};
         bool export_from_function{false};
         bool verbose{true};
-        bool export_operator_imbalance{true};
+        bool export_operator_imbalance{false};
         bool export_example_coupled_system{false};
         Scalar_t rescale_imbalance{1};
     };

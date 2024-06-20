@@ -7,7 +7,6 @@
 #include <stk_mesh/base/Comm.hpp>
 #include <stk_mesh/base/MetaData.hpp>
 
-
 #include "Trilinos_version.h"
 
 #if TRILINOS_MAJOR_MINOR_VERSION >= 140100
@@ -30,7 +29,8 @@ namespace utopia {
                 in.get("decomposition_method", decomposition_method);
                 in.get("verbose", verbose);
                 in.get("import_all_field_data", import_all_field_data);
-                in.get("time_step", time_step);
+                in.get("time_step_index", time_step_index);
+                in.get("time", time_);
                 in.get("output_path", output_path);
 
                 Scalar scale = 1.;
@@ -175,7 +175,11 @@ namespace utopia {
                     io_broker->populate_field_data();
 
                     if (import_all_field_data) {
-                        io_broker->read_defined_input_fields(time_step);
+                        if (time_ < 0) {
+                            io_broker->read_defined_input_fields(time_step_index);
+                        } else {
+                            io_broker->read_defined_input_fields(time_);
+                        }
                     }
 
                     mesh.wrap(meta_data, bulk_data);
@@ -202,7 +206,7 @@ namespace utopia {
                 try {
                     output_path = write_path;
                     io_broker->set_bulk_data(bulk_data);
-                    output_id = io_broker->create_output_mesh(write_path.to_string(), ::stk::io::WRITE_RESTART);
+                    output_id = io_broker->create_output_mesh(write_path.to_string(), write_purpose);
                     io_broker->write_output_mesh(output_id);
                     return true;
 
@@ -224,12 +228,14 @@ namespace utopia {
             Mesh &mesh;
             std::unique_ptr<IOBroker> io_broker;
             std::string read_specification;
-            ::stk::io::DatabasePurpose read_purpose{::stk::io::READ_MESH};           //{READ_RESTART}
+            ::stk::io::DatabasePurpose read_purpose{::stk::io::READ_MESH};  //{READ_RESTART}
+            ::stk::io::DatabasePurpose write_purpose{::stk::io::WRITE_RESTART};
             BulkData::AutomaticAuraOption auto_aura_option{BulkData::NO_AUTO_AURA};  //{AUTO_AURA}
             std::string decomposition_method;
             bool verbose{false};
             bool import_all_field_data{false};
-            int time_step{1};
+            int time_step_index{1};
+            double time_{-1};
             Path output_path{"./out.e"};
             int output_id{-1};
             int input_id{-1};
@@ -254,6 +260,40 @@ namespace utopia {
 
         void MeshIO::set_output_path(const Path &path) { impl_->output_path = path; }
 
+        void MeshIO::set_output_mode(enum OutputMode output_mode) {
+            switch (output_mode) {
+                case OUTPUT_MODE_OVERWRITE: {
+                    impl_->write_purpose = ::stk::io::WRITE_RESULTS;
+                    break;
+                }
+                case OUTPUT_MODE_APPEND: {
+                    impl_->write_purpose = ::stk::io::APPEND_RESULTS;
+                    break;
+                }
+                case OUTPUT_MODE_RESTART: {
+                    impl_->write_purpose = ::stk::io::WRITE_RESTART;
+                    break;
+                }
+
+                default:
+                    Utopia::Abort("Unsupported output mode");
+            }
+        }
+
+        void MeshIO::set_output_mode(const std::string &output_mode) {
+            if (output_mode.empty()) return;
+
+            if (output_mode == "APPEND") {
+                set_output_mode(OUTPUT_MODE_APPEND);
+            } else if (output_mode == "OVERWRITE") {
+                set_output_mode(OUTPUT_MODE_OVERWRITE);
+            } else if (output_mode == "RESTART") {
+                set_output_mode(OUTPUT_MODE_RESTART);
+            } else {
+                Utopia::Abort("Unsupported output mode: " + output_mode + "! Use APPEND or OVERWRITE");
+            }
+        }
+
         const Path &MeshIO::output_path() const { return impl_->output_path; }
 
         ::stk::io::StkMeshIoBroker &MeshIO::raw_type() {
@@ -266,7 +306,7 @@ namespace utopia {
             impl_->io_broker->set_bulk_data(impl_->mesh.bulk_data());
 
             impl_->output_id =
-                impl_->io_broker->create_output_mesh(impl_->output_path.to_string(), ::stk::io::WRITE_RESTART);
+                impl_->io_broker->create_output_mesh(impl_->output_path.to_string(), impl_->write_purpose);
         }
 
         bool MeshIO::ensure_output() {
@@ -306,6 +346,13 @@ namespace utopia {
         }
 
         bool MeshIO::load_time_step(const Scalar t) { return impl_->load_time_step(t); }
+
+        int MeshIO::num_time_steps() const { return impl_->io_broker->get_num_time_steps(); }
+        MeshIO::Scalar MeshIO::max_time() const { return impl_->io_broker->get_max_time(); }
+
+        bool MeshIO::load_last_time_step() { return load_time_step(max_time()); }
+
+        void MeshIO::set_import_all_data(const bool val) { impl_->import_all_field_data = val; }
 
         bool MeshIO::ensure_input() {
             if (impl_->empty_input()) {

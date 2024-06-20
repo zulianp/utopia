@@ -1,0 +1,2 @@
+CompileFlags:
+	Add: [-c++, -sdt=c++17, -Wall]

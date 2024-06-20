@@ -229,16 +229,28 @@ namespace utopia {
         int size;
         MPI_Comm_size(comm, &size);
 
+        PetscInt lcols = 0;
+        PetscInt *colidx = (PetscInt *)crs.colidx;
+
+        for (ptrdiff_t i = 0; i < crs.lnnz; ++i) {
+            lcols = std::max(colidx[i], lcols);
+        }
+
+        lcols += 1;
+
         if (size == 1) {
             check_error(MatCreateSeqAIJWithArrays(
-                comm, crs.grows, crs.grows, rowptr, (PetscInt *)crs.colidx, (Scalar *)crs.values, &raw_type()));
+                comm, crs.grows, lcols, rowptr, (PetscInt *)crs.colidx, (Scalar *)crs.values, &raw_type()));
 
         } else {
+            PetscInt gcols = lcols;
+            MPI_Allreduce(MPI_IN_PLACE, &gcols, 1, MPIType<PetscInt>::value(), MPI_MAX, comm);
+
             check_error(MatCreateMPIAIJWithArrays(comm,
                                                   crs.lrows,
-                                                  crs.lrows,
+                                                  lcols,
                                                   crs.grows,
-                                                  crs.grows,
+                                                  gcols,
                                                   (PetscInt *)crs.rowptr,
                                                   (PetscInt *)crs.colidx,
                                                   (Scalar *)crs.values,
@@ -1763,7 +1775,11 @@ namespace utopia {
     }
 
     void PetscMatrix::shift_diag(const PetscVector &d) {
-        check_error(MatDiagonalSet(raw_type(), d.raw_type(), ADD_VALUES));
+        if (empty()) {
+            diag(d);
+        } else {
+            check_error(MatDiagonalSet(raw_type(), d.raw_type(), ADD_VALUES));
+        }
     }
 
     void PetscMatrix::set_diag(const PetscVector &d) {
@@ -1838,6 +1854,56 @@ namespace utopia {
         // MatGetBlockSize(raw_type(), &prev_block_size);
         // printf("prev_block_size=%d\n", prev_block_size);
         MatSetBlockSize(raw_type(), block_size);
+    }
+
+    void PetscMatrix::ghosts(IndexArray &ret) const {
+        PetscInt nghosts;
+        const PetscInt *ghosts = nullptr;
+        MatGetGhosts(this->raw_type(), &nghosts, &ghosts);
+
+        ret.resize(nghosts);
+        std::copy(ghosts, ghosts + nghosts, ret.begin());
+    }
+
+    void PetscMatrix::lump() {
+        PetscCrsView d, o;
+        views_host(*this, d, o);
+
+        SizeType rows = d.rows();
+        for (SizeType r = 0; r < rows; r++) {
+            Scalar row_sum = 0;
+
+            {
+                auto row = o.row(r);
+                for (SizeType k = 0; k < row.length; k++) {
+                    Scalar Aij = row.value(k);
+                    row_sum += Aij;
+                    row.value(k) = 0;
+                }
+            }
+
+            {
+                auto row = d.row(r);
+                SizeType k_diag = -1;
+                for (SizeType k = 0; k < row.length; k++) {
+                    SizeType c = row.colidx(k);
+                    Scalar Aij = row.value(k);
+
+                    row_sum += Aij;
+                    row.value(k) = 0;
+
+                    if (c == r) {
+                        k_diag = k;
+                    }
+                }
+
+                assert(k_diag >= 0);
+
+                if (k_diag >= 0) {
+                    row.value(k_diag) = row_sum;
+                }
+            }
+        }
     }
 
 }  // namespace utopia

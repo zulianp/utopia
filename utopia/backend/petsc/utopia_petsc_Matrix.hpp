@@ -117,7 +117,8 @@ namespace utopia {
         public Comparable<PetscMatrix>,
         public Operator<PetscVector>,
         public Tensor<PetscMatrix, 2>,
-        public Selectable<PetscMatrix, 2> {
+        public Selectable<PetscMatrix, 2>,
+        public Configurable {
     public:
         using Scalar = PetscScalar;
         using SizeType = PetscInt;
@@ -735,6 +736,17 @@ namespace utopia {
 
         inline bool read(const std::string &path) { return read(comm().get(), path); }
 
+        void read(Input &in) override {
+            std::string path;
+            std::string type;
+
+            in.require("type", type);
+            if (type == "file") {
+                in.require("path", path);
+                this->read(path);
+            }
+        }
+
         bool read(MPI_Comm comm, const std::string &path);
 
 #ifdef UTOPIA_WITH_MATRIX_IO
@@ -803,6 +815,8 @@ namespace utopia {
         void build_diag(PetscMatrix &result) const;
         void diag(const PetscVector &other);
         void diag(const PetscMatrix &other) { other.build_diag(*this); }
+
+        void lump();
 
         void col(const SizeType id, PetscVector &result) const;
 
@@ -945,6 +959,8 @@ namespace utopia {
 
         void diag_scale_right(const PetscVector &diag);
         void diag_scale_left(const PetscVector &diag);
+
+        void ghosts(IndexArray &ret) const;
 
         inline std::string get_class() const override { return "PetscMatrix"; }
 

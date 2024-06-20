@@ -7,6 +7,8 @@
 #include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_polymorphic_LinearSolver.hpp"
 
+#include "utopia_ShiftedPenalty.hpp"
+
 namespace utopia {
 
     template <class Matrix, class Vector, int Backend>
@@ -18,10 +20,22 @@ namespace utopia {
             }
         }
 
-        std::shared_ptr<LinearSolver> linear_solver;
+        Impl() : penalty(utopia::make_unique<ShiftedPenalty<Matrix, Vector>>()) {}
+
         bool debug{false};
-        Scalar penalty_param{1e4};
+
+        std::shared_ptr<LinearSolver> linear_solver;
+        std::shared_ptr<Vector> boolean_selector;
+        std::shared_ptr<Matrix> scaling_matrix;
+        std::unique_ptr<Penalty<Matrix, Vector>> penalty;
+        std::shared_ptr<Transformation> transform;
     };
+
+    template <class Matrix, class Vector, int Backend>
+    void ShiftedPenaltyQPSolver<Matrix, Vector, Backend>::set_scaling_matrix(
+        const std::shared_ptr<Matrix> &scaling_matrix) {
+        this->impl_->scaling_matrix = scaling_matrix;
+    }
 
     template <class Matrix, class Vector, int Backend>
     ShiftedPenaltyQPSolver<Matrix, Vector, Backend>::ShiftedPenaltyQPSolver(std::shared_ptr<LinearSolver> linear_solver)
@@ -51,7 +65,7 @@ namespace utopia {
     void ShiftedPenaltyQPSolver<Matrix, Vector, Backend>::read(Input &in) {
         QPSolver<Matrix, Vector>::read(in);
         in.get("debug", impl_->debug);
-        in.get("penalty_param", impl_->penalty_param);
+        impl_->penalty->read(in);
 
         if (impl_->linear_solver) {
             in.get("linear_solver", *impl_->linear_solver);
@@ -82,78 +96,60 @@ namespace utopia {
             this->init_solver("ShiftedPenaltyQPSolver comm.size = " + std::to_string(b.comm().size()),
                               {" it. ",
                                "      || x_k - x_{k-1} ||, "
-                               "      || g_{k-1} ||, "
-                               "      || s_{k-1} ||, "
-                               "      || d_{k-1} ||"});
+                               "      || g_{k-1} ||, "});
         }
 
-        Vector d, g, diag_B, c;
-        Matrix A;
+        Vector c, g, d;
+        Matrix H, H_penalty;
 
-        A = *this->get_operator();
-        diag_B.zeros(layout(b));
+        H = *this->get_operator();
+        d = diag(H);
+
         c.zeros(layout(b));
+        g.zeros(layout(b));
 
-        auto ub_ptr = this->upper_bound();
-        auto a_ptr = this->get_operator();
+        auto H_unconstrained_ptr = this->get_operator();
         auto linear_solver = impl_->linear_solver;
-        linear_solver->verbose(true);
 
-        const Scalar penalty_param = impl_->penalty_param;
+        assert(impl_->penalty);
+        auto &&penalty = impl_->penalty;
+        penalty->reset();
+        penalty->set_box_constraints(make_ref(this->get_box_constraints()));
+        penalty->set_selection(impl_->boolean_selector);
+        penalty->set_scaling_matrix(impl_->scaling_matrix);
+        penalty->set_transform(impl_->transform);
 
         bool converged = false;
 
-        Vector shift(layout(b), 0);
-        Vector active(layout(b));
         const int max_it = this->max_it();
         for (int it = 1; it <= max_it; it++) {
-            g = *a_ptr * x - b;
-            d = *ub_ptr - x;
+            g = *H_unconstrained_ptr * x - b;
 
-            {
-                auto d_view = const_local_view_device(d);
+            // Set buffers to zero
+            if (!c.empty()) c.set(0);
+            if (!H_penalty.empty()) H_penalty *= 0;
 
-                auto a_view = local_view_device(active);
-                auto s_view = local_view_device(shift);
+            penalty->update(x);
+            penalty->gradient(x, c);
+            penalty->hessian(x, H_penalty);
 
-                auto g_view = local_view_device(g);
-                auto diag_B_view = local_view_device(diag_B);
-
-                parallel_for(
-                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                        const Scalar di = d_view.get(i);
-                        Scalar si = s_view.get(i);
-                        Scalar dps = di + si;
-
-                        const Scalar active = dps <= 0;
-                        a_view.set(i, active);
-
-                        si = active * dps;
-                        s_view.set(i, si);
-                        dps = di + si;
-
-                        // Gradient
-                        g_view.set(i, g_view.get(i) - active * (penalty_param * dps));
-
-                        // Hessian
-                        diag_B_view.set(i, active * penalty_param);
-                    });
-            }
-
+            g += c;
             g = -g;
-            A.same_nnz_pattern_copy(*this->get_operator());
-            A.shift_diag(diag_B);
+
+            // TODO Find a way to be more efficient
+            H = *H_unconstrained_ptr;
+            H += H_penalty;
+
+            // disp(H_penalty);
+
             c.set(0);
-            linear_solver->solve(A, g, c);
+            linear_solver->solve(H, g, c);
             x += c;
 
-            Scalar norm_c = norm2(c);
-
+            const Scalar norm_c = norm2(c);
             if (this->verbose()) {
-                Scalar norm_g = norm2(g);
-                Scalar norm_d = norm2(e_mul(d, active));
-                Scalar norm_s = norm2(shift);
-                PrintInfo::print_iter_status(it, {norm_c, norm_g, norm_s, norm_d});
+                const Scalar norm_g = norm2(g);
+                PrintInfo::print_iter_status(it, {norm_c, norm_g});
             }
 
             converged = this->check_convergence(it, 1, 1, norm_c);
@@ -161,6 +157,11 @@ namespace utopia {
         }
 
         return converged;
+    }
+
+    template <class Matrix, class Vector, int Backend>
+    void ShiftedPenaltyQPSolver<Matrix, Vector, Backend>::set_transform(const std::shared_ptr<Transformation> &t) {
+        impl_->transform = t;
     }
 
     template <class Matrix, class Vector, int Backend>
@@ -184,7 +185,7 @@ namespace utopia {
     template <class Matrix, class Vector, int Backend>
     void ShiftedPenaltyQPSolver<Matrix, Vector, Backend>::set_selection(
         const std::shared_ptr<Vector> &boolean_selector) {
-        // impl_->boolean_selector = boolean_selector;
+        impl_->boolean_selector = boolean_selector;
     }
 
 }  // namespace utopia

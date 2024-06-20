@@ -27,6 +27,11 @@ namespace utopia {
             step_ += 1;
         }
 
+        inline void restart(const T restart_time) {
+            start_ = restart_time;
+            time_ = restart_time;
+        }
+
         void read(Input& in) override {
             in.get("step", step_);
             in.get("delta", delta_);
@@ -38,11 +43,12 @@ namespace utopia {
 
             Integer n_steps = 0;
             in.get("n_steps", n_steps);
-            in.get("end", end_);
 
             if (n_steps != 0) {
                 end_ = start_ + n_steps * delta_;
             }
+
+            in.get("end", end_);
         }
 
     private:
