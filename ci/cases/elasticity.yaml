@@ -1,0 +1,75 @@
+app: nlsolve
+matrix_free: false
+
+solver:
+  verbose: true
+  max-it: 10
+  linear_solver:
+    verbose: true
+    apply_gradient_descent_step: true
+    max-it: 200
+    max_it: 200
+    backend: petsc
+    type: ksp
+    ksp_type: cg
+    pc_type: hypre
+
+
+problem:
+  # output_path: ./elasticity_out.vtu
+  # output_path: ./elasticity_out.e
+  output_path: ./elasticity_out.bp
+  assembly:
+    material:
+      type: LinearElasticity
+      mu: 1
+      lambda: 1
+    quadrature_order: 4
+    # forcing_functions: # Not supported yet
+    # - where: volume
+    #   value: 0.2
+    #   verbose: false
+
+space:
+  # Generated mesh
+  n_var: 3
+  mesh:
+    type: cube
+    elem_type: HEX8
+    nx: 5
+    ny: 5
+    nz: 5
+    min_x: 0
+    min_y: 0
+    min_z: 0
+    max_x: 1
+    max_y: 1
+    max_z: 1
+  # Problem Variables
+  variables:
+  - name: disp
+    order: FIRST
+    n_components: 3
+
+  # Dirichlet conditions
+  boundary_conditions:
+  - name: left
+    value: -0.2
+    var: 0
+  - name: right
+    value: 0.2
+    var: 0
+  # Y coordinate
+  - name: left
+    value: -0.05
+    var: 1
+  - name: right
+    value: 0.05
+    var: 1
+  # Z coordinate
+  - name: left
+    value: -0.0
+    var: 2
+  - name: right
+    value: 0.0
+    var: 2
