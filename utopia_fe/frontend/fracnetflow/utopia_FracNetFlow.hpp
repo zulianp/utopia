@@ -141,7 +141,7 @@ namespace utopia {
 
             // const Scalar tol = -1e-8;
             // const Scalar tol = -1e-10;
-            const Scalar tol = -1e-12;
+            const Scalar tol = -1e-15;
             // const Scalar tol = 0;
 
             PetscCrsView F_d, F_o;
@@ -158,7 +158,7 @@ namespace utopia {
                         Scalar Fij = F_row.value(k);
                         Scalar xj = x_d.get(c);
 
-                        if (Fij * (xj - xi) > tol) {
+                        if (Fij * (xi - xj) > tol) {
                             F_row.value(k) = 0;
                         }
                     }
@@ -171,7 +171,7 @@ namespace utopia {
                         Scalar Fij = F_row.value(k);
                         Scalar xj = x_o.get(c);
 
-                        if (Fij * (xj - xi) > tol) {
+                        if (Fij * (xi - xj) > tol) {
                             F_row.value(k) = 0;
                         }
                     }
@@ -196,8 +196,8 @@ namespace utopia {
                     auto row = F_d.row(r);
                     for (SizeType k = 0; k < row.length; k++) {
                         Scalar Fij = row.value(k);
-                        P_plus_i += std::max(0., Fij);
-                        P_minus_i += std::min(0., Fij);
+                        P_plus_i  += std::max(0., -1.0*Fij);
+                        P_minus_i += std::min(0., -1.0*Fij);
                     }
                 }
 
@@ -205,8 +205,8 @@ namespace utopia {
                     auto row = F_o.row(r);
                     for (SizeType k = 0; k < row.length; k++) {
                         Scalar Fij = row.value(k);
-                        P_plus_i += std::max(0., Fij);
-                        P_minus_i += std::min(0., Fij);
+                        P_plus_i  += std::max(0., -1.0*Fij);
+                        P_minus_i += std::min(0., -1.0*Fij);
                     }
                 }
 
@@ -370,7 +370,8 @@ namespace utopia {
 
                         if (Fij > 0) {
                             alpha_ij = std::min(R_plus_d.get(r), R_minus_d.get(c));
-                        } else {
+                        } 
+                        else {
                             alpha_ij = std::min(R_minus_d.get(r), R_plus_d.get(c));
                         }
 
@@ -392,7 +393,8 @@ namespace utopia {
 
                         if (Fij > 0) {
                             alpha_ij = std::min(R_plus_d.get(r), R_minus_o.get(c));
-                        } else {
+                        } 
+                        else  {
                             alpha_ij = std::min(R_minus_d.get(r), R_plus_o.get(c));
                         }
 
@@ -413,7 +415,7 @@ namespace utopia {
         void post_process(const Vector &g, Vector &u) const override {
             UTOPIA_TRACE_SCOPE("StabilizeTransport::post_process");
             //!!! CHECK -g instead of g because the rhs is = -g
-            Vector u_dot = (*A_corrected_) * u + g;
+            Vector u_dot = -1.0 * (*A_corrected_) * u + g;// Calcoli u_dot  //g=residuo lineare  u=uk=soluzione del tipe step
 
             // TODO check if +
             // u_dot = -u_dot;
@@ -441,9 +443,13 @@ namespace utopia {
             u.select(ghosts, u_ghosts);
             u_dot.select(ghosts, u_dot_ghosts);
 
-            // TODO check if -1 or 1
-            add_contrib(*A_diff_, u, u_ghosts, -1, F);
-            add_contrib(*M_diff_, u_dot, u_dot_ghosts, 1, F);
+            // TODO check if -1 or 
+            add_contrib(*A_diff_, u, u_ghosts, 1, F);       // costruisci f_ij
+
+            //add_contrib(*M_corrected_, u_dot, u_dot_ghosts, 1, F); //costruisci f_ij
+
+            add_contrib(*M_diff_, u_dot, u_dot_ghosts, -1, F);
+
             pre_limiting_step(u, u_ghosts, F);
 
             if (debug_) {
@@ -469,7 +475,7 @@ namespace utopia {
             }
 
             Vector Q_plus(layout(u), 0), Q_minus(layout(u), 0);
-            min_max_bound(dt_, *M_corrected_, u, u_ghosts, Q_minus, Q_plus);
+            min_max_bound(dt_, *M_diff_, u, u_ghosts, Q_minus, Q_plus);
 
             if (debug_) {
                 space_->write("Q_plus.e", Q_plus);
@@ -500,7 +506,6 @@ namespace utopia {
             Vector u_correction(layout(u), 0);
             create_update(F, R_minus, R_minus_ghosts, R_plus, R_minus_ghosts, u_correction);
 
-            u_correction *= dt_;
             u_correction = e_mul(inverse_mass_vector_, u_correction);
 
             space_->apply_zero_constraints(u_correction);
@@ -510,7 +515,7 @@ namespace utopia {
                 utopia::out() << "norm_u_correction: " << norm_u_correction << "\n";
             }
 
-            u += u_correction;
+            u += u_correction * dt_;
 
             if (debug_) {
                 space_->write("u_correction.e", u_correction);
@@ -526,8 +531,8 @@ namespace utopia {
         std::shared_ptr<Matrix> M_diff_;
         Vector inverse_mass_vector_;
         Scalar dt_{1};
-        bool debug_{true};
-        // bool debug_{false};
+        // bool debug_{true};
+        bool debug_{false};
     };
 
     template <class FunctionSpace>
@@ -594,8 +599,13 @@ namespace utopia {
                 auto st = std::make_shared<StabilizeTransport<FunctionSpace>>(porous_matrix);
                 problem->add_matrix_transformer(st);
 
-                // FIXME uncomment after fix!
-                problem->add_post_processor(st);
+                // bool use_flux_post_processor = true;
+                bool use_flux_post_processor = false;
+                in.get("use_flux_post_processor", use_flux_post_processor);
+
+                if (use_flux_post_processor) {
+                    problem->add_post_processor(st);
+                }
             }
 
             if (problem_type == "transport" || integrator == "ImplicitEuler") {

@@ -533,6 +533,8 @@ namespace utopia {
                      .add_option("verbose",
                                  verbose_,
                                  "If verbose == true, prints additional information (with computational overhead).")
+                     .add_option(
+                         "zero_shift_on_reset", zero_shift_on_reset_, "Set the shift to zero when reset() is called.")
                      .parse(in)) {
                 return;
             }
@@ -548,8 +550,16 @@ namespace utopia {
         }
 
         void reset() override {
-            if (shift) {
+            if (shift && zero_shift_on_reset_) {
                 shift->set(0.);
+            } else {
+                if (shift && verbose_ && !zero_shift_on_reset_) {
+                    Scalar norm_shift = norm2(*shift);
+                    if (!shift->comm().rank()) {
+                        utopia::out() << "ShiftedPenalty: keeping shift from previous work (mag: " << norm_shift
+                                      << ")!\n";
+                    }
+                }
             }
 
             penalty_parameter_current_ = penalty_parameter_;
@@ -578,6 +588,7 @@ namespace utopia {
         std::shared_ptr<Vector> shift;
         std::shared_ptr<Vector> dps;
         bool verbose_{false};
+        bool zero_shift_on_reset_{true};
     };
 }  // namespace utopia
 
