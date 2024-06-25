@@ -8,11 +8,7 @@
 #include <set>
 
 #ifdef UTOPIA_ENABLE_MATRIX_IO
-
-extern "C" {
 #include "matrixio_array.h"
-}
-
 #endif
 
 namespace utopia {
@@ -380,7 +376,7 @@ namespace utopia {
         return err;
     }
 
-#ifdef UTOPIA_WITH_MATRIX_IO
+#ifdef UTOPIA_ENABLE_MATRIX_IO
     bool PetscVector::read_raw(MPI_Comm comm, const std::string &path) {
         double *data;
         ptrdiff_t nlocal, nglobal;

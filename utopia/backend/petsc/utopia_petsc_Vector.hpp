@@ -1,6 +1,8 @@
 #ifndef UTOPIA_UTOPIA_PETSCVECTOR_H
 #define UTOPIA_UTOPIA_PETSCVECTOR_H
 
+#include "utopia_Config.hpp"
+
 #include "utopia_Allocations.hpp"
 #include "utopia_ArrayView.hpp"
 #include "utopia_BLAS_Operands.hpp"

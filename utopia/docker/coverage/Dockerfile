@@ -7,7 +7,7 @@ RUN rm -rf /utopia_cloned/utopia/bin_cov
 # Compile
 RUN cd /utopia_cloned/utopia && mkdir bin_cov
 RUN cd /utopia_cloned/utopia/bin_cov && cmake -DUTOPIA_ENABLE_CODE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug ..
-RUN cd /utopia_cloned/utopia/bin_cov && make complete
+RUN cd /utopia_cloned/utopia/bin_cov && make
 
 # Create coverage data
 RUN cp /utopia_cloned/utopia/scripts/utils/coverage.sh /utopia_cloned/utopia/bin_cov/coverage.sh

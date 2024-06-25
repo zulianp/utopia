@@ -166,6 +166,9 @@ macro(print_dependency_table)
   set(SMALL_DEP_TABLE
       "-${SMALL_DEP_TABLE}Mars\t|${UTOPIA_ENABLE_MARS}\t|${Mars_FOUND}\n")
 
+  set(SMALL_DEP_TABLE
+      "-${SMALL_DEP_TABLE}SFEM\t|${UTOPIA_ENABLE_SFEM}\t| --\n")
+
   set(SMALL_DEP_TABLE "${SMALL_DEP_TABLE}_______________________________\n")
 
   message(STATUS ${SMALL_DEP_TABLE})

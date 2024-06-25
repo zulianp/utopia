@@ -58,6 +58,10 @@ if(UTOPIA_ENABLE_PETSCDM)
   list(APPEND UTOPIA_FE_MODULES backend/petsc)
 endif()
 
+if(UTOPIA_ENABLE_SFEM)
+  list(APPEND UTOPIA_FE_MODULES backend/sfem)
+endif()
+
 # #
 # ##############################################################################
 

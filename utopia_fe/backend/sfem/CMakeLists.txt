@@ -15,12 +15,6 @@ list(APPEND SFEM_MODULES .)
       ${UTOPIA_FE_SOURCES}
       PARENT_SCOPE)
 
-
-
-
-
-
-
 find_path(
     SFEM_DIR
     NAMES  base/sfem_base.h
@@ -69,54 +63,75 @@ if(SFEM_DIR)
         operators/trishell3
     )
 
-    utopiafe_add_module(utopia_dep_sfem ${SFEM_DIR} "${SFEM_SUBMODULES}")
+    scan_directories(${SFEM_DIR} "${SFEM_SUBMODULES}"
+                     UTOPIA_FE_BUILD_INCLUDES UTOPIA_FE_HEADERS UTOPIA_FE_SOURCES)
 
-    file(GLOB SFEM_PYTHON_SCRIPTS_1 "${SFEM_DIR}/python/mesh/*.py")
-    file(GLOB SFEM_PYTHON_SCRIPTS_2 "${SFEM_DIR}/python/sdf/*.py")
-    file(GLOB SFEM_PYTHON_SCRIPTS_2 "${SFEM_DIR}/python/grid/*.py")
+    set(UTOPIA_FE_BUILD_INCLUDES
+        ${UTOPIA_FE_BUILD_INCLUDES}
+        PARENT_SCOPE)
 
-    list(APPEND SFEM_PYTHON_SCRIPTS ${SFEM_PYTHON_SCRIPTS_1})
-    list(APPEND SFEM_PYTHON_SCRIPTS ${SFEM_PYTHON_SCRIPTS_2})
+    set(UTOPIA_FE_HEADERS
+        ${UTOPIA_FE_HEADERS}
+        PARENT_SCOPE)
 
-    install(FILES ${SFEM_PYTHON_SCRIPTS} 
-        PERMISSIONS OWNER_READ OWNER_EXECUTE 
-        DESTINATION scripts)
+    set(UTOPIA_FE_SOURCES
+        ${UTOPIA_FE_SOURCES}
+        PARENT_SCOPE)
 
-    message(STATUS "SFEM_PYTHON_SCRIPTS=${SFEM_PYTHON_SCRIPTS}")
 
-    file(GLOB SFEM_EXCUTABLES "${SFEM_DIR}/drivers/*.c")
+    set(SFEM_FOUND TRUE)
+    set(PARENT_SCOPE SFEM_FOUND TRUE)
 
-    set(SFEM_EXCLUDED_EXEC "")
-    list(APPEND SFEM_EXCLUDED_EXEC "grad_and_project;heat_equation;integrate_divergence;partition_mesh_based_on_operator;taylor_hood_navier_stokes")
+    # FIXME Better integration with SFEM in the next versions!
 
-    # message(STATUS "SFEM_EXCLUDED_EXEC=${SFEM_EXCLUDED_EXEC}")
+    # utopiafe_add_module(utopia_dep_sfem ${SFEM_DIR} "${SFEM_SUBMODULES}")
 
-    # Add sfem executables as optional functionalities
-    foreach(SFEM_EXEC ${SFEM_EXCUTABLES})
-        get_filename_component(SFEM_EXEC_NAME ${SFEM_EXEC} NAME_WE)
-        list(FIND SFEM_EXCLUDED_EXEC "${SFEM_EXEC_NAME}" LIST_INDEX)
+    # file(GLOB SFEM_PYTHON_SCRIPTS_1 "${SFEM_DIR}/python/mesh/*.py")
+    # file(GLOB SFEM_PYTHON_SCRIPTS_2 "${SFEM_DIR}/python/sdf/*.py")
+    # file(GLOB SFEM_PYTHON_SCRIPTS_2 "${SFEM_DIR}/python/grid/*.py")
+
+    # list(APPEND SFEM_PYTHON_SCRIPTS ${SFEM_PYTHON_SCRIPTS_1})
+    # list(APPEND SFEM_PYTHON_SCRIPTS ${SFEM_PYTHON_SCRIPTS_2})
+
+    # install(FILES ${SFEM_PYTHON_SCRIPTS} 
+    #     PERMISSIONS OWNER_READ OWNER_EXECUTE 
+    #     DESTINATION scripts)
+
+    # message(STATUS "SFEM_PYTHON_SCRIPTS=${SFEM_PYTHON_SCRIPTS}")
+
+    # file(GLOB SFEM_EXCUTABLES "${SFEM_DIR}/drivers/*.c")
+
+    # set(SFEM_EXCLUDED_EXEC "")
+    # list(APPEND SFEM_EXCLUDED_EXEC "grad_and_project;heat_equation;integrate_divergence;partition_mesh_based_on_operator;taylor_hood_navier_stokes")
+
+    # # message(STATUS "SFEM_EXCLUDED_EXEC=${SFEM_EXCLUDED_EXEC}")
+
+    # # Add sfem executables as optional functionalities
+    # foreach(SFEM_EXEC ${SFEM_EXCUTABLES})
+    #     get_filename_component(SFEM_EXEC_NAME ${SFEM_EXEC} NAME_WE)
+    #     list(FIND SFEM_EXCLUDED_EXEC "${SFEM_EXEC_NAME}" LIST_INDEX)
         
-        if (${LIST_INDEX} GREATER -1)
-        else()
-            # message(STATUS "SFEM_EXEC_NAME=${SFEM_EXEC_NAME}")
-            # add_executable(${SFEM_EXEC_NAME} EXCLUDE_FROM_ALL ${SFEM_EXEC})
-            add_executable(${SFEM_EXEC_NAME} ${SFEM_EXEC})
-            target_link_libraries(${SFEM_EXEC_NAME} PRIVATE utopia_dep_sfem)
+    #     if (${LIST_INDEX} GREATER -1)
+    #     else()
+    #         # message(STATUS "SFEM_EXEC_NAME=${SFEM_EXEC_NAME}")
+    #         # add_executable(${SFEM_EXEC_NAME} EXCLUDE_FROM_ALL ${SFEM_EXEC})
+    #         add_executable(${SFEM_EXEC_NAME} ${SFEM_EXEC})
+    #         target_link_libraries(${SFEM_EXEC_NAME} PRIVATE utopia_dep_sfem)
 
-            install(
-                TARGETS ${SFEM_EXEC_NAME}
-                RUNTIME DESTINATION bin
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib)
-        endif()
-    endforeach()
+    #         install(
+    #             TARGETS ${SFEM_EXEC_NAME}
+    #             RUNTIME DESTINATION bin
+    #             LIBRARY DESTINATION lib
+    #             ARCHIVE DESTINATION lib)
+    #     endif()
+    # endforeach()
 
-    target_link_libraries(utopia_dep_sfem PUBLIC Utopia::utopia)
+    # target_link_libraries(utopia_dep_sfem PUBLIC Utopia::utopia)
 
-    utopiafe_add_module(utopia_sfem ${CMAKE_CURRENT_SOURCE_DIR} ".")
-    target_link_libraries(utopia_sfem PUBLIC utopia_dep_sfem utopia_fe_core)
+    # utopiafe_add_module(utopia_sfem ${CMAKE_CURRENT_SOURCE_DIR} ".")
+    # target_link_libraries(utopia_sfem PUBLIC utopia_dep_sfem utopia_fe_core)
 
-    set(UTOPIA_FE_LIBRARIES ${UTOPIA_FE_LIBRARIES} PARENT_SCOPE)
+    # set(UTOPIA_FE_LIBRARIES ${UTOPIA_FE_LIBRARIES} PARENT_SCOPE)
 else()
     message(FATAL_ERROR "Could not find SFEM!")
 endif()
