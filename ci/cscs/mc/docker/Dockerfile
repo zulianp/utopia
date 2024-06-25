@@ -26,6 +26,7 @@ RUN mkdir -p /utopia.src/build \
     -DUTOPIA_ENABLE_PETSC=ON \
     -DUTOPIA_ENABLE_TRILINOS=ON \
     -DUTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE=ON \
+    -DUTOPIA_ENABLE_DEPRECATED_API=ON \
     -DBLA_PREFER_PKGCONFIG=ON \
     /utopia.src/utopia |& tee cmake_output.log \
   && ! grep 'Manually-specified variables were' cmake_output.log \

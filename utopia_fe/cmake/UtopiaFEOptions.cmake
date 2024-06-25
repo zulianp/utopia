@@ -30,7 +30,7 @@ option(UTOPIA_INSTALL_LIBMESH "Local install of libmesh." OFF)
 option(UTOPIA_ENABLE_PETSCDM "Enable the PETSc DM functionalities" OFF)
 
 # Once we have cleaner separation between this and legacy turn OFF
-option(UTOPIA_ENABLE_LIBMESH_DEPRECATED "Enable the deprecated utopia::libmesh functionalities" ON)
+option(UTOPIA_ENABLE_LIBMESH_DEPRECATED "Enable the deprecated utopia::libmesh functionalities" OFF)
 
 
 option(UTOPIA_ENABLE_TESTS "Enable utopia_fe testing." ON)
