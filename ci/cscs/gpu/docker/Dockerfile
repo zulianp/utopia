@@ -30,7 +30,7 @@ RUN mkdir -p /utopia.src/build \
     -DBLA_PREFER_PKGCONFIG=ON \
     /utopia.src/utopia |& tee cmake_output.log \
   && ! grep 'Manually-specified variables were' cmake_output.log \
-  && make -j$NUM_PROCS complete \
+  && make -j$NUM_PROCS \
   && make install
 
 RUN mkdir -p /utopia.src/utopia_fe/build \
@@ -48,5 +48,5 @@ RUN mkdir -p /utopia.src/utopia_fe/build \
     -DUTOPIA_ENABLE_MOONOLITH=ON \
     /utopia.src/utopia_fe |& tee cmake_output.log \
   && ! grep 'Manually-specified variables were' cmake_output.log \
-  && make -j$NUM_PROCS complete \
+  && make -j$NUM_PROCS \
   && make install
