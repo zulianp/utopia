@@ -44,8 +44,12 @@ RUN mkdir -p /utopia.src/utopia_fe/build \
     -DBUILD_SHARED_LIBS=OFF \
     -DUTOPIA_ENABLE_CXX14_FEATURES=ON \
     -DUTOPIA_ENABLE_LIBMESH=ON \
+    -DUTOPIA_ENABLE_MOONOLITH=ON \
+    -DUTOPIA_INSTALL_MOONOLITH=ON \
     -DUTOPIA_ENABLE_MARS=ON \
     /utopia.src/utopia_fe |& tee cmake_output.log \
   && ! grep 'Manually-specified variables were' cmake_output.log \
+  && make par_moonolith \
+  && cmake /utopia.src/utopia_fe  \
   && make -j$NUM_PROCS \
   && make install
