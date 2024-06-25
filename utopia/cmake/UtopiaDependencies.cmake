@@ -366,8 +366,7 @@ if(UTOPIA_ENABLE_YAML_CPP)
 
     list(APPEND YAMLCPP_MODULES .)
 
-    if(APPLE)
-
+    if(APPLE AND TARGET yaml-cpp::yaml-cpp)
       get_target_property(YAML_CPP_INCLUDE_DIR yaml-cpp::yaml-cpp
                           INTERFACE_INCLUDE_DIRECTORIES)
 
