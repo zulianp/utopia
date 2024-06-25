@@ -385,6 +385,20 @@ if(UTOPIA_ENABLE_YAML_CPP)
         get_target_property(YAML_CPP_LIBRARIES yaml-cpp::yaml-cpp
                             IMPORTED_LOCATION_NOCONFIG)
       endif()
+
+    elseif(NOT TARGET yaml-cpp::yaml-cpp AND TARGET yaml-cpp)
+      if(NOT YAML_CPP_LIBRARIES)
+          get_target_property(YAML_CPP_LIBRARIES yaml-cpp
+                              IMPORTED_LOCATION_RELEASE)
+      endif()
+      if(NOT YAML_CPP_LIBRARIES)
+          get_target_property(YAML_CPP_LIBRARIES yaml-cpp
+                              IMPORTED_LOCATION_DEBUG)
+      endif()
+      if(NOT YAML_CPP_LIBRARIES)
+          get_target_property(YAML_CPP_LIBRARIES yaml-cpp
+                              IMPORTED_LOCATION_NOCONFIG)
+      endif()
     endif()
 
     message(STATUS "yaml-cpp found!")
