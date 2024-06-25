@@ -20,8 +20,8 @@ option(UTOPIA_INSTALL_MOONOLITH "Local install of par_moonolith." OFF)
 option(UTOPIA_ENABLE_WARNINGS "Compiler warnings" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
 
-option(UTOPIA_ENABLE_LIBMESH "Enable the libmesh functionalities" ON)
-option(UTOPIA_ENABLE_LIBMESH_LEGACY "Enable the legacy utopia::libmesh functionalities" ON)
+option(UTOPIA_ENABLE_LIBMESH "Enable the libmesh functionalities" OFF)
+option(UTOPIA_ENABLE_LIBMESH_LEGACY "Enable the legacy utopia::libmesh functionalities" OFF)
 option(UTOPIA_ENABLE_LIBMESH_KOKKOS "Enable the libmesh functionalities" OFF)
 
 option(UTOPIA_INSTALL_LIBMESH "Local install of libmesh." OFF)

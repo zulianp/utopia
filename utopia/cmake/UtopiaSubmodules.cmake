@@ -74,6 +74,18 @@ endif()
 
 # endif()
 
-# if(UTOPIA_ENABLE_MATRIX_IO)
 
-# endif()
+if(UTOPIA_ENABLE_MATRIX_IO)
+    find_path(
+        MATRIX_IO_DIR
+        NAMES  matrixio_crs.h
+        HINTS ${MATRIX_IO_DIR} $ENV{MATRIX_IO_DIR}/matrix.io ${CMAKE_CURRENT_SOURCE_DIR}/external/matrix.io
+    )
+    
+    if(MATRIX_IO_DIR)
+        
+      scan_directories(${MATRIX_IO_DIR} "." UTOPIA_BUILD_INCLUDES UTOPIA_HEADERS
+                       UTOPIA_SOURCES)
+    endif()
+
+endif()
