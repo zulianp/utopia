@@ -82,7 +82,7 @@ namespace utopia {
             return solve(operator_cast<Vector>(*this->get_operator()), b, x);
         }
 
-        OperatorBasedLinearSolver *clone() const override { return nullptr; }
+        OperatorBasedLinearSolver *clone() const override = 0;
 
         OperatorBasedLinearSolver &operator=(const OperatorBasedLinearSolver &other) {
             if (this == &other) return *this;
