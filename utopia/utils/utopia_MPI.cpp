@@ -1,6 +1,6 @@
 #include "utopia_MPI.hpp"
 
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
 
 #include <mpi.h>
 
@@ -52,4 +52,4 @@ namespace utopia {
     void mpi_world_barrier() {}
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_MPI
+#endif  // UTOPIA_ENABLE_MPI

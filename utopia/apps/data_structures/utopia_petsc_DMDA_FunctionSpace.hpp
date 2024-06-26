@@ -11,6 +11,8 @@
 #include "utopia_petsc_MakeElem.hpp"
 // #include "utopia_petsc_DMDA_FunctionSpace.hpp"
 
+#include "utopia_petsc_Constraints.hpp"
+
 namespace utopia {
 
     template <class Point_, class IntArray_, int NComponents_, class UniVarElem_>
@@ -39,6 +41,7 @@ namespace utopia {
         using Device = typename Mesh::Device;
 
         using DirichletBC = utopia::DirichletBoundaryCondition<FunctionSpace>;
+        using ConstraintsT = utopia::Constraints<FunctionSpace>;
         using DofMapping = utopia::DofMapping<Mesh, UniVarElem_, NComponents_>;
         static const int NDofs = DofMapping::NDofs;
 
@@ -137,13 +140,23 @@ namespace utopia {
         bool on_boundary(const SizeType &elem_idx) const { return mesh_->on_boundary(elem_idx); }
 
         template <class... Args>
-        void emplace_dirichlet_condition(Args &&... args) {
+        void emplace_dirichlet_condition(Args &&...args) {
             dirichlet_bcs_.push_back(utopia::make_unique<DirichletBC>(*this, std::forward<Args>(args)...));
+        }
+
+        template <class... Args>
+        void emplace_constraint(Args &&...args) {
+            // dirichlet_bcs_.push_back(utopia::make_unique<DirichletBC>(*this, std::forward<Args>(args)...));
+            constraints_.push_back(utopia::make_unique<ConstraintsT>(*this, std::forward<Args>(args)...));
         }
 
         void apply_constraints(PetscMatrix &mat, PetscVector &vec) const {
             for (const auto &bc : dirichlet_bcs_) {
                 bc->apply(mat, vec);
+            }
+
+            for (const auto &c : constraints_) {
+                c->apply(mat, vec);
             }
         }
 
@@ -151,11 +164,19 @@ namespace utopia {
             for (const auto &bc : dirichlet_bcs_) {
                 bc->apply(mat);
             }
+
+            for (const auto &c : constraints_) {
+                c->apply(mat);
+            }
         }
 
         void apply_constraints(PetscVector &vec) const {
             for (const auto &bc : dirichlet_bcs_) {
                 bc->apply(vec);
+            }
+
+            for (const auto &c : constraints_) {
+                c->apply(vec);
             }
         }
 
@@ -163,17 +184,29 @@ namespace utopia {
             for (const auto &bc : dirichlet_bcs_) {
                 bc->copy(in, vec);
             }
+
+            for (const auto &c : constraints_) {
+                c->copy(in, vec);
+            }
         }
 
         void apply_zero_constraints(PetscVector &vec) const {
             for (const auto &bc : dirichlet_bcs_) {
                 bc->apply_zero(vec);
             }
+
+            for (const auto &c : constraints_) {
+                c->apply_zero(vec);
+            }
         }
 
         void build_constraints_markers(PetscVector &vec) const {
             for (const auto &bc : dirichlet_bcs_) {
                 bc->apply_val(vec, 1.0);
+            }
+
+            for (const auto &c : constraints_) {
+                c->apply_val(vec, 1.0);
             }
         }
 
@@ -215,6 +248,7 @@ namespace utopia {
         }
 
         void reset_bc() { dirichlet_bcs_.clear(); }
+        void reset_constraints() { constraints_.clear(); }
 
         inline Range element_range() const {
             assert(elements_);
@@ -254,12 +288,26 @@ namespace utopia {
         std::unique_ptr<FunctionSpace> uniform_refine() const {
             auto fine_space = utopia::make_unique<FunctionSpace>(mesh_->uniform_refine(), subspace_id_);
 
-            const std::size_t n = dirichlet_bcs_.size();
-            fine_space->dirichlet_bcs_.resize(n);
+            {
+                // Dirichlet
+                const std::size_t n = dirichlet_bcs_.size();
+                fine_space->dirichlet_bcs_.resize(n);
 
-            for (std::size_t i = 0; i < n; ++i) {
-                fine_space->dirichlet_bcs_[i] = std::make_shared<DirichletBC>(*fine_space);
-                fine_space->dirichlet_bcs_[i]->init_from(*dirichlet_bcs_[i]);
+                for (std::size_t i = 0; i < n; ++i) {
+                    fine_space->dirichlet_bcs_[i] = std::make_shared<DirichletBC>(*fine_space);
+                    fine_space->dirichlet_bcs_[i]->init_from(*dirichlet_bcs_[i]);
+                }
+            }
+
+            {
+                // General constraints
+                const std::size_t n = constraints_.size();
+                fine_space->constraints_.resize(n);
+
+                for (std::size_t i = 0; i < n; ++i) {
+                    fine_space->constraints_[i] = std::make_shared<ConstraintsT>(*fine_space);
+                    fine_space->constraints_[i]->init_from(*constraints_[i]);
+                }
             }
 
             return fine_space;
@@ -321,6 +369,7 @@ namespace utopia {
         }
 
         bool write(const Path &path, const PetscVector &x) const { return mesh_->write(path, x); }
+        bool read_field(const Path &path, PetscVector &x) const { return mesh_->read_field(path, x); }
 
         inline bool empty() const { return static_cast<bool>(mesh_); }
 
@@ -349,6 +398,7 @@ namespace utopia {
         std::shared_ptr<Mesh> mesh_;
         std::shared_ptr<typename Mesh::Elements> elements_;
         std::vector<std::shared_ptr<DirichletBC>> dirichlet_bcs_;
+        std::vector<std::shared_ptr<ConstraintsT>> constraints_;
         SizeType subspace_id_;
 
         void allocate_mesh(const PetscCommunicator &comm) {

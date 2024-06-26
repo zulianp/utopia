@@ -542,7 +542,7 @@ namespace utopia {
     };
 
     static void quasi_newton() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().print_backend_info();
         // QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector>
         // >().run_dense();
@@ -554,16 +554,16 @@ namespace utopia {
         // LBFGS<PetscVector> >().run_multilevel();
 #endif
 
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
         QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord> >().print_backend_info();
         // QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord>
         // >().run_dense();
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
-        // #ifdef UTOPIA_WITH_TRILINOS
+        // #ifdef UTOPIA_ENABLE_TRILINOS
         // QuasiNewtonTest<TpetraMatrixd, TpetraVectord>().print_backend_info();
         //      QuasiNewtonTest<TpetraMatrixd, TpetraVectord>().run_sparse();
-        // #endif //UTOPIA_WITH_TRILINOS
+        // #endif //UTOPIA_ENABLE_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(quasi_newton);

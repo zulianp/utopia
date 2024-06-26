@@ -1,9 +1,10 @@
 #ifndef UTOPIA_YAML_INPUT_HPP
 #define UTOPIA_YAML_INPUT_HPP
 
+#include <string>
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_WITH_YAML_CPP
+#ifdef UTOPIA_ENABLE_YAML_CPP
 
 #include <memory>
 #include "utopia_Input.hpp"
@@ -22,16 +23,24 @@ namespace utopia {
         YAMLInput(const YAML::Node &node);
         YAMLInput(YAML::Node &&node);
 
+        static std::shared_ptr<YAMLInput> FromString(const std::string &str);
+
         YAMLInput();
         ~YAMLInput() override;
 
         bool open(const Path &path);
 
         SizeType size() const override;
+
+        void get(const std::string &key, std::vector<std::string> &v) override;
+        void get(const std::string &key, std::vector<float> &v) override;
+        void get(const std::string &key, std::vector<double> &v) override;
+
         void get(std::vector<std::shared_ptr<IConvertible>> &values) override;
         void get_all(std::function<void(Input &)> lambda) override;
         void get(const std::string &key, bool &val) override;
         void get(const std::string &key, double &val) override;
+        void get(const std::string &key, float &val) override;
         void get(const std::string &key, int &val) override;
         void get(const std::string &key, long &val) override;
         void get(const std::string &key, unsigned long &val) override;
@@ -55,5 +64,5 @@ namespace utopia {
     };
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_YAML_CPP
+#endif  // UTOPIA_ENABLE_YAML_CPP
 #endif  // UTOPIA_YAML_INPUT_HPP

@@ -18,7 +18,7 @@
 
 #include "libmesh/parallel_mesh.h"
 
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
 #include "utopia_SymbolicFunction.hpp"
 namespace utopia {
 
@@ -44,6 +44,6 @@ namespace utopia {
     }
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_TINY_EXPR
+#endif  // UTOPIA_ENABLE_TINY_EXPR
 
 #endif  // UTOPIA_LIBMESH_OLD_HPP

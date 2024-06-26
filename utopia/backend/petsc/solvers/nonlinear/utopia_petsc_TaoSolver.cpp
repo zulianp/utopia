@@ -333,6 +333,7 @@ namespace utopia {
         void read(Input &in) override {
             std::string type;
             in.get("type", type);
+            in.get("tao_type", type);
 
             if (!type.empty() && TaoTypes::is_valid(type, true)) {
                 set_type(type);
@@ -446,6 +447,11 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     void TaoSolver<Matrix, Vector>::read(Input &in) {
+        in.get("linear_solver", [&](Input &) {
+            auto ls = std::make_shared<OmniLinearSolver<Matrix, Vector>>();
+            this->set_linear_solver(ls);
+        });
+
         NewtonBase<Matrix, Vector>::read(in);
         // VariableBoundSolverInterface<Vector>::read(in);
         impl_->read(in);
@@ -459,6 +465,8 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     bool TaoSolver<Matrix, Vector>::solve(Function<Matrix, Vector> &fun, Vector &x) {
+        UTOPIA_TRACE_SCOPE("TaoSolver::solve");
+
         init(fun, x);
         this->init_solver("Tao Solver", {""});
         auto flg = impl_->solve(x);
@@ -481,6 +489,8 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     void TaoSolver<Matrix, Vector>::init(Function<Matrix, Vector> &fun, Vector &x) {
+        UTOPIA_TRACE_SCOPE("TaoSolver::init");
+
         if (!impl_->initialized(size(x))) {
             impl_->init(x.comm().get());
 

@@ -8,10 +8,14 @@
 #include "utopia_Instance.hpp"
 #include "utopia_petsc_Factorization.hpp"
 
+#include "utopia_SolverType.hpp"
+
 namespace utopia {
 
     class SchurComplement<PetscMatrix>::Impl {
     public:
+        using Factorization_t = utopia::Factorization<PetscMatrix, PetscVector>;
+
         IS is_eliminated{nullptr};
         IS is_dof{nullptr};
 
@@ -24,6 +28,11 @@ namespace utopia {
         std::shared_ptr<LinearSolver<PetscMatrix, PetscVector>> A_II_inv;
 
         Communicator comm;
+
+        std::string solver_package;
+        std::string type;
+
+        Impl() : solver_package(Factorization_t::default_package()), type("cholesky") {}
 
         static void copy_values(const PetscVector &x_from, PetscVector &x_to) {
             {
@@ -63,7 +72,7 @@ namespace utopia {
         bool create_A_II_inverse() {
             UTOPIA_TRACE_REGION_BEGIN("SchurComplement::initialize::decomposition");
             if (!A_II_inv) {
-                A_II_inv = std::make_shared<Factorization<PetscMatrix, PetscVector>>("mumps", "cholesky");
+                A_II_inv = std::make_shared<Factorization_t>(solver_package, type);
             }
 
             assert(A_II.comm().size() == 1);
@@ -219,8 +228,9 @@ namespace utopia {
         }
     };
 
-    void SchurComplement<PetscMatrix>::read(Input &) {
-        // TODO
+    void SchurComplement<PetscMatrix>::read(Input &in) {
+        in.get("solver_package", impl_->solver_package);
+        in.get("type", impl_->type);
     }
 
     SchurComplement<PetscMatrix>::SchurComplement() : impl_(utopia::make_unique<Impl>()) {}

@@ -52,8 +52,6 @@ namespace utopia {
 
         const Vector &exact_sol() const override { return unconstrained_.exact_sol(); }
 
-        Scalar min_function_value() const override { return 0.99042212; }
-
     private:
         Hellical07<Matrix, Vector> unconstrained_;
     };

@@ -54,10 +54,10 @@ namespace utopia {
                 run_tr(this->test_functions_, solver, "NewtonTest_CG_HOMEMADE_jacobi", this->verbose_);
             });
 
-#ifdef UTOPIA_WITH_PETSC  // call to pc_type() is only supported by PETSC KSP solver
+#ifdef UTOPIA_ENABLE_PETSC  // call to pc_type() is only supported by PETSC KSP solver
             this->register_experiment("NewtonTest_CG_PETSC_jacobi", [this]() {
                 auto lin_solver = std::make_shared<utopia::ConjugateGradient<Matrix, Vector> >();
-                lin_solver->pc_type("sor");
+                lin_solver->pc_type(PCSOR);
                 // lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
                 // lin_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
 
@@ -68,7 +68,7 @@ namespace utopia {
                 Newton<Matrix, Vector> solver(lin_solver);
                 run_tr(this->test_functions_, solver, "NewtonTest_CG_PETSC_inv_diag", this->verbose_);
             });
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
             this->register_experiment("NewtonTest_STCG_inv_diag", [this]() {
                 auto lin_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
@@ -103,7 +103,7 @@ namespace utopia {
                 run_tr(this->test_functions_, solver, "NewtonTest_BiCGStab_HOMEMADE_GS", this->verbose_);
             });
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             this->register_experiment("NewtonTest_GMRES_backtracking", [this]() {
                 auto lin_solver = std::make_shared<utopia::GMRES<Matrix, Vector> >();
                 lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
@@ -135,12 +135,12 @@ namespace utopia {
 
             this->register_experiment("TR_STCG", [this]() {
                 auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
-                subproblem->pc_type("asm");
+                subproblem->pc_type(PCASM);
                 TrustRegion<Matrix, Vector> solver(subproblem);
                 solver.delta0(1e10);
                 run_tr(this->test_functions_, solver, "TR_STCG", this->verbose_);
             });
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
         }
 
     private:
@@ -217,7 +217,7 @@ namespace utopia {
     };
 
     static void unconstrained_large_scale() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         int verbosity_level = 1;
         const int n_global = 10;
         bool alg_verbose = false;
@@ -229,7 +229,7 @@ namespace utopia {
         LargeScaleUnconstrainedBenchmark<PetscMatrix, PetscVector> bench1(n_global, alg_verbose);
         bench1.set_verbosity_level(verbosity_level);
         bench1.run();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(unconstrained_large_scale);

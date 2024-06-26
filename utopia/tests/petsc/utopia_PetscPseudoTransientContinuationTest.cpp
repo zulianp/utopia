@@ -5,7 +5,7 @@
 
 namespace utopia {
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     class PseudoTransientContinuationTest {
     public:
         using Traits = utopia::Traits<PetscVector>;
@@ -125,10 +125,10 @@ namespace utopia {
         bool verbose_{true};
     };
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
     static void pseudo_transient_continuation() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         PseudoTransientContinuationTest().run();
 #endif
     }

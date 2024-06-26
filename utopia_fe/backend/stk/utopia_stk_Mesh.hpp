@@ -18,6 +18,7 @@ namespace utopia {
 
     template <>
     class Traits<utopia::stk::Mesh> : public Traits<UVector> {
+        // class Traits<utopia::stk::Mesh> : public Traits<utopia::TpetraMatrix> {
     public:
         using Super = Traits<UVector>;
         using SideSet = utopia::stk::SideSet;

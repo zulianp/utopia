@@ -1,7 +1,7 @@
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_WITH_TRILINOS
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_TRILINOS
+#ifdef UTOPIA_ENABLE_PETSC
 
 #include "utopia_petsc.hpp"
 #include "utopia_petsc_trilinos_ConvertTensor.hpp"

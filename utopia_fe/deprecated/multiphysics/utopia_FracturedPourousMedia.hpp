@@ -277,12 +277,12 @@ namespace utopia {
     public:
         inline void post_process(const Matrix &mat) override {
             std::cout << "condition-number: ";
-#ifdef WITH_SLEPC
+#ifdef UTOPIA_ENABLE_SLEPC
             auto c = cond(mat);
             std::cout << c << std::endl;
 #else
             std::cout << "[not computed, missing library]" << std::endl;
-#endif  // WITH_SLEPC
+#endif  // UTOPIA_ENABLE_SLEPC
         }
 
         inline void read(Input &) override {}
@@ -301,12 +301,12 @@ namespace utopia {
                 std::cout << "condition-number: [skipped]" << std::endl;
             } else {
                 std::cout << "condition-number: ";
-#ifdef WITH_SLEPC
+#ifdef UTOPIA_ENABLE_SLEPC
                 condition_number_ = cond(mat);
                 std::cout << condition_number_ << std::endl;
 #else
                 std::cout << "[not computed, missing library]" << std::endl;
-#endif  // WITH_SLEPC
+#endif  // UTOPIA_ENABLE_SLEPC
             }
             n_dofs_ = size(mat).get(0);
         }

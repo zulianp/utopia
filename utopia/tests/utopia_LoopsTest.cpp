@@ -1,7 +1,7 @@
 #include "utopia.hpp"
-#include "utopia_AlgebraUnitTest.hpp"
 #include "utopia_Algorithms.hpp"
 #include "utopia_Assert.hpp"
+#include "utopia_SubCommUnitTest.hpp"
 #include "utopia_Testing.hpp"
 
 #include "utopia_assemble_laplacian_1D.hpp"
@@ -9,7 +9,7 @@
 namespace utopia {
 
     template <class Matrix, class Vector>
-    class Loops final : public AlgebraUnitTest<Vector> {
+    class Loops final : public SubCommUnitTest<Vector> {
     private:
         using Traits = utopia::Traits<Vector>;
         using Scalar = typename Traits::Scalar;
@@ -58,18 +58,18 @@ namespace utopia {
     };
 
     static void loops() {
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
         // Serial backend
         run_serial_test<Loops<BlasMatrixd, BlasVectord>>();
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         run_parallel_test<Loops<PetscMatrix, PetscVector>>();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
         run_parallel_test<Loops<TpetraMatrixd, TpetraVectord>>();
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(loops);

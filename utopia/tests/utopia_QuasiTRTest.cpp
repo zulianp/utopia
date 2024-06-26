@@ -261,7 +261,7 @@ namespace utopia {
     };
 
     static void quasi_tr() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         int verbosity_level = 1;
         const int n_global = 10;
         bool alg_verbose = false;
@@ -273,7 +273,7 @@ namespace utopia {
         QuasiTRTest<PetscMatrix, PetscVector> bench1(n_global, alg_verbose);
         bench1.set_verbosity_level(verbosity_level);
         bench1.run();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(quasi_tr);

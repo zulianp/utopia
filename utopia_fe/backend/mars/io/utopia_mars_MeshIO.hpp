@@ -28,12 +28,12 @@ namespace utopia {
     namespace mars {
 
 #ifdef MARS_ENABLE_ADIOS2
-#define MARS_WITH_WITH_IO
+#define MARS_ENABLE_IO
         template <class... Args>
         using MarsIOImpl = ::mars::adios2::IO<Args...>;
 #else
 #ifdef MARS_ENABLE_VTK
-#define MARS_WITH_WITH_IO
+#define MARS_ENABLE_IO
         template <class... Args>
         using MarsIOImpl = ::mars::vtk::IO<Args...>;
 #endif

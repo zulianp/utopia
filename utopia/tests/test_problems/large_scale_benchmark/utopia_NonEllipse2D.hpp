@@ -9,7 +9,7 @@ namespace utopia {
     class NonEllipse2D {};
 }  // namespace utopia
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include <petsc/private/snesimpl.h> /* For SNES_Solve event */
 #include <petscdm.h>
 #include <petscdmda.h>
@@ -187,8 +187,6 @@ namespace utopia {
         }
 
         const Vector &exact_sol() const override { return exact_sol_; }
-
-        Scalar min_function_value() const override { return -1.013634375000014e+01; }
 
         std::string name() const override { return "NonlEllipse2D"; }
 
@@ -694,5 +692,5 @@ namespace utopia {
     };
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 #endif  // UTOPIA_NONL_ELLIPSE_2D_HPP

@@ -2,38 +2,30 @@
 #define UTOPIA_BELOS_IMPL_HPP
 
 #include "utopia_Base.hpp"
-
-#ifdef UTOPIA_WITH_TRILINOS_BELOS
-
 #include "utopia_Belos_solver.hpp"
-
 #include "utopia_Wrapper.hpp"
 #include "utopia_make_unique.hpp"
 
+#ifdef UTOPIA_ENABLE_TRILINOS_BELOS
 #include <BelosLinearProblem.hpp>
 #include <BelosSolverFactory.hpp>
 #include <BelosTpetraAdapter.hpp>
 
-// TODO remove from here
-#include <Teuchos_GlobalMPISession.hpp>
-#include <Teuchos_ParameterList.hpp>
-#include <Teuchos_StandardCatchMacros.hpp>
-#include <Teuchos_XMLParameterListCoreHelpers.hpp>
-#include <Tpetra_CrsMatrix.hpp>
-
-#ifdef UTOPIA_WITH_TRILINOS_MUELU
+#ifdef UTOPIA_ENABLE_TRILINOS_MUELU
 #include <MueLu.hpp>
 #include <MueLu_CreateTpetraPreconditioner.hpp>
 #include <MueLu_TpetraOperator.hpp>
 #else
-#warning "Trilinos was not built with MueLu support. AMG cannot be used as a preconditioner for the Belos solver."
-#endif  // UTOPIA_WITH_TRILINOS_MUELU
+#warning "Trilinos was built without MueLu support. AMG cannot be used as a preconditioner for the Belos solver."
+#endif  // UTOPIA_ENABLE_TRILINOS_MUELU
 
-#ifdef UTOPIA_WITH_TRILINOS_IFPACK2
+#ifdef UTOPIA_ENABLE_TRILINOS_IFPACK2
 #include <Ifpack2_Factory.hpp>
 #else
-#warning "Trilinos was not built with Ifpack2 support. Direct preconditioners cannot be used with the Belos solver."
-#endif  // UTOPIA_WITH_TRILINOS_IFPACK2
+#warning "Trilinos was built without Ifpack2 support. Direct preconditioners cannot be used with the Belos solver."
+#endif  // UTOPIA_ENABLE_TRILINOS_IFPACK2
+
+#include "utopia_Tpetra_Operator.hpp"
 
 namespace utopia {
 
@@ -45,7 +37,6 @@ namespace utopia {
         using LocalSizeType = typename Traits<Vector>::LocalSizeType;
         using Node = typename Traits<Vector>::Node;
 
-        using VectorType = typename Vector::VectorType;
         using MultiVectorType = typename Vector::MultiVectorType;
         using CrsMatrixType = typename Matrix::CrsMatrixType;
         using OperatorType = Tpetra::Operator<Scalar, LocalSizeType, SizeType, Node>;
@@ -53,62 +44,64 @@ namespace utopia {
         using ProblemType = Belos::LinearProblem<Scalar, MultiVectorType, OperatorType>;
         using SolverType = Belos::SolverManager<Scalar, MultiVectorType, OperatorType>;
 
-#ifdef UTOPIA_WITH_TRILINOS_IFPACK2
+#ifdef UTOPIA_ENABLE_TRILINOS_IFPACK2
         using IfPack2PrecType = Ifpack2::Preconditioner<Scalar, LocalSizeType, SizeType, Node>;
-#endif  // UTOPIA_WITH_TRILINOS_IFPACK2
+#endif  // UTOPIA_ENABLE_TRILINOS_IFPACK2
 
-#ifdef UTOPIA_WITH_TRILINOS_MUELU
+#ifdef UTOPIA_ENABLE_TRILINOS_MUELU
         using MueLuPrecType = MueLu::TpetraOperator<Scalar, LocalSizeType, SizeType, Node>;
-#endif
+#endif  // UTOPIA_ENABLE_TRILINOS_MUELU
 
         Teuchos::RCP<ProblemType> linear_problem;
         Teuchos::RCP<Teuchos::ParameterList> param_list;
         Teuchos::RCP<SolverType> belos_solver;
         Belos::SolverFactory<Scalar, MultiVectorType, OperatorType> belos_factory;
 
-        // preconditioner
-#ifdef UTOPIA_WITH_TRILINOS_IFPACK2
-        Teuchos::RCP<IfPack2PrecType> ifpack2_prec_;
-#endif  // UTOPIA_WITH_TRILINOS_IFPACK2
-
-#ifdef UTOPIA_WITH_TRILINOS_MUELU
-        Teuchos::RCP<MueLuPrecType> muelu_prec_;
-#endif  // UTOPIA_WITH_TRILINOS_MUELU
+        Impl() : param_list(Teuchos::parameterList()) {}
     };
 
     template <typename Matrix, typename Vector>
     BelosSolver<Matrix, Vector, TRILINOS>::BelosSolver(const BelosSolver &other)
         : PreconditionedSolverInterface<Vector>(other),
-          PreconditionedSolver(other),
-          impl_(utopia::make_unique<Impl>(*other.impl_)) {
-        // FIXME
-    }
+          Super(other),
+          solver_type_(other.solver_type_),
+          solver_params_(other.solver_params_),
+          impl_(utopia::make_unique<Impl>(*other.impl_)) {}
+
+    template <typename Matrix, typename Vector>
+    BelosSolver<Matrix, Vector, TRILINOS>::BelosSolver(const std::string &type, std::initializer_list<ParamKey> params)
+        : solver_type_(type), solver_params_(params), impl_(utopia::make_unique<Impl>()) {}
 
     template <typename Matrix, typename Vector>
     BelosSolver<Matrix, Vector, TRILINOS>::~BelosSolver() {}
 
     template <typename Matrix, typename Vector>
-    BelosSolver<Matrix, Vector, TRILINOS>::BelosSolver() : impl_(utopia::make_unique<Impl>()) {}
-
-    template <typename Matrix, typename Vector>
     void BelosSolver<Matrix, Vector, TRILINOS>::update(const std::shared_ptr<const Matrix> &op,
                                                        const std::shared_ptr<const Matrix> &prec) {
-        PreconditionedSolver::update(op, prec);
+        Super::update(op, prec);
         // set_problem(*op);
     }
 
     template <typename Matrix, typename Vector>
     void BelosSolver<Matrix, Vector, TRILINOS>::update(const std::shared_ptr<const Matrix> &op) {
-        PreconditionedSolver::update(op);
-        // set_problem(*op);
+        Super::update(op);
     }
 
     template <typename Matrix, typename Vector>
     bool BelosSolver<Matrix, Vector, TRILINOS>::apply(const Vector &rhs, Vector &lhs) {
+        UTOPIA_TRACE_SCOPE("BelosSolver::apply(...)");
+        if (empty(lhs)) {
+            lhs.zeros(layout(rhs));
+        }
+
+        assert(!rhs.has_nan_or_inf());
+
         impl_->linear_problem =
             Teuchos::rcp(new typename Impl::ProblemType(raw_type(*this->get_operator()), raw_type(lhs), raw_type(rhs)));
 
+        set_programmatic_config();
         set_problem();
+        set_preconditioner(this->get_operator());
 
         assert(!(impl_->belos_solver.is_null()));
         impl_->belos_solver->solve();
@@ -116,225 +109,202 @@ namespace utopia {
     }
 
     template <typename Matrix, typename Vector>
-    int BelosSolver<Matrix, Vector, TRILINOS>::get_num_iter() const {
-        return impl_->belos_solver->getNumIters();
-    }
-
-    template <typename Matrix, typename Vector>
-    double BelosSolver<Matrix, Vector, TRILINOS>::achieved_tol() const {
-        return impl_->belos_solver->achievedTol();
-    }
-
-    template <typename Matrix, typename Vector>
-    void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner(const std::shared_ptr<Preconditioner> &) {
-        assert(false && "IMPLEMENT ME");
-        set_preconditioner();  //(A) //FIXME
-    }
-
-    // https://trilinos.github.io/pdfs/mueluguide.pdf
-    // https://trilinos.github.io/pdfs/MueLu_tutorial.pdf
-
-    template <typename Matrix, typename Vector>
-    void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner(const Matrix &precond) {
-        bool direct_solver =
-            impl_->param_list->sublist("UTOPIA", true).template get<bool>("Direct Preconditioner", false);
-        std::string dir_prec_type =
-            impl_->param_list->sublist("UTOPIA", true).get("Ifpack2 Preconditioner", "prec_type_unset");
-        if (direct_solver) {
-#ifdef UTOPIA_WITH_TRILINOS_IFPACK2
-            impl_->ifpack2_prec_ =
-                Ifpack2::Factory::create<typename Impl::CrsMatrixType>(dir_prec_type, raw_type(precond));
-            assert(!impl_->ifpack2_prec_.is_null());
-            impl_->ifpack2_prec_->setParameters(impl_->param_list->sublist(dir_prec_type, false));
-            impl_->ifpack2_prec_->initialize();
-            impl_->ifpack2_prec_->compute();
-            std::string preconditioner_type =
-                impl_->param_list->sublist("UTOPIA", true).get("Preconditioner Type", "right");
-            std::transform(preconditioner_type.begin(),
-                           preconditioner_type.end(),
-                           preconditioner_type.begin(),
-                           [](unsigned char c) { return std::tolower(c); });
-            if (preconditioner_type == "left") {
-                impl_->linear_problem->setLeftPrec(impl_->ifpack2_prec_);
-            } else {
-                impl_->linear_problem->setRightPrec(impl_->ifpack2_prec_);
-            }
-#else   // UTOPIA_WITH_TRILINOS_IFPACK2
-            std::cerr << "Cannot use a Direct Preconditioner with the BelosSolver, since Trilinos was not built with "
-                         "Ifpack2 support!"
-                      << std::endl;
-#endif  // UTOPIA_WITH_TRILINOS_IFPACK2
-        } else {
-#ifdef UTOPIA_WITH_TRILINOS_MUELU
-            // Multigrid Hierarchy
-            impl_->muelu_prec_ =
-                MueLu::CreateTpetraPreconditioner((Teuchos::RCP<typename Impl::OperatorType>)raw_type(precond),
-                                                  impl_->param_list->sublist("MueLu", false));
-
-            assert(!impl_->muelu_prec_.is_null());
-            std::string preconditioner_type =
-                impl_->param_list->sublist("UTOPIA", true).get("Preconditioner Type", "right");
-            std::transform(preconditioner_type.begin(),
-                           preconditioner_type.end(),
-                           preconditioner_type.begin(),
-                           [](unsigned char c) { return std::tolower(c); });
-            if (preconditioner_type == "left") {
-                impl_->linear_problem->setLeftPrec(impl_->muelu_prec_);
-            } else {
-                impl_->linear_problem->setRightPrec(impl_->muelu_prec_);
-            }
-#else
-            std::cerr << "Cannot use MueLu as preconditioner since Trilinos was not built with MueLu support."
-                      << std::endl;
-#endif  // UTOPIA_WITH_TRILINOS_MUELU
+    void BelosSolver<Matrix, Vector, TRILINOS>::print_usage(std::ostream &os) const {
+        Super::print_usage(os);
+        for (const auto &param : solver_params_) {
+            this->print_param_usage(
+                os, params_[param].name, params_[param].type, params_[param].description, params_[param].default_value);
         }
     }
 
-    template <typename Matrix, typename Vector>
-    void BelosSolver<Matrix, Vector, TRILINOS>::read_xml(const std::string &path) {
-        if (!path.empty()) {
-            try {
-                impl_->param_list = Teuchos::getParametersFromXmlFile(path);
-            } catch (const std::exception &ex) {
-                std::cerr << ex.what() << std::endl;
-                assert(false);
-                abort();
-            }
-        } else {
-            // use default paramlist
-        }
-    }
-
-    // read an utopia file and convert in a trilinos list
     template <typename Matrix, typename Vector>
     void BelosSolver<Matrix, Vector, TRILINOS>::read(Input &in) {
-        PreconditionedSolver::read(in);
+        Super::read(in);
+        set_programmatic_config();
 
-        // TODO
-        std::string exotic = "";
-        in.get("exotic", exotic);
+        // The solver_params sublist is created by the call to set_programmatic_config
+        constexpr bool must_exist{true};
+        auto solver_params = Teuchos::sublist(impl_->param_list, solver_type_, must_exist);
 
-        // if (!exotic.empty()) {
-        // }
-
-        if (impl_->param_list.is_null()) {
-            impl_->param_list = Teuchos::parameterList();
-        }
-
-        impl_->param_list->set("Relative tolerance", this->rtol(), "CG");
-        impl_->param_list->set("S tolerance", this->stol(), "CG");
-        impl_->param_list->set("A tolerance", this->atol(), "CG");
-        impl_->param_list->set("Maximum iteration", this->max_it(), "CG");
-        impl_->param_list->set("Verbose", this->verbose(), "CG");
-        // auto in = open_istream(const Path &path);
-    }
-
-    // available parameters
-    // TODO print setted parameters??
-    template <typename Matrix, typename Vector>
-    void BelosSolver<Matrix, Vector, TRILINOS>::print_usage(std::ostream &os) const {
-        PreconditionedSolver::print_usage(os);
-        // TODO
-        // m_utopia_warning_once("not implemented");
-    }
-
-    template <typename Matrix, typename Vector>
-    BelosSolver<Matrix, Vector, TRILINOS> *BelosSolver<Matrix, Vector, TRILINOS>::clone() const {
-        return new BelosSolver(*this);
-    }
-
-    template <typename Matrix, typename Vector>
-    bool BelosSolver<Matrix, Vector, TRILINOS>::set_problem() {
-        impl_->linear_problem->setProblem();
-        auto sol_type = impl_->param_list->get("Solver Type", "CG");
-        auto belos_params = Teuchos::sublist(impl_->param_list, sol_type, false);
-        impl_->belos_solver =
-            impl_->belos_factory.create(sol_type, belos_params);  // to change it to have the specialization
-        impl_->belos_solver->setProblem(impl_->linear_problem);
+        // Set Belos-specific parameters
         if (this->verbose()) {
-            impl_->belos_solver->getCurrentParameters()->print();
+            in.get(params_[ParamKey::OUTPUT_FREQ].name, output_frequency_);
+            solver_params->set(params_[ParamKey::OUTPUT_FREQ].belos_name, output_frequency_);
         }
-        set_preconditioner();
-        return true;
+        if (solver_params_.find(ParamKey::BLOCK_SIZE) != solver_params_.end()) {
+            in.get(params_[ParamKey::BLOCK_SIZE].name, block_size_);
+            solver_params->set(params_[ParamKey::BLOCK_SIZE].belos_name, block_size_);
+        }
+        if (solver_params_.find(ParamKey::MAX_RESTARTS) != solver_params_.end()) {
+            in.get(params_[ParamKey::MAX_RESTARTS].name, max_restarts_);
+            solver_params->set(params_[ParamKey::MAX_RESTARTS].belos_name, max_restarts_);
+        }
+        if (solver_params_.find(ParamKey::NUM_BLOCKS) != solver_params_.end()) {
+            in.get(params_[ParamKey::NUM_BLOCKS].name, num_blocks_);
+            solver_params->set(params_[ParamKey::NUM_BLOCKS].belos_name, num_blocks_);
+        }
+        if (solver_params_.find(ParamKey::ORTHOGONALIZATION) != solver_params_.end()) {
+            in.get(params_[ParamKey::ORTHOGONALIZATION].name, orthogonalization_);
+            solver_params->set(params_[ParamKey::ORTHOGONALIZATION].belos_name, orthogonalization_);
+        }
+        if (solver_params_.find(ParamKey::USE_SINGLE_RED) != solver_params_.end()) {
+            in.get(params_[ParamKey::USE_SINGLE_RED].name, use_single_red_);
+            solver_params->set(params_[ParamKey::USE_SINGLE_RED].belos_name, use_single_red_);
+        }
     }
 
     template <typename Matrix, typename Vector>
-    bool BelosSolver<Matrix, Vector, TRILINOS>::set_problem(Matrix &) {
-        std::cerr << "[Warning] matrix parameter ignored" << std::endl;
+    void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner(const std::shared_ptr<Preconditioner> &prec) {
+        auto op = std::dynamic_pointer_cast<Operator<Vector>>(prec);
 
-        impl_->linear_problem->setProblem();
-        auto sol_type = impl_->param_list->get("Solver Type", "CG");
-        auto belos_params = Teuchos::sublist(impl_->param_list, sol_type, false);
-        impl_->belos_solver =
-            impl_->belos_factory.create(sol_type, belos_params);  // to change it to have the specialization
-        set_preconditioner();                                     //(A);
-        impl_->belos_solver->setProblem(impl_->linear_problem);
-        if (this->verbose()) {
-            impl_->belos_solver->getCurrentParameters()->print();
-        }
-        return true;
-    }
-
-    template <typename Matrix, typename Vector>
-    void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner()  // const std::shared_ptr<Preconditioner> &precond)
-    {
-        bool direct_solver =
-            impl_->param_list->sublist("UTOPIA", true).template get<bool>("Direct Preconditioner", false);
-        std::string dir_prec_type =
-            impl_->param_list->sublist("UTOPIA", true).get("Ifpack2 Preconditioner", "prec_type_unset");
-
-        if (direct_solver) {
-#ifdef UTOPIA_WITH_TRILINOS_IFPACK2
-            impl_->ifpack2_prec_ =
-                Ifpack2::Factory::create<typename Impl::CrsMatrixType>(dir_prec_type, raw_type(*this->get_operator()));
-            assert(!impl_->ifpack2_prec_.is_null());
-            impl_->ifpack2_prec_->setParameters(impl_->param_list->sublist(dir_prec_type, false));
-            impl_->ifpack2_prec_->initialize();
-            impl_->ifpack2_prec_->compute();
-            std::string preconditioner_type =
-                impl_->param_list->sublist("UTOPIA", true).get("Preconditioner Type", "right");
-            // TODO to move to input validation phase
-            std::transform(preconditioner_type.begin(),
-                           preconditioner_type.end(),
-                           preconditioner_type.begin(),
-                           [](unsigned char c) { return std::tolower(c); });
-            if (preconditioner_type == "left") {
-                impl_->linear_problem->setLeftPrec(impl_->ifpack2_prec_);
-            } else {
-                impl_->linear_problem->setRightPrec(impl_->ifpack2_prec_);
-            }
-#else   // UTOPIA_WITH_TRILINOS_IFPACK2
-            std::cerr << "Cannot use a Direct Preconditioner with the BelosSolver, since Trilinos was not built with "
-                         "Ifpack2 support!"
-                      << std::endl;
-#endif  // UTOPIA_WITH_TRILINOS_IFPACK2
+        if (!op) {
+            assert(false && "IMPLEMENT ME");
         } else {
-#ifdef UTOPIA_WITH_TRILINOS_MUELU
-            // Multigrid Hierarchy
-            impl_->muelu_prec_ = MueLu::CreateTpetraPreconditioner(
-                (Teuchos::RCP<typename Impl::OperatorType>)raw_type(*this->get_operator()),
-                impl_->param_list->sublist("MueLu", false));
-            assert(!impl_->muelu_prec_.is_null());
-            std::string preconditioner_type =
-                impl_->param_list->sublist("UTOPIA", true).get("Preconditioner Type", "right");
-            // TODO to move to input validation phase
-            std::transform(preconditioner_type.begin(),
-                           preconditioner_type.end(),
-                           preconditioner_type.begin(),
-                           [](unsigned char c) { return std::tolower(c); });
-            if (preconditioner_type == "left") {
-                impl_->linear_problem->setLeftPrec(impl_->muelu_prec_);
-            } else {
-                impl_->linear_problem->setRightPrec(impl_->muelu_prec_);
-            }
-#else   // UTOPIA_WITH_TRILINOS_MUELU
-            std::cerr << "Cannot use MueLu as preconditioner since Trilinos was not built with MueLu support."
-                      << std::endl;
-#endif  // UTOPIA_WITH_TRILINOS_MUELU
+            auto tpetra_op = utopia::tpetra_operator(op);
+            impl_->linear_problem->setLeftPrec(tpetra_op);
         }
+    }
+
+    template <typename Matrix, typename Vector>
+    void BelosSolver<Matrix, Vector, TRILINOS>::set_programmatic_config() {
+        using MagnitudeType = typename Teuchos::ScalarTraits<Scalar>::magnitudeType;
+
+        auto solver_params = Teuchos::sublist(impl_->param_list, solver_type_, false);
+        solver_params->set("Convergence Tolerance", static_cast<MagnitudeType>(this->rtol()));
+        solver_params->set("Maximum Iterations", static_cast<int>(this->max_it()));
+        solver_params->set("Output Style", 1);
+        if (this->verbose()) {
+            solver_params->set("Output Frequency", 1);
+            solver_params->set("Verbosity",
+                               Belos::Errors + Belos::Warnings + Belos::TimingDetails + Belos::FinalSummary +
+                                   Belos::StatusTestDetails);
+        } else {
+            solver_params->set("Verbosity", Belos::Errors + Belos::Warnings);
+        }
+    }
+
+    template <typename Matrix, typename Vector>
+    void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner(const std::string &pc_type,
+                                                                   const std::string &pc_side) {
+        if (pc_type.empty()) {
+            enable_pc_ = false;
+            enable_direct_pc_ = false;
+        } else {
+            std::string pc_type_lc(pc_type);
+            std::transform(
+                pc_type.begin(), pc_type.end(), pc_type_lc.begin(), [](unsigned char c) { return std::tolower(c); });
+            if (pc_type_lc == "muelu") {
+                enable_direct_pc_ = false;
+            } else {
+                direct_pc_type_ = pc_type;
+                enable_direct_pc_ = true;
+            }
+            pc_side_ = pc_side;
+            enable_pc_ = true;
+        }
+    }
+
+    template <typename Matrix, typename Vector>
+    void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner(const std::shared_ptr<const Matrix> &op) {
+        auto pc = Teuchos::RCP<typename Impl::OperatorType>();
+        if (enable_direct_pc_) {
+#ifdef UTOPIA_ENABLE_TRILINOS_IFPACK2
+            const int solver_verbosity = impl_->param_list->get("Verbosity", Belos::Errors + Belos::Warnings);
+            auto pc_params = Teuchos::sublist(impl_->param_list, direct_pc_type_, false);
+            pc_params->set("Verbosity", solver_verbosity);
+            Teuchos::RCP<typename Impl::IfPack2PrecType> direct_pc =
+                Ifpack2::Factory::create<typename Impl::CrsMatrixType>(direct_pc_type_, raw_type(*op));
+            direct_pc->setParameters(*pc_params);
+            direct_pc->initialize();
+            direct_pc->compute();
+            pc = direct_pc;
+#else   // UTOPIA_ENABLE_TRILINOS_IFPACK2
+            m_utopia_error(
+                "Cannot use Direct Preconditioner with BelosSolver, since Trilinos was built without Ifpack2 support");
+#endif  // UTOPIA_ENABLE_TRILINOS_IFPACK2
+        } else if (enable_pc_) {
+#ifdef UTOPIA_ENABLE_TRILINOS_MUELU
+            // Multigrid Hierarchy
+            auto pc_params = Teuchos::sublist(impl_->param_list, "MueLu", false);
+            pc_params->set("verbosity", this->verbose() ? "medium" : "none");
+            Teuchos::RCP<typename Impl::MueLuPrecType> muelu_pc =
+                MueLu::CreateTpetraPreconditioner((Teuchos::RCP<typename Impl::OperatorType>)raw_type(*op), *pc_params);
+
+            pc = muelu_pc;
+#else
+            m_utopia_error(
+                "Cannot use MueLu as preconditioner with BelosSolver, since Trilinos was built without MueLu support");
+#endif  // UTOPIA_ENABLE_TRILINOS_MUELU
+        }
+        if (!pc.is_null()) {
+            std::string pc_side_lc(pc_side_);
+            std::transform(
+                pc_side_.begin(), pc_side_.end(), pc_side_lc.begin(), [](unsigned char c) { return std::tolower(c); });
+            if (pc_side_lc == "left") {
+                impl_->linear_problem->setLeftPrec(pc);
+            } else {
+                impl_->linear_problem->setRightPrec(pc);
+            }
+        }
+    }
+
+    template <typename Matrix, typename Vector>
+    void BelosSolver<Matrix, Vector, TRILINOS>::set_problem() {
+        impl_->linear_problem->setProblem();
+
+        auto solver_params = Teuchos::sublist(impl_->param_list, solver_type_, false);
+        try {
+            if (impl_->belos_solver.is_null()) {
+                impl_->belos_solver = impl_->belos_factory.create(solver_type_, solver_params);
+            } else {
+                impl_->belos_solver->setParameters(solver_params);
+            }
+            impl_->belos_solver->setProblem(impl_->linear_problem);
+        } catch (const std::exception &ex) {
+            std::cerr << ex.what() << std::endl;
+            assert(0);
+        }
+
+        if (this->verbose()) {
+            std::cout << std::endl;
+            std::cout << "Parameter list for '" << solver_type_ << "' solver:" << std::endl;
+            impl_->belos_solver->getCurrentParameters()->print();
+        }
+    }
+
+    template <typename Matrix, typename Vector>
+    bool BelosSolver<Matrix, Vector, TRILINOS>::solve(const Operator<Vector> &op, const Vector &rhs, Vector &sol) {
+        UTOPIA_TRACE_SCOPE("BelosSolver::solve(op)");
+
+        if (empty(sol)) {
+            sol.zeros(layout(rhs));
+        }
+
+        assert(!rhs.has_nan_or_inf());
+
+        auto tpetra_op = tpetra_operator(utopia::make_ref(const_cast<Operator<Vector> &>(op)));
+
+        impl_->linear_problem = Teuchos::rcp(new typename Impl::ProblemType(tpetra_op, raw_type(sol), raw_type(rhs)));
+
+        set_programmatic_config();
+        set_problem();
+        // set_preconditioner(this->get_operator());
+
+        assert(!(impl_->belos_solver.is_null()));
+        impl_->belos_solver->solve();
+        return true;
+    }
+
+    template <typename Matrix, typename Vector>
+    void BelosSolver<Matrix, Vector, TRILINOS>::update(const Operator<Vector> &op) {
+        // const auto layout_rhs = row_layout(op);
+
+        // if (!initialized_ || !layout_rhs.same(layout_)) {
+        //     init_memory(layout_rhs);
+        // }
     }
 
 }  // namespace utopia
 
 #endif  // UTOPIA_BELOS_IMPL_HPP
-#endif  // UTOPIA_WITH_TRILINOS_BELOS
+#endif  // UTOPIA_ENABLE_TRILINOS_BELOS

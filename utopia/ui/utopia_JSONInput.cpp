@@ -1,6 +1,6 @@
 #include "utopia_JSONInput.hpp"
 
-#ifdef UTOPIA_WITH_JSON
+#ifdef UTOPIA_ENABLE_JSON
 #include <fstream>
 #include <utility>
 #include "json.hpp"
@@ -180,12 +180,12 @@ namespace utopia {
                         //     c.set(j.get<long long>());
                         // } else
                         if (c.is_ulong()) {
-                        c.set(j.get<unsigned long>());
-                    } else if (c.is_string()) {
-                        c.set(j.get<double>());
-                    } else if (c.is_long_long_int()) {
-                        c.set(j.get<long long int>());
-                    }
+                            c.set(j.get<unsigned long>());
+                        } else if (c.is_string()) {
+                            c.set(j.get<double>());
+                        } else if (c.is_long_long_int()) {
+                            c.set(j.get<long long int>());
+                        }
 
                 } else if (j.is_string()) {
                     c.set(j.get<std::string>());
@@ -247,6 +247,11 @@ namespace utopia {
     }
 
     void JSONInput::get(const std::string &key, double &val) {
+        assert(impl_);
+        impl_->get(key, val);
+    }
+
+    void JSONInput::get(const std::string &key, float &val) {
         assert(impl_);
         impl_->get(key, val);
     }
@@ -336,4 +341,4 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_JSON
+#endif  // UTOPIA_ENABLE_JSON

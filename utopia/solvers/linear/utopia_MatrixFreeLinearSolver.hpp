@@ -12,7 +12,6 @@ namespace utopia {
 
     template <class Vector>
     class MatrixFreeLinearSolver : virtual public Configurable,
-                                   virtual public Clonable,
                                    virtual public Preconditioner<Vector>,
                                    virtual public PreconditionedSolverInterface<Vector> {
     public:
@@ -36,8 +35,8 @@ namespace utopia {
     };
 
     template <class Matrix, class Vector>
-    class OperatorBasedLinearSolver : public MatrixFreeLinearSolver<Vector>,
-                                      public PreconditionedSolver<Matrix, Vector> {
+    class OperatorBasedLinearSolver : virtual public MatrixFreeLinearSolver<Vector>,
+                                      virtual public PreconditionedSolver<Matrix, Vector> {
     public:
         using MatrixFreeLinearSolver<Vector>::update;
         using PreconditionedSolver<Matrix, Vector>::update;
@@ -47,8 +46,10 @@ namespace utopia {
 
         OperatorBasedLinearSolver() = default;
 
-        OperatorBasedLinearSolver<Matrix, Vector>(const OperatorBasedLinearSolver<Matrix, Vector> &other)
-            : PreconditionedSolverInterface<Vector>(other), MatrixFreeLinearSolver<Vector>(other), PreconditionedSolver<Matrix, Vector>(other) {}
+        OperatorBasedLinearSolver(const OperatorBasedLinearSolver &other)
+            : PreconditionedSolverInterface<Vector>(other),
+              MatrixFreeLinearSolver<Vector>(other),
+              PreconditionedSolver<Matrix, Vector>(other) {}
 
         bool solve(const Matrix &A, const Vector &b, Vector &x) override {
             update(make_ref(A));
@@ -83,9 +84,8 @@ namespace utopia {
 
         OperatorBasedLinearSolver *clone() const override = 0;
 
-        OperatorBasedLinearSolver &operator=(const OperatorBasedLinearSolver &other)
-        {
-            if(this == &other) return *this;
+        OperatorBasedLinearSolver &operator=(const OperatorBasedLinearSolver &other) {
+            if (this == &other) return *this;
             MatrixFreeLinearSolver<Vector>::operator=(other);
             PreconditionedSolver<Matrix, Vector>::operator=(other);
             return *this;

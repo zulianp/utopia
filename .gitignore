@@ -22,3 +22,4 @@ utopia/doc/*
 *.blg
 *.log
 *.out
+.cache

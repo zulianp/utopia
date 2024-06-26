@@ -59,7 +59,7 @@ namespace utopia {
 
         // void convert_test()
         // {
-        //     #ifdef UTOPIA_WITH_PETSC
+        //     #ifdef UTOPIA_ENABLE_PETSC
         //         if(Traits<Vector>::Backend == PETSC) {
         //             Vector ut_vec = local_zeros(10);
 
@@ -239,7 +239,7 @@ namespace utopia {
             D += Matrix(diag(v));
 
             // The next lines seem to crash when using Trilinos/Code coverage
-            // info/specific version of Kokkos/Tpetra #ifndef UTOPIA_WITH_CODE_COVERAGE
+            // info/specific version of Kokkos/Tpetra #ifndef UTOPIA_ENABLE_CODE_COVERAGE
 
             UTOPIA_NO_ALLOC_BEGIN("mat_copy5");  //
             // https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatDiagonalSet.html#MatDiagonalSet
@@ -591,11 +591,11 @@ namespace utopia {
     };
 
     void expr() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         ExpressionTests<PetscMatrix, PetscVector>(PetscCommunicator(), 10).run();
 #endif
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
         ExpressionTests<TpetraMatrixd, TpetraVectord>(TrilinosCommunicator(), 10).run();
 #endif
     }

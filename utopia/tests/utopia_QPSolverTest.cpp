@@ -23,14 +23,16 @@
 
 #include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_PrimalInteriorPointSolver_impl.hpp"
+#include "utopia_ShiftedPenalty.hpp"
+#include "utopia_ShiftedPenaltyQPSolver_impl.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc_BDDLinearSolver.hpp"
 #include "utopia_petsc_BDDOperator.hpp"
 #include "utopia_petsc_BDDQPSolver.hpp"
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 namespace utopia {
 
@@ -402,6 +404,25 @@ namespace utopia {
             // disp(x);
         }
 
+        void shifted_penalty_test() {
+            ShiftedPenaltyQPSolver<Matrix> qp_solver;
+            auto params =                                   //
+                param_list(                                 //
+                    param("penalty_param", 1e2),            //
+                    param("verbose", true),                 //
+                    param("linear_solver",                  //
+                          param_list(                       //
+                              param("ksp_type", "bcgs"),    //
+                              param("pc_type", "bjacobi"),  //
+                              param("verbose", true)        //
+                              )                             //
+                          )                                 //
+                );
+
+            qp_solver.read(params);
+            run_qp_solver(qp_solver);
+        }
+
         void run() {
             print_backend_info();
             UTOPIA_RUN_TEST(interior_point_qp_solver_test);
@@ -412,6 +433,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(ngs_test);
             UTOPIA_RUN_TEST(MPRGP_test);
             UTOPIA_RUN_TEST(nblockgs_test);
+            UTOPIA_RUN_TEST(shifted_penalty_test);
         }
 
         void run_GS_QR() {
@@ -427,7 +449,7 @@ namespace utopia {
         bool verbose = false;
     };
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     // FIXME merge with the other once it is poperly implemented
     template <class Matrix, class Vector>
     class PQPSolverTest {
@@ -447,8 +469,8 @@ namespace utopia {
         void MPRGP_DD() {
             auto &&comm = Comm::get_default();
 
-            // static const bool verbose = false;
-            static const bool verbose = Traits::Backend == PETSC;
+            static const bool verbose = false;
+            // static const bool verbose = Traits::Backend == PETSC;
 
             Matrix A;
             Vector b;
@@ -521,6 +543,8 @@ namespace utopia {
             // params.set("use_preconditioner", false);
 
             ///////////////////////////////////////////////////////////////
+
+#ifdef UTOPIA_ENABLE_PETSC
 
             BDDLinearSolver<Matrix, Vector> solver;
             solver.read(params);
@@ -617,6 +641,7 @@ namespace utopia {
 
                 utopia_test_assert(diff < 1e-6);
             }
+#endif  // UTOPIA_ENABLE_PETSC
         }
 
         void poly_qp() {
@@ -653,7 +678,7 @@ namespace utopia {
 
         void monotone_amg_test() {
             // Does not work
-            const static bool verbose = true;
+            const static bool verbose = false;
             const static bool use_masks = false;
             int n_levels = 4;
             int n_coarse = 50;
@@ -713,8 +738,8 @@ namespace utopia {
             auto coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
             // auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
             // auto coarse_smoother = std::make_shared<KSPSolver<Matrix, Vector>>();
-            // coarse_smoother->pc_type("bjacobi");
-            // coarse_smoother->ksp_type("cg");
+            // coarse_smoother->pc_type(PCBJACOBI);
+            // coarse_smoother->ksp_type(KSPCG);
 
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
             // auto direct_solver = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
@@ -761,7 +786,7 @@ namespace utopia {
     };
 
     static void qp_solver() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         PQPSolverTest<PetscMatrix, PetscVector>().run();
         QPSolverTest<PetscMatrix, PetscVector>().run();
         QPSolverTest<PetscMatrix, PetscVector>().run_GS_QR();
@@ -769,15 +794,15 @@ namespace utopia {
         MonotoneMGTest<PetscMatrix, PetscVector>().run();
         // ProjectedGaussSeidelNewTest<PetscMatrix, PetscVector>().run();
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
         QPSolverTest<TpetraMatrixd, TpetraVectord>().run();
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
 
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
         QPSolverTest<BlasMatrixd, BlasVectord>().run();  // TODO(zulianp): : because blas is missing min operation ....
-#endif                                                   // UTOPIA_WITH_BLAS
+#endif                                                   // UTOPIA_ENABLE_BLAS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(qp_solver);

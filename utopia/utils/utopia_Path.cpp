@@ -7,6 +7,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <filesystem>
+
 
 // for windows looks for windows/dirent.h
 #include <dirent.h>
@@ -14,7 +16,9 @@
 
 #ifdef WIN32
 static const char PATH_SEPARATOR = '\\';
+#include <filesystem>
 #else
+#include <unistd.h>
 static const char PATH_SEPARATOR = '/';
 #endif
 
@@ -110,9 +114,24 @@ namespace utopia {
         }
     }
 
-    bool Path::make_dir(const int permissions) {
+    bool Path::exists() const
+    {
+        const std::filesystem::path p{path_};
+        return std::filesystem::exists(p);
+    }
+
+    bool Path::make_dir(const int permissions) const {
+#ifdef WIN32
+        auto ok = std::filesystem::create_directory(path_.c_str());
+        if(!ok) return false;
+
+        std::filesystem::permissions(path_.c_str(),
+                          std::filesystem::perms(permissions));
+#else
         int result = mkdir(path_.c_str(), permissions);
+
         return result == 0;
+#endif
     }
 
     PathIterator::DirHandle::DirHandle(const std::string &path) { dir = opendir(path.c_str()); }

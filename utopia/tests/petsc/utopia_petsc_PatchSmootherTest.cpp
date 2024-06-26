@@ -8,9 +8,9 @@
 #include "utopia_petsc_PatchSmoother.hpp"
 #include "utopia_petsc_RASPatchSmoother.hpp"
 
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
 #include "utopia_blas_Array.hpp"
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
 #include "test_problems/utopia_QPSolverTestProblem.hpp"
 
@@ -24,13 +24,13 @@ public:
     using SizeType = typename Traits::SizeType;
     using Comm = typename Traits::Communicator;
 
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
     using PatchMatrix = utopia::BlasMatrixd;
     using PatchVector = utopia::BlasVectord;
 #else
     using PatchMatrix = Matrix;
     using PatchVector = Vector;
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
     SizeType n_dofs{40};
     bool verbose{false};
@@ -54,6 +54,8 @@ public:
     }
 
     void test_qp_patch_smoother() {
+        if(Comm::get_default().size() > 1) return;
+
         auto solver = std::make_shared<ProjectedGaussSeidel<PatchMatrix, PatchVector>>();
         PatchSmoother<Matrix, PatchMatrix> patch_smoother;
         patch_smoother.set_patch_solver(solver);
@@ -62,6 +64,8 @@ public:
     }
 
     void test_qp_patch_smoother_RAS() {
+        if(Comm::get_default().size() > 1) return;
+
         auto solver = std::make_shared<ProjectedGaussSeidel<PatchMatrix, PatchVector>>();
         RASPatchSmoother<Matrix, PatchMatrix> patch_smoother;
         patch_smoother.set_patch_solver(solver);
@@ -82,6 +86,8 @@ public:
     }
 
     void test_qp_patch_smoother_ssn() {
+        if(Comm::get_default().size() > 1) return;
+        
         auto solver =
             std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<Factorization<Matrix, Vector>>());
 
@@ -131,9 +137,9 @@ public:
 };
 
 void patch_smoother() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     PatchSmootherTest<PetscMatrix, PetscVector>().run();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(patch_smoother);

@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 #include "utopia_Kokkos_ParallelFor.hpp"
 #include "utopia_Kokkos_ParallelReduce.hpp"
 #include "utopia_trilinos_DeviceView.hpp"
@@ -12,6 +12,7 @@
 #include "utopia_trilinos_RowView.hpp"
 #include "utopia_trilinos_Traits.hpp"
 #include "utopia_trilinos_Types.hpp"
+#include "utopia_trilinos_ViewHost.hpp"
 #include "utopia_trilinos_solvers.hpp"
 
 // optimizations
@@ -32,5 +33,5 @@
 // FIXME re-introduce later
 // #include "utopia_trilinos_Eval_Distance.hpp"
 
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
 #endif  // UTOPIA_TRILINOS_HPP

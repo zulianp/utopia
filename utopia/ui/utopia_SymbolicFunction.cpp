@@ -1,12 +1,18 @@
 #include "utopia_SymbolicFunction.hpp"
 
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
 
 #include "tinyexpr.h"
 #include "utopia_make_unique.hpp"
 
+#include <cmath>
 #include <utility>
 #include <vector>
+
+static double my_max(double a, double b) { return (a > b) ? a : b; }
+static double my_min(double a, double b) { return (a < b) ? a : b; }
+static double my_sin(double a) { return std::sin(a); }
+static double my_cos(double a) { return std::cos(a); }
 
 namespace utopia {
     class SymbolicFunction::Impl {
@@ -22,6 +28,10 @@ namespace utopia {
                   {"y", &y_, TE_VARIABLE, nullptr},
                   {"z", &z_, TE_VARIABLE, nullptr},
                   {"t", &t_, TE_VARIABLE, nullptr},
+                  {"sin", (void *)my_sin, TE_FUNCTION1, nullptr},
+                  {"cos", (void *)my_cos, TE_FUNCTION1, nullptr},
+                  {"max", (void *)my_max, TE_FUNCTION2, nullptr},
+                  {"min", (void *)my_min, TE_FUNCTION2, nullptr}  //
               }),
               err_(0) {
             /* Compile the expression with variables. */
@@ -95,6 +105,14 @@ namespace utopia {
         return impl_->eval();
     }
 
+    double SymbolicFunction::eval(const double x, const double y, const double z, const double t) const {
+        impl_->x_ = x;
+        impl_->y_ = y;
+        impl_->z_ = z;
+        impl_->t_ = t;
+        return impl_->eval();
+    }
+
     double SymbolicFunction::eval(const std::vector<double> &x) {
         // FIXME
         assert(x.size() <= 4);
@@ -125,4 +143,4 @@ namespace utopia {
     }
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_TINY_EXPR
+#endif  // UTOPIA_ENABLE_TINY_EXPR

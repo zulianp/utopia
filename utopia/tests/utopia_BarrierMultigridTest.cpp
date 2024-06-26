@@ -1,5 +1,9 @@
 #include "utopia_Testing.hpp"
 
+#include "utopia_Base.hpp"
+
+#ifdef UTOPIA_ENABLE_PETSC
+
 #include "utopia.hpp"
 
 #include "test_problems/utopia_QPSolverTestProblem.hpp"
@@ -11,12 +15,12 @@
 #include "utopia_ElementWisePseudoInverse.hpp"
 
 #include "utopia_BarrierMultigrid.hpp"
-#include "utopia_LogBarrierQPMultigrid.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
+#include "utopia_LogBarrierQPMultigrid.hpp"
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 namespace utopia {
 
@@ -76,7 +80,7 @@ namespace utopia {
             // Use external linear smoothing (otherwise internally uses Jacobi)
             // mg->set_linear_smoother(std::make_shared<ILU<Matrix, Vector>>());
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             if (algebraic) {
                 auto agg = std::make_shared<Agglomerate<Matrix>>();
 
@@ -130,6 +134,7 @@ namespace utopia {
             // }
         }
 
+#ifdef UTOPIA_ENABLE_PETSC
         void test_qp_problem() {
             //////////////////////////////////////////////////////////////////////////////////////////
             // Problem set-up
@@ -176,28 +181,33 @@ namespace utopia {
                 write("X_qp.m", x);
             }
         }
+#endif  // UTOPIA_ENABLE_PETSC
 
         void run() {
             print_backend_info();
             UTOPIA_RUN_TEST(test_ml_problem);
+#ifdef UTOPIA_ENABLE_PETSC
             UTOPIA_RUN_TEST(test_qp_problem);
+#endif
         }
     };
 
     static void barrier_mg() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         BarrierMultigridTest<PetscMatrix, PetscVector>().run();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
-        // #ifdef UTOPIA_WITH_TRILINOS
+        // #ifdef UTOPIA_ENABLE_TRILINOS
         //         BarrierMultigridTest<TpetraMatrixd, TpetraVectord>().run();
-        // #endif  // UTOPIA_WITH_TRILINOS
+        // #endif  // UTOPIA_ENABLE_TRILINOS
 
-        // #ifdef UTOPIA_WITH_BLAS
+        // #ifdef UTOPIA_ENABLE_BLAS
         //         BarrierMultigridTest<BlasMatrixd, BlasVectord>()
         //             .run();  // TODO(zulianp): : because blas is missing min operation ....
-        // #endif               // UTOPIA_WITH_BLAS
+        // #endif               // UTOPIA_ENABLE_BLAS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(barrier_mg);
 }  // namespace utopia
+
+#endif

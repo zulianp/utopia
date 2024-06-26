@@ -410,11 +410,9 @@ namespace utopia {
                     return false;
                 }
             } else {
-                // if(!assembler.assemble(master, slave, opts.tags)) {
-                //     return false;
-                // }
-                std::cerr << "[Error] not implemented" << std::endl;
-                assert(false && "implement me!!!");
+                if (!assembler.assemble(master, slave, opts.tags)) {
+                    return false;
+                }
             }
 
             prepare_data(opts, assembler, data);

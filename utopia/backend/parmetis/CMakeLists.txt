@@ -1,55 +1,18 @@
-find_package(ParMetis)
+list(APPEND PARMETIS_MODULES .)
 
-if(NOT PARMETIS_FOUND)
-    message(FATAL_ERROR "Unable to find ParMetis")
-    # include(FetchContent)
-    # message(STATUS "Fetching parmetis, since it could not be found.")
+  scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "." UTOPIA_BUILD_INCLUDES
+                   UTOPIA_HEADERS UTOPIA_SOURCES)
 
-    # if(UTOPIA_DEPENDENCIES_DIR)
-    #     set(PARMETIS_INSTALL_DIR ${UTOPIA_DEPENDENCIES_DIR}/PARMETIS)
-    # else()
-    #     set(PARMETIS_INSTALL_DIR ${CMAKE_SOURCE_DIR}/../external/PARMETIS)
-    # endif()
+  set(UTOPIA_BUILD_INCLUDES
+      ${UTOPIA_BUILD_INCLUDES}
+      PARENT_SCOPE)
 
-    # set(STAGE_DIR "${CMAKE_BINARY_DIR}/stage")
-    # set(PARMETIS_URL "https://github.com/KarypisLab/ParMETIS")
+  set(UTOPIA_HEADERS
+      ${UTOPIA_HEADERS}
+      PARENT_SCOPE)
 
-    # FetchContent_Declare(
-    #     parmetis
-    #     GIT_REPOSITORY ${PARMETIS_URL}
-    #     # GIT_TAG origin/sampler
-    #     GIT_TAG origin/development
-    # )
-    
-    # FetchContent_MakeAvailable(parmetis)
+  set(UTOPIA_SOURCES
+      ${UTOPIA_SOURCES}
+      PARENT_SCOPE)
 
-    # add_library(ParMetis::parmetis ALIAS parmetis)
-    # target_link_libraries(utopia PUBLIC parmetis)
-
-else()
-    target_include_directories(utopia PUBLIC ${PARMETIS_INCLUDES})
-    target_link_libraries(utopia PUBLIC ${PARMETIS_LIBRARIES})
-
-    list(APPEND UTOPIA_THIRDPARTY_INCLUDES ${PARMETIS_INCLUDES})
-    list(APPEND UTOPIA_THIRDPARTY_LIBRARIES ${PARMETIS_LIBRARIES})
-
-    set(UTOPIA_THIRDPARTY_INCLUDES
-        ${UTOPIA_THIRDPARTY_INCLUDES}
-        PARENT_SCOPE)
-
-    set(UTOPIA_THIRDPARTY_LIBRARIES
-        ${UTOPIA_THIRDPARTY_LIBRARIES}
-        PARENT_SCOPE)
-endif()
-
-
-set(UTOPIA_WITH_PARMETIS TRUE)
-set(UTOPIA_WITH_PARMETIS TRUE PARENT_SCOPE)
-
-list(
-    APPEND
-    PARMETIS_MODULES
-    .
-    )
-
-utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${PARMETIS_MODULES}")
+# utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${PARMETIS_MODULES}")

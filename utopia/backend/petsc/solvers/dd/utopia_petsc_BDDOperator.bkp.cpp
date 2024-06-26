@@ -177,7 +177,7 @@ namespace utopia {
             printf("\n");
         }
 
-#ifdef UTOPIA_WITH_METIS
+#ifdef UTOPIA_ENABLE_METIS
         void split_local_blocks_with_metis(const Matrix &mat, const int num_blocks) {
             UTOPIA_TRACE_REGION_BEGIN("BDDOperator::split_local_blocks_with_metis");
 
@@ -590,7 +590,7 @@ namespace utopia {
             }
 
             if (local_block_splitting) {
-#ifdef UTOPIA_WITH_METIS
+#ifdef UTOPIA_ENABLE_METIS
                 split_local_blocks_with_metis(A, local_block_splitting);
 #else
                 split_local_blocks(A);
@@ -1248,8 +1248,8 @@ namespace utopia {
             if (impl_->verbose) comm().root_print("Using amg(A_GG) preconditioner");
 
             auto solver = std::make_shared<KSPSolver<Matrix, Vector>>();
-            solver->ksp_type("preonly");
-            solver->pc_type("hypre");
+            solver->ksp_type(KSPPREONLY);
+            solver->pc_type(PCHYPRE);
             solver->update(impl_->A_GG_);
             solver->max_it(1);
             return solver;

@@ -74,6 +74,7 @@ namespace utopia {
             void scale(const Scalar &scale_factor);
 
             SizeType n_elements() const;
+            SizeType n_local_elements() const;
 
             void bounding_box(AABB &output) const;
 

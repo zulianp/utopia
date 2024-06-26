@@ -8,6 +8,10 @@
 #include "utopia_SymbolicFunction.hpp"
 #include "utopia_ui.hpp"
 
+#ifdef UTOPIA_WITH_YAML_CPP
+#include "utopia_YAMLInput.hpp"
+#endif
+
 namespace utopia {
 
     void generic_stream(Input &is) {
@@ -27,7 +31,7 @@ namespace utopia {
         generic_stream(*is_ptr);
     }
 
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
     void symbolic_expr() {
         {
             SymbolicFunction f("x + y + z");
@@ -47,7 +51,33 @@ namespace utopia {
         }
     }
 
-#endif  // UTOPIA_WITH_TINY_EXPR
+#endif  // UTOPIA_ENABLE_TINY_EXPR
+
+#ifdef UTOPIA_WITH_YAML_CPP
+
+    void yaml_vector_test() {
+        std::string yaml = "vec: [1, 2, 3]";
+        auto in = YAMLInput::FromString(yaml);
+
+        {
+            std::vector<std::string> v;
+            in->get("vec", v);
+            utopia_test_assert(v.size() == 3);
+        }
+
+        {
+            std::vector<double> v;
+            in->get("vec", v);
+            utopia_test_assert(v.size() == 3);
+        }
+
+        {
+            std::vector<float> v;
+            in->get("vec", v);
+            utopia_test_assert(v.size() == 3);
+        }
+    }
+#endif
 
     void input_parameters() {
         InputParameters in;
@@ -75,27 +105,31 @@ namespace utopia {
     void newton_ui() {
         const std::string data_path = Utopia::instance().get("data_path");
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 
         // auto cg = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE>>();
         auto cg = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector>>();
         Newton<PetscMatrix, PetscVector> newton(cg);
 
-#ifdef UTOPIA_WITH_JSON
+#ifdef UTOPIA_ENABLE_JSON
         newton.import("Newton", data_path + "/json/default.json");
-#endif  // UTOPIA_WITH_JSON
+#endif  // UTOPIA_ENABLE_JSON
 
         newton.import("Newton", data_path + "/xml/default.xml");
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
     }
 
     static void ui() {
         UTOPIA_RUN_TEST(xml_stream);
         UTOPIA_RUN_TEST(input_parameters);
         UTOPIA_RUN_TEST(newton_ui);
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
         UTOPIA_RUN_TEST(symbolic_expr);
 #endif  // UTOPIA_WITH_TINY_EXPR
+
+#ifdef UTOPIA_WITH_YAML_CPP
+        UTOPIA_RUN_TEST(yaml_vector_test);
+#endif
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(ui);

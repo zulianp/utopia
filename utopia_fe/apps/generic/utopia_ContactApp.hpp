@@ -8,10 +8,10 @@
 
 #include "utopia_ui.hpp"
 
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
 #include "utopia_blas.hpp"
 #include "utopia_blas_Array.hpp"
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
 #include "utopia_fe_Core.hpp"
 

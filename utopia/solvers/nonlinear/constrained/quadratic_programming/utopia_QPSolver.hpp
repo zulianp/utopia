@@ -30,6 +30,18 @@ namespace utopia {
             VariableBoundSolverInterface<Vector>::init_memory(layout);
             PreconditionedSolver<Matrix, Vector>::init_memory(layout);
         }
+
+        bool set_box_constraints(const BoxConstraints<Vector> &box) override {
+            bool ok = VariableBoundSolverInterface<Vector>::set_box_constraints(box);
+
+            auto p = std::dynamic_pointer_cast<VariableBoundSolverInterface<Vector>>(this->get_preconditioner());
+
+            if (p) {
+                ok = p->set_box_constraints(box) && ok;
+            }
+
+            return ok;
+        }
     };
 
     template <class Vector>

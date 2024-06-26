@@ -1,6 +1,15 @@
-list(APPEND CORE_MODULES . fe mech)
+list(APPEND CORE_MODULES . mech)
 
-utopiafe_add_module(utopia_fe_core ${CMAKE_CURRENT_SOURCE_DIR}
-                    "${CORE_MODULES}")
+scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "${CORE_MODULES}" UTOPIA_FE_BUILD_INCLUDES UTOPIA_FE_HEADERS UTOPIA_FE_SOURCES)
 
-target_link_libraries(utopia_fe_core PUBLIC Utopia::utopia)
+set(UTOPIA_FE_BUILD_INCLUDES
+    ${UTOPIA_FE_BUILD_INCLUDES}
+    PARENT_SCOPE)
+
+set(UTOPIA_FE_HEADERS
+    ${UTOPIA_FE_HEADERS}
+    PARENT_SCOPE)
+
+set(UTOPIA_FE_SOURCES
+    ${UTOPIA_FE_SOURCES}
+    PARENT_SCOPE)

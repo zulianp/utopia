@@ -40,6 +40,8 @@ namespace utopia {
             bool write(const Path &path, const Vector &x) override;
             void read(Input &in) override;
             bool read_with_state(Input &in, Field<FunctionSpace> &val);
+            bool read_with_fields(Input &in, std::vector<std::shared_ptr<Field<FunctionSpace>>> &val);
+
             void describe(std::ostream &os) const override;
 
             std::shared_ptr<Mesh> mesh_ptr() const override;
@@ -60,10 +62,19 @@ namespace utopia {
             void create_field(Field<FunctionSpace> &field);
             void create_nodal_vector_field(const int vector_size, Field<FunctionSpace> &field);
 
+            // void read_field(const std::string &name, const int vector_size, Field<FunctionSpace> &field);
+
             void apply_constraints(Matrix &m, const Scalar diag_value = 1.0) const override;
             void apply_constraints(Vector &v) const override;
+
+            /// Set the value of in_out[i] to (bc_value - u[i]) * scale_factor
+            void apply_constraints(const Vector &u, const Scalar scale_factor, Vector &in_out) const;
+
             void apply_constraints(Matrix &m, Vector &v) const override;
             void apply_zero_constraints(Vector &vec) const override;
+            void apply_value_constraints(const Scalar value, Vector &vec) const;
+            void apply_constraints_time_derivative(Vector &) const override;
+
             void copy_at_constrained_nodes(const Vector &, Vector &) const override;
 
             void overwrite_parts(const std::vector<std::string> &parts,
@@ -124,6 +135,8 @@ namespace utopia {
             void set_print_map(const bool val);
 
             void create_boundary_node_list(IndexArray &node_list) const;
+
+            void create_node_to_element_matrix(Matrix &matrix) const;
 
         private:
             class Impl;

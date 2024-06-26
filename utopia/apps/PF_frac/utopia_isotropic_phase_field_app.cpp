@@ -40,7 +40,7 @@
 #include "utopia_TrivialPreconditioners.hpp"
 #include "utopia_TrustRegionVariableBound.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
 
@@ -51,20 +51,20 @@
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_RedundantQPSolver.hpp"
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 #include <chrono>
 #include <cmath>
 #include <random>
 
-#ifdef UTOPIA_WITH_VC
+#ifdef UTOPIA_ENABLE_VC
 #include "utopia_vc_IsotropicPhaseFieldForBrittleFractures.hpp"
-#endif  // UTOPIA_WITH_VC
+#endif  // UTOPIA_ENABLE_VC
 
 namespace utopia {
 
     template <class FunctionSpace>
-#ifdef UTOPIA_WITH_VC
+#ifdef UTOPIA_ENABLE_VC
     using FractureModel = utopia::VcIsotropicPhaseFieldForBrittleFractures<FunctionSpace>;
 #else
     using FractureModel = utopia::IsotropicPhaseFieldForBrittleFractures<FunctionSpace>;
@@ -97,7 +97,7 @@ namespace utopia {
         stats.start();
 
         InitialCondidtionPFTension<FunctionSpace> IC_setup(space, 0.0);
-        PFFracTension2D<FunctionSpace> BC_setup(space);
+        PFFracTension<FunctionSpace> BC_setup(space);
 
         IncrementalLoading<FunctionSpace, FractureModel<FunctionSpace>> time_stepper(space, IC_setup, BC_setup);
 
@@ -135,7 +135,7 @@ namespace utopia {
         stats.start();
 
         InitialCondidtionPFTension<FunctionSpace> IC_setup(space, 0.0);
-        PFFracTension2D<FunctionSpace> BC_setup(space);
+        PFFracTension<FunctionSpace> BC_setup(space);
 
         // IncrementalLoading<FunctionSpace, FractureModel<FunctionSpace>> time_stepper(space, IC_setup, BC_setup);
 
@@ -346,7 +346,7 @@ namespace utopia {
         MLIncrementalLoading<FunctionSpace,
                              FractureModel<FunctionSpace>,
                              // PhaseFieldVolDevSplit<FunctionSpace>,
-                             PFFracTension2D<FunctionSpace>,
+                             PFFracTension<FunctionSpace>,
                              InitialCondidtionPFTension<FunctionSpace>>
             time_stepper(space);
 
@@ -551,7 +551,7 @@ namespace utopia {
 
         MLIncrementalLoading<FunctionSpace,
                              FractureModel<FunctionSpace>,
-                             PFFracTension2D<FunctionSpace>,
+                             PFFracTension<FunctionSpace>,
                              InitialCondidtionPFTension<FunctionSpace>>
             time_stepper(space);
 

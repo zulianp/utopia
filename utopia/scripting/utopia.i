@@ -5,8 +5,8 @@
 #define SWIG_FILE_WITH_INIT
  %}
 
-#define UTOPIA_WITH_NUMPY
-#ifdef UTOPIA_WITH_NUMPY
+#define UTOPIA_ENABLE_NUMPY
+#ifdef UTOPIA_ENABLE_NUMPY
 
 %include "numpy.i"
 
@@ -24,6 +24,6 @@
 %init %{
 %}
 
-#endif //UTOPIA_WITH_NUMPY
+#endif //UTOPIA_ENABLE_NUMPY
 
 #include "utopia_script.hpp"

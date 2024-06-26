@@ -9,7 +9,7 @@ namespace utopia {
     template <typename T>
     void ConvertTensor<UVector, libMesh::NumericVector<T>, 1>::apply(const UVector &in,
                                                                      libMesh::NumericVector<T> &out) {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         auto ptr = dynamic_cast<libMesh::PetscVector<libMesh::Number> *>(&out);
 
         if (ptr) {
@@ -27,7 +27,7 @@ namespace utopia {
     template <typename T>
     void ConvertTensor<libMesh::NumericVector<T>, UVector, 1>::apply(const libMesh::NumericVector<T> &in,
                                                                      UVector &out) {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         auto ptr = dynamic_cast<const libMesh::PetscVector<libMesh::Number> *>(&in);
 
         if (ptr) {

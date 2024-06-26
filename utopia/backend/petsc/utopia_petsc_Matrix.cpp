@@ -6,19 +6,20 @@
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector.hpp"
 
+#include "utopia_petsc_CrsView.hpp"
+
 #include <algorithm>
 #include <set>
 #include <utility>
 
-#ifdef UTOPIA_WITH_MATRIX_IO
+#ifdef UTOPIA_ENABLE_MATRIX_IO
 
-extern "C" {
 #include "matrixio_crs.h"
-}
+#include "utils.h"
 
 #endif
 
-#ifdef UTOPIA_WITH_YAML_CPP
+#ifdef UTOPIA_ENABLE_YAML_CPP
 #include "utopia_YAMLInput.hpp"
 #endif
 
@@ -133,10 +134,10 @@ namespace utopia {
     }
 
     bool PetscMatrix::read(MPI_Comm comm, const std::string &path) {
-#ifdef UTOPIA_WITH_MATRIX_IO
+#ifdef UTOPIA_ENABLE_MATRIX_IO
         Path ppath = path;
 
-#ifdef UTOPIA_WITH_YAML_CPP
+#ifdef UTOPIA_ENABLE_YAML_CPP
         auto ext = ppath.extension();
         if (ext == "yaml" || ext == "yml") {
             Path folder = ppath.parent();
@@ -171,7 +172,7 @@ namespace utopia {
             Path folder = ppath.parent();
             return read_raw(comm, folder / "rowptr.raw", folder / "colidx.raw", folder / "values.raw");
         }
-#endif  // UTOPIA_WITH_MATRIX_IO
+#endif  // UTOPIA_ENABLE_MATRIX_IO
 
         destroy();
 
@@ -188,7 +189,7 @@ namespace utopia {
         return err;
     }
 
-#ifdef UTOPIA_WITH_MATRIX_IO
+#ifdef UTOPIA_ENABLE_MATRIX_IO
     bool PetscMatrix::read_raw(MPI_Comm comm,
                                const std::string &rowptr_path,
                                const std::string &colidx_path,
@@ -228,16 +229,34 @@ namespace utopia {
         int size;
         MPI_Comm_size(comm, &size);
 
+        PetscInt lcols = 0;
+        PetscInt *colidx = (PetscInt *)crs.colidx;
+
+        for (ptrdiff_t i = 0; i < crs.lnnz; ++i) {
+            lcols = std::max(colidx[i], lcols);
+        }
+
+        lcols += 1;
+
         if (size == 1) {
             check_error(MatCreateSeqAIJWithArrays(
-                comm, crs.grows, crs.grows, rowptr, (PetscInt *)crs.colidx, (Scalar *)crs.values, &raw_type()));
+                comm, crs.grows, lcols, rowptr, (PetscInt *)crs.colidx, (Scalar *)crs.values, &raw_type()));
 
         } else {
+            PetscInt gcols = lcols;
+            MPI_Allreduce(MPI_IN_PLACE, &gcols, 1, MPIType<PetscInt>::value(), MPI_MAX, comm);
+
+            if (gcols == crs.grows) {
+                lcols = (PetscInt)crs.lrows;
+            } else {
+                Utopia::Abort("read_raw does not support rectangular matrices!");
+            }
+
             check_error(MatCreateMPIAIJWithArrays(comm,
                                                   crs.lrows,
-                                                  crs.lrows,
+                                                  lcols,
                                                   crs.grows,
-                                                  crs.grows,
+                                                  gcols,
                                                   (PetscInt *)crs.rowptr,
                                                   (PetscInt *)crs.colidx,
                                                   (Scalar *)crs.values,
@@ -265,9 +284,121 @@ namespace utopia {
                         TypeToString<SizeType>::get(),
                         TypeToString<Scalar>::get());
     }
-#endif  // UTOPIA_WITH_MATRIX_IO
+
+    bool PetscMatrix::write_raw(MPI_Comm comm,
+                                const std::string &rowptr_path,
+                                const std::string &colidx_path,
+                                const std::string &values_path) const {
+        crs_t crs;
+        crs.lrows = this->local_rows();
+        crs.grows = this->rows();
+
+        crs.rowptr_type = string_to_mpi_datatype(TypeToString<SizeType>::get());
+        crs.colidx_type = string_to_mpi_datatype(TypeToString<SizeType>::get());
+        crs.values_type = string_to_mpi_datatype(TypeToString<Scalar>::get());
+
+        int size;
+        MPI_Comm_size(comm, &size);
+        if (size == 1) {
+            PetscCrsView crs_view(raw_type());
+
+            crs.rowptr = (char *)&crs_view.row_ptr()[0];
+            crs.colidx = (char *)&crs_view.colidx()[0];
+            crs.values = (char *)&crs_view.values()[0];
+
+            crs.lnnz = crs_view.nnz();
+            crs.gnnz = crs_view.nnz();
+
+            crs.start = 0;
+            crs.rowoffset = 0;
+
+        } else {
+            PetscErrorCode err = 0;
+
+            const PetscInt *cols;
+            Mat d, o;
+            err = MatMPIAIJGetSeqAIJ(raw_type(), &d, &o, &cols);
+            assert(err == 0);
+
+            PetscCrsView d_crs_view(d);
+            PetscCrsView o_crs_view(o);
+
+            crs.lnnz = d_crs_view.nnz() + o_crs_view.nnz();
+            PetscInt *rowptr = (PetscInt *)malloc((crs.lrows + 1) * sizeof(PetscInt));
+            PetscInt *colidx = (PetscInt *)malloc(crs.lnnz * sizeof(PetscInt));
+            PetscScalar *values = (PetscScalar *)malloc(crs.lnnz * sizeof(PetscScalar));
+
+            long lnnz = crs.lnnz;
+            long start = 0;
+            MPI_Exscan(&lnnz, &start, 1, MPI_LONG, MPI_SUM, comm);
+            crs.start = start;
+            crs.rowoffset = this->row_range().begin();
+
+            PetscInt coloff = this->col_range().begin();
+
+            auto d_rowptr = d_crs_view.row_ptr();
+            auto o_rowptr = o_crs_view.row_ptr();
+
+            auto d_colidx = d_crs_view.colidx();
+            auto o_colidx = o_crs_view.colidx();
+
+            auto d_values = d_crs_view.values();
+            auto o_values = o_crs_view.values();
+
+            // PetscInt nghosts;
+            // const PetscInt *ghosts = nullptr;
+            // MatGetGhosts(raw_type(), &nghosts, &ghosts);
+
+            rowptr[0] = start;
+
+            for (ptrdiff_t i = 0; i < crs.lrows; i++) {
+                rowptr[i + 1] = (d_rowptr[i + 1] - d_rowptr[i]) + (o_rowptr[i + 1] - o_rowptr[i]) + rowptr[i];
+
+                ptrdiff_t last_offset = rowptr[i];
+                for (PetscInt k = d_rowptr[i]; k < d_rowptr[i + 1]; k++) {
+                    colidx[last_offset + k] = coloff + d_colidx[k];
+                    values[last_offset + k] = d_values[k];
+
+                    assert(colidx[last_offset] < this->cols());
+                }
+
+                last_offset += d_rowptr[i + 1] - d_rowptr[i];
+                for (PetscInt k = o_rowptr[i]; k < o_rowptr[i + 1]; k++) {
+                    colidx[last_offset + k] = cols[o_colidx[k]];
+                    values[last_offset + k] = o_values[k];
+
+                    assert(colidx[last_offset] < this->cols());
+                }
+            }
+
+            crs.rowptr = (char *)rowptr;
+            crs.colidx = (char *)colidx;
+            crs.values = (char *)values;
+        }
+
+        bool ok = crs_write(comm, rowptr_path.c_str(), colidx_path.c_str(), values_path.c_str(), &crs) == 0;
+
+        if (size == 1) {
+            crs_release(&crs);
+        } else {
+            crs_free(&crs);
+        }
+
+        return ok;
+    }
+
+#endif  // UTOPIA_ENABLE_MATRIX_IO
 
     bool PetscMatrix::write(const std::string &path) const {
+#ifdef UTOPIA_ENABLE_MATRIX_IO
+        Path ppath = path;
+        if (ppath.extension() == "raw") {
+            Path folder = ppath.parent();
+            folder.make_dir();
+            return write_raw(comm().get(), folder / "rowptr.raw", folder / "colidx.raw", folder / "values.raw");
+        }
+#endif
+
         if (is_matlab_file(path)) {
             return write_matlab(path);
         }
@@ -532,17 +663,25 @@ namespace utopia {
     }
 
     PetscMatrix::Scalar PetscMatrix::sum() const {
-        Vec row_sum;
+        Scalar result = static_cast<Scalar>(0);
+        MPI_Comm comm = communicator();
 
-        MatCreateVecs(raw_type(), nullptr, &row_sum);
+        int size = 0;
+        MPI_Comm_size(comm, &size);
 
-        MatGetRowSum(raw_type(), row_sum);
+        if (!is_block() && (size == 1 || !is_mpi())) {
+            Vec v;
+            MatCreateVecs(raw_type(), nullptr, &v);
+            MatGetRowSum(raw_type(), v);
+            check_error(VecSum(v, &result));
 
-        Scalar res = 0.;
-        check_error(VecSum(row_sum, &res));
+            VecDestroy(&v);
+        } else {
+            result = generic_local_reduce(*this, result, utopia::Plus());
+            MPI_Allreduce(MPI_IN_PLACE, &result, 1, MPI_DOUBLE, MPI_SUM, comm);
+        }
 
-        VecDestroy(&row_sum);
-        return res;
+        return result;
     }
 
     PetscMatrix::Scalar PetscMatrix::max() const {
@@ -556,7 +695,7 @@ namespace utopia {
             Vec v;
             MatCreateVecs(raw_type(), nullptr, &v);
             MatGetRowMax(raw_type(), v, nullptr);
-            VecMax(v, nullptr, &result);
+            check_error(VecMax(v, nullptr, &result));
 
             VecDestroy(&v);
         } else {
@@ -578,7 +717,7 @@ namespace utopia {
             Vec v;
             MatCreateVecs(raw_type(), nullptr, &v);
             MatGetRowMin(raw_type(), v, nullptr);
-            VecMin(v, nullptr, &result);
+            check_error(VecMin(v, nullptr, &result));
 
             VecDestroy(&v);
         } else {
@@ -1547,8 +1686,8 @@ namespace utopia {
     }
 
     void PetscMatrix::diagonal_block(PetscMatrix &other) const {
-        // reference count on the returned matrix is not incremented and it is used as part of the containing MPI Mat's
-        // normal operation
+        // reference count on the returned matrix is not incremented and it is used as part of the containing MPI
+        // Mat's normal operation
         Mat M;
         check_error(MatGetDiagonalBlock(raw_type(), &M));
         other.copy_from(M);
@@ -1642,7 +1781,11 @@ namespace utopia {
     }
 
     void PetscMatrix::shift_diag(const PetscVector &d) {
-        check_error(MatDiagonalSet(raw_type(), d.raw_type(), ADD_VALUES));
+        if (empty()) {
+            diag(d);
+        } else {
+            check_error(MatDiagonalSet(raw_type(), d.raw_type(), ADD_VALUES));
+        }
     }
 
     void PetscMatrix::set_diag(const PetscVector &d) {
@@ -1681,6 +1824,91 @@ namespace utopia {
             MatConvert(this->raw_type(), MATAIJ, MAT_INITIAL_MATRIX, &scalar_matrix.raw_type());
         } else {
             scalar_matrix = *this;
+        }
+    }
+
+    // https://petsc.org/release/docs/manualpages/Mat/MatCreateMPIAIJWithSplitArrays/
+
+    void PetscMatrix::wrap(MPI_Comm comm,
+                           const PetscInt rows_local,
+                           const PetscInt cols_local,
+                           const PetscInt rows_global,
+                           const PetscInt cols_global,
+                           PetscInt *rowptr,
+                           PetscInt *colidx,
+                           PetscScalar *values,
+                           std::function<void()> destroy_callback) {
+        destroy();
+
+        int size;
+        MPI_Comm_size(comm, &size);
+
+        if (size == 1) {
+            check_error(MatCreateSeqAIJWithArrays(comm, rows_global, cols_global, rowptr, colidx, values, &raw_type()));
+
+        } else {
+            check_error(MatCreateMPIAIJWithArrays(
+                comm, rows_local, cols_local, rows_global, cols_global, rowptr, colidx, values, &raw_type()));
+        }
+
+        this->destroy_callback = destroy_callback;
+        update_mirror();
+    }
+
+    void PetscMatrix::set_block_size(const int block_size) {
+        // int prev_block_size;
+        // MatGetBlockSize(raw_type(), &prev_block_size);
+        // printf("prev_block_size=%d\n", prev_block_size);
+        MatSetBlockSize(raw_type(), block_size);
+    }
+
+    void PetscMatrix::ghosts(IndexArray &ret) const {
+        PetscInt nghosts;
+        const PetscInt *ghosts = nullptr;
+        MatGetGhosts(this->raw_type(), &nghosts, &ghosts);
+
+        ret.resize(nghosts);
+        std::copy(ghosts, ghosts + nghosts, ret.begin());
+    }
+
+    void PetscMatrix::lump() {
+        PetscCrsView d, o;
+        views_host(*this, d, o);
+
+        SizeType rows = d.rows();
+        for (SizeType r = 0; r < rows; r++) {
+            Scalar row_sum = 0;
+
+            {
+                auto row = o.row(r);
+                for (SizeType k = 0; k < row.length; k++) {
+                    Scalar Aij = row.value(k);
+                    row_sum += Aij;
+                    row.value(k) = 0;
+                }
+            }
+
+            {
+                auto row = d.row(r);
+                SizeType k_diag = -1;
+                for (SizeType k = 0; k < row.length; k++) {
+                    SizeType c = row.colidx(k);
+                    Scalar Aij = row.value(k);
+
+                    row_sum += Aij;
+                    row.value(k) = 0;
+
+                    if (c == r) {
+                        k_diag = k;
+                    }
+                }
+
+                assert(k_diag >= 0);
+
+                if (k_diag >= 0) {
+                    row.value(k_diag) = row_sum;
+                }
+            }
         }
     }
 

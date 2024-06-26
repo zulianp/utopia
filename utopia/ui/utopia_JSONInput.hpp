@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_WITH_JSON
+#ifdef UTOPIA_ENABLE_JSON
 
 #include <memory>
 #include "utopia_Input.hpp"
@@ -25,6 +25,7 @@ namespace utopia {
         void get_all(std::function<void(Input &)> lambda) override;
         void get(const std::string &key, bool &val) override;
         void get(const std::string &key, double &val) override;
+        void get(const std::string &key, float &val) override;
         void get(const std::string &key, int &val) override;
         void get(const std::string &key, long &val) override;
         void get(const std::string &key, unsigned long &val) override;
@@ -48,5 +49,5 @@ namespace utopia {
     };
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_JSON
+#endif  // UTOPIA_ENABLE_JSON
 #endif  // UTOPIA_JSON_STREAM_HPP

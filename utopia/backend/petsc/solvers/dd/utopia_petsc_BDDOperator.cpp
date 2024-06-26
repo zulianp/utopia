@@ -57,13 +57,13 @@ namespace utopia {
         void extend_skeleton_selection_with_local_decomposition(const Matrix &mat) {
             if (num_blocks == 0) return;
 
-#ifdef UTOPIA_WITH_METIS
+#ifdef UTOPIA_ENABLE_METIS
             UTOPIA_TRACE_REGION_BEGIN("BDDOperator::extend_skeleton_with_local_blocks");
 
             Matrix local_block;
             local_block_view(mat, local_block);
 
-            std::vector<SizeType> partitions(local_block.rows(), -1);
+            std::vector<int> partitions(local_block.rows(), -1);
 
             if (!decompose(local_block, num_blocks, &partitions[0])) {
                 UTOPIA_TRACE_REGION_END("BDDOperator::extend_skeleton_with_local_blocks");
@@ -98,7 +98,7 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("BDDOperator::extend_skeleton_with_local_blocks");
 #else
             UTOPIA_UNUSED(mat);
-#endif  // UTOPIA_WITH_METIS
+#endif  // UTOPIA_ENABLE_METIS
         }
 
         void initialize_dof_indices(const Matrix &mat) {
@@ -273,6 +273,7 @@ namespace utopia {
         in.get("block_size", impl_->block_size);
         // in.get("handle_linear_constraints", impl_->handle_linear_constraints);
         in.get("num_blocks", impl_->num_blocks);
+        in.get("schur_complement", impl_->schur_complement);
     }
 
     template <class Matrix, class Vector>
@@ -350,8 +351,8 @@ namespace utopia {
             if (impl_->verbose) comm().root_print("Using amg(A_GG) preconditioner");
 
             auto solver = std::make_shared<KSPSolver<Matrix, Vector>>();
-            solver->ksp_type("preonly");
-            solver->pc_type("hypre");
+            solver->ksp_type(KSPPREONLY);
+            solver->pc_type(PCHYPRE);
             solver->update(reduced_matrix());
             solver->max_it(1);
             return solver;

@@ -17,7 +17,7 @@
 #include "utopia_fe_config.hpp"
 #include "utopia_libmesh_Types.hpp"
 
-#ifdef UTOPIA_WITH_BOOST
+#ifdef UTOPIA_ENABLE_BOOST
 
 #include "utopia_NormalTangentialCoordinateSystem.hpp"
 
@@ -558,4 +558,4 @@ namespace utopia {
     }
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_BOOST
+#endif  // UTOPIA_ENABLE_BOOST

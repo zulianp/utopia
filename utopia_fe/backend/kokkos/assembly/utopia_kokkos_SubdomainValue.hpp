@@ -25,6 +25,14 @@ namespace utopia {
                     sub_is.get("value", value);
                     sub_is.get("block", block_id);
 
+                    bool verbose = false;
+                    sub_is.get("verbose", verbose);
+
+                    if (verbose) {
+                        utopia::out() << "value " << value << "\n";
+                        utopia::out() << "block " << block_id << "\n";
+                    }
+
                     if (!value.empty()) {
                         host_map.insert(block_id, std::atof(value.c_str()));
                         empty = false;

@@ -10,10 +10,10 @@
 
 #include "utopia_ProjectedBlockGaussSeidelSweep.hpp"
 
-#ifdef UTOPIA_WITH_VC
+#ifdef UTOPIA_ENABLE_VC
 #include "utopia_vc_ProjectedBlockGaussSeidelSweep.hpp"
 #include "utopia_vc_ProjectedBlockGaussSeidelSweepTransposed.hpp"
-#endif  // UTOPIA_WITH_VC
+#endif  // UTOPIA_ENABLE_VC
 
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Utils.hpp"
@@ -29,7 +29,7 @@ namespace utopia {
     ProjectedGaussSeidel<PetscMatrix, PetscVector, PETSC>::~ProjectedGaussSeidel() = default;
 
     ProjectedGaussSeidel<PetscMatrix, PetscVector, PETSC>::ProjectedGaussSeidel()
-        : n_local_sweeps_(3), check_s_norm_each_(1) {}
+        : n_local_sweeps_(1), check_s_norm_each_(10) {}
 
     // FIXME copy constructor creates weird behaviour
     ProjectedGaussSeidel<PetscMatrix, PetscVector, PETSC>::ProjectedGaussSeidel(const ProjectedGaussSeidel &other)
@@ -74,9 +74,9 @@ namespace utopia {
         int block_size = 0;
         in.get("block_size", block_size);
 
-#ifdef UTOPIA_WITH_VC
+#ifdef UTOPIA_ENABLE_VC
         // FIXME
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         bool use_simd = false;
         in.get("use_simd", use_simd);
 
@@ -84,15 +84,15 @@ namespace utopia {
             // sweeper_ = utopia::make_unique<VcProjectedBlockGaussSeidelSweep<PetscMatrix>>();
             sweeper_ = utopia::make_unique<VcProjectedBlockGaussSeidelSweepTransposed<PetscMatrix>>();
         } else
-#endif  // UTOPIA_WITH_PETSC
-#endif  // UTOPIA_WITH_VC
+#endif  // UTOPIA_ENABLE_PETSC
+#endif  // UTOPIA_ENABLE_VC
             if (block_size == 2) {
-            sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<PetscMatrix, 2>>();
-        } else if (block_size == 3) {
-            sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<PetscMatrix, 3>>();
-        } else if (block_size == 4) {
-            sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<PetscMatrix, 4>>();
-        }
+                sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<PetscMatrix, 2>>();
+            } else if (block_size == 3) {
+                sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<PetscMatrix, 3>>();
+            } else if (block_size == 4) {
+                sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<PetscMatrix, 4>>();
+            }
 
         if (sweeper_) {
             sweeper_->read(in);

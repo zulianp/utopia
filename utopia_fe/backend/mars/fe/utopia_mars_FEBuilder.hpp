@@ -48,9 +48,15 @@ namespace utopia {
                             auto local_dof = fe_dof_map.get_elem_local_dof(elem_index, i * block_size);
                             dof_handler.template get_dof_coordinates_from_local<Type>(local_dof, p);
 
+                            // printf("%d ", int(local_dof));
+
                             for (int d = 0; d < coords.extent(1); ++d) {
                                 coords(i, d) = p[d];
+
+                                // printf("%g ", (double)p[d]);
                             }
+
+                            // printf("\n");
                         }
                     }
                 });

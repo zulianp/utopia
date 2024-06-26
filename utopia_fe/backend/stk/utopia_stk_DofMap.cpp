@@ -6,6 +6,7 @@
 #include "utopia_stk_Mesh.hpp"
 
 #include <stk_mesh/base/BulkData.hpp>
+#include <stk_mesh/base/Comm.hpp>
 #include <stk_mesh/base/MetaData.hpp>
 
 #include <cmath>
@@ -50,6 +51,10 @@ namespace utopia {
             SizeType aura_nodes_offset{0};
             int n_var{1};
             bool valid_local_id_mode{false};
+
+            // global
+            ptrdiff_t n_elements{0};
+            ptrdiff_t n_nodes{0};
 
             void print_map(const ::stk::mesh::BulkData &bulk_data, std::ostream &os) const {
                 auto &meta_data = bulk_data.mesh_meta_data();
@@ -463,6 +468,16 @@ namespace utopia {
             } else {
                 init_parallel(impl_->comm, bulk_data);
             }
+
+            init_global_sizes(bulk_data);
+        }
+
+        void DofMap::init_global_sizes(::stk::mesh::BulkData &bulk_data) {
+            std::vector<size_t> entity_counts;
+            ::stk::mesh::comm_mesh_counts(bulk_data, entity_counts);
+
+            impl_->n_elements = entity_counts[::stk::topology::ELEMENT_RANK];
+            impl_->n_nodes = entity_counts[::stk::topology::NODE_RANK];
         }
 
         void DofMap::init(Mesh &mesh, const bool verbose) {
@@ -474,6 +489,7 @@ namespace utopia {
 
             impl_->comm = Impl::Communicator(bulk_data.parallel());
 
+            init_global_sizes(bulk_data);
             // std::stringstream ss;
             // mesh.describe(ss);
 
@@ -1224,10 +1240,15 @@ namespace utopia {
 
             ////////////////////////////////////////////////////////////
             SizeType n_owned_nodes = impl_->owned_dof_end - impl_->owned_dof_start;
+
+            // FIXME this should work even with 0 owned nodes!
             assert(impl_->owned_dof_start >= 0);
             assert(impl_->owned_dof_end >= 0);
-            assert(n_owned_nodes > 0);
-            SizeType n_var_vec = global.local_size() / n_owned_nodes;
+            // assert(n_owned_nodes > 0);
+            // SizeType n_var_vec = global.local_size() / n_owned_nodes;
+            SizeType n_var_vec = global.size() / impl_->n_nodes;
+
+            // printf("g (%ld / %ld) (%ld / %ld)\n", global.size(), impl_->n_nodes, global.local_size(), n_owned_nodes);
 
             assert(n_owned_nodes * n_var_vec == global.local_size());
 
@@ -1263,8 +1284,8 @@ namespace utopia {
                 case OVERWRITE_MODE: {
                     auto l2g = this->local_to_global();
 
-                    auto l_view = const_local_view_device(local);
-                    auto g_view = local_view_device(global);
+                    auto l_view = const_local_view_host(local);
+                    auto g_view = local_view_host(global);
 
                     // TODO
                     // parallel_for(local_range_device(local), UTOPIA_LAMBDA(const SizeType){});
@@ -1290,6 +1311,26 @@ namespace utopia {
 
                                 g_view.set(g_id - r.begin(), l_view.get(l_id));
                             }
+                        }
+                    }
+
+                    break;
+                }
+                case ADD_MODE: {
+                    auto l2g = this->local_to_global();
+
+                    Write<Vector> w(global, utopia::GLOBAL_ADD);
+
+                    auto l_view = const_local_view_host(local);
+                    const SizeType nl = l2g.size();
+                    const int nv = local.local_size() / nl;
+                    assert(nv > 0);
+
+                    for (SizeType i = 0; i < nl; ++i) {
+                        for (int d = 0; d < nv; ++d) {
+                            const SizeType g_id = l2g(i, d);
+                            const SizeType l_id = i * nv + d;
+                            global.c_add(g_id, l_view.get(l_id));
                         }
                     }
 

@@ -1,6 +1,6 @@
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
@@ -183,7 +183,7 @@ namespace utopia {
 
             auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector>>("stcg", "lu", false);
 
-            if (x.comm().size() != 1) subproblem->pc_type("bjacobi");
+            if (x.comm().size() != 1) subproblem->pc_type(PCBJACOBI);
 
             subproblem->atol(1e-14);
             subproblem->max_it(1000);
@@ -243,8 +243,8 @@ namespace utopia {
             }
 
             auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector>>("stcg", "lu", false);
-            // #ifdef UTOPIA_WITH_PETSC
-            //     #ifdef UTOPIA_WITH_SLEPC
+            // #ifdef UTOPIA_ENABLE_PETSC
+            //     #ifdef UTOPIA_ENABLE_SLEPC
             //         auto eigen_solver = std::make_shared<SlepcSolver<Matrix, Vector,
             //         PETSC_EXPERIMENTAL> >();
             //         // TODO:: add checks if has arpack
@@ -256,8 +256,8 @@ namespace utopia {
             //         auto subproblem =
             //         std::make_shared<utopia::MoreSorensenEigen<Matrix, Vector>
             //         >(linear_solver, eigen_solver);
-            //     #endif //UTOPIA_WITH_SLEPC
-            // #endif //UTOPIA_WITH_PETSC
+            //     #endif //UTOPIA_ENABLE_SLEPC
+            // #endif //UTOPIA_ENABLE_PETSC
 
             TrustRegion<Matrix, Vector> tr_solver(subproblem);
             tr_solver.read(input_params_);
@@ -278,7 +278,7 @@ namespace utopia {
             }
 
             // auto lsolver = std::make_shared<GMRES<Matrix, Vector> >();
-            // lsolver->pc_type("bjacobi");
+            // lsolver->pc_type(PCBJACOBI);
 
             // auto lsolver = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE>
             // >();
@@ -546,7 +546,7 @@ namespace utopia {
 
             QuadraticExtendedFunction<PetscMatrix, PetscVector> fun_QP(H, g, x_eq, x_bc_marker, empty_rhs);
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
             Matrix H_tril;
             Vector g_tril;
             Vector x_tril, x_eq_tril, x_bc_marker_tril, empty_rhs_tril;
@@ -572,7 +572,7 @@ namespace utopia {
             tr_solver.verbose(verbose_);
             tr_solver.solve(fun_QP_tril, x_tril);
 
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
         }
 
         template <class Matrix1, class Vector1, class Matrix2, class Vector2>
@@ -886,7 +886,7 @@ namespace utopia {
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, false).run_petsc();
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, false).run_trilinos();
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
         HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
 #endif
     }
@@ -894,4 +894,4 @@ namespace utopia {
     UTOPIA_REGISTER_TEST_FUNCTION(hck);
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC

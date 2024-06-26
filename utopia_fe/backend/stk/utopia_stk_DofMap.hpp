@@ -89,6 +89,7 @@ namespace utopia {
             void init_serial(::stk::mesh::BulkData &bulk_data);
 
             void init(::stk::mesh::BulkData &bulk_data);
+            void init_global_sizes(::stk::mesh::BulkData &bulk_data);
 
             void exchange_shared_dofs(const Communicator &comm,
                                       ::stk::mesh::BulkData &bulk_data,

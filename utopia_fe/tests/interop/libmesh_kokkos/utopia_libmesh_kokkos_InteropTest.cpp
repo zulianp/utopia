@@ -1,6 +1,6 @@
 #include "utopia_fe_base.hpp"
 
-#ifdef UTOPIA_WITH_INTREPID2
+#ifdef UTOPIA_ENABLE_INTREPID2
 
 #include "utopia_Testing.hpp"
 #include "utopia_ui.hpp"
@@ -65,4 +65,4 @@ void interop_libmesh_kokkos_test_create_fe_boundary() {
 UTOPIA_REGISTER_TEST_FUNCTION(interop_libmesh_kokkos);
 UTOPIA_REGISTER_TEST_FUNCTION(interop_libmesh_kokkos_test_create_fe_boundary);
 
-#endif  // UTOPIA_WITH_INTREPID2
+#endif  // UTOPIA_ENABLE_INTREPID2

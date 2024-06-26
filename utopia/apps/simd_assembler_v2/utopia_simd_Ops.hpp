@@ -153,7 +153,7 @@ namespace utopia {
 
 }  // namespace utopia
 
-#ifdef UTOPIA_WITH_VC
+#ifdef UTOPIA_ENABLE_VC
 #include <Vc/Vc>
 
 namespace utopia {
@@ -213,6 +213,6 @@ namespace utopia {
     }  // namespace simd_v2
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_VC
+#endif  // UTOPIA_ENABLE_VC
 
 #endif  // UTOPIA_SIMD_OPS_HPP

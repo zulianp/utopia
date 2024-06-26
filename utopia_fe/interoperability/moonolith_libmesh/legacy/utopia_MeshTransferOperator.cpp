@@ -145,6 +145,11 @@ namespace utopia {
         return types;
     }
 
+    void MeshTransferOperator::use_new_algo(const bool val) {
+        params_->use_new_algo = val;
+        params_->discretization = "new";
+    }
+
     MeshTransferOperator::MeshTransferOperator(const std::shared_ptr<MeshBase> &from_mesh,
                                                const std::shared_ptr<DofMap> &from_dofs,
                                                const std::shared_ptr<MeshBase> &to_mesh,
@@ -537,6 +542,7 @@ namespace utopia {
             }
 
             operator_ = new_assembler.build_operator();
+            matrices_ = new_assembler.matrices();
 
             // if(params_->normalize_rows) {
             //     auto pseudo_l2_operator = std::make_shared<PseudoL2TransferOperator>();

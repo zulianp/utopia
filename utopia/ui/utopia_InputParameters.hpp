@@ -27,6 +27,8 @@ namespace utopia {
 
         inline void get(const std::string &key, double &val) override { aux_get(key, val); }
 
+        inline void get(const std::string &key, float &val) override { aux_get(key, val); }
+
         inline void get(const std::string &key, int &val) override { aux_get(key, val); }
 
         inline void get(const std::string &key, std::string &val) override { aux_get(key, val); }
@@ -201,14 +203,14 @@ namespace utopia {
     template <class First, class... Args>
     inline void param_append(InputParameters &params,
                              std::pair<std::string, First> &&first,
-                             std::pair<std::string, Args> &&... list) {
+                             std::pair<std::string, Args> &&...list) {
         // param_set(params, std::forward<std::string>(first.first), std::forward<First>(first.second));
         param_set(params, std::forward<std::pair<std::string, First>>(first));
         param_append(params, std::forward<std::pair<std::string, Args>>(list)...);
     }
 
     template <class... Args>
-    inline InputParameters param_list(std::pair<std::string, Args> &&... list) {
+    inline InputParameters param_list(std::pair<std::string, Args> &&...list) {
         InputParameters ret;
         param_append(ret, std::forward<std::pair<std::string, Args>>(list)...);
         return ret;

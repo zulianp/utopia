@@ -1,24 +1,24 @@
 #include "test_problems/utopia_QPSolverTestProblem.hpp"
 #include "utopia.hpp"
-#include "utopia_AlgebraUnitTest.hpp"
 #include "utopia_BlockQPSolver.hpp"
+#include "utopia_SubCommUnitTest.hpp"
 
 #include "utopia_RedundantQPSolver.hpp"
 #include "utopia_SemismoothNewton_old.hpp"
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Redundant.hpp"
 #include "utopia_petsc_RedundantQPSolver.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 namespace utopia {
 
     template <class Matrix, class Vector>
-    class SubCommAlgebraTest final : public AlgebraUnitTest<Vector> {
+    class SubCommAlgebraTest final : public SubCommUnitTest<Vector> {
     public:
         using Traits = utopia::Traits<Vector>;
         using Scalar = typename Traits::Scalar;
@@ -251,13 +251,14 @@ namespace utopia {
     };
 
     void sub_comm_algebra() {
-#ifdef UTOPIA_WITH_PETSC
-        run_parallel_test<SubCommAlgebraTest<PetscMatrix, PetscVector>>();
-#endif  // UTOPIA_WITH_PETSC
+        const bool verbose = Utopia::instance().verbose();
+#ifdef UTOPIA_ENABLE_PETSC
+        run_parallel_test<SubCommAlgebraTest<PetscMatrix, PetscVector>>(verbose);
+#endif  // UTOPIA_ENABLE_PETSC
 
-        // #ifdef UTOPIA_WITH_TRILINOS
-        //         run_parallel_test< SubCommAlgebraTest<TpetraMatrix, TpetraVector> >();
-        // #endif //UTOPIA_WITH_TRILINOS
+        // #ifdef UTOPIA_ENABLE_TRILINOS
+        //         run_parallel_test< SubCommAlgebraTest<TpetraMatrix, TpetraVector> >(verbose);
+        // #endif //UTOPIA_ENABLE_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(sub_comm_algebra);

@@ -62,6 +62,18 @@ namespace utopia {
                 deformation_gradient_->init(*displacement);
                 deformation_gradient_->add_identity();
                 assert(deformation_gradient_->check_dets_are_positive());
+
+                // std::cout << "------------------------------------------------\n";
+                // std::cout << "------------------------------------------------\n";
+                // const SizeType e0 = deformation_gradient_->data().extent(0);
+                // const SizeType e1 = deformation_gradient_->data().extent(1);
+                // const SizeType e2 = deformation_gradient_->data().extent(2);
+
+                // std::cout << "F: " << e0 << " " << e1 << " " << e2 << "\n";
+
+                // deformation_gradient_->describe(std::cout);
+
+                // std::cout << "------------------------------------------------\n";
                 return true;
             }
 
@@ -131,6 +143,19 @@ namespace utopia {
                                 }
                             }
                         });
+
+                    // std::cout << "------------------------------------------------\n";
+                    // std::cout << "------------------------------------------------\n";
+                    // const SizeType e0 = this->matrix_accumulator()->data().extent(0);
+                    // const SizeType e1 = this->matrix_accumulator()->data().extent(1);
+                    // const SizeType e2 = this->matrix_accumulator()->data().extent(2);
+                    // const SizeType e3 = this->matrix_accumulator()->data().extent(2);
+
+                    // std::cout << "H: " << e0 << " " << e1 << " " << e2 << " " << e3 << "\n";
+
+                    // this->matrix_accumulator()->describe(std::cout);
+
+                    // std::cout << "------------------------------------------------\n";
                 }
 
                 UTOPIA_TRACE_REGION_END(name() + "::assemble_matrix");
@@ -192,6 +217,18 @@ namespace utopia {
                             }
                         });
                 }
+
+                // std::cout << "------------------------------------------------\n";
+                // std::cout << "------------------------------------------------\n";
+                // const SizeType e0 = this->vector_accumulator()->data().extent(0);
+                // const SizeType e1 = this->vector_accumulator()->data().extent(1);
+                // const SizeType e2 = this->vector_accumulator()->data().extent(2);
+
+                // std::cout << "G: " << e0 << " " << e1 << " " << e2 << "\n";
+
+                // this->vector_accumulator()->describe(std::cout);
+
+                // std::cout << "------------------------------------------------\n";
 
                 UTOPIA_TRACE_REGION_END(name() + "::assemble_vector");
                 return true;

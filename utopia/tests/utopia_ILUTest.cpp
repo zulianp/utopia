@@ -7,7 +7,7 @@
 
 using namespace utopia;
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 
 #include "utopia_ILUDecompose.hpp"
 #include "utopia_petsc_DILUAlgorithm.hpp"
@@ -16,7 +16,7 @@ using namespace utopia;
 #include "utopia_DILUDecompose_impl.hpp"
 
 void petsc_ilu_test() {
-    auto comm = PetscCommunicator::get_default();
+    auto comm = PetscCommunicator::self();
     PetscInt n = 100;
 
     auto vl = layout(comm, n, n * comm.size());
@@ -29,7 +29,7 @@ void petsc_ilu_test() {
     // assemble_poisson_problem_1D(1.0, A, b);
 
     ILU<PetscMatrix, PetscVector> ls;
-    // ls.verbose(true);
+    ls.verbose(true);
     ls.atol(1e-6);
     ls.rtol(1e-7);
     ls.stol(1e-7);
@@ -186,16 +186,16 @@ void petsc_block_ilu_test() {
     utopia_test_assert(norm_r < 1e-5);
 }
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 void ilu() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     UTOPIA_RUN_TEST(petsc_ilu_test);
     UTOPIA_RUN_TEST(petsc_ilu_cg_test);
     UTOPIA_RUN_TEST(petsc_block_ilu_test);
     UTOPIA_RUN_TEST(petsc_dilu_test);
     // UTOPIA_RUN_TEST(petsc_ilu_vi_test);
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(ilu);

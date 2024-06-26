@@ -4,8 +4,8 @@
 
 #include "utopia_SimpleNewton.hpp"
 
-#include "utopia_ImplicitEulerIntegrator.hpp"
-#include "utopia_NewmarkIntegrator.hpp"
+// #include "utopia_ImplicitEulerIntegrator.hpp"
+// #include "utopia_NewmarkIntegrator.hpp"
 #include "utopia_SemiGeometricMultigridNew.hpp"
 
 #include "utopia_libmesh.hpp"
@@ -21,12 +21,12 @@
 
 #include "utopia_ConjugateGradient.hpp"
 
-#include "../apps/generic/utopia_NLSolveApp.hpp"
+// #include "../apps/generic/utopia_NLSolveApp.hpp"
 
-namespace utopia {
-    template class NewmarkIntegrator<utopia::libmesh::FunctionSpace>;
-    template class ImplicitEulerIntegrator<utopia::libmesh::FunctionSpace>;
-}  // namespace utopia
+// namespace utopia {
+//     template class NewmarkIntegrator<utopia::libmesh::FunctionSpace>;
+//     template class ImplicitEulerIntegrator<utopia::libmesh::FunctionSpace>;
+// }  // namespace utopia
 
 void libmesh_nlsolve(utopia::Input &in) {
     using Matrix_t = utopia::Traits<utopia::libmesh::FunctionSpace>::Matrix;

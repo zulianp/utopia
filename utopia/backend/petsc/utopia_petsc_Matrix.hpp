@@ -117,7 +117,8 @@ namespace utopia {
         public Comparable<PetscMatrix>,
         public Operator<PetscVector>,
         public Tensor<PetscMatrix, 2>,
-        public Selectable<PetscMatrix, 2> {
+        public Selectable<PetscMatrix, 2>,
+        public Configurable {
     public:
         using Scalar = PetscScalar;
         using SizeType = PetscInt;
@@ -647,6 +648,16 @@ namespace utopia {
             update_mirror();
         }
 
+        void wrap(MPI_Comm comm,
+                  const PetscInt rows_local,
+                  const PetscInt cols_local,
+                  const PetscInt rows_global,
+                  const PetscInt cols_global,
+                  PetscInt *rowptr,
+                  PetscInt *colidx,
+                  PetscScalar *values,
+                  std::function<void()> destroy_callback);
+
         void own(Mat &mat) {
             wrapper_ = std::make_shared<PetscMatrixMemory>(mat, true);
             update_mirror();
@@ -725,9 +736,20 @@ namespace utopia {
 
         inline bool read(const std::string &path) { return read(comm().get(), path); }
 
+        void read(Input &in) override {
+            std::string path;
+            std::string type;
+
+            in.require("type", type);
+            if (type == "file") {
+                in.require("path", path);
+                this->read(path);
+            }
+        }
+
         bool read(MPI_Comm comm, const std::string &path);
 
-#ifdef UTOPIA_WITH_MATRIX_IO
+#ifdef UTOPIA_ENABLE_MATRIX_IO
         bool read_raw(MPI_Comm comm,
                       const std::string &rowptr_path,
                       const std::string &colidx_path,
@@ -740,7 +762,12 @@ namespace utopia {
                       const std::string &rowptr_path,
                       const std::string &colidx_path,
                       const std::string &values_path);
-#endif  // UTOPIA_WITH_MATRIX_IO
+
+        bool write_raw(MPI_Comm comm,
+                       const std::string &rowptr_path,
+                       const std::string &colidx_path,
+                       const std::string &values_path) const;
+#endif  // UTOPIA_ENABLE_MATRIX_IO
 
         void copy_from(Mat mat);
         void copy_to(Mat mat) const;
@@ -788,6 +815,8 @@ namespace utopia {
         void build_diag(PetscMatrix &result) const;
         void diag(const PetscVector &other);
         void diag(const PetscMatrix &other) { other.build_diag(*this); }
+
+        void lump();
 
         void col(const SizeType id, PetscVector &result) const;
 
@@ -931,6 +960,8 @@ namespace utopia {
         void diag_scale_right(const PetscVector &diag);
         void diag_scale_left(const PetscVector &diag);
 
+        void ghosts(IndexArray &ret) const;
+
         inline std::string get_class() const override { return "PetscMatrix"; }
 
         void assign(const Range &row_range, const Range &col_range, const PetscMatrix &block);
@@ -945,6 +976,8 @@ namespace utopia {
         }
 
         void update_mirror();
+
+        void set_block_size(const int block_size);
 
     private:
         PetscCommunicator comm_;

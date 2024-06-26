@@ -15,7 +15,7 @@ namespace utopia {
         template <typename Scalar, class ExecutionSpace_ = ::Kokkos::DefaultExecutionSpace, typename IntType = int>
         class Mesh : public Configurable {
         public:
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
             using Comm = utopia::MPICommunicator;
 #else
             using Comm = utopia::SelfCommunicator;

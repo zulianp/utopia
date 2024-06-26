@@ -41,7 +41,7 @@ namespace utopia {
                     std::cerr << "\033[1;31m [Error] LinearSolver diverged at iteration " << num_it
                               << " reason = " << diverged_reason_string(convergence_reason) << ". \033[0m\n";
                 } else {
-                    std::cerr << "\033[1;32m LinearSolver converged at iteration " << num_it
+                    std::cout << "\033[1;32m LinearSolver converged at iteration " << num_it
                               << ", convergence reason = " << convergence_reason << " \033[0m\n";
                 }
             }
@@ -74,7 +74,7 @@ namespace utopia {
                 } else if (convergence_reason < 0) {
                     std::cerr << "\033[1;31m [Error] NonlinearSolver stopped at iteration " << num_it << " . \033[0m\n";
                 } else {
-                    std::cerr << "\033[1;31m NonlinearSolver converged at iteration " << num_it
+                    std::cout << "\033[1;31m NonlinearSolver converged at iteration " << num_it
                               << " for reason = " << convergence_reason << " \033[0m\n";
                 }
             }

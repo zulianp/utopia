@@ -1,13 +1,15 @@
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_WITH_TRILINOS
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 
 // include edsl components
 #include "utopia.hpp"
 #include "utopia_AppRunner.hpp"
+
+#ifdef UTOPIA_ENABLE_TRILINOS
 #include "utopia_petsc_trilinos.hpp"
 #include "utopia_trilinos.hpp"
+#endif  // UTOPIA_ENABLE_TRILINOS
 
 #include "utopia_petsc_CrsView.hpp"
 
@@ -26,6 +28,7 @@
 
 namespace utopia {
 
+#ifdef UTOPIA_ENABLE_TRILINOS
     void convert_mm_matrix_to_petsc_bin(Input &in) {
         std::string path_in, path_out;
         in.get("in", path_in);
@@ -56,6 +59,8 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(convert_mm_vector_to_petsc_bin);
 
+#endif  // UTOPIA_ENABLE_TRILINOS
+
     template <class Matrix, class Vector>
     class LSSolveApp : public Configurable {
     public:
@@ -65,7 +70,7 @@ namespace utopia {
             Chrono tts;
             tts.start();
 
-            Matrix A;
+            Matrix A, P;
             Vector x, b, oracle;
 
             MPITimeStatistics stats(x.comm());
@@ -73,8 +78,8 @@ namespace utopia {
             //////////////////////////////////////////
             stats.start();
 
-            std::string path_A, path_b, path_oracle, path_output = "out.mm";
-            bool use_amg = true;
+            std::string path_A, path_b, path_mat_for_preconditioner, path_oracle, path_output = "out.mm";
+            bool use_amg = false;
             int block_size = 1;
             bool write_matlab = false;
             bool rescale_with_diag = false;
@@ -82,9 +87,11 @@ namespace utopia {
             bool use_ksp_smoother = true;
             bool convert_to_block_matrix = false;
             bool amg_as_preconditioner = false;
+            bool use_lor_cg = false;
 
             in.require("A", path_A);
             in.require("b", path_b);
+            in.get("P", path_mat_for_preconditioner);
             in.get("oracle", path_oracle);
             in.get("out", path_output);
             in.get("use_amg", use_amg);
@@ -95,6 +102,7 @@ namespace utopia {
             in.get("use_ksp_smoother", use_ksp_smoother);
             in.get("convert_to_block_matrix", convert_to_block_matrix);
             in.get("amg_as_preconditioner", amg_as_preconditioner);
+            in.get("use_lor_cg", use_lor_cg);
 
             if (use_ksp) {
                 use_amg = false;
@@ -112,6 +120,10 @@ namespace utopia {
                 b.values(row_layout(A), 1.0);
             } else {
                 utopia::read(path_b, b);
+            }
+
+            if (!path_mat_for_preconditioner.empty()) {
+                utopia::read(path_mat_for_preconditioner, P);
             }
 
             if (!path_oracle.empty()) {
@@ -144,83 +156,69 @@ namespace utopia {
 
             x.zeros(row_layout(A));
 
-            std::shared_ptr<LinearSolver<Matrix, Vector>> solver;
+            std::shared_ptr<LinearSolver<Matrix, Vector>> solver = std::make_shared<OmniLinearSolver<Matrix, Vector>>();
 
-            if (use_amg) {
-                std::shared_ptr<IterativeSolver<Matrix, Vector>> smoother;
+            if (!use_lor_cg) {
+                if (use_amg) {
+                    std::shared_ptr<IterativeSolver<Matrix, Vector>> smoother;
 
-                if (use_ksp_smoother) {
-                    auto ksp = std::make_shared<KSPSolver<Matrix, Vector>>();
-                    ksp->pc_type("ilu");
-                    ksp->ksp_type("richardson");
-                    smoother = ksp;
-                } else {
-                    smoother = std::make_shared<ILU<Matrix, Vector>>();
-                }
+                    if (use_ksp_smoother) {
+                        auto ksp = std::make_shared<KSPSolver<Matrix, Vector>>();
+                        ksp->pc_type(PCILU);
+                        ksp->ksp_type(KSPRICHARDSON);
+                        smoother = ksp;
+                    } else {
+                        smoother = std::make_shared<ILU<Matrix, Vector>>();
+                    }
 
-                // auto smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
-                std::shared_ptr<LinearSolver<Matrix, Vector>> coarse_solver;
-                if (convert_to_block_matrix) {
-                    auto gmres = std::make_shared<GMRES<Matrix, Vector>>("ilu");
-                    gmres->factor_set_pivot_in_blocks(true);
-                    coarse_solver = gmres;
-                } else {
-                    coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
-                }
+                    // auto smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+                    std::shared_ptr<LinearSolver<Matrix, Vector>> coarse_solver;
+                    if (convert_to_block_matrix) {
+                        auto gmres = std::make_shared<GMRES<Matrix, Vector>>("ilu");
+                        gmres->factor_set_pivot_in_blocks(true);
+                        coarse_solver = gmres;
+                    } else {
+                        coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
+                    }
 
-                // std::shared_ptr<MatrixAgglomerator<Matrix>> agglomerator;
+                    // std::shared_ptr<MatrixAgglomerator<Matrix>> agglomerator;
 
-                // if (block_size == 2) {
-                //     agglomerator = std::make_shared<BlockAgglomerate<Matrix, 2>>();
-                // } else if (block_size == 3) {
-                //     agglomerator = std::make_shared<BlockAgglomerate<Matrix, 3>>();
-                // } else if (block_size == 4) {
-                //     agglomerator = std::make_shared<BlockAgglomerate<Matrix, 4>>();
-                // } else {
-                //     agglomerator = std::make_shared<Agglomerate<Matrix>>();
-                // }
+                    // if (block_size == 2) {
+                    //     agglomerator = std::make_shared<BlockAgglomerate<Matrix, 2>>();
+                    // } else if (block_size == 3) {
+                    //     agglomerator = std::make_shared<BlockAgglomerate<Matrix, 3>>();
+                    // } else if (block_size == 4) {
+                    //     agglomerator = std::make_shared<BlockAgglomerate<Matrix, 4>>();
+                    // } else {
+                    //     agglomerator = std::make_shared<Agglomerate<Matrix>>();
+                    // }
 
-                auto amg = std::make_shared<AlgebraicMultigrid<Matrix, Vector>>(smoother, coarse_solver);
+                    auto amg = std::make_shared<AlgebraicMultigrid<Matrix, Vector>>(smoother, coarse_solver);
 
-                InputParameters inner_params;
-                inner_params.set("block_size", block_size);
-                inner_params.set("use_simd", true);
-                inner_params.set("use_line_search", true);
-                coarse_solver->read(inner_params);
-                smoother->read(inner_params);
+                    InputParameters inner_params;
+                    inner_params.set("block_size", block_size);
+                    inner_params.set("use_simd", true);
+                    inner_params.set("use_line_search", true);
+                    coarse_solver->read(inner_params);
+                    smoother->read(inner_params);
 
-                if (amg_as_preconditioner) {
-                    amg->max_it(1);
-                    auto krylov_solver = std::make_shared<BiCGStab<Matrix, Vector>>();
-                    krylov_solver->set_preconditioner(amg);
-                    solver = krylov_solver;
-                } else {
-                    solver = amg;
-                }
+                    if (amg_as_preconditioner) {
+                        amg->max_it(1);
+                        auto krylov_solver = std::make_shared<BiCGStab<Matrix, Vector>>();
+                        krylov_solver->set_preconditioner(amg);
+                        solver = krylov_solver;
+                    } else {
+                        solver = amg;
+                    }
 
-            } else {
-                if (use_ksp) {
+                } else if (use_ksp) {
                     auto ksp = std::make_shared<KSPSolver<Matrix, Vector>>();
                     ksp->factor_set_pivot_in_blocks(convert_to_block_matrix);
                     solver = ksp;
-                } else {
-                    // auto ksp = std::make_shared<KSPSolver<Matrix, Vector>>();
-                    // auto ilu = std::make_shared<ILU<Matrix, Vector>>();
-
-                    // InputParameters inner_params;
-                    // inner_params.set("block_size", block_size);
-
-                    // ilu->read(inner_params);
-                    // ilu->max_it(1);
-
-                    // ksp->set_preconditioner(ilu);
-                    // solver = ksp;
-
-                    solver = std::make_shared<ILU<Matrix, Vector>>();
                 }
-            }
 
-            solver->read(in);
+                solver->read(in);
+            }
 
             stats.stop_collect_and_restart("read_settings");
 
@@ -232,7 +230,40 @@ namespace utopia {
                 utopia::out() << "ndofs " << x.size() << std::endl;
             }
 
-            solver->solve(A, b, x);
+            if (use_lor_cg) {
+                auto cg = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+                cg->update(make_ref(A));
+                cg->apply_gradient_descent_step(true);
+
+                auto prec = std::make_shared<KSPSolver<Matrix, Vector>>();
+                prec->update(make_ref(P));
+                prec->rtol(1e-18);
+                prec->stol(1e-18);
+                prec->atol(1e-18);
+                prec->max_it(20);
+
+                cg->set_preconditioner(prec);
+                cg->rtol(1e-18);
+                cg->stol(1e-18);
+                cg->atol(1e-18);
+
+                cg->verbose(true);
+
+                solver = cg;
+                solver->apply(b, x);
+            } else {
+                auto psolver = std::dynamic_pointer_cast<PreconditionedSolver<Matrix, Vector>>(solver);
+                if (psolver && !P.empty()) {
+                    if (!mpi_world_rank()) {
+                        utopia::out() << "Using preconditioner with matrix: " << path_mat_for_preconditioner << "\n";
+                    }
+
+                    psolver->update(make_ref(A), make_ref(P));
+                    solver->apply(b, x);
+                } else {
+                    solver->solve(A, b, x);
+                }
+            }
 
             stats.stop_collect_and_restart("solve");
 
@@ -256,7 +287,7 @@ namespace utopia {
     };
 
     void ls_solve(Input &in) {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         std::string backend = "petsc";
 #else
         std::string backend = "trilinos";
@@ -277,6 +308,4 @@ namespace utopia {
     UTOPIA_REGISTER_APP(ls_solve);
 
 }  // namespace utopia
-
-#endif  // UTOPIA_WITH_TRILINOS
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC

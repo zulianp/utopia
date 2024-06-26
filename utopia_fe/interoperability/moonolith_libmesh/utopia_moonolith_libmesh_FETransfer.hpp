@@ -48,11 +48,11 @@ namespace utopia {
                 return std::make_shared<TransferType>(this->transfer_matrix());
             }
 
+            std::shared_ptr<Matrix> transfer_matrix() const;
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;
-
-            std::shared_ptr<Matrix> transfer_matrix() const;
         };
 
     }  // namespace libmesh

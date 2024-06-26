@@ -14,26 +14,28 @@
 #include "utopia_ProjectedGaussSeidel.hpp"
 #include "utopia_ProjectedGradient.hpp"
 #include "utopia_SemismoothNewton.hpp"
+#include "utopia_ShiftedPenaltyQPSolver_impl.hpp"
 
 // PETSC
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "petsctao.h"
 #include "utopia_LogBarrierQPMultigrid.hpp"
 #include "utopia_petsc_BDDQPSolver.hpp"
 #include "utopia_petsc_Factorizations.hpp"
 #include "utopia_petsc_LinearSolvers.hpp"
+#include "utopia_petsc_PMPRGP.hpp"
 #include "utopia_petsc_RowView.hpp"
 #include "utopia_petsc_SemismoothNewton.hpp"
 #include "utopia_petsc_TaoQPSolver.hpp"
 
 //
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
 #include "utopia_blas.hpp"
 #include "utopia_blas_Array.hpp"
 #include "utopia_petsc_RASPatchSmoother.hpp"
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 #include <functional>
 #include <map>
@@ -121,27 +123,30 @@ namespace utopia {
                 register_solver<HomeMadeLogBarrierQPSolver>("any", "logbarrier");
                 register_solver<HomeMadePrimalInteriorPointSolver>("any", "ipm");
                 register_solver<HomeMadeMPRGP>("any", "mprgp");
+                register_solver<utopia::ShiftedPenaltyQPSolver<Matrix>>("any", "spm");
             }
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             {
                 // Petsc
                 using PetscSemiSmoothNewton = utopia::SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL>;
                 using PetscTaoQPSolver = utopia::TaoQPSolver<Matrix, Vector>;
                 using PetscBDDQPSolver = utopia::BDDQPSolver<Matrix, Vector>;
+                using PetscPMPRGP = utopia::PMPRGP<Matrix, Vector>;
                 using PetscLogBarrierQPMultigrid = utopia::LogBarrierQPMultigrid<Matrix, Vector>;
 
                 register_solver<PetscSemiSmoothNewton>("petsc", "ssnewton");
                 register_solver<PetscTaoQPSolver>("petsc", "taoqp");
                 register_solver<PetscBDDQPSolver>("petsc", "bdd");
                 register_solver<PetscLogBarrierQPMultigrid>("petsc", "logbarrier_mg");
+                register_solver<PetscPMPRGP>("any", "pmprgp");
 
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
                 using PetscRASPatchSmoother = utopia::RASPatchSmoother<Matrix, utopia::BlasMatrix<Scalar>>;
                 register_solver<PetscRASPatchSmoother>("petsc", "patch_smoother");
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
             }
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
         }
     };
 
@@ -211,7 +216,7 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     OmniQPSolver<Matrix, Vector>::OmniQPSolver() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         auto tron = utopia::make_unique<TaoQPSolver<Matrix, Vector>>();
         tron->tao_type(TAOTRON);
         tron->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));

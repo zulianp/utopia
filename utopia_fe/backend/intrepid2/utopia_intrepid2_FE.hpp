@@ -168,8 +168,12 @@ namespace utopia {
                 CellTools::setJacobianInv(jacobian_inv, jacobian);
                 CellTools::setJacobianDet(jacobian_det, jacobian);
 
-                FunctionSpaceTools::computeCellMeasure<Scalar>(measure, jacobian_det, q_weights);
 
+                #if TRILINOS_MAJOR_MINOR_VERSION >= 150200
+                FunctionSpaceTools::computeCellMeasure(measure, jacobian_det, q_weights);
+                #else
+                FunctionSpaceTools::computeCellMeasure<Scalar>(measure, jacobian_det, q_weights);
+                #endif
                 fun = DynRankView("fun", n_fun, n_quad_points);
                 basis.getValues(fun, q_points, ::Intrepid2::OPERATOR_VALUE);
 
@@ -177,8 +181,13 @@ namespace utopia {
                 grad = DynRankView("grad", n_cells, n_fun, n_quad_points, spatial_dimension);
 
                 basis.getValues(ref_grad, q_points, ::Intrepid2::OPERATOR_GRAD);
-                FunctionSpaceTools::HGRADtransformGRAD<Scalar>(grad, jacobian_inv, ref_grad);
 
+
+                #if TRILINOS_MAJOR_MINOR_VERSION >= 150200
+                FunctionSpaceTools::HGRADtransformGRAD(grad, jacobian_inv, ref_grad);
+                #else
+                FunctionSpaceTools::HGRADtransformGRAD<Scalar>(grad, jacobian_inv, ref_grad);
+                #endif
                 Super::init(measure, fun, grad, jacobian, jacobian_inv);
             }
 

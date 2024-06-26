@@ -1,7 +1,7 @@
 #include "utopia_fe_base.hpp"
 
-#ifdef UTOPIA_WITH_INTREPID2
-#ifdef UTOPIA_WITH_PETSC_DM
+#ifdef UTOPIA_ENABLE_INTREPID2
+#ifdef UTOPIA_ENABLE_PETSC_DM
 
 #include "utopia_Main.hpp"
 
@@ -12,7 +12,6 @@
 #include "utopia_moonolith_petsc_FETransfer.hpp"
 #include "utopia_petsc_dm.hpp"
 
-
 #include "utopia_petsc_intrepid2_OmniAssembler.hpp"
 
 void petsc_franetg(utopia::Input &in) {
@@ -22,5 +21,5 @@ void petsc_franetg(utopia::Input &in) {
 
 UTOPIA_REGISTER_APP(petsc_franetg);
 
-#endif  //UTOPIA_WITH_INTREPID2
-#endif  //UTOPIA_WITH_PETSC_DM
+#endif  // UTOPIA_ENABLE_INTREPID2
+#endif  // UTOPIA_ENABLE_PETSC_DM

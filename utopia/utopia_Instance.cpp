@@ -1,6 +1,7 @@
 #include "utopia_Instance.hpp"
 #include "utopia_Allocations.hpp"
 #include "utopia_AuthoredWork.hpp"
+#include "utopia_Banner.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_CiteUtopia.hpp"
 #include "utopia_Config.hpp"
@@ -8,21 +9,22 @@
 #include "utopia_MPI.hpp"
 #include "utopia_Tracer.hpp"
 #include "utopia_make_unique.hpp"
-#include "utopia_Banner.hpp"
+
+#include "utopia_Base.hpp"
 
 #include "utopia_Reporter.hpp"
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 #include "utopia_trilinos_Library.hpp"
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc_Library.hpp"
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
 #include <mpi.h>
-#endif  // UTOPIA_WITH_MPI
+#endif  // UTOPIA_ENABLE_MPI
 
 #include <cassert>
 #include <iostream>
@@ -30,15 +32,15 @@
 namespace utopia {
 
     void Utopia::Init(int argc, char *argv[]) {
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
         instance().add_library_with_priority(utopia::make_unique<TrilinosLibrary>());
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         instance().add_library_with_priority(utopia::make_unique<PetscLibrary>());
 #endif
 
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
         if (instance().libraries_.empty()) {
             MPI_Init(&argc, &argv);
         }
@@ -62,7 +64,7 @@ namespace utopia {
     }
 
     int Utopia::Finalize() {
-#ifdef UTOPIA_TRACE_ENABLED
+#ifdef UTOPIA_ENABLE_TRACE
         Tracer::instance().save_collected_log();
 #endif
 
@@ -86,11 +88,11 @@ namespace utopia {
             ret += (*it)->finalize();
         }
 
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
         if (instance().libraries_.empty()) {
             ret += MPI_Finalize();
         }
-#endif  // UTOPIA_WITH_MPI
+#endif  // UTOPIA_ENABLE_MPI
 
         instance().libraries_.clear();
 
@@ -129,7 +131,7 @@ namespace utopia {
 
     void Utopia::Abort() {
         int error_code = -1;
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
         MPI_Abort(MPI_COMM_WORLD, error_code);
 #else
         exit(error_code);
@@ -185,7 +187,7 @@ namespace utopia {
 
 #endif  // ENABLE_NO_ALLOC_REGIONS
 
-#ifdef UTOPIA_TRACE_ENABLED
+#ifdef UTOPIA_ENABLE_TRACE
             if (str == "-intercept") {
                 if (i + 1 < argc) {
                     Tracer::instance().interceptor().expr(argv[i + 1]);
@@ -200,14 +202,21 @@ namespace utopia {
                 Tracer::instance().full_trace(true);
             }
 
-            if (str == "--trace_log_regions") {
+            if (str == "--trace_root_log_regions") {
+                bool must_log = true;
+#ifdef UTOPIA_ENABLE_MPI
+                int rank;
+                MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+                must_log = !rank;
+#endif
+                Tracer::instance().log_regions(must_log);
+            } else if (str == "--trace_log_regions") {
                 Tracer::instance().log_regions(true);
             }
-#endif  // UTOPIA_TRACE_ENABLED
+#endif  // UTOPIA_ENABLE_TRACE
         }
 
-        if(verbose()) 
-        {
+        if (verbose()) {
             Banner::welcome();
         }
     }

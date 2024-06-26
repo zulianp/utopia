@@ -102,7 +102,7 @@ int main()
 
 
   auto subproblem = std::make_shared<utopia::Lanczos<utopia::DSMatrixd, utopia::DVectord> >();
-  // subproblem->pc_type("lu"); 
+  // subproblem->pc_type(PCLU); 
   subproblem->atol(1e-11);
   utopia::TrustRegion<utopia::DSMatrixd, utopia::DVectord> tr_solver(subproblem);
   tr_solver.verbose(true); 

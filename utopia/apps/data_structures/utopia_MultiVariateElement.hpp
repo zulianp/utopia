@@ -5,10 +5,10 @@
 #include "utopia_ElemTraits.hpp"
 #include "utopia_Quadrature.hpp"
 
-#ifdef UTOPIA_WITH_VC
+#ifdef UTOPIA_ENABLE_VC
 #include "utopia_simd_Matrix.hpp"
 #include "utopia_simd_Vector.hpp"
-#endif  // UTOPIA_WITH_VC
+#endif  // UTOPIA_ENABLE_VC
 
 #include <utility>
 
@@ -72,7 +72,7 @@ namespace utopia {
             }
         }
 
-#ifdef UTOPIA_WITH_VC
+#ifdef UTOPIA_ENABLE_VC
 
         template <typename T>
         UTOPIA_INLINE_FUNCTION auto fun(const int i, const simd_v2::Vector<T, Dim> &p) const
@@ -101,7 +101,7 @@ namespace utopia {
             }
         }
 
-#endif  // UTOPIA_WITH_VC
+#endif  // UTOPIA_ENABLE_VC
 
         UTOPIA_INLINE_FUNCTION constexpr static bool is_affine() { return Elem::is_affine(); }
 
@@ -115,10 +115,10 @@ namespace utopia {
         }
 
         template <class... Args>
-        UTOPIA_INLINE_FUNCTION MultiVariateElem(Args &&... args) : univar_elem_(std::forward<Args>(args)...) {}
+        UTOPIA_INLINE_FUNCTION MultiVariateElem(Args &&...args) : univar_elem_(std::forward<Args>(args)...) {}
 
         template <class... H>
-        UTOPIA_INLINE_FUNCTION void set(H &&... args) {
+        UTOPIA_INLINE_FUNCTION void set(H &&...args) {
             univar_elem_.set(std::forward<H>(args)...);
         }
 

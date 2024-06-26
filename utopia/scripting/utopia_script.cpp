@@ -18,14 +18,14 @@ void print_array(double *seq, int n) {
 
 namespace utopia {
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     UTOPIA_FACTORY_REGISTER_VECTOR(PetscVector);
     UTOPIA_FACTORY_REGISTER_MATRIX(PetscMatrix);
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
     UTOPIA_FACTORY_REGISTER_VECTOR(TpetraVector);
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 }  // namespace utopia
 

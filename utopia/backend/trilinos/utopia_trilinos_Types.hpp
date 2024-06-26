@@ -16,4 +16,4 @@ namespace utopia {
     using TpetraVectord = utopia::TpetraVector;
 }  // namespace utopia
 
-#endif  // UTOPIA_UTOPIA_TRILINOS_TYPES_HPP
+#endif  // UTOPIA_TRILINOS_TYPES_HPP

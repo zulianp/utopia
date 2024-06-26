@@ -3,26 +3,26 @@
 #include "utopia.hpp"
 #include "utopia_Version.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc_impl.hpp"
 
 using VectorType = utopia::PetscVector;
 using MatrixType = utopia::PetscMatrix;
 
 #else
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 using VectorType = utopia::TpetraVector;
 using MatrixType = utopia::TpetraMatrix;
 #else
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
 using VectorType = utopia::BlasVectord;
 using MatrixType = utopia::BlasMatrixd;
 #else
 #warning "No backend available"
 #define UTOPIA_NO_BACKEND
-#endif  // UTOPIA_WITH_BLAS
-#endif  // UTOPIA_WITH_TRILINOS
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_BLAS
+#endif  // UTOPIA_ENABLE_TRILINOS
+#endif  // UTOPIA_ENABLE_PETSC
 
 #ifndef UTOPIA_NO_BACKEND
 

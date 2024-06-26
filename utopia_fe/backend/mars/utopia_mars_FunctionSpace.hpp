@@ -114,6 +114,11 @@ namespace utopia {
                                          Vector &vec,
                                          const KokkosDiscretization::Part &part = KokkosDiscretization::all()) = 0;
 
+            virtual void local_to_global(const Comm &comm,
+                                         const std::vector<KokkosDiscretization::ScalarAccumulator> &acc,
+                                         std::vector<Scalar> &scalars,
+                                         const Part &part = KokkosDiscretization::all()) = 0;
+
             virtual void local_to_global_on_boundary(
                 const std::vector<KokkosDiscretization::VectorAccumulator> &acc,
                 AssemblyMode mode,
@@ -170,7 +175,9 @@ namespace utopia {
             void apply_zero_constraints(Vector &vec) const;
             void copy_at_constrained_nodes(const Vector &in, Vector &out) const /*override*/;
 
+
             void apply_constraints_update(Vector &v) const { this->apply_constraints(v); }
+            void apply_constraints_time_derivative(Vector &v){Utopia::Abort("IMPLEMENT ME!");};
 
             void add_dirichlet_boundary_condition(const std::string &name,
                                                   const Scalar &value,

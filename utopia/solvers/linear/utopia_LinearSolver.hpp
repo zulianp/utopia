@@ -39,9 +39,18 @@ namespace utopia {
 
         bool apply(const Vector &rhs, Vector &sol) override = 0;
 
-        void read(Input &in) override { Preconditioner<Vector>::read(in); }
+        void read(Input &in) override {
+            Preconditioner<Vector>::read(in);
+            in.get("verbose", verbose_);
+        }
 
-        void print_usage(std::ostream &os) const override { Preconditioner<Vector>::print_usage(os); }
+        void print_usage(std::ostream &os) const override {
+            Preconditioner<Vector>::print_usage(os);
+            this->print_param_usage(os, "verbose", "bool", "Turn on/off verbose.", verbose_init_ ? "true" : "false");
+        }
+
+        virtual bool verbose() const { return verbose_; }
+        virtual void verbose(const bool &verbose) { verbose_ = verbose; };
 
         /**
          * @brief      Solve routine.
@@ -73,6 +82,9 @@ namespace utopia {
         LinearSolver *clone() const override = 0;
 
     private:
+        static constexpr bool verbose_init_{false};
+        bool verbose_{verbose_init_}; /*!< Verbose enabled? . */
+
         std::shared_ptr<const Matrix> op_;
     };
 
