@@ -7,11 +7,12 @@ Utopia is a C++ embedded domain specific language designed for parallel non-line
 
 # Main contributors of utopia
 
-- Dr. Patrick Zulian (Lead developer, Euler institute)
-- Dr. Alena Kopanicakova (Linear and nonlinear solvers, Euler institute)
-- Dr. Maria Giuseppina Chiara Nestola (MOOSE integrations, Euler institute)
-- Dr. Nur Aiman Fadel (CSCS)
+- Dr. Patrick Zulian (Lead developer, Euler institute, USI)
+- Dr. Alena Kopanicakova (Linear and nonlinear solvers, Euler institute, USI)
+- Dr. Maria Giuseppina Chiara Nestola (MOOSE integrations, Euler institute, USI)
 - Andreas Fink (CSCS)
+- Dylan Ramelli (USI)
+- Dr. Nur Aiman Fadel (CSCS)
 
 Developed at the Euler institute, USI, Lugano, Switzerland (https://www.euler.usi.ch/).
 
@@ -58,9 +59,23 @@ In the future the Utopia FE library will be removed from this repository and wil
 - Join us or contact us through our [mailing list](https://lists.usi.ch/mailman3/postorius/lists/utopia-users.lists.usi.ch)
 
 
-## Citing Utopia
-If you use Utopia for your research please use the following bibtex entry (or equivalent) to cite us
+## Using Utopia for your research? Here is how you can cite it
+If you use Utopia for your research please use the following bibtex entry to cite us
 
+```bibtex
+@article{utopia2021,
+    author = {Zulian, Patrick and Kopani{\v{c}}{\'{a}}kov{\'{a}}, Alena and Nestola, Maria G C and Fadel, Nur and Fink, Andreas and VandeVondele, Joost and Krause, Rolf},
+    title = {Large scale simulation of pressure induced phase‐field fracture propagation using {U}topia},
+    journal = {CCF Transactions on High Performance Computing},
+    year = {2021},
+    month = {06},
+    doi = {10.1007/s42514-021-00069-6},
+    url = {https://doi.org/10.1007/s42514-021-00069-6},
+    eprint = {https://doi.org/10.1007/s42514-021-00069-6},
+}
+```
+
+Use the following bibtex to refer to the repository
 ```bibtex
 @misc{utopiagit,
 	author = {Patrick Zulian and Alena Kopani{\v c}{\'a}kov{\'a} and Maria Chiara Giuseppina Nestola and Andreas Fink and Nur Fadel and Alessandro Rigazzi and Victor Magri and Teseo Schneider and Eric Botter and Jan Mankau and Rolf Krause},
