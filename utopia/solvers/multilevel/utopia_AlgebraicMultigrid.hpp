@@ -75,7 +75,8 @@ namespace utopia {
         AlgebraicMultigrid *clone() const override { return new AlgebraicMultigrid(*this); }
 
         AlgebraicMultigrid(const AlgebraicMultigrid &other)
-            : IterativeSolver(other), algorithm_(other.algorithm_),
+            : IterativeSolver(other),
+              algorithm_(other.algorithm_),
               agglomerator_(std::shared_ptr<MatrixAgglomerator<Matrix>>(other.agglomerator_->clone())),
               n_levels_(other.n_levels_) {}
 
@@ -85,7 +86,7 @@ namespace utopia {
 
         void ensure_agglomerator() {
             if (!agglomerator_) {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
                 if (block_size_ == 2) {
                     agglomerator_ = std::make_shared<BlockAgglomerate<Matrix, 2>>();
                 } else if (block_size_ == 3) {
@@ -93,7 +94,7 @@ namespace utopia {
                 } else if (block_size_ == 4) {
                     agglomerator_ = std::make_shared<BlockAgglomerate<Matrix, 4>>();
                 } else
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
                 {
                     agglomerator_ = std::make_shared<Agglomerate<Matrix>>();

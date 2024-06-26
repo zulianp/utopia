@@ -152,6 +152,45 @@ namespace utopia {
                                 grad_trial[1] * (grad_test[0] * x23 + grad_test[1] * (x13 * x5 + x16 + x2 * x7)));
             }
 
+            UTOPIA_FUNCTION void apply(const T *UTOPIA_RESTRICT f,
+                                       const T *grad_test,
+                                       const T *disp_grad,
+                                       const T dx,
+                                       T *UTOPIA_RESTRICT res) const {
+                using namespace utopia::device;
+                // Automatically generated
+                T x0 = 2 * k;
+                T x1 = f[3] * x0;
+                T x2 = pow(f[0], 2);
+                T x3 = pow(f[1], 2);
+                T x4 = pow(f[2], 2);
+                T x5 = pow(f[3], 2);
+                T x6 = c * exp((1.0 / 2.0) * b * (x2 + x3 + x4 + x5 - 2));
+                T x7 = pow(b, 2) * x6;
+                T x8 = f[0] * x7;
+                T x9 = f[1] * x8 - f[2] * x1;
+                T x10 = -f[1] * x1 + f[2] * x8;
+                T x11 = f[0] * f[3];
+                T x12 = f[1] * f[2];
+                T x13 = x0 * (-x11 + x12 + 1);
+                T x14 = x0 * x11 + x11 * x7 - x13;
+                T x15 = a + b * x6;
+                T x16 = f[0] * x0;
+                T x17 = f[3] * x7;
+                T x18 = f[1] * x17 - f[2] * x16;
+                T x19 = x0 * x12 + x12 * x7 + x13;
+                T x20 = (1.0 / 2.0) * dx;
+                T x21 = -f[1] * x16 + f[2] * x17;
+                res[0] += x20 * (grad_test[0] * (disp_grad[0] * (x0 * x5 + x15 + x2 * x7) + disp_grad[1] * x9 +
+                                                 disp_grad[2] * x10 + disp_grad[3] * x14) +
+                                 grad_test[1] * (disp_grad[0] * x9 + disp_grad[1] * (x0 * x4 + x15 + x3 * x7) +
+                                                 disp_grad[2] * x19 + disp_grad[3] * x18));
+                res[1] += x20 * (grad_test[0] * (disp_grad[0] * x10 + disp_grad[1] * x19 +
+                                                 disp_grad[2] * (x0 * x3 + x15 + x4 * x7) + disp_grad[3] * x21) +
+                                 grad_test[1] * (disp_grad[0] * x14 + disp_grad[1] * x18 + disp_grad[2] * x21 +
+                                                 disp_grad[3] * (x0 * x2 + x15 + x5 * x7)));
+            }
+
             T a{1.0};
             T b{1.0};
             T c{1.0};

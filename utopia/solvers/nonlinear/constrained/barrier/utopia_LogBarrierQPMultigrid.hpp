@@ -1,6 +1,10 @@
 #ifndef UTOPIA_LOG_BARRIER_QP_MULTIGRID_SOLVER_HPP
 #define UTOPIA_LOG_BARRIER_QP_MULTIGRID_SOLVER_HPP
 
+#include "utopia_Base.hpp"
+
+#ifdef UTOPIA_ENABLE_PETSC
+
 #include "utopia_BarrierMultigrid.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_ILU.hpp"
@@ -149,5 +153,5 @@ namespace utopia {
     };  // namespace utopia
 
 }  // namespace utopia
-
+#endif  // UTOPIA_ENABLE_PETSC
 #endif  // UTOPIA_LOG_BARRIER_QP_MULTIGRID_SOLVER_HPP

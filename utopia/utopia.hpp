@@ -39,37 +39,25 @@ more information and tutorials.
 #include "utopia_Solvers.hpp"
 #include "utopia_Utils.hpp"
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 // Macros defined in a petsc header are conflicting with Enums defined in
 // Trilinos Trilinos inclusions should always preceed petsc inclusions
 #include "utopia_petsc_trilinos.hpp"
 #include "utopia_trilinos.hpp"
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
 
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
 #include "utopia_blas.hpp"
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc.hpp"
 #include "utopia_petsc_impl.hpp"
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
-#ifdef UTOPIA_WITH_CUDA
-#include "utopia_cuda.hpp"
-#endif  // UTOPIA_WITH_CUDA
-
-#ifdef UTOPIA_WITH_OPENCL
-#include "utopia_opencl.hpp"
-#endif  // UTOPIA_WITH_OPENCL
-
-#ifdef UTOPIA_WITH_M3ELINSOL
-#include "utopia_m3elinsol.hpp"
-#endif  // UTOPIA_WITH_M3ELINSOL
-
-#ifdef UTOPIA_WITH_VC
+#ifdef UTOPIA_ENABLE_VC
 #include "utopia_Vc.hpp"
-#endif  // UTOPIA_WITH_M3ELINSOL
+#endif  // UTOPIA_ENABLE_VC
 
 #include "utopia_polymorphic_LinearSolver.hpp"
 

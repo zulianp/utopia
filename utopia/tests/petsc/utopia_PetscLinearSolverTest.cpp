@@ -5,7 +5,7 @@
 
 namespace utopia {
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     class PetscLinearSolverTest {
     public:
         using Traits = utopia::Traits<PetscVector>;
@@ -21,8 +21,12 @@ namespace utopia {
 
             UTOPIA_RUN_TEST(petsc_bicgstab);
             UTOPIA_RUN_TEST(petsc_gmres);
+
 // FIXME make it work also without mumps
-#ifdef PETSC_HAVE_MUMPS
+#ifndef PETSC_HAVE_MUMPS
+            if (Comm::world().size() > 1) return;
+#endif  // PETSC_HAVE_MUMPS
+
             UTOPIA_RUN_TEST(petsc_mg);
             UTOPIA_RUN_TEST(petsc_cg_mg);
             UTOPIA_RUN_TEST(petsc_mg_1D);
@@ -35,8 +39,6 @@ namespace utopia {
             UTOPIA_RUN_TEST(petsc_factorization);
             UTOPIA_RUN_TEST(petsc_st_cg_mg);
             UTOPIA_RUN_TEST(petsc_redundant_test);
-
-#endif  // PETSC_HAVE_MUMPS
         }
 
         void petsc_cg() {
@@ -73,7 +75,7 @@ namespace utopia {
             KSP_MF<PetscMatrix, PetscVector> cg;
 
             // FIXME
-            cg.pc_type("none");
+            cg.pc_type(PCNONE);
             cg.rtol(1e-6);
             cg.atol(1e-6);
             cg.max_it(500);
@@ -104,7 +106,7 @@ namespace utopia {
 
             // test also with our preconditioner
             // cg.set_preconditioner(std::make_shared<IdentityPreconditioner<PetscVector>>());
-            cg.ksp_type("cg");
+            cg.ksp_type(KSPCG);
             cg.solve(matrix_operator, rhs, x);
 
             utopia_test_assert(approxeq(rhs, A * x, 1e-5));
@@ -327,8 +329,8 @@ namespace utopia {
             auto solver = std::make_shared<utopia::RedundantLinearSolver<PetscMatrix, PetscVector>>();
             solver->number_of_parallel_solves(comm_.size());
             // solver->number_of_parallel_solves(1);
-            solver->ksp_type("gmres");
-            solver->pc_type("lu");
+            solver->ksp_type(KSPGMRES);
+            solver->pc_type(PCLU);
 
             solver->verbose(false);
             solver->solve(mat, rhs, sol);
@@ -564,7 +566,7 @@ namespace utopia {
             auto precond = std::make_shared<InvDiagPreconditioner<PetscMatrix, PetscVector>>();
             // utopia_ksp.set_preconditioner(precond);
             utopia_ksp.verbose(verbose);
-            utopia_ksp.ksp_type("gmres");
+            utopia_ksp.ksp_type(KSPGMRES);
             utopia_ksp.solve(A, rhs, x_0);
             utopia_test_assert(approxeq(A * x_0, rhs, 1e-6));
             //! [KSPSolver solve example1]
@@ -703,10 +705,10 @@ namespace utopia {
         int n_{10};
     };
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
     static void petsc_linear() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         PetscLinearSolverTest().run();
 #endif
     }

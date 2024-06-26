@@ -137,6 +137,11 @@ public:
 
     if (auto *pgs_QR = dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector> *>(
             qp_smoother_.get())) {
+
+      Super::init_memory(row_layout(*op));
+      active_set_->init(layout(*this->constraints_.lower_bound()));
+      help_.zeros(row_layout(*op));
+
     } else {
       init_memory(row_layout(*op));
     }
@@ -197,6 +202,7 @@ public:
   }
 
   void init_memory(const Layout &l) override {
+
     Super::init_memory(l);
     active_set_->init(l);
 
@@ -340,13 +346,21 @@ public:
   }
 
   Scalar criticality_measure_inf(const Vector &x, const Vector &g) {
-    help_ = x - g;
 
-    this->project(*this->constraints_.lower_bound(),
-                  *this->constraints_.upper_bound(), help_);
-    help_ -= x;
+    // needed because QR MG has constraints in projected space
+    if (x.size() == this->constraints_.lower_bound()->size() &&
+        x.size() == this->constraints_.upper_bound()->size()) {
 
-    return norm2(help_);
+      help_ = x - g;
+
+      this->project(*this->constraints_.lower_bound(),
+                    *this->constraints_.upper_bound(), help_);
+      help_ -= x;
+
+      return norm2(help_);
+    } else {
+      return norm2(g);
+    }
   }
 
 protected:

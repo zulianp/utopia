@@ -97,7 +97,7 @@ namespace utopia {
             utopia_test_assert(approxeq(sum_row_sum, 0.0, 1e-9));
 
             KSPSolver<Matrix_t, Vector_t> solver;
-            solver.pc_type("hypre");
+            solver.pc_type("bjacobi");
             solver.rtol(rtol);
             solver.verbose(verbose);
 
@@ -152,7 +152,7 @@ namespace utopia {
 
             auto fe_ptr = std::make_shared<FE>();
             create_fe(space, *fe_ptr, 2);
-            utopia::kokkos::LaplaceOperator<FE> lapl(fe_ptr, {1.0});
+            utopia::kokkos::LaplaceOperator<void,FE> lapl(fe_ptr, {1.0});
 
             assemble_and_solve("poisson", space, lapl);
         }
@@ -167,7 +167,7 @@ namespace utopia {
 
             auto fe_ptr = std::make_shared<FE>();
             create_fe(space, *fe_ptr, 2);
-            utopia::kokkos::VectorLaplaceOperator<FE, 3> lapl(fe_ptr, {1.0});
+            utopia::kokkos::VectorLaplaceOperator<void,FE, 3> lapl(fe_ptr, {1.0});
 
             assemble_and_solve("vector_poisson", space, lapl);
         }
@@ -184,10 +184,10 @@ namespace utopia {
             auto fe_ptr = std::make_shared<FE>();
             create_fe(space, *fe_ptr, 2);
 
-            utopia::kokkos::LinearElasticity<FE, Dim> linear_elasticity(fe_ptr, {1.0, 1.0});
+            utopia::kokkos::LinearElasticity<void,FE, Dim> linear_elasticity(fe_ptr, {1.0, 1.0});
             assemble_and_solve("linear_elasticity", space, linear_elasticity);
 
-            utopia::kokkos::NeoHookean<FE> neohookean(fe_ptr, {1.0, 1.0});
+            utopia::kokkos::NeoHookean<void,FE> neohookean(fe_ptr, {1.0, 1.0});
             assemble_and_solve("neohookean", space, neohookean);
         }
     };

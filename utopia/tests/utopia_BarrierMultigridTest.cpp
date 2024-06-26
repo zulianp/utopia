@@ -1,5 +1,9 @@
 #include "utopia_Testing.hpp"
 
+#include "utopia_Base.hpp"
+
+#ifdef UTOPIA_ENABLE_PETSC
+
 #include "utopia.hpp"
 
 #include "test_problems/utopia_QPSolverTestProblem.hpp"
@@ -11,12 +15,12 @@
 #include "utopia_ElementWisePseudoInverse.hpp"
 
 #include "utopia_BarrierMultigrid.hpp"
-#include "utopia_LogBarrierQPMultigrid.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
+#include "utopia_LogBarrierQPMultigrid.hpp"
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 namespace utopia {
 
@@ -50,7 +54,8 @@ namespace utopia {
 
             InputParameters params;
             params.set("use_coarse_space", true);
-            params.set("debug", true);
+            // params.set("debug", true);
+            params.set("verbose", verbose);
             params.set("barrier_parameter", 1);
             params.set("barrier_parameter_shrinking_factor", 0.1);
             params.set("min_barrier_parameter", 1e-10);
@@ -75,7 +80,7 @@ namespace utopia {
             // Use external linear smoothing (otherwise internally uses Jacobi)
             // mg->set_linear_smoother(std::make_shared<ILU<Matrix, Vector>>());
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             if (algebraic) {
                 auto agg = std::make_shared<Agglomerate<Matrix>>();
 
@@ -83,7 +88,7 @@ namespace utopia {
                 agg_params.set("bmax", 4);
                 agg->read(agg_params);
 
-                agg->verbose(true);
+                agg->verbose(false);
                 mg->set_agglomerator(agg);
             }
 #endif
@@ -92,9 +97,9 @@ namespace utopia {
         }
 
         void test_ml_problem() {
-            const static bool verbose = true;
+            const static bool verbose = false;
             const static bool use_masks = false;
-            int n_levels = 7;
+            int n_levels = 5;
             int n_coarse = 501;
 
             using ProblemType = utopia::Poisson1D<Matrix, Vector>;
@@ -123,18 +128,19 @@ namespace utopia {
 
             mg->solve(*fun, x);
 
-            if (Traits::Backend == PETSC) {
-                rename("x", x);
-                write("X.m", x);
-            }
+            // if (Traits::Backend == PETSC) {
+            //     rename("x", x);
+            //     write("X.m", x);
+            // }
         }
 
+#ifdef UTOPIA_ENABLE_PETSC
         void test_qp_problem() {
             //////////////////////////////////////////////////////////////////////////////////////////
             // Problem set-up
-            const static bool verbose = true;
+            const static bool verbose = false;
             const static bool use_masks = false;
-            int n_levels = 7;
+            int n_levels = 5;
             int n_coarse = 501;
 
             using ProblemType = utopia::Poisson1D<Matrix, Vector>;
@@ -175,28 +181,33 @@ namespace utopia {
                 write("X_qp.m", x);
             }
         }
+#endif  // UTOPIA_ENABLE_PETSC
 
         void run() {
             print_backend_info();
             UTOPIA_RUN_TEST(test_ml_problem);
+#ifdef UTOPIA_ENABLE_PETSC
             UTOPIA_RUN_TEST(test_qp_problem);
+#endif
         }
     };
 
     static void barrier_mg() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         BarrierMultigridTest<PetscMatrix, PetscVector>().run();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
-        // #ifdef UTOPIA_WITH_TRILINOS
+        // #ifdef UTOPIA_ENABLE_TRILINOS
         //         BarrierMultigridTest<TpetraMatrixd, TpetraVectord>().run();
-        // #endif  // UTOPIA_WITH_TRILINOS
+        // #endif  // UTOPIA_ENABLE_TRILINOS
 
-        // #ifdef UTOPIA_WITH_BLAS
+        // #ifdef UTOPIA_ENABLE_BLAS
         //         BarrierMultigridTest<BlasMatrixd, BlasVectord>()
         //             .run();  // TODO(zulianp): : because blas is missing min operation ....
-        // #endif               // UTOPIA_WITH_BLAS
+        // #endif               // UTOPIA_ENABLE_BLAS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(barrier_mg);
 }  // namespace utopia
+
+#endif

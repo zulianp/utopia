@@ -23,24 +23,23 @@ namespace utopia {
             // One shot functions
             void read(Input &in) override;
             bool read_with_state(Input &in, Field<FunctionSpace> &field);
+            bool read_nodal(Field<FunctionSpace> &field, const bool fail_if_not_found = true);
             void import_all_field_data(const bool value);
 
             // Statefull functions
-            // bool load();
-
             bool write(const Field<FunctionSpace> &field);
             bool write(const Vector &v);
             bool write(const Vector &v, const int step, const Scalar);
             bool write(const int step, const Scalar t);
-            // bool read(Vector &v, const int step = 1, const Scalar t = 0);
 
             void set_output_path(const Path &path);
+            void set_output_mode(OutputMode output_mode);
+            void set_output_mode(const std::string &output_mode);
             bool open_output();
 
             void set_input_path(const Path &path);
             bool open_input();
             bool open_input(Input &in);
-            // void set_read_path(const Path &path);
 
             SpaceIO(FunctionSpace &space);
             ~SpaceIO();
@@ -48,7 +47,14 @@ namespace utopia {
             void enable_interpolation_mode();
 
             bool load_time_step(const Scalar t);
+            bool load_last_time_step();
+            int num_time_steps() const;
+            Scalar max_time() const;
+            void set_import_all_data(const bool val);
+
             void register_output_field(const std::string &var_name);
+            void register_output_field(const Field<FunctionSpace> &field);
+            void update_output_field(const Field<FunctionSpace> &field);
 
         public:
             class Impl;

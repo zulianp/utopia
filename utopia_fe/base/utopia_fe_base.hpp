@@ -6,13 +6,18 @@
 #include "utopia_fe_config.hpp"
 
 namespace utopia {
-#ifdef UTOPIA_WITH_TRILINOS_ALGEBRA
+#ifdef UTOPIA_ENABLE_TRILINOS_ALGEBRA
     using USparseMatrix = TpetraMatrixd;
     using UVector = TpetraVectord;
 #else
+#ifdef UTOPIA_ENABLE_PETSC
     using USparseMatrix = PetscMatrix;
     using UVector = PetscVector;
-#endif  // UTOPIA_WITH_TRILINOS_ALGEBRA
+#else
+    using USparseMatrix = TpetraMatrixd;
+    using UVector = TpetraVectord;
+#endif
+#endif  // UTOPIA_ENABLE_TRILINOS_ALGEBRA
 
     using UIndexArray = utopia::Traits<UVector>::IndexArray;
     using UScalarArray = utopia::Traits<UVector>::ScalarArray;

@@ -1,0 +1,109 @@
+version: '{build}'
+clone_folder: c:\projects\utopia
+
+image: Visual Studio 2019
+
+init:
+  - ps: ($env:APPVEYOR_SAVE_CACHE_ON_ERROR = "true")
+
+
+# cache dependencies libraries.
+cache:
+  - C:\projects\installations\trilinos -> appveyor.yml
+  - C:\projects\trilinos\trilinos-release-14-4-0 -> appveyor.yml
+  - C:\projects\trilinos -> appveyor.yml
+  - C:\projects\trilinos\trilinos-14-4-0- -> appveyor.yml
+  - C:\projects\boost\boost_1_83_0 -> appveyor.yml
+  - C:\projects\hdf5\CMake-hdf5-1.14.2\CMake-hdf5-1.14.2\build\HDF5-1.14.2-win64 -> appveyor.yml
+
+install:
+# Install MS-MPI
+- ps: Start-FileDownload 'https://github.com/microsoft/Microsoft-MPI/releases/download/v10.1.1/msmpisetup.exe'
+- msmpisetup.exe -unattend
+- set PATH=C:\Program Files\Microsoft MPI\Bin;%PATH%
+
+# # Install MS-MPI SDK
+- ps: Start-FileDownload 'https://github.com/microsoft/Microsoft-MPI/releases/download/v10.1.1/msmpisdk.msi'
+- msmpisdk.msi /quiet /passive
+- set PATH=C:\Program Files\Microsoft MPI\Bin;%PATH%
+
+- cd c:\projects
+- mkdir blas && cd blas
+# Blas
+- ps: Start-FileDownload 'https://icl.utk.edu/lapack-for-windows/libraries/VisualStudio/3.7.0/Dynamic-MINGW/Win64/libblas.dll'
+- ps: Start-FileDownload 'https://icl.utk.edu/lapack-for-windows/libraries/VisualStudio/3.7.0/Dynamic-MINGW/Win32/libblas.lib'
+
+- cd c:\projects
+- mkdir lapack && cd lapack
+# Lapack
+- ps: Start-FileDownload 'https://icl.utk.edu/lapack-for-windows/libraries/VisualStudio/3.7.0/Dynamic-MINGW/Win64/liblapack.dll'
+- ps: Start-FileDownload 'https://icl.utk.edu/lapack-for-windows/libraries/VisualStudio/3.7.0/Dynamic-MINGW/Win32/liblapack.lib'
+
+# Boost C++
+- cd c:\projects
+- IF NOT EXIST boost mkdir boost
+- cd boost
+- ps: if (-not (Test-Path -Path 'c:\projects\boost\boost_1_83_0' -PathType Leaf )) { Start-FileDownload 'https://sourceforge.net/projects/boost/files/boost/1.83.0/boost_1_83_0.tar.gz'}
+- IF NOT EXIST boost_1_83_0 7z x boost_1_83_0.tar.gz -so | 7z x -si -ttar > nul
+
+# SUPERLU NOT COMPILING AS OF NOW.
+# - cd c:\projects
+# - mkdir superlu && cd superlu
+# - ps: Start-FileDownload 'https://github.com/xiaoyeli/superlu/archive/refs/tags/v6.0.1.tar.gz'
+# - 7z x v6.0.1.tar.gz -so | 7z x -si -ttar > nul
+# - cd superlu-6.0.1
+# - cmake -G "Visual Studio 16 2019" -A x64 -S . -B "build64" -DCMAKE_INSTALL_PREFIX="C:\projects\installations\superlu" -DCMAKE_CXX_FLAGS="/W0 /EHsc" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=mpicxx -DMPI_C_INCLUDE_PATH="C:\Program Files (x86)\Microsoft SDKs\MPI\Include" -DMPI_C_LIBRARIES="C:\Program Files (x86)\Microsoft SDKs\MPI\Lib\x64\msmpi.lib" -DMPI_CXX_LIBRARIES="C:\Program Files (x86)\Microsoft SDKs\MPI\Lib\x64\msmpi.lib" -DMPI_CXX_INCLUDE_PATH="C:/Program Files (x86)/Microsoft SDKs/MPI/Include" -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_STANDARD=17 && cmake --build build64 --config Release --target install
+
+#HDF5 win
+# - cd c:\projects
+# - IF NOT EXIST C:\projects\hdf5 mkdir hdf5 && cd hdf5 
+# - ps: Start-FileDownload 'https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.14/hdf5-1.14.2/src/CMake-hdf5-1.14.2.zip'
+# - IF NOT EXIST C:\projects\hdf5\CMake-hdf5-1.14.2\CMake-hdf5-1.14.2\build\HDF5-1.14.2-win64 7z x CMake-hdf5-1.14.2.zip && cd "CMake-hdf5-1.14.2\CMake-hdf5-1.14.2\" && build-vs2019-64.bat && cd "build\" && 7z x HDF5-1.14.2-win64.zip
+
+
+#NETCDF
+# - cd c:\projects
+# - IF NOT EXIST C:\projects\netcdf mkdir netcdf && cd netcdf 
+# - ps: Start-FileDownload 'https://downloads.unidata.ucar.edu/netcdf-c/4.9.2/netcdf-c-4.9.2.tar.gz'
+# - 7z x netcdf-c-4.9.2.tar.gz -so | 7z x -si -ttar > nul
+# - cd netcdf-c-4.9.2
+# - cmake -G "Visual Studio 16 2019" -A x64 -S . -B "build64" -DCMAKE_INSTALL_PREFIX="C:\projects\installations\netcdf" -DCMAKE_CXX_FLAGS="/W0 /EHsc" -DHDF5_DIR="C:\projects\hdf5\CMake-hdf5-1.14.2\CMake-hdf5-1.14.2\build\HDF5-1.14.2-win64\cmake" -DCMAKE_BUILD_TYPE=Release && cmake --build build64 --config Release --target install
+
+# Config msys
+# - cd "C:\msys64\usr\bin" 
+# - bash.exe -l -c "echo $MINGW_PREFIX"
+# - bash.exe -l -c "pacman -Syu"
+# - bash.exe -l -c "pacman -S autoconf automake-wrapper bison bsdcpio make git"
+
+#Install Petsc
+# Does not natively compile with windows
+# Cannot use MS-MPI, Intel-MPI, MPICH2
+# Options are, Cygwin to compile, MSYS, 
+# - cd c:\projects\petsc
+# - ps: Start-FileDownload 'https://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-3.18.3.tar.gz'
+# - 7z x petsc-3.18.3.tar.gz -so | 7z x -si -ttar > nul
+# - cd petsc-3.18.3
+# - C:\msys64\usr\bin\bash.exe -l -c " /usr/bin/python ./configure --with-mpiexec='C:/Program Files/Microsoft MPI/Bin/mpiexec.exe'"
+
+# Install Trilinos
+- cd c:\projects
+- IF NOT EXIST trilinos mkdir trilinos
+- cd trilinos
+- ps: if (-not (Test-Path -Path 'c:\projects\trilinos\trilinos-release-14-4-0' -PathType Leaf )) { Start-FileDownload 'https://github.com/trilinos/Trilinos/archive/refs/tags/trilinos-release-14-4-0.tar.gz'}
+- IF NOT EXIST trilinos-release-14-4-0 7z x trilinos-release-14-4-0.tar.gz -so | 7z x -si -ttar > nul
+- mv Trilinos-trilinos-release-14-4-0 trilinos-14-4-0
+- cd trilinos-14-4-0
+# - cmake -G "Visual Studio 16 2019" -A x64 -S . -B "build64" -DCMAKE_INSTALL_PREFIX="C:\projects\installations\trilinos" -DCMAKE_CXX_FLAGS="/W0 /EHsc" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=mpicxx -DMPI_C_INCLUDE_PATH="C:\Program Files (x86)\Microsoft SDKs\MPI\Include" -DMPI_C_LIBRARIES="C:\Program Files (x86)\Microsoft SDKs\MPI\Lib\x64\msmpi.lib" -DMPI_CXX_LIBRARIES="C:\Program Files (x86)\Microsoft SDKs\MPI\Lib\x64\msmpi.lib" -DMPI_CXX_INCLUDE_PATH="C:/Program Files (x86)/Microsoft SDKs/MPI/Include" -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_STANDARD=17 -DBUILD_SHARED_LIBS=OFF -DAmesos2_ENABLE_EXPLICIT_INSTANTIATION=ON -DIfpack2_ENABLE_EXPLICIT_INSTANTIATION=ON -DMueLu_ENABLE_EXPLICIT_INSTANTIATION=ON -DTPL_ENABLE_MPI=ON -DTPL_ENABLE_Netcdf:BOOL=OFF -DTPL_ENABLE_Pnetcdf=OFF -DTeuchos_ENABLE_EXPLICIT_INSTANTIATION=ON -DTpetraCore_ENABLE_EXPLICIT_INSTANTIATION=ON -DTpetra_ENABLE_EXPLICIT_INSTANTIATION=ON -DTpetra_INST_COMPLEX_DOUBLE=OFF -DTpetra_INST_DOUBLE:BOOL=ON -DTpetra_INST_INT_LONG:BOOL=ON -DTpetra_INST_INT_LONG_LONG:BOOL=OFF -DTrilinos_ALLOW_NO_PACKAGES:BOOL=OFF -DTrilinos_ASSERT_DEFINED_DEPENDENCIES=FATAL_ERROR -DTrilinos_ENABLE_ALL_OPTIONAL_PACKAGES=OFF  -DTrilinos_ENABLE_Amesos2:BOOL=ON -DTrilinos_ENABLE_AztecOO:BOOL=OFF -DTrilinos_ENABLE_Belos:BOOL=ON -DTrilinos_ENABLE_EXPLICIT_INSTANTIATION:BOOL=ON -DTrilinos_ENABLE_Epetra:BOOL=OFF -DTrilinos_ENABLE_EpetraExt:BOOL=OFF -DTrilinos_ENABLE_Gtest:BOOL=OFF -DTrilinos_ENABLE_Ifpack2:BOOL=ON -DTrilinos_ENABLE_Intrepid2:BOOL=OFF -DTrilinos_ENABLE_MueLu:BOOL=ON -DTrilinos_ENABLE_NOX=ON -DTrilinos_ENABLE_SEACASEpu:BOOL=OFF -DTrilinos_ENABLE_SEACASExodiff:BOOL=OFF -DTrilinos_ENABLE_SEACASExodus:BOOL=OFF -DTrilinos_ENABLE_SEACASIoss:BOOL=OFF -DTrilinos_ENABLE_SEACASNemslice:BOOL=OFF -DTrilinos_ENABLE_SEACASNemspread:BOOL=OFF -DTrilinos_ENABLE_STKBalance:BOOL=OFF -DTrilinos_ENABLE_STKIO:BOOL=OFF -DTrilinos_ENABLE_STKMesh:BOOL=OFF -DTrilinos_ENABLE_STKSearch:BOOL=OFF -DTrilinos_ENABLE_STKSimd:BOOL=OFF -DTrilinos_ENABLE_STKTopology:BOOL=OFF -DTrilinos_ENABLE_STKTransfer:BOOL=OFF -DTrilinos_ENABLE_STKUnit_test_utils:BOOL=OFF -DTrilinos_ENABLE_STKUnit_tests:BOOL=OFF -DTrilinos_ENABLE_STKUtil:BOOL=OFF -DTrilinos_ENABLE_TESTS:BOOL=OFF -DTrilinos_ENABLE_Tpetra:BOOL=ON -DTrilinos_ENABLE_TpetraCore=ON -DTrilinos_ENABLE_Zoltan2:BOOL=OFF -DTrilinos_ENABLE_Zoltan:BOOL=OFF -DTPL_ENABLE_SuperLU:BOOL=OFF -DXpetra_ENABLE_EXPLICIT_INSTANTIATION:BOOL=ON -DTPL_ENABLE_SuperLU:BOOL=OFF -DTPL_ENABLE_Boost:BOOL=OFF -DTrilinos_ENABLE_Percept:BOOL=OFF -DTPL_ENABLE_HDF5:BOOL=OFF -DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON -DTrilinos_ENABLE_Kokkos=ON -DTPL_BLAS_LIBRARIES="c:/projects/blas/libblas.lib" -DTPL_LAPACK_LIBRARIES="c:/projects/lapack/liblapack.lib" -DTPL_Boost_INCLUDE_DIRS="c:/projects/boost_1_83_0/boost" && cmake --build build64 --config Release --target install
+
+# -DTPL_HDF5_LIBRARIES="C:\projects\hdf5\CMake-hdf5-1.14.2\CMake-hdf5-1.14.2\build\HDF5-1.14.2-win64\lib" -DTPL_HDF5_INCLUDE_DIRS="C:\projects\hdf5\CMake-hdf5-1.14.2\CMake-hdf5-1.14.2\build\HDF5-1.14.2-win64\include" && cmake --build build64 --config Release --target install
+
+
+## Utopia
+- cd c:\projects\utopia\utopia
+- cmake -Ball_builds -DCMAKE_INSTALL_PREFIX="C:\projects\installations\utopia" -DCMAKE_EXE_LINKER_FLAGS:STRING="/machine:x64" -DMPI_C_INCLUDE_PATH="C:\Program Files (x86)\Microsoft SDKs\MPI\Include" -DMPI_C_LIBRARIES="C:\Program Files (x86)\Microsoft SDKs\MPI\Lib\x64\msmpi.lib" -DMPI_CXX_LIBRARIES="C:\Program Files (x86)\Microsoft SDKs\MPI\Lib\x64\msmpi.lib" -DMPI_CXX_INCLUDE_PATH="C:\Program Files (x86)\Microsoft SDKs\MPI\Include" -DUTOPIA_ENABLE_TRACE_EXPR=ON -DUTOPIA_ENABLE_TRACE=ON -DUTOPIA_ENABLE_TRILINOS=OFF -DUTOPIA_ENABLE_BLAS=ON -DUTOPIA_ENABLE_LAPACK=ON -DUTOPIA_ENABLE_YAML_CPP=OFF -DUTOPIA_ENABLE_POLYMORPHIC=ON -DUTOPIA_ENABLE_PETSC=OFF -DUTOPIA_ENABLE_TESTS=ON -DUTOPIA_ENABLE_BENCHMARK=ON -DUTOPIA_ENABLE_EXAMPLES=ON -DUTOPIA_ENABLE_SCRIPTING=OFF -DUTOPIA_ENABLE_SLEPC=OFF -DCMAKE_INSTALL_PREFIX=install -DUTOPIA_ENABLE_ISOLVER=OFF -DUTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL=OFF -DBLAS_LIBRARIES="c:\projects\blas\libblas.lib" -DLAPACK_LIBRARIES="c:\projects\lapack\liblapack.lib" -DTrilinos_DIR="c:\projects\installations\trilinos\lib\cmake\Trilinos"
+
+build_script:
+  - cmake --build all_builds --config Release --target install
+
+
+

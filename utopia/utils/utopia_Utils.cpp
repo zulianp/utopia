@@ -153,4 +153,36 @@ namespace utopia {
         }
     }
 
+    template <>
+    void CSVWriter::write_table_row_and_append_vector(const std::vector<std::string> vars, std::vector<std::string> vars2) {
+        if (pFile != nullptr && mpi_world_rank() == 0) {
+            for (std::vector<double>::size_type i = 0; i < vars.size(); i++) {
+                    fprintf(pFile, "%s,", vars[i].c_str());
+            }
+            for (std::vector<double>::size_type i = 0; i < vars2.size(); i++) {
+                if (i < vars2.size() - 1)
+                    fprintf(pFile, "%s,", vars2[i].c_str());
+                else
+                    fprintf(pFile, "%s", vars2[i].c_str());
+            }
+            fprintf(pFile, "\n");
+        }
+    }
+
+    template <>
+    void CSVWriter::write_table_row_and_append_vector(const std::vector<double> vars, std::vector<double> vars2) {
+        if (pFile != nullptr && mpi_world_rank() == 0) {
+            for (std::vector<double>::size_type i = 0; i < vars.size(); i++) {
+                    fprintf(pFile, "%.12e,", vars[i]);
+            }
+            for (std::vector<double>::size_type i = 0; i < vars2.size(); i++) {
+                if (i < vars2.size() - 1)
+                    fprintf(pFile, "%.12e,", vars2[i]);
+                else
+                    fprintf(pFile, "%.12e", vars2[i]);
+            }
+            fprintf(pFile, "\n");
+        }
+    }
+
 }  // namespace utopia

@@ -269,7 +269,7 @@ namespace utopia {
         ghosted_vec_->doImport(*y, importer, Tpetra::INSERT);
     }
 
-    TpetraVector::TpetraVector(const TpetraVector &other) { copy(other); }
+    TpetraVector::TpetraVector(const TpetraVector &other) : comm_(other.comm_) { copy(other); }
 
     void TpetraVector::copy(const TpetraVector &other) {
         if (&other == this) {
@@ -511,5 +511,13 @@ namespace utopia {
         }
 #endif  // (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
     }
+
+    void TpetraVector::wrap(const RCPVectorType &x) {
+        assert(x->getMap());
+        comm_ = x->getMap()->getComm();
+        vec_ = x;
+    }
+
+    void TpetraVector::unwrap(const RCPVectorType &) { vec_.release(); }
 
 }  // namespace utopia

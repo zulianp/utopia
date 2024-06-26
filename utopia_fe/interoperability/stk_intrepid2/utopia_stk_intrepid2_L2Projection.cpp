@@ -15,8 +15,8 @@ namespace utopia {
         class L2Projection::Impl {
         public:
             using Intrepi2FE_t = utopia::intrepid2::FE<Scalar>;
-            using L2Projection2 = utopia::kokkos::L2Projection<Intrepi2FE_t, Intrepi2FE_t::DynRankView>;
-            using Intrepid2Assembler = utopia::kokkos::FEAssembler<Intrepi2FE_t>;
+            using L2Projection2 = utopia::kokkos::L2Projection<FunctionSpace, Intrepi2FE_t, Intrepi2FE_t::DynRankView>;
+            using Intrepid2Assembler = utopia::kokkos::FEAssembler<FunctionSpace, Intrepi2FE_t>;
 
             std::shared_ptr<Field> field;
             std::shared_ptr<Intrepid2Field> intrepid2_field;

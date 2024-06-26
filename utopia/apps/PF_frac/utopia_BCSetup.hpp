@@ -37,6 +37,8 @@
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_impl.hpp"
 
+#include "utopia_petsc_Constraints.hpp"
+
 #include <chrono>
 #include <cmath>
 #include <random>
@@ -213,39 +215,55 @@ namespace utopia {
     };
 
     template <class FunctionSpace>
-    class PFFracTension2D : public BCSetup<FunctionSpace> {
+    class PFFracTension : public BCSetup<FunctionSpace> {
     public:
         using Scalar = typename FunctionSpace::Scalar;
         using Vector = typename FunctionSpace::Vector;
 
-        PFFracTension2D(FunctionSpace &space, const Scalar &disp_y = 1.0)
+        PFFracTension(FunctionSpace &space, const Scalar &disp_y = 1.0)
             : BCSetup<FunctionSpace>(space), disp_y_(disp_y) {}
 
-        void read(Input &in) override { in.get("disp_y", disp_y_); }
+        void read(Input &in) override {
+            in.get("disp_y", disp_y_);
+            in.get("fix_phase_field_on_sides", fix_phase_field_);
+        }
 
         void emplace_time_dependent_BC(const Scalar &time) override {
-            static const int Dim = FunctionSpace::Dim;
+            //            static const int Dim = FunctionSpace::Dim;
 
             using Point = typename FunctionSpace::Point;
             this->space_.reset_bc();
 
             this->space_.emplace_dirichlet_condition(
-                SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
+                SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
 
             this->space_.emplace_dirichlet_condition(
-                SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return disp_y_ * time; }, 1);
+                SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2);
 
-            for (int d = 2; d < Dim + 1; ++d) {
-                this->space_.emplace_dirichlet_condition(
-                    SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+            this->space_.emplace_dirichlet_condition(
+                SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return disp_y_ * time; }, 2);
 
+            this->space_.emplace_dirichlet_condition(
+                SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);  // fix x displacement
+
+            // Fixing top and bottom boundary to no have any damage on them
+            if (fix_phase_field_) {
                 this->space_.emplace_dirichlet_condition(
-                    SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+                    SideSet::bottom(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::top(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
             }
         }
 
     private:
         Scalar disp_y_;
+        bool fix_phase_field_;
     };
 
     template <class FunctionSpace>
@@ -257,7 +275,10 @@ namespace utopia {
         PFFracShear2D(FunctionSpace &space, const Scalar &disp_x = 1.0)
             : BCSetup<FunctionSpace>(space), disp_x_(disp_x) {}
 
-        void read(Input &in) override { in.get("disp_x", disp_x_); }
+        void read(Input &in) override {
+            in.get("disp_x", disp_x_);
+            in.get("fix_phase_field_on_sides", fix_phase_field_);
+        }
 
         void emplace_time_dependent_BC(const Scalar &time) override {
             // static const int Dim = FunctionSpace::Dim;
@@ -266,20 +287,40 @@ namespace utopia {
             this->space_.reset_bc();
 
             this->space_.emplace_dirichlet_condition(
-                SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2);
+                SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);  // fix x
 
             this->space_.emplace_dirichlet_condition(
-                SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_ * time; }, 2);
+                SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2);  // fix y
 
             this->space_.emplace_dirichlet_condition(
-                SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
+                SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_ * time; }, 1);  // shear x
 
             this->space_.emplace_dirichlet_condition(
-                SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
+                SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2);  // fix y
+
+            // Fixing top and bottom boundary to no have any damage on them
+            if (fix_phase_field_) {
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::bottom(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::top(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::right(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
+            }
         }
 
     private:
         Scalar disp_x_;
+        bool fix_phase_field_;
     };
 
     template <class FunctionSpace>
@@ -321,6 +362,354 @@ namespace utopia {
     private:
         Scalar disp_y_;
     };
+
+    template <class FunctionSpace>
+    class BiaxialLoading2D : public BCSetup<FunctionSpace> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
+
+        BiaxialLoading2D(FunctionSpace &space, const Scalar &Top_disp_y = 1.0, const Scalar &Right_disp_x = 1.0)
+            : BCSetup<FunctionSpace>(space), disp_y_(Top_disp_y), disp_x_(Right_disp_x) {}
+
+        void read(Input &in) override {
+            in.get("disp_y", disp_y_);
+            in.get("disp_x", disp_x_);
+            in.get("fix_phase_field_on_sides", fix_phase_field_);
+        }
+
+        void emplace_time_dependent_BC(const Scalar &time) override {
+            // static const int Dim = FunctionSpace::Dim;
+
+            using Point = typename FunctionSpace::Point;
+            this->space_.reset_bc();
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::bottom(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                2  // disp_y
+            );
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::left(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                1  // disp_x
+            );
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::top(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return disp_y_ * time; },
+                2  // disp_y
+            );
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::right(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_ * time; },
+                1  // disp_x
+            );
+        }
+
+    private:
+        Scalar disp_y_;
+        Scalar disp_x_;
+        bool fix_phase_field_;
+    };
+
+    template <class FunctionSpace>
+    class UniaxialLoading2D : public BCSetup<FunctionSpace> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
+
+        UniaxialLoading2D(FunctionSpace &space, const Scalar &Top_disp_y = 1.0, const Scalar &Right_disp_x = 1.0)
+            : BCSetup<FunctionSpace>(space), disp_y_(Top_disp_y), disp_x_(Right_disp_x) {}
+
+        void read(Input &in) override {
+            in.get("disp_y", disp_y_);
+            in.get("disp_x", disp_x_);
+            in.get("fix_phase_field_on_sides", fix_phase_field_);
+        }
+
+        void emplace_time_dependent_BC(const Scalar &time) override {
+            // static const int Dim = FunctionSpace::Dim;
+
+            using Point = typename FunctionSpace::Point;
+            this->space_.reset_bc();
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::left(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                2  // disp_y
+            );
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::left(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                1  // disp_x
+            );
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::right(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_ * time; },
+                1  // disp_x
+            );
+
+            // Fixing left and right boundary to no have any damage on them
+            if (fix_phase_field_) {
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::left(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::right(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
+            }
+        }
+
+    private:
+        Scalar disp_y_;
+        Scalar disp_x_;
+        bool fix_phase_field_{false};
+    };
+
+
+    template <class FunctionSpace>
+    class BoxLoading : public BCSetup<FunctionSpace> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
+
+        BoxLoading(FunctionSpace &space, const Scalar &Top_disp_y = 1.0, const Scalar &Right_disp_x = 1.0)
+            : BCSetup<FunctionSpace>(space), disp_y_(Top_disp_y), disp_x_(Right_disp_x) {}
+
+        void read(Input &in) override {
+            in.get("disp_y", disp_y_);
+            in.get("disp_x", disp_x_);
+            in.get("fix_phase_field_on_sides", fix_phase_field_);
+        }
+
+        void emplace_time_dependent_BC(const Scalar &time) override {
+            // static const int Dim = FunctionSpace::Dim;
+
+            using Point = typename FunctionSpace::Point;
+            this->space_.reset_bc();
+
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::left(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                1  // disp_x
+            );
+
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::right(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_*time; },
+                1  // disp_x
+            );
+
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::bottom(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                2  // disp_y
+            );
+
+
+//            this->space_.emplace_dirichlet_condition(
+//                SideSet::top(),
+//                UTOPIA_LAMBDA(const Point &)->Scalar { return disp_y_; },
+//                2  // disp_y
+//            );
+
+//            this->space_.emplace_dirichlet_condition(
+//                SideSet::left(),
+//                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+//                1  // disp_x
+//            );
+
+//            this->space_.emplace_dirichlet_condition(
+//                SideSet::right(),
+//                UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_ * time; },
+//                1  // disp_x
+//            );
+
+            // Fixing left and right boundary to no have any damage on them
+            if (fix_phase_field_) {
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::left(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::right(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
+            }
+        }
+
+    private:
+        Scalar disp_y_;
+        Scalar disp_x_;
+        bool fix_phase_field_{false};
+    };
+
+    template <class FunctionSpace>
+    class SedimentaryLayers_BC : public BCSetup<FunctionSpace> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
+
+        SedimentaryLayers_BC(FunctionSpace &space, const Scalar &Top_disp_y = 1.0, const Scalar &Right_disp_x = 1.0)
+            : BCSetup<FunctionSpace>(space), disp_y_(Top_disp_y), disp_x_(Right_disp_x) {}
+
+        void read(Input &in) override {
+            in.get("disp_y", disp_y_);
+            in.get("disp_x", disp_x_);
+            in.get("fix_phase_field_on_sides", fix_phase_field_);
+        }
+
+        void emplace_time_dependent_BC(const Scalar &time) override {
+            // static const int Dim = FunctionSpace::Dim;
+
+            using Point = typename FunctionSpace::Point;
+            this->space_.reset_bc();
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::left(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                1  // disp_x
+            );
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::bottom(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                2  // disp_y
+            );
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::right(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_ * time; },
+                1  // disp_x
+            );
+
+            // Fixing left and right boundary to no have any damage on them
+            if (fix_phase_field_) {
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::left(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::right(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
+            }
+        }
+
+    private:
+        Scalar disp_y_;
+        Scalar disp_x_;
+        bool   fix_phase_field_{false};
+    };
+
+    template <class FunctionSpace>
+    class SedimentaryLayersCompressed_BC : public BCSetup<FunctionSpace> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
+
+        SedimentaryLayersCompressed_BC(FunctionSpace &space, const Scalar &Top_disp_y = 1.0, const Scalar &Right_disp_x = 1.0)
+            : BCSetup<FunctionSpace>(space), disp_y_(Top_disp_y), disp_x_(Right_disp_x) {}
+
+        void read(Input &in) override {
+            in.get("disp_y", disp_y_);
+            in.get("disp_x", disp_x_);
+
+            Scalar sigma_v;
+            in.get("sigma_v", sigma_v);
+
+            Scalar E, nu;
+            in.get("E_2", E);
+            in.get("nu_2", nu);
+
+            Scalar ymin,xmin, ymax,xmax;
+            in.get("y_min", ymin);
+            in.get("x_min", xmin);
+            in.get("y_max", ymax);
+            in.get("x_max", xmax);
+
+            Scalar Lx = xmax-xmin;
+            Scalar Ly = ymax-ymin;
+
+            //getting strain for overburden
+            disp_v_ = - Ly * sigma_v * (1.0-nu*nu) / E ; // FOR 2D layer
+            disp_t_ = - Ly * nu * disp_x_ / Lx;
+
+            in.get("fix_phase_field_on_sides", fix_phase_field_);
+        }
+
+        void emplace_time_dependent_BC(const Scalar &time) override {
+            // static const int Dim = FunctionSpace::Dim;
+
+            using Point = typename FunctionSpace::Point;
+            this->space_.reset_bc();
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::left(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                1  // disp_x
+            );
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::bottom(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                2  // disp_y
+            );
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::right(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_ * time; },
+                1  // disp_x
+            );
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::top(),
+                UTOPIA_LAMBDA(const Point &)->Scalar { return disp_v_ + disp_t_ * time; },
+                2  // disp_x
+            );
+
+            // Fixing left and right boundary to no have any damage on them
+            if (fix_phase_field_) {
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::left(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::right(),
+                    UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                    0  // alpha
+                );
+            }
+        }
+
+    private:
+        Scalar disp_y_;
+        Scalar disp_x_;
+        Scalar disp_v_, disp_t_;
+        bool   fix_phase_field_{false};
+    };
+
 
     template <class FunctionSpace>
     class PFMixed2D : public BCSetup<FunctionSpace> {
@@ -443,6 +832,152 @@ namespace utopia {
     private:
         Scalar disp_x_;
         Scalar disp_y_;
+    };
+
+    template <class FunctionSpace>
+    class FixedSubdomain2D : public BCSetup<FunctionSpace> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
+
+        FixedSubdomain2D(FunctionSpace &space,
+                         const Scalar &x_min = 0,
+                         const Scalar &y_min = 0,
+                         const Scalar &x_max = 1,
+                         const Scalar &y_max = 1,
+                         const Scalar &val = 0)
+            : BCSetup<FunctionSpace>(space), x_min_(x_min), y_min_(y_min), x_max_(x_max), y_max_(y_max), val_(val) {}
+
+        void read(Input &in) override {
+            in.get("fixed_x_min", x_min_);
+            in.get("fixed_y_min", y_min_);
+            in.get("fixed_x_max", x_max_);
+            in.get("fixed_y_max", y_max_);
+        }
+
+        void emplace_time_dependent_BC(const Scalar &) override {
+            using Point = typename FunctionSpace::Point;
+            this->space_.reset_constraints();
+
+            this->space_.emplace_constraint(
+                UTOPIA_LAMBDA(const Point &p)->bool {
+                    return p(0) >= x_min_ && p(1) >= y_min_ && p(0) <= x_max_ && p(1) <= y_max_;
+                },
+                UTOPIA_LAMBDA(const Point &)->Scalar { return val_; },
+                0);
+        }
+
+    private:
+        Scalar x_min_, y_min_;
+        Scalar x_max_, y_max_;
+        Scalar val_;
+    };
+
+    template <class FunctionSpace>
+    class LayeredSubdomain : public BCSetup<FunctionSpace> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
+
+        LayeredSubdomain(FunctionSpace &space,
+                         const Scalar &y_min = 0,
+                         const Scalar &y_max = 1,
+                         const Scalar &val = 0)
+            : BCSetup<FunctionSpace>(space), y_min_(y_min), y_max_(y_max), val_(val) {}
+
+        void read(Input &in) override {
+            in.get("bottom_layer_height", y_min_);
+            in.get("top_layer_height"   , y_max_);
+            in.get("bottom_layer_height2", y_min2_);
+            in.get("top_layer_height2"   , y_max2_);
+            in.get("no_phase_field_outside_layer", no_phase_field);
+            in.get("no_pf_length", no_pf_length);
+            in.get("length_scale", length_scale);
+        }
+
+        void emplace_time_dependent_BC(const Scalar &) override {
+            using Point = typename FunctionSpace::Point;
+            this->space_.reset_constraints();
+
+            this->space_.emplace_constraint(
+                UTOPIA_LAMBDA(const Point &p)->bool {
+                    if (no_phase_field == true){
+                         return  ( !(p(1) >= y_min_ - no_pf_length*length_scale && p(1) <= y_max_ + no_pf_length*length_scale) &&   //Not in layer 1  and
+                                      !(p(1) > y_min2_ - no_pf_length*length_scale && p(1) < y_max2_ + no_pf_length*length_scale) );    //Not in layer 2
+
+                        } else return false;
+                },
+                UTOPIA_LAMBDA(const Point &)->Scalar { return val_; },
+                0);
+        }
+
+    private:
+        Scalar  y_min_, y_max_;
+        Scalar  y_min2_, y_max2_;
+        Scalar val_;
+        Scalar length_scale, no_pf_length;
+        bool allow_pf_close_to_layer{false}, no_phase_field{true};
+    };
+
+    template <class FunctionSpace>
+    class NoDamage : public BCSetup<FunctionSpace> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
+
+        NoDamage(FunctionSpace &space,
+                         const Scalar &y_min = 0,
+                         const Scalar &y_max = 1,
+                         const Scalar &val = 0)
+            : BCSetup<FunctionSpace>(space), y_min_(y_min), y_max_(y_max), val_(val) {}
+
+        void read(Input &in) override {
+            in.get("no_damage_on", no_damage_on);
+        }
+
+        void emplace_time_dependent_BC(const Scalar &) override {
+            using Point = typename FunctionSpace::Point;
+            this->space_.reset_constraints();
+
+            this->space_.emplace_constraint(
+                UTOPIA_LAMBDA(const Point &p)->bool {
+                            if (no_damage_on) return true;
+                            else return false;
+                },
+                UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+                0); //phase field
+        }
+
+    private:
+        Scalar  y_min_, y_max_;
+        Scalar  y_min2_, y_max2_;
+        Scalar val_;
+        Scalar length_scale;
+        bool no_damage_on{true};
+    };
+
+    template <class FunctionSpace, class DirichletBC, class Constraints>
+    class DirichletAndVolConstraints : public BCSetup<FunctionSpace> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
+
+        DirichletAndVolConstraints(FunctionSpace &space)
+            : BCSetup<FunctionSpace>(space), bc_(space), constraints_(space) {}
+
+        void read(Input &in) override {
+            bc_.read(in);
+            constraints_.read(in);
+        }
+
+        void emplace_time_dependent_BC(const Scalar &t) override {
+            bc_.emplace_time_dependent_BC(t);
+            constraints_.emplace_time_dependent_BC(t);
+        }
+
+    private:
+        DirichletBC bc_;
+        Constraints constraints_;
     };
 
 }  // namespace utopia

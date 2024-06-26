@@ -34,14 +34,15 @@ namespace utopia {
         inline constexpr static SolverType cg() { return "cg"; }
         inline constexpr static SolverType bicgstab() { return "bicgstab"; }
         inline constexpr static SolverType direct() { return "direct"; }
+        inline constexpr static SolverType gmres() { return "gmres"; }
         inline constexpr static SolverType ksp() { return "ksp"; }
 
         inline constexpr static SolverType lu_decomposition() { return "lu_decomposition"; }
-        inline constexpr static SolverType cholesky_decomposition() { return "cholesky_decomposition"; }
+        inline constexpr static SolverType cholesky_decomposition() { return "cholesky"; }
 
-        // #ifdef UTOPIA_WITH_UMFPACK
+        // #ifdef UTOPIA_ENABLE_UMFPACK
         inline constexpr static SolverPackage umfpack() { return "umfpack"; }
-        // #endif //UTOPIA_WITH_UMFPACK
+        // #endif //UTOPIA_ENABLE_UMFPACK
 
         // #ifdef PETSC_HAVE_MUMPS
         inline constexpr static SolverPackage mumps() { return "mumps"; }

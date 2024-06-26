@@ -1,6 +1,6 @@
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_DEPRECATED_API
+#ifdef UTOPIA_ENABLE_DEPRECATED_API
 
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
@@ -127,19 +127,19 @@ namespace utopia {
     };
 
     static void deprecated() {
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
         DeprecatedTest<BlasMatrixd, BlasVectord>().run();
         DenseDeprecatedTest<BlasMatrixd, BlasVectord>().run();
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         DeprecatedTest<utopia::PetscMatrix, utopia::PetscVector>::run();
         // DenseDeprecatedTest<PetscMatrix, PetscVector>().run();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
         DeprecatedTest<utopia::TpetraMatrix, utopia::TpetraVector>::run();
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(deprecated);
@@ -149,4 +149,4 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif  // UTOPIA_DEPRECATED_API
+#endif  // UTOPIA_ENABLE_DEPRECATED_API

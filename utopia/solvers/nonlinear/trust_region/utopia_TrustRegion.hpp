@@ -7,8 +7,10 @@
 #include "utopia_TRBase.hpp"
 #include "utopia_TRSubproblem.hpp"
 
+#include "utopia_Tracer.hpp"
+
 namespace utopia {
-    template <class Matrix, class Vector>
+    template <class Matrix, class Vector = typename Traits<Matrix>::Vector>
     class TrustRegion final : public NewtonBase<Matrix, Vector>, public TrustRegionBase<Vector> {
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
@@ -35,13 +37,15 @@ namespace utopia {
         }
 
         bool solve(Function<Matrix, Vector> &fun, Vector &x_k) override {
+            UTOPIA_TRACE_SCOPE("TrustRegion::solve");
+
             using namespace utopia;
 
             // passing solver and parameters into subproblem
             bool converged = false;
             NumericalTollerance<Scalar> tol(this->atol(), this->rtol(), this->stol());
 
-            Scalar delta, product, ared, pred, rho, E_k, E_k1;
+            Scalar delta = 0, product = 0, ared = 0, pred = 0, rho = 0, E_k = 0, E_k1 = 0;
 
             SizeType it = 0;
             SizeType it_successful = 0;
@@ -54,6 +58,7 @@ namespace utopia {
             Vector g, p_k;
             Matrix H;
 
+            fun.update(x_k);
             fun.gradient(x_k, g);
             g0_norm = norm2(g);
             g_norm = g0_norm;
@@ -77,6 +82,9 @@ namespace utopia {
                                    "delta_k",
                                    "|| p_k || "});
                 PrintInfo::print_iter_status(it, {g_norm});
+            } else if (this->mini_verbose_) {
+                this->init_solver("TRUST_REGION_BASE", {" it. ", "|| g ||", "J_k"});
+                PrintInfo::print_iter_status(it, {g_norm, E_k});
             }
 
 #else
@@ -175,6 +183,8 @@ namespace utopia {
                 if (this->verbose_)
                     PrintInfo::print_iter_status(it,
                                                  {g_norm, r_norm, product, E_k, E_k1, ared, pred, rho, delta, s_norm});
+                else if (this->mini_verbose_)
+                    PrintInfo::print_iter_status(it, {g_norm, E_k});
 #else
                 if (this->verbose_) PrintInfo::print_iter_status(it, {g_norm, r_norm, E_k, E_k1, rho, delta, s_norm});
 #endif
@@ -185,11 +195,17 @@ namespace utopia {
                 //      tr. radius update
                 //----------------------------------------------------------------------------
                 this->delta_update(rho, p_k, delta);
+                fun.update(x_k);
+
                 it++;
             }
 
             // some benchmarking
             TrustRegionBase::print_statistics(it, it_successful);
+
+            // E.P: setting solver metrics for later printing
+            gnorm_ = g_norm;
+            iterations_ = it;
 
             return true;
         }
@@ -204,12 +220,17 @@ namespace utopia {
                 "set_trust_region_strateg... \n");
         }
 
+        Scalar get_gnorm() { return gnorm_; }
+        Scalar get_iterations() { return iterations_; }
+
     private:
         Scalar get_pred(const Vector &g_minus, const Matrix &B, const Vector &p_k) {
             return (dot(g_minus, p_k) - 0.5 * dot(B * p_k, p_k));
         }
 
         Vector g_minus_;
+        Scalar gnorm_;
+        Scalar iterations_;
     };
 
 }  // namespace utopia

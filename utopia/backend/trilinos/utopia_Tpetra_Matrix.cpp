@@ -5,8 +5,8 @@
 #include "utopia_DeviceView.hpp"
 #include "utopia_Instance.hpp"
 #include "utopia_Logger.hpp"
-//#include "utopia_kokkos_ParallelEach.hpp"
-// #include "utopia_trilinos_Each_impl.hpp"
+// #include "utopia_kokkos_ParallelEach.hpp"
+//  #include "utopia_trilinos_Each_impl.hpp"
 
 #include "utopia_trilinos_Utils.hpp"
 
@@ -541,7 +541,11 @@ namespace utopia {
 
         assert(!implementation().getRowMap().is_null());
 
+#if UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE == 1
+        return implementation().getRowMap()->getLocalNumElements();
+#else
         return implementation().getRowMap()->getNodeNumElements();
+#endif
     }
 
     TpetraMatrix::SizeType TpetraMatrix::local_cols() const {
@@ -551,9 +555,18 @@ namespace utopia {
 
         if (implementation().getDomainMap().is_null()) {
             assert(!init_->domain_map.is_null());
+#if UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE == 1
+            return init_->domain_map->getLocalNumElements();
+#else
             return init_->domain_map->getNodeNumElements();
+#endif
         }
+
+#if UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE == 1
+        return implementation().getDomainMap()->getLocalNumElements();
+#else
         return implementation().getDomainMap()->getNodeNumElements();
+#endif
     }
 
     void TpetraMatrix::clear() {
@@ -570,7 +583,7 @@ namespace utopia {
         auto row_map = impl.getRowMap()->getLocalMap();
 
 #if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
-        auto local_mat = raw_type()->getLocalMatrixDevice();
+        auto local_mat = raw_type()->getLocalMatrixHost();
 #else
         auto local_mat = raw_type()->getLocalMatrix();
 #endif
@@ -707,6 +720,11 @@ namespace utopia {
     }
 
     void TpetraMatrix::shift_diag(const TpetraVector &d) {
+        if (empty()) {
+            diag(d);
+            return;
+        }
+
         auto d_view = const_view_device(d);
 
         // FIXME?

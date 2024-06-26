@@ -4,13 +4,13 @@
 #include "petscsys.h"
 #include "utopia_petsc_build_ksp.hpp"
 
-#ifdef UTOPIA_WITH_SLEPC
+#ifdef UTOPIA_ENABLE_SLEPC
 #include "slepcsys.h"
 #endif
 
 namespace utopia {
     void PetscLibrary::init(int argc, char *argv[]) {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         static char help[] = "initializing utopia environment through petsc";
 
         // #ifndef NDEBUG
@@ -20,11 +20,11 @@ namespace utopia {
         PetscOptionsSetValue(nullptr, "-on_error_abort", nullptr);
         // #endif
 
-#ifdef UTOPIA_WITH_SLEPC
+#ifdef UTOPIA_ENABLE_SLEPC
         SlepcInitialize(&argc, &argv, (char *)nullptr, help);  // calls PetscInitialize inside
 #else
         PetscInitialize(&argc, &argv, (char *)0, help);
-#endif  // UTOPIA_WITH_SLEPC
+#endif  // UTOPIA_ENABLE_SLEPC
 
         // is this proper place for doing this ???
         KSPRegister("utopia", KSPCreate_UTOPIA);
@@ -32,11 +32,11 @@ namespace utopia {
     }
 
     int PetscLibrary::finalize() {
-#ifdef UTOPIA_WITH_SLEPC
+#ifdef UTOPIA_ENABLE_SLEPC
         return SlepcFinalize();  // calls PetscFinalize inside
 #else
         return PetscFinalize();
-#endif  // UTOPIA_WITH_SLEPC
+#endif  // UTOPIA_ENABLE_SLEPC
     }
 
     std::string PetscLibrary::name() const { return "Petsc"; }

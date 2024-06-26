@@ -7,12 +7,18 @@
 
 #include "utopia_mars_MeshIO.hpp"
 
+#include "utopia_mars_Discretization.hpp"
+
 namespace utopia {
     namespace mars {
         class FunctionSpace::Impl {
         public:
             // using DeviceType = typename Kokkos::Device<Kokkos::DefaultExecutionSpace, KokkosSpace>;
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+            using MarsCrsMatrix = Matrix::CrsMatrixType::local_matrix_device_type;
+#else
             using MarsCrsMatrix = Matrix::CrsMatrixType::local_matrix_type;
+#endif
             using MapType = Matrix::MapType;
 
             using DeviceType = Matrix::CrsMatrixType::device_type;
@@ -29,16 +35,24 @@ namespace utopia {
                 handler_impl->init(mesh_impl, n_var);
                 handler = handler_impl;
 
-#ifdef MARS_WITH_WITH_IO
-                write = [handler_impl](const Path &path, const Vector &x) -> bool {
+#ifdef MARS_ENABLE_IO
+                write = [handler_impl, this](const Path &path, const Vector &x) -> bool {
                     MarsIOImpl<typename FEHandler::FEDofMap> w(handler_impl->get_fe_dof_map());
 
+                    // auto x_kokkos = x.raw_type()->getLocalViewHost();
+                    // return w.write_tpetra(path.to_string(), x_kokkos);
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+                    auto x_kokkos = x.raw_type()->getLocalViewHost(Tpetra::Access::ReadWrite);
+#else
                     auto x_kokkos = x.raw_type()->getLocalViewHost();
-                    return w.write_tpetra(path.to_string(), x_kokkos);
+#endif
+                    w.add_field_tpetra("U", this->n_var, x_kokkos);
+                    w.set_output_path(path);
+                    return w.write();
                 };
 #else
                 write = [](const Path &, const Vector &) -> bool { return false; };
-#endif  // UTOPIA_WITH_VTK
+#endif  // UTOPIA_ENABLE_VTK
             }
 
             template <class RawType>

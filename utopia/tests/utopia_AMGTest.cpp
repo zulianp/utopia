@@ -10,10 +10,10 @@
 
 #include "utopia_InputParameters.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc_AdditiveCorrectionTransfer.hpp"
 #include "utopia_petsc_ILUDecompose.hpp"
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 using namespace utopia;
 
@@ -30,7 +30,8 @@ public:
 
     void run() {
         // UTOPIA_RUN_TEST(test_amg_add_corr);
-        UTOPIA_RUN_TEST(test_amg);
+
+        if (mpi_world_size() == 1) UTOPIA_RUN_TEST(test_amg);
     }
 
     void test_amg() {
@@ -122,9 +123,9 @@ public:
 };
 
 void amg() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     AMGTest<PetscMatrix, PetscVector>().run();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(amg);

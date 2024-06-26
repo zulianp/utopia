@@ -55,7 +55,7 @@ namespace utopia {
             case 1: {
                 auto m_mesh = std::make_shared<::moonolith::Mesh<Scalar, 1>>(in.comm().raw_comm());
                 auto m_space = std::make_shared<::moonolith::FunctionSpace<::moonolith::Mesh<Scalar, 1>>>(m_mesh);
-                convert(in.raw_type().get_mesh(), in.raw_type_dof_map(), 0, *m_space, 0);
+                convert_libmesh_to_moonolith(in.raw_type().get_mesh(), in.raw_type_dof_map(), 0, *m_space, 0);
                 out.wrap(m_space);
                 break;
             }
@@ -63,7 +63,7 @@ namespace utopia {
             case 2: {
                 auto m_mesh = std::make_shared<::moonolith::Mesh<Scalar, 2>>(in.comm().raw_comm());
                 auto m_space = std::make_shared<::moonolith::FunctionSpace<::moonolith::Mesh<Scalar, 2>>>(m_mesh);
-                convert(in.raw_type().get_mesh(), in.raw_type_dof_map(), 0, *m_space, 0);
+                convert_libmesh_to_moonolith(in.raw_type().get_mesh(), in.raw_type_dof_map(), 0, *m_space, 0);
                 out.wrap(m_space);
                 break;
             }
@@ -71,7 +71,7 @@ namespace utopia {
             case 3: {
                 auto m_mesh = std::make_shared<::moonolith::Mesh<Scalar, 3>>(in.comm().raw_comm());
                 auto m_space = std::make_shared<::moonolith::FunctionSpace<::moonolith::Mesh<Scalar, 3>>>(m_mesh);
-                convert(in.raw_type().get_mesh(), in.raw_type_dof_map(), 0, *m_space, 0);
+                convert_libmesh_to_moonolith(in.raw_type().get_mesh(), in.raw_type_dof_map(), 0, *m_space, 0);
                 out.wrap(m_space);
                 break;
             }

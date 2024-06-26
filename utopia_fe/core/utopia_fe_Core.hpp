@@ -5,9 +5,14 @@
 
 #include "utopia_FEAssembler.hpp"
 
+#include "utopia_IOMode.hpp"
+
 namespace utopia {
     template <class FunctionSpace>
     class Obstacle {};
+
+    template <class FunctionSpace>
+    class Contact {};
 
     template <class FunctionSpace>
     class FETransfer {};
@@ -23,6 +28,8 @@ namespace utopia {
     template <class FE, class Op>
     class AssembleTraits {};
 
+    template <class FunctionSpace, class FE>
+    class Discretization {};
 }  // namespace utopia
 
 #endif  // UTOPIA_FE_CORE_HPP

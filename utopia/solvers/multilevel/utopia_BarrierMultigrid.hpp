@@ -52,7 +52,7 @@ namespace utopia {
         using IPTransfer = utopia::IPTransfer<Matrix, Vector>;
         using VariableBoundSolverInterface = utopia::VariableBoundSolverInterface<Vector>;
 
-        using LogBarrierBase = utopia::LogBarrierBase<Matrix, Vector>;
+        using Penalty = utopia::Penalty<Matrix, Vector>;
 
         class AlphaStats {
         public:
@@ -153,7 +153,7 @@ namespace utopia {
                 .parse(in);
 
             if (!barrier_ || barrier_->function_type() != barrier_function_type) {
-                barrier_ = LogBarrierFactory<Matrix, Vector>::new_log_barrier(barrier_function_type);
+                barrier_ = PenaltyFactory<Matrix, Vector>::new_penalty(barrier_function_type);
             }
 
             barrier_->read(in);
@@ -208,7 +208,10 @@ namespace utopia {
             mem.barrier_diag.zeros(layout(x));
 
             Scalar g_norm_0 = compute_norm_gradient_objective(fun, x, state, mem);
-            PrintInfo::print_iter_status(0, {g_norm_0, 1});
+
+            if (this->verbose()) {
+                PrintInfo::print_iter_status(0, {g_norm_0, 1});
+            }
 
             if (fun.is_hessian_constant()) {
                 update_hessian(fun, x, state, mem);
@@ -246,13 +249,16 @@ namespace utopia {
                     nonlinear_smooth(fun, x, state, post_smoothing_steps());
                 }
 
-                barrier_->update_barrier();
+                barrier_->update(x);
 
                 /////////////////////////////////////////////
                 // Convergence check
 
                 Scalar g_norm = compute_norm_gradient_objective(fun, x, state, mem);
-                PrintInfo::print_iter_status(it, {g_norm, g_norm / g_norm_0});
+                if (this->verbose()) {
+                    PrintInfo::print_iter_status(it, {g_norm, g_norm / g_norm_0});
+                }
+
                 converged = this->check_convergence(it, g_norm, (g_norm / g_norm_0), 1);
 
                 /////////////////////////////////////////////
@@ -305,8 +311,8 @@ namespace utopia {
             agglomerator_ = agglomerator;
         }
 
-        inline void set_barrier(const std::shared_ptr<LogBarrierBase> &barrier) { barrier_ = barrier; }
-        inline const std::shared_ptr<LogBarrierBase> &barrier() { return barrier_; }
+        inline void set_barrier(const std::shared_ptr<Penalty> &barrier) { barrier_ = barrier; }
+        inline const std::shared_ptr<Penalty> &barrier() { return barrier_; }
 
     public:
         BarrierMultigrid *clone() const override {
@@ -348,7 +354,7 @@ namespace utopia {
         std::shared_ptr<LinearSolver> coarse_solver_;
         std::vector<std::shared_ptr<Transfer>> transfer_operators_;
         std::vector<LevelMemory> memory_;
-        std::shared_ptr<LogBarrierBase> barrier_;
+        std::shared_ptr<Penalty> barrier_;
         std::shared_ptr<LineSearchBoxProjection<Vector>> line_search_projection_;
         std::shared_ptr<Smoother> linear_smoother_clonable_;
 

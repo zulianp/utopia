@@ -263,7 +263,7 @@ public:
     // auto sol_status = rmtr_->solution_status();
 
     // auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>();
-    // subproblem->pc_type("asm");
+    // subproblem->pc_type(PCASM);
     // TrustRegion<Matrix, Vector> solver(subproblem);
     // subproblem->atol(1e-14);
     // solver.verbose(true);
@@ -282,7 +282,7 @@ public:
     // solver.solve(*fine_fun, solution);
 
     // auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>();
-    // subproblem->pc_type("asm");
+    // subproblem->pc_type(PCASM);
     // Newton<Matrix, Vector> solver(subproblem);
     // solver.verbose(true);
     // solver.solve(*level_functions_.back(), solution);

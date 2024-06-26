@@ -1,0 +1,112 @@
+include:
+  - remote: 'https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.ci-ext.yml'
+
+stages:
+  - build_base
+  - build # build stage is running on the Kubernetes cluster
+  - test # test stage is running on a slurm cluster
+
+variables:
+  # for CUDA-aware MPI, Sarus requires LD_PRELOAD to be set in order to load
+  # the specified cuda libraries from the compute node before all others
+  CUDA_LIBS: '/usr/local/cuda/compat/libcuda.so:/usr/local/cuda/lib64/libcudart.so'
+  PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/utopia_gpu:$CI_COMMIT_SHA
+  UTOPIA_CASE_PATH: '/utopia.src/ci/cases/'
+  UTOPIA_RUN_OPTS: '-data_path /utopia.src/utopia/data --verbose'
+
+build-utopia-baseimage:
+  extends: .container-builder
+  stage: build_base
+  before_script:
+    - DATA_TAG=`mktemp`
+    - sha256sum $DOCKERFILE > $DATA_TAG
+    # always use latest branch revision from mars repo
+    - git ls-remote $MARS_GIT_URL $MARS_GIT_REFS >> $DATA_TAG
+    - DOCKERFILE_TAG=`sha256sum $DATA_TAG | head -c 16`
+    - rm -f $DATA_TAG
+    - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/baseimage/utopia_base:$DOCKERFILE_TAG
+    - echo "BASE_IMAGE=$PERSIST_IMAGE_NAME" >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
+  variables:
+    DOCKERFILE: ci/cscs/gpu/docker/Dockerfile.base
+    MARS_GIT_URL: 'https://bitbucket.org/zulianp/mars.git'
+    MARS_GIT_REFS: 'refs/heads/development'
+
+build-utopia:
+  extends: .container-builder
+  stage: build
+  variables:
+    DOCKERFILE: ci/cscs/gpu/docker/Dockerfile
+    DOCKER_BUILD_ARGS: '["BASE_IMAGE=$BASE_IMAGE"]'
+    GIT_SUBMODULE_STRATEGY: recursive
+    # FIXME delete line below when config petsc+trilinos works on gpu node
+    # for now, tests will be performed on build-utopia-no_petsc
+    PERSIST_IMAGE_NAME: discard
+
+# this build configuration is used by Mars test pipeline
+# no tests will be performed in this pipeline, we only care about the buildability
+build-utopia-no_petsc:
+  extends: .container-builder
+  stage: build
+  variables:
+    DOCKERFILE: ci/cscs/gpu/docker/Dockerfile.no_petsc
+    DOCKER_BUILD_ARGS: '["BASE_IMAGE=$BASE_IMAGE"]'
+    GIT_SUBMODULE_STRATEGY: recursive
+    # FIXME uncomment line below when config petsc+trilinos works on gpu node
+    # PERSIST_IMAGE_NAME: discard
+
+run-utopia-test:
+  extends: .container-runner-daint-gpu
+  image: $PERSIST_IMAGE_NAME
+  variables:
+    SLURM_NTASKS: 1
+    SLURM_TIMELIMIT: "00:10:00"
+    USE_MPI: "NO"
+  script:
+    # the tests are not installed, so we need to run them from the build directory
+    - cd /utopia.src/build
+    # run all tests
+    - ./utopia_test $UTOPIA_RUN_OPTS
+
+run-utopia-benchmark:
+  extends: .container-runner-daint-gpu
+  image: $PERSIST_IMAGE_NAME
+  variables:
+    SLURM_TIMELIMIT: "00:10:00"
+    USE_MPI: "YES"
+  script:
+    # the tests are not installed, so we need to run them from the build directory
+    - cd /utopia.src/build
+    - ./utopia_bench $UTOPIA_RUN_OPTS
+
+run-utopia_fe-test:
+  extends: .container-runner-daint-gpu
+  image: $PERSIST_IMAGE_NAME
+  variables:
+    SLURM_NTASKS: 1
+    SLURM_TIMELIMIT: "00:10:00"
+    USE_MPI: "YES"
+    MPICH_RDMA_ENABLED_CUDA: "1"
+  script:
+    # the tests are not installed, so we need to run them from the build directory
+    - cd /utopia.src/utopia_fe/build
+    # run all tests
+    - env LD_PRELOAD=$CUDA_LIBS ./utopia_fe_test --verbose
+
+run-utopia_fe-mars:
+  extends: .container-runner-daint-gpu
+  image: $PERSIST_IMAGE_NAME
+  variables:
+    SLURM_NTASKS: 1
+    SLURM_TIMELIMIT: "00:10:00"
+    USE_MPI: "YES"
+    MPICH_RDMA_ENABLED_CUDA: "1"
+  script:
+    # the tests are not installed, so we need to run them from the build directory
+    - cd /utopia.src/utopia_fe/build
+    # run all tests
+    - env LD_PRELOAD=$CUDA_LIBS ./utopia_fe_exec --verbose -backend mars @file $UTOPIA_CASE_PATH/elasticity.yaml
+    - env LD_PRELOAD=$CUDA_LIBS ./utopia_fe_exec --verbose -backend mars @file $UTOPIA_CASE_PATH/poisson.yaml
+    - env LD_PRELOAD=$CUDA_LIBS ./utopia_fe_exec --verbose -backend mars @file $UTOPIA_CASE_PATH/thermo_elasticity.yaml

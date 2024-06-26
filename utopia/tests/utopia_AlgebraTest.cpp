@@ -5,7 +5,7 @@
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 #include "utopia_trilinos.hpp"
 #endif
 
@@ -307,7 +307,7 @@ namespace utopia {
         void transform_ijv_test() {
             Matrix M;
 
-            M.sparse(layout(world, Traits::decide(), Traits::decide(), 3, 3), 3, 3);
+            M.sparse(layout(world, Traits::decide(), Traits::decide(), n, n), 3, 3);
 
             assemble_laplacian_1D(M);
 
@@ -335,7 +335,7 @@ namespace utopia {
         void transpose_test() {
             Matrix M, M_copy;
 
-            M.sparse(layout(world, Traits::decide(), Traits::decide(), 3, 3), 3, 3);
+            M.sparse(layout(world, Traits::decide(), Traits::decide(), n, n), 3, 3);
 
             assemble_laplacian_1D(M);
             M_copy.copy(M);
@@ -346,7 +346,16 @@ namespace utopia {
         }
 
         void run() {
-            UTOPIA_RUN_TEST(sparse_chop_test);
+            // FIXME(zulianp) this test causes Segmentation Violation when utopia is built with gpu support
+            if constexpr (Traits::Backend == PETSC) {
+#ifdef PETSC_HAVE_CUDA
+                utopia_warning("Skipping sparse_chop_test");
+#else
+                UTOPIA_RUN_TEST(sparse_chop_test);
+#endif
+            } else {
+                UTOPIA_RUN_TEST(sparse_chop_test);
+            }
             UTOPIA_RUN_TEST(transform_test);
             UTOPIA_RUN_TEST(transform_ijv_test);
             UTOPIA_RUN_TEST(transpose_test);
@@ -578,26 +587,27 @@ namespace utopia {
             UTOPIA_RUN_TEST(nnz_test);
             UTOPIA_RUN_TEST(trace_test);
             UTOPIA_RUN_TEST(in_place_test);
+
             UTOPIA_RUN_TEST(chop_test);
         }
     };
 
     static void algebra() {
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
         DenseAlgebraTest<BlasMatrixd, BlasVectord>().run();
         SerialAlgebraTest<BlasMatrixd, BlasVectord>().run();
         SparseAlgebraTest<BlasMatrixd, BlasVectord>().run();
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         DenseAlgebraTest<PetscMatrix, PetscVector>().run();
         SparseAlgebraTest<PetscMatrix, PetscVector>().run();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
         VectorAlgebraTest<TpetraVector>().run();
         SparseAlgebraTest<TpetraMatrix, TpetraVector>().run();
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(algebra);

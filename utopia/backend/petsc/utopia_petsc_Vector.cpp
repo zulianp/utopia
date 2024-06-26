@@ -1,10 +1,15 @@
 #include "utopia_Tracer.hpp"
+#include "utopia_TypeToString.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
 #include "utopia_petsc_quirks.hpp"
 
 #include <cstring>
 #include <map>
 #include <set>
+
+#ifdef UTOPIA_ENABLE_MATRIX_IO
+#include "matrixio_array.h"
+#endif
 
 namespace utopia {
 
@@ -116,7 +121,7 @@ namespace utopia {
 
         this->comm().set(comm);
 
-        UTOPIA_REPORT_ALLOC("PetscVector::repurpose");
+        UTOPIA_REPORT_ALLOC("PetscVector::init");
         check_error(VecCreate(comm, &vec_));
         check_error(VecSetFromOptions(vec_));
         check_error(VecSetType(vec_, type));
@@ -334,9 +339,16 @@ namespace utopia {
 
     void PetscVector::convert_from(const Vec &vec) { copy_from(vec); }
 
-    void PetscVector::convert_to(Vec &vec) const { check_error(VecCopy(raw_type(), vec)); }
+    void PetscVector::convert_to(Vec vec) const { check_error(VecCopy(raw_type(), vec)); }
 
     bool PetscVector::read(MPI_Comm comm, const std::string &path) {
+#ifdef UTOPIA_ENABLE_MATRIX_IO
+        Path ppath = path;
+        if (ppath.extension() == "raw") {
+            return read_raw(comm, path);
+        }
+#endif  // UTOPIA_ENABLE_MATRIX_IO
+
         destroy();
 
         PetscViewer fd;
@@ -355,7 +367,64 @@ namespace utopia {
         return err;
     }
 
+    bool PetscVector::load(const std::string &path) {
+        PetscViewer fd;
+
+        bool err = check_error(PetscViewerBinaryOpen(comm().get(), path.c_str(), FILE_MODE_READ, &fd));
+        err = err && check_error(VecLoad(implementation(), fd));
+        PetscViewerDestroy(&fd);
+        return err;
+    }
+
+#ifdef UTOPIA_ENABLE_MATRIX_IO
+    bool PetscVector::read_raw(MPI_Comm comm, const std::string &path) {
+        double *data;
+        ptrdiff_t nlocal, nglobal;
+        if (array_create_from_file(comm, path.c_str(), MPI_DOUBLE, (void **)&data, &nlocal, &nglobal)) {
+            return false;
+        }
+
+        this->zeros(comm, type_override(), nlocal, nglobal);
+
+        Scalar *stored;
+        VecGetArray(implementation(), &stored);
+
+        for (SizeType i = 0; i < nlocal; ++i) {
+            stored[i] = data[i];
+        }
+
+        VecRestoreArray(implementation(), &stored);
+        free(data);
+
+        return true;
+    }
+
+    bool PetscVector::write_raw(const std::string &path) const {
+        const Scalar *stored;
+        VecGetArrayRead(implementation(), &stored);
+
+        ptrdiff_t nlocal = local_size();
+        ptrdiff_t nglobal = size();
+
+        bool ok = true;
+        if (array_write(comm().get(), path.c_str(), MPI_DOUBLE, (void *)stored, nlocal, nglobal)) {
+            ok = false;
+        }
+
+        VecRestoreArrayRead(implementation(), &stored);
+        return ok;
+    }
+
+#endif  // UTOPIA_ENABLE_MATRIX_IO
+
     bool PetscVector::write(const std::string &path) const {
+#ifdef UTOPIA_ENABLE_MATRIX_IO
+        Path ppath = path;
+        if (ppath.extension() == "raw") {
+            return write_raw(path);
+        }
+#endif  // UTOPIA_ENABLE_MATRIX_IO
+
         if (is_matlab_file(path)) {
             return write_matlab(path);
         }
@@ -467,7 +536,7 @@ namespace utopia {
     }
 
     void PetscVector::write_unlock(WriteMode mode) {
-        UTOPIA_TRACE_REGION_BEGIN("PetscVector::write_unlock");
+        // UTOPIA_TRACE_REGION_BEGIN("PetscVector::write_unlock");
 
         switch (mode) {
             case GLOBAL_INSERT:
@@ -497,7 +566,7 @@ namespace utopia {
             }
         }
 
-        UTOPIA_TRACE_REGION_END("PetscVector::write_unlock");
+        // UTOPIA_TRACE_REGION_END("PetscVector::write_unlock");
     }
 
     void PetscVector::read_and_write_lock(WriteMode mode) { write_lock(mode); }
@@ -631,12 +700,79 @@ namespace utopia {
         update_mirror();
     }
 
+    void PetscVector::own(Vec &v) {
+        destroy();
+
+        assert(v);
+        vec_ = v;
+        owned_ = true;
+        // has to be
+        initialized_ = true;
+        immutable_ = false;
+
+        update_mirror();
+    }
+
     void PetscVector::unwrap(Vec &v) const {
         if (this->raw_type() == v) {
             return;
         }
 
         copy_data_to(v);
+    }
+
+    void PetscVector::create_local_vector(PetscVector &out) {
+        const std::string str = type();
+
+        if (out.empty() || out.size() != this->local_size()) {
+            out.destroy();
+            PetscInt n_local = this->local_size();
+
+            check_error(VecCreate(PETSC_COMM_SELF, &out.raw_type()));
+            check_error(VecSetType(out.raw_type(), str.c_str()));
+            check_error(VecSetSizes(out.raw_type(), n_local, n_local));
+
+            out.set_initialized(true);
+        }
+
+        VecGetLocalVector(this->raw_type(), out.raw_type());
+        out.update_mirror();
+    }
+
+    void PetscVector::restore_local_vector(PetscVector &out) {
+        VecRestoreLocalVector(this->raw_type(), out.raw_type());
+    }
+
+    void PetscVector::destroy() {
+        if (vec_) {
+            if (owned_) {
+                VecDestroy(&vec_);
+            }
+
+            vec_ = nullptr;
+        }
+
+        initialized_ = false;
+        owned_ = true;
+        ghost_values_.clear();
+
+        if (destroy_callback) {
+            destroy_callback();
+        }
+    }
+
+    void PetscVector::wrap(MPI_Comm comm,
+                           const PetscInt nlocal,
+                           const PetscInt nglobal,
+                           const PetscScalar *array,
+                           std::function<void()> destroy_callback) {
+        this->destroy();
+
+        VecCreateMPIWithArray(comm, 1, nlocal, nglobal, array, &this->raw_type());
+
+        this->update_mirror();
+
+        this->destroy_callback = destroy_callback;
     }
 
 }  // namespace utopia

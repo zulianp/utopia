@@ -7,6 +7,8 @@
 #include "utopia_Range.hpp"
 #include "utopia_Traits.hpp"
 
+#include "utopia_assemble_laplacian_1D.hpp"
+
 namespace utopia {
 
     template <class Matrix, class Vector>

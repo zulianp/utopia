@@ -12,7 +12,7 @@
 namespace utopia {
 
     template <class Matrix, class Vector>
-    class MPRGP final : public OperatorBasedQPSolver<Matrix, Vector> {
+    class MPRGP : public OperatorBasedQPSolver<Matrix, Vector> {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
@@ -23,6 +23,7 @@ namespace utopia {
         using Super::solve;
         using Super::update;
 
+        virtual ~MPRGP() = default;
         MPRGP() : eps_eig_est_(1e-1), power_method_max_it_(10) {}
 
         void read(Input &in) override {
@@ -30,6 +31,7 @@ namespace utopia {
             in.get("eig_comp_tol", eps_eig_est_);
             in.get("power_method_max_it", power_method_max_it_);
             in.get("hardik_variant", hardik_variant_);
+            in.get("use_right_preconditioner", use_right_preconditioner_);
         }
 
         void print_usage(std::ostream &os) const override {
@@ -52,8 +54,12 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("MPRGP::update");
         }
 
-        bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override {
+        bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &x) override {
             UTOPIA_TRACE_REGION_BEGIN("MPRGP::solve(...)");
+
+            if (this->verbose()) {
+                this->init_solver("MPRGP comm_size: " + std::to_string(rhs.comm().size()), {"it", "|| g ||"});
+            }
 
             if (this->has_empty_bounds()) {
                 this->fill_empty_bounds(layout(rhs));
@@ -61,53 +67,35 @@ namespace utopia {
                 assert(this->get_box_constraints().valid(layout(rhs)));
             }
 
-            auto &box = this->get_box_constraints();
+            auto &&box = this->get_box_constraints();
 
             this->update(A);
 
+            auto preconditioner = this->get_preconditioner();
+
             // as it is not clear ATM, how to apply preconditioner, we use it at least
             // to obtain initial guess
-            if (precond_) {
+            if (preconditioner && !use_right_preconditioner_) {
                 // this is unconstrained step
-                precond_->apply(rhs, sol);
+                preconditioner->apply(rhs, x);
                 // projection to feasible set
-                this->make_iterate_feasible(sol);
+                this->make_iterate_feasible(x);
             }
 
-            bool ok = aux_solve(A, rhs, sol, box);
-
-            UTOPIA_TRACE_REGION_END("MPRGP::solve(...)");
-            return ok;
-        }
-
-        void set_eig_comp_tol(const Scalar &eps_eig_est) { eps_eig_est_ = eps_eig_est; }
-
-    private:
-        bool aux_solve(const Operator<Vector> &A,
-                       const Vector &rhs,
-                       Vector &x,
-                       const BoxConstraints<Vector> &constraints) {
-            // UTOPIA_NO_ALLOC_BEGIN("MPRGP");
-            // //cudaProfilerStart();
-
-            const auto &&ub = constraints.upper_bound();
-            const auto &&lb = constraints.lower_bound();
-
-            if (this->verbose()) {
-                this->init_solver("MPRGP comm_size: " + std::to_string(rhs.comm().size()), {"it", "|| g ||"});
-            }
+            auto ub = box.upper_bound();
+            auto lb = box.lower_bound();
 
             const Scalar gamma = 1.0;
             Scalar alpha_bar = 1;
             if (!hardik_variant_) {
-                alpha_bar = 1.95 / this->get_normA(A);
+                alpha_bar = 1.95 / this->power_method(A);
             }
 
             Scalar pAp, beta_beta, fi_fi, gp_dot, g_betta, beta_Abeta;
 
             SizeType it = 0;
             bool converged = false;
-            Scalar gnorm;
+            Scalar gnorm = -1;
 
             Scalar alpha_cg, alpha_f, beta_sc;
 
@@ -115,6 +103,13 @@ namespace utopia {
             assert(ub);
 
             this->project(*lb, *ub, x);
+
+            const bool rprecond = preconditioner && use_right_preconditioner_;
+
+            if (rprecond) {
+                // Preconditioning 1)
+                preconditioner->apply(rhs, x);
+            }
 
             A.apply(x, Ax);
             g = Ax - rhs;
@@ -144,8 +139,18 @@ namespace utopia {
                     if (hardik_variant_) {
                         x -= alpha_cg * p;
 
+                        if (rprecond) {
+                            // Preconditioning 2a)
+                            preconditioner->apply(rhs, x);
+                        }
+
                         if (alpha_cg <= alpha_f) {
-                            g -= alpha_cg * Ap;
+                            if (rprecond) {
+                                A.apply(x, g);
+                                g -= rhs;
+                            } else {
+                                g -= alpha_cg * Ap;
+                            }
 
                             this->get_fi(x, g, *lb, *ub, fi);
                             beta_sc = dot(fi, Ap) / pAp;
@@ -163,17 +168,39 @@ namespace utopia {
 
                         if (alpha_cg <= alpha_f) {
                             x = y;
-                            g = g - alpha_cg * Ap;
+                            if (rprecond) {
+                                // Preconditioning 2b)
+                                preconditioner->apply(rhs, x);
+                                A.apply(x, g);
+                                g -= rhs;
+                            } else {
+                                g = g - alpha_cg * Ap;
+                            }
+
                             this->get_fi(x, g, *lb, *ub, fi);
                             beta_sc = dot(fi, Ap) / pAp;
                             p = fi - beta_sc * p;
                         } else {
                             x = x - alpha_f * p;
+
+                            // if (rprecond) {
+                            //     // Preconditioning 2c)
+                            //     preconditioner->apply(rhs, x);
+                            //     A.apply(x, g);
+                            //     g -= rhs;
+                            // } else {
                             g = g - alpha_f * Ap;
+                            // }
+
                             this->get_fi(x, g, *lb, *ub, fi);
 
                             help_f1 = x - (alpha_bar * fi);
                             this->project(help_f1, *lb, *ub, x);
+
+                            if (rprecond) {
+                                // Preconditioning 2.1c)
+                                preconditioner->apply(rhs, x);
+                            }
 
                             A.apply(x, Ax);
                             g = Ax - rhs;
@@ -186,12 +213,24 @@ namespace utopia {
                     dots(g, beta, g_betta, beta, Abeta, beta_Abeta);
                     // detecting negative curvature
                     if (beta_Abeta <= 0.0) {
+                        if (this->verbose()) {
+                            PrintInfo::print_iter_status(it, {gnorm});
+                        }
+
                         return true;
                     }
 
                     alpha_cg = g_betta / beta_Abeta;
                     x = x - alpha_cg * beta;
-                    g = g - alpha_cg * Abeta;
+
+                    if (rprecond) {
+                        // Preconditioning 3)
+                        preconditioner->apply(rhs, x);
+                        A.apply(x, g);
+                        g -= rhs;
+                    } else {
+                        g = g - alpha_cg * Abeta;
+                    }
 
                     this->get_fi(x, g, *lb, *ub, p);
                 }
@@ -211,16 +250,14 @@ namespace utopia {
                 }
 
                 converged = this->check_convergence(it, gnorm, 1, 1);
-                // converged = (it > this->max_it() || gnorm < std::min(0.1,
-                // std::sqrt(r_norm0)) * r_norm0 ) ? true : false;
             }
 
-            // //cudaProfilerStop();
-            // UTOPIA_NO_ALLOC_END();
-            return true;
+            UTOPIA_TRACE_REGION_END("MPRGP::solve(...)");
+            return converged;
         }
 
-    public:
+        void set_eig_comp_tol(const Scalar &eps_eig_est) { eps_eig_est_ = eps_eig_est; }
+
         void get_fi(const Vector &x, const Vector &g, const Vector &lb, const Vector &ub, Vector &fi) const {
             assert(!empty(fi));
 
@@ -306,7 +343,7 @@ namespace utopia {
         }
 
     private:
-        Scalar get_normA(const Operator<Vector> &A) {
+        Scalar power_method(const Operator<Vector> &A) {
             // Super simple power method to estimate the biggest eigenvalue
             assert(!empty(help_f2));
             help_f2.set(1.0);
@@ -336,7 +373,7 @@ namespace utopia {
                 it = it + 1;
             }
 
-            if (this->verbose())
+            if (this->verbose() && mpi_world_rank() == 0)
                 utopia::out() << "Power method converged in " << it << " iterations. Largest eig: " << lambda << "  \n";
 
             return lambda;
@@ -362,10 +399,6 @@ namespace utopia {
             layout_ = layout;
         }
 
-        void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond) override {
-            precond_ = precond;
-        }
-
     private:
         Vector fi, beta, gp, p, y, Ap, Abeta, Ax, g, help_f1, help_f2;
 
@@ -375,8 +408,8 @@ namespace utopia {
         bool initialized_{false};
         Layout layout_;
 
-        std::shared_ptr<Preconditioner<Vector> > precond_;
         bool hardik_variant_{false};
+        bool use_right_preconditioner_{true};
     };
 }  // namespace utopia
 

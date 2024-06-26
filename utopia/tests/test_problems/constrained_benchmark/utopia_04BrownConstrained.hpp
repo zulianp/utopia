@@ -49,8 +49,6 @@ namespace utopia {
 
         const Vector &exact_sol() const override { return unconstrained_.exact_sol(); }
 
-        Scalar min_function_value() const override { return 0.78400000e3; }
-
     private:
         Brown04<Matrix, Vector> unconstrained_;
     };

@@ -1,6 +1,7 @@
 #ifndef UTOPIA_STRESS_STRAIN_PARAMETERS_HPP
 #define UTOPIA_STRESS_STRAIN_PARAMETERS_HPP
 
+#include "utopia_IOStream.hpp"
 #include "utopia_Input.hpp"
 
 // https://en.wikipedia.org/wiki/Lam%C3%A9_parameters
@@ -85,6 +86,7 @@ namespace utopia {
     public:
         void read(Input &in) override {
             in.get("ni", this->get());
+            in.get("nu", this->get());
             in.get("poisson_ratio", this->get());
         }
 

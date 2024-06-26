@@ -1,6 +1,6 @@
 #include "utopia_fe_base.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 
 #include "utopia_Testing.hpp"
 #include "utopia_ui.hpp"
@@ -45,4 +45,4 @@ UTOPIA_REGISTER_TEST_FUNCTION(interop_petsc_intrepid2);
 
 // UTOPIA_REGISTER_TEST_FUNCTION(scalar_product_petsc_intrepid2);
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC

@@ -126,6 +126,21 @@ namespace utopia {
             return min_h;
         }
 
+        UTOPIA_INLINE_FUNCTION constexpr Scalar min_spacing_x() const {
+            const SizeType n = dim();
+
+            Scalar min_h = (box_max_[0] - box_min_[0]) / dims_[0];
+            return min_h;
+        }
+
+
+        UTOPIA_INLINE_FUNCTION constexpr Scalar min_spacing_y() const {
+            const SizeType n = dim();
+
+            Scalar min_h = (box_max_[1] - box_min_[1]) / dims_[1];
+            return min_h;
+        }
+
         UTOPIA_INLINE_FUNCTION constexpr Scalar cell_size(const SizeType &, const SizeType &d) const {
             return (box_max_[d] - box_min_[d]) / (dims_[d] - 1);
         }
@@ -162,6 +177,7 @@ namespace utopia {
             device::copy(other.ghost_corners_begin_, ghost_corners_begin_);
             device::copy(other.ghost_corners_extent_, ghost_corners_extent_);
             device::copy(other.box_min_, box_min_);
+            device::copy(other.box_max_, box_max_);
         }
 
         UTOPIA_INLINE_FUNCTION constexpr StructuredGrid(const IntArray &dims,

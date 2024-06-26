@@ -1,11 +1,16 @@
 # tests.cmake
 
-if(UTOPIA_ENABLE_STK)
+# Added intrepid2 since utopia_stk_restartTest need intrepid.
+if(UTOPIA_ENABLE_STK AND UTOPIA_ENABLE_INTREPID2)
     list(APPEND TEST_MODULES stk)
 endif()
 
 if(UTOPIA_ENABLE_LIBMESH)
-    list(APPEND TEST_MODULES libmesh libmesh/old)
+    list(APPEND TEST_MODULES libmesh)
+
+    # if(UTOPIA_ENABLE_LIBMESH_DEPRECATED)
+    #     list(APPEND TEST_MODULES libmesh/deprecated)
+    # endif()
 endif()
 
 if(UTOPIA_ENABLE_MOONOLITH)
@@ -20,7 +25,7 @@ if(UTOPIA_ENABLE_MARS)
     list(APPEND TEST_MODULES mars)
 endif()
 
-if(UTOPIA_ENABLE_PETSC)
+if(UTOPIA_ENABLE_PETSCDM)
     list(APPEND TEST_MODULES petsc)
 endif()
 
@@ -32,7 +37,7 @@ if(UTOPIA_ENABLE_INTREPID2 AND UTOPIA_ENABLE_STK)
     list(APPEND TEST_MODULES interop/stk_intrepid2)
 endif()
 
-if(UTOPIA_ENABLE_INTREPID2 AND UTOPIA_ENABLE_PETSC)
+if(UTOPIA_ENABLE_INTREPID2 AND UTOPIA_ENABLE_PETSCDM)
     list(APPEND TEST_MODULES interop/petsc_intrepid2)
 endif()
 
@@ -40,8 +45,8 @@ if(UTOPIA_ENABLE_INTREPID2 AND UTOPIA_ENABLE_ARBORX)
     list(APPEND TEST_MODULES interop/intrepid2_arborx)
 endif()
 
-if(UTOPIA_ENABLE_INTREPID2 AND UTOPIA_ENABLE_LIBMESH)
-    list(APPEND TEST_MODULES interop/libmesh_intrepid2)
+if(UTOPIA_ENABLE_INTREPID2 AND UTOPIA_ENABLE_LIBMESH AND UTOPIA_ENABLE_LIBMESH_KOKKOS)
+    list(APPEND TEST_MODULES interop/libmesh_kokkos)
 endif()
 
 set(LOCAL_HEADERS "")

@@ -126,6 +126,7 @@ namespace utopia {
             DynRankView cell_nodes;
             CubaturePtr cubature;
             DynRankView q_points;
+            DynRankView q_weights;
             DynRankView jacobian_det;
 
             // NVCC_PRIVATE :
@@ -154,7 +155,7 @@ namespace utopia {
                 assert(spatial_dimension > 0);
                 assert(manifold_dimension > 0);
 
-                DynRankView q_weights("q_weights", n_quad_points);
+                q_weights = DynRankView("q_weights", n_quad_points);
                 q_points = DynRankView("q_points", n_quad_points, manifold_dimension);
                 jacobian = DynRankView("jacobian", n_cells, n_quad_points, spatial_dimension, spatial_dimension);
                 jacobian_inv =
@@ -167,8 +168,12 @@ namespace utopia {
                 CellTools::setJacobianInv(jacobian_inv, jacobian);
                 CellTools::setJacobianDet(jacobian_det, jacobian);
 
-                FunctionSpaceTools::computeCellMeasure<Scalar>(measure, jacobian_det, q_weights);
 
+                #if TRILINOS_MAJOR_MINOR_VERSION >= 150200
+                FunctionSpaceTools::computeCellMeasure(measure, jacobian_det, q_weights);
+                #else
+                FunctionSpaceTools::computeCellMeasure<Scalar>(measure, jacobian_det, q_weights);
+                #endif
                 fun = DynRankView("fun", n_fun, n_quad_points);
                 basis.getValues(fun, q_points, ::Intrepid2::OPERATOR_VALUE);
 
@@ -176,8 +181,13 @@ namespace utopia {
                 grad = DynRankView("grad", n_cells, n_fun, n_quad_points, spatial_dimension);
 
                 basis.getValues(ref_grad, q_points, ::Intrepid2::OPERATOR_GRAD);
-                FunctionSpaceTools::HGRADtransformGRAD<Scalar>(grad, jacobian_inv, ref_grad);
 
+
+                #if TRILINOS_MAJOR_MINOR_VERSION >= 150200
+                FunctionSpaceTools::HGRADtransformGRAD(grad, jacobian_inv, ref_grad);
+                #else
+                FunctionSpaceTools::HGRADtransformGRAD<Scalar>(grad, jacobian_inv, ref_grad);
+                #endif
                 Super::init(measure, fun, grad, jacobian, jacobian_inv);
             }
 

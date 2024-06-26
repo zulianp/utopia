@@ -13,6 +13,7 @@ namespace utopia {
     class BDDQPSolver final : public QPSolver<Matrix, Vector> {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
+        using IndexSet = typename Traits<Vector>::IndexSet;
         using Layout = typename Traits<Vector>::Layout;
         using MatrixFreeQPSolver = utopia::MatrixFreeQPSolver<Vector>;
         using Super = utopia::QPSolver<Matrix, Vector>;

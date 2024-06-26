@@ -24,7 +24,7 @@ namespace utopia {
 
         inline int size() const override { return comm_->getSize(); }
 
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
         MPI_Comm raw_comm() const override;
         explicit TrilinosCommunicator(MPI_Comm comm);
         static TrilinosCommunicator self();
@@ -54,14 +54,14 @@ namespace utopia {
 
         template <typename T>
         inline T sum(const T &val) const {
-            T ret_global = 0.0;
+            T ret_global = static_cast<T>(0);
             Teuchos::reduceAll(*get(), Teuchos::REDUCE_SUM, 1, &val, &ret_global);
             return ret_global;
         }
 
         template <typename T, std::size_t N>
         inline T sum(std::array<T, N> &val) const {
-            T ret_global = 0.0;
+            T ret_global = static_cast<T>(0);
 
             std::array<T, N> local_val;
             std::copy(std::begin(val), std::end(val), std::begin(local_val));
@@ -73,21 +73,23 @@ namespace utopia {
 
         template <typename T>
         inline T min(const T &val) const {
-            T ret_global = 0.0;
+            T ret_global = static_cast<T>(0);
             Teuchos::reduceAll(*get(), Teuchos::REDUCE_MIN, 1, &val, &ret_global);
             return ret_global;
         }
 
         template <typename T>
         inline T max(const T &val) const {
-            T ret_global = 0.0;
+            T ret_global = static_cast<T>(0);
+
             Teuchos::reduceAll(*get(), Teuchos::REDUCE_MAX, 1, &val, &ret_global);
             return ret_global;
         }
 
         template <class Op, typename T>
         inline T reduce(const Op & /*op*/, const T &val) const {
-            T ret_global = 0.0;
+            T ret_global = static_cast<T>(0);
+
             Teuchos::reduceAll(*get(), MPIReduceOp<Op, TRILINOS>::op(), 1, &val, &ret_global);
             return ret_global;
         }

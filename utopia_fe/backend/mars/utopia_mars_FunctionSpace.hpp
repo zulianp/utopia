@@ -7,6 +7,8 @@
 
 #include "utopia_DirichletBoundary.hpp"
 
+#include "utopia_kokkos_Discretization.hpp"
+#include "utopia_kokkos_UniformFE.hpp"
 #include "utopia_mars_ForwardDeclarations.hpp"
 #include "utopia_mars_Mesh.hpp"
 
@@ -14,7 +16,11 @@ namespace utopia {
     template <>
     class Traits<utopia::mars::FunctionSpace> : public Traits<utopia::mars::Mesh> {
     public:
+        using Super_ = Traits<utopia::mars::Mesh>;
         using Mesh = utopia::mars::Mesh;
+        using Environment = utopia::Environment<utopia::mars::FunctionSpace>;
+        using FE = utopia::kokkos::UniformFE<typename Super_::Scalar>;
+        using Discretization = utopia::Discretization<utopia::mars::FunctionSpace, FE>;
     };
 
     namespace mars {
@@ -29,7 +35,15 @@ namespace utopia {
             using IndexSet = Traits<FunctionSpace>::IndexSet;
             using Comm = Traits<FunctionSpace>::Communicator;
 
+#if (TRILINOS_MAJOR_MINOR_VERSION >= 130100 && UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE)
+            using MarsCrsMatrix = Matrix::CrsMatrixType::local_matrix_device_type;
+#else
             using MarsCrsMatrix = Matrix::CrsMatrixType::local_matrix_type;
+#endif
+
+            using FE = Traits<FunctionSpace>::FE;
+            using KokkosDiscretization = utopia::kokkos::Discretization<FunctionSpace, FE>;
+            using Part = KokkosDiscretization::Part;
 
             virtual ~IFEHandler() = default;
 
@@ -53,8 +67,6 @@ namespace utopia {
                                                    const std::string side,
                                                    const int component) = 0;
 
-            // virtual void system_apply_constraints(Matrix &m, Vector &v) = 0;
-
             virtual void ensure_sparsity_pattern() = 0;
 
             virtual SizeType n_local_dofs() = 0;
@@ -62,6 +74,56 @@ namespace utopia {
             virtual SizeType n_dofs() = 0;
 
             virtual Factory &factory() = 0;
+
+            ////////////////////////////////////////////////////////////////////////////////////
+
+            virtual void create(std::vector<KokkosDiscretization::FE_ptr> &fe,
+                                int order,
+                                const KokkosDiscretization::Part &part = KokkosDiscretization::all()) = 0;
+
+            virtual void create_on_boundary(std::vector<KokkosDiscretization::FE_ptr> &fe,
+                                            int order,
+                                            const KokkosDiscretization::Part &part = KokkosDiscretization::all()) = 0;
+
+            ////////////////////////////////////////////////////////////////////////////////////
+
+            virtual void convert_field(const Field<FunctionSpace> &in,
+                                       std::vector<std::shared_ptr<KokkosDiscretization::FEField>> &out,
+                                       const KokkosDiscretization::Part &part = KokkosDiscretization::all()) = 0;
+
+            virtual void convert_field(const std::vector<std::shared_ptr<KokkosDiscretization::FEField>> &in,
+                                       Field<FunctionSpace> &out,
+                                       const KokkosDiscretization::Part &part = KokkosDiscretization::all()) = 0;
+
+            ////////////////////////////////////////////////////////////////////////////////////
+
+            virtual void global_to_local(const Vector &vector,
+                                         std::vector<KokkosDiscretization::VectorAccumulator> &element_vectors,
+                                         const KokkosDiscretization::Part &part = KokkosDiscretization::all(),
+                                         const int comp = 0) = 0;
+
+            // Local to global
+
+            virtual void local_to_global(const std::vector<KokkosDiscretization::MatrixAccumulator> &acc,
+                                         AssemblyMode mode,
+                                         Matrix &mat,
+                                         const KokkosDiscretization::Part &part = KokkosDiscretization::all()) = 0;
+
+            virtual void local_to_global(const std::vector<KokkosDiscretization::VectorAccumulator> &acc,
+                                         AssemblyMode mode,
+                                         Vector &vec,
+                                         const KokkosDiscretization::Part &part = KokkosDiscretization::all()) = 0;
+
+            virtual void local_to_global(const Comm &comm,
+                                         const std::vector<KokkosDiscretization::ScalarAccumulator> &acc,
+                                         std::vector<Scalar> &scalars,
+                                         const Part &part = KokkosDiscretization::all()) = 0;
+
+            virtual void local_to_global_on_boundary(
+                const std::vector<KokkosDiscretization::VectorAccumulator> &acc,
+                AssemblyMode mode,
+                Vector &vec,
+                const KokkosDiscretization::Part &part = KokkosDiscretization::all()) = 0;
         };
 
         class FunctionSpace : public Configurable, public Describable, public Traits<FunctionSpace> {
@@ -73,6 +135,9 @@ namespace utopia {
             using LocalSizeType = Traits<Matrix>::LocalSizeType;
             using IndexSet = Traits<FunctionSpace>::IndexSet;
             using Comm = Traits<FunctionSpace>::Communicator;
+
+            using Discretization = Traits<FunctionSpace>::Discretization;
+
             using DirichletBoundary = utopia::DirichletBoundary<Traits<FunctionSpace>>;
 
             FunctionSpace(const Comm &comm = Comm::get_default());
@@ -84,7 +149,6 @@ namespace utopia {
 
             bool write(const Path &path, const Vector &x);
             void read(Input &in) override;
-            // bool read_with_state(Input &in, Field<FunctionSpace> &val);
             void describe(std::ostream &os = std::cout) const override;
 
             std::shared_ptr<Mesh> mesh_ptr() const;
@@ -105,16 +169,15 @@ namespace utopia {
             void create_local_vector(Vector &v) const;
             void create_matrix(Matrix &m) const;
 
-            // void create_field(Field<FunctionSpace> &field);
-            // void create_nodal_vector_field(const int vector_size, Field<FunctionSpace> &field);
-
             void apply_constraints(Matrix &m, const Scalar diag_value = 1.0) const;
             void apply_constraints(Vector &v) const;
             void apply_constraints(Matrix &m, Vector &v) const;
             void apply_zero_constraints(Vector &vec) const;
             void copy_at_constrained_nodes(const Vector &in, Vector &out) const /*override*/;
 
+
             void apply_constraints_update(Vector &v) const { this->apply_constraints(v); }
+            void apply_constraints_time_derivative(Vector &v){Utopia::Abort("IMPLEMENT ME!");};
 
             void add_dirichlet_boundary_condition(const std::string &name,
                                                   const Scalar &value,
@@ -122,44 +185,18 @@ namespace utopia {
 
             bool empty() const;
 
-            // void displace(const Vector &displacement);
             void global_to_local(const Vector &global, Vector &local) const;
             void local_to_global(const Vector &local, Vector &global, AssemblyMode mode) const;
-
-            // const DofMap &dof_map() const;
-            // DofMap &dof_map();
 
             const std::string &name() const;
 
             const Factory &factory() const;
 
-            // SizeType n_variables() const;
-            // const std::string &variable_name(const SizeType var_num) const;
-            // int variable_size(const SizeType var_num) const;
-
-            // void nodal_field_to_local_vector(Vector &v);
-            // void local_vector_to_nodal_field(const Vector &v);
-
-            // void nodal_field_to_global_vector(Vector &v);
-            // void global_vector_to_nodal_field(const Vector &v);
-
-            // template <typename FieldType>
-            // void declare_new_nodal_field(const std::string &name, const int n_comp);
-
-            // void create_vector(const std::string &field_name, Vector &v) const;
-            // void global_vector_to_nodal_field(const std::string &field_name, const Vector &v);
-
-            // void backend_set_nodal_field(const Field<FunctionSpace> &field);
+            std::shared_ptr<IFEHandler> handler() const;
 
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;
-            std::shared_ptr<IFEHandler> handler() const;
-
-            // void register_output_variables(MeshIO &io);
-            // void read_meta(Input &in);
-            // void register_variables();
-            // friend class SpaceIO;
         };
 
     }  // namespace mars

@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef UTOPIA_WITH_TINY_EXPR
+#ifdef UTOPIA_ENABLE_TINY_EXPR
 
 #include <memory>
 #include "utopia_Expression.hpp"
@@ -25,6 +25,8 @@ namespace utopia {
         double eval(const double x, const double y);
         double eval(const double x, const double y, const double z);
         double eval(const double x, const double y, const double z, const double t);
+        double eval(const double x, const double y, const double z, const double t) const;
+
         double eval(const std::vector<double> &x);
 
         bool valid() const;
@@ -65,6 +67,6 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_TINY_EXPR
+#endif  // UTOPIA_ENABLE_TINY_EXPR
 
 #endif  // UTOPIA_SYMBOLIC_FUNCTION_HPP

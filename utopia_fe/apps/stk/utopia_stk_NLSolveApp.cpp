@@ -15,14 +15,18 @@
 #include "utopia_stk_intrepid2.hpp"
 #include "utopia_stk_intrepid2_OmniAssembler.hpp"
 
+#include "utopia_moonolith_stk_Contact.hpp"
 #include "utopia_moonolith_stk_Obstacle.hpp"
 
-namespace utopia {
-    template class NewmarkIntegrator<utopia::stk::FunctionSpace>;
-    template class ImplicitEulerIntegrator<utopia::stk::FunctionSpace>;
-}  // namespace utopia
+#ifdef UTOPIA_ENABLE_SFEM
+#include "utopia_sfem_stk_SDFObstacle.hpp"
+#endif  // UTOPIA_ENABLE_SFEM
 
 void stk_nlsolve(utopia::Input &in) {
+#ifdef UTOPIA_ENABLE_SFEM
+    utopia::register_sfem_stk_contact();
+#endif  // UTOPIA_ENABLE_SFEM
+
     utopia::NLSolveApp<utopia::stk::FunctionSpace> app;
     app.read(in);
 

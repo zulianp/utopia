@@ -9,7 +9,7 @@ namespace utopia {
     class Bratu2D {};
 }  // namespace utopia
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 // #warning "this code should go in the petsc backend folder"
 #include <petsc/private/snesimpl.h> /* For SNES_Solve event */
 #include <petscdm.h>
@@ -150,11 +150,6 @@ namespace utopia {
 
         const Vector &exact_sol() const override { return exact_sol_; }
 
-        Scalar min_function_value() const override {
-            // depends on the solution to which we converged to
-            return -1.012;
-        }
-
         std::string name() const override { return "Bratu2D"; }
 
         SizeType dim() const override { return n_ * n_; }
@@ -229,5 +224,5 @@ namespace utopia {
     };
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 #endif

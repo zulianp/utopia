@@ -75,12 +75,12 @@ public:
 int main(int argc, char **argv) {
     using namespace utopia;
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     using MatrixT = PetscMatrix;
     using VectorT = PetscVector;
 #define EXAMPLE_HAS_DENSE_ALGEBRA_BACKEND
 #else
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
     using MatrixT = BlasMatrixd;
     using VectorT = BlasVectord;
 #define EXAMPLE_HAS_DENSE_ALGEBRA_BACKEND

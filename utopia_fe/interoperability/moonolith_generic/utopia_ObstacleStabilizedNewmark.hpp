@@ -1,26 +1,26 @@
 #ifndef UTOPIA_OBSTACLE_STABILIZED_NEWMARK_INTEGRATOR_HPP
 #define UTOPIA_OBSTACLE_STABILIZED_NEWMARK_INTEGRATOR_HPP
 
+#include "utopia_ContactFactory.hpp"
+#include "utopia_ContactInterface.hpp"
 #include "utopia_FEModelFunction.hpp"
-#include "utopia_IObstacle.hpp"
-#include "utopia_ObstacleFactory.hpp"
 
 #include <utility>
 
 namespace utopia {
 
     template <class FunctionSpace>
-    class ObstacleDependentFunction {
+    class ContactDependentFunction {
     public:
-        virtual ~ObstacleDependentFunction() = default;
-        virtual void set_obstacle(const std::shared_ptr<IObstacle<FunctionSpace>> obstacle) = 0;
+        virtual ~ContactDependentFunction() = default;
+        virtual void set_contact(const std::shared_ptr<ContactInterface<FunctionSpace>> obstacle) = 0;
     };
 
     // https://en.wikipedia.org/wiki/Newmark-beta_method
     // Unconditionally Stable gamma = 0.5, beta = 0.25
     template <class FunctionSpace>
     class ObstacleStabilizedNewmark : public TimeDependentFunction<FunctionSpace>,
-                                      public ObstacleDependentFunction<FunctionSpace> {
+                                      public ContactDependentFunction<FunctionSpace> {
     public:
         using Super = utopia::TimeDependentFunction<FunctionSpace>;
         using Vector_t = typename Traits<FunctionSpace>::Vector;
@@ -33,13 +33,13 @@ namespace utopia {
             in.get("debug", debug_);
             in.get("stabilized_formulation", stabilized_formulation_);
 
-            if (stabilized_formulation_) {
-                utopia::out() << "Using stabilized formulation!\n";
-            }
+            // if (stabilized_formulation_) {
+            //     utopia::out() << "Using stabilized formulation!\n";
+            // }
         }
 
         bool update_constraints(const Vector_t &x) {
-            utopia::out() << "ObstacleStabilizedNewmark::update_constraints\n";
+            // utopia::out() << "ObstacleStabilizedNewmark::update_constraints\n";
 
             this->space()->displace(x);
             bool ok = obstacle_->assemble(*this->space());
@@ -114,7 +114,7 @@ namespace utopia {
         }
 
         template <class... Args>
-        ObstacleStabilizedNewmark(Args &&... args) : Super(std::forward<Args>(args)...) {}
+        ObstacleStabilizedNewmark(Args &&...args) : Super(std::forward<Args>(args)...) {}
 
         virtual ~ObstacleStabilizedNewmark() = default;
 
@@ -151,7 +151,7 @@ namespace utopia {
             return true;
         }
 
-        inline void set_obstacle(const std::shared_ptr<IObstacle<FunctionSpace>> obstacle) override {
+        inline void set_contact(const std::shared_ptr<ContactInterface<FunctionSpace>> obstacle) override {
             obstacle_ = obstacle;
         }
 
@@ -164,7 +164,7 @@ namespace utopia {
         Vector_t force_old_;
         bool has_zero_density_{false};
 
-        std::shared_ptr<IObstacle<FunctionSpace>> obstacle_;
+        std::shared_ptr<ContactInterface<FunctionSpace>> obstacle_;
         bool debug_{false};
         bool stabilized_formulation_{true};
     };

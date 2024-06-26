@@ -8,6 +8,8 @@
 #include "utopia_MPI.hpp"
 #include "utopia_Testing.hpp"
 
+#include "utopia_Multilevel.hpp"
+
 namespace utopia {
 
     template <class Matrix, class Vector>
@@ -199,7 +201,7 @@ namespace utopia {
             in.set("stol", 1e-14);
             in.set("stol", 1e-14);
             in.set("delta_min", 1e-13);
-            in.set("max-it", 20);
+            in.set("max_it", 20);
             in.set("verbose", false);
 
             // RMTR specific parameters
@@ -280,11 +282,11 @@ namespace utopia {
                 std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > >(n_levels_, n_);
             ml_problems_[1] =
                 std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Bratu1D<Matrix, Vector> > >(n_levels_, n_);
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             ml_problems_[2] =
                 std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, NonEllipse2D<Matrix, Vector> > >(
                     2, n_levels_, n_);
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
         }
 
         ~QuasiRMTR_test() override { ml_problems_.clear(); }
@@ -388,7 +390,7 @@ namespace utopia {
             in.set("stol", 1e-14);
             in.set("stol", 1e-14);
             in.set("delta_min", 1e-13);
-            in.set("max-it", 50);
+            in.set("max_it", 50);
             in.set("verbose", false);
 
             // RMTR specific parameters
@@ -458,14 +460,14 @@ namespace utopia {
         // 	verbosity_level = 2;
         // }
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         int verbosity_level = 0;
         const int n_global = 10;
         bool alg_verbose = false;
         RMTR_test<PetscMatrix, PetscVector> bench1(n_global, alg_verbose);
         bench1.set_verbosity_level(verbosity_level);
         bench1.run();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
     }
 
     static void quasi_rmtr() {
@@ -474,14 +476,14 @@ namespace utopia {
         // 	verbosity_level = 2;
         // }
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         int verbosity_level = 0;
         const int n_global = 10;
         bool alg_verbose = false;
         QuasiRMTR_test<PetscMatrix, PetscVector> bench1(n_global, alg_verbose);
         bench1.set_verbosity_level(verbosity_level);
         bench1.run();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(rmtr);

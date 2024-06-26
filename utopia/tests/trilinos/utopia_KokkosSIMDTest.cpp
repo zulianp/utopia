@@ -2,7 +2,7 @@
 
 // #include "utopia_Base.hpp"
 
-// #ifdef UTOPIA_WITH_KOKKOS_SIMD
+// #ifdef UTOPIA_ENABLE_KOKKOS_SIMD
 
 // #include "utopia.hpp"
 // #include "utopia_Testing.hpp"
@@ -247,4 +247,4 @@
 
 // UTOPIA_REGISTER_TEST_FUNCTION(kokkos_simd);
 
-// #endif  // UTOPIA_WITH_KOKKOS_SIMD
+// #endif  // UTOPIA_ENABLE_KOKKOS_SIMD

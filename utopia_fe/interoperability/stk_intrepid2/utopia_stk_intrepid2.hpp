@@ -9,7 +9,7 @@
 #include "utopia_stk_intrepid2_OmniAssembler.hpp"
 #include "utopia_stk_intrepid2_Transport.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 #include "utopia_petsc_ForwardDeclarations.hpp"
 #endif
 
@@ -76,7 +76,7 @@ namespace utopia {
         static void apply(const Intrepid2Field<Scalar> &from, Field<utopia::stk::FunctionSpace> &to);
     };
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     template <typename Scalar>
     class LocalToGlobal<utopia::stk::FunctionSpace, StkViewDevice_t<Scalar>, PetscMatrix> {
     public:
@@ -107,7 +107,7 @@ namespace utopia {
                                const std::string &part_name);
     };
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
     template <typename Scalar>
     class GlobalToLocal<utopia::stk::FunctionSpace,

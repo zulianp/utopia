@@ -1,6 +1,7 @@
 #ifndef UTOPIA_LINEAR_REGRESSION
 #define UTOPIA_LINEAR_REGRESSION
 
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -68,7 +69,7 @@ namespace utopia {
          * a matrix X and a vector y.
          */
         LinearRegression() : num_of_samples_(96) {
-            fstream data_file;
+            std::fstream data_file;
             string line, number;
             int counter = 0;
 
@@ -169,11 +170,12 @@ namespace utopia {
                 auto h_view = const_local_view_device(*h_);
                 auto y_view = const_local_view_device(y_);
 
-                parallel_for(local_range_device(*errors_), UTOPIA_LAMBDA(const SizeType &i) {
-                    const auto yi = y_view.get(i);
-                    const auto hi = h_view.get(i);
-                    squared_errors_view.set(i, (hi - yi) * (hi - yi));
-                });
+                parallel_for(
+                    local_range_device(*errors_), UTOPIA_LAMBDA(const SizeType &i) {
+                        const auto yi = y_view.get(i);
+                        const auto hi = h_view.get(i);
+                        squared_errors_view.set(i, (hi - yi) * (hi - yi));
+                    });
             }
 
             /**
@@ -295,7 +297,7 @@ void test() {
     auto precond = hess_approx->build_Hinv_precond();
     lsolver->set_preconditioner(precond);
 
-    QuasiNewton<Vector> solverQN(hess_approx, lsolver);
+    QuasiNewton<Matrix, Vector> solverQN(hess_approx, lsolver);
     /** Constructing the initial guess */
     /** solverQN.verbose(true); */
     solverQN.solve(newLinearRegression, x);
@@ -317,18 +319,18 @@ void test() {
 int main(int argc, char **argv) {
     using namespace utopia;
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     using MatrixT = PetscMatrix;
     using VectorT = PetscVector;
 #else
-#ifdef WITH_TRILINOS
-    using MatrixT = TpetraMatrixd;
-    using VectorT = TpetraVectord;
-#else
+    // #ifdef UTOPIA_ENABLE_TRILINOS
+    //     using MatrixT = TpetraMatrixd;
+    //     using VectorT = TpetraVectord;
+    // #else
     using MatrixT = BlasMatrixd;
     using VectorT = BlasVectord;
 #endif
-#endif
+    // #endif
 
     Utopia::Init(argc, argv);
 

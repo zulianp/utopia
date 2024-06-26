@@ -1,6 +1,9 @@
 #include "utopia.hpp"
+#include "utopia_Base.hpp"
 #include "utopia_Device.hpp"
+#include "utopia_Operations.hpp"
 #include "utopia_QuadraticFunction.hpp"
+#include "utopia_TestMacros.hpp"
 #include "utopia_TestProblems.hpp"
 #include "utopia_Testing.hpp"
 #include "utopia_ZeroRowsToIdentity.hpp"
@@ -531,7 +534,7 @@ namespace utopia {
     }
 
     void petsc_to_blas() {
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
 
         PetscVector x(serial_layout(16), 0.);
 
@@ -552,7 +555,7 @@ namespace utopia {
         PetscVector expected(serial_layout(16), 2.0);
         utopia_test_assert(approxeq(expected, x));
 
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
     }
 
     void petsc_conversion() {
@@ -694,6 +697,33 @@ namespace utopia {
 
         // The next line is equivalent to this:  PtAP = ptap(P, A); since it is pattern matched
         PtAP = transpose(P) * A * P;
+        ABC = A * P * C;
+
+        PetscMatrix expected;
+        expected.identity(layout(P), 1.0);
+        utopia_test_assert(approxeq(expected, PtAP));
+        utopia_test_assert(approxeq(expected, ABC));
+    }
+
+    void petsc_test_ptap_reuse_matrix() {
+        auto &&comm = PetscCommunicator::get_default();
+        const int n = comm.size() * 3;
+
+        PetscMatrix P;
+        P.identity(layout(comm, 3, 3, n, n), 1.0);
+        PetscMatrix A;
+        A.identity(layout(P), 1.0);
+        PetscMatrix C;
+        C.identity(layout(P), 1.0);
+        PetscMatrix PtAP, ABC, PAPt;
+
+        // The next line is equivalent to this:  PtAP = ptap(P, A); since it is pattern matched
+        PtAP = transpose(P) * A * P;
+        PtAP *= 0.;
+        ptap_reuse_matrix(A, P, PtAP);
+
+        // MatPtAP(raw_type(A), raw_type(P), MAT_REUSE_MATRIX, 1., &raw_type(PtAP));
+
         ABC = A * P * C;
 
         PetscMatrix expected;
@@ -1536,7 +1566,7 @@ namespace utopia {
         PetscMatrix A;
         A.crs(serial_layout(n_rows, n_cols), row_ptr, columns, values);
 
-        disp(A);
+        // disp(A);
     }
 
     void petsc_block_matrix() {
@@ -1561,6 +1591,26 @@ namespace utopia {
 
         PetscScalar actual = sum(mat);
         utopia_test_assert(approxeq(actual, 4.0));
+    }
+
+    void petsc_matrix_lump() {
+        auto n = 3;
+
+        auto &&comm = PetscCommunicator::get_default();
+        auto ml = layout(comm, n, n, PetscTraits::determine(), PetscTraits::determine());
+
+        PetscMatrix M;
+        M.sparse(ml, 3, 3);
+        assemble_laplacian_1D(M);
+        M.shift_diag(2);
+
+        M.lump();
+        PetscVector diag_M = diag(M);
+
+        PetscScalar sum_M = sum(M);
+        PetscScalar sum_diag_M = sum(diag_M);
+
+        utopia_test_assert(approxeq(sum_M, sum_diag_M));
     }
 
     static void petsc_specific() {
@@ -1596,6 +1646,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_each_sparse_matrix);
         UTOPIA_RUN_TEST(petsc_matrix_composition);
         UTOPIA_RUN_TEST(petsc_test_ptap);
+        UTOPIA_RUN_TEST(petsc_test_ptap_reuse_matrix);
         UTOPIA_RUN_TEST(petsc_test_rart);
         UTOPIA_RUN_TEST(petsc_new_eval);
         UTOPIA_RUN_TEST(petsc_tensor_reduction);
@@ -1606,7 +1657,13 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_get_col_test);
         UTOPIA_RUN_TEST(petsc_dense_mat_mult_test);
         UTOPIA_RUN_TEST(petsc_norm_test);
+        UTOPIA_RUN_TEST(petsc_matrix_lump);
+// FIXME(zulianp) this test causes Segmentation Violation when utopia is built with gpu support
+#ifdef PETSC_HAVE_CUDA
+        utopia_warning("Skipping petsc_chop_test");
+#else
         UTOPIA_RUN_TEST(petsc_chop_test);
+#endif
         UTOPIA_RUN_TEST(petsc_zero_rows_to_id);
         UTOPIA_RUN_TEST(petsc_conversion);
         UTOPIA_RUN_TEST(petsc_sparse_matrix_accessors);

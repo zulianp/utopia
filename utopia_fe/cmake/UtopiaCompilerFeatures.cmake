@@ -1,6 +1,8 @@
 macro(set_utopia_compiler_features target_)
     if(NOT CMAKE_CXX_STANDARD)
-        if(UTOPIA_ENABLE_CXX14_FEATURES)
+        if(UTOPIA_ENABLE_CXX17_FEATURES)
+            set(CMAKE_CXX_STANDARD 17)
+        elseif(UTOPIA_ENABLE_CXX14_FEATURES)
             set(CMAKE_CXX_STANDARD 14)
         else()
             set(CMAKE_CXX_STANDARD 11)
@@ -71,3 +73,20 @@ macro(set_utopia_compiler_features target_)
     # cxx_variadic_templates) target_compile_features(${target_} PUBLIC
     # cxx_template_template_parameters)
 endmacro(set_utopia_compiler_features)
+
+
+if(APPLE)
+    set(CMAKE_MACOSX_RPATH 1)
+
+    # use, i.e. don't skip the full RPATH for the build tree
+    set(CMAKE_SKIP_BUILD_RPATH FALSE)
+     
+    # when building, don't use the install RPATH already
+    # (but later on when installing)
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+     
+    # add the automatically determined parts of the RPATH
+    # which point to directories outside the build tree to the install RPATH
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+endif()

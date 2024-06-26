@@ -131,7 +131,7 @@ namespace utopia {
             }
 
             // FIXME(Alena/Patrick) This is not converging
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             // this->register_experiment("TR_Variable_Tao", [this]() {
             //     auto lsolver = std::make_shared<LUDecomposition<PetscMatrix, PetscVector> >();
             //     lsolver->set_library_type("petsc");
@@ -140,7 +140,7 @@ namespace utopia {
             //     TrustRegionVariableBound<Matrix, Vector> tr_solver(subproblem);
             //     run_tr(this->test_functions_, tr_solver, "TR_Variable_Tao", this->verbose_);
             // });
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
         }
 
     private:
@@ -157,7 +157,7 @@ namespace utopia {
             in.set("rtol", rtol);
             in.set("stol", stol);
             in.set("delta_min", 1e-13);
-            in.set("max-it", 5000);
+            in.set("max_it", 5000);
             in.set("verbose", false);
 
             // auto params_qp = std::make_shared<InputParameters>();
@@ -209,7 +209,7 @@ namespace utopia {
         }
     };
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
     static void constrained_opt() {
         if (mpi_world_size() == 1) {
             int verbosity_level = 1;
@@ -228,5 +228,5 @@ namespace utopia {
 
     UTOPIA_REGISTER_TEST_FUNCTION_OPTIONAL(constrained_opt);
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 }  // namespace utopia

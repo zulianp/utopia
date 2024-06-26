@@ -11,6 +11,19 @@
 #include <petsc/private/taoimpl.h>
 #include "petsctao.h"
 
+// Deprecated API is handled here
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3, 17, 0)
+#define Quircks_TaoSetHessian TaoSetHessianRoutine
+#define Quircks_TaoSetGradient(input, b, c, d) TaoSetGradientRoutine(input, c, d)
+#define Quircks_TaoSetObjective TaoSetObjectiveRoutine
+#define Quircks_TaoSetSolution TaoSetInitialVector
+#else
+#define Quircks_TaoSetHessian TaoSetHessian
+#define Quircks_TaoSetGradient(input, b, c, d) TaoSetGradient(input, b, c, d)
+#define Quircks_TaoSetObjective TaoSetObjective
+#define Quircks_TaoSetSolution TaoSetSolution
+#endif
+
 #define U_CHECKERR(ierr)               \
     {                                  \
         if ((ierr) != 0) return false; \
@@ -172,30 +185,30 @@ namespace utopia {
             return false;
         }
 
+        auto void_f = (static_cast<void *>(&fun));
         PetscErrorCode ierr = 0;
         if (fun.has_preconditioner()) {
-            ierr = TaoSetHessianRoutine(tao,
-                                        raw_type(*fun.data()->H),
-                                        raw_type(*fun.data()->H_pre),
-                                        UtopiaTaoFormHessian<Matrix, Vector>,
-                                        static_cast<void *>(&fun));
+            ierr = Quircks_TaoSetHessian(tao,
+                                         raw_type(*fun.data()->H),
+                                         raw_type(*fun.data()->H_pre),
+                                         UtopiaTaoFormHessian<Matrix, Vector>,
+                                         void_f);
             U_CHECKERR(ierr);
 
         } else {
-            ierr = TaoSetHessianRoutine(tao,
-                                        raw_type(*fun.data()->H),
-                                        raw_type(*fun.data()->H),
-                                        UtopiaTaoFormHessian<Matrix, Vector>,
-                                        static_cast<void *>(&fun));
+            ierr = Quircks_TaoSetHessian(tao,
+                                         raw_type(*fun.data()->H),
+                                         raw_type(*fun.data()->H),
+                                         (UtopiaTaoFormHessian<Matrix, Vector>),
+                                         void_f);
             U_CHECKERR(ierr);
         }
 
-        ierr = TaoSetObjectiveRoutine(tao, UtopiaTaoEvaluateObjective<Matrix, Vector>, static_cast<void *>(&fun));
+        ierr = Quircks_TaoSetObjective(tao, UtopiaTaoEvaluateObjective<Matrix, Vector>, void_f);
         U_CHECKERR(ierr);
 
-        ierr = TaoSetGradientRoutine(tao, UtopiaTaoEvaluateGradient<Matrix, Vector>, static_cast<void *>(&fun));
+        ierr = Quircks_TaoSetGradient(tao, nullptr, (UtopiaTaoEvaluateGradient<Matrix, Vector>), void_f);
         U_CHECKERR(ierr);
-
         return false;
     }
 
@@ -320,6 +333,7 @@ namespace utopia {
         void read(Input &in) override {
             std::string type;
             in.get("type", type);
+            in.get("tao_type", type);
 
             if (!type.empty() && TaoTypes::is_valid(type, true)) {
                 set_type(type);
@@ -352,7 +366,7 @@ namespace utopia {
 
         inline bool solve(Vector &x) {
             PetscErrorCode ierr = 0;
-            TaoSetInitialVector(tao, raw_type(x));
+            Quircks_TaoSetSolution(tao, raw_type(x));
             ierr = TaoSolve(tao);
             U_CHECKERR(ierr);
 
@@ -394,7 +408,7 @@ namespace utopia {
 
         inline bool smooth(Vector &x) {
             PetscErrorCode ierr = 0;
-            TaoSetInitialVector(tao, raw_type(x));
+            Quircks_TaoSetSolution(tao, raw_type(x));
             ierr = TaoSolve(tao);
             U_CHECKERR(ierr);
             return true;
@@ -433,6 +447,11 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     void TaoSolver<Matrix, Vector>::read(Input &in) {
+        in.get("linear_solver", [&](Input &) {
+            auto ls = std::make_shared<OmniLinearSolver<Matrix, Vector>>();
+            this->set_linear_solver(ls);
+        });
+
         NewtonBase<Matrix, Vector>::read(in);
         // VariableBoundSolverInterface<Vector>::read(in);
         impl_->read(in);
@@ -446,6 +465,8 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     bool TaoSolver<Matrix, Vector>::solve(Function<Matrix, Vector> &fun, Vector &x) {
+        UTOPIA_TRACE_SCOPE("TaoSolver::solve");
+
         init(fun, x);
         this->init_solver("Tao Solver", {""});
         auto flg = impl_->solve(x);
@@ -468,6 +489,8 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     void TaoSolver<Matrix, Vector>::init(Function<Matrix, Vector> &fun, Vector &x) {
+        UTOPIA_TRACE_SCOPE("TaoSolver::init");
+
         if (!impl_->initialized(size(x))) {
             impl_->init(x.comm().get());
 

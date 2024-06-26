@@ -31,6 +31,12 @@ namespace utopia {
             in.get("gap_positive_bound", gap_positive_bound);
             in.get("invert_face_orientation", invert_face_orientation);
             in.get("debug", debug);
+            in.get("snap_to_canonical_vectors", snap_to_canonical_vectors);
+            in.get("extend_contact_surface", extend_contact_surface);
+            in.get("skip_dir", skip_dir);
+            in.get("skip_dir_tol", skip_dir_tol);
+            in.get("verbose", verbose);
+            in.get("margin", margin);
 
             in.get("surfaces", [this](Input &in) {
                 in.get_all([this](Input &in) {
@@ -41,6 +47,34 @@ namespace utopia {
                     }
                 });
             });
+
+            bool print_params = false;
+            in.get("print_params", print_params);
+
+            if (print_params || verbose) {
+                int rank;
+                MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+                if (rank == 0) {
+                    describe(utopia::out().stream());
+                }
+            }
+        }
+
+        void Obstacle::Params::describe(std::ostream &os) const {
+            os << "-----------------------------------------\n";
+            os << "utopia::moonolith::Obstacle\n";
+            os << "-----------------------------------------\n";
+            os << "variable_number: \t" << variable_number << "\n";
+            os << "gap_negative_bound: \t" << gap_negative_bound << "\n";
+            os << "gap_positive_bound: \t" << gap_positive_bound << "\n";
+            os << "invert_face_orientation: \t" << invert_face_orientation << "\n";
+            os << "debug: \t" << debug << "\n";
+            os << "snap_to_canonical_vectors: \t" << snap_to_canonical_vectors << "\n";
+            os << "skip_dir: \t" << skip_dir << "\n";
+            os << "skip_dir_tol: \t" << skip_dir_tol << "\n";
+            os << "margin: \t" << margin << "\n";
+            os << "extend_contact_surface: \t" << extend_contact_surface << "\n";
         }
 
         class Obstacle::Output {
@@ -149,6 +183,9 @@ namespace utopia {
                     if (is_contact.get(i) == 0.0) {
                         gap.set(i, 1e8);
                     }
+                    // else {
+                    //     gap.add(i, -margin);
+                    // }
                 }
             }
 
@@ -273,10 +310,19 @@ namespace utopia {
                     return false;
                 }
 
+                obstacle->snap_to_canonical_vectors(params.snap_to_canonical_vectors);
                 obstacle->set_gap_bounds(params.gap_negative_bound, params.gap_positive_bound);
+                obstacle->skip_dir(params.skip_dir);
+                obstacle->skip_dir_tol(params.skip_dir_tol);
+                obstacle->extend_contact_surface(params.extend_contact_surface);
                 obstacle->assemble(params.tags, *space_d);
 
                 this->finalize_tensors(Dim, obstacle->buffers(), output);
+
+                if (params.margin != 0.) {
+                    output.gap.shift(-params.margin);
+                }
+
                 return true;
             }
 
@@ -340,7 +386,7 @@ namespace utopia {
 
         void Obstacle::set_params(const Params &params) { *this->params_ = params; }
 
-        bool Obstacle::assemble(const FunctionSpace &space) {
+        bool Obstacle::assemble(FunctionSpace &space) {
             UTOPIA_TRACE_REGION_BEGIN("moonolith::Obstacle::assemble");
 
             assert(impl_);

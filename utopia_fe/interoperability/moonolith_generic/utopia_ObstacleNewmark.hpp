@@ -5,14 +5,14 @@
 
 #include "utopia_BoxConstrainedFEFunction.hpp"
 #include "utopia_BoxConstraints.hpp"
-#include "utopia_IObstacle.hpp"
+#include "utopia_ContactInterface.hpp"
 #include "utopia_NewmarkIntegrator.hpp"
 #include "utopia_fe_Core.hpp"
 
 #include "utopia_AnalyticObstacle_impl.hpp"
 #include "utopia_ImplicitObstacle_impl.hpp"
 
-#include "utopia_ObstacleFactory.hpp"
+#include "utopia_ContactFactory.hpp"
 
 #include "utopia_IsNotSupported.hpp"
 
@@ -31,7 +31,7 @@ namespace utopia {
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
         using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using Mesh_t = typename Traits<FunctionSpace>::Mesh;
-        using LogBarrierBase = utopia::LogBarrierBase<Matrix_t, Vector_t>;
+        using Penalty = utopia::Penalty<Matrix_t, Vector_t>;
 
         ObstacleNewmark(const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &unconstrained)
             : Super(unconstrained) {}
@@ -74,14 +74,18 @@ namespace utopia {
 
             if (!obstacle_) {
                 std::string type;
-                in.get("obstacle",
-                       [&](Input &node) { obstacle_ = ObstacleFactory<FunctionSpace>::new_obstacle(node); });
+                in.get("obstacle", [&](Input &node) { obstacle_ = ContactFactory<FunctionSpace>::new_obstacle(node); });
+            }
+
+            if (!obstacle_) {
+                std::string type;
+                in.get("contact", [&](Input &node) { obstacle_ = ContactFactory<FunctionSpace>::new_contact(node); });
             }
 
             ////////////////////////////////////////////////////////////////////////////////
             std::string function_type;
             in.get("function_type", function_type);
-            barrier_ = LogBarrierFactory<Matrix_t, Vector_t>::new_log_barrier(function_type);
+            barrier_ = PenaltyFactory<Matrix_t, Vector_t>::new_penalty(function_type);
             barrier_->read(in);
         }
 
@@ -184,9 +188,26 @@ namespace utopia {
         const Vector_t &solution() const override { return this->x_old(); }
         bool report_solution(const Vector_t &x) override { return Super::report_solution(x); }
 
-        bool update(const Vector_t & /*x*/) override {
+        // bool update(const Vector_t &x) override {
+        //     if (barrier_) {
+        //         barrier_->update(x);
+        //     }
+
+        //     return true;
+        // }
+
+        bool update(const Vector_t &x) override {
             if (barrier_) {
-                barrier_->update_barrier();
+                Vector_t x_obs;
+
+                if (trivial_obstacle_) {
+                    obstacle_->transform(x, x_obs);
+                } else {
+                    Vector_t x_temp = x - this->x_old();
+                    obstacle_->transform(x_temp, x_obs);
+                }
+
+                barrier_->update(x_obs);
             }
 
             return true;
@@ -269,8 +290,8 @@ namespace utopia {
         }
 
     private:
-        std::shared_ptr<IObstacle<FunctionSpace>> obstacle_;
-        std::shared_ptr<LogBarrierBase> barrier_;
+        std::shared_ptr<ContactInterface<FunctionSpace>> obstacle_;
+        std::shared_ptr<Penalty> barrier_;
         bool debug_{false};
         int debug_from_iteration_{0};
         bool trivial_obstacle_{false};

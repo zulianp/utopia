@@ -5,6 +5,8 @@
 #include "utopia_Input.hpp"
 #include "utopia_Traits.hpp"
 
+#include "utopia_ContactInterface.hpp"
+
 #include "utopia_moonolith_ForwardDeclarations.hpp"
 #include "utopia_moonolith_FunctionSpace.hpp"
 
@@ -14,7 +16,7 @@
 namespace utopia {
     namespace moonolith {
 
-        class Obstacle final : public Configurable, public Describable {
+        class Obstacle final : public ContactInterface<moonolith::FunctionSpace> {
         public:
             using Vector = Traits<FunctionSpace>::Vector;
             using Matrix = Traits<FunctionSpace>::Matrix;
@@ -26,24 +28,24 @@ namespace utopia {
             void describe(std::ostream &os) const override;
 
             bool init_obstacle(const Mesh &obstacle_mesh);
-            bool assemble(const FunctionSpace &space);
-            void transform(const Matrix &in, Matrix &out);
-            void transform(const Vector &in, Vector &out);
-            void inverse_transform(const Vector &in, Vector &out);
+            bool assemble(FunctionSpace &space) override;
+            void transform(const Matrix &in, Matrix &out) override;
+            void transform(const Vector &in, Vector &out) override;
+            void inverse_transform(const Vector &in, Vector &out) override;
 
-            const Vector &gap() const;
-            const Vector &is_contact() const;
-            const Vector &normals() const;
+            const Vector &gap() const override;
+            const Vector &is_contact() const override;
+            const Vector &normals() const override;
 
             Vector &gap();
             Vector &is_contact();
             Vector &normals();
-            std::shared_ptr<Matrix> mass_matrix();
+            std::shared_ptr<Matrix> mass_matrix() override;
 
             Obstacle();
             ~Obstacle();
 
-            std::shared_ptr<Matrix> orthogonal_transformation();
+            std::shared_ptr<Matrix> orthogonal_transformation() override;
 
             // class SurfaceDescriptor {
             // public:
@@ -51,16 +53,23 @@ namespace utopia {
             //     int id{-1};
             // };
 
-            class Params : public Configurable {
+            class Params : public Configurable, public Describable {
             public:
                 int variable_number{0};
                 Scalar gap_negative_bound{-0.0001};
                 Scalar gap_positive_bound{0.1};
+                Scalar margin{0.};
                 std::unordered_set<int> tags;
                 bool invert_face_orientation{false};
                 bool debug{false};
+                bool snap_to_canonical_vectors{false};
+                int skip_dir{-1};
+                Scalar skip_dir_tol{0.2};
+                bool verbose{false};
+                bool extend_contact_surface{false};
 
                 void read(Input &in) override;
+                void describe(std::ostream &os) const override;
             };
 
             void set_params(const Params &params);

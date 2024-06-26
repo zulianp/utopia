@@ -21,7 +21,7 @@
 #include "utopia_SampleView.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
 // petsc
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
@@ -33,7 +33,7 @@
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_petsc_FE.hpp"
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
 // FIXME
 #ifndef USE_SIMD_ASSEMBLY

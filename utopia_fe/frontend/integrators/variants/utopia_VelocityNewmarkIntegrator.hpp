@@ -34,6 +34,11 @@ namespace utopia {
             return Super::update_IVP(x);
         }
 
+        bool update_BVP() override {
+            this->space()->apply_constraints(this->x_old());
+            return true;
+        }
+
         bool hessian_and_gradient(const Vector_t &velocity, Matrix_t &H, Vector_t &g) const override {
             Vector_t x;
             update_x(velocity, x);
@@ -79,6 +84,9 @@ namespace utopia {
             H *= (this->delta_time() / 2);
             UTOPIA_TRACE_REGION_END("VelocityNewmarkIntegrator::integrate_hessian");
         }
+
+        void hessian_from_velocity_to_displacement(Matrix_t &H) const { H *= (2 / this->delta_time()); }
+        void hessian_from_displacement_to_velocity(Matrix_t &H) const { H *= (this->delta_time() / 2); }
 
         bool time_derivative(const Vector_t &x, Vector_t &dfdt) const override {
             return Super::time_derivative(x, dfdt);

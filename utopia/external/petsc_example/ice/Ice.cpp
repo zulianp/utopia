@@ -1557,12 +1557,12 @@ int main(int argc,char *argv[])
 
 
       auto linear_solver = std::make_shared<GMRES<DSMatrixd, DVectord>>();
-      linear_solver->pc_type("asm");
+      linear_solver->pc_type(PCASM);
       linear_solver->atol(1e-12); 
       utopia::AffineSimilarity<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
 
       // auto linear_solver = std::make_shared<GMRES<DSMatrixd, DVectord>>();
-      // linear_solver->pc_type("asm");
+      // linear_solver->pc_type(PCASM);
       // utopia::PseudoContinuation<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
 
 

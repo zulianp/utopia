@@ -25,7 +25,7 @@ namespace utopia {
                      .add_option("clear_non_essential_matrices",
                                  clear_non_essential_matrices,
                                  "Keeps only the final transfer matrix in memory and deletes the rest.")
-                     .add_option("export_tensors", export_tensors_, "Exports tensors to disk.")
+                     .add_option("export_tensors", export_tensors, "Exports tensors to disk.")
                      .add_option("has_covering", has_covering, "Constructs lagrange multiplier in intersections.")
                      .add_option("chop_tol", chop_tol, "Chop numeric entries close below a certain tolerance")
                      .add_option(
@@ -60,9 +60,9 @@ namespace utopia {
         int n_var{1};
         std::vector<std::pair<int, int>> tags;
         bool clear_non_essential_matrices{true};
-        bool export_tensors_{false};
+        bool export_tensors{false};
         bool use_reference_frame{false};
-        bool print_operator_imbalance{true};
+        bool print_operator_imbalance{false};
         double chop_tol{0.};
     };
 

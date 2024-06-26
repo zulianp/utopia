@@ -36,7 +36,7 @@ namespace utopia {
             void clear();
             bool empty() const;
             bool apply(const Vector &from, Vector &to) const override;
-            bool apply(const Matrix &to_matrix, Matrix &matrix_in_from_space) const;
+            bool apply(const Matrix &to_matrix, Matrix &from_matrix, const bool reuse_matrix = false) const;
             Size size() const override;
             Size local_size() const override;
 
@@ -60,6 +60,8 @@ namespace utopia {
 
             void set_constraint_matrix_from(const std::shared_ptr<Matrix> &c);
             void set_constraint_matrix_to(const std::shared_ptr<Matrix> &c);
+
+            // void rebalance_the_from_system();
 
         private:
             class Impl;

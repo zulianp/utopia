@@ -5,6 +5,8 @@
 #include "utopia_petsc_Communicator.hpp"
 #include "utopia_petsc_DM.hpp"
 
+#include "petscsystypes.h"
+
 #if defined(PETSC_HAVE_EXODUSII)
 #include <petscdmplex.h>
 #include <petscviewerexodusii.h>
@@ -37,8 +39,13 @@ namespace utopia {
         PetscViewer viewer{nullptr};
     };
 
-    bool PetscIO::open(const PetscCommunicator &comm, const Path &path) {
+    bool PetscIO::open(const PetscCommunicator &comm, const Path &path, const std::string &mode) {
         PetscErrorCode ierr = 0;
+
+        PetscFileMode petsc_mode = FILE_MODE_WRITE;
+        if (mode == "r") {
+            petsc_mode = FILE_MODE_READ;
+        }
 
         auto mpi_comm = comm.get();
         auto &viewer = wrapper_->viewer;
@@ -58,7 +65,7 @@ namespace utopia {
         } else
 #endif
             if (ext == "vts") {
-            ierr = PetscViewerVTKOpen(mpi_comm, path.c_str(), FILE_MODE_WRITE, &viewer);
+            ierr = PetscViewerVTKOpen(mpi_comm, path.c_str(), petsc_mode, &viewer);
             if (ierr != 0) {
                 assert(false);
                 return false;
@@ -67,7 +74,7 @@ namespace utopia {
             ierr = PetscViewerPushFormat(viewer, PETSC_VIEWER_VTK_VTS);
             assert(ierr == 0);
         } else if (ext == "vtr") {
-            ierr = PetscViewerVTKOpen(mpi_comm, path.c_str(), FILE_MODE_WRITE, &viewer);
+            ierr = PetscViewerVTKOpen(mpi_comm, path.c_str(), petsc_mode, &viewer);
             if (ierr != 0) {
                 assert(false);
                 return false;
@@ -76,7 +83,7 @@ namespace utopia {
             ierr = PetscViewerPushFormat(viewer, PETSC_VIEWER_VTK_VTR);
             assert(ierr == 0);
         } else if (ext == "vtu") {
-            ierr = PetscViewerVTKOpen(mpi_comm, path.c_str(), FILE_MODE_WRITE, &viewer);
+            ierr = PetscViewerVTKOpen(mpi_comm, path.c_str(), petsc_mode, &viewer);
             if (ierr != 0) {
                 assert(false);
                 return false;
@@ -94,7 +101,7 @@ namespace utopia {
         // }
 #if defined(PETSC_HAVE_HDF5)
         else if (ext == "h5") {
-            PetscViewerHDF5Open(mpi_comm, path.c_str(), FILE_MODE_WRITE, &viewer);
+            PetscViewerHDF5Open(mpi_comm, path.c_str(), petsc_mode, &viewer);
 
             if (ierr != 0) {
                 assert(false);
@@ -104,7 +111,7 @@ namespace utopia {
 #endif
 #if defined(PETSC_HAVE_EXODUSII)
         else if (ext == "e") {
-            ierr = PetscViewerExodusIIOpen(mpi_comm, path.c_str(), FILE_MODE_WRITE, &viewer);
+            ierr = PetscViewerExodusIIOpen(mpi_comm, path.c_str(), petsc_mode, &viewer);
             if (ierr != 0) {
                 assert(false);
                 return false;
@@ -126,6 +133,17 @@ namespace utopia {
     bool PetscIO::write(const PetscDMBase &dm) { return DMView(dm.raw_type(), wrapper_->viewer) == 0; }
 
     bool PetscIO::write(const PetscVector &x) { return VecView(x.raw_type(), wrapper_->viewer) == 0; }
+
+    bool PetscIO::read(PetscDMBase &dm) { return DMLoad(dm.raw_type(), wrapper_->viewer) == 0; }
+
+    bool PetscIO::read(PetscVector &x) {
+        if (x.empty()) {
+            assert(false);
+            return false;
+        }
+
+        return VecLoad(x.raw_type(), wrapper_->viewer) == 0;
+    }
 
     void PetscIO::close() { wrapper_->destroy(); }
 

@@ -24,7 +24,7 @@ namespace utopia {
         return TrilinosCommunicator(get()->split(color, rank()));
     }
 
-#ifdef UTOPIA_WITH_MPI
+#ifdef UTOPIA_ENABLE_MPI
     MPI_Comm TrilinosCommunicator::raw_comm() const {
         auto *mpi_comm = dynamic_cast<const Teuchos::MpiComm<int> *>(comm_.get());
         if (mpi_comm != nullptr) {
@@ -40,9 +40,6 @@ namespace utopia {
         return TrilinosCommunicator(Teuchos::rcp(new Teuchos::SerialComm<int>()));
     }
 
-    TrilinosCommunicator TrilinosCommunicator::world() {
-        // FIXME
-        return TrilinosCommunicator(Teuchos::rcp(new Teuchos::MpiComm<int>(MPI_COMM_WORLD)));
-    }
+    TrilinosCommunicator TrilinosCommunicator::world() { return TrilinosCommunicator(Tpetra::getDefaultComm()); }
 #endif
 }  // namespace utopia

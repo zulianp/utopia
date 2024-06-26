@@ -3,7 +3,7 @@
 #include "utopia_TestFunctions.hpp"
 #include "utopia_Views.hpp"
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 
 namespace utopia {
     template <typename Matrix, typename Vector, int Backend = Traits<Vector>::Backend>
@@ -109,8 +109,6 @@ namespace utopia {
         Vector initial_guess() const override { return initial_guess_; }
 
         const Vector &exact_sol() const override { return exact_sol_; }
-
-        Scalar min_function_value() const override { return -1.013634375000014e+01; }
 
         std::string name() const override { return "Poisson_Kokkos"; }
 
@@ -591,4 +589,4 @@ namespace utopia {
     };
 }  // namespace utopia
 
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_TRILINOS

@@ -6,7 +6,7 @@
 #include "utopia_petsc_NonlinearSolvers.hpp"
 #include "utopia_petsc_Smoothers.hpp"
 
-#ifdef UTOPIA_WITH_SLEPC
+#ifdef UTOPIA_ENABLE_SLEPC
 #include "utopia_petsc_Slepc.hpp"
 #endif
 

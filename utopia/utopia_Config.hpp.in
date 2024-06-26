@@ -1,36 +1,46 @@
 #ifndef UTOPIA_CONFIG_HPP
 #define UTOPIA_CONFIG_HPP
 
-#cmakedefine UTOPIA_WITH_BLAS
-#cmakedefine UTOPIA_WITH_LAPACK
-#cmakedefine UTOPIA_WITH_PETSC
-#cmakedefine UTOPIA_WITH_SLEPC
-#cmakedefine UTOPIA_WITH_TRILINOS
-#cmakedefine UTOPIA_WITH_TRILINOS_AMESOS2
-#cmakedefine UTOPIA_WITH_TRILINOS_BELOS
-#cmakedefine UTOPIA_WITH_TRILINOS_IFPACK2
-#cmakedefine UTOPIA_WITH_TRILINOS_MUELU
-#cmakedefine UTOPIA_WITH_TRILINOS_TPETRAEXT
-#cmakedefine UTOPIA_WITH_CPP11
-#cmakedefine UTOPIA_WITH_UMFPACK
-#cmakedefine UTOPIA_WITH_MPI
-#cmakedefine UTOPIA_WITH_OPEN_BLAS
-#cmakedefine UTOPIA_WITH_PETSC_CRAY
-#cmakedefine UTOPIA_WITH_CUDA
-#cmakedefine UTOPIA_WITH_OPENCL
-#cmakedefine UTOPIA_WITH_EIGEN_3
-#cmakedefine UTOPIA_TRACE_ENABLED
-#cmakedefine UTOPIA_TRACE_EXPR_ENABLED
+
+// Moonolith style variables.
+#define UTOPIA_CXX_COMPILER "@CMAKE_CXX_COMPILER@"
+#define UTOPIA_C_COMPILER "@CMAKE_C_COMPILER@"
+#define UTOPIA_DEP_INCLUDES "@UTOPIA_DEP_INCLUDES@"
+#define UTOPIA_DEP_LIBRARIES "@UTOPIA_DEP_LIBRARIES@"
+
+
+
+#cmakedefine UTOPIA_ENABLE_BLAS
+#cmakedefine UTOPIA_ENABLE_LAPACK
+#cmakedefine UTOPIA_ENABLE_PETSC
+#cmakedefine UTOPIA_ENABLE_SLEPC
+#cmakedefine UTOPIA_ENABLE_TRILINOS
+#cmakedefine UTOPIA_ENABLE_TRILINOS_AMESOS2
+#cmakedefine UTOPIA_ENABLE_TRILINOS_BELOS
+#cmakedefine UTOPIA_ENABLE_TRILINOS_IFPACK2
+#cmakedefine UTOPIA_ENABLE_TRILINOS_MUELU
+#cmakedefine UTOPIA_ENABLE_TRILINOS_TPETRAEXT
+#cmakedefine UTOPIA_ENABLE_CPP11
+#cmakedefine UTOPIA_ENABLE_UMFPACK
+#cmakedefine UTOPIA_ENABLE_MPI
+#cmakedefine UTOPIA_ENABLE_PETSC_CRAY
+#cmakedefine UTOPIA_ENABLE_EIGEN_3
+#cmakedefine UTOPIA_ENABLE_TRACE
+#cmakedefine UTOPIA_ENABLE_TRACE_EXPR
 #cmakedefine UTOPIA_ENABLE_NO_ALLOC_REGIONS
-#cmakedefine UTOPIA_WITH_TINY_EXPR
-#cmakedefine UTOPIA_WITH_JSON
-#cmakedefine UTOPIA_WITH_YAML_CPP
-#cmakedefine UTOPIA_WITH_M3ELINSOL
-#cmakedefine UTOPIA_WITH_CPP14
-#cmakedefine UTOPIA_WITH_CODE_COVERAGE
-#cmakedefine UTOPIA_DEPRECATED_API
-#cmakedefine UTOPIA_WITH_VC
-// #cmakedefine UTOPIA_WITH_KOKKOS_SIMD
+#cmakedefine UTOPIA_ENABLE_TINY_EXPR
+#cmakedefine UTOPIA_ENABLE_JSON
+#cmakedefine UTOPIA_ENABLE_YAML_CPP
+#cmakedefine UTOPIA_ENABLE_CPP14
+#cmakedefine UTOPIA_ENABLE_CPP17
+#cmakedefine UTOPIA_ENABLE_CODE_COVERAGE
+#cmakedefine UTOPIA_ENABLE_DEPRECATED_API
+#cmakedefine UTOPIA_ENABLE_VC
+#cmakedefine UTOPIA_ENABLE_METIS
+#cmakedefine UTOPIA_ENABLE_PARMETIS
+#cmakedefine UTOPIA_ENABLE_MATRIX_IO
+#cmakedefine UTOPIA_ENABLE_ISOLVER
+// #cmakedefine UTOPIA_ENABLE_KOKKOS_SIMD
 
 #cmakedefine UTOPIA_PETSC_VERSION_MAJOR
 #cmakedefine UTOPIA_PETSC_VERSION_MINOR
@@ -38,7 +48,7 @@
 
 #cmakedefine01 UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 #include <Kokkos_Macros.hpp>
 #define UTOPIA_LAMBDA KOKKOS_LAMBDA
 #define UTOPIA_INLINE_FUNCTION KOKKOS_INLINE_FUNCTION
@@ -54,12 +64,7 @@
 #define UTOPIA_NVCC_PRIVATE
 #endif
 
-
-#ifdef UTOPIA_WITH_OPEN_BLAS
-#define UTOPIA_WITH_BLAS
-#endif
-
-#ifdef UTOPIA_WITH_PETSC_CRAY
+#ifdef UTOPIA_ENABLE_PETSC_CRAY
 #define PETSC_CXX_STATIC_INLINE static inline
 #define PETSC_CXX_RESTRICT __restrict__
 #endif
@@ -67,16 +72,31 @@
 
 #ifndef NDEBUG
 #include <assert.h>
-#cmakedefine ENABLE_LOCK_CHECK
-#ifdef ENABLE_LOCK_CHECK
+#cmakedefine UTOPIA_ENABLE_LOCK_CHECK
+#ifdef UTOPIA_ENABLE_LOCK_CHECK
 #define utopia_lock_check_assert(expr_) assert(expr_)
 #else
 #define utopia_lock_check_assert(expr_)
-#endif //ENABLE_LOCK_CHECK
+#endif //UTOPIA_ENABLE_LOCK_CHECK
 #else
 #define utopia_lock_check_assert(expr_)
 #endif //NDEBUG
 
-#include "utopia_compiler_features.hpp"
+
+#ifndef UTOPIA_DEPRECATED
+    #if defined(UTOPIA_COMPILER_CXX_ATTRIBUTE_DEPRECATED) && UTOPIA_COMPILER_CXX_ATTRIBUTE_DEPRECATED
+      #define UTOPIA_DEPRECATED [[deprecated]]
+      #define UTOPIA_DEPRECATED_MSG(MSG) [[deprecated(MSG)]]
+    #elif UTOPIA_COMPILER_IS_GNU || UTOPIA_COMPILER_IS_Clang
+      #define UTOPIA_DEPRECATED __attribute__((__deprecated__))
+      #define UTOPIA_DEPRECATED_MSG(MSG) __attribute__((__deprecated__(MSG)))
+    #elif UTOPIA_COMPILER_IS_MSVC
+      #define UTOPIA_DEPRECATED __declspec(deprecated)
+      #define UTOPIA_DEPRECATED_MSG(MSG) __declspec(deprecated(MSG))
+    #else
+      #define UTOPIA_DEPRECATED
+      #define UTOPIA_DEPRECATED_MSG(MSG)
+    #endif
+#endif
 
 #endif //UTOPIA_CONFIG_HPP

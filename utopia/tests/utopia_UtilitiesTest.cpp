@@ -168,7 +168,7 @@ namespace utopia {
                 utopia_test_assert(approxeq(y == 0 ? 1.0 : 0.0, entry));
             });
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             // NOTE(eric): range assignment is NYI in Petsc backend
             if (std::is_same<Matrix, PetscMatrix>::value) {
                 return;
@@ -297,29 +297,53 @@ namespace utopia {
         utopia_test_assert(!ss.str().empty());
     }
 
+    template <class Matrix, class Vector>
+    class MatrixStructureTest {
+    public:
+        using TraitsT = utopia::Traits<Matrix>;
+        using Comm = typename TraitsT::Communicator;
+        using Scalar = typename TraitsT::Scalar;
+        using SizeType = typename TraitsT::SizeType;
+
+        void is_col_imbalanced_test() {
+            auto comm = Comm();
+
+            auto ml = utopia::layout(comm, 5, 5, TraitsT::determine(), TraitsT::determine());
+            Matrix mat;
+            mat.identity(ml, 0.1);
+
+            // Identity has perfect balance!
+            utopia_test_assert(!transpose_distro_is_strongly_imbalanced(mat, 0));
+        }
+
+        void run() { UTOPIA_RUN_TEST(is_col_imbalanced_test); }
+    };
+
     static void utilities() {
         UTOPIA_RUN_TEST(authored_work_test);
         UTOPIA_RUN_TEST(describe_test);
         UTOPIA_RUN_TEST(describe_chrono_test);
 
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
         UtilitiesTest<BlasMatrixd, BlasVectord>().run();
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         BlockTest<PetscMatrix, PetscVector>().run();
 
         UtilitiesTest<PetscMatrix, PetscVector>().run();
         BlockTest<PetscMatrix, PetscVector>().run();
 
-#endif  // UTOPIA_WITH_PETSC
+        MatrixStructureTest<PetscMatrix, PetscVector>().run();
+
+#endif  // UTOPIA_ENABLE_PETSC
 
         // FIXME
         if (mpi_world_size() == 1) {
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
             // FIXME This tests fails when using adress sanitizer inside trilinos (CMAKE_BUILD_TYPE=ASAN)
             BlockTest<TpetraMatrixd, TpetraVectord>().run();
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
         }
     }
 

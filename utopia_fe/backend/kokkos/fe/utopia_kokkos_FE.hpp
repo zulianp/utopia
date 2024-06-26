@@ -4,10 +4,11 @@
 #include "utopia_Logger.hpp"
 
 #include "utopia_Base.hpp"
+#include "utopia_Traits.hpp"
 #include "utopia_kokkos_FEBase.hpp"
+#include "utopia_kokkos_FEForwardDeclarations.hpp"
 
 #include <Kokkos_DynRankView.hpp>
-#include <Kokkos_View.hpp>
 
 namespace utopia {
 
@@ -57,8 +58,14 @@ namespace utopia {
             UTOPIA_INLINE_FUNCTION GradientView grad() const { return grad_; }
             UTOPIA_INLINE_FUNCTION FunctionView fun() const { return fun_; }
             UTOPIA_INLINE_FUNCTION MeasureView measure() const { return measure_; }
-            UTOPIA_INLINE_FUNCTION JacobianView jacobian() const { return jacobian_; }
-            UTOPIA_INLINE_FUNCTION JacobianInverseView jacobian_inverse() const { return jacobian_inverse_; }
+            UTOPIA_INLINE_FUNCTION JacobianView jacobian() const {
+                assert(static_cast<int>(jacobian_.extent(0)) != 0);
+                return jacobian_;
+            }
+            UTOPIA_INLINE_FUNCTION JacobianInverseView jacobian_inverse() const {
+                assert(static_cast<int>(jacobian_inverse_.extent(0)) != 0);
+                return jacobian_inverse_;
+            }
 
             inline bool empty() const { return n_cells() == 0; }
             inline SizeType n_cells() const override { return measure_.extent(0); }
@@ -80,6 +87,12 @@ namespace utopia {
                 grad_ = grad;
                 jacobian_ = jacobian;
                 jacobian_inverse_ = jacobian_inverse;
+            }
+
+            void init(const MeasureView &measure, const FunctionView &fun, const GradientView &grad) {
+                measure_ = measure;
+                fun_ = fun;
+                grad_ = grad;
             }
 
             void print_measure() {
@@ -221,6 +234,15 @@ namespace utopia {
             }
 
             inline bool has_element_tags() const { return element_tags_.size() > 0; }
+
+            void clear() {
+                measure_.~MeasureView();
+                fun_.~FunctionView();
+                grad_.~GradientView();
+                jacobian_.~JacobianView();
+                jacobian_inverse_.~JacobianInverseView();
+                element_tags_.~IntView();
+            }
 
         private:
             MeasureView measure_;

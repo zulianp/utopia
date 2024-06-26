@@ -165,8 +165,6 @@ namespace utopia {
 
         const Vector &exact_sol() const override { return x_exact_; }
 
-        Scalar min_function_value() const override { return 1.12793e-8; }
-
     private:
         Scalar p(const SizeType &i) const {
             if (i == 1 || i == 15)

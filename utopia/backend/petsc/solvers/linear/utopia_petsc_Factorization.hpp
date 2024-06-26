@@ -23,7 +23,8 @@ namespace utopia {
         }
 
         inline constexpr static SolverPackage default_package() {
-#ifdef PETSC_HAVE_SUPERLU_DIST
+// FIXME(zulianp) package SUPERLU_DIST causes MPI error (invalid communicator) during MPI finalize
+#if defined(PETSC_HAVE_SUPERLU_DIST) && (0)
             return MATSOLVERSUPERLU_DIST;
 #else  // PETSC_HAVE_SUPERLU_DIST
 #ifdef PETSC_HAVE_MUMPS
@@ -62,7 +63,18 @@ namespace utopia {
         inline void update(const std::shared_ptr<const Matrix> &op) override {
             if (op->is_sparse()) {
                 is_sparse_ = true;
+                bool use_distributed_solver = false;
+                if (strategy_.solver_package() == Solver::petsc() && op->is_mpi()) {
+                    // Can't use default lower-upper preconditioner (PCLU) with MPI parallelization,
+                    // fallback to the additive Schwarz method (PCASM)
+                    strategy_.pc_type(PCASM);
+                    use_distributed_solver = true;
+                }
                 strategy_.update(op);
+                if (use_distributed_solver) {
+                    // ..and use incomplete factorization preconditioner in each parallel block
+                    strategy_.sub_ksp_pc_type(KSPPREONLY, PCILU);
+                }
             } else {
                 is_sparse_ = false;
                 dense_strategy_.update(op);

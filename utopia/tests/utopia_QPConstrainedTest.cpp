@@ -67,7 +67,7 @@ namespace utopia {
             // );
 
             // works only for petsc
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
             this->register_experiment("ProjectedTao_Test", [this]() {
                 auto lin_solver = std::make_shared<GMRES<Matrix, Vector> >();
                 TaoQPSolver<Matrix, Vector> solver(lin_solver);
@@ -76,7 +76,7 @@ namespace utopia {
 
                 run_test(this->test_functions_, solver, "ProjectedTao_Test", this->verbose_);
             });
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
         }
 
     private:
@@ -97,7 +97,7 @@ namespace utopia {
             in.set("stol", 1e-14);
             in.set("stol", 1e-14);
             in.set("delta_min", 1e-13);
-            in.set("max-it", 10000);
+            in.set("max_it", 10000);
             in.set("verbose", false);
             solver.read(in);
 
@@ -171,7 +171,11 @@ namespace utopia {
     };
 
     static void qp_constrained() {
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
+// FIXME(zulianp) this test causes Segmentation Violation when utopia is built with gpu support
+#ifdef PETSC_HAVE_CUDA
+        utopia_warning("Skipping qp_constrained");
+#else
         int verbosity_level = 1;
         const int n_global = 20;
         bool alg_verbose = false;
@@ -183,19 +187,20 @@ namespace utopia {
         QPConstrainedBenchmark<PetscMatrix, PetscVector> bench_petsc(n_global, alg_verbose);
         bench_petsc.set_verbosity_level(verbosity_level);
         bench_petsc.run();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // PETSC_HAVE_CUDA
+#endif  // UTOPIA_ENABLE_PETSC
 
-        // #ifdef UTOPIA_WITH_TRILINOS
+        // #ifdef UTOPIA_ENABLE_TRILINOS
         //     QPConstrainedBenchmark<TpetraMatrixd, TpetraVectord> bench_tril(n_global, alg_verbose);
         // 	bench_tril.set_verbosity_level(verbosity_level);
         // 	bench_tril.run();
-        // #endif //UTOPIA_WITH_TRILINOS
+        // #endif //UTOPIA_ENABLE_TRILINOS
 
-        // #ifdef UTOPIA_WITH_BLAS
+        // #ifdef UTOPIA_ENABLE_BLAS
         // 	QPConstrainedBenchmark<BlasMatrixd, BlasVectord> bench_blas(n_global, alg_verbose);
         // 	bench_blas.set_verbosity_level(verbosity_level);
         // 	bench_blas.run();
-        // #endif //UTOPIA_WITH_BLAS
+        // #endif //UTOPIA_ENABLE_BLAS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(qp_constrained);

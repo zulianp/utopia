@@ -362,7 +362,11 @@ namespace utopia {
                 return 0;
             }
 
+#if UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE == 1
+            return implementation().getMap()->getLocalNumElements();
+#else
             return implementation().getMap()->getNodeNumElements();
+#endif
         }
 
         inline Scalar norm2() const override { return implementation().norm2(); }
@@ -429,6 +433,9 @@ namespace utopia {
 
         bool read(const Teuchos::RCP<const Teuchos::Comm<int> > &comm, const std::string &path);
         bool write(const std::string &path) const;
+
+        void wrap(const RCPVectorType &x);
+        void unwrap(const RCPVectorType &x);
 
         inline bool empty() const override { return vec_.is_null(); }
 

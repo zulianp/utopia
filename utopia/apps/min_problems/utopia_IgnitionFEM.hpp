@@ -419,11 +419,6 @@ namespace utopia {
             return x_exact_;
         }
 
-        Scalar min_function_value() const override {
-            std::cout << "IgnitionFem:: min_function_value not known, terminate... \n";
-            return 0;
-        }
-
         std::string name() const override { return "BratuFem"; }
 
         SizeType dim() const override { return size(rhs_); }

@@ -22,8 +22,8 @@ namespace utopia {
 
 
 	namespace kokkos {
-		template<class FE, int Dim>
-		using Fung = utopia::kokkos::AutoHyperElasticity<FE, utopia::kernels::Fung<typename FE::Scalar, Dim>>;
+		template<class FunctionSpace, class FE, int Dim>
+		using Fung = utopia::kokkos::AutoHyperElasticity<FunctionSpace, FE, utopia::kernels::Fung<typename FE::Scalar, Dim>>;
 	}
 }
 

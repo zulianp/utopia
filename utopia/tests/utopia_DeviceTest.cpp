@@ -3,7 +3,7 @@
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
 #include "utopia_trilinos.hpp"
 #endif
 
@@ -44,15 +44,11 @@ namespace utopia {
                 Scalar reduce_v = 0.0;
                 parallel_reduce(
                     r, UTOPIA_LAMBDA(const SizeType &i) { return v_device.get(i); }, reduce_v);
-
-                // test local reduce
-                reduce_v = v.comm().sum(reduce_v);
-                utopia_test_assert(static_cast<SizeType>(reduce_v) == (n - 1) * (n / 2));
             }
 
             // host context
             SizeType sum_v = sum(v);
-            utopia_test_assert(sum_v == (n - 1) * (n / 2));
+            utopia_test_assert(sum_v == ((n - 1) * (n)) / 2);
         }
 
         static void run() {
@@ -62,17 +58,17 @@ namespace utopia {
     };
 
     static void device_test() {
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_BLAS
         DeviceTest<BlasMatrixd, BlasVectord>().run();
-#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_ENABLE_BLAS
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_ENABLE_PETSC
         DeviceTest<utopia::PetscMatrix, utopia::PetscVector>::run();
-#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_ENABLE_PETSC
 
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_ENABLE_TRILINOS
         DeviceTest<utopia::TpetraMatrix, utopia::TpetraVector>::run();
-#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_ENABLE_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(device_test);

@@ -7,13 +7,14 @@ Utopia is a C++ embedded domain specific language designed for parallel non-line
 
 # Main contributors of utopia
 
-- Dr. Patrick Zulian (Lead developer, ICS)
-- Dr. Alena Kopanicakova (Linear and nonlinear solvers, ICS)
-- Dr. Maria Giuseppina Chiara Nestola (MOOSE integrations, ICS)
-- Dr. Nur Aiman Fadel (CSCS)
+- Dr. Patrick Zulian (Lead developer, Euler institute, USI)
+- Dr. Alena Kopanicakova (Linear and nonlinear solvers, Euler institute, USI)
+- Dr. Maria Giuseppina Chiara Nestola (MOOSE integrations, Euler institute, USI)
 - Andreas Fink (CSCS)
+- Dylan Ramelli (USI)
+- Dr. Nur Aiman Fadel (CSCS)
 
-Developed at the Institute of Computational Science, USI, Lugano, Switzerland (https://www.ics.usi.ch).
+Developed at the Euler institute, USI, Lugano, Switzerland (https://www.euler.usi.ch/).
 
 # License
 The software is realized with NO WARRANTY and it is licenzed under [BSD 3-Clause license](https://opensource.org/licenses/BSD-3-Clause)
@@ -61,8 +62,8 @@ For avoiding problems with cmake define the following env variable `export SYSTE
 - Join us or contact us through our [mailing list](https://lists.usi.ch/mailman3/postorius/lists/utopia-users.lists.usi.ch)
 
 
-## Citing Utopia
-If you use Utopia for your research please use the following bibtex entry (or equivalent) to cite us
+## Using Utopia for your research? Here is how you can cite it
+If you use Utopia for your research please use the following bibtex entry to cite us
 
 ```bibtex
 @article{utopia2021,
@@ -71,22 +72,14 @@ If you use Utopia for your research please use the following bibtex entry (or eq
     journal = {CCF Transactions on High Performance Computing},
     year = {2021},
     month = {06},
-    abstract = {Non-linear phase field models are increasingly used for the simulation of fracture propagation problems. 
-	The numerical simulation of fracture networks of realistic size requires the efficient parallel solution of large coupled non-linear systems. 
-	Although in principle efficient iterative multi-level methods for these types of problems are available, they are not widely used in practice due to the complexity of their parallel implementation. 
-	Here, we present Utopia, which is an open-source C++ library for parallel non-linear multilevel solution strategies. 
-	Utopia provides the advantages of high-level programming interfaces while at the same time a framework to access low-level data-structures without breaking code encapsulation. 
-	Complex numerical procedures can be expressed with few lines of code, and evaluated by different implementations, libraries, or computing hardware. 
-	In this paper, we investigate the parallel performance of our implementation of the recursive multilevel trust-region (RMTR) method based on the Utopia library. 
-	RMTR is a globally convergent multilevel solution strategy designed to solve non-convex constrained minimization problems. 
-	In particular, we solve pressure-induced phase-field fracture propagation in large and complex fracture networks. 
-	Solving such problems is deemed challenging even for a few fractures, however, here we are considering networks of realistic size with up to 1000 fractures.},
     doi = {10.1007/s42514-021-00069-6},
     url = {https://doi.org/10.1007/s42514-021-00069-6},
     eprint = {https://doi.org/10.1007/s42514-021-00069-6},
 }
+```
 
-
+Use the following bibtex to refer to the repository
+```bibtex
 @misc{utopiagit,
 	author = {Patrick Zulian and Alena Kopani{\v c}{\'a}kov{\'a} and Maria Chiara Giuseppina Nestola and Andreas Fink and Nur Fadel and Alessandro Rigazzi and Victor Magri and Teseo Schneider and Eric Botter and Jan Mankau and Rolf Krause},
 	title = {{U}topia: A performance portable {C}++ library for parallel linear and nonlinear algebra. {G}it repository},
@@ -103,6 +96,34 @@ Several components are the outcome of specific authors' research work.  For citi
 
 ## Docker containers
 You can use a pre-installed version of utopia in a Docker container. See [HERE](https://bitbucket.org/zulianp/utopia/wiki/Docker%20containers) for more details.
+
+
+
+## Contributions 
+
+### Utopia Open-source repository (BSD 3-clause license)
+
+1. https://bitbucket.org/zulianp/utopia
+2. https://bitbucket.org/zulianp/par_moonolith (frontend and several integrations are in Utopia)
+
+
+###  Simulations realized with Utopia
+
+
+1. [Large-scale simulation of pressure-induced phase-field fracture propagation using Utopia](https://doi.org/10.1007/s42514-021-00069-6)
+2. [3D non-conforming mesh model for flow in fractured porous media using Lagrange multipliers](https://doi.org/10.1016/j.cageo.2019.06.014)
+3. [Comparison and application of non-conforming mesh models for flow in fractured porous media using dual Lagrange multipliers](https://doi.org/10.1016/j.jcp.2021.110773)
+
+###  Contributions to benchmarks
+
+
+1. [Verification benchmarks for single-phase flow in three-dimensional fractured porous media](https://doi.org/10.1016/j.advwatres.2020.103759)
+
+###  Simulations using Utopia as a dependency
+
+1. [Fully coupled dynamic simulations of bioprosthetic aortic valves based on an embedded strategy for fluid-structure interaction with contact](https://doi.org/10.1093/europace/euaa398)
+2. [An immersed boundary method for fluid-structure interaction based on variational transfer](https://doi.org/10.1016/j.jcp.2019.108884)
+3. [Space-time multilevel Monte Carlo methods and their application to cardiac electrophysiology](https://doi.org/10.1016/j.jcp.2021.110164)
 
 
 # More details coming soon!

@@ -5,6 +5,8 @@
 #include "utopia_FEModelFunction.hpp"
 #include "utopia_MatrixTransformer.hpp"
 
+#include <memory>
+
 namespace utopia {
 
     template <class FunctionSpace>
@@ -67,6 +69,7 @@ namespace utopia {
             inline bool is_master() const { return is_master_; }
             inline const std::string &name() const { return name_; }
 
+            inline bool has_mass_matrix() const { return static_cast<bool>(mass_matrix_); }
             inline const std::shared_ptr<Matrix_t> &mass_matrix() const {
                 assert(mass_matrix_);
                 return mass_matrix_;
@@ -255,7 +258,7 @@ namespace utopia {
                 auto &&from_mass_matrix = from_->mass_matrix();
                 auto &&to_mass_matrix = to_->mass_matrix();
 
-                if (verbose_) {
+                if (verbose_ && !transfer_->comm().rank()) {
                     utopia::out() << "Condensing mass matrix!\n";
                 }
 
@@ -275,7 +278,7 @@ namespace utopia {
                 const Size_t n = from_matrices.size();
                 assert(n == Size_t(to_matrices.size()));
 
-                if (verbose_) {
+                if (verbose_ && !transfer_->comm().rank()) {
                     utopia::out() << "Condensing " << n << " pair(s) of systems!\n";
                 }
 
@@ -298,7 +301,7 @@ namespace utopia {
                 const Size_t n = from_vectors.size();
                 assert(n == Size_t(to_vectors.size()));
 
-                if (verbose_) {
+                if (verbose_ && !transfer_->comm().rank()) {
                     utopia::out() << "Condensing " << n << " pair(s) of rhs!\n";
                 }
 
@@ -386,6 +389,13 @@ namespace utopia {
         }
 
         bool update(const Vector_t &) override { return true; }
+
+        bool update_IVP(const Vector_t &x) override {
+            // *master_fe_problem_->update_IVP(x);
+            return true;
+        }
+
+        void post_solve(Vector_t &x) override { apply_post_processors(x); }
 
         bool value(const Vector_t &, Scalar_t &v) const override {
             v = -1;
@@ -571,9 +581,6 @@ namespace utopia {
             if (couplings_.empty()) {
                 in.get("couplings", [this](Input &array_node) {
                     array_node.get_all([this](Input &node) {
-                        auto c = utopia::make_unique<Coupling>();
-                        c->read(node);
-
                         std::string from, to;
 
                         node.get("from", from);
@@ -582,7 +589,8 @@ namespace utopia {
                         assert(!from.empty());
                         assert(!to.empty());
 
-                        this->add_coupling(from, to);
+                        auto &&c = this->add_coupling(from, to);
+                        c.read(node);
                     });
                 });
             }
@@ -651,7 +659,7 @@ namespace utopia {
             master_fe_problem_ = it->second;
         }
 
-        void add_coupling(const std::string &from, const std::string &to) {
+        Coupling &add_coupling(const std::string &from, const std::string &to) {
             auto c = utopia::make_unique<Coupling>();
 
             auto it_from = fe_problems_.find(from);
@@ -668,6 +676,7 @@ namespace utopia {
 
             c->set(it_from->second, it_to->second);
             couplings_.push_back(std::move(c));
+            return *couplings_.back();
         }
 
         bool report_solution(const Vector_t &x) override {
@@ -688,20 +697,41 @@ namespace utopia {
             }
         }
 
-        void add_matrix_transformer(std::unique_ptr<MatrixTransformer<Matrix_t>> &&transformer) {
-            transformers_.push_back(std::move(transformer));
+        void add_matrix_transformer(const std::shared_ptr<MatrixTransformer<Matrix_t>> &transformer) {
+            transformers_.push_back(transformer);
         }
+
+        void add_post_processor(const std::shared_ptr<PostProcessor<Vector_t>> &pp) { post_processors_.push_back(pp); }
 
         void set_time(const std::shared_ptr<SimulationTime> &time) override {
             for (auto &ff : fe_problems_) {
                 ff.second->function_->set_time(time);
             }
+
+            for (auto &trafo : transformers_) {
+                trafo->set_time(time);
+            }
         }
 
     protected:
         void apply_transformers(Matrix_t &mat) const {
-            for (auto &trafo : transformers_) {
-                trafo->apply(mat);
+            if (master_fe_problem_->has_mass_matrix()) {
+                for (auto &trafo : transformers_) {
+                    trafo->apply_to_matrices(*master_fe_problem_->mass_matrix(), mat);
+                }
+
+            } else {
+                for (auto &trafo : transformers_) {
+                    trafo->apply(mat);
+                }
+            }
+        }
+
+        void apply_post_processors(Vector_t &x) const {
+            if (post_processors_.empty()) return;
+
+            for (auto &pp : post_processors_) {
+                pp->post_process(*master_fe_problem_->gradient_, x);
             }
         }
 
@@ -715,7 +745,8 @@ namespace utopia {
         bool verbose_{default_verbose()};
         bool override_with_algebraic_residual_{false};
 
-        std::vector<std::unique_ptr<MatrixTransformer<Matrix_t>>> transformers_;
+        std::vector<std::shared_ptr<MatrixTransformer<Matrix_t>>> transformers_;
+        std::vector<std::shared_ptr<PostProcessor<Vector_t>>> post_processors_;
 
         void project_solutions() const {
             for (auto it = couplings_.rbegin(); it != couplings_.rend(); ++it) {

@@ -1,34 +1,40 @@
 set(UTOPIA_BENCH_DIR ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks)
+set(UTOPIA_TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
-list(APPEND BENCH_MODULES
+list(APPEND BENCH_MODULES .)
+
+
+list(
+    APPEND
+    TEST_MODULES
     .
-)
-
-
+    test_problems
+    test_problems/unconstrained_benchmark
+    test_problems/constrained_benchmark
+    test_problems/large_scale_benchmark
+    test_problems/PTC_benchmark)
 
 set(LOCAL_HEADERS "")
 set(LOCAL_SOURCES "")
-find_project_files(${UTOPIA_BENCH_DIR} ${BENCH_MODULES} LOCAL_HEADERS LOCAL_SOURCES)
-target_sources(utopia_bench PRIVATE ${LOCAL_SOURCES})
-target_link_libraries(utopia_bench PRIVATE utopia)
-utopia_link_default_targets(utopia_bench)
+find_project_files(${UTOPIA_BENCH_DIR} ${BENCH_MODULES} LOCAL_HEADERS
+                   LOCAL_SOURCES)
 
-target_include_directories(utopia_bench PRIVATE ${UTOPIA_BENCH_DIR})
-target_include_directories(utopia_bench PRIVATE .)
+target_sources(
+  utopia_bench
+  PRIVATE ${LOCAL_SOURCES}
+  PRIVATE ${LOCAL_HEADERS})
+
 foreach(MODULE ${TEST_MODULES})
-    # deep dependency into the test module...
-    target_include_directories(utopia_bench PRIVATE ${UTOPIA_TEST_DIR}/${MODULE})
+  # deep dependency into the test module...
+  target_include_directories(utopia_bench PRIVATE ${UTOPIA_BENCH_DIR}/${MODULE})
+  target_include_directories(utopia_bench PRIVATE ${UTOPIA_TEST_DIR}/${MODULE})
+
 endforeach()
-target_include_directories(utopia_bench PRIVATE ${BENCH_MODULES})
 
 if(UTOPIA_ENABLE_EIGEN_3)
-    find_package(Eigen3)
-    if(EIGEN3_FOUND)
-        set(UTOPIA_WITH_EIGEN_3 ON)
-        #set(UTOPIA_WITH_EIGEN_3 ON PARENT_SCOPE)
-        target_include_directories(utopia_bench PRIVATE ${EIGEN3_INCLUDE_DIR})
-    endif()
+  find_package(Eigen3)
+  if(EIGEN3_FOUND)
+    set(UTOPIA_ENABLE_EIGEN_3 ON)
+    target_include_directories(utopia_bench PRIVATE ${EIGEN3_INCLUDE_DIR})
+  endif()
 endif()
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g ${UTOPIA_DEV_FLAGS}")

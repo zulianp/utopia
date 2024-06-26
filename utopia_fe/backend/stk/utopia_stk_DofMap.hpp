@@ -70,6 +70,7 @@ namespace utopia {
             GlobalIndex local_to_global() const;
             const IndexArray &d_nnz() const;
             const IndexArray &o_nnz() const;
+            SizeType max_nnz_x_row() const;
 
             int n_var() const;
             void set_n_var(const int n_var);
@@ -88,6 +89,7 @@ namespace utopia {
             void init_serial(::stk::mesh::BulkData &bulk_data);
 
             void init(::stk::mesh::BulkData &bulk_data);
+            void init_global_sizes(::stk::mesh::BulkData &bulk_data);
 
             void exchange_shared_dofs(const Communicator &comm,
                                       ::stk::mesh::BulkData &bulk_data,

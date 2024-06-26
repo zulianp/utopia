@@ -16,8 +16,8 @@
 #include "utopia_VelocityNewmarkIntegrator.hpp"
 
 // FIXME
-#ifndef UTOPIA_WITH_MARS
-#ifndef UTOPIA_WITH_PETSCDM
+#ifndef UTOPIA_ENABLE_MARS
+#ifndef UTOPIA_ENABLE_PETSCDM
 #define UTOPIA_ENABLE_NC_METHODS
 #endif
 #endif

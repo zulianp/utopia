@@ -49,7 +49,7 @@
     "n_coarse_sub_comm": 2,    
     "solver" : {
         "verbose" : true,
-        "max-it" : 300,
+        "max_it" : 300,
         "atol": 1e-4,
         "max_coarse_it": 1,
         "max_sucessful_coarse_it": 1,
@@ -64,7 +64,7 @@
         "linear-solver" : {
             "verbose" : false,
             "atol": 1e-8,
-            "max-it": 1000
+            "max_it": 1000
         }
     }
 }

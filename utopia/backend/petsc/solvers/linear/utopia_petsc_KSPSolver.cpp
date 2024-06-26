@@ -80,7 +80,7 @@ namespace utopia {
             PetscReal emax, emin;
             KSPComputeExtremeSingularValues(ksp, &emax, &emin);
             PetscPrintf(comm,
-                        "%D     %14.12e         %14.12e        %14.12e \n",
+                        "%d     %14.12e         %14.12e        %14.12e \n",
                         it,
                         rnorm,
                         conv_rate,
@@ -90,7 +90,7 @@ namespace utopia {
                 PetscPrintf(comm, "it           ||r||                   rho      \n");
             }
 
-            PetscPrintf(comm, "%D     %14.12e         %14.12e \n", it, rnorm, conv_rate);
+            PetscPrintf(comm, "%d     %14.12e         %14.12e \n", it, rnorm, conv_rate);
         }
 
         return 0;
@@ -114,12 +114,15 @@ namespace utopia {
             case KSP_CONVERGED_ITS: {
                 return "KSP_CONVERGED_ITS";
             }
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3, 19, 0)
             case KSP_CONVERGED_CG_NEG_CURVE: {
                 return "KSP_CONVERGED_CG_NEG_CURVE";
             }
+            // duplicate of KSP_CONVERGED_STEP_LENGTH (since version 3.19)
             case KSP_CONVERGED_CG_CONSTRAINED: {
                 return "KSP_CONVERGED_CG_CONSTRAINED";
             }
+#endif
             case KSP_CONVERGED_STEP_LENGTH: {
                 return "KSP_CONVERGED_STEP_LENGTH";
             }

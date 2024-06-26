@@ -77,8 +77,53 @@ namespace utopia {
         // TODO
         virtual void update(const Operator<Vector> &A) { UTOPIA_UNUSED(A); }
 
+        virtual void clear() {}
+
         Preconditioner *clone() const override = 0;
     };
+
+    template <class Vector>
+    class PrecondtionerTimesOperator : public Operator<Vector> {
+    public:
+        using Communicator = typename Traits<Vector>::Communicator;
+
+        PrecondtionerTimesOperator(const std::shared_ptr<Preconditioner<Vector>> &preconditioner,
+                                   const std::shared_ptr<Operator<Vector>> &op)
+            : preconditioner_(preconditioner), op_(op), buff_(std::make_shared<Vector>()) {}
+
+        inline bool apply(const Vector &rhs, Vector &sol) const override {
+            if (empty(*buff_)) {
+                buff_->zeros(layout(rhs));
+            }
+
+            if (!op_->apply(rhs, *buff_)) {
+                return false;
+            }
+
+            preconditioner_->apply(*buff_, sol);
+            return true;
+        }
+
+        inline Size size() const override { return op_->size(); }
+
+        inline Size local_size() const override { return op_->local_size(); }
+
+        inline Communicator &comm() override { return op_->comm(); }
+
+        inline const Communicator &comm() const override { return op_->comm(); }
+
+    private:
+        std::shared_ptr<Preconditioner<Vector>> preconditioner_;
+        std::shared_ptr<Operator<Vector>> op_;
+        std::shared_ptr<Vector> buff_;
+    };
+
+    template <class Vector>
+    std::shared_ptr<PrecondtionerTimesOperator<Vector>> mult(
+        const std::shared_ptr<Preconditioner<Vector>> &preconditioner,
+        const std::shared_ptr<Operator<Vector>> &op) {
+        return std::make_shared<PrecondtionerTimesOperator<Vector>>(preconditioner, op);
+    }
 
     template <class Expr, class Vector>
     class ExprPreconditioner : public Preconditioner<Vector> {

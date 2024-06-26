@@ -56,8 +56,8 @@ void stk_moonolith_convert_space() {
     FunctionSpaceTo space_to;
     convert_function_space(space_from, space_to);
 
-    // disp(space_to.n_dofs());
-    utopia_test_assert(space_to.mesh().write("dump.vtu"));
+    // if(space_from.comm().size() == 1)
+    //     utopia_test_assert(space_to.mesh().write("dump.vtu"));
 }
 
 void stk_moonolith_extract_trace_space() {

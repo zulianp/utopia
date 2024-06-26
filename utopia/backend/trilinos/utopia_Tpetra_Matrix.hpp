@@ -79,7 +79,7 @@ namespace utopia {
         //   return mat_->clone(node2, params);
         // }
 
-        TpetraMatrix(const TpetraMatrix &other) : owner_(true) {
+        TpetraMatrix(const TpetraMatrix &other) : comm_(other.comm_), owner_(true) {
             if (!other.is_null()) {
                 mat_.reset(new CrsMatrixType(other.implementation(), Teuchos::Copy));
             }
@@ -216,10 +216,19 @@ namespace utopia {
 
             if (implementation().getDomainMap().is_null()) {
                 assert(!init_->domain_map.is_null());
+#if UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE == 1
+                return {implementation().getRowMap()->getLocalNumElements(), init_->domain_map->getLocalNumElements()};
+#else
                 return {implementation().getRowMap()->getNodeNumElements(), init_->domain_map->getNodeNumElements()};
+#endif
             } else {
+#if UTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE == 1
+                return {implementation().getRowMap()->getLocalNumElements(),
+                        implementation().getDomainMap()->getLocalNumElements()};
+#else
                 return {implementation().getRowMap()->getNodeNumElements(),
                         implementation().getDomainMap()->getNodeNumElements()};
+#endif
             }
         }
 
@@ -455,6 +464,8 @@ namespace utopia {
         bool write(const std::string &path) const;
 
         bool is_valid(const bool verbose = false) const;
+        bool is_block() const { return false; }
+        void convert_to_scalar_matrix() {}
 
         Scalar sum() const;
         // FIXME

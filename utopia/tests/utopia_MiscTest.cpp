@@ -20,50 +20,8 @@ namespace utopia {
         utopia_test_assert(4 == block_mat.nnz());
     }
 
-#ifdef UTOPIA_WITH_CUDA
-    void cuda_hello_world() {
-        // For the moment no hybrid
-        if (utopia::mpi_world_size() != 1) return;
-
-        const int n = 100;
-        CUMatrixd m = identity(n, n);
-        CUVectord v = values(n, 1.0 / 3.0);
-        const double r = dot(v, v);
-        CUVectord mv = m * v;
-
-        const double mvr = dot(mv, mv);
-
-        // disp(r);
-        // disp(mvr);
-    }
-#endif
-
-#ifdef UTOPIA_WITH_OPENCL
-    void test_opencl_code() {
-        const int n = 30;
-
-        CLMatrixd m = identity(n, n);
-        CLVectord v1 = values(n, 0.1), v2 = values(n, 0.2), v3 = values(n, 0.3), v4 = values(n, 0.4);
-
-        CLVectord res = abs(m * pow2(v1) + sqrt(v2) - v3);
-
-        // utopia::out() <<"-------------------\n";
-        // disp(v1);
-        // utopia::out() <<"-------------------\n";
-        // disp(res);
-        // utopia::out() <<"-------------------\n";
-
-        CLMatrixd mat_res = transpose(abs(0.1 * (m * m) - m) * (m));  // inner transpose does not work yet.
-
-        // utopia::out() <<"-------------------\n";
-        // // disp(mat_res);
-        // utopia::out() <<"-------------------\n";
-    }
-
-#endif  // UTOPIA_WITH_OPENCL
-
-#ifdef UTOPIA_WITH_LAPACK
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_LAPACK
+#ifdef UTOPIA_ENABLE_BLAS
     void test_lapack_eigen_solver() {
         using namespace utopia;
         using SizeType = Traits<BlasMatrixd>::SizeType;
@@ -198,22 +156,15 @@ namespace utopia {
         auto ptr_2 = fact_1->make();
     }
 
-#endif  // UTOPIA_WITH_BLAS
-#endif  // UTOPIA_WITH_LAPACK
+#endif  // UTOPIA_ENABLE_BLAS
+#endif  // UTOPIA_ENABLE_LAPACK
 
     static void misc() {
         UTOPIA_RUN_TEST(crs_matrix);
 
-#ifdef UTOPIA_WITH_CUDA
-        UTOPIA_RUN_TEST(cuda_hello_world);
-#endif
 
-#ifdef UTOPIA_WITH_OPENCL
-        UTOPIA_RUN_TEST(test_opencl_code);
-#endif
-
-#ifdef UTOPIA_WITH_LAPACK
-#ifdef UTOPIA_WITH_BLAS
+#ifdef UTOPIA_ENABLE_LAPACK
+#ifdef UTOPIA_ENABLE_BLAS
         UTOPIA_RUN_TEST(test_lapack_eigen_solver);
 #endif
 #endif
