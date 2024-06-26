@@ -87,10 +87,10 @@ if(UTOPIA_ENABLE_MPI)
   endif()
 endif()
 
-if(MPI_CXX_COMPILER)
-  set(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
-  set(CMAKE_CXX_COMPILER_DEBUG ${MPI_CXX_COMPILER})
-endif()
+# if(MPI_CXX_COMPILER)
+#   set(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
+#   set(CMAKE_CXX_COMPILER_DEBUG ${MPI_CXX_COMPILER})
+# endif()
 
 # ##############################################################################
 # ##############################################################################
