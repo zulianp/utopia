@@ -35,8 +35,8 @@ namespace utopia {
     };
 
     template <class Matrix, class Vector>
-    class OperatorBasedLinearSolver : public MatrixFreeLinearSolver<Vector>,
-                                      public PreconditionedSolver<Matrix, Vector> {
+    class OperatorBasedLinearSolver : virtual public MatrixFreeLinearSolver<Vector>,
+                                      virtual public PreconditionedSolver<Matrix, Vector> {
     public:
         using MatrixFreeLinearSolver<Vector>::update;
         using PreconditionedSolver<Matrix, Vector>::update;
