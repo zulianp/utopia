@@ -1,7 +1,16 @@
-#!/bin/bash
+#!/bin/bash                                                                                                                                                                                           
+
+# source /opt/cray/pe/cpe/23.12/restore_lmod_system_defaults.sh                                                                                                                                       
 
 module load cray
 module load PrgEnv-gnu
 module load CMake
-module load gcc/11.2.0  cray-mpich/8.1.12  cray-hdf5-parallel/1.12.1.3
-module load cray-netcdf-hdf5parallel/4.8.1.3
+module load cray-mpich
+module load cray-hdf5-parallel
+module load cray-netcdf-hdf5parallel
+
+export CC=cc
+export CXX=CC
+export FC=ftn
+export F90=ftn
+export F77=ftn

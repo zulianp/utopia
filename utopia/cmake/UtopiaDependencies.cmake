@@ -220,7 +220,7 @@ if(UTOPIA_ENABLE_PETSC)
     set(UTOPIA_PETSC_VERSION ${PETSC_VERSION})
 
   else()
-    message(WARNING "[Warning] Petsc not found")
+    message(WARNING "[Warning] Petsc not found.\nYou can use the option -DUTOPIA_INSTALL_PETSC=ON and `make petsc` to install it")")
   endif()
 
   if(PETSC_FOUND AND UTOPIA_ENABLE_SLEPC)
@@ -340,7 +340,7 @@ if(UTOPIA_ENABLE_TRILINOS)
     set(UTOPIA_TRILINOS_VERSION ${Trilinos_VERSION})
 
   else()
-    message(WARNING "[Warning] Trilinos not found")
+    message(WARNING "[Warning] Trilinos not found.\nYou can use the option -DUTOPIA_INSTALL_TRILINOS=ON and `make trilinos` to install it")
   endif()
   add_subdirectory(backend/trilinos)
 endif()
@@ -428,7 +428,9 @@ if(UTOPIA_ENABLE_YAML_CPP)
     message(
       WARNING
         "---------------------------------------------------------------\n"
-        "yaml-cpp not found! yaml-cpp is required by utopia to build correctly. To install locally in UTOPIA_DEPENDENCIES_DIR run `make yaml-cpp` and re-run cmake. Otherwise export YAMLCPP_DIR.`\n"
+        "yaml-cpp not found! yaml-cpp is required by utopia to build correctly."
+        "To install locally in UTOPIA_DEPENDENCIES_DIR, set -DUTOPIA_INSTALL_YAML_CPP=ON, then run `make yaml-cpp` and re-run cmake."
+        "Otherwise export YAMLCPP_DIR.`\n"
         "---------------------------------------------------------------\n")
   endif()
 endif()

@@ -1,4 +1,42 @@
-## About
+# Build configurations
+
+Utopia supports build configurations for the different applications 
+
+- FLUYA 	`-DUTOPIA_ENABLE_FLUYA_MODE=ON`
+- AVFLOW	`-DUTOPIA_ENABLE_AVFLOW_MODE=ON`
+- FRANETG 	`-DUTOPIA_ENABLE_FRANETG_MODE=ON`
+
+Utopia provides the environment scripts for the supported supercomputers
+
+- Eiger: utopia/scripts/setup_fluya_env_eiger.sh
+- Daint: utopia/scripts/setup_fluya_env_daint.sh
+
+For compiling the main dependencies 
+
+## FLUYA
+
+The main dependencies can be compiled with utopia.
+After running the environement script, go to `utopia` folder
+
+```bash
+mkdir -p build && 						\
+cd build && 							\
+cmake .. 								\
+	-DUTOPIA_ENABLE_FLUYA_MODE=ON 		\
+	-DUTOPIA_INSTALL_TRILINOS=ON  		\
+	-DUTOPIA_INSTALL_PETSC=ON  	  		\
+	-DUTOPIA_INSTALL_YAML_CPP=ON  && 	\
+make yaml-cpp &&						\
+make petsc &&							\
+make trilinos
+```
+
+and go have lunch.
+
+## AVFLOW
+
+
+# Build scripts
 utopia_compile.sh is an easy to use script for quickly setting up utopia. There are four different types of builds supported:
 
 - basic: Build utopia with basic functionalities and with blas as backend.
@@ -9,7 +47,8 @@ utopia_compile.sh is an easy to use script for quickly setting up utopia. There 
 
 ## Instructions on how to use utopia_compile.sh
 While in "utopia/utopia/"
-```
+
+```bash
 ./scripts/utopia_compile.sh -b <build_type> -j <n_jobs> -p <install_prefix>
 ./scripts/utopia_compile.sh -h 
 ```
@@ -17,7 +56,7 @@ Where:
 
 - build_type: basic, all, fluya, local.
 - n_jobs: number of jobs you want to run.
-- install_prefix: path to where you want to install utopia. Default installation folder is '/usr/local/'
+- install_prefix: path to where you want to install utopia. Default installation folder is `/usr/local/`
 - -h: Will print out info on how to use the script as well.
 
 ## What the script actually does.
@@ -29,6 +68,7 @@ Where:
 
 ## Extra
 You can also run the different build scripts individually. For example:
-```
+
+```bash
 ./scripts/make_all.sh <n_jobs> <install_prefix>
 ```
