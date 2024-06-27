@@ -1,4 +1,5 @@
 # Tested on Piz Daint (With master, fmt folder needs to be copied to the installation folder Trilinos/include)
+# https://github.com/trilinos/Trilinos.git
 # commit 77005adad6d625dbf62009620ffdc4ffa06b9fac
 
 cmake .. \
