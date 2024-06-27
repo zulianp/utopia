@@ -340,7 +340,7 @@ if(UTOPIA_ENABLE_TRILINOS)
     set(UTOPIA_TRILINOS_VERSION ${Trilinos_VERSION})
 
   else()
-    message(WARNING "[Warning] Trilinos not found.\nYou can use the option -DUTOPIA_INSTALL_TRILINOS=ON and `make trilinos` to install it")
+    message(WARNING "[Warning] Trilinos not found.\nYou can type `make trilinos` to install it, then re-run cmake.")
   endif()
   add_subdirectory(backend/trilinos)
 endif()
@@ -429,7 +429,7 @@ if(UTOPIA_ENABLE_YAML_CPP)
       WARNING
         "---------------------------------------------------------------\n"
         "yaml-cpp not found! yaml-cpp is required by utopia to build correctly."
-        "To install locally in UTOPIA_DEPENDENCIES_DIR, set -DUTOPIA_INSTALL_YAML_CPP=ON, then run `make yaml-cpp` and re-run cmake."
+        "To install locally in UTOPIA_DEPENDENCIES_DIR, you can type `make yaml-cpp` and re-run cmake."
         "Otherwise export YAMLCPP_DIR.`\n"
         "---------------------------------------------------------------\n")
   endif()
