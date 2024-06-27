@@ -252,6 +252,12 @@ if(UTOPIA_ENABLE_TRILINOS)
       "${Trilinos_SEARCH_PATHS};${TRILINOS_DIR}/lib/cmake/Trilinos;${Trilinos_DIR}/lib/cmake/Trilinos;${TRILINOS_DIR}/lib64/cmake/Trilinos;${Trilinos_DIR}/lib64/cmake/Trilinos"
   )
 
+  if(UTOPIA_DEPENDENCIES_DIR)
+    set(Trilinos_SEARCH_PATHS "${Trilinos_SEARCH_PATHS};${UTOPIA_DEPENDENCIES_DIR}/Trilinos/lib/cmake/Trilinos")
+  else()
+    set(Trilinos_SEARCH_PATHS "${Trilinos_SEARCH_PATHS};${CMAKE_SOURCE_DIR}/../external/Trilinos/lib/cmake/Trilinos")
+  endif()
+
   # find dependencies
   if(NOT UTOPIA_INSTALL_TRILINOS)
 

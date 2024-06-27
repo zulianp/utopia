@@ -35,23 +35,30 @@ endif()
 # ##############################################################################
 # ##############################################################################
 
+include(cmake/UtopiaFunctions.cmake)
+
+# ##############################################################################
+
+# Detecting supercomputing system
+cmake_host_system_information(RESULT _host_name QUERY HOSTNAME)
+string_starts_with("${_host_name}" "daint" HOST_IS_DAINT)
+string_starts_with("${_host_name}" "eiger" HOST_IS_EIGER)
+if(${HOST_IS_DAINT} OR ${HOST_IS_EIGER})
+    message(STATUS "Detected CSCS cluster with HOSTNAME=${_host_name}, setting -DUTOPIA_ENABLE_CLUSTER=ON")
+    set(UTOPIA_ENABLE_CLUSTER ON CACHE BOOL "" FORCE)
+endif()
+
+# ##############################################################################
+
 include(CMakePackageConfigHelpers)
 include(cmake/UtopiaCompilerFeatures.cmake)
 include(cmake/UtopiaGitVersion.cmake)
 include(cmake/UtopiaClangFormat.cmake)
-include(cmake/UtopiaFunctions.cmake)
 include(cmake/CodeCoverage.cmake)
 include(cmake/UtopiaDefaults.cmake)
 include(cmake/UtopiaCompilerFeatures.cmake)
 include(cmake/UtopiaDependencies.cmake)
 include(cmake/UtopiaSubmodules.cmake)
-
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
-
-# Not being used in code.
-set(UTOPIA_ENABLE_CPP11 ON)
 
 # ##############################################################################
 # ##############################################################################

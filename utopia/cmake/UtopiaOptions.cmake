@@ -66,6 +66,7 @@ option(UTOPIA_INSTALL_YAML_CPP "Install yaml-cpp directly" OFF)
 option(UTOPIA_ENABLE_CLUSTER
        "Enable cluster options, for now superlu compilation and installation."
        OFF)
+
 option(UTOPIA_ENABLE_GPU "Enable gpu support for utopia." OFF)
 
 option(

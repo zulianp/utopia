@@ -133,3 +133,17 @@ function (getListOfVarsStartingWith _prefix _varResult)
     string (REGEX MATCHALL "(^|;)${_prefix}[A-Za-z0-9_]*" _matchedVars "${_vars}")
     set (${_varResult} ${_matchedVars} PARENT_SCOPE)
 endfunction()
+
+# ##############################################################################
+
+function(string_starts_with str search result)
+  string(FIND "${str}" "${search}" out)
+
+  if("${out}" EQUAL 0)
+    set(${result} TRUE)
+    set(${result} TRUE PARENT_SCOPE)
+    message(STATUS "${str}, ${search}, POSITION=${out} result=${${result}}")
+  else()
+    set(${result} FALSE PARENT_SCOPE)
+  endif()
+endfunction()
