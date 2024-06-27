@@ -14,8 +14,8 @@
 source $APPS/UES/anfink/cpu/environment
 
 # We compile the new versions!
-unset TRILINOS_DIR
-unset PETSC_DIR
-unset LIBMESH_DIR
-# unset MOONOLITH_DIR
-# unset UTOPIA_DIR
+# unset TRILINOS_DIR
+# unset PETSC_DIR
+# unset LIBMESH_DIR
+unset MOONOLITH_DIR
+unset UTOPIA_DIR
