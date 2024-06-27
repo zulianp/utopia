@@ -344,13 +344,6 @@ endif()
 # #################YAML######################
 
 if(UTOPIA_ENABLE_YAML_CPP)
-
-  if(UTOPIA_DEPENDENCIES_DIR)
-    set(YAMLCPP_INSTALL_DIR ${UTOPIA_DEPENDENCIES_DIR}/yaml-cpp)
-  else()
-    set(YAMLCPP_INSTALL_DIR ${CMAKE_SOURCE_DIR}/../external/yaml-cpp)
-  endif()
-
   set(YAML_CPP_SEARCH_PATHS "${YAMLCPP_INSTALL_DIR}")
   if(UTOPIA_ENABLE_ENV_READ)
     set(YAML_CPP_SEARCH_PATHS "${YAML_CPP_SEARCH_PATHS};$ENV{YAML_CPP_DIR}")
