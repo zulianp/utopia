@@ -44,7 +44,7 @@ cmake_host_system_information(RESULT _host_name QUERY HOSTNAME)
 string_starts_with("${_host_name}" "daint" HOST_IS_DAINT)
 string_starts_with("${_host_name}" "eiger" HOST_IS_EIGER)
 if(${HOST_IS_DAINT} OR ${HOST_IS_EIGER})
-    message(STATUS "Detected CSCS cluster with HOSTNAME=${_host_name}, setting -DUTOPIA_ENABLE_CLUSTER=ON")
+    message(STATUS "[Status] Detected CSCS cluster with HOSTNAME=${_host_name}, setting -DUTOPIA_ENABLE_CLUSTER=ON")
     set(UTOPIA_ENABLE_CLUSTER ON CACHE BOOL "" FORCE)
 endif()
 
