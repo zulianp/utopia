@@ -1,10 +1,14 @@
 #!/bin/bash
 
-source $APPS/UES/anfink/cpu/environment
+module load daint-mc
+module unload PrgEnv-cray
+module load PrgEnv-gnu
+module load cray-hdf5 cray-netcdf
+module load cray-mpich
+module load CMake/3.26.5
 
-# We compile the new versions!
-unset MOONOLITH_DIR
-unset UTOPIA_DIR
-unset TRILINOS_DIR
-unset PETSC_DIR
-unset TRILINOS_DIR
+export CXX=CC
+export CC=cc
+export FC=ftn
+export F90=ftn
+export F77=ftn
