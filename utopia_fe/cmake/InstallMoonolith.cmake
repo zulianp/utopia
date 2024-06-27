@@ -1,4 +1,4 @@
-if(NOT ParMoonolith_FOUND)
+# if(NOT ParMoonolith_FOUND)
   include(ExternalProject)
 
   if(UTOPIA_DEPENDENCIES_DIR)
@@ -35,7 +35,9 @@ if(NOT ParMoonolith_FOUND)
     COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config $<CONFIG>
     COMMAND ${CMAKE_COMMAND} -E echo "$<CONFIG> build complete")
 
-  set_target_properties(par_moonolith PROPERTIES EXCLUDE_FROM_ALL TRUE)
+  # set_target_properties(par_moonolith PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
+  list(APPEND UTOPIA_FE_TARGET_DEPENDENCIES par_moonolith)
 
   set(MOONOLITH_DIR ${MOONOLITH_INSTALL_DIR})
-endif()
+# endif()
