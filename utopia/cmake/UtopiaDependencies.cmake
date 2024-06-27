@@ -220,7 +220,7 @@ if(UTOPIA_ENABLE_PETSC)
     set(UTOPIA_PETSC_VERSION ${PETSC_VERSION})
 
   else()
-    message(WARNING "[Warning] Petsc not found.\nYou can use the option -DUTOPIA_INSTALL_PETSC=ON and `make petsc` to install it")")
+    message(WARNING "[Warning] Petsc not found.\nYou can use the option -DUTOPIA_INSTALL_PETSC=ON and `make petsc` to install it")
   endif()
 
   if(PETSC_FOUND AND UTOPIA_ENABLE_SLEPC)
