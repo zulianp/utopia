@@ -50,7 +50,7 @@ if(NOT Trilinos_FOUND)
       TRILINOS_CMAKE_ARGS
       "-DNetcdf_INCLUDE_DIRS=$ENV{NETCDF_DIR}/include/;$ENV{PNETCDF_DIR}/include"
       "-DNetcdf_LIBRARY_DIRS=$ENV{NETCDF_DIR}/lib/;$ENV{PNETCDF_DIR}/lib"
-      "-TPL_Netcdf_INCLUDE_DIRS=$ENV{NETCDF_DIR}/lib/;$ENV{PNETCDF_DIR}/lib"
+      "-DTPL_Netcdf_INCLUDE_DIRS=$ENV{NETCDF_DIR}/lib/;$ENV{PNETCDF_DIR}/lib"
       "-DSuperLU_INCLUDE_DIRS=$ENV{SuperLU_DIR}/include"
       "-DSuperLU_LIBRARY_DIRS=$ENV{SuperLU_DIR}/lib64")
   endif()
