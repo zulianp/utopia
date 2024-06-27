@@ -19,9 +19,6 @@ if(NOT Trilinos_FOUND)
     set(MPI_DIR $ENV{MPI_DIR})
   endif()
 
-  # set(TRILINOS_CXX_COMPILER ${CMAKE_CXX_COMPILER}) set(TRILINOS_C_COMPILER
-  # ${CMAKE_C_COMPILER})
-
   if(MPI_CXX_COMPILER)
     list(APPEND TRILINOS_CMAKE_ARGS "-DMPI_USE_COMPILER_WRAPPERS=ON"
          "-DMPI_CXX_COMPILER=${MPI_CXX_COMPILER}")
@@ -35,8 +32,6 @@ if(NOT Trilinos_FOUND)
     list(APPEND TRILINOS_CMAKE_ARGS
          "-DMPI_Fortan_COMPILER=${MPI_Fortan_COMPILER}")
   endif()
-
-  set(HDF5_DIR "")
 
   if(UTOPIA_ENABLE_ENV_READ)
     set(HDF5_DIR $ENV{HDF5_DIR})
@@ -116,8 +111,8 @@ if(NOT Trilinos_FOUND)
     "-DTrilinos_ENABLE_Zoltan2:BOOL=ON"
     "-DTrilinos_ENABLE_Zoltan:BOOL=ON"
     "-DTPL_ENABLE_SuperLU:BOOL=OFF"
+    # "-DTPL_ENABLE_SuperLU:BOOL=ON"
     "-DXpetra_ENABLE_EXPLICIT_INSTANTIATION:BOOL=ON"
-    "-DTPL_ENABLE_SuperLU:BOOL=ON"
     "-DTrilinos_ENABLE_Percept:BOOL=ON"
     "-DTPL_ENABLE_HDF5:BOOL=ON"
     "-DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON"
@@ -148,7 +143,7 @@ if(NOT Trilinos_FOUND)
       UPDATE_COMMAND "" # FIXME
       PREFIX ${STAGE_DIR}
       GIT_REPOSITORY ${TRILINOS_URL}
-      GIT_TAG trilinos-release-15-0-0
+      # GIT_TAG trilinos-release-15-0-0
       DOWNLOAD_DIR ${STAGE_DIR}
       INSTALL_DIR ${TRILINOS_INSTALL_DIR}
       # BINARY_DIR                      ${TRILINOS_SOURCE_DIR}
@@ -167,5 +162,4 @@ if(NOT Trilinos_FOUND)
         "Please set the following variables for trilinos to install correctly:\nHDF5_DIR: Folder where HDF is located."
     )
   endif()
-
 endif()
