@@ -28,10 +28,10 @@ if(NOT Trilinos_FOUND)
     list(APPEND TRILINOS_CMAKE_ARGS "-DMPI_C_COMPILER=${MPI_C_COMPILER}")
   endif()
 
-  if(MPI_Fortan_COMPILER)
-    list(APPEND TRILINOS_CMAKE_ARGS
-         "-DMPI_Fortan_COMPILER=${MPI_Fortan_COMPILER}")
-  endif()
+  # if(MPI_Fortan_COMPILER)
+  #   list(APPEND TRILINOS_CMAKE_ARGS
+  #        "-DMPI_Fortan_COMPILER=${MPI_Fortan_COMPILER}")
+  # endif()
 
   if(UTOPIA_ENABLE_ENV_READ)
     set(HDF5_DIR $ENV{HDF5_DIR})
