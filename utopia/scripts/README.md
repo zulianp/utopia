@@ -15,32 +15,33 @@ For compiling the main dependencies
 
 ## FLUYA
 
-The main dependencies can be compiled with utopia.
+Some of the main dependencies can be compiled with utopia directly. Trilinos needs to be compiled separately (see `utopia/scripts/installer/configure_trilinos.sh`).
 After running the environement script, go to `utopia` folder
 
 ```bash
 mkdir -p build_fluya  && cd build_fluya
-cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DUTOPIA_INSTALL_PETSC=ON -DUTOPIA_PETSC_ENABLE_SUPERLU=ON -DUTOPIA_INSTALL_YAML_CPP=ON -DUTOPIA_INSTALL_TRILINOS=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fluya
+cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DUTOPIA_INSTALL_PETSC=ON -DUTOPIA_PETSC_ENABLE_SUPERLU=ON -DUTOPIA_INSTALL_YAML_CPP=ON -DTrilinos_DIR=$TRILINOS_DIR/lib64/cmake/Trilinos -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fluya
 make yaml-cpp
 make petsc
-make trilinos
 cmake ..
 make -j8 && make install
 ```
-
-and go have lunch.
 
 UtopiaFE is compiled with the following procedure. Go to `utopia_fe` folder
 
 ```bash
 mkdir -p build_fluya &&
 cd build_fluya &&
-cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DUTOPIA_INSTALL_MOONOLITH=ON -DUtopia_DIR=$INSTALL_DIR/utopia_fe_fluya_gpu -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fe_fluya &&
+cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DUTOPIA_INSTALL_MOONOLITH=ON -DUtopia_DIR=$INSTALL_DIR/utopia_fluya -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fe_fluya &&
 make -j8 && make install
 ```
 
 ## AVFLOW
-# Build scripts
+
+Similar but does not need Trilinos. LIBMESH can be installed directly too using `-DUTOPIA_INSTALL_LIBMESH` and `make libmesh`.
+
+
+# Build scripts (experimental)
 utopia_compile.sh is an easy to use script for quickly setting up utopia. There are four different types of builds supported:
 
 - basic: Build utopia with basic functionalities and with blas as backend.

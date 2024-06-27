@@ -58,7 +58,7 @@ option(UTOPIA_BUILD_DOCUMENTATION
 option(UTOPIA_ENABLE_SCRIPTING
        "Enable exports for other languages (C, Python, etc...)" OFF)
 
-option(UTOPIA_INSTALL_TRILINOS "Install trilinos directly" OFF)
+option(UTOPIA_INSTALL_TRILINOS "Install trilinos directly (Unstable)" OFF)
 option(UTOPIA_INSTALL_PETSC "Install petsc directly" OFF)
 option(UTOPIA_INSTALL_SLEPC "Install slepc directly" OFF)
 option(UTOPIA_INSTALL_YAML_CPP "Install yaml-cpp directly" OFF)
