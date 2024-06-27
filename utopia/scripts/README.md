@@ -6,10 +6,10 @@ Utopia supports build configurations for the different applications
 - AVFLOW	`-DUTOPIA_ENABLE_AVFLOW_MODE=ON`
 - FRANETG 	`-DUTOPIA_ENABLE_FRANETG_MODE=ON`
 
-Utopia provides the environment scripts for the supported supercomputers
+Utopia provides the environment scripts for the supported supercomputers. Source them to load the relevant modules.
 
-- Eiger: utopia/scripts/setup_fluya_env_eiger.sh
-- Daint: utopia/scripts/setup_fluya_env_daint.sh
+- Eiger: `source utopia/scripts/setup_fluya_env_eiger.sh`
+- Daint: `source utopia/scripts/setup_fluya_env_daint.sh`
 
 For compiling the main dependencies
 
@@ -20,7 +20,7 @@ After running the environement script, go to `utopia` folder
 
 ```bash
 mkdir -p build_fluya  && cd build_fluya
-cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DUTOPIA_INSTALL_TRILINOS=ON -DUTOPIA_INSTALL_PETSC=ON -DUTOPIA_INSTALL_YAML_CPP=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fluya
+cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DUTOPIA_INSTALL_PETSC=ON -DUTOPIA_PETSC_ENABLE_SUPERLU=ON -DUTOPIA_INSTALL_YAML_CPP=ON -DUTOPIA_INSTALL_TRILINOS=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fluya
 make yaml-cpp
 make petsc
 make trilinos
@@ -36,8 +36,6 @@ UtopiaFE is compiled with the following procedure. Go to `utopia_fe` folder
 mkdir -p build_fluya &&
 cd build_fluya &&
 cmake .. -DUTOPIA_ENABLE_FLUYA_MODE=ON -DUTOPIA_INSTALL_MOONOLITH=ON -DUtopia_DIR=$INSTALL_DIR/utopia_fe_fluya_gpu -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia_fe_fluya &&
-make par_moonolith
-cmake .. 
 make -j8 && make install
 ```
 

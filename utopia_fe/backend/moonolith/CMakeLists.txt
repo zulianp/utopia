@@ -1,4 +1,4 @@
-if(ParMoonolith_FOUND)
+
 list(APPEND MOONOLITH_MODULES .)
 
 scan_directories(${CMAKE_CURRENT_SOURCE_DIR} "${MOONOLITH_MODULES}"
@@ -15,4 +15,3 @@ set(UTOPIA_FE_HEADERS
 set(UTOPIA_FE_SOURCES
     ${UTOPIA_FE_SOURCES}
     PARENT_SCOPE)
-endif()

@@ -1,4 +1,4 @@
-# if(NOT ParMoonolith_FOUND)
+if(UTOPIA_INSTALL_MOONOLITH_EXTERNAL)
   include(ExternalProject)
 
   if(UTOPIA_DEPENDENCIES_DIR)
@@ -40,4 +40,33 @@
   list(APPEND UTOPIA_FE_TARGET_DEPENDENCIES par_moonolith)
 
   set(MOONOLITH_DIR ${MOONOLITH_INSTALL_DIR})
-# endif()
+
+else()
+
+  include(FetchContent)
+  message(STATUS "Fetching par_moonolith, due to option UTOPIA_INSTALL_MOONOLITH=ON.")
+
+  set(MOONOLITH_ENABLE_BENCHMARK
+      OFF
+      CACHE INTERNAL "")
+
+  set(MOONOLITH_ENABLE_TESTING
+      OFF
+      CACHE INTERNAL "")
+
+  # FIXME This is used to avoid clashes with test_install and other targets
+  set(MOONOLITH_ENABLE_SUBMODULE ON CACHE INTERNAL "")
+
+  FetchContent_Declare(
+      moonolith
+      GIT_REPOSITORY https://bitbucket.org/zulianp/par_moonolith.git
+      # GIT_TAG origin/sampler
+      GIT_TAG origin/development
+  )
+  
+  FetchContent_MakeAvailable(moonolith)
+
+  add_library(ParMoonolith::par_moonolith ALIAS par_moonolith)
+
+  list(APPEND UTOPIA_FE_SUBMODULES "par_moonolith")
+endif()

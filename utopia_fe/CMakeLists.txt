@@ -96,6 +96,10 @@ if(UTOPIA_FE_TARGET_DEPENDENCIES)
   add_dependencies(utopia_fe ${UTOPIA_FE_TARGET_DEPENDENCIES})
 endif()
 
+if(UTOPIA_FE_SUBMODULES)
+  target_link_libraries(utopia_fe PUBLIC ${UTOPIA_FE_SUBMODULES})
+endif()
+
 set_utopia_compiler_features(utopia_fe)
 
 # ##############################################################################
