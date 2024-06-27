@@ -17,5 +17,5 @@ source $APPS/UES/anfink/cpu/environment
 unset TRILINOS_DIR
 unset PETSC_DIR
 unset LIBMESH_DIR
-unset MOONOLITH_DIR
-unset UTOPIA_DIR
+# unset MOONOLITH_DIR
+# unset UTOPIA_DIR

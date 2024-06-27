@@ -100,9 +100,9 @@ if(UTOPIA_ENABLE_ENV_READ)
       "${Petsc_SEARCH_PATHS};$ENV{PETSC_DIR};$ENV{HOME}/petsc")
 endif()
 
-if(UTOPIA_INSTALL_PETSC)
+# if(UTOPIA_INSTALL_PETSC)
   set(Petsc_SEARCH_PATHS "${CMAKE_SOURCE_DIR}/../external/petsc/")
-endif()
+# endif()
 
 find_path(
   PETSC_DIR include/petsc.h
