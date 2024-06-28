@@ -25,6 +25,9 @@ if(UTOPIA_ENABLE_ENV_READ)
   )
 endif()
 
+set(ParMetis_SEARCH_PATHS_INCLUDES "${ParMetis_SEARCH_PATHS_INCLUDES};${PETSC_DIR}/include")
+set(ParMetis_SEARCH_PATHS_LIBRARY "${ParMetis_SEARCH_PATHS_LIBRARY};${PETSC_DIR}/lib")
+
 find_path(ParMetis_INCLUDES parmetis.h PATHS ${ParMetis_SEARCH_PATHS_INCLUDES})
 
 find_library(

@@ -92,6 +92,14 @@ list(APPEND UTOPIA_FE_HEADERS utopia_fe.hpp)
 
 add_library(utopia_fe ${UTOPIA_FE_SOURCES} ${UTOPIA_FE_HEADERS})
 
+if(UTOPIA_FE_TARGET_DEPENDENCIES)
+  add_dependencies(utopia_fe ${UTOPIA_FE_TARGET_DEPENDENCIES})
+endif()
+
+if(UTOPIA_FE_SUBMODULES)
+  target_link_libraries(utopia_fe PUBLIC ${UTOPIA_FE_SUBMODULES})
+endif()
+
 set_utopia_compiler_features(utopia_fe)
 
 # ##############################################################################
@@ -289,19 +297,6 @@ include(cmake/PostInstall.cmake)
 
 # EXTRA TARGETS
 # ##############################################################################
-
-add_custom_target(apps)
-add_dependencies(apps utopia_fe utopia_fe_exec)
-
-# #
-# ##############################################################################
-
-add_custom_target(complete)
-add_dependencies(complete utopia_fe_test)
-
-# ##############################################################################
-
-# include(cmake/PostInstall.cmake)
 
 print_dependency_table()
 log_dependency_table()

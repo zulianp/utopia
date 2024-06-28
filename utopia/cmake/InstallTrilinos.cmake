@@ -28,10 +28,10 @@ if(NOT Trilinos_FOUND)
     list(APPEND TRILINOS_CMAKE_ARGS "-DMPI_C_COMPILER=${MPI_C_COMPILER}")
   endif()
 
-  if(MPI_Fortan_COMPILER)
-    list(APPEND TRILINOS_CMAKE_ARGS
-         "-DMPI_Fortan_COMPILER=${MPI_Fortan_COMPILER}")
-  endif()
+  # if(MPI_Fortan_COMPILER)
+  #   list(APPEND TRILINOS_CMAKE_ARGS
+  #        "-DMPI_Fortan_COMPILER=${MPI_Fortan_COMPILER}")
+  # endif()
 
   if(UTOPIA_ENABLE_ENV_READ)
     set(HDF5_DIR $ENV{HDF5_DIR})
@@ -50,6 +50,7 @@ if(NOT Trilinos_FOUND)
       TRILINOS_CMAKE_ARGS
       "-DNetcdf_INCLUDE_DIRS=$ENV{NETCDF_DIR}/include/;$ENV{PNETCDF_DIR}/include"
       "-DNetcdf_LIBRARY_DIRS=$ENV{NETCDF_DIR}/lib/;$ENV{PNETCDF_DIR}/lib"
+      "-DTPL_Netcdf_INCLUDE_DIRS=$ENV{NETCDF_DIR}/lib/;$ENV{PNETCDF_DIR}/lib"
       "-DSuperLU_INCLUDE_DIRS=$ENV{SuperLU_DIR}/include"
       "-DSuperLU_LIBRARY_DIRS=$ENV{SuperLU_DIR}/lib64")
   endif()
@@ -143,7 +144,7 @@ if(NOT Trilinos_FOUND)
       UPDATE_COMMAND "" # FIXME
       PREFIX ${STAGE_DIR}
       GIT_REPOSITORY ${TRILINOS_URL}
-      # GIT_TAG trilinos-release-15-0-0
+      GIT_TAG trilinos-release-15-0-0
       DOWNLOAD_DIR ${STAGE_DIR}
       INSTALL_DIR ${TRILINOS_INSTALL_DIR}
       # BINARY_DIR                      ${TRILINOS_SOURCE_DIR}
