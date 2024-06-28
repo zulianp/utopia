@@ -26,23 +26,19 @@ option(UTOPIA_ENABLE_BLAS "Enable the blas backend" ON)
 
 option(UTOPIA_ENABLE_TRACE "enables utopia tracing facilities for regions"
        OFF)
-# option(UTOPIA_ENABLE_TRACE_EXPR "enables utopia tracing facilities for
-# every expression" OFF)
 
-# option(UTOPIA_ENABLE_LOCAL_DEPENDENCIES_INSTALL "Sets utopia to use current
-# project installs of petsc and trilinos" OFF)
+option(UTOPIA_ENABLE_TRACE_EXPR "enables utopia tracing facilities for every expression" OFF)
 
 option(UTOPIA_ENABLE_NO_ALLOC_REGIONS"enables utopia alloc-check facilities"
        OFF)
-# option(UTOPIA_ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers
-# developed in the PASSO library" OFF)
 option(UTOPIA_ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
 option(UTOPIA_ENABLE_CXX17_FEATURES "Enable usage of cxx17 standard" ON)
 
 option(UTOPIA_ENABLE_MOOSE_ENV_MODE
        "Allows to use the moose installation compilers" OFF)
 option(UTOPIA_ENABLE_DEPRECATED_API
-       "Decprecated functionality that will be removed in the future" ON)
+       "Decprecated functionality that will be removed in the future" OFF)
+
 option(UTOPIA_ENABLE_TINY_EXPR "String expressions support" ON)
 option(UTOPIA_ENABLE_RAPIDJSON "Enable support for JSON input files" OFF)
 option(UTOPIA_ENABLE_YAML_CPP "Enable YAML support" ON)
@@ -62,7 +58,7 @@ option(UTOPIA_BUILD_DOCUMENTATION
 option(UTOPIA_ENABLE_SCRIPTING
        "Enable exports for other languages (C, Python, etc...)" OFF)
 
-option(UTOPIA_INSTALL_TRILINOS "Install trilinos directly" OFF)
+option(UTOPIA_INSTALL_TRILINOS "Install trilinos directly (Unstable)" OFF)
 option(UTOPIA_INSTALL_PETSC "Install petsc directly" OFF)
 option(UTOPIA_INSTALL_SLEPC "Install slepc directly" OFF)
 option(UTOPIA_INSTALL_YAML_CPP "Install yaml-cpp directly" OFF)
@@ -70,6 +66,7 @@ option(UTOPIA_INSTALL_YAML_CPP "Install yaml-cpp directly" OFF)
 option(UTOPIA_ENABLE_CLUSTER
        "Enable cluster options, for now superlu compilation and installation."
        OFF)
+
 option(UTOPIA_ENABLE_GPU "Enable gpu support for utopia." OFF)
 
 option(

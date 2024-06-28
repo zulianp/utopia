@@ -25,6 +25,8 @@ if(NOT CYGWIN)
         --with-mpi=1
         --download-scalapack=yes
         --download-hypre=yes
+        --download-metis=yes
+        --download-parmetis=yes
         # --with-cxx-dialect=C++11
         --download-mumps=yes
         --with-debugging=0)

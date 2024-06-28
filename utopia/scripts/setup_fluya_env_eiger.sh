@@ -1,7 +1,20 @@
-#!/bin/bash
+#!/bin/bash                                                                                                                                                                                           
 
 module load cray
+module unload PrgEnv-cray
 module load PrgEnv-gnu
-module load CMake
-module load gcc/11.2.0  cray-mpich/8.1.12  cray-hdf5-parallel/1.12.1.3
-module load cray-netcdf-hdf5parallel/4.8.1.3
+module load cray-mpich
+module load cray-hdf5
+module load cray-netcdf 
+module load cray-parallel-netcdf
+module load CMake/3.26.5
+
+export CXX=CC
+export CC=cc
+export FC=ftn
+export F90=ftn
+export F77=ftn
+
+
+# module load cray-hdf5-parallel
+# module load cray-netcdf-hdf5parallel

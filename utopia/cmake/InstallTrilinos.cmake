@@ -19,9 +19,6 @@ if(NOT Trilinos_FOUND)
     set(MPI_DIR $ENV{MPI_DIR})
   endif()
 
-  # set(TRILINOS_CXX_COMPILER ${CMAKE_CXX_COMPILER}) set(TRILINOS_C_COMPILER
-  # ${CMAKE_C_COMPILER})
-
   if(MPI_CXX_COMPILER)
     list(APPEND TRILINOS_CMAKE_ARGS "-DMPI_USE_COMPILER_WRAPPERS=ON"
          "-DMPI_CXX_COMPILER=${MPI_CXX_COMPILER}")
@@ -31,12 +28,10 @@ if(NOT Trilinos_FOUND)
     list(APPEND TRILINOS_CMAKE_ARGS "-DMPI_C_COMPILER=${MPI_C_COMPILER}")
   endif()
 
-  if(MPI_Fortan_COMPILER)
-    list(APPEND TRILINOS_CMAKE_ARGS
-         "-DMPI_Fortan_COMPILER=${MPI_Fortan_COMPILER}")
-  endif()
-
-  set(HDF5_DIR "")
+  # if(MPI_Fortan_COMPILER)
+  #   list(APPEND TRILINOS_CMAKE_ARGS
+  #        "-DMPI_Fortan_COMPILER=${MPI_Fortan_COMPILER}")
+  # endif()
 
   if(UTOPIA_ENABLE_ENV_READ)
     set(HDF5_DIR $ENV{HDF5_DIR})
@@ -55,6 +50,7 @@ if(NOT Trilinos_FOUND)
       TRILINOS_CMAKE_ARGS
       "-DNetcdf_INCLUDE_DIRS=$ENV{NETCDF_DIR}/include/;$ENV{PNETCDF_DIR}/include"
       "-DNetcdf_LIBRARY_DIRS=$ENV{NETCDF_DIR}/lib/;$ENV{PNETCDF_DIR}/lib"
+      "-DTPL_Netcdf_INCLUDE_DIRS=$ENV{NETCDF_DIR}/lib/;$ENV{PNETCDF_DIR}/lib"
       "-DSuperLU_INCLUDE_DIRS=$ENV{SuperLU_DIR}/include"
       "-DSuperLU_LIBRARY_DIRS=$ENV{SuperLU_DIR}/lib64")
   endif()
@@ -116,8 +112,8 @@ if(NOT Trilinos_FOUND)
     "-DTrilinos_ENABLE_Zoltan2:BOOL=ON"
     "-DTrilinos_ENABLE_Zoltan:BOOL=ON"
     "-DTPL_ENABLE_SuperLU:BOOL=OFF"
+    # "-DTPL_ENABLE_SuperLU:BOOL=ON"
     "-DXpetra_ENABLE_EXPLICIT_INSTANTIATION:BOOL=ON"
-    "-DTPL_ENABLE_SuperLU:BOOL=ON"
     "-DTrilinos_ENABLE_Percept:BOOL=ON"
     "-DTPL_ENABLE_HDF5:BOOL=ON"
     "-DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON"
@@ -167,5 +163,4 @@ if(NOT Trilinos_FOUND)
         "Please set the following variables for trilinos to install correctly:\nHDF5_DIR: Folder where HDF is located."
     )
   endif()
-
 endif()

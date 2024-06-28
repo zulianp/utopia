@@ -1,8 +1,5 @@
 #!/bin/bash
 set -e
-# Module setup and superlu
-source setup_fluya_env_eiger.sh
-# source setup_fluya_env_daint.sh
 
 STAGE_DIR=$SCRATCH/code
 INSTALL_DIR=$STAGE_DIR/installations
@@ -19,6 +16,8 @@ if [[ ! -d utopia ]]
 	then
 		git clone --recurse-submodules https://bitbucket.org/zulianp/utopia.git
 fi
+
+source $STAGE_DIR/utopia/utopia/scripts/setup_fluya_env_eiger.sh
 
 cd utopia/utopia
 git checkout cmake_refactor_fe
