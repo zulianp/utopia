@@ -7,7 +7,8 @@ module load cray-mpich
 module load cray-hdf5
 module load cray-netcdf 
 module load cray-parallel-netcdf
-module load CMake/3.26.5
+module load cray-libsci
+module load CMake
 
 export CXX=CC
 export CC=cc
