@@ -1,6 +1,7 @@
 #include "utopia_petsc_LinearSolverFactory.hpp"
 
 #include "utopia_AlgebraicMultigrid.hpp"
+#include "utopia_Chebyshev3level.hpp"
 #include "utopia_ConjugateGradient.hpp"
 #include "utopia_LinearSolver.hpp"
 #include "utopia_LinearSolverFactory.hpp"
@@ -71,6 +72,7 @@ namespace utopia {
         solvers_[Solver::gmres()] = utopia::make_unique<LSFactoryMethod<GMRES<PetscMatrix, PetscVector>>>();
         solvers_["amg"] = utopia::make_unique<LSFactoryMethod<AlgebraicMultigrid<PetscMatrix, PetscVector>>>();
         solvers_["bdd"] = utopia::make_unique<LSFactoryMethod<BDDLinearSolver<PetscMatrix, PetscVector>>>();
+        solvers_["cheb3"] = utopia::make_unique<LSFactoryMethod<Chebyshev3level<PetscMatrix, PetscVector>>>();
 #ifdef UTOPIA_ENABLE_PARMETIS
         solvers_["rebalanced"] = utopia::make_unique<LSFactoryMethod<RebalancedSolver>>();
 #endif  // UTOPIA_ENABLE_PARMETIS
