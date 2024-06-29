@@ -216,10 +216,9 @@ namespace utopia {
                     ksp->factor_set_pivot_in_blocks(convert_to_block_matrix);
                     solver = ksp;
                 }
-
-                solver->read(in);
             }
 
+            solver->read(in);
             stats.stop_collect_and_restart("read_settings");
 
             Vector r = b - A * x;

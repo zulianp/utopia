@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "utopia_DeviceView.hpp"
 #include "utopia_MatrixFreeLinearSolver.hpp"
 
 namespace utopia {

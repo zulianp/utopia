@@ -30,7 +30,8 @@ namespace utopia {
         Chebyshev3level() {}
 
         Chebyshev3level(const Chebyshev3level &other)
-            : PreconditionedSolverInterface<Vector>(other), OperatorBasedLinearSolver<Matrix, Vector>(other),
+            : PreconditionedSolverInterface<Vector>(other),
+              OperatorBasedLinearSolver<Matrix, Vector>(other),
               scale_max_eig_(other.scale_max_eig_),
               scale_min_eig_(other.scale_min_eig_),
               power_method_(other.power_method_) {}
@@ -41,17 +42,17 @@ namespace utopia {
             in.get("scale_max_eig", scale_max_eig_);
             in.get("scale_min_eig", scale_min_eig_);
 
-            Scalar eps_eig_est_;
-            SizeType power_method_max_it_;
-            bool use_rand_vec_init_;
+            Scalar eps_eig_est{1e-2};
+            SizeType power_method_max_it{30};
+            bool use_rand_vec_init{false};
 
-            in.get("power_method_tol", eps_eig_est_);
-            in.get("power_method_max_it", power_method_max_it_);
-            in.get("use_rand_vec_init", use_rand_vec_init_);
+            in.get("power_method_tol", eps_eig_est);
+            in.get("power_method_max_it", power_method_max_it);
+            in.get("use_rand_vec_init", use_rand_vec_init);
 
-            power_method_.use_rand_vec_init(use_rand_vec_init_);
-            power_method_.max_it(power_method_max_it_);
-            power_method_.tol(eps_eig_est_);
+            power_method_.use_rand_vec_init(use_rand_vec_init);
+            power_method_.max_it(power_method_max_it);
+            power_method_.tol(eps_eig_est);
         }
 
         void power_method_tol(const Scalar &tol) { power_method_.tol(tol); }
@@ -120,6 +121,8 @@ namespace utopia {
         }
 
         bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override {
+            UTOPIA_TRACE_SCOPE("Chebyshev3level::solve");
+            
             Scalar avg_eig = (this->eigMax_ + this->eigMin_) / 2.0;
             Scalar diff_eig = (this->eigMax_ - this->eigMin_) / 2.0;
 
@@ -129,6 +132,8 @@ namespace utopia {
             SizeType it = 0;
             Scalar r_norm = 9e9, alpha = 0.0, beta = 0.0;
             bool converged = false;
+
+            this->init_solver("Utopia Chebyshev3level", {"it. ", "||r||"});
 
             while (!converged) {
                 if (it == 0) {

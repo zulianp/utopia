@@ -8,6 +8,7 @@
 #include "utopia_SolverType.hpp"
 
 #include "utopia_BiCGStab.hpp"
+#include "utopia_Chebyshev3level.hpp"
 #include "utopia_ConjugateGradient.hpp"
 
 #include <memory>
@@ -31,6 +32,7 @@ namespace utopia {
         virtual void register_solvers() {
             register_solver<ConjugateGradient<typename Traits<Vector>::Matrix, Vector, HOMEMADE>>("cg");
             register_solver<BiCGStab<typename Traits<Vector>::Matrix, Vector, HOMEMADE>>("bcgs");
+            register_solver<Chebyshev3level<typename Traits<Vector>::Matrix, Vector, HOMEMADE>>("cheb3");
         }
 
         bool empty() const { return solvers_.empty(); }
