@@ -56,6 +56,8 @@ namespace utopia {
 
             void enable_interpolation_mode();
 
+            std::vector<double> get_time_steps() const;
+
         public:
             class Impl;
             std::unique_ptr<Impl> impl_;

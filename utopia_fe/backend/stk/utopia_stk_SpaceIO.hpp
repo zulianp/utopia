@@ -52,6 +52,8 @@ namespace utopia {
             Scalar max_time() const;
             void set_import_all_data(const bool val);
 
+            std::vector<double> get_time_steps() const;
+
             void register_output_field(const std::string &var_name);
             void register_output_field(const Field<FunctionSpace> &field);
             void update_output_field(const Field<FunctionSpace> &field);

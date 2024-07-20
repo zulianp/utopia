@@ -345,6 +345,8 @@ namespace utopia {
             }
         }
 
+        std::vector<double> MeshIO::get_time_steps() const { return impl_->io_broker->get_time_steps(); }
+
         bool MeshIO::load_time_step(const Scalar t) { return impl_->load_time_step(t); }
 
         int MeshIO::num_time_steps() const { return impl_->io_broker->get_num_time_steps(); }
