@@ -14,7 +14,7 @@
 #
 # #############################################################################
 
-set(UTOPIA_SEARCH_PATHS "/usr/local/;/usr/;${UTOPIA_DIR}
+set(UTOPIA_SEARCH_PATHS "/usr/local/;/usr/;${Utopia_DIR};${UTOPIA_DIR}
         ${UTOPIA_INCLUDES}")
 
 if(UTOPIA_ENABLE_ENV_READ)

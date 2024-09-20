@@ -30,9 +30,9 @@ namespace utopia {
             using Entity_t = ::stk::mesh::Entity;
             using Selector_t = ::stk::mesh::Selector;
             using IOBroker_t = ::stk::io::StkMeshIoBroker;
-            using VectorField_t = ::stk::mesh::Field<Scalar, ::stk::mesh::Cartesian>;
-            using MatrixField_t = ::stk::mesh::Field<Scalar, ::stk::mesh::Cartesian, ::stk::mesh::Cartesian>;
-            using MatrixField3x3_t = ::stk::mesh::Field<Scalar, ::stk::mesh::Cartesian3d, ::stk::mesh::Cartesian3d>;
+            // using VectorField_t = ::stk::mesh::Field<Scalar, ::stk::mesh::Cartesian>;
+            // using MatrixField_t = ::stk::mesh::Field<Scalar, ::stk::mesh::Cartesian, ::stk::mesh::Cartesian>;
+            // using MatrixField3x3_t = ::stk::mesh::Field<Scalar, ::stk::mesh::Cartesian3d, ::stk::mesh::Cartesian3d>;
 
             std::string name{"main"};
             std::shared_ptr<Mesh> mesh;
@@ -151,12 +151,10 @@ namespace utopia {
 
                 if (!has_field) {
                     if (v.n_components == 1) {
-                        auto &field =
-                            meta_data.declare_field<::stk::mesh::Field<Scalar>>(::stk::topology::NODE_RANK, v.name, 1);
+                        auto &field = meta_data.declare_field<Scalar>(::stk::topology::NODE_RANK, v.name, 1);
                         ::stk::mesh::put_field_on_mesh(field, part, 1, nullptr);
                     } else {
-                        auto &field =
-                            meta_data.declare_field<Impl::VectorField_t>(::stk::topology::NODE_RANK, v.name, 1);
+                        auto &field = meta_data.declare_field<Scalar>(::stk::topology::NODE_RANK, v.name, 1);
                         ::stk::mesh::put_field_on_mesh(field, part, v.n_components, nullptr);
                     }
                 } else {
@@ -1773,10 +1771,10 @@ namespace utopia {
             meta_data.enable_late_fields();
 
             if (n_comp == 1) {
-                auto &field = meta_data.declare_field<::stk::mesh::Field<Scalar>>(::stk::topology::NODE_RANK, name, 1);
+                auto &field = meta_data.declare_field<Scalar>(::stk::topology::NODE_RANK, name, 1);
                 ::stk::mesh::put_field_on_mesh(field, part, 1, nullptr);
             } else {
-                auto &field = meta_data.declare_field<Impl::VectorField_t>(::stk::topology::NODE_RANK, name, 1);
+                auto &field = meta_data.declare_field<Scalar>(::stk::topology::NODE_RANK, name, 1);
                 ::stk::mesh::put_field_on_mesh(field, part, n_comp, nullptr);
             }
         }
@@ -1792,28 +1790,24 @@ namespace utopia {
                 meta_data.enable_late_fields();
 
                 if (tensor_size == 1) {
-                    stk_field = &meta_data.declare_field<::stk::mesh::Field<Scalar>>(
-                        ::stk::topology::ELEMENT_RANK, field.name(), 1);
+                    stk_field = &meta_data.declare_field<Scalar>(::stk::topology::ELEMENT_RANK, field.name(), 1);
                     ::stk::mesh::put_field_on_mesh(*stk_field, part, 1, nullptr);
                 } else if (tensor_size == mesh().spatial_dimension()) {
                     assert(tensor_size == mesh().spatial_dimension());
-                    stk_field =
-                        &meta_data.declare_field<Impl::VectorField_t>(::stk::topology::ELEMENT_RANK, field.name(), 1);
+                    stk_field = &meta_data.declare_field<Scalar>(::stk::topology::ELEMENT_RANK, field.name(), 1);
                     ::stk::mesh::put_field_on_mesh(*stk_field, part, tensor_size, nullptr);
                 } else if (tensor_size == mesh().spatial_dimension() * mesh().spatial_dimension()) {
                     // if (mesh().spatial_dimension() == 3) {
-                    //     stk_field = &meta_data.declare_field<Impl::MatrixField3x3_t>(
-                    //         ::stk::topology::ELEMENT_RANK, field.name(), 1);
+                    //     stk_field = &meta_data.declare_field<                    // ::stk::topology::ELEMENT_RANK,
+                    //     field.name(), 1);
                     //     ::stk::mesh::put_field_on_mesh(*stk_field, part, 3, 3, nullptr);
                     // } else {
-                    stk_field =
-                        &meta_data.declare_field<Impl::MatrixField_t>(::stk::topology::ELEMENT_RANK, field.name(), 1);
+                    stk_field = &meta_data.declare_field<Scalar>(::stk::topology::ELEMENT_RANK, field.name(), 1);
                     ::stk::mesh::put_field_on_mesh(
                         *stk_field, part, mesh().spatial_dimension(), mesh().spatial_dimension(), nullptr);
                     // }
                 } else {
-                    stk_field = &meta_data.declare_field<::stk::mesh::Field<Scalar>>(
-                        ::stk::topology::ELEMENT_RANK, field.name(), 1);
+                    stk_field = &meta_data.declare_field<Scalar>(::stk::topology::ELEMENT_RANK, field.name(), 1);
                     ::stk::mesh::put_field_on_mesh(*stk_field, part, tensor_size, nullptr);
                 }
             }
@@ -1858,14 +1852,12 @@ namespace utopia {
                 meta_data.enable_late_fields();
 
                 if (tensor_size == 1) {
-                    stk_field = &meta_data.declare_field<::stk::mesh::Field<Scalar>>(
-                        ::stk::topology::NODE_RANK, field.name(), 1);
+                    stk_field = &meta_data.declare_field<Scalar>(::stk::topology::NODE_RANK, field.name(), 1);
                     ::stk::mesh::put_field_on_mesh(*stk_field, part, 1, nullptr);
                 } else {
                     assert(tensor_size == mesh().spatial_dimension());
 
-                    stk_field =
-                        &meta_data.declare_field<Impl::VectorField_t>(::stk::topology::NODE_RANK, field.name(), 1);
+                    stk_field = &meta_data.declare_field<Scalar>(::stk::topology::NODE_RANK, field.name(), 1);
                     ::stk::mesh::put_field_on_mesh(*stk_field, part, tensor_size, nullptr);
                 }
             }
