@@ -1,7 +1,10 @@
 # InstallPetsc.cmake
+# If it does not work try directly in the terminal
+# git clone -b main https://gitlab.com/petsc/petsc.git petsc
+# ./configure --prefix=$INSTALL_DIR/petsc --with-mpi=1 --download-scalapack=yes --download-hypre=yes --download-metis=yes --download-parmetis=yes --download-mumps=yes --with-debugging=0
+
 if(NOT CYGWIN)
   if(NOT PETSC_FOUND)
-    # git clone -b maint https://gitlab.com/petsc/petsc.git petsc
     include(ExternalProject)
 
     if(UTOPIA_DEPENDENCIES_DIR)

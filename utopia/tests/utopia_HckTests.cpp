@@ -1,6 +1,8 @@
 #include "utopia_Base.hpp"
 
 #ifdef UTOPIA_ENABLE_PETSC
+#include "utopia_petsc_Base.hpp"
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3, 22, 2)
 
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
@@ -894,4 +896,8 @@ namespace utopia {
     UTOPIA_REGISTER_TEST_FUNCTION(hck);
 }  // namespace utopia
 
+#else
+#warning "Disabled HckTests because of compatibility problem with Petsc version 3.22.2"
+
+#endif
 #endif  // UTOPIA_ENABLE_PETSC

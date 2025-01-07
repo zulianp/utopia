@@ -6,6 +6,7 @@
 
 #include "mass.h"
 #include "mesh_utils.h"
+#include "node_interpolate.h"
 #include "sfem_defs.h"
 #include "sfem_mesh.h"
 #include "sfem_resample_gap.h"

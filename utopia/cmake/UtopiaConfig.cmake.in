@@ -22,6 +22,7 @@ set(UTOPIA_YAML_CPP_DIR @UTOPIA_YAML_CPP_DIR@ CACHE FILEPATH "Path to yaml-cpp i
 set(UTOPIA_INSTALL_TRILINOS @UTOPIA_INSTALL_TRILINOS@)
 set(UTOPIA_INSTALL_PETSC @UTOPIA_INSTALL_PETSC@)
 set(UTOPIA_INSTALL_YAML_CPP @UTOPIA_INSTALL_YAML_CPP@)
+set(UTOPIA_MATRIX_IO_DIR @MATRIX_IO_DIR@)
 
 ########## old style variables. Preferably you should use target_link_libraries(my_target Utopia::utopia) ################
 @OLD_CMAKE_CONFIG_CONTENT@

@@ -46,6 +46,27 @@ find_package(yaml-cpp HINTS ${UTOPIA_YAML_CPP_DIR} REQUIRED)
 
 # if(ArborX_FOUND) # Add includes to build_includes, .... endif() endif()
 
+if(UTOPIA_ENABLE_SFEM)
+  include(FetchContent)
+
+  if(NOT UTOPIA_MATRIX_IO_DIR AND NOT MatrixIO_DIR)
+    message(FATAL_ERROR "SFEM required MatrixIO_DIR to be defined!")
+  endif()
+
+  set(MatrixIO_DIR ${UTOPIA_MATRIX_IO_DIR}) 
+  set(SFEM_ENABLE_SUBMODULE ON)
+  set(SFEM_ENABLE_SUBMODULE ON CACHE INTERNAL "")
+
+  FetchContent_Declare(
+  sfem
+  SOURCE_DIR ${CMAKE_SOURCE_DIR}/external/sfem
+  )
+
+  FetchContent_MakeAvailable(sfem)
+  add_library(SFEM::sfem ALIAS sfem)
+  list(APPEND UTOPIA_FE_SUBMODULES sfem)
+endif()
+
 if(UTOPIA_ENABLE_LIBMESH)
   if(UTOPIA_ENABLE_STK)
     message(

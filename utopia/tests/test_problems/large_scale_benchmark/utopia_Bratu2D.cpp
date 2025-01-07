@@ -2,6 +2,7 @@
 #include "utopia_TestFunctions.hpp"
 
 #ifdef UTOPIA_ENABLE_PETSC
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3, 22, 2)
 
 namespace utopia {
 
@@ -402,4 +403,5 @@ namespace utopia {
     template class Bratu2D<PetscMatrix, PetscVector, PETSC>;
 }  // namespace utopia
 
+#endif
 #endif  // UTOPIA_ENABLE_PETSC

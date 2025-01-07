@@ -24,6 +24,12 @@
 #define Quircks_TaoSetSolution TaoSetSolution
 #endif
 
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3, 22, 2)
+#define PetscQuirks_TaoDefaultMonitor TaoDefaultSMonitor
+#else
+#define PetscQuirks_TaoDefaultMonitor TaoDefaultMonitor
+#endif
+
 #define U_CHECKERR(ierr)               \
     {                                  \
         if ((ierr) != 0) return false; \
@@ -326,8 +332,10 @@ namespace utopia {
             const char monfilename[7] = "stdout";
             PetscViewer monviewer;
             PetscViewerASCIIOpen(communicator(), monfilename, &monviewer);
-            TaoSetMonitor(
-                tao, TaoDefaultSMonitor, monviewer, reinterpret_cast<PetscErrorCode (*)(void **)>(PetscViewerDestroy));
+            TaoSetMonitor(tao,
+                          PetscQuirks_TaoDefaultMonitor,
+                          monviewer,
+                          reinterpret_cast<PetscErrorCode (*)(void **)>(PetscViewerDestroy));
         }
 
         void read(Input &in) override {
