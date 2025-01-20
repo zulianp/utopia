@@ -156,6 +156,12 @@ namespace utopia {
                     } else {
                         auto &field = meta_data.declare_field<Scalar>(::stk::topology::NODE_RANK, v.name, 1);
                         ::stk::mesh::put_field_on_mesh(field, part, v.n_components, nullptr);
+
+                        if (v.n_components == mesh->spatial_dimension() && v.n_components == 3) {
+                            ::stk::io::set_field_output_type(field, ::stk::io::FieldOutputType::VECTOR_3D);
+                        } else if (v.n_components == mesh->spatial_dimension() && v.n_components == 2) {
+                            ::stk::io::set_field_output_type(field, ::stk::io::FieldOutputType::VECTOR_2D);
+                        }
                     }
                 } else {
                     // TODO check if definition is correct
@@ -1776,6 +1782,12 @@ namespace utopia {
             } else {
                 auto &field = meta_data.declare_field<Scalar>(::stk::topology::NODE_RANK, name, 1);
                 ::stk::mesh::put_field_on_mesh(field, part, n_comp, nullptr);
+
+                if (n_comp == mesh().spatial_dimension() && n_comp == 3) {
+                    ::stk::io::set_field_output_type(field, ::stk::io::FieldOutputType::VECTOR_3D);
+                } else if (n_comp == mesh().spatial_dimension() && n_comp == 2) {
+                    ::stk::io::set_field_output_type(field, ::stk::io::FieldOutputType::VECTOR_2D);
+                }
             }
         }
 
@@ -1859,6 +1871,12 @@ namespace utopia {
 
                     stk_field = &meta_data.declare_field<Scalar>(::stk::topology::NODE_RANK, field.name(), 1);
                     ::stk::mesh::put_field_on_mesh(*stk_field, part, tensor_size, nullptr);
+
+                    if (tensor_size == mesh().spatial_dimension() && tensor_size == 3) {
+                        ::stk::io::set_field_output_type(*stk_field, ::stk::io::FieldOutputType::VECTOR_3D);
+                    } else if (tensor_size == mesh().spatial_dimension() && tensor_size == 2) {
+                        ::stk::io::set_field_output_type(*stk_field, ::stk::io::FieldOutputType::VECTOR_2D);
+                    }
                 }
             }
 
