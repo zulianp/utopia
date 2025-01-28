@@ -70,11 +70,6 @@ if(UTOPIA_ENABLE_TINY_EXPR)
 
 endif()
 
-# if(UTOPIA_ENABLE_PARMETIS)
-
-# endif()
-
-
 if(UTOPIA_ENABLE_MATRIX_IO)
     find_path(
         MATRIX_IO_DIR
@@ -83,9 +78,10 @@ if(UTOPIA_ENABLE_MATRIX_IO)
     )
     
     if(MATRIX_IO_DIR)
-        
       scan_directories(${MATRIX_IO_DIR} "." UTOPIA_BUILD_INCLUDES UTOPIA_HEADERS
                        UTOPIA_SOURCES)
+    else()
+      message(FATAL_ERROR "Could not find matrix.io")
     endif()
 
 endif()
