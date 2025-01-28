@@ -165,6 +165,8 @@ namespace utopia {
             return impl_->io.load_last_time_step();
         }
 
+        std::vector<double> SpaceIO::get_time_steps() const { return impl_->io.get_time_steps(); }
+
         int SpaceIO::num_time_steps() const { return impl_->io.num_time_steps(); }
         SpaceIO::Scalar SpaceIO::max_time() const { return impl_->io.max_time(); }
 

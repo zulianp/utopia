@@ -9,6 +9,8 @@
 #include <stk_mesh/base/Types.hpp>
 #include <stk_topology/topology.hpp>
 
+#include <cassert>
+
 namespace utopia {
     namespace stk {
 

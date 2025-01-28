@@ -10,6 +10,7 @@ namespace utopia {
 }  // namespace utopia
 
 #ifdef UTOPIA_ENABLE_PETSC
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3, 22, 2)
 // #warning "this code should go in the petsc backend folder"
 #include <petsc/private/snesimpl.h> /* For SNES_Solve event */
 #include <petscdm.h>
@@ -224,5 +225,6 @@ namespace utopia {
     };
 }  // namespace utopia
 
+#endif
 #endif  // UTOPIA_ENABLE_PETSC
 #endif

@@ -19,7 +19,9 @@ namespace utopia {
 
         explicit LargeScaleUnconstrainedBenchmark(const SizeType &n, const bool verbose) : n_(n), verbose_(verbose) {
             test_functions_.resize(7);
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3, 22, 2)
             test_functions_[0] = std::make_shared<Bratu2D<Matrix, Vector> >(n_);
+#endif
 
             test_functions_[1] = std::make_shared<Poisson3D<Matrix, Vector> >(n_);
             test_functions_[2] = std::make_shared<Morebv1D<Matrix, Vector> >(n_);
@@ -27,6 +29,7 @@ namespace utopia {
             test_functions_[3] = std::make_shared<Poisson2D<Matrix, Vector> >(n_);
 
             test_functions_[4] = std::make_shared<Poisson1D<Matrix, Vector> >(n_);
+
             test_functions_[5] = std::make_shared<Bratu1D<Matrix, Vector> >(n_);
 
             test_functions_[6] = std::make_shared<NonEllipse2D<Matrix, Vector> >(n_);
