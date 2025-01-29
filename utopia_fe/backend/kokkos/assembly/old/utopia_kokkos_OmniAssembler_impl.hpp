@@ -52,6 +52,7 @@
 #include "utopia_hyperelasticity_SaintVenantKirchoff_2.hpp"
 #include "utopia_hyperelasticity_SaintVenantKirchoff_3.hpp"
 
+#include "utopia_hyperelasticity_GuccioneCosta_3.hpp"
 #include "utopia_hyperelasticity_Yeoh.hpp"
 #include "utopia_hyperelasticity_Yeoh_2.hpp"
 #include "utopia_hyperelasticity_Yeoh_3.hpp"
@@ -212,6 +213,8 @@ namespace utopia {
                     "IncompressibleMooneyRivlin", 2);
                 register_assembler_variant<utopia::kokkos::IncompressibleMooneyRivlin<FunctionSpace, FE_t, 3>>(
                     "IncompressibleMooneyRivlin", 3);
+
+                register_assembler_variant<utopia::kokkos::GuccioneCosta<FunctionSpace, FE_t, 3>>("GuccioneCosta", 3);
 
                 register_generated_assemblers(*this);
 

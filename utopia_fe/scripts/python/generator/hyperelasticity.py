@@ -226,6 +226,29 @@ class MooneyRivlin(HyperElasticModel):
 		self.fun = C1 * (I1 - d) + C2 * (I2 - d)
 		self.name = 'MooneyRivlin'
 
+
+class GuccioneCosta(HyperElasticModel):
+	def __init__(self):
+		super().__init__(3)
+
+		I_C = self.I_C
+		J = self.J
+
+		Id = se.eye(3)
+		E = se.rational(1, 2) * (self.C - Id)
+
+		# mu sometimes is called C
+		mu, bf, bt, bfs, k = se.symbols('mu b_f b_t b_fs k')
+		self.params = [(mu, 2000), (bf, 8), (bt, 2), (bfs, 4), (k, 10)]
+
+		Q = bf   *  E[0, 0]**2
+		Q += bt  * (E[1, 1]**2 + E[2, 2]**2 + E[1, 2]**2 + E[2, 1]**2) 
+		Q += bfs * (E[0, 1]**2 + E[1, 0]**2 + E[0, 2]**2 + E[2, 0]**2)
+
+		self.fun = mu/2 * (se.exp(Q) - 1) + k * (J - 1)**2
+		self.name = 'GuccioneCosta'
+		self.use_default_parameter_reader = False
+
 # TEST (https://shaddenlab.gitlab.io/fenicsmechanics/chapters/demos-all.html)
 # https://www2.karlin.mff.cuni.cz/~hron/fenics-tutorial/elasticity/doc.html
 # https://abaqus-docs.mit.edu/2017/English/SIMACAEMATRefMap/simamat-c-hyperelastic.htm
@@ -257,7 +280,7 @@ class MooneyRivlin(HyperElasticModel):
 def generate_materials(d,simplify_expressions):
 	output_dir = f'../../../backend/kokkos/assembly/mech/generated/{d}D'
 	# output_dir = f'./workspace/{d}D'
-	models = [NeoHookeanOgden(d), NeoHookeanBower(d), NeoHookeanWang(d), NeoHookeanSmith(d), Fung(d), MooneyRivlin(d), SaintVenantKirchoff(d), Yeoh(d, 2)]
+	models = [NeoHookeanOgden(d), NeoHookeanBower(d), NeoHookeanWang(d), NeoHookeanSmith(d), Fung(d), MooneyRivlin(d), SaintVenantKirchoff(d), Yeoh(d, 2),]
 	# models.append(Yeoh(d, 3))
 	# models = [ NeoHookeanSmith(d), Fung(d)]
 	# models = [NeoHookeanOgden(d)]
@@ -273,9 +296,13 @@ def generate_materials(d,simplify_expressions):
 
 def main(args):
 	# generate_materials(2,True)
-	generate_materials(2,False)
+	# generate_materials(2,False)
 	# generate_materials(3, False)
 	# generate_materials(3, True)
+
+	guccione_output_dir = f'../../../backend/kokkos/assembly/mech/generated/3D'
+	GuccioneCosta().generate_files(guccione_output_dir, False)
+
 
 if __name__ == '__main__':
     main(sys.argv[1:])
