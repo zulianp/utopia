@@ -172,6 +172,8 @@ namespace utopia {
         }
 
         bool solve(Function_t &fun, Vector_t &x) {
+            UTOPIA_TRACE_SCOPE("BoxConstrainedFEFunctionSolver::solve");
+
             ensure_qp_solver();
 
             BoxConstraints<Vector_t> box;
