@@ -86,6 +86,23 @@ class NeoHookeanOgden(HyperElasticModel):
 		self.name = 'NeoHookeanOgden'
 		self.use_default_parameter_reader = True
 
+# https://onlinelibrary.wiley.com/doi/full/10.1002/cnm.2945
+class NeoHookeanSiguenza(HyperElasticModel):
+	def __init__(self, d):
+		super().__init__(d)
+
+		I_C = self.I_C
+		J = self.J
+
+		I_mod = J**(-2/3) * I_C
+
+		G, K = se.symbols('G K')
+		self.params = [(G, 1.0), (K, 1.0)]
+
+		self.fun = G/2 *(I_mod - d) + (K/2) * (log(J))**2
+		self.name = 'NeoHookeanSiguenza'
+		self.use_default_parameter_reader = False
+
 class NeoHookeanBower(HyperElasticModel):
 	def __init__(self, d):
 		super().__init__(d)
@@ -300,8 +317,10 @@ def main(args):
 	# generate_materials(3, False)
 	# generate_materials(3, True)
 
-	guccione_output_dir = f'../../../backend/kokkos/assembly/mech/generated/3D'
-	GuccioneCosta().generate_files(guccione_output_dir, False)
+	output_dir = f'../../../backend/kokkos/assembly/mech/generated/3D'
+	# GuccioneCosta().generate_files(output_dir, False)
+	NeoHookeanSiguenza(2).generate_files(output_dir, False)
+	NeoHookeanSiguenza(3).generate_files(output_dir, False)
 
 
 if __name__ == '__main__':
