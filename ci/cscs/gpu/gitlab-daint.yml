@@ -15,7 +15,7 @@ variables:
   UTOPIA_RUN_OPTS: '-data_path /utopia.src/utopia/data --verbose'
 
 build-utopia-baseimage:
-  extends: .container-builder
+  extends: .container-builder-cscs-gh200
   stage: build_base
   before_script:
     - DATA_TAG=`mktemp`
@@ -31,11 +31,11 @@ build-utopia-baseimage:
       dotenv: build.env
   variables:
     DOCKERFILE: ci/cscs/gpu/docker/Dockerfile.base
-    MARS_GIT_URL: 'https://bitbucket.org/zulianp/mars.git'
+    MARS_GIT_URL: 'https://github.com/dganellari/mars.git'
     MARS_GIT_REFS: 'refs/heads/development'
 
 build-utopia:
-  extends: .container-builder
+  extends: .container-builder-cscs-gh200
   stage: build
   variables:
     DOCKERFILE: ci/cscs/gpu/docker/Dockerfile
@@ -48,7 +48,7 @@ build-utopia:
 # this build configuration is used by Mars test pipeline
 # no tests will be performed in this pipeline, we only care about the buildability
 build-utopia-no_petsc:
-  extends: .container-builder
+  extends: .container-builder-cscs-gh200
   stage: build
   variables:
     DOCKERFILE: ci/cscs/gpu/docker/Dockerfile.no_petsc
@@ -58,7 +58,7 @@ build-utopia-no_petsc:
     # PERSIST_IMAGE_NAME: discard
 
 run-utopia-test:
-  extends: .container-runner-daint-gpu
+  extends: .container-runner-santis-gh200
   image: $PERSIST_IMAGE_NAME
   variables:
     SLURM_NTASKS: 1
@@ -71,7 +71,7 @@ run-utopia-test:
     - ./utopia_test $UTOPIA_RUN_OPTS
 
 run-utopia-benchmark:
-  extends: .container-runner-daint-gpu
+  extends: .container-runner-santis-gh200
   image: $PERSIST_IMAGE_NAME
   variables:
     SLURM_TIMELIMIT: "00:10:00"
@@ -82,7 +82,7 @@ run-utopia-benchmark:
     - ./utopia_bench $UTOPIA_RUN_OPTS
 
 run-utopia_fe-test:
-  extends: .container-runner-daint-gpu
+  extends: .container-runner-santis-gh200
   image: $PERSIST_IMAGE_NAME
   variables:
     SLURM_NTASKS: 1
@@ -96,7 +96,7 @@ run-utopia_fe-test:
     - env LD_PRELOAD=$CUDA_LIBS ./utopia_fe_test --verbose
 
 run-utopia_fe-mars:
-  extends: .container-runner-daint-gpu
+  extends: .container-runner-santis-gh200
   image: $PERSIST_IMAGE_NAME
   variables:
     SLURM_NTASKS: 1
