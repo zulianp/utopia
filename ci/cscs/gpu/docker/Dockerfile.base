@@ -1,9 +1,10 @@
 FROM ghcr.io/eth-cscs/docker-ci-ext/spack-base-containers/spack-build:spack0.23.0-ubuntu22.04-cuda12.4.1 AS builder
 
-RUN echo "${CSCS_REGISTRY}"
-RUN echo "${CSCS_REGISTRY_PATH}"
-
 ARG NUM_PROCS
+
+RUN apt-get -yqq update && apt-get -yqq upgrade \
+ && apt-get -yqq install build-essential gdb gfortran \
+ && rm -rf /var/lib/apt/lists/*
 
 RUN spack-install-helper \
     alps-gh200 \
