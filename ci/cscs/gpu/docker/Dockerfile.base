@@ -2,7 +2,9 @@ FROM ghcr.io/eth-cscs/docker-ci-ext/spack-base-containers/spack-build:spack0.23.
 
 ARG NUM_PROCS
 
-RUN spack install gcc@12.3.0
+RUN apt-get -yqq update && apt-get -yqq upgrade \
+ && apt-get -yqq install build-essential gdb gfortran \
+ && rm -rf /var/lib/apt/lists/*
 
 RUN spack compiler find --scope site && spack compilers
 
