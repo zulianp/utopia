@@ -1,5 +1,4 @@
-FROM ghcr.io/eth-cscs/docker-ci-ext/base-containers/spack-build:spack0.23.0-ubuntu22.04-cuda12.4.1 as builder
-
+FROM $CSCS_REGISTRY/docker-ci-ext/base-containers/public/spack-build:spack0.23.0-ubuntu22.04-cuda12.4.1 as builder
 
 ARG NUM_PROCS
 
@@ -44,7 +43,7 @@ RUN spack env activate /opt/spack-environment \
 # end of builder container, now we are ready to copy necessary files
 
 # copy only relevant parts to the final container
-FROM ghcr.io/eth-cscs/docker-ci-ext/base-containers/spack-build:spack0.23.0-ubuntu22.04-cuda12.4.1
+FROM $CSCS_REGISTRY/docker-ci-ext/base-containers/public/spack-build:spack0.23.0-ubuntu22.04-cuda12.4.1
 
 # copy mars installation to the final container
 ENV MARS_DIR=/mars.install
