@@ -2,12 +2,9 @@ FROM ghcr.io/eth-cscs/docker-ci-ext/spack-base-containers/spack-build:spack0.23.
 
 ARG NUM_PROCS
 
-RUN apt-get -yqq update && apt-get -yqq upgrade \
- && apt-get -yqq install build-essential gdb gfortran \
- && rm -rf /var/lib/apt/lists/*
-
 RUN spack-install-helper \
     alps-gh200 \
+    "gcc@12.4.0" \
     "trilinos@13.4.0 cxxstd=17 +amesos2 +belos ~epetra +intrepid2 +mumps +openmp +suite-sparse +superlu-dist +shards +nox" \
     "petsc +hypre ~complex +mumps +openmp +suite-sparse +superlu-dist" \
     "libmesh@1.7.1 +petsc" \
