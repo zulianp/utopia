@@ -11,10 +11,10 @@ RUN spack compilers
 
 RUN spack-install-helper \
     --target alps-gh200 \
-    "trilinos@13.4.0 cxxstd=17 +amesos2 +belos ~epetra +intrepid2 +mumps +openmp +suite-sparse +superlu-dist +shards +nox %gcc" \
-    "petsc@3.10.5 +hypre ~complex +mumps +openmp +suite-sparse +superlu-dist" \
-    "libmesh@1.7.1 ^petsc@3.10.5" \
-    "slepc ~arpack ^petsc@3.10.5" \
+    "trilinos cxxstd=17 +amesos2 +belos ~epetra +intrepid2 +mumps +openmp +suite-sparse +superlu-dist +shards +nox %gcc" \
+    "petsc +hypre ~complex +mumps +openmp +suite-sparse +superlu-dist" \
+    "libmesh +petsc" \
+    "slepc ~arpack" \
     "eigen" \
     "hypre" \
     "cmake" \
@@ -23,7 +23,7 @@ RUN spack-install-helper \
     "git" \
     "yaml-cpp" \
     "openblas" \
-    "suite-sparse@5.13.0"
+    "suite-sparse"
 
 RUN git clone https://github.com/dganellari/mars.git --branch development /mars.src
 RUN cd /mars.src && git submodule update --init --recursive
