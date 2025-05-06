@@ -6,11 +6,12 @@ RUN apt-get -yqq update && apt-get -yqq upgrade \
  && apt-get -yqq install build-essential gdb gfortran \
  && rm -rf /var/lib/apt/lists/*
 
-RUN spack compiler find --scope site && spack compilers
+RUN spack compiler find
+RUN spack compilers
 
 RUN spack-install-helper \
-    alps-gh200 \
-    "trilinos@13.4.0 cxxstd=17 +amesos2 +belos ~epetra +intrepid2 +mumps +openmp +suite-sparse +superlu-dist +shards +nox" \
+    --target alps-gh200 \
+    "trilinos@13.4.0 cxxstd=17 +amesos2 +belos ~epetra +intrepid2 +mumps +openmp +suite-sparse +superlu-dist +shards +nox %gcc" \
     "petsc +hypre ~complex +mumps +openmp +suite-sparse +superlu-dist" \
     "libmesh@1.7.1 +petsc" \
     "slepc ~arpack" \
