@@ -11,15 +11,15 @@ RUN spack compilers
 
 RUN spack-install-helper \
     --target alps-gh200 \
-    "trilinos cxxstd=17 +amesos2 +belos ~epetra +intrepid2 +mumps +openmp +suite-sparse +superlu-dist +shards +nox ^kokkos+wrapper %gcc" \
+    "trilinos cxxstd=17 +amesos2 +belos ~epetra +intrepid2 +mumps +openmp +suite-sparse +superlu-dist +shards +nox ^kokkos+wrapper %gcc" \ # most recent
     "petsc@3.17 +hypre ~complex +mumps +openmp +suite-sparse +superlu-dist" \
-    "libmesh +petsc ^petsc@3.17" \
+    # "libmesh +petsc ^petsc@3.17" \
     "slepc ~arpack ^petsc@3.17" \
     "eigen" \
     "hypre" \
     "cmake" \
     "py-numpy" \
-    "swig" \
+    # "swig" \
     "git" \
     "yaml-cpp" \
     "openblas" \
@@ -50,7 +50,7 @@ RUN spack env activate /opt/spack-environment \
 # end of builder container, now we are ready to copy necessary files
 
 # copy only relevant parts to the final container
-FROM ghcr.io/eth-cscs/docker-ci-ext/spack-base-containers/spack-build:spack0.23.0-ubuntu22.04-cuda12.4.1
+FROM ghcr.io/eth-cscs/docker-ci-ext/spack-base-containers/spack-runtime:spack0.23.0-ubuntu22.04-cuda12.4.1
 
 # copy mars installation to the final container
 ENV MARS_DIR=/mars.install
