@@ -3,7 +3,7 @@ FROM ghcr.io/eth-cscs/docker-ci-ext/spack-base-containers/spack-build:spack0.23.
 ARG NUM_PROCS
 
 RUN apt-get -yqq update && apt-get -yqq upgrade \
- && apt-get -yqq install build-essential gdb gfortran \
+ && apt-get -yqq install build-essential gdb gfortran m4 \
  && rm -rf /var/lib/apt/lists/*
 
 RUN spack compiler find
