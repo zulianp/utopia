@@ -22,8 +22,7 @@ RUN spack-install-helper \
     "openblas" \
     "suite-sparse"
 
-# Find yaml-cpp location and export useful paths
-RUN YAMLDIR=$(spack location -i yaml-cpp) && \
+RUN spack env activate /opt/spack-environment && YAMLDIR=$(spack location -i yaml-cpp) && \
     echo "export CMAKE_PREFIX_PATH=${YAMLDIR}:\$CMAKE_PREFIX_PATH" >> /etc/profile.d/z20_yamlcpp_env.sh && \
     echo "export LD_LIBRARY_PATH=${YAMLDIR}/lib:\$LD_LIBRARY_PATH" >> /etc/profile.d/z20_yamlcpp_env.sh && \
     chmod +x /etc/profile.d/z20_yamlcpp_env.sh
