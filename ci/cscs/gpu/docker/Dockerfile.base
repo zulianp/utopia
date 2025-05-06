@@ -14,7 +14,7 @@ RUN spack-install-helper \
     "trilinos@13.4.0 cxxstd=17 +amesos2 +belos ~epetra +intrepid2 +mumps +openmp +suite-sparse +superlu-dist +shards +nox %gcc" \
     "petsc@3.10.5 +hypre ~complex +mumps +openmp +suite-sparse +superlu-dist" \
     "libmesh@1.7.1 ^petsc@3.10.5" \
-    "slepc ~arpack" \
+    "slepc ~arpack ^petsc@3.10.5" \
     "eigen" \
     "hypre" \
     "cmake" \
