@@ -13,8 +13,8 @@ RUN spack-install-helper \
     --target alps-gh200 \
     "trilinos cxxstd=17 +amesos2 +belos ~epetra +intrepid2 +mumps +openmp +suite-sparse +superlu-dist +shards +nox ^kokkos+wrapper %gcc" \
     "petsc@3.20 +hypre ~complex +mumps +openmp +suite-sparse +superlu-dist" \
-    "libmesh +petsc ^petsc@3.21" \
-    "slepc ~arpack ^petsc@3.21" \
+    "libmesh +petsc ^petsc@3.20" \
+    "slepc ~arpack ^petsc@3.20" \
     "eigen" \
     "hypre" \
     "cmake" \
