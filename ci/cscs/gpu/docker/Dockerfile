@@ -15,7 +15,7 @@ ENV UTOPIA_DIR=/utopia.install
 RUN mkdir -p /utopia.src/build \
   && cd /utopia.src/build \
   && source /etc/profile.d/z10_spack_environment.sh \
-  && /etc/profile.d/z20_yamlcpp_env.sh \
+  && source /etc/profile.d/z20_yamlcpp_env.sh \
   && cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$UTOPIA_DIR \
@@ -38,7 +38,7 @@ RUN mkdir -p /utopia.src/build \
 RUN mkdir -p /utopia.src/utopia_fe/build \
   && cd /utopia.src/utopia_fe/build \
   && source /etc/profile.d/z10_spack_environment.sh \
-  && /etc/profile.d/z20_yamlcpp_env.sh \
+  && source /etc/profile.d/z20_yamlcpp_env.sh \
   && cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$UTOPIA_DIR \
