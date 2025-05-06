@@ -31,7 +31,7 @@ build-utopia-baseimage:
       dotenv: build.env
   variables:
     DOCKERFILE: ci/cscs/gpu/docker/Dockerfile.base
-    MARS_GIT_URL: 'https://github.com/dganellari/mars.git'
+    MARS_GIT_URL: 'https://bitbucket.org/zulianp/mars.git'
     MARS_GIT_REFS: 'refs/heads/development'
 
 build-utopia:
