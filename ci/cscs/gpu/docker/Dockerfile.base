@@ -9,18 +9,19 @@ RUN apt-get -yqq update && apt-get -yqq upgrade \
 RUN spack compiler find
 RUN spack compilers
 
+ENV SPACK_ADDL_FLAGS="ldflags='-L/usr/local/cuda/lib64'"
 RUN spack-install-helper \
     --target alps-gh200 \
-    "trilinos@13.4.0 cxxstd=17 +amesos2 +belos ~epetra +intrepid2 +mumps +openmp +suite-sparse +superlu-dist +shards +nox %gcc ^kokkos+wrapper%gcc" \
-    "petsc +hypre ~complex +mumps +openmp +suite-sparse +superlu-dist %gcc" \
-    "eigen %gcc" \
-    "hypre %gcc" \
-    "cmake %gcc" \
-    "py-numpy %gcc" \
-    "git %gcc" \
-    "yaml-cpp %gcc" \
-    "openblas %gcc" \
-    "suite-sparse@5.13.0 %gcc"
+    "$SPACK_ADDL_FLAGS trilinos@13.4.0 cxxstd=17 +amesos2 +belos ~epetra +intrepid2 +mumps +openmp +suite-sparse +superlu-dist +shards +nox %gcc ^kokkos+wrapper%gcc" \
+    "$SPACK_ADDL_FLAGS petsc +hypre ~complex +mumps +openmp +suite-sparse +superlu-dist %gcc" \
+    "$SPACK_ADDL_FLAGS eigen %gcc" \
+    "$SPACK_ADDL_FLAGS hypre %gcc" \
+    "$SPACK_ADDL_FLAGS cmake %gcc" \
+    "$SPACK_ADDL_FLAGS py-numpy %gcc" \
+    "$SPACK_ADDL_FLAGS git %gcc" \
+    "$SPACK_ADDL_FLAGS yaml-cpp %gcc" \
+    "$SPACK_ADDL_FLAGS openblas %gcc" \
+    "$SPACK_ADDL_FLAGS suite-sparse@5.13.0 %gcc"
 
 RUN spack env activate /opt/spack-environment && YAMLDIR=$(spack location -i yaml-cpp) && \
     echo "export CMAKE_PREFIX_PATH=${YAMLDIR}:\$CMAKE_PREFIX_PATH" >> /etc/profile.d/z20_yamlcpp_env.sh && \

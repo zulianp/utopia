@@ -61,6 +61,7 @@ run-utopia-test:
   extends: .container-runner-santis-gh200
   image: $PERSIST_IMAGE_NAME
   variables:
+    SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
     SLURM_TIMELIMIT: "00:10:00"
     USE_MPI: "NO"
@@ -74,6 +75,8 @@ run-utopia-benchmark:
   extends: .container-runner-santis-gh200
   image: $PERSIST_IMAGE_NAME
   variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 1
     SLURM_TIMELIMIT: "00:10:00"
     USE_MPI: "YES"
   script:
@@ -85,6 +88,7 @@ run-utopia_fe-test:
   extends: .container-runner-santis-gh200
   image: $PERSIST_IMAGE_NAME
   variables:
+    SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
     SLURM_TIMELIMIT: "00:10:00"
     USE_MPI: "YES"
@@ -99,6 +103,7 @@ run-utopia_fe-mars:
   extends: .container-runner-santis-gh200
   image: $PERSIST_IMAGE_NAME
   variables:
+    SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
     SLURM_TIMELIMIT: "00:10:00"
     USE_MPI: "YES"
