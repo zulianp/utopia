@@ -11,8 +11,8 @@ RUN spack compilers
 
 RUN spack-install-helper \
     --target alps-gh200 \
-    "trilinos cxxstd=17 +amesos2 +belos ~epetra +intrepid2 +mumps +openmp +suite-sparse +superlu-dist +shards +nox ^kokkos+wrapper %gcc" \
-    "petsc@3.17 +hypre ~complex +mumps +openmp +suite-sparse +superlu-dist" \
+    "trilinos@13.4.0 cxxstd=17 +amesos2 +belos ~epetra +intrepid2 +mumps +openmp +suite-sparse +superlu-dist +shards +nox" \
+    "petsc +hypre ~complex +mumps +openmp +suite-sparse +superlu-dist" \
     "eigen" \
     "hypre" \
     "cmake" \
@@ -20,7 +20,7 @@ RUN spack-install-helper \
     "git" \
     "yaml-cpp" \
     "openblas" \
-    "suite-sparse"
+    "suite-sparse@5.13.0"
 
 RUN spack env activate /opt/spack-environment && YAMLDIR=$(spack location -i yaml-cpp) && \
     echo "export CMAKE_PREFIX_PATH=${YAMLDIR}:\$CMAKE_PREFIX_PATH" >> /etc/profile.d/z20_yamlcpp_env.sh && \
