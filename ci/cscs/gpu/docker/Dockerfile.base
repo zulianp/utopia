@@ -25,6 +25,7 @@ RUN spack-install-helper \
 RUN spack env activate /opt/spack-environment && YAMLDIR=$(spack location -i yaml-cpp) && \
     echo "export CMAKE_PREFIX_PATH=${YAMLDIR}:\$CMAKE_PREFIX_PATH" >> /etc/profile.d/z20_yamlcpp_env.sh && \
     echo "export CMAKE_PREFIX_PATH=${YAMLDIR}/lib:\$CMAKE_PREFIX_PATH" >> /etc/profile.d/z20_yamlcpp_env.sh && \
+    echo "export YAML_CPP_LIB=${YAMLDIR}/lib" >> /etc/profile.d/z20_yamlcpp_env.sh && \
     echo "export LD_LIBRARY_PATH=${YAMLDIR}/lib:\$LD_LIBRARY_PATH" >> /etc/profile.d/z20_yamlcpp_env.sh && \
     chmod +x /etc/profile.d/z20_yamlcpp_env.sh
 

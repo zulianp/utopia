@@ -31,6 +31,8 @@ RUN mkdir -p /utopia.src/build \
     -DUTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE=ON \
     -DBLA_PREFER_PKGCONFIG=ON \
     -DCMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH \
+    -DCMAKE_EXE_LINKER_FLAGS="-L${YAML_CPP_LIB}" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-L${YAML_CPP_LIB}" \
     /utopia.src/utopia |& tee cmake_output.log \
   && ! grep 'Manually-specified variables were' cmake_output.log \
   && make -j$NUM_PROCS \
