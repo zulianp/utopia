@@ -6,6 +6,10 @@ namespace utopia {
         bool mute = false;
         in.get("mute", mute);
 
+        // if (!mute) {
+        //     printf("[Warning] std out is active!\n");
+        // }
+
         if (mute) {
             cout_ = utopia::make_unique<NullOStream>();
             cerr_ = utopia::make_unique<NullOStream>();

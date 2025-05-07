@@ -6,6 +6,20 @@
 #include "utopia_Config.hpp"
 
 #ifdef UTOPIA_ENABLE_PETSC
+
+#ifndef PETSC_VERSION_MAJOR
+#error "PETSC_VERSION_MAJOR undefined"
+#endif
+
+#ifndef PETSC_VERSION_MINOR
+#error "PETSC_VERSION_MINOR undefined"
+#endif
+
+#ifndef PETSC_VERSION_SUBMINOR
+#error "PETSC_VERSION_SUBMINOR undefined"
+
+#endif
+
 #define UTOPIA_PETSC_VERSION_LESS_THAN(major, minor, subminor)                                                        \
     ((PETSC_VERSION_MAJOR < (major) ||                                                                                \
       (PETSC_VERSION_MAJOR == (major) &&                                                                              \

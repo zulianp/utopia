@@ -1,5 +1,8 @@
 #include <cassert>
 #include <string>
+
+#include "utopia_Base.hpp"
+
 #include "utopia.hpp"
 #include "utopia_Benchmark.hpp"
 #include "utopia_BiCGStab.hpp"
@@ -19,8 +22,10 @@ namespace utopia {
 
         explicit LargeScaleUnconstrainedBenchmark(const SizeType &n, const bool verbose) : n_(n), verbose_(verbose) {
             test_functions_.resize(7);
+#ifdef UTOPIA_ENABLE_PETSC
 #if UTOPIA_PETSC_VERSION_LESS_THAN(3, 22, 2)
             test_functions_[0] = std::make_shared<Bratu2D<Matrix, Vector> >(n_);
+#endif
 #endif
 
             test_functions_[1] = std::make_shared<Poisson3D<Matrix, Vector> >(n_);
