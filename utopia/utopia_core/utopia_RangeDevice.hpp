@@ -41,13 +41,13 @@ namespace utopia {
     template <class T, typename F>
     inline static void parallel_for(const RangeDevice<T> &r, F f) {
         using Device = typename RangeDevice<T>::Device;
-        Device::template parallel_for(r.begin(), r.end(), f);
+        Device::parallel_for(r.begin(), r.end(), f);
     }
 
     template <class T, typename... Args>
     inline static void parallel_reduce(const RangeDevice<T> &r, Args &&... args) {
         using Device = typename RangeDevice<T>::Device;
-        Device::template parallel_reduce(r.begin(), r.end(), std::forward<Args>(args)...);
+        Device::parallel_reduce(r.begin(), r.end(), std::forward<Args>(args)...);
     }
 }  // namespace utopia
 
