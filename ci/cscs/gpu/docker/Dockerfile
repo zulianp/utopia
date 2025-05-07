@@ -30,6 +30,7 @@ RUN mkdir -p /utopia.src/build \
     -DUTOPIA_ENABLE_TRILINOS=ON \
     -DUTOPIA_REMOVE_TRILINOS_DEPRECATED_CODE=ON \
     -DBLA_PREFER_PKGCONFIG=ON \
+    -DCMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH \
     /utopia.src/utopia |& tee cmake_output.log \
   && ! grep 'Manually-specified variables were' cmake_output.log \
   && make -j$NUM_PROCS \
