@@ -16,7 +16,6 @@ RUN mkdir -p /utopia.src/build \
   && cd /utopia.src/build \
   && source /etc/profile.d/z10_spack_environment.sh \
   && source /etc/profile.d/z20_yamlcpp_env.sh \
-  && echo $CMAKE_PREFIX_PATH $YAML_CPP_LIB \
   && cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$UTOPIA_DIR \
@@ -54,6 +53,9 @@ RUN mkdir -p /utopia.src/utopia_fe/build \
     -DUTOPIA_ENABLE_LIBMESH=OFF \
     -DUTOPIA_ENABLE_MARS=ON \
     -DUTOPIA_ENABLE_MOONOLITH=OFF \
+    -DCMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH \
+    -DCMAKE_EXE_LINKER_FLAGS="-L${YAML_CPP_LIB}" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-L${YAML_CPP_LIB}" \
     /utopia.src/utopia_fe |& tee cmake_output.log \
   && ! grep 'Manually-specified variables were' cmake_output.log \
   && make -j$NUM_PROCS \
