@@ -11,7 +11,7 @@ RUN spack compilers
 
 RUN spack-install-helper \
     --target alps-gh200 \
-    "trilinos@13.4.0 cxxstd=17 +amesos2 +belos ~epetra +intrepid2 +mumps +openmp +suite-sparse +superlu-dist +shards +nox ^kokkos+wrapper %gcc" \
+    "trilinos@13.4.0 cxxstd=17 +amesos2 +belos ~epetra +intrepid2 +mumps +openmp +suite-sparse +superlu-dist +shards +nox %gcc ^kokkos+wrapper%gcc" \
     "petsc +hypre ~complex +mumps +openmp +suite-sparse +superlu-dist %gcc" \
     "eigen %gcc" \
     "hypre %gcc" \
