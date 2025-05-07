@@ -16,6 +16,7 @@ RUN mkdir -p /utopia.src/build \
   && cd /utopia.src/build \
   && source /etc/profile.d/z10_spack_environment.sh \
   && source /etc/profile.d/z20_yamlcpp_env.sh \
+  && echo $CMAKE_PREFIX_PATH $YAML_CPP_LIB \
   && cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$UTOPIA_DIR \
