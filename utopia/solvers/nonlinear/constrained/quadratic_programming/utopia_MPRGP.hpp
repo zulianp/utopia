@@ -344,6 +344,8 @@ namespace utopia {
 
     private:
         Scalar power_method(const Operator<Vector> &A) {
+            UTOPIA_TRACE_SCOPE("MPRGP::power_method");
+
             // Super simple power method to estimate the biggest eigenvalue
             assert(!empty(help_f2));
             help_f2.set(1.0);

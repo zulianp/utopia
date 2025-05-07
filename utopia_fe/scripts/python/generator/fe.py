@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Sympy
-from symengine import *
+# from symengine import *
 import sympy
 from sympy.utilities.codegen import codegen
 
@@ -161,6 +161,12 @@ class SymPyEngine:
 
     def trace(self, m):
         return sympy.trace(m)
+
+    def eye(self, n):
+        return sympy.eye(n)
+
+    def exp(self, expr):
+        return sympy.exp(expr)
 
     def inverse(self, mat):
         # return sympy.Inverse(mat)
