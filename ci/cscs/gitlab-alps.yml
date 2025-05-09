@@ -30,7 +30,7 @@ build-utopia-baseimage:
     reports:
       dotenv: build.env
   variables:
-    DOCKERFILE: ci/cscs/gpu/docker/Dockerfile.base
+    DOCKERFILE: ci/cscs/docker/Dockerfile.base
     MARS_GIT_URL: 'https://bitbucket.org/zulianp/mars.git'
     MARS_GIT_REFS: 'refs/heads/development'
 
@@ -38,7 +38,7 @@ build-utopia:
   extends: .container-builder-cscs-gh200
   stage: build
   variables:
-    DOCKERFILE: ci/cscs/gpu/docker/Dockerfile
+    DOCKERFILE: ci/cscs/docker/Dockerfile
     DOCKER_BUILD_ARGS: '["BASE_IMAGE=$BASE_IMAGE"]'
     GIT_SUBMODULE_STRATEGY: recursive
     # FIXME delete line below when config petsc+trilinos works on gpu node
@@ -51,7 +51,7 @@ build-utopia-no_petsc:
   extends: .container-builder-cscs-gh200
   stage: build
   variables:
-    DOCKERFILE: ci/cscs/gpu/docker/Dockerfile.no_petsc
+    DOCKERFILE: ci/cscs/docker/Dockerfile.no_petsc
     DOCKER_BUILD_ARGS: '["BASE_IMAGE=$BASE_IMAGE"]'
     GIT_SUBMODULE_STRATEGY: recursive
     # FIXME uncomment line below when config petsc+trilinos works on gpu node
