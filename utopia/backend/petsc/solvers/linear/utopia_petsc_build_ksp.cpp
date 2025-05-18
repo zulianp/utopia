@@ -103,11 +103,16 @@ PetscErrorCode KSPView_UTOPIA(KSP /*ksp*/, PetscViewer viewer) {
 
 #undef __FUNCT__
 #define __FUNCT__ "KSPSetFromOptions_UTOPIA"
-#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 18, 0)
-PetscErrorCode KSPSetFromOptions_UTOPIA(KSP /*ksp*/, PetscOptionItems * /*PetscOptionsObject*/) {
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 23, 0)
+PetscErrorCode KSPSetFromOptions_UTOPIA(KSP /*ksp*/, PetscOptionItems /*PetscOptionsObject*/)
 #else
-PetscErrorCode KSPSetFromOptions_UTOPIA(PetscOptionItems * /*PetscOptionsObject*/, KSP /*ksp*/) {
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 18, 0)
+PetscErrorCode KSPSetFromOptions_UTOPIA(KSP /*ksp*/, PetscOptionItems * /*PetscOptionsObject*/)
+#else
+PetscErrorCode KSPSetFromOptions_UTOPIA(PetscOptionItems * /*PetscOptionsObject*/, KSP /*ksp*/)
 #endif
+#endif
+{
     PetscFunctionBegin;
     // PetscErrorCode ierr;
 
