@@ -176,6 +176,8 @@ namespace utopia {
 
             // for(size_t i =0; i < test_functions.size(); i++)
             for (auto i = 0; i < 1; i++) {
+                if (!test_functions[i]) continue;
+
                 Vector x_init = test_functions[i]->initial_guess();
                 solver.solve(*test_functions[i], x_init);
 

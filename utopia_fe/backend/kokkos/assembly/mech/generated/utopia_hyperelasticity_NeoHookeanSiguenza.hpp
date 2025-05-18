@@ -2,28 +2,28 @@
 #define UTOPIA_TPL_HYPERELASTICITY_NeoHookeanSiguenza_hpp
 
 #include "utopia_Algorithms.hpp"
-#include "utopia_kokkos_AutoHyperElasticity.hpp"
-
+#include "utopia_kokkos_AutoHyperElasticityHetero.hpp"
 
 #ifndef UTOPIA_RESTRICT
 #define UTOPIA_RESTRICT __restrict__
 #endif
 
 namespace utopia {
-	namespace kernels {
+    namespace kernels {
 
-		template<typename T, int Dim>
-		class NeoHookeanSiguenza {
-		public:
-			static_assert(Dim < 0, "Automatically generated class -- NeoHookeanSiguenza -- needs template specialization");
+        template <typename T, int Dim>
+        class NeoHookeanSiguenza {
+        public:
+            static_assert(Dim < 0,
+                          "Automatically generated class -- NeoHookeanSiguenza -- needs template specialization");
+        };
+    }  // namespace kernels
 
-		};
-	}
+    namespace kokkos {
+        template <class FunctionSpace, class FE, int Dim>
+        using NeoHookeanSiguenza = utopia::kokkos::
+            AutoHyperElasticityHetero<FunctionSpace, FE, utopia::kernels::NeoHookeanSiguenza<typename FE::Scalar, Dim>>;
+    }
+}  // namespace utopia
 
-	namespace kokkos {
-		template<class FunctionSpace, class FE, int Dim>
-		using NeoHookeanSiguenza = utopia::kokkos::AutoHyperElasticity<FunctionSpace, FE, utopia::kernels::NeoHookeanSiguenza<typename FE::Scalar, Dim>>;
-	}
-}
-
-#endif //UTOPIA_TPL_HYPERELASTICITY_NeoHookeanSiguenza_hpp
+#endif  // UTOPIA_TPL_HYPERELASTICITY_NeoHookeanSiguenza_hpp
