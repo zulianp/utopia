@@ -1,6 +1,8 @@
 #ifndef UTOPIA_PETSC_EVAL_DOT_OP_DOT_HPP
 #define UTOPIA_PETSC_EVAL_DOT_OP_DOT_HPP
 
+#include "utopia_petsc_Base.hpp"
+
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_ForwardDeclarations.hpp"
 
@@ -129,14 +131,20 @@ namespace utopia {
                 assert(ierr == 0);
                 left_num = vals[0];
                 right_num = vals[1];
-            } else if (x2.raw_type() == x4.raw_type()) {
+            }
+#if !UTOPIA_PETSC_VERSION_EQ(3, 23, 2)
+            // There is a bug in VecMDot in version 3/23/2
+            // TODO if not fixed in release version make workaround
+            else if (x2.raw_type() == x4.raw_type()) {
                 Vec vecs[2] = {x1.raw_type(), x3.raw_type()};
                 PetscScalar vals[2] = {0., 0.};
                 ierr = VecMDot(x2.raw_type(), 2, vecs, vals);
                 assert(ierr == 0);
                 left_num = vals[0];
                 right_num = vals[1];
-            } else {
+            }
+#endif
+            else {
                 ierr = VecDotBegin(x1.raw_type(), x2.raw_type(), &left_num);
                 assert(ierr == 0);
                 ierr = VecDotBegin(x3.raw_type(), x4.raw_type(), &right_num);
