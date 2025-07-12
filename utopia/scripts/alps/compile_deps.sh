@@ -4,6 +4,7 @@ set -e
 set -x
 
 export DEPS=$HOME/deps
+export INSTALL_DIR=$DEPS/installations
 
 mkdir -p $DEPS
 cd $DEPS
@@ -30,9 +31,10 @@ cd $DEPS
 git clone https://github.com/petsc/petsc.git
 cd $DEPS/petsc
 
-./configure CFLAGS='-mcpu=neoverse-v2 -O3 -ffast-math -funroll-loops -march=armv9-a' CXXFLAGS='-mcpu=neoverse-v2 -O3 -ffast-math' --prefix=$DEPS/installations --with-mpi=1 --download-scalapack=yes --download-hypre=yes --download-metis=yes --download-parmetis=yes --with-cxx-dialect=C++11 --download-mumps=yes --with-debugging=0 --download-superlu_dist=yes --download-superlu=yes  --download-netcdf --download-pnetcdf --download-exodusii --download-zlib --download-triangle --download-ctetgen --download-hdf5
+./configure CFLAGS='-mcpu=neoverse-v2 -O3 -ffast-math -funroll-loops -march=armv9-a' CXXFLAGS='-mcpu=neoverse-v2 -O3 -ffast-math' --prefix=$DEPS/installations/petsc --with-mpi=1 --download-scalapack=yes --download-hypre=yes --download-metis=yes --download-parmetis=yes --with-cxx-dialect=C++11 --download-mumps=yes --with-debugging=0 --download-superlu_dist=yes --download-superlu=yes  --download-netcdf --download-pnetcdf --download-exodusii --download-zlib --download-triangle --download-ctetgen --download-hdf5  --download-fblaslapack=1 
 
-make -j72 && make install
+make PETSC_DIR=/users/zulianp/deps/petsc PETSC_ARCH=arch-linux-c-opt all
+make PETSC_DIR=/users/zulianp/deps/petsc PETSC_ARCH=arch-linux-c-opt install
 
 ####################
 # Install Trilinos
@@ -46,9 +48,9 @@ mkdir -p build && cd build
 
 cmake .. \
 -DCMAKE_INSTALL_PREFIX=$DEPS/installations/Trilinos \
--DNetcdf_LIBRARY_DIRS=$DEPS/petsc/lib/   \
--DTPL_Netcdf_INCLUDE_DIRS=$DEPS/petsc/include/ \
--DTPL_Netcdf_LIBRARIES=$DEPS/petsc/lib/libnetcdf.a \
+-DNetcdf_LIBRARY_DIRS=$DEPS/installations/petsc/lib/   \
+-DTPL_Netcdf_INCLUDE_DIRS=$DEPS/installations/petsc/include/ \
+-DTPL_Netcdf_LIBRARIES=$DEPS/installations/petsc/lib/libnetcdf.a \
 -DTrilinos_ENABLE_Fortran:BOOL=OFF \
 -DAmesos2_ENABLE_EXPLICIT_INSTANTIATION=ON \
 -DBUILD_SHARED_LIBS=OFF \
@@ -117,17 +119,17 @@ make -j72 && make install
 ####################
 
 cd $HOME
-git clone https://bitbucket.org/zulianp/utopia.git
+git clone https://github.com/zulianp/utopia.git
 git submodule update --init --recursive
 cd $HOME/utopia/utopia
 mkdir build && cd build
 
 cmake .. \
-	-DCMAKE_INSTALL_PREFIX=$DEPS/installations \
+	-DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/utopia \
 	-DUTOPIA_ENABLE_FLUYA_MODE=ON \
 	-DUTOPIA_INSTALL_YAML=ON \
-	-DPetsc_DIR=$DEPS/petsc \ 
-	-DTrilinos_DIR=$DEPS/Trilinos/lib/cmake/Trilinos 
+	-DPetsc_DIR=$INSTALL_DIR/petsc \ 
+	-DTrilinos_DIR=$INSTALL_DIR/Trilinos/lib/cmake/Trilinos 
 
 make yaml-cpp
 

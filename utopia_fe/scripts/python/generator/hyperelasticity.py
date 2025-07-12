@@ -223,26 +223,30 @@ class MooneyRivlin(HyperElasticModel):
 	def __init__(self, d):
 		super().__init__(d)
 
-		I_C = self.I_C
+		C1, C2, K = se.symbols('C1 C2 K')
+		self.params = [(C1, 0.083), (C2, 0.083), (K, 166.67)]
+
 		J = self.J
-		C = self.C
+		C = self.F * self.F.T # Left Cauchy-Green
 
-		C1, C2 = se.symbols('C1 C2')
-		self.params = [(C1, 1.0), (C2, 1.0)]
-		
-		CikxCki = 0
-		for i in range(0, d):
-			for k in range(0, d):
-				CikxCki += C[i,k] * C[k,i]
+		I1 = se.trace(C)
+		I2 = se.rational(1, 2) * (I1 ** 2 - se.trace(C*C))
 
-		I_C2 = se.rational(1, 2) * (I_C**2 - CikxCki)
-		# I_C3 = det(C)
+		Jm23 = J**se.rational(-2, 3)
+		Jm43 = J**se.rational(-4, 3)
+		I1_bar = Jm23 * I1
+		I2_bar = Jm43 * I2
 
-		I1 = J**(-se.rational(d-1, d))*I_C
-		I2 = J**(-se.rational(d+1, d))*I_C2;
-		self.fun = C1 * (I1 - d) + C2 * (I2 - d)
+		I1_ref = d
+		I2_ref = d
+
+		if d == 2:
+			I2_ref = 1
+
+		W_iso =  C1 * (I1_bar - I1_ref) + C2 * (I2_bar - I2_ref)
+		W_vol = (K/2) * log(J)**2
+		self.fun = W_iso + W_vol
 		self.name = 'MooneyRivlin'
-
 
 class GuccioneCosta(HyperElasticModel):
 	def __init__(self):
@@ -298,13 +302,15 @@ def generate_materials(d,simplify_expressions):
 	output_dir = f'../../../backend/kokkos/assembly/mech/generated/{d}D'
 	# output_dir = f'./workspace/{d}D'
 	models = [NeoHookeanOgden(d), NeoHookeanBower(d), NeoHookeanWang(d), NeoHookeanSmith(d), Fung(d), MooneyRivlin(d), SaintVenantKirchoff(d), Yeoh(d, 2),]
+	models = [MooneyRivlin(d)] 
+
 	# models.append(Yeoh(d, 3))
 	# models = [ NeoHookeanSmith(d), Fung(d)]
 	# models = [NeoHookeanOgden(d)]
 	# models = [Fung(d)]
 	# models = [IncompressibleMooneyRivlin(d)] 
 	# models = [Yeoh(d, 3)]
-
+	 
 	# models = [Yeoh(d, 1)]
 	# models = [SaintVenantKirchoff(d)]
 
@@ -313,15 +319,16 @@ def generate_materials(d,simplify_expressions):
 
 def main(args):
 	# generate_materials(2,True)
-	# generate_materials(2,False)
-	# generate_materials(3, False)
+	generate_materials(2,False)
+	generate_materials(3, False)
 	# generate_materials(3, True)
 
 	output_dir = f'../../../backend/kokkos/assembly/mech/generated/3D'
 	# GuccioneCosta().generate_files(output_dir, False)
-	NeoHookeanSiguenza(2).generate_files(output_dir, False)
-	NeoHookeanSiguenza(3).generate_files(output_dir, False)
-
+	# NeoHookeanSiguenza(2).generate_files(output_dir, False)
+	# NeoHookeanSiguenza(3).generate_files(output_dir, False)
+	# MooneyRivlin(3).generate_files(output_dir, False)
+	# MooneyRivlin(2).generate_files(output_dir, False)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
