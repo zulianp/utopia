@@ -248,6 +248,35 @@ class MooneyRivlin(HyperElasticModel):
 		self.fun = W_iso + W_vol
 		self.name = 'MooneyRivlin'
 
+class IncompressibleMooneyRivlin(HyperElasticModel):
+	def __init__(self, d):
+		super().__init__(d)
+
+		C1, C2, K = se.symbols('C1 C2 K')
+		self.params = [(C1, 0.083), (C2, 0.083), (K, 166.67)]
+
+		J = self.J
+		C = self.F * self.F.T # Left Cauchy-Green
+
+		I1 = se.trace(C)
+		I2 = se.rational(1, 2) * (I1 ** 2 - se.trace(C*C))
+
+		Jm23 = J**se.rational(-2, 3)
+		Jm43 = J**se.rational(-4, 3)
+		I1_bar = Jm23 * I1
+		I2_bar = Jm43 * I2
+
+		I1_ref = d
+		I2_ref = d
+
+		if d == 2:
+			I2_ref = 1
+
+		W_iso =  C1 * (I1_bar - I1_ref) + C2 * (I2_bar - I2_ref)
+		W_vol = (K/2) * (J - 1)**2
+		self.fun = W_iso + W_vol
+		self.name = 'IncompressibleMooneyRivlin'
+
 class GuccioneCosta(HyperElasticModel):
 	def __init__(self):
 		super().__init__(3)
@@ -302,7 +331,8 @@ def generate_materials(d,simplify_expressions):
 	output_dir = f'../../../backend/kokkos/assembly/mech/generated/{d}D'
 	# output_dir = f'./workspace/{d}D'
 	models = [NeoHookeanOgden(d), NeoHookeanBower(d), NeoHookeanWang(d), NeoHookeanSmith(d), Fung(d), MooneyRivlin(d), SaintVenantKirchoff(d), Yeoh(d, 2),]
-	models = [MooneyRivlin(d)] 
+	# models = [MooneyRivlin(d)] 
+	models = [IncompressibleMooneyRivlin(d)] 
 
 	# models.append(Yeoh(d, 3))
 	# models = [ NeoHookeanSmith(d), Fung(d)]
@@ -319,7 +349,7 @@ def generate_materials(d,simplify_expressions):
 
 def main(args):
 	# generate_materials(2,True)
-	generate_materials(2,False)
+	generate_materials(2, False)
 	generate_materials(3, False)
 	# generate_materials(3, True)
 
