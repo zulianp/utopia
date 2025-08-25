@@ -51,6 +51,8 @@ mkdir -p build && cd build
 
 cmake .. \
 -DCMAKE_INSTALL_PREFIX=$DEPS/installations/Trilinos \
+-DCMAKE_C_COMPILER=/user-environment/env/default/bin/mpicc \
+-DCMAKE_CXX_COMPILER=/user-environment/env/default/bin/mpicxx \
 -DCMAKE_BUILD_TYPE=Release \
 -DCMAKE_CXX_STANDARD=17 \
 -DTPL_ENABLE_Kokkos=ON  -DTPL_Kokkos_ROOT=/user-environment/env/default \
@@ -80,28 +82,30 @@ cmake .. \
 -DTrilinos_ENABLE_STKIO:BOOL=ON \
 -DTrilinos_ENABLE_STKMesh:BOOL=ON \
 -DTrilinos_ENABLE_STKSearch:BOOL=ON \
--DTrilinos_ENABLE_STKBalance:BOOL=ON \
+-DTrilinos_ENABLE_STKBalance:BOOL=OFF \
 -DTrilinos_ENABLE_STKSimd:BOOL=ON \
 -DTrilinos_ENABLE_STKTopology:BOOL=ON \
 -DTrilinos_ENABLE_STKTransfer:BOOL=ON \
 -DTrilinos_ENABLE_STKUtil:BOOL=ON \
 -DTrilinos_ENABLE_Tpetra:BOOL=ON \
 -DTrilinos_ENABLE_TpetraCore:BOOL=ON \
--DTrilinos_ENABLE_Zoltan2:BOOL=ON \
--DTrilinos_ENABLE_Zoltan:BOOL=ON \
+-DTrilinos_ENABLE_Zoltan2:BOOL=OFF \
+-DTrilinos_ENABLE_Zoltan:BOOL=OFF \
 -DTPL_ENABLE_HDF5:BOOL=ON \
--DHDF5_INCLUDE_DIRS=$DEPS/installations/petsc/include/ \
--DHDF5_LIBRARY_DIRS=$DEPS/installations/petsc/lib/ \
--DTPL_HDF5_LIBRARIES=$DEPS/installations/petsc/lib/libhdf5.so \
+-DHDF5_INCLUDE_DIRS=$INSTALL_DIR/petsc/include/ \
+-DHDF5_LIBRARY_DIRS=$INSTALL_DIR/petsc/lib/ \
+-DTPL_HDF5_LIBRARIES=$INSTALL_DIR/petsc/lib/libhdf5.so \
 -DTPL_ENABLE_Netcdf:BOOL=ON \
--DNetcdf_LIBRARY_DIRS=$DEPS/installations/petsc/lib/   \
--DTPL_Netcdf_INCLUDE_DIRS=$DEPS/installations/petsc/include/ \
+-DNetcdf_LIBRARY_DIRS=$INSTALL_DIR/petsc/lib/   \
+-DTPL_Netcdf_INCLUDE_DIRS=$INSTALL_DIR/petsc/include/ \
 -DTPL_ENABLE_Pnetcdf::BOOL=ON \
--DTPL_Netcdf_LIBRARIES="$DEPS/installations/petsc/lib/libpnetcdf.so;$DEPS/installations/petsc/lib/libnetcdf.so;-ldl" \
--DPnetcdf_INCLUDE_DIRS=$DEPS/installations/petsc/include \
+-DTPL_Netcdf_LIBRARIES="$INSTALL_DIR/petsc/lib/libpnetcdf.so;$INSTALL_DIR/petsc/lib/libnetcdf.so;-ldl" \
+-DTPL_Pnetcdf_LIBRARIES="$INSTALL_DIR/petsc/lib/libpnetcdf.so;$INSTALL_DIR/petsc/lib/libnetcdf.so;-ldl" \
+-DPnetcdf_INCLUDE_DIRS=$INSTALL_DIR/petsc/include \
 -DBUILD_SHARED_LIBS=OFF \
 -DTpetra_INST_COMPLEX_DOUBLE=OFF \
 -DTpetra_INST_INT_LONG_LONG:BOOL=OFF \
+-DTpetra_INST_SERIAL:BOOL=ON -DTpetra_INST_OPENMP:BOOL=ON -DTrilinos_ENABLE_OpenMP:BOOL=ON \
 -DTPL_ENABLE_Boost:BOOL=OFF \
 -DTPL_ENABLE_SuperLU:BOOL=OFF \
 -DTrilinos_ALLOW_NO_PACKAGES:BOOL=OFF \
@@ -116,7 +120,8 @@ cmake .. \
 -DTrilinos_ENABLE_STKUnit_test_utils:BOOL=OFF \
 -DTrilinos_ENABLE_STKUnit_tests:BOOL=OFF \
 -DTrilinos_ENABLE_TESTS:BOOL=OFF  \
--DKokkos_BINARY_DIR=/user-environment/env/default/bin -DKokkos_CUDA_DIR=/user-environment/env/default/
+-DKokkos_BINARY_DIR=/user-environment/env/default/bin -DKokkos_CUDA_DIR=/user-environment/env/default/ \
+-DBLAS_LIBRARY_DIRS=$INSTALL_DIR/petsc/lib -DTPL_LAPACK_LIBRARIES=$INSTALL_DIR/petsc/lib/libscalapack.so  -DTPL_BLAS_LIBRARIES='/users/zulianp/deps/installations/petsc/lib/libfblas.a'
 
 make -j72 && make install
  # && \
