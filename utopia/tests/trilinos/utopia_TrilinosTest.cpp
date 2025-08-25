@@ -434,7 +434,7 @@ namespace utopia {
             const double val_3 = norm1(D);
 
             if (!approxeq(val_3, size(A).get(1) * 1.)) {
-                m_utopia_error("diag does not work on for tpetra rectangular matrices in parallel (nor serial)");
+                m_utopia_warning("diag does not work on for tpetra rectangular matrices in parallel (nor serial)");
             }
         }
 
@@ -787,7 +787,7 @@ namespace utopia {
 #ifdef UTOPIA_ENABLE_PETSC
             test_mg<PetscMatrix, PetscVector>();
 #endif  // UTOPIA_ENABLE_PETSC
-            // trilinos version
+        // trilinos version
             test_mg<TpetraMatrixd, TpetraVectord>();
         }
 

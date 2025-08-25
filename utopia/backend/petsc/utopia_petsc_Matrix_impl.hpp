@@ -1,7 +1,7 @@
 #ifndef UTOPIA_PETSC_MATRIX_IMPL_HPP
 #define UTOPIA_PETSC_MATRIX_IMPL_HPP
 
-//#include "utopia_petsc_Each.hpp"
+// #include "utopia_petsc_Each.hpp"
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Vector.hpp"
 
@@ -378,7 +378,7 @@ namespace utopia {
 
     template <class Op>
     void PetscMatrix::op_transform(const Op &op) {
-        transform_values([op](const Scalar &value) -> Scalar { return op.template apply(value); });
+        transform_values([op](const Scalar &value) -> Scalar { return op.apply(value); });
     }
 
     template <class Op>

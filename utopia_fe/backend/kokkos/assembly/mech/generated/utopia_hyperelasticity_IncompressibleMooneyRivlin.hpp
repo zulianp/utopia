@@ -2,7 +2,7 @@
 #define UTOPIA_TPL_HYPERELASTICITY_IncompressibleMooneyRivlin_hpp
 
 #include "utopia_Algorithms.hpp"
-#include "utopia_kokkos_MixedHyperElasticity.hpp"
+#include "utopia_kokkos_AutoHyperElasticity.hpp"
 
 
 #ifndef UTOPIA_RESTRICT
@@ -20,10 +20,9 @@ namespace utopia {
 		};
 	}
 
-
 	namespace kokkos {
 		template<class FunctionSpace, class FE, int Dim>
-		using IncompressibleMooneyRivlin = utopia::kokkos::MixedHyperElasticity<FunctionSpace, FE, utopia::kernels::IncompressibleMooneyRivlin<typename FE::Scalar, Dim>>;
+		using IncompressibleMooneyRivlin = utopia::kokkos::AutoHyperElasticity<FunctionSpace, FE, utopia::kernels::IncompressibleMooneyRivlin<typename FE::Scalar, Dim>>;
 	}
 }
 
