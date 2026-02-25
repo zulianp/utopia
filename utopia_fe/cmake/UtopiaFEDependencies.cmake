@@ -64,7 +64,8 @@ if(UTOPIA_ENABLE_SFEM)
 
   FetchContent_MakeAvailable(sfem)
   add_library(SFEM::sfem ALIAS sfem)
-  list(APPEND UTOPIA_FE_SUBMODULES sfem)
+  # Link against the exported SFEM namespace so UtopiaFE exports are portable.
+  list(APPEND UTOPIA_FE_SUBMODULES SFEM::sfem)
 endif()
 
 if(UTOPIA_ENABLE_LIBMESH)
