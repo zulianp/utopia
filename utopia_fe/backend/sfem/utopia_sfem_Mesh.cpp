@@ -8,6 +8,7 @@
 #include "sfem_base.h"
 #include "sfem_defs.h"
 #include "sfem_mesh_write.h"
+#include "sfem_Mesh.hpp"
 
 #include "crs_graph.h"
 #include "extract_sharp_features.h"
@@ -50,9 +51,9 @@ namespace utopia {
         class Mesh::Impl {
         public:
             Communicator comm;
-            mesh_t mesh;
-            Impl() : comm(Communicator::get_default()) { mesh_init(&mesh); }
-            ~Impl() { mesh_destroy(&mesh); }
+            std::shared_ptr<::sfem::Mesh> mesh;
+            Impl() : comm(Communicator::get_default()) { }
+            ~Impl() {  }
         };
 
         Mesh::Mesh() : impl_(utopia::make_unique<Impl>()) {}
@@ -61,10 +62,11 @@ namespace utopia {
         const Mesh::Communicator &Mesh::comm() const { return impl_->comm; }
         Mesh::Communicator &Mesh::comm() { return impl_->comm; }
 
-        int Mesh::spatial_dimension() const { return impl_->mesh.spatial_dim; }
+        int Mesh::spatial_dimension() const { return impl_->mesh->spatial_dimension(); }
 
         bool Mesh::read(const Path &path) {
-            return SFEM_OK == mesh_read(impl_->comm.get(), path.c_str(), &impl_->mesh);
+            impl_->mesh = ::sfem::Mesh::create_from_file(::sfem::Communicator::wrap(impl_->comm.get()), path.c_str());
+            return impl_->mesh != nullptr;
         }
 
         void Mesh::read(Input &in) {
@@ -76,7 +78,7 @@ namespace utopia {
         }
 
         void Mesh::create_vector_nodal(Vector &out, int ncomponents) const {
-            out.zeros(layout(impl_->comm, impl_->mesh.n_owned_nodes * ncomponents, impl_->mesh.nnodes * ncomponents));
+            out.zeros(layout(impl_->comm, impl_->mesh->n_owned_nodes() * ncomponents, impl_->mesh->n_nodes() * ncomponents));
         }
 
         void Mesh::write_nodal_field(const Path &path, const Vector &field) {
@@ -86,7 +88,7 @@ namespace utopia {
 
         bool Mesh::write(const Path &path) {
             UTOPIA_TRACE_SCOPE("sfem::Mesh::write");
-            return SFEM_OK == mesh_write(path.c_str(), &impl_->mesh);
+            return SFEM_SUCCESS == impl_->mesh->write(path.c_str());
         }
 
         void Mesh::describe(std::ostream &os) const {
@@ -101,12 +103,12 @@ namespace utopia {
         void *Mesh::raw_type() const { return (void *)&impl_->mesh; }
 
         ArrayView<const Mesh::SizeType> Mesh::node_mapping() const {
-            return ArrayView<const SizeType>(impl_->mesh.node_mapping, impl_->mesh.nnodes);
+            return ArrayView<const SizeType>(impl_->mesh->node_mapping()->data(), impl_->mesh->n_nodes());
         }
 
-        Mesh::SizeType Mesh::n_owned_elements() const { return impl_->mesh.n_owned_elements; }
+        Mesh::SizeType Mesh::n_owned_elements() const { return impl_->mesh->n_owned_elements(); }
 
-        Mesh::SizeType Mesh::n_local_nodes() const { return impl_->mesh.n_owned_nodes; }
+        Mesh::SizeType Mesh::n_local_nodes() const { return impl_->mesh->n_owned_nodes(); }
 
         std::shared_ptr<MeshView> Mesh::sharp_edges(const Scalar angle_threshold) const {
             ptrdiff_t n_sharp_edges = 0;
@@ -116,18 +118,18 @@ namespace utopia {
             {
                 count_t *rowptr = 0;
                 idx_t *colidx = 0;
-                build_crs_graph_for_elem_type(impl_->mesh.element_type,
-                                              impl_->mesh.nelements,
-                                              impl_->mesh.nnodes,
-                                              impl_->mesh.elements,
+                build_crs_graph_for_elem_type(impl_->mesh->element_type(),
+                                              impl_->mesh->n_elements(),
+                                              impl_->mesh->n_nodes(),
+                                              impl_->mesh->elements()->data(),
                                               &rowptr,
                                               &colidx);
 
-                extract_sharp_edges((enum ElemType)impl_->mesh.element_type,
-                                    impl_->mesh.nelements,
-                                    impl_->mesh.nnodes,
-                                    impl_->mesh.elements,
-                                    impl_->mesh.points,
+                extract_sharp_edges((enum ElemType)impl_->mesh->element_type(),
+                                    impl_->mesh->n_elements(),
+                                    impl_->mesh->n_nodes(),
+                                    impl_->mesh->elements()->data(),
+                                    impl_->mesh->points()->data(),
                                     // CRS-graph (node to node)
                                     rowptr,
                                     colidx,
@@ -154,8 +156,8 @@ namespace utopia {
                 elements = ArrayView<idx_t *>();
             };
 
-            view->impl().points = ArrayView<geom_t *>(impl_->mesh.points, impl_->mesh.spatial_dim);
-            view->impl().nnodes = impl_->mesh.nnodes;
+            view->impl().points = ArrayView<geom_t *>(impl_->mesh->points()->data(), impl_->mesh->spatial_dimension());
+            view->impl().nnodes = impl_->mesh->n_nodes();
             view->impl().destroy_points = [](ArrayView<geom_t *> &points) { points = ArrayView<geom_t *>(); };
             view->impl().element_type = BEAM2;
             return view;
@@ -167,10 +169,10 @@ namespace utopia {
             ptrdiff_t n_disconnected_elements = 0;
             element_idx_t *disconnected_elements = 0;
 
-            extract_disconnected_faces((enum ElemType)impl_->mesh.element_type,
-                                       impl_->mesh.nelements,
-                                       impl_->mesh.nnodes,
-                                       impl_->mesh.elements,
+            extract_disconnected_faces((enum ElemType)impl_->mesh->element_type(),
+                                       impl_->mesh->n_elements(),
+                                       impl_->mesh->n_nodes(),
+                                       impl_->mesh->elements()->data(),
                                        se.nelements,
                                        se.elements[0],
                                        se.elements[1],
@@ -178,10 +180,10 @@ namespace utopia {
                                        &disconnected_elements);
 
             if (disconnected_elements) {
-                int nxe = elem_num_nodes((enum ElemType)impl_->mesh.element_type);
+                int nxe = elem_num_nodes((enum ElemType)impl_->mesh->element_type());
                 idx_t **selected_elements = allocate_elements(nxe, n_disconnected_elements);
                 select_elements(
-                    nxe, n_disconnected_elements, disconnected_elements, impl_->mesh.elements, selected_elements);
+                    nxe, n_disconnected_elements, disconnected_elements, impl_->mesh->elements()->data(), selected_elements);
 
                 auto view = std::make_shared<MeshView>();
                 view->impl().elements = ArrayView<idx_t *>(selected_elements, nxe);
@@ -191,11 +193,11 @@ namespace utopia {
                     elements = ArrayView<idx_t *>();
                 };
 
-                view->impl().points = ArrayView<geom_t *>(impl_->mesh.points, impl_->mesh.spatial_dim);
-                view->impl().nnodes = impl_->mesh.nnodes;
+                view->impl().points = ArrayView<geom_t *>(impl_->mesh->points()->data(), impl_->mesh->spatial_dimension());
+                view->impl().nnodes = impl_->mesh->n_nodes();
                 view->impl().destroy_points = [](ArrayView<geom_t *> &points) { points = ArrayView<geom_t *>(); };
 
-                view->impl().element_type = (enum ElemType)impl_->mesh.element_type;
+                view->impl().element_type = (enum ElemType)impl_->mesh->element_type();
                 return view;
 
             } else {
@@ -210,7 +212,7 @@ namespace utopia {
             idx_t *corners = nullptr;
 
             se.nelements = extract_sharp_corners(
-                impl_->mesh.nnodes, se.nelements, se.elements[0], se.elements[1], &n_corners, &corners, remove_edges);
+                impl_->mesh->n_nodes(), se.nelements, se.elements[0], se.elements[1], &n_corners, &corners, remove_edges);
 
             if (n_corners) {
                 idx_t **elements = (idx_t **)malloc(sizeof(idx_t *));
@@ -224,8 +226,8 @@ namespace utopia {
                     elements = ArrayView<idx_t *>();
                 };
 
-                view->impl().points = ArrayView<geom_t *>(impl_->mesh.points, impl_->mesh.spatial_dim);
-                view->impl().nnodes = impl_->mesh.nnodes;
+                view->impl().points = ArrayView<geom_t *>(impl_->mesh->points()->data(), impl_->mesh->spatial_dimension());
+                view->impl().nnodes = impl_->mesh->n_nodes();
                 view->impl().destroy_points = [](ArrayView<geom_t *> &points) { points = ArrayView<geom_t *>(); };
                 view->impl().element_type = NODE1;
 
