@@ -28,7 +28,9 @@ namespace utopia {
         void read(Input &in) override {
             Super::read(in);
             in.get("enable_restart", enable_restart_);
-            export_time_integrator_fields_ = enable_restart_;
+            if (enable_restart_) {
+                export_time_integrator_fields_ = enable_restart_;
+            }
 
             if (!export_time_integrator_fields_) {
                 in.get("output",
