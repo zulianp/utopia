@@ -33,7 +33,7 @@ static std::shared_ptr<FE> make_ref_tet() {
     int n_dims = 3;
 
     FE::DynRankView device_cell_points("cell_points", n_cells, n_nodes, n_dims);
-    FE::DynRankView::HostMirror cell_points = ::Kokkos::create_mirror_view(device_cell_points);
+    auto cell_points = ::Kokkos::create_mirror_view(device_cell_points);
 
     for (int c = 0; c < n_cells; ++c) {
         for (int n = 0; n < n_nodes; ++n) {
@@ -55,7 +55,7 @@ static std::shared_ptr<FE> make_ref_tet() {
 void intrepid2_basis_functions() {
     auto fe_ptr = make_ref_tet();
 
-    FE::DynRankView::HostMirror host_measure = ::Kokkos::create_mirror_view(fe_ptr->measure());
+    auto host_measure = ::Kokkos::create_mirror_view(fe_ptr->measure());
     ::Kokkos::deep_copy(host_measure, fe_ptr->measure());
 
     auto actual = host_measure(0, 0);

@@ -103,8 +103,9 @@ namespace utopia {
             StkViewDevice_t<Scalar> device_cell_points("cell_points", n_cells, n_nodes_x_elem, spatial_dim);
             StkIntViewDevice_t device_element_tags("element_tags", n_cells);
 
-            typename StkViewDevice_t<Scalar>::HostMirror cell_points = Kokkos::create_mirror_view(device_cell_points);
-            StkIntViewDevice_t::HostMirror element_tags = Kokkos::create_mirror_view(device_element_tags);
+            auto cell_points = Kokkos::create_mirror_view(device_cell_points);
+
+            auto element_tags = Kokkos::create_mirror_view(device_element_tags);
 
             int elem_idx = 0;
             for (const auto &ib : buckets) {
@@ -227,7 +228,7 @@ namespace utopia {
         using BucketVector_t = ::stk::mesh::BucketVector;
         using Entity_t = ::stk::mesh::Entity;
 
-        typename StkViewDevice_t<Scalar>::HostMirror element_matrices =
+        auto element_matrices =
             ::Kokkos::create_mirror_view(device_element_matrices);
         ::Kokkos::deep_copy(element_matrices, device_element_matrices);
 
@@ -370,7 +371,7 @@ namespace utopia {
                                     const StkViewDevice_t<Scalar> &device_element_vectors,
                                     AssemblyMode mode,
                                     PetscVector &vector) {
-            typename StkViewDevice_t<Scalar>::HostMirror element_vectors =
+            auto element_vectors =
                 ::Kokkos::create_mirror_view(device_element_vectors);
             ::Kokkos::deep_copy(element_vectors, device_element_vectors);
 
@@ -418,7 +419,7 @@ namespace utopia {
                 }
             }
 
-            typename StkViewDevice_t<Scalar>::HostMirror element_vectors =
+            auto element_vectors =
                 ::Kokkos::create_mirror_view(device_element_vectors);
             ::Kokkos::deep_copy(element_vectors, device_element_vectors);
 
@@ -609,7 +610,7 @@ namespace utopia {
             device_element_vectors = StkViewDevice_t<Scalar>("Coefficients", num_elem, n_nodes_x_elem * n_comp);
         }
 
-        typename StkViewDevice_t<Scalar>::HostMirror element_vectors =
+        auto element_vectors =
             ::Kokkos::create_mirror_view(device_element_vectors);
 
         // FIXME not on device

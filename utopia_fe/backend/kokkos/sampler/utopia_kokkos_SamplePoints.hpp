@@ -18,7 +18,11 @@ namespace utopia {
 
             using HPolytope = utopia::kokkos::HPolytope<DynRankView>;
             using Points = DynRankView;
+#if KOKKOS_VERSION >= 50002
+            using HostPoints = typename Points::host_mirror_type;
+#else
             using HostPoints = typename Points::HostMirror;
+#endif
             using Intersector = utopia::kokkos::PointHPolytopeIntersection<Points, HPolytope>;
             using Index = typename Intersector::IndexView;
 

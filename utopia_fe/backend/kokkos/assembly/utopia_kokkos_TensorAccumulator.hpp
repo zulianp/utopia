@@ -69,7 +69,7 @@ namespace utopia {
             void zero() { utopia::kokkos::fill(data_, 0.0); }
 
             void describe(std::ostream &os) const override {
-                typename View::HostMirror host_data = ::Kokkos::create_mirror_view(data_);
+                auto host_data = ::Kokkos::create_mirror_view(data_);
 
                 const SizeType n_cells = host_data.extent(0);
 

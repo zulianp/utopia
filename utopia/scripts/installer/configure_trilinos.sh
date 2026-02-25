@@ -66,6 +66,7 @@ cmake .. \
 -DTrilinos_ENABLE_TpetraCore:BOOL=ON \
 -DTrilinos_ENABLE_Zoltan2:BOOL=ON \
 -DTrilinos_ENABLE_Zoltan:BOOL=ON \
+-DSIERRA_MIGRATION:BOOL=ON \
 -DXpetra_ENABLE_EXPLICIT_INSTANTIATION:BOOL=ON  && \
 make -j40 && make install && \
 cp -r ../packages/seacas/libraries/ioss/src/private_copy_fmt/fmt/ $SCRATCH/installations/Trilinos/include/fmt

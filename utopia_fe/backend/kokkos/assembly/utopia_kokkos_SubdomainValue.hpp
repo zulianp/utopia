@@ -15,7 +15,11 @@ namespace utopia {
             using Scalar = typename FE::Scalar;
             using ExecutionSpace = typename FE::ExecutionSpace;
             using UnorderedMap = ::Kokkos::UnorderedMap<int, Scalar>;
+#if KOKKOS_VERSION >= 50002
+            using HostUnorderedMap = typename UnorderedMap::host_mirror_type;
+#else
             using HostUnorderedMap = typename UnorderedMap::HostMirror;
+#endif
             static const int DEFAULT_MAP_CAPACITY = 10;
 
             void read(Input &in) /*override*/ {
