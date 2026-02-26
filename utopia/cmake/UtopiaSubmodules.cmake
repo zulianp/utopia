@@ -55,14 +55,15 @@ if(UTOPIA_ENABLE_TINY_EXPR)
 
   if(TINY_EXPR_DIR)
 
-    # Add headers and sources to global variables.
-    scan_directories(${TINY_EXPR_DIR} "." UTOPIA_BUILD_INCLUDES UTOPIA_HEADERS
-                     UTOPIA_SOURCES)
-    set(UTOPIA_BUILD_INCLUDES ${UTOPIA_BUILD_INCLUDES})
+    # tinyexpr ships examples and utilities that should not be part of the
+    # utopia library build.
+    list(APPEND UTOPIA_BUILD_INCLUDES ${TINY_EXPR_DIR})
+    list(APPEND UTOPIA_HEADERS ${TINY_EXPR_DIR}/tinyexpr.h)
+    list(APPEND UTOPIA_SOURCES ${TINY_EXPR_DIR}/tinyexpr.c)
 
-    set(UTOPIA_HEADERS ${UTOPIA_HEADERS})
-
-    set(UTOPIA_SOURCES ${UTOPIA_SOURCES})
+    # Keep tinyexpr implementation compiled as C even in mixed toolchains.
+    set_source_files_properties(${TINY_EXPR_DIR}/tinyexpr.c PROPERTIES
+                                LANGUAGE C)
 
     set(UTOPIA_ENABLE_TINY_EXPR ON)
     set(UTOPIA_ADDITIONAL_COMPONENTS ";tinyexpr")
