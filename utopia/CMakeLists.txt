@@ -80,6 +80,14 @@ list(APPEND UTOPIA_SOURCES utopia.cpp utopia_Instance.cpp utopia_Base.cpp)
 
 add_library(utopia ${UTOPIA_SOURCES} ${UTOPIA_HEADERS})
 
+# Some platforms/toolchains may route .c files through C++ flags/driver.
+# Force all C translation units in this target to compile as C.
+foreach(_src IN LISTS UTOPIA_SOURCES)
+  if(_src MATCHES "\\.c$")
+    set_source_files_properties(${_src} PROPERTIES LANGUAGE C)
+  endif()
+endforeach()
+
 # We use this to force c++14
 set_utopia_compiler_features(utopia)
 
