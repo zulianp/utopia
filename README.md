@@ -34,7 +34,7 @@ Clone the repository and its submodules
 
 or for older git versions
 
-- git clone https://bitbucket.org/zulianp/utopia.git
+- git clone github.com/zulianp/utopia.git
 - cd utopia
 - git submodule update --init --recursive
 
