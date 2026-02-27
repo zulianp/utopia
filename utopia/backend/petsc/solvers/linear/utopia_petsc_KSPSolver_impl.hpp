@@ -972,12 +972,22 @@ namespace utopia {
         PetscErrorCode ierr;
         UTOPIA_UNUSED(ierr);
         if (this->verbose()) {
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 24, 4)
+            ierr = KSPMonitorSet(ksp, MyKSPMonitor, new KSPLog(), [](void *arg) -> PetscErrorCode {
+                auto ksp_log = (KSPLog *)(arg);
+                delete ksp_log;
+                return 0;
+            });
+
+#else
+
             ierr = KSPMonitorSet(ksp, MyKSPMonitor, new KSPLog(), [](void **arg) -> PetscErrorCode {
                 auto ksp_log = (KSPLog **)(arg);
                 delete *ksp_log;
                 *ksp_log = nullptr;
                 return 0;
             });
+#endif
             assert(ierr == 0);
         }
 

@@ -1,6 +1,5 @@
 cmake .. \
 -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/Trilinos \
--DCMAKE_INSTALL_PREFIX=$SCRATCH/installations/Trilinos \
 -DNetcdf_LIBRARY_DIRS=/opt/homebrew/Cellar/netcdf/4.9.2_1/lib     \
 -DTPL_Netcdf_INCLUDE_DIRS=/opt/homebrew/Cellar/netcdf/4.9.2_1/include   \
 -DTPL_Netcdf_LIBRARIES=/opt/homebrew/Cellar/netcdf/4.9.2_1/lib/libnetcdf.dylib  \
