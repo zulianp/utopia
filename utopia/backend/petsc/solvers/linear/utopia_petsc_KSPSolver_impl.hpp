@@ -680,15 +680,15 @@ namespace utopia {
             UTOPIA_UNUSED(ierr);
         }
 
-        void set_monitor(PetscErrorCode (*monitor)(KSP, PetscInt, PetscReal, void *),
-                         void *mctx,
-                         PetscErrorCode (*monitordestroy)(void **)) {
-            PetscErrorCode ierr;
-            UTOPIA_UNUSED(ierr);
-            ierr = KSPMonitorSet(ksp_, monitor, mctx, monitordestroy);
-            assert(ierr == 0);
-            UTOPIA_UNUSED(ierr);
-        }
+        // void set_monitor(PetscErrorCode (*monitor)(KSP, PetscInt, PetscReal, void *),
+        //                  void *mctx,
+        //                  PetscErrorCode (*monitordestroy)(void **)) {
+        //     PetscErrorCode ierr;
+        //     UTOPIA_UNUSED(ierr);
+        //     ierr = KSPMonitorSet(ksp_, monitor, mctx, monitordestroy);
+        //     assert(ierr == 0);
+        //     UTOPIA_UNUSED(ierr);
+        // }
 
         bool apply(const Vector &b, Vector &x) {
             PetscErrorCode ierr;

@@ -335,7 +335,14 @@ namespace utopia {
             TaoSetMonitor(tao,
                           PetscQuirks_TaoDefaultMonitor,
                           monviewer,
-                          reinterpret_cast<PetscErrorCode (*)(void **)>(PetscViewerDestroy));
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 24, 4)
+                          reinterpret_cast<PetscErrorCode (*)(void *)>(PetscViewerDestroy)
+
+#else
+                          reinterpret_cast<PetscErrorCode (*)(void **)>(PetscViewerDestroy)
+#endif
+
+            );
         }
 
         void read(Input &in) override {
