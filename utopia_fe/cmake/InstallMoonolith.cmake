@@ -59,9 +59,9 @@ else()
 
   FetchContent_Declare(
       moonolith
-      GIT_REPOSITORY https://bitbucket.org/zulianp/par_moonolith.git
+      GIT_REPOSITORY https://github.com/zulianp/par_moonolith.git
       # GIT_TAG origin/sampler
-      GIT_TAG origin/development
+      # GIT_TAG origin/development
   )
   
   FetchContent_MakeAvailable(moonolith)
