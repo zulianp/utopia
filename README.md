@@ -30,11 +30,11 @@ Copyright (c) 2015 Institute of Computational Science - USI Università della Sv
 
 Clone the repository and its submodules
 
-- git clone --recurse-submodules https://bitbucket.org/zulianp/utopia.git
+- git clone --recurse-submodules https://github.com/zulianp/utopia.git
 
 or for older git versions
 
-- git clone github.com/zulianp/utopia.git
+- git clone https://github.com/zulianp/utopia.git
 - cd utopia
 - git submodule update --init --recursive
 
