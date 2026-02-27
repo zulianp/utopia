@@ -18,7 +18,9 @@
 #include <stk_mesh/base/Comm.hpp>
 #include <stk_mesh/base/CoordinateSystems.hpp>
 #include <stk_mesh/base/Entity.hpp>
+#if TRILINOS_MAJOR_MINOR_VERSION < 160200
 #include <stk_mesh/base/GetBuckets.hpp>
+#endif
 #include <stk_mesh/base/GetEntities.hpp>
 #include <stk_mesh/base/MetaData.hpp>
 
