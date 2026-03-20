@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# All scripts inside https://bitbucket.org/zulianp/utopia/src/monotone_mg_refactor/utopia/scripts/installer need to be copied on the PWD
+# All scripts inside https://github.com/zulianp/utopia/tree/master/utopia/scripts/installer need to be copied on the PWD
 # Make sure to have a proper MPI installations and all the env variables defined (e.g. MPI_DIR)
 
 export USER_DIR=$PWD
@@ -27,7 +27,7 @@ git clone https://github.com/trilinos/Trilinos.git; \
 ##################################################################
 
 cd $USER_DIR
-git clone https://zulianp@bitbucket.org/zulianp/par_moonolith.git
+git clone https://github.com/zulianp/par_moonolith.git
 cd par_moonolith
 git checkout development
 mkdir build
@@ -47,7 +47,7 @@ cd build && cmake .. -DCMAKE_INSTALL_PREFIX=$YAML_CPP_DIR \
 ##################################################################
 
 cd $USER_DIR
-git clone https://bitbucket.org/zulianp/utopia.git
+git clone https://github.com/zulianp/utopia.git
 cd utopia
 git checkout monotone_mg_refactor
 git submodule update --init --recursive

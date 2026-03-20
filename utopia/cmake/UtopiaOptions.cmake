@@ -53,7 +53,7 @@ option(UTOPIA_PULL_REQUEST_MODE
 
 option(UTOPIA_ENABLE_EIGEN_3 "Look for eigen for comparing performance" OFF)
 option(UTOPIA_BUILD_DOCUMENTATION
-       "Use Doxygen to create the HTML based API documentation" ON)
+       "Use Doxygen to create the HTML based API documentation" OFF)
 
 option(UTOPIA_ENABLE_SCRIPTING
        "Enable exports for other languages (C, Python, etc...)" OFF)

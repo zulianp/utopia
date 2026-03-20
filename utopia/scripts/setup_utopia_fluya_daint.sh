@@ -37,7 +37,7 @@ cd $STAGE_DIR
 # Download utopia if not present
 if [[ ! -d utopia ]]
 	then
-		git clone --recurse-submodules https://bitbucket.org/zulianp/utopia.git
+		git clone --recurse-submodules https://github.com/zulianp/utopia.git
 fi
 
 cd utopia/utopia
@@ -64,7 +64,7 @@ cd $STAGE_DIR
 # Download ParMoonolith if not present
 if [[ ! -d par_moonolith ]]
 	then
-		git clone https://bitbucket.org/zulianp/par_moonolith.git
+		git clone https://github.com/zulianp/par_moonolith.git
 fi
 cd par_moonolith
 

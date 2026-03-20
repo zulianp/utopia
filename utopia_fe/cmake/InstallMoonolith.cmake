@@ -9,7 +9,7 @@ if(UTOPIA_INSTALL_MOONOLITH_EXTERNAL)
   endif()
 
   set(STAGE_DIR "${CMAKE_BINARY_DIR}/stage")
-  set(MOONOLITH_URL https://bitbucket.org/zulianp/par_moonolith.git)
+  set(MOONOLITH_URL https://github.com/zulianp/par_moonolith.git)
   set(MOONOLITH_SOURCE_DIR ${STAGE_DIR}/moonolith)
   set(MOONOLITH_BIN_DIR ${STAGE_DIR}/moonolith/bin)
   set(MOONOLITH_MPI_BASE_DIR $ENV{MPI_DIR})

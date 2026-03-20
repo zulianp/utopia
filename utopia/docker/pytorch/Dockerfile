@@ -24,7 +24,7 @@ ENV LD_LIBRARY_PATH=/usr/lib64/
 # # ################################################################################
 
 WORKDIR /
-RUN git clone https://zulianp@bitbucket.org/zulianp/utopia.git
+RUN git clone https://github.com/zulianp/utopia.git
 RUN cd utopia && git checkout monotone_mg_refactor && git submodule update --init --recursive
 RUN mkdir /utopia/utopia/build
 RUN cd /utopia/utopia/build && cmake .. \

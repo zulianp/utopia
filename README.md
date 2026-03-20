@@ -24,7 +24,7 @@ Copyright (c) 2015 Institute of Computational Science - USI Università della Sv
 
 # Getting started
 
-([More in-depth guide here](https://bitbucket.org/zulianp/utopia/wiki/Getting%20started))
+([More in-depth guide here](https://github.com/zulianp/utopia/wiki/Getting-started))
 
 ## Downloading utopia
 
@@ -50,7 +50,7 @@ Go to the folder utopia/utopia:
 - make
 - make install.
 
-For compiling the very experimental FE library follow the instructions [HERE](https://bitbucket.org/zulianp/utopia/wiki/Utopia%20FE).
+For compiling the very experimental FE library follow the instructions [HERE](https://github.com/zulianp/utopia/wiki/Utopia-FE).
 In the future the Utopia FE library will be removed from this repository and will have its own repo (after a large scale refactoring).
 
 ### MacOS Big Sur
@@ -83,8 +83,8 @@ Use the following bibtex to refer to the repository
 @misc{utopiagit,
 	author = {Patrick Zulian and Alena Kopani{\v c}{\'a}kov{\'a} and Maria Chiara Giuseppina Nestola and Andreas Fink and Nur Fadel and Alessandro Rigazzi and Victor Magri and Teseo Schneider and Eric Botter and Jan Mankau and Rolf Krause},
 	title = {{U}topia: A performance portable {C}++ library for parallel linear and nonlinear algebra. {G}it repository},
-	url = {https://bitbucket.org/zulianp/utopia},
-	howpublished = {https://bitbucket.org/zulianp/utopia},
+	url = {https://github.com/zulianp/utopia},
+	howpublished = {https://github.com/zulianp/utopia},
 	year = {2016}
 }
 ```
@@ -103,8 +103,8 @@ You can use a pre-installed version of utopia in a Docker container. See [HERE](
 
 ### Utopia Open-source repository (BSD 3-clause license)
 
-1. https://bitbucket.org/zulianp/utopia
-2. https://bitbucket.org/zulianp/par_moonolith (frontend and several integrations are in Utopia)
+1. https://github.com/zulianp/utopia
+2. https://github.com/zulianp/par_moonolith (frontend and several integrations are in Utopia)
 
 
 ###  Simulations realized with Utopia

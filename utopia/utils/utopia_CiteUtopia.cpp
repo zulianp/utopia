@@ -28,7 +28,7 @@ namespace utopia {
             "\ttitle = {{U}topia: A performance portable {C}++ library for parallel linear and nonlinear algebra. "
             "{G}it "
             "repository},\n"
-            "\thowpublished = {https://bitbucket.org/zulianp/utopia},\n"
+            "\thowpublished = {https://github.com/zulianp/utopia},\n"
             "\tyear = {2016},\n"
             "}\n");
     }

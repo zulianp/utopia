@@ -21,8 +21,8 @@ static const char* utopia_logo_ =
     "--------------------------------------------------------------------------------\n";
 
 static const char* info =
-    "Git-repository:\thttps://bitbucket.org/zulianp/utopia/src/master/\n"
-    "License:\thttps://bitbucket.org/zulianp/utopia/src/master/LICENSE.md\n"
+    "Git-repository:\thttps://github.com/zulianp/utopia\n"
+    "License:\thttps://github.com/zulianp/utopia/blob/master/LICENSE.md\n"
     "Credits\t\tIf you use utopia for your research use `--citations` option "
     "to your runs to see which papers have to be cited.\n";
 

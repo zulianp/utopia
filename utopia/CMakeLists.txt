@@ -5,7 +5,7 @@ project(
   utopia
   VERSION ${UTOPIA_VERSION}
   LANGUAGES "CXX" "C"
-  HOMEPAGE_URL "https://bitbucket.org/zulianp/utopia/"
+  HOMEPAGE_URL "https://github.com/zulianp/utopia/"
   DESCRIPTION
     "Utopia is an open-source C++ library for parallel non-linear multilevel solution strategies"
 )

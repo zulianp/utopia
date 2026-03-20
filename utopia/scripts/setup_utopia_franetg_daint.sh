@@ -68,7 +68,7 @@ cd $STAGE_DIR
 
 if [[ ! -d mars ]]
 	then
-		git clone https://bitbucket.org/zulianp/mars.git
+		git clone https://github.com/zulianp/mars.git
 fi
 
 cd mars
@@ -86,7 +86,7 @@ cd $STAGE_DIR
 # Download utopia if not present
 if [[ ! -d utopia ]]
 	then
-		git clone --recurse-submodules https://bitbucket.org/zulianp/utopia.git
+		git clone --recurse-submodules https://github.com/zulianp/utopia.git
 fi
 
 cd utopia/utopia

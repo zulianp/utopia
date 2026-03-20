@@ -4,7 +4,7 @@ project(
   utopia_fe
   VERSION 0.1.0
   LANGUAGES "CXX" "C"
-  HOMEPAGE_URL "https://bitbucket.org/zulianp/utopia"
+  HOMEPAGE_URL "https://github.com/zulianp/utopia"
   DESCRIPTION "Library for portable finite element discretizations.")
 
 # ##############################################################################

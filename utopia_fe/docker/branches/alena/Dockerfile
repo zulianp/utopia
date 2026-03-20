@@ -12,7 +12,7 @@ RUN ls $MPI_DIR/bin | grep mpi
 
 RUN apk add --no-cache curl build-base clang cmake git gfortran linux-headers m4 perl lapack-dev valgrind-dev gdb
 
-RUN git clone https://bitbucket.org/zulianp/utopia.git utopia_cloned
+RUN git clone https://github.com/zulianp/utopia.git utopia_cloned
 RUN cd /utopia_cloned && git checkout pseudo_transient_continuation && git submodule update --init --recursive && git pull
 
 # compile utopia
@@ -29,7 +29,7 @@ RUN cd /utopia_cloned/utopia/bin && ./utopia_exec -verbose && ./utopia_exec -tes
 
 # compile moonolith
 
-RUN git clone https://zulianp@bitbucket.org/zulianp/par_moonolith.git moonolith_cloned
+RUN git clone https://github.com/zulianp/par_moonolith.git moonolith_cloned
 RUN cd /moonolith_cloned && mkdir bin
 RUN cd /moonolith_cloned/bin && \
 	cmake .. -DCMAKE_INSTALL_PREFIX=/par_moonolith -DCMAKE_BUILD_TYPE=Release \

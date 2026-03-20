@@ -103,7 +103,7 @@ ENV CXX clang++
 #                             Utopia installation
 ################################################################################
 
-RUN git clone https://zulianp@bitbucket.org/zulianp/utopia.git
+RUN git clone https://github.com/zulianp/utopia.git
 RUN cd utopia && git checkout vc_simd && git submodule update --init --recursive
 RUN mkdir /utopia/utopia/build
 RUN cd /utopia/utopia/build && cmake .. -DUTOPIA_SCRIPTING=ON \

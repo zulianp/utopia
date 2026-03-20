@@ -30,7 +30,7 @@ with compile time decisions.
 and no actual computation is yet performed.
 
 </br>
-Visit our <a href="https://bitbucket.org/zulianp/utopia/wiki/Home">Wiki</a> for
+Visit our <a href="https://github.com/zulianp/utopia/wiki">Wiki</a> for
 more information and tutorials.
 */
 

@@ -26,7 +26,7 @@ RUN PATH=$PATH:/usr/local/bin/lcov
 ###################################################################################################################
 
 # Clone code
-RUN git clone https://bitbucket.org/zulianp/utopia.git utopia_cloned
+RUN git clone https://github.com/zulianp/utopia.git utopia_cloned
 RUN cd /utopia_cloned && git checkout development && git submodule update --init --recursive && git pull
 RUN cd /utopia_cloned && git pull
 
@@ -58,7 +58,7 @@ ENV TRILINOS_DIR $UTOPIA_DEPENDENCIES_DIR/trilinos
 ############################## SLEPC ########################################
 #############################################################################
 
-# RUN git clone https://bitbucket.org/slepc/slepc /slepc_cloned
+# RUN git clone https://gitlab.com/slepc/slepc.git /slepc_cloned
 # RUN cd /slepc_cloned && git checkout maint
 
 # # Dependencies for Arpack

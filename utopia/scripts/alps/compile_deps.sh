@@ -13,7 +13,7 @@ cd $DEPS
 # Install moonolith
 ####################
 # commit 0337bfe0b9dcc77abc5d44df0b7f57cdcdf2ff74
-git clone https://bitbucket.org/zulianp/par_moonolith.git
+git clone https://github.com/zulianp/par_moonolith.git
 cd $DEPS/par_moonolith
 
 mkdir -p build && cd build
