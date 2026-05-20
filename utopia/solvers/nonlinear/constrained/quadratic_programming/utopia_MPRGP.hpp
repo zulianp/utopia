@@ -58,7 +58,7 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("MPRGP::solve(...)");
 
             if (this->verbose()) {
-                this->init_solver("MPRGP comm_size: " + std::to_string(rhs.comm().size()), {"it", "|| g ||"});
+                this->init_solver("MPRGP comm_size: " + std::to_string(rhs.comm().size()), {"it", "|| g ||", "|| g/g_0 ||"});
             }
 
             if (this->has_empty_bounds()) {
@@ -95,7 +95,7 @@ namespace utopia {
 
             SizeType it = 0;
             bool converged = false;
-            Scalar gnorm = -1;
+            Scalar gnorm = -1, gnorm0 = -1;
 
             Scalar alpha_cg, alpha_f, beta_sc;
 
@@ -214,7 +214,7 @@ namespace utopia {
                     // detecting negative curvature
                     if (beta_Abeta <= 0.0) {
                         if (this->verbose()) {
-                            PrintInfo::print_iter_status(it, {gnorm});
+                            PrintInfo::print_iter_status(it, {gnorm, gnorm/gnorm0});
                         }
 
                         return true;
@@ -243,13 +243,18 @@ namespace utopia {
                 dots(beta, beta, beta_beta, fi, fi, fi_fi, gp, gp, gnorm);
 
                 gnorm = std::sqrt(gnorm);
+                
+                if(it == 0) {
+                    gnorm0 = gnorm;
+                }
+
                 it++;
 
                 if (this->verbose()) {
-                    PrintInfo::print_iter_status(it, {gnorm});
+                    PrintInfo::print_iter_status(it, {gnorm, gnorm/gnorm0});
                 }
 
-                converged = this->check_convergence(it, gnorm, 1, 1);
+                converged = this->check_convergence(it, gnorm, gnorm/gnorm0, 1);
             }
 
             UTOPIA_TRACE_REGION_END("MPRGP::solve(...)");
