@@ -67,6 +67,7 @@ namespace utopia {
             void displace(const Vector &displacement);
             void scale(const Scalar &scale_factor);
             void scale(const std::vector<Scalar> &scale_factors);
+            void translate(const std::vector<Scalar> &translation);
 
             void unit_cube(const SizeType &nx, const SizeType &ny, const SizeType &nz);
 

@@ -277,6 +277,31 @@ namespace utopia {
             }
         }
 
+        void Mesh::translate(const std::vector<Scalar> &translation)
+        {
+            ::stk::mesh::Selector s_universal = meta_data().universal_part();
+            const auto &node_buckets = bulk_data().get_buckets(::stk::topology::NODE_RANK, s_universal);
+            auto *coords = meta_data().coordinate_field();
+
+            const int dim = spatial_dimension();
+
+            assert(dim <= int(translation.size()));
+
+            for (const auto &ib : node_buckets) {
+                const auto &b = *ib;
+                const SizeType length = b.size();
+
+                for (SizeType k = 0; k < length; ++k) {
+                    auto node = b[k];
+                    Scalar *points = (Scalar *)::stk::mesh::field_data(*coords, node);
+
+                    for (int d = 0; d < dim; ++d) {
+                        points[d] += translation[d];
+                    }
+                }
+            }
+        }
+
         void Mesh::scale(const Scalar &scale_factor) {
             const int dim = spatial_dimension();
             std::vector<Scalar> sf(dim, scale_factor);

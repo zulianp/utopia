@@ -45,6 +45,13 @@ namespace utopia {
                     // read_purpose = ::stk::io::READ_RESTART;
                 }
 
+                translate.resize(3);
+
+                std::fill(translate.begin(), scales.end(), 0);
+                in.get("translate_x", translate[0]);
+                in.get("translate_y", translate[1]);
+                in.get("translate_z", translate[2]);
+
                 // if (decomposition_in_subdirs) {
                 //     decomposition_method = "";
                 // }
@@ -192,6 +199,11 @@ namespace utopia {
                         mesh.scale(scales);
                     }
 
+                    if(translate[0] != 0 || translate[1] != 0 || translate[2] != 0 )
+                    {
+                        mesh.translate(translate);
+                    }
+
                     return true;
                 } catch (const std::exception &ex) {
                     utopia::err() << "Mesh::read(\"" << read_specification << "\") error: " << ex.what() << '\n';
@@ -241,6 +253,7 @@ namespace utopia {
             int input_id{-1};
             ::stk::io::MeshField::TimeMatchOption time_match{::stk::io::MeshField::CLOSEST};
             std::vector<Scalar> scales{{1, 1, 1}};
+            std::vector<Scalar> translate{{0, 0, 0}};
         };
 
         void MeshIO::enable_interpolation_mode() { impl_->time_match = ::stk::io::MeshField::LINEAR_INTERPOLATION; }
