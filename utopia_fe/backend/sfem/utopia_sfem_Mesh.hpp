@@ -12,6 +12,10 @@
 
 #include "utopia_sfem_ForwardDeclarations.hpp"
 
+namespace smesh {
+    class Mesh;
+}
+
 namespace utopia {
     template <>
     class Traits<utopia::sfem::Mesh> : public Traits<UVector> {
@@ -73,7 +77,8 @@ namespace utopia {
 
             ArrayView<const SizeType> node_mapping() const;
 
-            void *raw_type() const;
+            std::shared_ptr<::smesh::Mesh> raw_type() const;
+            void set_raw_type(const std::shared_ptr<::smesh::Mesh> &mesh);
 
             std::shared_ptr<MeshView> sharp_edges(const Scalar angle_threshold) const;
             std::shared_ptr<MeshView> disconnected_faces_from_sharp_edges(MeshView &sharp_edges) const;

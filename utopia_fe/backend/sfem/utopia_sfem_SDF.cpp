@@ -4,19 +4,46 @@
 #include "matrixio_array.h"
 #include "matrixio_ndarray.h"
 
-#include "mass.h"
-#include "mesh_utils.h"
-#include "node_interpolate.h"
-#include "sfem_defs.h"
-#include "sfem_mesh.h"
-#include "sfem_resample_gap.h"
+#include "mass.hpp"
+#include "node_interpolate.hpp"
+#include "sfem_defs.hpp"
+#include "sfem_resample_gap.hpp"
+#include "smesh_mesh.hpp"
 
 #include "utopia_sfem_Mesh.hpp"
 
 #include "utopia_ui.hpp"
 
+#include <vector>
+
 namespace utopia {
     namespace sfem {
+        class MeshDataView {
+        public:
+            std::shared_ptr<::smesh::Mesh> storage;
+            ptrdiff_t nnodes{0};
+            ptrdiff_t n_owned_nodes{0};
+            ptrdiff_t n_owned_elements{0};
+            int spatial_dim{0};
+            ::smesh::ElemType element_type{::smesh::INVALID};
+            idx_t **elements{nullptr};
+            geom_t **points{nullptr};
+        };
+
+        static MeshDataView mesh_data_view(const Mesh &mesh) {
+            auto raw = mesh.raw_type();
+            MeshDataView ret;
+            ret.storage = raw;
+            ret.nnodes = raw->n_nodes();
+            ret.n_owned_nodes = mesh.n_local_nodes();
+            ret.n_owned_elements = mesh.n_owned_elements();
+            ret.spatial_dim = raw->spatial_dimension();
+            ret.element_type = raw->element_type(0);
+            ret.elements = raw->elements(0)->data();
+            ret.points = raw->points()->data();
+            return ret;
+        }
+
         class SDF::Impl {
         public:
             ptrdiff_t nlocal[3];
@@ -132,7 +159,8 @@ namespace utopia {
             UTOPIA_TRACE_SCOPE("SDF::interpolate_to_mesh");
             clear();
 
-            auto m = (mesh_t *)mesh.raw_type();
+            auto mesh_data = mesh_data_view(mesh);
+            auto m = &mesh_data;
 
             real_t *xnormal = (real_t *)malloc(m->nnodes * sizeof(real_t));
             real_t *ynormal = (real_t *)malloc(m->nnodes * sizeof(real_t));
@@ -209,7 +237,8 @@ namespace utopia {
             clear();
             impl_->has_weights = true;
 
-            auto m = (mesh_t *)mesh.raw_type();
+            auto mesh_data = mesh_data_view(mesh);
+            auto m = &mesh_data;
 
             real_t *xnormal = (real_t *)calloc(m->nnodes, sizeof(real_t));
             real_t *ynormal = (real_t *)calloc(m->nnodes, sizeof(real_t));
@@ -258,7 +287,7 @@ namespace utopia {
                 // Edges
                 resample_gap_local(
                     // Mesh
-                    shell_type((ElemType)edges_ptr->element_type()),
+                    ::smesh::shell_type(static_cast<::smesh::ElemType>(edges_ptr->element_type())),
                     edges_ptr->n_elements(),
                     m->nnodes,
                     edge_elements.begin(),
@@ -275,7 +304,7 @@ namespace utopia {
                     ynormal,
                     znormal);
 
-                assemble_lumped_mass(shell_type((ElemType)edges_ptr->element_type()),
+                assemble_lumped_mass(::smesh::shell_type(static_cast<::smesh::ElemType>(edges_ptr->element_type())),
                                      edges_ptr->n_elements(),
                                      m->nnodes,
                                      edge_elements.begin(),
@@ -289,7 +318,7 @@ namespace utopia {
                     // Faces (all)
                     resample_gap_local(
                         // Mesh
-                        shell_type((ElemType)m->element_type),
+                        ::smesh::shell_type(m->element_type),
                         m->n_owned_elements,
                         m->nnodes,
                         m->elements,
@@ -306,7 +335,7 @@ namespace utopia {
                         ynormal,
                         znormal);
 
-                    assemble_lumped_mass(shell_type((ElemType)m->element_type),
+                    assemble_lumped_mass(::smesh::shell_type(m->element_type),
                                          m->n_owned_elements,
                                          m->nnodes,
                                          m->elements,
@@ -321,7 +350,7 @@ namespace utopia {
 
                         resample_gap_local(
                             // Mesh
-                            shell_type((ElemType)faces_ptr->element_type()),
+                            ::smesh::shell_type(static_cast<::smesh::ElemType>(faces_ptr->element_type())),
                             faces_ptr->n_elements(),
                             m->nnodes,
                             face_elements.begin(),
@@ -338,7 +367,7 @@ namespace utopia {
                             ynormal,
                             znormal);
 
-                        assemble_lumped_mass(shell_type((ElemType)faces_ptr->element_type()),
+                        assemble_lumped_mass(::smesh::shell_type(static_cast<::smesh::ElemType>(faces_ptr->element_type())),
                                              faces_ptr->n_elements(),
                                              m->nnodes,
                                              face_elements.begin(),
@@ -360,14 +389,23 @@ namespace utopia {
                     real_t *p_ynormal = (real_t *)calloc(corners_ptr->n_elements(), sizeof(real_t));
                     real_t *p_znormal = (real_t *)calloc(corners_ptr->n_elements(), sizeof(real_t));
 
-                    geom_t **corner_points = allocate_points(m->spatial_dim, corners_ptr->n_elements());
-                    select_points(
-                        m->spatial_dim, corners_ptr->n_elements(), corner_elements[0], m->points, corner_points);
+                    std::vector<std::vector<geom_t>> corner_point_storage(
+                        m->spatial_dim, std::vector<geom_t>(corners_ptr->n_elements()));
+                    std::vector<geom_t *> corner_points(m->spatial_dim);
+
+                    for (int d = 0; d < m->spatial_dim; ++d) {
+                        auto *const storage = corner_point_storage[d].data();
+                        corner_points[d] = storage;
+
+                        for (ptrdiff_t i = 0; i < corners_ptr->n_elements(); ++i) {
+                            storage[i] = m->points[d][corner_elements[0][i]];
+                        }
+                    }
 
                     interpolate_gap(
                         // Mesh
                         corners_ptr->n_elements(),
-                        corner_points,
+                        corner_points.data(),
                         // SDF
                         nlocal,
                         impl_->stride,
@@ -393,7 +431,6 @@ namespace utopia {
                         mass_vector[corner_elements[0][i]] += 1;
                     }
 
-                    free_points(m->spatial_dim, corner_points);
                     free(p_g);
                     free(p_xnormal);
                     free(p_ynormal);
@@ -429,7 +466,8 @@ namespace utopia {
 
             clear();
 
-            auto m = (mesh_t *)mesh.raw_type();
+            auto mesh_data = mesh_data_view(mesh);
+            auto m = &mesh_data;
 
             real_t *xnormal = (real_t *)calloc(m->nnodes, sizeof(real_t));
             real_t *ynormal = (real_t *)calloc(m->nnodes, sizeof(real_t));
@@ -471,7 +509,7 @@ namespace utopia {
             if (mesh.comm().size() == 1) {
                 resample_gap(
                     // Mesh
-                    (ElemType)m->element_type,
+                    m->element_type,
                     m->n_owned_elements,
                     m->nnodes,
                     m->elements,
@@ -493,7 +531,7 @@ namespace utopia {
 
                 resample_gap_local(
                     // Mesh
-                    (ElemType)m->element_type,
+                    m->element_type,
                     m->n_owned_elements,
                     m->nnodes,
                     m->elements,
@@ -514,7 +552,7 @@ namespace utopia {
 
                 auto weights_view = local_view_device(weights);
 
-                assemble_lumped_mass(shell_type((ElemType)m->element_type),
+                assemble_lumped_mass(::smesh::shell_type(m->element_type),
                                      m->n_owned_elements,
                                      m->nnodes,
                                      m->elements,

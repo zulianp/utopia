@@ -1,5 +1,5 @@
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![CodeFactor](https://www.codefactor.io/repository/bitbucket/zulianp/utopia/badge)](https://www.codefactor.io/repository/bitbucket/zulianp/utopia)
+[![CodeFactor](https://www.codefactor.io/repository/github/zulianp/utopia/badge)](https://www.codefactor.io/repository/github/zulianp/utopia)
 
 
 # Utopia #

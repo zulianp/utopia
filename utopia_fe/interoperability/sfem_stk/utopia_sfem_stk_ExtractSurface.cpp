@@ -2,9 +2,6 @@
 
 #include "utopia_sfem_Mesh.hpp"
 
-#include "sfem_defs.h"
-#include "sfem_mesh.h"
-
 // Utopia::Stk
 #include "utopia_stk_Commons.hpp"
 #include "utopia_stk_Mesh.hpp"
@@ -20,6 +17,8 @@
 #include <stk_mesh/base/GetEntities.hpp>
 #include <stk_mesh/base/MetaData.hpp>
 
+#include "smesh_mesh.hpp"
+
 using BucketVector_t = ::stk::mesh::BucketVector;
 using Bucket_t = ::stk::mesh::Bucket;
 using Entity_t = ::stk::mesh::Entity;
@@ -29,33 +28,35 @@ using MetaData_t = ::stk::mesh::MetaData;
 using BulkData_t = ::stk::mesh::BulkData;
 
 namespace utopia {
+    using idx_t = ::smesh::idx_t;
+    using geom_t = ::smesh::geom_t;
 
-    static enum ElemType convert_elem_type(::stk::topology::topology_t topo) {
+    static enum ::smesh::ElemType convert_elem_type(::stk::topology::topology_t topo) {
         switch (topo) {
             case ::stk::topology::NODE:
-                return NODE1;
+                return ::smesh::NODE1;
             case ::stk::topology::LINE_2:
             case ::stk::topology::BEAM_2:
-                return EDGE2;
+                return ::smesh::EDGE2;
             case ::stk::topology::TRI_3:
             case ::stk::topology::TRI_3_2D:
-                return TRI3;
+                return ::smesh::TRI3;
             case ::stk::topology::SHELL_TRI_3:
-                return TRISHELL3;
+                return ::smesh::TRISHELL3;
             case ::stk::topology::QUAD_4:
             case ::stk::topology::QUAD_4_2D:
             case ::stk::topology::SHELL_QUAD_4:
-                return QUAD4;
+                return ::smesh::QUAD4;
             case ::stk::topology::HEX_8:
-                return HEX8;
+                return ::smesh::HEX8;
             // case ::stk::topology::HEX_27:
             //     return HEX27;
             case ::stk::topology::TET_4:
-                return TET4;
+                return ::smesh::TET4;
             default: {
                 assert(false);
                 Utopia::Abort("Element type not supported!");
-                return INVALID;
+                return ::smesh::INVALID;
             }
         }
     }
@@ -64,10 +65,6 @@ namespace utopia {
                                   const ::stk::mesh::Selector &selector,
                                   const ::stk::topology::rank_t &topo,
                                   utopia::sfem::Mesh &out) {
-        auto mesh_ptr = (mesh_t *)out.raw_type();
-        mesh_destroy(mesh_ptr);
-        mesh_init(mesh_ptr);
-
         auto &meta_data = bulk_data.mesh_meta_data();
         auto *coords = meta_data.coordinate_field();
         const int spatial_dim = meta_data.spatial_dimension();
@@ -113,33 +110,13 @@ namespace utopia {
         // std::cout << "Num elem: " << n_selected_elements << "\n";
 
         ////////////////////////////////////////////////////////////////
+        auto elements_buffer = ::smesh::create_host_buffer<idx_t>(nodesxelem, n_selected_elements);
+        auto points_buffer = ::smesh::create_host_buffer<geom_t>(spatial_dim, n_selected_nodes);
+        auto node_mapping_buffer = ::smesh::create_host_buffer<idx_t>(n_selected_nodes);
 
-        mesh_ptr->elements = (idx_t **)malloc(nodesxelem * sizeof(idx_t *));
-        for (int d = 0; d < nodesxelem; d++) {
-            mesh_ptr->elements[d] = (idx_t *)malloc(n_selected_elements * sizeof(idx_t));
-        }
-
-        mesh_ptr->points = (geom_t **)malloc(spatial_dim * sizeof(geom_t *));
-
-        for (int d = 0; d < spatial_dim; d++) {
-            mesh_ptr->points[d] = (geom_t *)malloc(n_selected_nodes * sizeof(geom_t));
-        }
-
-        mesh_ptr->node_mapping = (idx_t *)malloc(n_selected_nodes * sizeof(idx_t));
-        mesh_ptr->n_owned_nodes = n_selected_nodes;
-        mesh_ptr->n_owned_elements = n_selected_elements;
-
-        mesh_ptr->nelements = out.comm().sum(n_selected_elements);
-        mesh_ptr->nnodes = n_selected_nodes;  // out.comm().sum(n_selected_nodes);
-        mesh_ptr->spatial_dim = spatial_dim;
-        mesh_ptr->comm = out.comm().get();
-
-        // FIXME (for the moment we do not need them but we will in the future)
-        mesh_ptr->n_owned_nodes_with_ghosts = 0;
-        mesh_ptr->n_owned_elements_with_ghosts = 0;
-        mesh_ptr->node_owner = nullptr;
-        mesh_ptr->node_offsets = nullptr;
-        mesh_ptr->ghosts = nullptr;
+        auto elements = elements_buffer->data();
+        auto out_points = points_buffer->data();
+        auto out_node_mapping = node_mapping_buffer->data();
 
         ////////////////////////////////////////////////////////////////
         // Nodes
@@ -165,10 +142,10 @@ namespace utopia {
                 const Scalar_t *points = (const Scalar_t *)::stk::mesh::field_data(*coords, node);
 
                 for (int d = 0; d < spatial_dim; ++d) {
-                    mesh_ptr->points[d][reduced_index] = points[d];
+                    out_points[d][reduced_index] = points[d];
                 }
 
-                mesh_ptr->node_mapping[reduced_index] = utopia::stk::convert_entity_to_index(node);
+                out_node_mapping[reduced_index] = utopia::stk::convert_entity_to_index(node);
             }
         }
 
@@ -177,13 +154,13 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////
 
         SizeType selected_elem_idx = 0;
+        enum ::smesh::ElemType element_type = ::smesh::INVALID;
         for (const auto &ib : elem_buckets) {
             const Bucket_t &b = *ib;
 
             auto sfem_type = convert_elem_type(b.topology());
-            mesh_ptr->element_type = sfem_type;
+            element_type = sfem_type;
             const Bucket_t::size_type length = b.size();
-            int block_id = utopia::stk::extract_set_id_from_bucket(b, topo);
 
             for (Bucket_t::size_type k = 0; k < length; ++k) {
                 Entity_t elem = b[k];
@@ -191,13 +168,17 @@ namespace utopia {
                 auto node_ids = bulk_data.begin_nodes(elem);
 
                 for (Size_t i = 0; i < n_nodes; ++i) {
-                    mesh_ptr->elements[i][selected_elem_idx] =
-                        node_mapping[utopia::stk::convert_entity_to_index(node_ids[i])];
+                    elements[i][selected_elem_idx] = node_mapping[utopia::stk::convert_entity_to_index(node_ids[i])];
                 }
 
                 selected_elem_idx++;
             }
         }
+
+        auto mesh = std::make_shared<::smesh::Mesh>(
+            ::smesh::Communicator::wrap(out.comm().get()), element_type, elements_buffer, points_buffer);
+        mesh->set_node_mapping(node_mapping_buffer);
+        out.set_raw_type(mesh);
     }
 
     // void ExtractSurface<utopia::stk::Mesh, utopia::sfem::Mesh>::apply(const utopia::stk::Mesh &in,

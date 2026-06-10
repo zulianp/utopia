@@ -13,6 +13,8 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
+#include <filesystem>
+
 #ifdef WIN32
 static const char PATH_SEPARATOR = '\\';
 #else
@@ -118,16 +120,30 @@ namespace utopia {
     }
 
     bool Path::make_dir(const int permissions) const {
-#ifdef WIN32
-        auto ok = std::filesystem::create_directory(path_.c_str());
-        if (!ok) return false;
+        // #ifdef WIN32
+        //         auto ok = std::filesystem::create_directory(path_.c_str());
+        //         if (!ok) return false;
 
+        //         std::filesystem::permissions(path_.c_str(), std::filesystem::perms(permissions));
+        // #else
+        //         int result = mkdir(path_.c_str(), permissions);
+
+        //         return result == 0;
+        // #endif
+
+        // #endif
+
+        std::error_code ec;
+
+        bool created = std::filesystem::create_directories(path_.c_str(), ec);
         std::filesystem::permissions(path_.c_str(), std::filesystem::perms(permissions));
-#else
-        int result = mkdir(path_.c_str(), permissions);
 
-        return result == 0;
-#endif
+        if (ec) {
+            // handle error
+            return false;
+        }
+
+        return created;
     }
 
     PathIterator::DirHandle::DirHandle(const std::string &path) { dir = opendir(path.c_str()); }

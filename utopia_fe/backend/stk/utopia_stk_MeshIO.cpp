@@ -35,6 +35,7 @@ namespace utopia {
 
                 Scalar scale = 1.;
                 in.get("scale", scale);
+                printf("scale: %g\n", scale);
 
                 std::fill(scales.begin(), scales.end(), scale);
                 in.get("scale_x", scales[0]);
@@ -47,7 +48,7 @@ namespace utopia {
 
                 translate.resize(3);
 
-                std::fill(translate.begin(), scales.end(), 0);
+                std::fill(translate.begin(), translate.end(), 0);
                 in.get("translate_x", translate[0]);
                 in.get("translate_y", translate[1]);
                 in.get("translate_z", translate[2]);
@@ -196,6 +197,7 @@ namespace utopia {
                     input_id = io_broker->get_active_mesh();
 
                     if (scales[0] != 1. || scales[1] != 1. || scales[2] != 1.) {
+                        printf("%g %g %g\n", scales[0], scales[1], scales[2]);
                         mesh.scale(scales);
                     }
 

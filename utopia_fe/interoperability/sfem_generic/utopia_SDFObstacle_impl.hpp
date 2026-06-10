@@ -314,6 +314,7 @@ namespace utopia {
         });
 
         if (impl_->verbose && !mpi_world_rank()) {
+            utopia::out() << "VERSION: NEW\n";
             utopia::out() << "infinity:\t" << impl_->infinity << "\n";
             utopia::out() << "export_gap:\t" << impl_->export_gap << "\n";
             utopia::out() << "shift:\t" << impl_->shift << "\n";
