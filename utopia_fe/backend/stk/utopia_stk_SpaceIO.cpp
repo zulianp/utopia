@@ -216,5 +216,10 @@ namespace utopia {
             impl_->space.backend_set_nodal_field(field);
         }
 
+        ::stk::io::StkMeshIoBroker &SpaceIO::raw_type()
+        {
+            return impl_->io.raw_type();
+        }
+
     }  // namespace stk
 }  // namespace utopia

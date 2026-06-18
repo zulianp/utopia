@@ -37,6 +37,8 @@ namespace utopia {
             void set_output_mode(const std::string &output_mode);
             bool open_output();
 
+            ::stk::io::StkMeshIoBroker &raw_type();
+
             void set_input_path(const Path &path);
             bool open_input();
             bool open_input(Input &in);
