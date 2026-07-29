@@ -520,10 +520,8 @@ namespace utopia {
 
             if (!time_) {
                 time_ = std::make_shared<SimulationTime>();
-                in.require("time", *time_);
-            } else {
-                in.get("time", *time_);
             }
+            in.get("time", *time_);  // use defaults if "time" not found
 
             fe_function_->set_time(time_);
 

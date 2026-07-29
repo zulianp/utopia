@@ -37,11 +37,14 @@ namespace utopia {
             void set_output_mode(const std::string &output_mode);
             bool open_output();
 
-            ::stk::io::StkMeshIoBroker &raw_type();
+            void set_restart_cycle_count(const int count);
+
+            void set_domain_decomposition_method(const std::string method);
 
             void set_input_path(const Path &path);
             bool open_input();
             bool open_input(Input &in);
+            bool open_restart(Input &in);
 
             SpaceIO(FunctionSpace &space);
             ~SpaceIO();

@@ -21,7 +21,73 @@ namespace utopia {
             bool is_open{false};
         };
 
-        void SpaceIO::read(Input &in) { impl_->space.read(in); }
+        void SpaceIO::read(Input &in) {
+            // TODO [faw 2026-07-30]: The code below was taken from
+            // utopia::stk::FunctionSpace::read. The code related to
+            // import_all_field_data is incomplete and needs revision.  In the
+            // fluya integration the import is handled as follows:
+            //
+            // if (import_field_data_) {
+            //     io_->import_all_field_data(true);
+            //     io_->enable_interpolation_mode();
+            //
+            //     valid_ = io_->open_input(in);
+            //     io_->load_time_step(stime_->get());
+            // } else {
+            //     io_->read(in);
+            //     valid_ = true;
+            // }
+            //
+            // when the todo is cleared it should be possible to just call
+            // io_->read(in) from application code.
+            //
+            // The related code is currently commented out:
+            ////////////////////////////////////////////////////////////////////
+            // bool import_all_field_data = false;
+            // in.get("import_all_field_data", import_all_field_data);
+            //
+            // if (import_all_field_data) {
+            //     impl_->io.import_all_field_data(true);
+            //     in.get("mesh", impl_->io);
+            //
+            //     if (!impl_->io.load()) {
+            //         Utopia::Abort("FunctionSpace::read(in): Unable to read input!");
+            //     }
+            // } else {
+            //     in.get("mesh", impl_->space.mesh());
+            // }
+            ////////////////////////////////////////////////////////////////////
+            // The in.get("mesh", impl_->space.mesh()); call in the esle branch
+            // does not work as it calls (for a mesh object):
+            // void YAMLInput::get(const std::string &key, Configurable &val) {
+            //     auto &node = impl_->root();
+            //     if (node[key]) {
+            //         YAMLInput branch(node[key]);
+            //         val.read(branch);
+            //     }
+            // }
+            // where val.read(branch) calls utopia::stk::Mesh::read which again
+            // creates a scope local MeshIO io(*this); object.
+
+            in.get("mesh", impl_->io);
+            if (!open_input()) {
+                Utopia::Abort("SpaceIO::read(in): Unable to read input!");
+            }
+
+            if (impl_->space.mesh().empty()) return;
+
+            impl_->space.read_meta(in);
+            impl_->space.register_variables();
+            impl_->space.dof_map().init(impl_->space.mesh(), false);
+
+            bool verbose = false;
+            in.get("verbose", verbose);
+            if (verbose) {
+                std::stringstream ss;
+                impl_->space.describe(ss);
+                impl_->space.comm().synched_print(ss.str());
+            }
+        }
 
         bool SpaceIO::read_with_state(Input &in, Field<FunctionSpace> &field) {
             return impl_->space.read_with_state(in, field);
@@ -182,6 +248,16 @@ namespace utopia {
             impl_->io.import_all_field_data(value);
         }
 
+        void SpaceIO::set_restart_cycle_count(const int count) {
+            assert(impl_);
+            impl_->io.set_restart_cycle_count(count);
+        }
+
+        void SpaceIO::set_domain_decomposition_method(const std::string method) {
+            assert(impl_);
+            impl_->io.set_domain_decomposition_method(method);
+        }
+
         void SpaceIO::set_input_path(const Path &path) {
             assert(impl_);
             impl_->io.set_read_path(path);
@@ -205,6 +281,20 @@ namespace utopia {
             return true;
         }
 
+        bool SpaceIO::open_restart(Input &in) {
+            assert(impl_);
+            impl_->space.read_meta(in);
+            in.get("mesh", [this](Input &mesh_node) { this->impl_->io.read_minimal(mesh_node); });
+            impl_->io.set_read_purpose(::stk::io::READ_RESTART);
+            if (!open_input()) {
+                return false;
+            }
+
+            impl_->space.dof_map().init(impl_->space.mesh());
+
+            return true;
+        }
+
         void SpaceIO::register_output_field(const std::string &var_name) { impl_->io.register_output_field(var_name); }
 
         void SpaceIO::register_output_field(const Field<FunctionSpace> &field) {
@@ -214,11 +304,6 @@ namespace utopia {
 
         void SpaceIO::update_output_field(const Field<FunctionSpace> &field) {
             impl_->space.backend_set_nodal_field(field);
-        }
-
-        ::stk::io::StkMeshIoBroker &SpaceIO::raw_type()
-        {
-            return impl_->io.raw_type();
         }
 
     }  // namespace stk
