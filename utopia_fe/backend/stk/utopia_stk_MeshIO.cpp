@@ -22,15 +22,11 @@ namespace utopia {
             using BulkData = ::stk::mesh::BulkData;
             using IOBroker = ::stk::io::StkMeshIoBroker;
 
-            void read(Input &in) override {
-                /////////////////////////////////////////////
-                bool decomposition_in_subdirs = false;
+            void read_minimal(Input &in) {
                 in.get("decomposition_in_subdirs", decomposition_in_subdirs);
                 in.get("decomposition_method", decomposition_method);
                 in.get("verbose", verbose);
                 in.get("import_all_field_data", import_all_field_data);
-                in.get("time_step_index", time_step_index);
-                in.get("time", time_);
                 in.get("output_path", output_path);
 
                 Scalar scale = 1.;
@@ -41,6 +37,28 @@ namespace utopia {
                 in.get("scale_x", scales[0]);
                 in.get("scale_y", scales[1]);
                 in.get("scale_z", scales[2]);
+
+                /////////////////////////////////////////////
+                std::string read_purpose_str;
+                in.get("read_purpose", read_purpose_str);
+                if (read_purpose_str == "READ_RESTART") {
+                    read_purpose = ::stk::io::READ_RESTART;
+                }
+                /////////////////////////////////////////////
+                bool auto_aura = true;
+                in.get("auto_aura", auto_aura);
+                if (auto_aura) {
+                    auto_aura_option = BulkData::AUTO_AURA;
+                }
+                /////////////////////////////////////////////
+            }
+
+            void read(Input &in) override {
+                /////////////////////////////////////////////
+                read_minimal(in);
+
+                in.get("time_step_index", time_step_index);
+                in.get("time", time_);
 
                 if (import_all_field_data) {
                     // read_purpose = ::stk::io::READ_RESTART;
@@ -126,20 +144,6 @@ namespace utopia {
 
                     mesh.set_is_generated_cube(true);
                 }
-
-                /////////////////////////////////////////////
-                std::string read_purpose_str;
-                in.get("read_purpose", read_purpose_str);
-                if (read_purpose_str == "READ_RESTART") {
-                    read_purpose = ::stk::io::READ_RESTART;
-                }
-                /////////////////////////////////////////////
-                bool auto_aura = true;
-                in.get("auto_aura", auto_aura);
-                if (auto_aura) {
-                    auto_aura_option = BulkData::AUTO_AURA;
-                }
-                /////////////////////////////////////////////
             }
 
             bool load_time_step(const Scalar t) {
@@ -248,6 +252,7 @@ namespace utopia {
             std::string decomposition_method;
             bool verbose{false};
             bool import_all_field_data{false};
+            bool decomposition_in_subdirs{false};
             int time_step_index{1};
             double time_{-1};
             Path output_path{"./out.e"};
@@ -261,6 +266,7 @@ namespace utopia {
         void MeshIO::enable_interpolation_mode() { impl_->time_match = ::stk::io::MeshField::LINEAR_INTERPOLATION; }
 
         void MeshIO::read(Input &in) { impl_->read(in); }
+        void MeshIO::read_minimal(Input &in) { impl_->read_minimal(in); }
         bool MeshIO::load() { return impl_->load(); }
         bool MeshIO::write(const Path &write_path) { return impl_->write(write_path); }
 
@@ -272,6 +278,15 @@ namespace utopia {
         MeshIO::~MeshIO() = default;
 
         void MeshIO::import_all_field_data(const bool value) { impl_->import_all_field_data = value; }
+
+        void MeshIO::set_restart_cycle_count(const int count) {
+            ensure_output();
+            impl_->io_broker->get_output_ioss_region(impl_->output_id)->get_database()->set_cycle_count(count);
+        }
+
+        void MeshIO::set_domain_decomposition_method(const std::string method) { impl_->decomposition_method = method; }
+
+        void MeshIO::set_read_purpose(::stk::io::DatabasePurpose purpose) { impl_->read_purpose = purpose; }
 
         void MeshIO::set_output_path(const Path &path) { impl_->output_path = path; }
 
@@ -310,11 +325,6 @@ namespace utopia {
         }
 
         const Path &MeshIO::output_path() const { return impl_->output_path; }
-
-        ::stk::io::StkMeshIoBroker &MeshIO::raw_type() {
-            assert(impl_->io_broker);
-            return *impl_->io_broker;
-        }
 
         void MeshIO::create_output_mesh() {
             assert(impl_->output_id == -1);

@@ -13,6 +13,8 @@
 #include <memory>
 #include <string>
 
+#include <stk_io/DatabasePurpose.hpp>
+
 namespace utopia {
 
     namespace stk {
@@ -22,6 +24,7 @@ namespace utopia {
             using Scalar = Traits<Mesh>::Scalar;
 
             void read(Input &in) override;
+            void read_minimal(Input &in);
             bool load();
             bool load_time_step(const Scalar t);
             bool load_last_time_step();
@@ -31,10 +34,13 @@ namespace utopia {
 
             void set_read_path(const Path &path);
             void set_read_specification(const std::string &format);
+            void set_read_purpose(::stk::io::DatabasePurpose purpose);
 
             void import_all_field_data(const bool value);
 
-            ::stk::io::StkMeshIoBroker &raw_type();
+            void set_restart_cycle_count(const int count);
+
+            void set_domain_decomposition_method(const std::string method);
 
             void set_output_path(const Path &path);
             void set_output_mode(enum OutputMode output_mode);
