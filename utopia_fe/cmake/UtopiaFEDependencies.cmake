@@ -121,21 +121,11 @@ if(UTOPIA_ENABLE_MOONOLITH AND NOT UTOPIA_INSTALL_MOONOLITH)
   list(APPEND UTOPIA_FE_DEP_INCLUDES ${MOONOLITH_INCLUDES})
 endif()
 
-
-
 if(UTOPIA_ENABLE_INTREPID2)
   set(UTOPIA_INTREPID2_SEARCH_PATHS "${UTOPIA_TRILINOS_DIR}/../Intrepid2")
   find_package(Intrepid2 HINTS ${UTOPIA_INTREPID2_SEARCH_PATHS} REQUIRED)
   if(Intrepid2_FOUND)
-    message(STATUS "Intrepid2 found.")
-    if(Trilinos_Kokkos_FOUND)
-      list(APPEND UTOPIA_FE_DEP_LIBRARIES ${Intrepid2_LIBRARIES})
-      list(APPEND UTOPIA_FE_DEP_INCLUDES ${Trilinos_INCLUDE_DIRS})
-      # message(STATUS "Trilinos_INCLUDE_DIRS;${Trilinos_INCLUDE_DIRS}")
-    else()
-      message(
-        FATAL_ERROR "UtopiaFE needs kokkos installed with utopia trilinos.")
-    endif()
+    list(APPEND UTOPIA_FE_DEP_LIBRARIES ${Intrepid2_LIBRARIES})
   endif()
 endif()
 
