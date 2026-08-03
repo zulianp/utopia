@@ -1,4 +1,3 @@
-if(Trilinos_Kokkos_FOUND)
 
   list(
     APPEND
@@ -43,4 +42,3 @@ if(Trilinos_Kokkos_FOUND)
       ${UTOPIA_FE_SOURCES}
       PARENT_SCOPE)
 
-endif()
