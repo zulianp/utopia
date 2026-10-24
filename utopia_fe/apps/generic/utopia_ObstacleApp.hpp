@@ -18,6 +18,7 @@
 #include "utopia_FEFunctionFactory.hpp"
 #include "utopia_NewmarkIntegrator.hpp"
 #include "utopia_ObstacleFEFunction.hpp"
+#include "utopia_VelocityVariant.hpp"
 #include "utopia_moonolith_ObstacleFEFunctionFactory.hpp"
 
 #include "utopia_MeshTransform.hpp"
@@ -130,6 +131,14 @@ namespace utopia {
 
                 } else {
                     fun = ObstacleFEFunctionFactory<FunctionSpace>::make_time_integrator(fun, integrator);
+
+                    // BoxConstrainedFEFunctionSolver measures the gap, bounds the increment and imposes the Dirichlet
+                    // data on the solution vector, which must therefore be the displacement
+                    if (std::dynamic_pointer_cast<VelocityVariant<FunctionSpace>>(fun)) {
+                        Utopia::Abort("ObstacleApp: the integrator " + integrator +
+                                      " solves for the velocity, which is not supported. Use a displacement-based "
+                                      "integrator or NLSolve!");
+                    }
                 }
 
                 obs_fun = std::make_shared<ObstacleFEFunction_t>(fun);
