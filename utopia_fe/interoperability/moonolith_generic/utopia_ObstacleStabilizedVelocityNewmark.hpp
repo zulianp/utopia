@@ -8,16 +8,19 @@
 #include "utopia_LineSearchBoxProjection.hpp"
 #include "utopia_LogBarrierFactory.hpp"
 #include "utopia_ObstacleStabilizedNewmark.hpp"
+#include "utopia_VelocityVariant.hpp"
 
 #include <utility>
 
 namespace utopia {
 
-    // https://en.wikipedia.org/wiki/Newmark-beta_method
-    // Unconditionally Stable gamma = 0.5, beta = 0.25
+    // Velocity form of the contact-stabilized Newmark method (see ObstacleStabilizedNewmark), with the
+    // contact constraint enforced by a barrier. The unknown is v_{n+1}, and x(v) = x_pred + dt/2 (v - v_hat_n),
+    // with the projected velocity v_hat_n = (x_pred - x_n) / dt
     template <class FunctionSpace>
     class ObstacleStabilizedVelocityNewmark : public TimeDependentFunction<FunctionSpace>,
                                               public ContactDependentFunction<FunctionSpace>,
+                                              public VelocityVariant<FunctionSpace>,
                                               public LSStrategy<typename Traits<FunctionSpace>::Vector> {
     public:
         using Super = utopia::TimeDependentFunction<FunctionSpace>;
@@ -40,8 +43,10 @@ namespace utopia {
             in.get("enable_line_search", enable_line_search_);
             in.get("enable_NaN_safe_line_search", enable_NaN_safe_line_search_);
             in.get("max_bisections", max_bisections_);
+            in.get("allow_projection", allow_projection_);
 
             in.get("dumping", dumping_);
+            in.get("consistent_initial_acceleration", consistent_initial_acceleration_);
 
             if (!obstacle_) {
                 std::string type;
@@ -59,12 +64,8 @@ namespace utopia {
             barrier_ = PenaltyFactory<Matrix_t, Vector_t>::new_penalty(function_type);
             barrier_->read(in);
 
-            bool use_barrier_mass_scaling = false;
-            in.get("use_barrier_mass_scaling", use_barrier_mass_scaling);
-
-            if (use_barrier_mass_scaling) {
-                barrier_->set_scaling_matrix(obstacle_->mass_matrix());
-            }
+            // The scaling matrix is set in update_constraints, once the obstacle has been assembled
+            in.get("use_barrier_mass_scaling", use_barrier_mass_scaling_);
         }
 
         bool update_constraints(const Vector_t &x) {
@@ -97,16 +98,20 @@ namespace utopia {
             barrier_->set_box_constraints(box);
 
             barrier_->set_selection(std::make_shared<Vector_t>(obstacle_->is_contact()));
-            barrier_->set_scaling_matrix(obstacle_->mass_matrix());
+
+            if (use_barrier_mass_scaling_) {
+                barrier_->set_scaling_matrix(obstacle_->mass_matrix());
+            }
 
             if (enable_line_search_) {
+                // The trivial obstacle constrains x itself, otherwise the constraint is on x - x_old
+                std::shared_ptr<Vector_t> offset = trivial_obstacle_ ? nullptr : make_ref(this->x_old());
+
                 if (!line_search_) {
-                    line_search_ = std::make_shared<LineSearchBoxProjection<Vector_t>>(box, make_ref(this->x_old()));
+                    line_search_ = std::make_shared<LineSearchBoxProjection<Vector_t>>(box, offset);
                 } else {
                     line_search_->set_box_constraints(box);
-                    if (!trivial_obstacle_) {
-                        line_search_->set_offset_vector(make_ref(this->x_old()));
-                    }
+                    line_search_->set_offset_vector(offset);
                 }
 
                 auto trafo = obstacle_->orthogonal_transformation();
@@ -197,22 +202,34 @@ namespace utopia {
 
         void init_memory(const Layout_t & /*layout*/) override {}
 
+        // Computes the predictor x_pred = x_n + dt v_hat_n, with the projected velocity v_hat_n
         void update_predictor() {
             assert(obstacle_);
 
+            const Scalar_t dt = this->delta_time();
+
             if (stabilized_formulation_) {
-                const Scalar_t dt = this->delta_time();
                 Vector_t temp;
                 obstacle_->transform(velocity_old_, temp);
-                temp *= dt;
-                temp = utopia::min(temp, obstacle_->gap());
 
-                obstacle_->inverse_transform(temp, predictor_);
+                // Admissible increment from x_old. The gap of the trivial obstacle refers to the reference
+                // configuration, hence the part already used by x_old is removed
+                Vector_t max_increment = obstacle_->gap();
+                if (trivial_obstacle_) {
+                    Vector_t t_x_old;
+                    obstacle_->transform(x_old_, t_x_old);
+                    max_increment -= t_x_old;
+                }
+
+                temp = utopia::min(temp, (1 / dt) * max_increment);
+
+                obstacle_->inverse_transform(temp, projected_velocity_);
             } else {
-                predictor_ = this->delta_time() * velocity_old_;
+                projected_velocity_ = velocity_old_;
             }
 
-            predictor_ += x_old_;
+            predictor_ = x_old_;
+            predictor_ += dt * projected_velocity_;
         }
 
         bool setup_IVP(Vector_t &x) override {
@@ -230,10 +247,33 @@ namespace utopia {
             velocity_old_.zeros(vlo);
             force_old_.zeros(vlo);
 
-            update_constraints(x);
+            if (consistent_initial_acceleration_ && !has_zero_density_ && !compute_initial_force()) {
+                return false;
+            }
+
+            if (!obstacle_) {
+                Utopia::Abort("ObstacleStabilizedVelocityNewmark: an obstacle or a contact is required!");
+            }
+
+            if (trivial_obstacle_) {
+                // The trivial obstacle bounds the total displacement, so its gap refers to the reference configuration
+                Vector_t zero(vlo, 0.);
+                update_constraints(zero);
+            } else {
+                update_constraints(x);
+            }
 
             update_predictor();
             return true;
+        }
+
+        // The force F(x_0) = r(x_0) - f(t_0) plays the role of -M a_0 (equation of motion at t_0)
+        bool compute_initial_force() {
+            if (this->has_time()) {
+                this->space()->update(*this->time());
+            }
+
+            return this->function()->gradient(x_old_, force_old_);
         }
 
         bool update_IVP(const Vector_t &velocity) override {
@@ -247,6 +287,9 @@ namespace utopia {
                 Utopia::Abort("update_IVP: NaN detected!");
             }
 
+            // Advances the clock (if the driver did not) so that the force is evaluated at the time of x
+            bool ok = Super::update_IVP(x);
+
             this->function()->gradient(x, force_old_);
 
             // Store current solution
@@ -257,7 +300,6 @@ namespace utopia {
                 update_constraints(x);
             }
 
-            bool ok = Super::update_IVP(x);
             update_predictor();
             barrier_->reset();
             return ok;
@@ -265,7 +307,7 @@ namespace utopia {
 
         bool time_derivative(const Vector_t &x, Vector_t &velocity) const override {
             const Scalar_t dt = this->delta_time();
-            velocity = velocity_old_;
+            velocity = projected_velocity_;
             velocity += (2 / dt) * (x - predictor_);
             return true;
         }
@@ -327,9 +369,47 @@ namespace utopia {
             return Super::hessian_and_gradient(x, H, g);
         }
 
-        bool update(const Vector_t &x) override {
+        bool update(const Vector_t &velocity) override {
             if (barrier_) {
-                barrier_->update(x);
+                Vector_t x, x_obs;
+                update_x(velocity, x);
+                constraint_coordinates(x, x_obs);
+                barrier_->update(x_obs);
+            }
+
+            return true;
+        }
+
+        // Incremental potential plus barrier energy, evaluated at x(v):
+        // E(x) = Psi(x) - f^T x + F_n^T x + 2/dt^2 (x - x_pred)^T M (x - x_pred) + B(x)
+        bool value(const Vector_t &velocity, Scalar_t &v) const override {
+            Vector_t x;
+            update_x(velocity, x);
+
+            if (!this->function()->value(x, v)) {
+                return false;
+            }
+
+            if (!has_zero_density_) {
+                const Scalar_t dt = this->delta_time();
+
+                Vector_t dx = x - predictor_;
+                Vector_t Mdx = (*this->mass_matrix()) * dx;
+                const Scalar_t inertia = (2 / (dt * dt)) * dot(dx, Mdx);
+                const Scalar_t previous_force = dot(force_old_, x);
+                v += inertia + previous_force;
+            }
+
+            if (barrier_) {
+                Vector_t barrier_x(layout(x), 0);
+                constraint_coordinates(x, barrier_x);
+
+                Scalar_t barrier_value = 0;
+                if (!barrier_->value(barrier_x, barrier_value)) {
+                    return false;
+                }
+
+                v += barrier_value;
             }
 
             return true;
@@ -340,6 +420,19 @@ namespace utopia {
 
         const Vector_t &solution() const override { return x_old(); }
         const Vector_t &velocity() const { return velocity_old_; }
+
+        // The displacement is written by report_solution
+        bool register_output(IO<FunctionSpace> &output) override {
+            set_velocity_field();
+            output.register_output_field(velocity_field_);
+            return true;
+        }
+
+        bool update_output(IO<FunctionSpace> &output) override {
+            set_velocity_field();
+            output.update_output_field(velocity_field_);
+            return true;
+        }
 
         bool report_solution(const Vector_t &) override { return Super::report_solution(solution()); }
 
@@ -352,9 +445,11 @@ namespace utopia {
             obstacle_ = obstacle;
         }
 
+        // Called by Newton for every iterate. Optional (as in ObstacleVelocityNewmark): a penalty (ShiftedPenalty)
+        // needs penetrating iterates to build up the contact force, and the projection would undo every step
         bool project_onto_feasibile_region(Vector_t &velocity) const final {
             bool ok = true;
-            if (barrier_) {
+            if (barrier_ && allow_projection_) {
                 Vector_t x;
                 update_x(velocity, x);
 
@@ -394,10 +489,50 @@ namespace utopia {
         }
 
         void initial_guess_for_solver(Vector_t &velocity) override {
-            // if (zero_initial_guess_) {
-            velocity.set(0.);
-            //     return;
-            // }
+            if (zero_initial_guess_) {
+                velocity.set(0.);
+            } else {
+                // x(v_hat_n) is the predictor, which is admissible in the stabilized formulation
+                velocity = projected_velocity_;
+            }
+
+            ensure_admissible(velocity);
+            impose_velocity_constraints(velocity);
+        }
+
+        // The barrier is only defined for admissible displacements. If x(v) is not admissible (e.g., when
+        // the guess moves the body beyond the gap), the guess x(v) = x_old (no motion), which always is, is used
+        void ensure_admissible(Vector_t &velocity) const {
+            if (!barrier_ || !barrier_->box()) return;
+
+            Vector_t x, t_x;
+            update_x(velocity, x);
+            constraint_coordinates(x, t_x);
+
+            if (barrier_->box()->count_violations(t_x) > 0) {
+                time_derivative(x_old_, velocity);
+            }
+        }
+
+        // Sets the Dirichlet dofs of the velocity such that x(v) = g(t_{n+1}) there,
+        // i.e., v_{n+1} = v_n + 2/dt (g(t_{n+1}) - x_pred)
+        void impose_velocity_constraints(Vector_t &velocity) const {
+            Vector_t g = x_old_;
+            this->space()->apply_constraints(g);
+
+            Vector_t v_bc;
+            time_derivative(g, v_bc);
+
+            // 1 on the free dofs and 0 on the Dirichlet dofs
+            Vector_t is_free(layout(velocity), 1.);
+            this->space()->apply_zero_constraints(is_free);
+
+            Vector_t v_free = e_mul(is_free, velocity);
+            Vector_t v_bc_free = e_mul(is_free, v_bc);
+
+            velocity = v_free;
+            velocity += v_bc;
+            velocity -= v_bc_free;
         }
 
         inline std::shared_ptr<LSStrategy<Vector_t>> line_search() override {
@@ -413,7 +548,9 @@ namespace utopia {
 
         UTOPIA_NVCC_PRIVATE
         Vector_t x_old_, velocity_old_;
+        Vector_t projected_velocity_;
         Vector_t predictor_;
+        Field<FunctionSpace> velocity_field_{"velocity"};
         Vector_t force_old_;
         bool has_zero_density_{false};
 
@@ -431,8 +568,11 @@ namespace utopia {
         bool enable_NaN_safe_line_search_{false};
         int max_bisections_{6};
         bool verbose_{false};
+        bool allow_projection_{false};
 
         Scalar_t dumping_{0.98};
+        bool use_barrier_mass_scaling_{true};
+        bool consistent_initial_acceleration_{true};
 
         // class Debug {
         // public:
@@ -449,7 +589,24 @@ namespace utopia {
 
         void update_x(const Vector_t &velocity, Vector_t &x) const {
             x = predictor_;
-            x += (0.5 * this->delta_time()) * (velocity - this->velocity_old());
+            x += (0.5 * this->delta_time()) * (velocity - projected_velocity_);
+        }
+
+        void set_velocity_field() {
+            velocity_field_.set_space(this->space());
+            velocity_field_.set_tensor_size(this->space()->n_var());
+            velocity_field_.set_data(std::make_shared<Vector_t>(velocity_old_));
+        }
+
+        // Maps the displacement to the quantity bounded by the gap (x for the trivial obstacle, x - x_old otherwise)
+        // in the obstacle coordinate system
+        void constraint_coordinates(const Vector_t &x, Vector_t &out) const {
+            if (trivial_obstacle_) {
+                obstacle_->transform(x, out);
+            } else {
+                Vector_t delta_x = x - this->x_old();
+                obstacle_->transform(delta_x, out);
+            }
         }
 
         void barrier_gradient(const Vector_t &x, Vector_t &g) const {
