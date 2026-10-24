@@ -150,9 +150,12 @@ namespace utopia {
                                                        const int i,
                                                        const int j,
                                                        StaticMatrix<Scalar, BlockSize, BlockSize> &block) const {
-                    Scalar val = op(cell, i);
+                    // Lumped: only the diagonal blocks (i == j) are non-zero
+                    Scalar val = (i == j) ? op(cell, i) : Scalar(0);
                     for (int subi = 0; subi < BlockSize; ++subi) {
-                        block(subi, subi) = val;
+                        for (int subj = 0; subj < BlockSize; ++subj) {
+                            block(subi, subj) = (subi == subj) ? val : Scalar(0);
+                        }
                     }
                 }
 
