@@ -29,7 +29,7 @@ namespace utopia {
         void read(Input &in) override { Super::read(in); }
 
         bool update_IVP(const Vector_t &velocity) override {
-            Vector_t x = this->x_old();
+            Vector_t x;
             update_x(velocity, x);
             return Super::update_IVP(x);
         }
@@ -39,6 +39,9 @@ namespace utopia {
             return true;
         }
 
+        // The residual is the Newmark residual evaluated at x(v) = x_n + dt/2 (v_n + v).
+        // The inertia term M a_{n+1} is added by NewmarkIntegrator::integrate_gradient, since
+        // a_{n+1}(x(v)) = 4/dt^2 (x(v) - x_n - dt v_n) - a_n = 2/dt (v - v_n) - a_n
         bool hessian_and_gradient(const Vector_t &velocity, Matrix_t &H, Vector_t &g) const override {
             Vector_t x;
             update_x(velocity, x);
@@ -48,22 +51,7 @@ namespace utopia {
         bool gradient(const Vector_t &velocity, Vector_t &g) const override {
             Vector_t x;
             update_x(velocity, x);
-
-            if (!this->function()->gradient(x, g)) {
-                return false;
-            }
-
-            Vector_t mom = velocity - this->velocity();
-            mom *= 2 / this->delta_time();
-            mom -= this->acceleration();
-
-            g += (*this->mass_matrix()) * mom;
-
-            if (this->must_apply_constraints_to_assembled()) {
-                this->space()->apply_zero_constraints(g);
-            }
-
-            return true;
+            return Super::gradient(x, g);
         }
 
         bool hessian(const Vector_t &velocity, Matrix_t &H) const override {
@@ -72,11 +60,21 @@ namespace utopia {
             return Super::hessian(x, H);
         }
 
+        bool value(const Vector_t &velocity, Scalar_t &v) const override {
+            Vector_t x;
+            update_x(velocity, x);
+            return Super::value(x, v);
+        }
+
+        bool update(const Vector_t &velocity) override {
+            Vector_t x;
+            update_x(velocity, x);
+            return Super::update(x);
+        }
+
         ////////////////////////////////////////////////////////////////////////////////
 
         bool setup_IVP(Vector_t &x) override { return Super::setup_IVP(x); }
-
-        void integrate_gradient(const Vector_t &, Vector_t &) const override {}
 
         void integrate_hessian(const Vector_t &x, Matrix_t &H) const override {
             UTOPIA_TRACE_REGION_BEGIN("VelocityNewmarkIntegrator::integrate_hessian");
@@ -94,15 +92,15 @@ namespace utopia {
 
         bool report_solution(const Vector_t &) override { return Super::report_solution(solution()); }
 
-        void initial_guess_for_solver(Vector_t &velocity) override { velocity.set(0.); }
+        void initial_guess_for_solver(Vector_t &velocity) override {
+            velocity.set(0.);
+            this->impose_velocity_constraints(velocity);
+        }
 
         void displacement(const Vector_t &velocity, Vector_t &result) const { update_x(velocity, result); }
 
     private:
-        void update_x(const Vector_t &velocity, Vector_t &x) const {
-            x = this->x_old();
-            x += (0.5 * this->delta_time()) * (this->velocity_old() + velocity);
-        }
+        void update_x(const Vector_t &velocity, Vector_t &x) const { this->displacement_from_velocity(velocity, x); }
     };
 
 }  // namespace utopia

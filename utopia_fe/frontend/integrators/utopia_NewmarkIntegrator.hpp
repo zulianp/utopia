@@ -2,6 +2,7 @@
 #define UTOPIA_NEWMARK_INTEGRATOR_HPP
 
 #include "utopia_FEModelFunction.hpp"
+#include "utopia_polymorphic_LinearSolver.hpp"
 
 #include <memory>
 #include <utility>
@@ -38,6 +39,7 @@ namespace utopia {
             }
 
             in.get("fail_on_field_not_found", fail_on_field_not_found_);
+            in.get("consistent_initial_acceleration", consistent_initial_acceleration_);
         }
 
         bool setup_IVP(IO<FunctionSpace> &input) override {
@@ -132,6 +134,56 @@ namespace utopia {
             state_->x.set_data(std::make_shared<Vector_t>(x));
             state_->velocity.set_data(std::make_shared<Vector_t>(vlo, 0));
             state_->acceleration.set_data(std::make_shared<Vector_t>(vlo, 0));
+
+            if (consistent_initial_acceleration_ && !state_->has_zero_density) {
+                return compute_initial_acceleration();
+            }
+
+            return true;
+        }
+
+        // Solves M a_0 = f(t_0) - r(x_0), i.e., the equation of motion at t_0.
+        // On the Dirichlet dofs a_0 = 0.
+        bool compute_initial_acceleration() {
+            if (this->has_time()) {
+                this->space()->update(*this->time());
+            }
+
+            Vector_t rhs;
+            if (!this->function()->gradient(x_old(), rhs)) {
+                return false;
+            }
+
+            rhs *= -1.0;
+            this->space()->apply_zero_constraints(rhs);
+
+            Matrix_t M = *this->mass_matrix();
+            this->space()->apply_constraints(M);
+
+            OmniLinearSolver<Matrix_t, Vector_t> solver;
+            acceleration_old().set(0.);
+            return solver.solve(M, rhs, acceleration_old());
+        }
+
+        // Incremental potential of the Newmark step:
+        // E(x) = Psi(x) - f^T x + 2/dt^2 (x - x_pred)^T M (x - x_pred), x_pred = x_n + dt v_n + dt^2/4 a_n
+        bool value(const Vector_t &x, Scalar_t &v) const override {
+            if (!this->function()->value(x, v)) {
+                return false;
+            }
+
+            if (!state_->has_zero_density) {
+                const Scalar_t dt = this->delta_time();
+                const Scalar_t dt2 = dt * dt;
+
+                Vector_t dx = x - x_old();
+                dx -= dt * velocity_old();
+                dx -= (dt2 / 4) * acceleration_old();
+
+                Vector_t Mdx = (*this->mass_matrix()) * dx;
+                v += (2 / dt2) * dot(dx, Mdx);
+            }
+
             return true;
         }
 
@@ -220,10 +272,38 @@ namespace utopia {
         const Vector_t &acceleration_old() const { return acceleration(); }
         Vector_t &acceleration_old() { return acceleration(); }
 
+        // Trapezoidal rule x_{n+1} = x_n + dt/2 (v_n + v_{n+1}), used by the velocity variants
+        void displacement_from_velocity(const Vector_t &velocity, Vector_t &x) const {
+            x = x_old();
+            x += (0.5 * this->delta_time()) * (velocity_old() + velocity);
+        }
+
+        // Sets the Dirichlet dofs of the velocity to v_{n+1} = 2/dt (g(t_{n+1}) - x_n) - v_n,
+        // so that the displacement obtained with displacement_from_velocity satisfies x_{n+1} = g(t_{n+1})
+        void impose_velocity_constraints(Vector_t &velocity) const {
+            Vector_t g = x_old();
+            this->space()->apply_constraints(g);
+
+            Vector_t v_bc = (2 / this->delta_time()) * (g - x_old());
+            v_bc -= velocity_old();
+
+            // 1 on the free dofs and 0 on the Dirichlet dofs
+            Vector_t is_free(layout(velocity), 1.);
+            this->space()->apply_zero_constraints(is_free);
+
+            Vector_t v_free = e_mul(is_free, velocity);
+            Vector_t v_bc_free = e_mul(is_free, v_bc);
+
+            velocity = v_free;
+            velocity += v_bc;
+            velocity -= v_bc_free;
+        }
+
     private:
         bool enable_restart_{false};
         bool export_time_integrator_fields_{true};
         bool fail_on_field_not_found_{true};
+        bool consistent_initial_acceleration_{true};
         std::shared_ptr<State> state_;
     };
 

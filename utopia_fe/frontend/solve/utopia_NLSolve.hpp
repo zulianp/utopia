@@ -230,6 +230,7 @@ namespace utopia {
                 do {
                     this->status("Timestep: " + std::to_string(n_time_steps++));
 
+                    function_->begin_time_step();
                     function_->space()->apply_constraints_update(x);
 
                     {  // If we have a newton solver we can add ad-hoc line-search strategies to it

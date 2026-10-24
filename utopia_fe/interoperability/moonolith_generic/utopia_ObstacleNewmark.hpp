@@ -15,6 +15,7 @@
 #include "utopia_ContactFactory.hpp"
 
 #include "utopia_IsNotSupported.hpp"
+#include "utopia_LineSearchBoxProjection.hpp"
 
 namespace utopia {
 
@@ -90,10 +91,21 @@ namespace utopia {
         }
 
         bool setup_IVP(Vector_t &x) override {
-            update_constraints(x);
-            barrier_->reset();
+            // The state must exist before the line-search references x_old
+            if (!Super::setup_IVP(x)) {
+                return false;
+            }
 
-            return Super::setup_IVP(x);
+            if (trivial_obstacle_) {
+                // The trivial obstacle bounds the total displacement, so its gap refers to the reference configuration
+                Vector_t zero(layout(x), 0.);
+                update_constraints(zero);
+            } else {
+                update_constraints(x);
+            }
+
+            barrier_->reset();
+            return true;
         }
 
         bool time_derivative(const Vector_t &x, Vector_t &dfdt) const override {
@@ -188,6 +200,27 @@ namespace utopia {
         const Vector_t &solution() const override { return this->x_old(); }
         bool report_solution(const Vector_t &x) override { return Super::report_solution(x); }
 
+        // Newmark incremental potential plus barrier energy
+        bool value(const Vector_t &x, Scalar_t &v) const override {
+            if (!Super::value(x, v)) {
+                return false;
+            }
+
+            if (barrier_) {
+                Vector_t barrier_x(layout(x), 0);
+                constraint_coordinates(x, barrier_x);
+
+                Scalar_t barrier_value = 0;
+                if (!barrier_->value(barrier_x, barrier_value)) {
+                    return false;
+                }
+
+                v += barrier_value;
+            }
+
+            return true;
+        }
+
         // bool update(const Vector_t &x) override {
         //     if (barrier_) {
         //         barrier_->update(x);
@@ -248,12 +281,8 @@ namespace utopia {
                        const Vector_t &correction,
                        Scalar_t &alpha) override {
             if (line_search_) {
-                if (trivial_obstacle_) {
-                    Vector_t zero(layout(x), 0.);
-                    return line_search_->get_alpha(fun, g, zero, correction, alpha);
-                } else {
-                    return line_search_->get_alpha(fun, g, x, correction, alpha);
-                }
+                // The offset of the line-search (none for the trivial obstacle) selects the constrained quantity
+                return line_search_->get_alpha(fun, g, x, correction, alpha);
             } else {
                 alpha = 0.99;
                 return false;
@@ -266,13 +295,8 @@ namespace utopia {
                        const Vector_t &correction,
                        Scalar_t &alpha) override {
             if (line_search_) {
-                if (trivial_obstacle_) {
-                    Vector_t zero(layout(x), 0.);
-                    return line_search_->get_alpha(fun, g, zero, correction, alpha);
-                } else {
-                    return line_search_->get_alpha(fun, g, x, correction, alpha);
-                }
-
+                // The offset of the line-search (none for the trivial obstacle) selects the constrained quantity
+                return line_search_->get_alpha(fun, g, x, correction, alpha);
             } else {
                 alpha = 0.99;
                 return false;
@@ -299,6 +323,17 @@ namespace utopia {
 
         bool enable_line_search_{false};
         std::shared_ptr<LineSearchBoxProjection<Vector_t>> line_search_;
+
+        // Maps the displacement to the quantity bounded by the gap (x for the trivial obstacle, x - x_old otherwise)
+        // in the obstacle coordinate system
+        void constraint_coordinates(const Vector_t &x, Vector_t &out) const {
+            if (trivial_obstacle_) {
+                obstacle_->transform(x, out);
+            } else {
+                Vector_t delta_x = x - this->x_old();
+                obstacle_->transform(delta_x, out);
+            }
+        }
 
         bool update_constraints(const Vector_t &x) {
             utopia::out() << "update_constraints\n";
@@ -330,11 +365,14 @@ namespace utopia {
             barrier_->set_scaling_matrix(obstacle_->mass_matrix());
 
             if (enable_line_search_) {
+                // The trivial obstacle constrains x itself, otherwise the constraint is on x - x_old
+                std::shared_ptr<Vector_t> offset = trivial_obstacle_ ? nullptr : make_ref(this->x_old());
+
                 if (!line_search_) {
-                    line_search_ = std::make_shared<LineSearchBoxProjection<Vector_t>>(box, make_ref(this->x_old()));
+                    line_search_ = std::make_shared<LineSearchBoxProjection<Vector_t>>(box, offset);
                 } else {
                     line_search_->set_box_constraints(box);
-                    line_search_->set_offset_vector(make_ref(this->x_old()));
+                    line_search_->set_offset_vector(offset);
                 }
 
                 line_search_->set_dumping(0.98);

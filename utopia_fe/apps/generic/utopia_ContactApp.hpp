@@ -113,6 +113,8 @@ namespace utopia {
             }
 
             do {
+                fun->begin_time_step();
+
                 if (!solver.solve(*obs_fun, x)) {
                     space.comm().root_print("ContactApp[Warning] solver failed to converge!");
                 }

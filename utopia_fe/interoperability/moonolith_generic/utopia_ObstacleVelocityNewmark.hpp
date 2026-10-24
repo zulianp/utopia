@@ -6,6 +6,7 @@
 #include "utopia_BoxConstrainedFEFunction.hpp"
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_ContactInterface.hpp"
+#include "utopia_NewmarkIntegrator.hpp"
 #include "utopia_fe_Core.hpp"
 
 #include "utopia_AnalyticObstacle_impl.hpp"
@@ -15,11 +16,13 @@
 
 #include "utopia_IsNotSupported.hpp"
 #include "utopia_LineSearchBoxProjection.hpp"
+#include "utopia_VelocityVariant.hpp"
 
 namespace utopia {
 
     template <class FunctionSpace>
     class ObstacleVelocityNewmark final : public NewmarkIntegrator<FunctionSpace>,
+                                          public VelocityVariant<FunctionSpace>,
                                           public LSStrategy<typename Traits<FunctionSpace>::Vector> {
     public:
         using Super = utopia::NewmarkIntegrator<FunctionSpace>;
@@ -139,9 +142,31 @@ namespace utopia {
         void init_memory(const Layout_t & /*layout*/) override {}
 
         void initial_guess_for_solver(Vector_t &velocity) override {
-            velocity.set(0.);
+            if (zero_initial_guess_) {
+                velocity.set(0.);
+            } else {
+                velocity = this->velocity();
+            }
 
             project_onto_feasibile_region(velocity);
+            ensure_admissible(velocity);
+
+            // Dirichlet data has precedence over the projection
+            this->impose_velocity_constraints(velocity);
+        }
+
+        // The barrier is only defined for admissible displacements. If x(v) is not admissible (e.g., when
+        // dt/2 v_n moves the body beyond the gap), the guess x(v) = x_old (no motion), which always is, is used
+        void ensure_admissible(Vector_t &velocity) const {
+            if (!box_) return;
+
+            Vector_t x, t_x;
+            update_x(velocity, x);
+            constraint_coordinates(x, t_x);
+
+            if (box_->count_violations(t_x) > 0) {
+                Super::time_derivative(this->x_old(), velocity);
+            }
         }
 
         inline std::shared_ptr<LSStrategy<Vector_t>> line_search() override {
@@ -185,12 +210,8 @@ namespace utopia {
             barrier_ = PenaltyFactory<Matrix_t, Vector_t>::new_penalty(function_type);
             barrier_->read(in);
 
-            bool use_barrier_mass_scaling = true;
-            in.get("use_barrier_mass_scaling", use_barrier_mass_scaling);
-
-            if (use_barrier_mass_scaling) {
-                barrier_->set_scaling_matrix(obstacle_->mass_matrix());
-            }
+            // The scaling matrix is set in update_constraints, once the obstacle has been assembled
+            in.get("use_barrier_mass_scaling", use_barrier_mass_scaling_);
 
             if (mpi_world_rank() == 0) {
                 describe(utopia::out().stream());
@@ -240,8 +261,20 @@ namespace utopia {
             // this->velocity_old().zeros(vlo);
             // this->acceleration_old().zeros(vlo);
 
-            update_constraints(x);
-            return Super::setup_IVP(x);
+            // The state must exist before the line-search references x_old
+            if (!Super::setup_IVP(x)) {
+                return false;
+            }
+
+            if (trivial_obstacle_) {
+                // The trivial obstacle bounds the total displacement, so its gap refers to the reference configuration
+                Vector_t zero(layout(x), 0.);
+                update_constraints(zero);
+            } else {
+                update_constraints(x);
+            }
+
+            return true;
         }
 
         bool time_derivative(const Vector_t &x, Vector_t &dfdt) const override {
@@ -254,20 +287,18 @@ namespace utopia {
             Matrix_t H;
             Vector_t buff_1(layout(x), 0), buff_2(layout(x), 0);
 
-            // delta_x
-            buff_2 = x - this->x_old();
-
-            // Transform x into obstacle coordinate system
-            obstacle_->transform(buff_2, buff_1);
+            // Constrained quantity (x or delta_x) in the obstacle coordinate system
+            constraint_coordinates(x, buff_1);
 
             SizeType n_violations = box_->count_violations(buff_1);
             if (!n_violations) return true;
 
-            // remove delta_x from upper_bound
-            *box_->upper_bound() -= buff_1;
+            // Bounds for the correction. Work on a copy: box_ is shared with the barrier and the line-search
+            BoxConstraints<Vector_t> correction_box(nullptr,
+                                                    std::make_shared<Vector_t>(*box_->upper_bound() - buff_1));
 
             qp_solver.verbose(true);
-            qp_solver.set_box_constraints(*box_);
+            qp_solver.set_box_constraints(correction_box);
 
             this->function()->hessian(x, H);
             Super::integrate_hessian(x, H);
@@ -438,6 +469,30 @@ namespace utopia {
         const Vector_t &solution() const override { return this->x_old(); }
         bool report_solution(const Vector_t &) override { return Super::report_solution(solution()); }
 
+        // Newmark incremental potential plus barrier energy, both evaluated at x(v)
+        bool value(const Vector_t &velocity, Scalar_t &v) const override {
+            Vector_t x;
+            update_x(velocity, x);
+
+            if (!Super::value(x, v)) {
+                return false;
+            }
+
+            if (barrier_) {
+                Vector_t barrier_x(layout(x), 0);
+                constraint_coordinates(x, barrier_x);
+
+                Scalar_t barrier_value = 0;
+                if (!barrier_->value(barrier_x, barrier_value)) {
+                    return false;
+                }
+
+                v += barrier_value;
+            }
+
+            return true;
+        }
+
         bool update(const Vector_t &velocity) override {
             if (barrier_) {
                 Vector_t x, x_obs;
@@ -513,15 +568,24 @@ namespace utopia {
         bool zero_initial_guess_{true};
         bool non_smooth_projection_{false};
         int max_projection_iterations_{10000};
+        bool use_barrier_mass_scaling_{true};
 
         Scalar_t damping_{1};
 
         std::shared_ptr<LineSearchBoxProjection<Vector_t>> line_search_;
         std::shared_ptr<BoxConstraints<Vector_t>> box_;
 
-        void update_x(const Vector_t &velocity, Vector_t &x) const {
-            x = this->x_old();
-            x += (0.5 * this->delta_time()) * (this->velocity_old() + velocity);
+        void update_x(const Vector_t &velocity, Vector_t &x) const { this->displacement_from_velocity(velocity, x); }
+
+        // Maps the displacement to the quantity bounded by the gap (x for the trivial obstacle, x - x_old otherwise)
+        // in the obstacle coordinate system
+        void constraint_coordinates(const Vector_t &x, Vector_t &out) const {
+            if (trivial_obstacle_) {
+                obstacle_->transform(x, out);
+            } else {
+                Vector_t delta_x = x - this->x_old();
+                obstacle_->transform(delta_x, out);
+            }
         }
 
         bool update_constraints(const Vector_t &x) {
@@ -553,17 +617,20 @@ namespace utopia {
             barrier_->set_box_constraints(box);
 
             barrier_->set_selection(std::make_shared<Vector_t>(obstacle_->is_contact()));
-            barrier_->set_scaling_matrix(obstacle_->mass_matrix());
+
+            if (use_barrier_mass_scaling_) {
+                barrier_->set_scaling_matrix(obstacle_->mass_matrix());
+            }
 
             if (enable_line_search_) {
+                // The trivial obstacle constrains x itself, otherwise the constraint is on x - x_old
+                std::shared_ptr<Vector_t> offset = trivial_obstacle_ ? nullptr : make_ref(this->x_old());
+
                 if (!line_search_) {
-                    line_search_ = std::make_shared<LineSearchBoxProjection<Vector_t>>(box, make_ref(this->x_old()));
+                    line_search_ = std::make_shared<LineSearchBoxProjection<Vector_t>>(box, offset);
                 } else {
                     line_search_->set_box_constraints(box);
-
-                    if (!trivial_obstacle_) {
-                        line_search_->set_offset_vector(make_ref(this->x_old()));
-                    }
+                    line_search_->set_offset_vector(offset);
                 }
 
                 auto trafo = obstacle_->orthogonal_transformation();
@@ -575,7 +642,9 @@ namespace utopia {
                 }
 
                 line_search_->set_transform(trafo);
-                line_search_->set_dumping(damping_);
+                // The barrier is infinite on the boundary, so the step must stop strictly before it (as in
+                // ObstacleNewmark)
+                line_search_->set_dumping(std::min(damping_, Scalar_t(0.98)));
             }
 
             box_ = box;

@@ -134,7 +134,21 @@ namespace utopia {
                 }
 
                 if (op_.lumped) {
-                    this->loop_cell_test("Assemble<Mass>::assemble::lump", Lump(this->matrix_data()));
+                    if (op_.n_components == 1) {
+                        this->loop_cell_test("Assemble<Mass>::assemble::lump", Lump(this->matrix_data()));
+                    } else {
+                        // The element matrix has n_shape_functions * n_components rows, which must all be lumped
+                        // (loop_cell_test only visits the first n_shape_functions)
+                        Lump lump(this->matrix_data());
+                        const int n_element_dofs = this->matrix_data().extent(1);
+
+                        this->loop_cell(
+                            "Assemble<Mass>::assemble::lump_vector", UTOPIA_LAMBDA(const int &cell) {
+                                for (int i = 0; i < n_element_dofs; ++i) {
+                                    lump(cell, i);
+                                }
+                            });
+                    }
                 }
 
                 if (op_.density_function) {

@@ -29,95 +29,108 @@ namespace utopia {
 
         std::string function_type() const override { return "ShiftedPenalty"; }
 
+        // The penalty energy for the shift s and the active set a, both set by update(), is
+        //   rho/2 sum_i dps_i(x)^2,  dps(x) = a (ub - x + s) (upper bound) or a (lb - x + s) (lower bound),
+        // with gradient -rho dps(x) and hessian rho a. The active set is the one of the shift before the last
+        // update. Determining it from the new shift instead makes Newton cycle between pushing the body out of the
+        // constraint and releasing it
+        void shifted_violation(const Vector &x, Vector &dps_out, Vector &active_out) const {
+            Vector zero_shift;
+            if (!shift) {
+                zero_shift.zeros(layout(x));
+            }
+
+            const Vector &s = shift ? *shift : zero_shift;
+
+            dps_out.zeros(layout(x));
+
+            if (active) {
+                active_out = *active;
+            } else {
+                active_out.zeros(layout(x));
+            }
+
+            auto s_view = const_local_view_device(s);
+            auto x_view = const_local_view_device(x);
+            auto dps_view = local_view_device(dps_out);
+            auto a_view = local_view_device(active_out);
+
+            // Without update() the active set is the one of the zero shift
+            const bool has_active = static_cast<bool>(active);
+
+            if (this->box()->has_upper_bound()) {
+                auto ub_view = const_local_view_device(*this->box()->upper_bound());
+
+                parallel_for(
+                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                        const Scalar v = ub_view.get(i) - x_view.get(i) + s_view.get(i);
+                        const Scalar a = has_active ? a_view.get(i) : Scalar(v <= 0);
+                        dps_view.set(i, a * v);
+                        a_view.set(i, a);
+                    });
+            } else if (this->box()->has_lower_bound()) {
+                auto lb_view = const_local_view_device(*this->box()->lower_bound());
+
+                parallel_for(
+                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                        const Scalar v = lb_view.get(i) - x_view.get(i) + s_view.get(i);
+                        const Scalar a = has_active ? a_view.get(i) : Scalar(v >= 0);
+                        dps_view.set(i, a * v);
+                        a_view.set(i, a);
+                    });
+            }
+        }
+
         bool penalty_gradient(const Vector &x, Vector &g) const {
             const Scalar penalty_parameter = penalty_parameter_current_;
 
-            auto dps_view = const_local_view_device(*dps);
-            auto g_view = local_view_device(g);
+            Vector dps_x, active_x;
+            shifted_violation(x, dps_x, active_x);
 
-            // SizeType cc = count_active(x);
-            // if (!x.comm().rank()) {
-            //     utopia::out() << "Actual active " << cc << "\n";
-            // }
+            auto dps_view = const_local_view_device(dps_x);
+            auto g_view = local_view_device(g);
 
             parallel_for(
                 local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                    const Scalar dps = dps_view.get(i);
-                    g_view.set(i, g_view.get(i) - penalty_parameter * dps);
+                    g_view.set(i, g_view.get(i) - penalty_parameter * dps_view.get(i));
                 });
 
             return true;
         }
 
         bool penalty_hessian(const Vector &x, Vector &H) const {
-            Vector d, diag_B;
             const Scalar penalty_parameter = penalty_parameter_current_;
 
             if (H.empty()) {
                 H.zeros(layout(x));
             }
 
-            if (!active) {
-                Utopia::Abort();
-            }
+            Vector dps_x, active_x;
+            shifted_violation(x, dps_x, active_x);
 
-            auto a_view = const_local_view_device(*active);
-            auto diag_B_view = local_view_device(H);
+            auto a_view = const_local_view_device(active_x);
+            auto H_view = local_view_device(H);
 
             parallel_for(
-                local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                    const Scalar ai = a_view.get(i);
-                    diag_B_view.set(i, ai * penalty_parameter);
-                });
+                local_range_device(x), UTOPIA_LAMBDA(const SizeType i) { H_view.set(i, a_view.get(i) * penalty_parameter); });
 
             return true;
         }
 
         bool penalty_value(const Vector &x, Vector &v) const {
-            Vector d;
             const Scalar penalty_parameter = penalty_parameter_current_;
 
-            auto a_view = local_view_device(*active);
+            Vector dps_x, active_x;
+            shifted_violation(x, dps_x, active_x);
 
-            if (this->box()->has_upper_bound()) {
-                d = *this->box()->upper_bound() - x;
+            auto dps_view = const_local_view_device(dps_x);
+            auto v_view = local_view_device(v);
 
-                auto d_view = const_local_view_device(d);
-                auto v_view = local_view_device(v);
-
-                parallel_for(
-                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                        const Scalar di = d_view.get(i);
-                        const Scalar active = a_view.get(i);
-                        v_view.set(i, active * di * di * penalty_parameter);
-                    });
-            }
-
-            if (this->box()->has_lower_bound()) {
-                // TODO Check
-                d = *this->box()->lower_bound() - x;
-
-                auto d_view = const_local_view_device(d);
-                auto v_view = local_view_device(v);
-
-                parallel_for(
-                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                        const Scalar di = d_view.get(i);
-                        const Scalar active = a_view.get(i);
-                        v_view.set(i, active * di * di * penalty_parameter);
-                    });
-            }
-
-            // if (this->box()->has_upper_bound() || this->box()->has_lower_bound()) {
-            //     auto d_view = const_local_view_device(*dps);
-            //     auto v_view = local_view_device(v);
-
-            //     parallel_for(
-            //         local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-            //             const Scalar di = d_view.get(i);
-            //             v_view.set(i, di * di * penalty_parameter);
-            //         });
-            // }
+            parallel_for(
+                local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                    const Scalar dps_i = dps_view.get(i);
+                    v_view.set(i, 0.5 * penalty_parameter * dps_i * dps_i);
+                });
 
             return true;
         }
@@ -146,11 +159,18 @@ namespace utopia {
                     h = work;
                 }
 
-                work.zeros(layout(H));
+                // The hessian in the constraint base is diag(h). In the problem base it is T^T diag(h) T,
+                // whose diagonal is not T^T h
+                Matrix diag_matrix = diag(h);
+                Matrix temp;
+                this->transform()->transform(diag_matrix, temp);
+                Vector temp_diag = diag(temp);
 
-                // Transform to problem base
-                this->transform()->inverse_transform_direction(h, work);
-                H += (work);
+                if (empty(H)) {
+                    H = temp_diag;
+                } else {
+                    H += temp_diag;
+                }
             } else {
                 h.zeros(layout(x));
                 if (!penalty_hessian(x, h)) {
@@ -234,7 +254,7 @@ namespace utopia {
             return true;
         }
 
-        /// FIXME shift is not considred in the energy value here
+        // Adds the penalty energy to value
         bool value(const Vector &x, Scalar &value) const override {
             UTOPIA_TRACE_SCOPE("ShiftedPenalty::value");
 
@@ -345,6 +365,8 @@ namespace utopia {
             return c;
         }
 
+        // Augmented-Lagrangian update of the shift at x: s <- min(0, ub - x + s) (upper bound) or
+        // s <- max(0, lb - x + s) (lower bound), and of the active set (where the shifted violation is not zero)
         void update_shift_aux(const Vector &x) {
             if (this->box()->has_upper_bound() && this->box()->has_lower_bound()) {
                 if (!x.comm().rank()) {
@@ -354,98 +376,56 @@ namespace utopia {
                 }
             }
 
-            if (this->box()->has_upper_bound()) {
-                {
-                    // {
-                    //     std::stringstream ss;
-                    //     ss << "x: " << x.local_size() << " " << x.size() << "\n";
-                    //     ss << "shift: " << shift->local_size() << " " << shift->size() << "\n";
-                    //     ss << "active: " << active->local_size() << " " << active->size() << "\n";
-                    //     ss << "dps: " << dps->local_size() << " " << dps->size() << "\n";
-                    //     ss << "upper_bound: " << this->box()->upper_bound()->local_size() << " "
-                    //        << this->box()->upper_bound()->size() << "\n";
+            {
+                auto x_view = const_local_view_device(x);
+                auto s_view = local_view_device(*shift);
+                auto a_view = local_view_device(*active);
 
-                    //     x.comm().synched_print(ss.str());
-                    // }
-
+                if (this->box()->has_upper_bound()) {
                     auto ub_view = const_local_view_device(*this->box()->upper_bound());
-                    auto x_view = const_local_view_device(x);
-                    auto s_view = local_view_device(*shift);
-                    auto a_view = local_view_device(*active);
-                    auto dps_view = local_view_device(*dps);
 
                     parallel_for(
                         local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                            const auto ubi = ub_view.get(i);
-                            const auto xi = x_view.get(i);
-                            const auto di = ubi - xi;
-                            auto si = s_view.get(i);
-
-                            auto dps = di + si;
-                            const bool active = dps <= 0;
-
-                            si = active * dps;
-                            dps = active * (di + si);
-
-                            a_view.set(i, active);
-                            s_view.set(i, si);
-                            dps_view.set(i, dps);
-
-                            // printf("%d) %g %g\n", i, si, dps);
+                            const Scalar v = ub_view.get(i) - x_view.get(i) + s_view.get(i);
+                            const bool a = v <= 0;
+                            s_view.set(i, a * v);
+                            a_view.set(i, a);
                         });
-                }
-
-                if (verbose_) {
-                    const SizeType c = sum(*active);
-                    Vector diff = *this->box()->upper_bound() - x;
-                    diff.e_min(0);
-                    const Scalar penetration_norm = norm2(diff);
-                    const Scalar shift_norm = norm2(*shift);
-
-                    if (!x.comm().rank() && c > 0) {
-                        utopia::out() << "UB) Active: " << c << ", penetration_norm: " << penetration_norm
-                                      << ", shift_norm: " << shift_norm << "\n";
-                    }
-                }
-            } else if (this->box()->has_lower_bound()) {
-                {
+                } else if (this->box()->has_lower_bound()) {
                     auto lb_view = const_local_view_device(*this->box()->lower_bound());
-                    auto x_view = const_local_view_device(x);
-                    auto s_view = local_view_device(*shift);
-                    auto a_view = local_view_device(*active);
-                    auto dps_view = local_view_device(*dps);
 
                     parallel_for(
                         local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                            const auto lbi = lb_view.get(i);
-                            const auto xi = x_view.get(i);
-                            const auto di = lbi - xi;
-                            auto si = s_view.get(i);
-
-                            auto dps = di + si;
-                            const bool active = dps >= 0;
-
-                            si = active * dps;
-                            dps = active * (di + si);
-
-                            a_view.set(i, active);
-                            s_view.set(i, si);
-                            dps_view.set(i, dps);
+                            const Scalar v = lb_view.get(i) - x_view.get(i) + s_view.get(i);
+                            const bool a = v >= 0;
+                            s_view.set(i, a * v);
+                            a_view.set(i, a);
                         });
                 }
+            }
 
-                if (verbose_) {
-                    const SizeType c = sum(*active);
-                    Vector diff = *this->box()->lower_bound() - x;
+            if (verbose_) {
+                Vector active_x;
+                shifted_violation(x, *dps, active_x);
+
+                const SizeType c = sum(*active);
+                Vector diff;
+                if (this->box()->has_upper_bound()) {
+                    diff = *this->box()->upper_bound() - x;
+                    diff.e_min(0);
+                } else {
+                    diff = *this->box()->lower_bound() - x;
                     diff.e_max(0);
-                    const Scalar penetration_norm = norm2(diff);
-                    const Scalar shift_norm = norm2(*shift);
-                    const Scalar dps_norm = norm2(*dps);
+                }
 
-                    if (!x.comm().rank() && c > 0) {
-                        utopia::out() << "LB) Active: " << c << ", penetration_norm: " << penetration_norm
-                                      << ", shift_norm: " << shift_norm << ", dps norm:" << dps_norm << "\n";
-                    }
+                const Scalar penetration_norm = norm2(diff);
+                const Scalar shift_norm = norm2(*shift);
+                const Scalar dps_norm = norm2(*dps);
+
+                if (!x.comm().rank() && c > 0) {
+                    utopia::out() << (this->box()->has_upper_bound() ? "UB" : "LB") << ") Active: " << c
+                                  << ", penetration_norm: " << penetration_norm << ", shift_norm: " << shift_norm
+                                  << ", dps norm:" << dps_norm << "\n";
                 }
             }
         }
@@ -520,6 +500,8 @@ namespace utopia {
         }
 
         void read(Input &in) override {
+            Super::read(in);
+
             penalty_parameter_max_ = 0;
             if (!Options()
                      .add_option(
