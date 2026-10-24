@@ -87,6 +87,9 @@ namespace utopia {
         virtual void initial_guess_for_solver(Vector_t &) {}
 
         virtual bool update_BVP() { return false; }
+        // Called by the time-stepping drivers before solving for the next step.
+        // Time-dependent functions advance their clock and boundary data to t_{n+1} here.
+        virtual bool begin_time_step() { return true; }
         virtual bool update_IVP(const Vector_t &) { return false; }
         virtual bool setup_IVP(Vector_t &) { return false; }
         virtual bool setup_IVP(IO<FunctionSpace> &) {
@@ -399,9 +402,22 @@ namespace utopia {
 
         void set_environment(const std::shared_ptr<Environment_t> &env) override { fe_function_->set_environment(env); }
 
+        // Advances the clock and the Dirichlet data to t_{n+1}, so that loads and boundary
+        // conditions of the step being solved are evaluated at the new time level.
+        bool begin_time_step() override {
+            if (!step_begun_) {
+                time()->update();
+                space()->update(*time());
+                step_begun_ = true;
+            }
+
+            return true;
+        }
+
         bool update_IVP(const Vector_t &x) override {
-            time()->update();
-            space()->update(*time());
+            // Drivers that do not call begin_time_step() advance the clock here (after the solve)
+            begin_time_step();
+            step_begun_ = false;
 
             if (fe_function_) fe_function_->update_IVP(x);
             return true;
@@ -604,6 +620,7 @@ namespace utopia {
     protected:
         inline bool export_tensors() const { return export_tensors_; }
         inline bool must_apply_constraints_to_assembled() const { return must_apply_constraints_; }
+        inline bool has_time() const { return static_cast<bool>(time_); }
 
     private:
         std::shared_ptr<FEFunctionInterface_t> fe_function_;
@@ -613,6 +630,7 @@ namespace utopia {
 
         bool must_apply_constraints_{true};
         bool export_tensors_{false};
+        bool step_begun_{false};
         utopia::Path output_path_{"output.e"};
         std::string output_mode_;
     };

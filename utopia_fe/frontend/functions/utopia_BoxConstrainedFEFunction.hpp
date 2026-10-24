@@ -73,6 +73,7 @@ namespace utopia {
 
         bool report_solution(const Vector_t &x) override { return unconstrained_->report_solution(x); }
 
+        bool begin_time_step() override { return unconstrained_->begin_time_step(); }
         bool update_IVP(const Vector_t &x) override { return unconstrained_->update_IVP(x); }
         bool setup_IVP(Vector_t &x) override { return unconstrained_->setup_IVP(x); }
         bool setup_IVP(IO<FunctionSpace> &input) override { return unconstrained_->setup_IVP(input); }

@@ -106,6 +106,7 @@ namespace utopia {
 
         bool report_solution(const Vector_t &x) override { return function_->report_solution(x); }
 
+        bool begin_time_step() override { return function_->begin_time_step(); }
         bool update_IVP(const Vector_t &x) override { return function_->update_IVP(x); }
         bool setup_IVP(Vector_t &x) override { return function_->setup_IVP(x); }
         bool is_IVP_solved() override { return function_->is_IVP_solved(); }

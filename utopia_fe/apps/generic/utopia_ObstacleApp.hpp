@@ -166,6 +166,8 @@ namespace utopia {
             }
 
             do {
+                fun->begin_time_step();
+
                 if (fun->is_time_dependent()) {
                     const Scalar_t t = fun->time()->get();
                     status("time: " + std::to_string(t));
