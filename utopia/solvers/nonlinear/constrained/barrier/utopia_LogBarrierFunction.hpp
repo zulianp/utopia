@@ -66,7 +66,7 @@ namespace utopia {
             }
 
             if (this->box_->has_lower_bound()) {
-                value += logn(x - *this->box_->lower_bound());
+                value -= logn(x - *this->box_->lower_bound());
             }
 
             return true;
@@ -222,7 +222,10 @@ namespace utopia {
             return true;
         }
 
+        // Value of the unconstrained function plus the barrier energy
         bool value(const Vector &x, Scalar &value) const override {
+            value = 0.0;
+
             if (unconstrained_) {
                 if (!unconstrained_->value(x, value)) {
                     value = 0.0;

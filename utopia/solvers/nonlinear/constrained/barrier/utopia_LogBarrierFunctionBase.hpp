@@ -34,6 +34,7 @@ namespace utopia {
             return gradient(x, g) && hessian(x, H);
         }
 
+        // Diagonal of the hessian
         virtual bool hessian(const Vector &x, Vector &H) const final {
             Vector work, h(layout(x), 0.);
 
@@ -53,9 +54,18 @@ namespace utopia {
                     h = work;
                 }
 
-                // Transform to problem base
-                this->transform()->inverse_transform_direction(h, work);
-                H += (work);
+                // The hessian in the constraint base is diag(h). In the problem base it is T^T diag(h) T,
+                // whose diagonal is not T^T h
+                Matrix diag_matrix = diag(h);
+                Matrix temp;
+                this->transform()->transform(diag_matrix, temp);
+                Vector temp_diag = diag(temp);
+
+                if (empty(H)) {
+                    H = temp_diag;
+                } else {
+                    H += temp_diag;
+                }
             } else {
                 if (!barrier_hessian(x, h)) {
                     return false;
@@ -103,9 +113,16 @@ namespace utopia {
                     h = work;
                 }
 
-                // Transform to problem base
-                this->transform()->inverse_transform_direction(h, work);
-                H.shift_diag(work);
+                // Transform to problem base: T^T diag(h) T
+                Matrix diag_matrix = diag(h);
+                Matrix temp;
+                this->transform()->transform(diag_matrix, temp);
+
+                if (H.empty()) {
+                    H = temp;
+                } else {
+                    H += temp;
+                }
             } else {
                 if (!barrier_hessian(x, h)) {
                     return false;
@@ -126,42 +143,30 @@ namespace utopia {
             return true;
         }
 
+        // Adds the barrier energy to value (as gradient and hessian add to their arguments)
         virtual bool value(const Vector &x, Scalar &value) const final {
             Vector work, v(layout(x), 0.);
 
             if (this->has_transform()) {
-                // Transform to constraint base
+                // Transform to constraint base (the energy is a scalar, it needs no back transformation)
                 this->transform()->transform(x, work);
                 if (!barrier_value(work, v)) {
                     return false;
                 }
-
-                v *= current_barrier_parameter_;
-                this->apply_selection(v);
-
-                // Scale contribuions
-                if (this->has_scaling_matrix()) {
-                    this->scaling_matrix()->apply(v, work);
-                    v = work;
-                }
-
-                // Transform to problem base
-                this->transform()->inverse_transform_direction(v, work);
-                value = sum(v);
             } else {
                 if (!barrier_value(x, v)) {
                     return false;
                 }
+            }
 
-                v *= current_barrier_parameter_;
-                this->apply_selection(v);
+            v *= current_barrier_parameter_;
+            this->apply_selection(v);
 
-                if (this->has_scaling_matrix()) {
-                    this->scaling_matrix()->apply(v, work);
-                    value = sum(work);
-                } else {
-                    value = sum(v);
-                }
+            if (this->has_scaling_matrix()) {
+                this->scaling_matrix()->apply(v, work);
+                value += sum(work);
+            } else {
+                value += sum(v);
             }
 
             return true;
@@ -313,7 +318,9 @@ namespace utopia {
         }
 
         // inline bool verbose() const { return verbose_; }
-        // virtual void reset() { current_barrier_parameter_ = barrier_parameter_; }
+
+        // Restarts the barrier continuation from the initial barrier parameter
+        void reset() override { current_barrier_parameter_ = barrier_parameter_; }
 
         // inline bool this->has_scaling_matrix() const { return static_cast<bool>(scaling_matrix_); }
 
@@ -343,6 +350,8 @@ namespace utopia {
                      .parse(in)) {
                 return;
             }
+
+            reset();
 
             // if (mpi_world_rank() == 0) {
             //     describe(utopia::out().stream());

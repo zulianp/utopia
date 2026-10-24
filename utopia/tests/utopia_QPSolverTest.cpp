@@ -236,9 +236,9 @@ namespace utopia {
         }
 
         void log_barrier_qp_solver_test() {
-            // log_barrier_qp_solver_test("LogBarrierFunction", true);
-            log_barrier_qp_solver_test("LogBarrierFunction", false);
-            log_barrier_qp_solver_test("BoundedLogBarrierFunction", false);
+            // The names of PenaltyFactory (unknown names silently fall back to LogBarrier)
+            log_barrier_qp_solver_test("LogBarrier", false);
+            log_barrier_qp_solver_test("BoundedLogBarrier", false);
 
             // Utopia::Abort("BYE");
         }
