@@ -196,8 +196,9 @@ namespace utopia {
                     auto row = F_d.row(r);
                     for (SizeType k = 0; k < row.length; k++) {
                         Scalar Fij = row.value(k);
-                        P_plus_i  += std::max(0., -1.0*Fij);
-                        P_minus_i += std::min(0., -1.0*Fij);
+                        // Kuzmin: P_i^+ = Σ max{0,f_ij}, P_i^- = Σ min{0,f_ij}
+                        P_plus_i += std::max(0., Fij);
+                        P_minus_i += std::min(0., Fij);
                     }
                 }
 
@@ -205,8 +206,8 @@ namespace utopia {
                     auto row = F_o.row(r);
                     for (SizeType k = 0; k < row.length; k++) {
                         Scalar Fij = row.value(k);
-                        P_plus_i  += std::max(0., -1.0*Fij);
-                        P_minus_i += std::min(0., -1.0*Fij);
+                        P_plus_i += std::max(0., Fij);
+                        P_minus_i += std::min(0., Fij);
                     }
                 }
 
@@ -368,10 +369,12 @@ namespace utopia {
                         Scalar Fij = row.value(k);
                         Scalar alpha_ij = 0;
 
-                        if (Fij > 0) {
+                        // Kuzmin: f_ij > 0 → min(R_i^+, R_j^-); else min(R_i^-, R_j^+)
+                        // With F_ij := A_diff_ij (u_i - u_j), the antidiffusive sign is opposite to
+                        // the raw Galerkin entry, so the R+/R- branch is taken on F_ij < 0.
+                        if (Fij < 0) {
                             alpha_ij = std::min(R_plus_d.get(r), R_minus_d.get(c));
-                        } 
-                        else {
+                        } else if (Fij > 0) {
                             alpha_ij = std::min(R_minus_d.get(r), R_plus_d.get(c));
                         }
 
@@ -391,10 +394,9 @@ namespace utopia {
 
                         Scalar alpha_ij = 0;
 
-                        if (Fij > 0) {
+                        if (Fij < 0) {
                             alpha_ij = std::min(R_plus_d.get(r), R_minus_o.get(c));
-                        } 
-                        else  {
+                        } else if (Fij > 0) {
                             alpha_ij = std::min(R_minus_d.get(r), R_plus_o.get(c));
                         }
 
@@ -414,15 +416,10 @@ namespace utopia {
 
         void post_process(const Vector &g, Vector &u) const override {
             UTOPIA_TRACE_SCOPE("StabilizeTransport::post_process");
-            //!!! CHECK -g instead of g because the rhs is = -g
-            Vector u_dot = -1.0 * (*A_corrected_) * u + g;// Calcoli u_dot  //g=residuo lineare  u=uk=soluzione del tipe step
-
-            // TODO check if +
-            // u_dot = -u_dot;
-
+            // Approximate u_t from the low-order residual: M u_t + A_corr u ≈ 0 at the end of the step
+            // (g is the assembled residual contribution available to the post-processor).
+            Vector u_dot = (*A_corrected_) * u + g;
             space_->apply_zero_constraints(u_dot);
-
-            // Vector u_dot = (*A_corrected_) * x + g;
             u_dot = e_mul(inverse_mass_vector_, u_dot);
 
             if (debug_) {
@@ -443,12 +440,9 @@ namespace utopia {
             u.select(ghosts, u_ghosts);
             u_dot.select(ghosts, u_dot_ghosts);
 
-            // TODO check if -1 or 
-            add_contrib(*A_diff_, u, u_ghosts, 1, F);       // costruisci f_ij
-
-            //add_contrib(*M_corrected_, u_dot, u_dot_ghosts, 1, F); //costruisci f_ij
-
-            add_contrib(*M_diff_, u_dot, u_dot_ghosts, -1, F);
+            // Antidiffusive fluxes from operator and mass-matrix diffusion (Kuzmin AFC).
+            add_contrib(*A_diff_, u, u_ghosts, 1, F);
+            add_contrib(*M_diff_, u_dot, u_dot_ghosts, 1, F);
 
             pre_limiting_step(u, u_ghosts, F);
 
@@ -475,7 +469,8 @@ namespace utopia {
             }
 
             Vector Q_plus(layout(u), 0), Q_minus(layout(u), 0);
-            min_max_bound(dt_, *M_diff_, u, u_ghosts, Q_minus, Q_plus);
+            // Kuzmin eq. (81): Q± use the lumped-mass diagonal (M_corrected), not M_diff.
+            min_max_bound(dt_, *M_corrected_, u, u_ghosts, Q_minus, Q_plus);
 
             if (debug_) {
                 space_->write("Q_plus.e", Q_plus);
@@ -504,8 +499,9 @@ namespace utopia {
             R_minus.select(ghosts, R_minus_ghosts);
 
             Vector u_correction(layout(u), 0);
-            create_update(F, R_minus, R_minus_ghosts, R_plus, R_minus_ghosts, u_correction);
+            create_update(F, R_minus, R_minus_ghosts, R_plus, R_plus_ghosts, u_correction);
 
+            // f_bar already includes the M_diff/dt-scaled mass fluxes; convert with lumped mass only.
             u_correction = e_mul(inverse_mass_vector_, u_correction);
 
             space_->apply_zero_constraints(u_correction);
@@ -515,7 +511,7 @@ namespace utopia {
                 utopia::out() << "norm_u_correction: " << norm_u_correction << "\n";
             }
 
-            u += u_correction * dt_;
+            u += u_correction;
 
             if (debug_) {
                 space_->write("u_correction.e", u_correction);
